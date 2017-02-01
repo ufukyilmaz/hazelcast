@@ -3,9 +3,11 @@ package info.jerrinot.compatibilityguardian;
 import com.hazelcast.core.HazelcastInstance;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
+import static info.jerrinot.compatibilityguardian.Utils.*;
 import static info.jerrinot.compatibilityguardian.Utils.debug;
 
 
@@ -56,9 +58,21 @@ public class HazelcastProxyFactory {
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             debug("Proxy " + this + " called. Method: " + method);
             Class<?> delegateClass = delegate.getClass();
-            Method methodDelegate = delegateClass.getMethod(method.getName(), method.getParameterTypes());
+            Method methodDelegate = null;
+            try {
+                methodDelegate = delegateClass.getMethod(method.getName(), method.getParameterTypes());
+            } catch (NoSuchMethodException e) {
+                throw rethrow(e);
+            }
 
-            Object delegateResult = methodDelegate.invoke(delegate, args);
+            Object delegateResult = null;
+            try {
+                delegateResult = methodDelegate.invoke(delegate, args);
+            } catch (IllegalAccessException e) {
+                throw rethrow(e);
+            } catch (InvocationTargetException e) {
+                throw e.getTargetException();
+            }
             Class<?> returnType = method.getReturnType();
             // if there return types are equals -> they are loaded
             // by the same classloader -> no need to proxy what it returns
@@ -79,7 +93,7 @@ public class HazelcastProxyFactory {
             //if the return type itself is an interface then we have to add it
             //to the list of interfaces implemented by the proxy
             if (returnType.isInterface()) {
-                interfaces = Utils.concatItems(interfaces, returnType);
+                interfaces = concatItems(interfaces, returnType);
             }
             return interfaces;
         }

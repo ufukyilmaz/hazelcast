@@ -20,7 +20,7 @@ public class RollingUpgradeTest {
     }
 
     @Test
-    public void testPutAndGet() {
+    public void unitTestIsTheUI_forRealProgrammers() {
         HazelcastInstance hz374 = HazelcastStarter.startHazelcastVersion("3.7.4");
         HazelcastInstance hz375 = HazelcastStarter.startHazelcastVersion("3.7.5");
 

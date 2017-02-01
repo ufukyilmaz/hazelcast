@@ -58,21 +58,8 @@ public class HazelcastProxyFactory {
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             debug("Proxy " + this + " called. Method: " + method);
             Class<?> delegateClass = delegate.getClass();
-            Method methodDelegate = null;
-            try {
-                methodDelegate = delegateClass.getMethod(method.getName(), method.getParameterTypes());
-            } catch (NoSuchMethodException e) {
-                throw rethrow(e);
-            }
-
-            Object delegateResult = null;
-            try {
-                delegateResult = methodDelegate.invoke(delegate, args);
-            } catch (IllegalAccessException e) {
-                throw rethrow(e);
-            } catch (InvocationTargetException e) {
-                throw e.getTargetException();
-            }
+            Method methodDelegate = getMethodDelegate(method, delegateClass);
+            Object delegateResult = invokeMethodDelegate(methodDelegate, args);
             Class<?> returnType = method.getReturnType();
             // if there return types are equals -> they are loaded
             // by the same classloader -> no need to proxy what it returns
@@ -86,6 +73,28 @@ public class HazelcastProxyFactory {
             Object resultingProxy = HazelcastProxyFactory.generateProxyForInterface(delegateResult, interfaces);
             printInfoAboutResultProxy(resultingProxy);
             return resultingProxy;
+        }
+
+        private Object invokeMethodDelegate(Method methodDelegate, Object[] args) throws Throwable {
+            Object delegateResult;
+            try {
+                delegateResult = methodDelegate.invoke(delegate, args);
+            } catch (IllegalAccessException e) {
+                throw rethrow(e);
+            } catch (InvocationTargetException e) {
+                throw e.getTargetException();
+            }
+            return delegateResult;
+        }
+
+        private Method getMethodDelegate(Method method, Class<?> delegateClass) {
+            Method methodDelegate;
+            try {
+                methodDelegate = delegateClass.getMethod(method.getName(), method.getParameterTypes());
+            } catch (NoSuchMethodException e) {
+                throw rethrow(e);
+            }
+            return methodDelegate;
         }
 
         private Class<?>[] getInterfaceForResultProxy(Class<?> returnType) {

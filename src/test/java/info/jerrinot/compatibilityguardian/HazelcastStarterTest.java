@@ -1,8 +1,11 @@
 package info.jerrinot.compatibilityguardian;
 
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IMap;
 import org.junit.Test;
+
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.*;
 
@@ -64,7 +67,22 @@ public class HazelcastStarterTest {
         System.out.println("Client terminated");
 
         memberInstance.shutdown();
+    }
 
+    @Test
+    public void testClientMap_async() throws InterruptedException, ExecutionException {
+        HazelcastInstance memberInstance = HazelcastStarter.startHazelcastVersion("3.7");
+        HazelcastInstance clientInstance = HazelcastStarter.startHazelcastClientVersion("3.7.2");
+
+        IMap<Integer, Integer> clientMap = clientInstance.getMap("myMap");
+        clientMap.put(0, 1);
+        ICompletableFuture<Integer> async = clientMap.getAsync(0);
+        int value = async.get();
+
+        assertEquals(1, value);
+
+        clientInstance.shutdown();
+        memberInstance.shutdown();
     }
 
 }

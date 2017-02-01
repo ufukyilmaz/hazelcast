@@ -2,7 +2,6 @@ package info.jerrinot.compatibilityguardian;
 
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.internal.util.ThreadLocalRandom;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
@@ -30,8 +29,45 @@ public class HazelcastStarter {
             setClassLoaderMethod.invoke(config, classloader);
 
             Method newHazelcastInstanceMethod = hazelcastClass.getMethod("newHazelcastInstance", configClass);
-            return (HazelcastInstance) newHazelcastInstanceMethod.invoke(null, config);
-//            return null;
+            newHazelcastInstanceMethod.invoke(null, config);
+            return null;
+
+        } catch (ClassNotFoundException e) {
+            throw rethrow(e);
+        } catch (NoSuchMethodException e) {
+            throw rethrow(e);
+        } catch (IllegalAccessException e) {
+            throw rethrow(e);
+        } catch (InvocationTargetException e) {
+            throw rethrow(e);
+        } catch (InstantiationException e) {
+            throw rethrow(e);
+        } finally {
+            if (contextClassLoader != null) {
+                Thread.currentThread().setContextClassLoader(contextClassLoader);
+            }
+        }
+    }
+
+    public static HazelcastInstance startHazelcastClientVersion(String version) {
+        File versionDir = getOrCreateVersionVersionDirectory(version);
+        File[] files = Downloader.downloadVersion(version, versionDir);
+        URL[] urls = fileIntoUrls(files);
+        ClassLoader parentClassloader = HazelcastStarter.class.getClassLoader();
+        HazelcastAPIDelegatingClassloader classloader = new HazelcastAPIDelegatingClassloader(urls, parentClassloader);
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(null);
+        try {
+            Class<Hazelcast> hazelcastClass = (Class<Hazelcast>) classloader.loadClass("com.hazelcast.client.HazelcastClient");
+            System.out.println(hazelcastClass + " loaded by " + hazelcastClass.getClassLoader());
+            Class<?> configClass = classloader.loadClass("com.hazelcast.client.config.ClientConfig");
+            Object config = configClass.newInstance();
+            Method setClassLoaderMethod = configClass.getMethod("setClassLoader", ClassLoader.class);
+            setClassLoaderMethod.invoke(config, classloader);
+
+            Method newHazelcastInstanceMethod = hazelcastClass.getMethod("newHazelcastClient", configClass);
+            newHazelcastInstanceMethod.invoke(null, config);
+            return null;
 
         } catch (ClassNotFoundException e) {
             throw rethrow(e);

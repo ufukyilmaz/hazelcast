@@ -85,4 +85,8 @@ public class HazelcastStarterTest {
         memberInstance.shutdown();
     }
 
+    @Test
+    public void testConfigCopy() {
+    }
+
 }

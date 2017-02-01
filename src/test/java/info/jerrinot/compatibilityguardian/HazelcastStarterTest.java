@@ -1,6 +1,7 @@
 package info.jerrinot.compatibilityguardian;
 
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -37,10 +38,15 @@ public class HazelcastStarterTest {
 
     @Test
     public void testClientMap() throws InterruptedException {
-        HazelcastStarter.startHazelcastVersion("3.7");
-        HazelcastInstance instance = HazelcastStarter.startHazelcastClientVersion("3.7.2");
+        HazelcastInstance memberInstance = HazelcastStarter.startHazelcastVersion("3.7");
+        HazelcastInstance clientInstance = HazelcastStarter.startHazelcastClientVersion("3.7.2");
 
-        instance.getMap("myMap");
+        IMap<Integer, Integer> clientMap = clientInstance.getMap("myMap");
+        IMap<Integer, Integer> memberMap = memberInstance.getMap("myMap");
+
+        clientMap.put(1, 2);
+
+        assertEquals(2, (int)memberMap.get(1));
     }
 
 }

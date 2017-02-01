@@ -5,8 +5,9 @@ import com.hazelcast.core.HazelcastInstance;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.Arrays;
 
-import static info.jerrinot.compatibilityguardian.Utils.rethrow;
 
 public class HazelcastProxyFactory {
     public static HazelcastInstance proxy(Object hazelcastDelegate) {
@@ -53,13 +54,22 @@ public class HazelcastProxyFactory {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            System.out.println("Proxy " + this + " called. Method: " + method);
             Class<?> returnType = method.getReturnType();
-
             Class<?> aClass = delegate.getClass();
             Method methodDelegate = aClass.getMethod(method.getName(), method.getParameterTypes());
-            Object nestedDelegate = methodDelegate.invoke(delegate, args);
 
+            if (methodDelegate.getReturnType().equals(method.getReturnType())) {
+                return methodDelegate.invoke(delegate, args);
+            }
+
+            Object nestedDelegate = methodDelegate.invoke(delegate, args);
             Class<?>[] interfaces = returnType.getInterfaces();
+            if (returnType.isInterface()) {
+                ArrayList<Class<?>> al = new ArrayList<>(Arrays.asList(interfaces));
+                al.add(returnType);
+                interfaces = al.toArray(new Class[0]);
+            }
 
 
             Object resultingProxy = HazelcastProxyFactory.generateProxyForInterface(nestedDelegate, interfaces);

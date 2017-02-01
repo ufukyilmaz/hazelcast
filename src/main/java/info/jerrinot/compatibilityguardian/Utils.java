@@ -6,6 +6,8 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 
 public class Utils {
+    private static final boolean DEBUG_ENABLED = true;
+
     public static RuntimeException rethrow(Exception e) {
         if (e instanceof RuntimeException) {
             throw (RuntimeException)e;
@@ -18,5 +20,11 @@ public class Utils {
         T[] newArray = (T[]) Array.newInstance(componentType, source.length + items.length);
         ArrayUtils.concat(source, items, newArray);
         return newArray;
+    }
+
+    public static void debug(String text) {
+        if (DEBUG_ENABLED) {
+            System.out.println(text);
+        }
     }
 }

@@ -6,6 +6,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
+import static info.jerrinot.compatibilityguardian.Utils.debug;
+
 
 public class HazelcastProxyFactory {
     public static HazelcastInstance proxy(Object hazelcastDelegate) {
@@ -52,7 +54,7 @@ public class HazelcastProxyFactory {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            System.out.println("Proxy " + this + " called. Method: " + method);
+            debug("Proxy " + this + " called. Method: " + method);
             Class<?> delegateClass = delegate.getClass();
             Method methodDelegate = delegateClass.getMethod(method.getName(), method.getParameterTypes());
 
@@ -83,11 +85,11 @@ public class HazelcastProxyFactory {
         }
 
         private static void printInfoAboutResultProxy(Object resultingProxy) {
-            System.out.println("Returning proxy " + resultingProxy + ", loaded by " + resultingProxy.getClass().getClassLoader());
+            debug("Returning proxy " + resultingProxy + ", loaded by " + resultingProxy.getClass().getClassLoader());
             Class<?>[] ifaces = resultingProxy.getClass().getInterfaces();
-            System.out.println("The proxy implementes intefaces: ");
+            debug("The proxy implementes intefaces: ");
             for (Class<?> iface : ifaces) {
-                System.out.println(iface + ", loaded by " + iface.getClassLoader());
+                debug(iface + ", loaded by " + iface.getClassLoader());
             }
         }
     }

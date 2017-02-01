@@ -10,9 +10,7 @@ public class HazelcastStarterTest {
 
     @Test
     public void testMember() throws InterruptedException {
-//        HazelcastStarter.startHazelcastVersion("3.7.5");
-//        HazelcastStarter.startHazelcastVersion("3.7.4");
-        HazelcastStarter.startHazelcastVersion("3.7");
+        HazelcastInstance alwaysRunningMember = HazelcastStarter.startHazelcastVersion("3.7");
 
         for (int i = 1; i < 6; i++) {
             String version = "3.7." + i;
@@ -21,11 +19,13 @@ public class HazelcastStarterTest {
             System.out.println("Stopping member " + version);
             instance.shutdown();
         }
+
+        alwaysRunningMember.shutdown();
     }
 
     @Test
     public void testClientLifecycle() throws InterruptedException {
-        HazelcastStarter.startHazelcastVersion("3.7");
+        HazelcastInstance member = HazelcastStarter.startHazelcastVersion("3.7");
 
         for (int i = 1; i < 6; i++) {
             String version = "3.7." + i;
@@ -34,6 +34,8 @@ public class HazelcastStarterTest {
             System.out.println("Stopping client " + version);
             instance.shutdown();
         }
+
+        member.shutdown();
     }
 
     @Test
@@ -47,6 +49,9 @@ public class HazelcastStarterTest {
         clientMap.put(1, 2);
 
         assertEquals(2, (int)memberMap.get(1));
+
+        clientInstance.shutdown();
+        memberInstance.shutdown();
     }
 
     @Test
@@ -57,6 +62,8 @@ public class HazelcastStarterTest {
         System.out.println("About to terminate the client");
         clientInstance.getLifecycleService().terminate();
         System.out.println("Client terminated");
+
+        memberInstance.shutdown();
 
     }
 

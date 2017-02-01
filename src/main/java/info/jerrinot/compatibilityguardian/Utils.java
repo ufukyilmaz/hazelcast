@@ -12,7 +12,7 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 
 public class Utils {
-    public static final boolean DEBUG_ENABLED = true;
+    public static final boolean DEBUG_ENABLED = false;
 
     public static RuntimeException rethrow(Exception e) {
         if (e instanceof RuntimeException) {

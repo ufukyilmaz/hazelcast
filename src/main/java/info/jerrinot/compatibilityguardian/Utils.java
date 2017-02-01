@@ -6,7 +6,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 
 public class Utils {
-    private static final boolean DEBUG_ENABLED = true;
+    public static final boolean DEBUG_ENABLED = true;
 
     public static RuntimeException rethrow(Exception e) {
         if (e instanceof RuntimeException) {

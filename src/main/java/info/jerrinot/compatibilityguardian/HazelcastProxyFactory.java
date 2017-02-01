@@ -108,6 +108,9 @@ public class HazelcastProxyFactory {
         }
 
         private static void printInfoAboutResultProxy(Object resultingProxy) {
+            if (!Utils.DEBUG_ENABLED) {
+                return;
+            }
             debug("Returning proxy " + resultingProxy + ", loaded by " + resultingProxy.getClass().getClassLoader());
             Class<?>[] ifaces = resultingProxy.getClass().getInterfaces();
             debug("The proxy implementes intefaces: ");

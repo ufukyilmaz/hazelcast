@@ -5,8 +5,6 @@ import com.hazelcast.core.HazelcastInstance;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 
 public class HazelcastProxyFactory {
@@ -55,32 +53,42 @@ public class HazelcastProxyFactory {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             System.out.println("Proxy " + this + " called. Method: " + method);
+            Class<?> delegateClass = delegate.getClass();
+            Method methodDelegate = delegateClass.getMethod(method.getName(), method.getParameterTypes());
+
+            Object delegateResult = methodDelegate.invoke(delegate, args);
             Class<?> returnType = method.getReturnType();
-            Class<?> aClass = delegate.getClass();
-            Method methodDelegate = aClass.getMethod(method.getName(), method.getParameterTypes());
-
-            if (methodDelegate.getReturnType().equals(method.getReturnType())) {
-                return methodDelegate.invoke(delegate, args);
+            // if there return types are equals -> they are loaded
+            // by the same classloader -> no need to proxy what it returns
+            if (methodDelegate.getReturnType().equals(returnType)) {
+                return delegateResult;
             }
 
-            Object nestedDelegate = methodDelegate.invoke(delegate, args);
+            //at this point we know the delegate return something loaded by
+            //different class then the proxy -> we need to proxy the result
+            Class<?>[] interfaces = getInterfaceForResultProxy(returnType);
+            Object resultingProxy = HazelcastProxyFactory.generateProxyForInterface(delegateResult, interfaces);
+            printInfoAboutResultProxy(resultingProxy);
+            return resultingProxy;
+        }
+
+        private Class<?>[] getInterfaceForResultProxy(Class<?> returnType) {
             Class<?>[] interfaces = returnType.getInterfaces();
+            //if the return type itself is an interface then we have to add it
+            //to the list of interfaces implemented by the proxy
             if (returnType.isInterface()) {
-                ArrayList<Class<?>> al = new ArrayList<>(Arrays.asList(interfaces));
-                al.add(returnType);
-                interfaces = al.toArray(new Class[0]);
+                interfaces = Utils.concatItems(interfaces, returnType);
             }
+            return interfaces;
+        }
 
-
-            Object resultingProxy = HazelcastProxyFactory.generateProxyForInterface(nestedDelegate, interfaces);
+        private static void printInfoAboutResultProxy(Object resultingProxy) {
             System.out.println("Returning proxy " + resultingProxy + ", loaded by " + resultingProxy.getClass().getClassLoader());
             Class<?>[] ifaces = resultingProxy.getClass().getInterfaces();
             System.out.println("The proxy implementes intefaces: ");
             for (Class<?> iface : ifaces) {
                 System.out.println(iface + ", loaded by " + iface.getClassLoader());
             }
-            return resultingProxy;
-//            return null;
         }
     }
 }

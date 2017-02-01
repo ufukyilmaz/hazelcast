@@ -14,12 +14,12 @@ public class HazelcastProxyFactory {
         return proxy;
     }
 
-    public static <T> T generateProxyForInterface(Object delegate, ClassLoader targetClassloader, Class<?>...expectedInterfaces) {
+    public static <T> T generateProxyForInterface(Object delegate, ClassLoader proxyTargetClassloader, Class<?>...expectedInterfaces) {
         if (!checkImplementInterfaces(delegate, expectedInterfaces)) {
             throw new GuardianException("Cannot create proxy for class " + delegate);
         }
         InvocationHandler myInvocationHandler = new ProxyInvocationHandler(delegate);
-        return (T) Proxy.newProxyInstance(targetClassloader, expectedInterfaces, myInvocationHandler);
+        return (T) Proxy.newProxyInstance(proxyTargetClassloader, expectedInterfaces, myInvocationHandler);
     }
 
     private static boolean checkImplementInterfaces(Object o, Class<?>...ifaces) {

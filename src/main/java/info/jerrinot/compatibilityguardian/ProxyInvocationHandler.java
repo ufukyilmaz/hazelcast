@@ -34,7 +34,7 @@ class ProxyInvocationHandler implements InvocationHandler {
         //at this point we know the delegate return something loaded by
         //different class then the proxy -> we need to proxy the result
         Class<?>[] interfaces = getInterfaceForResultProxy(returnType);
-        ClassLoader targetClassLoader = Hazelcast.class.getClassLoader();
+        ClassLoader targetClassLoader = proxy.getClass().getClassLoader();
         Object resultingProxy = HazelcastProxyFactory.generateProxyForInterface(delegateResult, targetClassLoader, interfaces);
         printInfoAboutResultProxy(resultingProxy);
         return resultingProxy;

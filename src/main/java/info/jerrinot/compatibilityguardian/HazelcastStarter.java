@@ -1,5 +1,6 @@
 package info.jerrinot.compatibilityguardian;
 
+import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 
@@ -12,7 +13,12 @@ import java.net.URL;
 import static info.jerrinot.compatibilityguardian.Utils.rethrow;
 
 public class HazelcastStarter {
+
     public static HazelcastInstance startHazelcastVersion(String version) {
+        return startHazelcastVersion(version, null);
+    }
+
+    public static HazelcastInstance startHazelcastVersion(String version, Config configTemplate) {
         File versionDir = getOrCreateVersionVersionDirectory(version);
         File[] files = Downloader.downloadVersion(version, versionDir);
         URL[] urls = fileIntoUrls(files);
@@ -24,9 +30,14 @@ public class HazelcastStarter {
             Class<Hazelcast> hazelcastClass = (Class<Hazelcast>) classloader.loadClass("com.hazelcast.core.Hazelcast");
             System.out.println(hazelcastClass + " loaded by " + hazelcastClass.getClassLoader());
             Class<?> configClass = classloader.loadClass("com.hazelcast.config.Config");
-            Object config = configClass.newInstance();
-            Method setClassLoaderMethod = configClass.getMethod("setClassLoader", ClassLoader.class);
-            setClassLoaderMethod.invoke(config, classloader);
+            Object config;
+            if (configTemplate == null) {
+                config = configClass.newInstance();
+                Method setClassLoaderMethod = configClass.getMethod("setClassLoader", ClassLoader.class);
+                setClassLoaderMethod.invoke(config, classloader);
+            } else {
+                config = Configuration.configLoader(configTemplate, classloader);
+            }
 
             Method newHazelcastInstanceMethod = hazelcastClass.getMethod("newHazelcastInstance", configClass);
             Object delegate = newHazelcastInstanceMethod.invoke(null, config);

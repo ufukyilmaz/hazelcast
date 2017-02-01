@@ -15,30 +15,35 @@ import java.util.concurrent.ConcurrentMap;
 public class Configuration {
     public static final String WORKING_DIRECTORY = System.getProperty("user.home") + "/compatguardian";
 
+    public static Object configLoader(Config mainConfig, ClassLoader classloader)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException,
+            NoSuchMethodException {
+        Class<?> configClass = classloader.loadClass("com.hazelcast.config.Config");
+        Object otherConfig = cloneConfig(mainConfig, classloader);
 
-    public static Object configLoader(Config mainConfig, ClassLoader classloader) {
-        try {
-            Class<?> configClass = classloader.loadClass("com.hazelcast.config.Config");
-            Object otherConfig = cloneConfig(mainConfig, classloader);
-
-            Method setClassLoaderMethod = configClass.getMethod("setClassLoader", ClassLoader.class);
-            setClassLoaderMethod.invoke(otherConfig, classloader);
-            return otherConfig;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return null;
+        Method setClassLoaderMethod = configClass.getMethod("setClassLoader", ClassLoader.class);
+        setClassLoaderMethod.invoke(otherConfig, classloader);
+        return otherConfig;
     }
-    private static boolean isGetter(Method method){
-        if(!method.getName().startsWith("get"))      return false;
-        if(method.getParameterTypes().length != 0)   return false;
-        if(void.class.equals(method.getReturnType())) return false;
+
+    private static boolean isGetter(Method method) {
+        if (!method.getName().startsWith("get")) {
+            return false;
+        }
+        if (method.getParameterTypes().length != 0) {
+            return false;
+        }
+        if (void.class.equals(method.getReturnType())) {
+            return false;
+        }
         return true;
     }
 
-    public static Object cloneConfig(Object thisConfigObject, ClassLoader classloader) throws Exception{
-        if(thisConfigObject == null) return null;
+    public static Object cloneConfig(Object thisConfigObject, ClassLoader classloader)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException {
+        if (thisConfigObject == null) {
+            return null;
+        }
 
         Class thisConfigClass = thisConfigObject.getClass();
 
@@ -47,8 +52,8 @@ public class Configuration {
 
         for (Method method : thisConfigClass.getMethods()) {
             Class returnType = method.getReturnType();
-            if(isGetter(method) && hasSetter(otherConfigClass, returnType, creatSetterName(method))){
-                if (Properties.class.isAssignableFrom(returnType) ) {
+            if (isGetter(method) && hasSetter(otherConfigClass, returnType, creatSetterName(method))) {
+                if (Properties.class.isAssignableFrom(returnType)) {
                     //ignore
                 } else if (Map.class.isAssignableFrom(returnType) || ConcurrentMap.class.isAssignableFrom(returnType)) {
                     Map map = (Map) method.invoke(thisConfigObject, null);
@@ -60,7 +65,7 @@ public class Configuration {
                         otherMap.put(key, otherMapItem);
                     }
                     updateConfig(otherConfigClass, returnType, creatSetterName(method), otherConfigObject, otherMap);
-                } else if(returnType.equals(List.class)) {
+                } else if (returnType.equals(List.class)) {
                     List list = (List) method.invoke(thisConfigObject, null);
                     List otherList = new ArrayList();
                     for (Object item : list) {
@@ -68,19 +73,19 @@ public class Configuration {
                         otherList.add(otherItem);
                     }
                     updateConfig(otherConfigClass, returnType, creatSetterName(method), otherConfigObject, otherList);
-                } else if(returnType.isEnum()) {
+                } else if (returnType.isEnum()) {
                     Enum thisSubConfigObject = (Enum) method.invoke(thisConfigObject, null);
                     Class otherEnumClass = classloader.loadClass(thisSubConfigObject.getClass().getName());
                     Object otherEnumValue = Enum.valueOf(otherEnumClass, thisSubConfigObject.name());
                     updateConfig(otherConfigClass, returnType, creatSetterName(method), otherConfigObject, otherEnumValue);
-                } else if(returnType.getName().startsWith("java")) {
+                } else if (returnType.getName().startsWith("java")) {
                     Object thisSubConfigObject = method.invoke(thisConfigObject, null);
                     updateConfig(otherConfigClass, returnType, creatSetterName(method), otherConfigObject, thisSubConfigObject);
-                } else if(returnType.getName().startsWith("com.hazelcast.memory.MemorySize")) {
+                } else if (returnType.getName().startsWith("com.hazelcast.memory.MemorySize")) {
                     //ignore
-                } else if(returnType.getName().startsWith("com.hazelcast")) {
+                } else if (returnType.getName().startsWith("com.hazelcast")) {
                     Object thisSubConfigObject = method.invoke(thisConfigObject, null);
-                    Object otherSubConfig= cloneConfig(thisSubConfigObject, classloader);
+                    Object otherSubConfig = cloneConfig(thisSubConfigObject, classloader);
                     updateConfig(otherConfigClass, returnType, creatSetterName(method), otherConfigObject, otherSubConfig);
                 } else {
                     //
@@ -115,7 +120,7 @@ public class Configuration {
     }
 
     private static String creatSetterName(Method getter) {
-        return "s"+getter.getName().substring(1);
+        return "s" + getter.getName().substring(1);
     }
 
     public static Object getValue(Object obj, String getter)

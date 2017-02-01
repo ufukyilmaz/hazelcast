@@ -1,5 +1,6 @@
 package info.jerrinot.compatibilityguardian;
 
+import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IMap;
@@ -23,6 +24,17 @@ public class HazelcastStarterTest {
             instance.shutdown();
         }
 
+        alwaysRunningMember.shutdown();
+    }
+
+    @Test
+    public void testMemberWithConfig() throws InterruptedException {
+        Config config = new Config();
+        config.setInstanceName("test-name");
+
+        HazelcastInstance alwaysRunningMember = HazelcastStarter.startHazelcastVersion("3.7", config);
+
+        assertEquals(alwaysRunningMember.getName(),"test-name");
         alwaysRunningMember.shutdown();
     }
 

@@ -62,7 +62,7 @@ public class HazelcastProxyFactory {
             Class<?> returnType = method.getReturnType();
             // if there return types are equals -> they are loaded
             // by the same classloader -> no need to proxy what it returns
-            if (methodDelegate.getReturnType().equals(returnType)) {
+            if (methodDelegate.getReturnType().equals(returnType) || delegateResult == null) {
                 return delegateResult;
             }
 

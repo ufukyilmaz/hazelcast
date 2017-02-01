@@ -25,11 +25,11 @@ public class RollingUpgradeTest {
         HazelcastInstance hz375 = HazelcastStarter.startHazelcastVersion("3.7.5");
 
         IMap<Integer, String> map374 = hz374.getMap("myMap");
-        map374.put(42, "UI = Cheating!");
+        map374.put(42, "GUI = Cheating!");
 
         IMap<Integer, String> myMap = hz375.getMap("myMap");
         String ancientWisdom = myMap.get(42);
 
-        assertEquals("UI = Cheating!", ancientWisdom);
+        assertEquals("GUI = Cheating!", ancientWisdom);
     }
 }

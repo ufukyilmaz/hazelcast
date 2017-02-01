@@ -29,8 +29,9 @@ public class HazelcastStarter {
             setClassLoaderMethod.invoke(config, classloader);
 
             Method newHazelcastInstanceMethod = hazelcastClass.getMethod("newHazelcastInstance", configClass);
-            newHazelcastInstanceMethod.invoke(null, config);
-            return null;
+            Object delegate = newHazelcastInstanceMethod.invoke(null, config);
+
+            return HazelcastProxyFactory.proxy(delegate);
 
         } catch (ClassNotFoundException e) {
             throw rethrow(e);
@@ -66,8 +67,8 @@ public class HazelcastStarter {
             setClassLoaderMethod.invoke(config, classloader);
 
             Method newHazelcastInstanceMethod = hazelcastClass.getMethod("newHazelcastClient", configClass);
-            newHazelcastInstanceMethod.invoke(null, config);
-            return null;
+            Object delegate = newHazelcastInstanceMethod.invoke(null, config);
+            return HazelcastProxyFactory.proxy(delegate);
 
         } catch (ClassNotFoundException e) {
             throw rethrow(e);

@@ -23,7 +23,7 @@ public class HazelcastStarterTest {
     }
 
     @Test
-    public void testClient() throws InterruptedException {
+    public void testClientLifecycle() throws InterruptedException {
         HazelcastStarter.startHazelcastVersion("3.7");
 
         for (int i = 1; i < 6; i++) {
@@ -33,6 +33,14 @@ public class HazelcastStarterTest {
             System.out.println("Stopping client " + version);
             instance.shutdown();
         }
+    }
+
+    @Test
+    public void testClientMap() throws InterruptedException {
+        HazelcastStarter.startHazelcastVersion("3.7");
+        HazelcastInstance instance = HazelcastStarter.startHazelcastClientVersion("3.7.2");
+
+        instance.getMap("myMap");
     }
 
 }

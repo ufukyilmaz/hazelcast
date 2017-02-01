@@ -46,10 +46,9 @@ public class HazelcastProxyFactory {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            if (method.getName().equals("shutdown")) {
-                shutdownMethod.invoke(delegate);
-            }
-            return null;
+            Class<?> aClass = delegate.getClass();
+            Method methodDelegate = aClass.getMethod(method.getName(), method.getParameterTypes());
+            return methodDelegate.invoke(delegate, args);
         }
     }
 }

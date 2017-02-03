@@ -6,11 +6,9 @@
 
 <suppressions>
 
-    <!-- Suppress duplicate checking of copyright notice -->
-    <suppress checks="StrictDuplicateCode" files="\.java" lines="1-15"/>
-
     <!-- Exclude all files from header check, so we can keep a common checkstyle.xml configuration -->
-    <suppress checks="Header" files=""/>
+    <suppress checks="RegexpHeader" files="package-info.java"/>
+    <suppress checks="RegexpHeader" files="com.hazelcast.spi.hotrestart.impl.gc.ChunkPriorityQueue.java"/>
 
     <!-- Javadoc suppressions -->
     <suppress checks="Javadoc(Package|Type|Method|Variable)" files="/impl/"/>

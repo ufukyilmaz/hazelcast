@@ -81,7 +81,7 @@
 
     <!-- Checks for Headers                                -->
     <!-- See http://checkstyle.sf.net/config_header.html   -->
-    <module name="Header">
+    <module name="RegexpHeader">
         <property name="headerFile" value="${main.basedir}/checkstyle/ClassHeader.txt"/>
         <property name="fileExtensions" value="java"/>
     </module>

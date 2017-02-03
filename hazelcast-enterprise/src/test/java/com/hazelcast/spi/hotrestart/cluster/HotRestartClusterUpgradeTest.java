@@ -46,13 +46,13 @@ public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStart
 
         Address[] addresses = new Address[]{getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
-        assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
+        assertClusterVersion(instances, originalCodebaseVersion.asVersion());
         shutdownCluster();
 
         instances = restartInstances(addresses, nextMinorVersion);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         assertNodesVersion(instances, nextMinorVersion);
-        assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
+        assertClusterVersion(instances, originalCodebaseVersion.asVersion());
     }
 
     // cluster of nodes starts at codebase/cluster version V
@@ -74,22 +74,22 @@ public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStart
 
         Address[] addresses = new Address[]{getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
-        assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
+        assertClusterVersion(instances, originalCodebaseVersion.asVersion());
         shutdownCluster();
 
         instances = restartInstances(addresses, nextMinorVersion);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         assertNodesVersion(instances, nextMinorVersion);
-        assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
+        assertClusterVersion(instances, originalCodebaseVersion.asVersion());
 
         // upgrade cluster version to next minor version
-        getClusterService(instances[0]).changeClusterVersion(nextMinorVersion.asClusterVersion());
-        assertClusterVersion(instances, nextMinorVersion.asClusterVersion());
+        getClusterService(instances[0]).changeClusterVersion(nextMinorVersion.asVersion());
+        assertClusterVersion(instances, nextMinorVersion.asVersion());
         shutdownCluster();
 
         instances = restartInstances(addresses, nextMinorVersion);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
-        assertClusterVersion(instances, nextMinorVersion.asClusterVersion());
+        assertClusterVersion(instances, nextMinorVersion.asVersion());
     }
 
     // cluster of nodes starts at codebase/cluster version V
@@ -115,7 +115,7 @@ public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStart
 
         final Address[] addresses = new Address[]{getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
-        assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
+        assertClusterVersion(instances, originalCodebaseVersion.asVersion());
         shutdownCluster();
 
         instances[0] = restartInstance(addresses[0], null,
@@ -127,7 +127,7 @@ public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStart
 
         // only one node starts in the final cluster
         assertInstancesJoined(1, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
-        assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
+        assertClusterVersion(instances, originalCodebaseVersion.asVersion());
     }
 
     // cluster of nodes starts at codebase/cluster version V
@@ -154,7 +154,7 @@ public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStart
 
         final Address[] addresses = new Address[]{getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
-        assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
+        assertClusterVersion(instances, originalCodebaseVersion.asVersion());
         shutdownCluster();
 
         // instance with codebase version minor-1 will fail due to incompatibility with cluster version

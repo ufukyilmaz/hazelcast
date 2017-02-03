@@ -1,7 +1,7 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.internal.cluster.ClusterVersionListener;
-import com.hazelcast.version.ClusterVersion;
+import com.hazelcast.version.Version;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -10,15 +10,15 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class EnterpriseClusterVersionListener implements EnterpriseClusterVersionAware, ClusterVersionListener {
 
-    private final AtomicReference<ClusterVersion> clusterVersion = new AtomicReference<ClusterVersion>(ClusterVersion.UNKNOWN);
+    private final AtomicReference<Version> clusterVersion = new AtomicReference<Version>(Version.UNKNOWN);
 
     @Override
-    public void onClusterVersionChange(ClusterVersion newVersion) {
+    public void onClusterVersionChange(Version newVersion) {
         this.clusterVersion.set(newVersion);
     }
 
     @Override
-    public ClusterVersion getClusterVersion() {
+    public Version getClusterVersion() {
         return clusterVersion.get();
     }
 

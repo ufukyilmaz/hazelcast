@@ -29,12 +29,12 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.SocketInterceptor;
+import com.hazelcast.version.Version;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ExceptionUtil;
-import com.hazelcast.version.ClusterVersion;
 
 import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature;
 
@@ -168,14 +168,14 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     }
 
     private static class EnterpriseClientVersionAware implements EnterpriseClusterVersionAware {
-        private final ClusterVersion version;
+        private final Version version;
 
         public EnterpriseClientVersionAware(String buildVersion) {
-            this.version = ClusterVersion.of(buildVersion);
+            this.version = Version.of(buildVersion);
         }
 
         @Override
-        public ClusterVersion getClusterVersion() {
+        public Version getClusterVersion() {
             return version;
         }
     }

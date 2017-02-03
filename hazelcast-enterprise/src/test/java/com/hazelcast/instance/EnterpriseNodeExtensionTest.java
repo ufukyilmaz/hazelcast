@@ -7,11 +7,11 @@ import com.hazelcast.internal.cluster.impl.JoinRequest;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Packet;
+import com.hazelcast.version.Version;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.UuidUtil;
-import com.hazelcast.version.ClusterVersion;
 import com.hazelcast.version.MemberVersion;
 import org.junit.Before;
 import org.junit.Rule;
@@ -51,42 +51,42 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
     @Test
     public void test_39nodeVersionCompatibleWith_clusterPreviousMinorVersion() {
         MemberVersion currentVersion = MemberVersion.of(3,9,0);
-        ClusterVersion minorMinusOne = new ClusterVersion(currentVersion.getMajor(), currentVersion.getMinor() - 1);
+        Version minorMinusOne = Version.of(currentVersion.getMajor(), currentVersion.getMinor() - 1);
         assertTrue(nodeExtension.isNodeVersionCompatibleWith(minorMinusOne));
     }
 
     @Test
     public void test_39nodeVersionNotCompatibleWith_clusterNextMinorVersion() {
         MemberVersion currentVersion = MemberVersion.of(3,9,0);
-        ClusterVersion minorMinusOne = new ClusterVersion(currentVersion.getMajor(), currentVersion.getMinor() + 1);
+        Version minorMinusOne = Version.of(currentVersion.getMajor(), currentVersion.getMinor() + 1);
         assertFalse(nodeExtension.isNodeVersionCompatibleWith(minorMinusOne));
     }
 
     @Test
     public void test_39nodeVersionNotCompatibleWith_clusterOtherMajorVersion() {
         MemberVersion currentVersion = MemberVersion.of(3,9,0);
-        ClusterVersion majorPlusOne = new ClusterVersion(currentVersion.getMajor() + 1, currentVersion.getMinor());
+        Version majorPlusOne = Version.of(currentVersion.getMajor() + 1, currentVersion.getMinor());
         assertFalse(nodeExtension.isNodeVersionCompatibleWith(majorPlusOne));
     }
 
     @Test
     public void test_38nodeVersionNotCompatibleWith_clusterPreviousMinorVersion() {
         MemberVersion currentVersion = MemberVersion.of(3,8,0);
-        ClusterVersion minorMinusOne = new ClusterVersion(currentVersion.getMajor(), currentVersion.getMinor() - 1);
+        Version minorMinusOne = Version.of(currentVersion.getMajor(), currentVersion.getMinor() - 1);
         assertFalse(nodeExtension.isNodeVersionCompatibleWith(minorMinusOne));
     }
 
     @Test
     public void test_38nodeVersionNotCompatibleWith_clusterNextMinorVersion() {
         MemberVersion currentVersion = MemberVersion.of(3,8,0);
-        ClusterVersion minorMinusOne = new ClusterVersion(currentVersion.getMajor(), currentVersion.getMinor() + 1);
+        Version minorMinusOne = Version.of(currentVersion.getMajor(), currentVersion.getMinor() + 1);
         assertFalse(nodeExtension.isNodeVersionCompatibleWith(minorMinusOne));
     }
 
     @Test
     public void test_38nodeVersionCompatibleWith_cluster38Version() {
         MemberVersion currentVersion = MemberVersion.of(3,8,0);
-        ClusterVersion majorPlusOne = new ClusterVersion(currentVersion.getMajor(), currentVersion.getMinor());
+        Version majorPlusOne = Version.of(currentVersion.getMajor(), currentVersion.getMinor());
         assertTrue(nodeExtension.isNodeVersionCompatibleWith(majorPlusOne));
     }
 

@@ -3,7 +3,7 @@ package com.hazelcast.internal.serialization.impl;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.Version;
+import com.hazelcast.version.Version;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -11,7 +11,6 @@ import com.hazelcast.nio.serialization.impl.VersionedDataSerializableFactory;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.ClusterVersion;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -28,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseDSSerializationTest {
 
-    private static ClusterVersion V3_8 = ClusterVersion.of("3.8");
+    private static Version V3_8 = Version.of("3.8");
 
     private boolean versionedSerializationEnabled;
 
@@ -171,7 +170,7 @@ public class EnterpriseDSSerializationTest {
 
     private class TestVersionAware implements EnterpriseClusterVersionAware {
         @Override
-        public ClusterVersion getClusterVersion() {
+        public Version getClusterVersion() {
             return V3_8;
         }
     }

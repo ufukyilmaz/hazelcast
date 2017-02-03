@@ -33,6 +33,8 @@ public class HdMapWanSyncTest extends AbstractMapWanSyncTest {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();
+        warmUpPartitions(clusterA);
+        warmUpPartitions(clusterB);
 
         final CountDownLatch startLatch = new CountDownLatch(1);
 

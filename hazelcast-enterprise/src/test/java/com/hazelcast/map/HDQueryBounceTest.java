@@ -10,7 +10,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
-public class HDQueryDuringMigrationsStressTest extends QueryDuringMigrationsStressTest {
+public class HDQueryBounceTest extends QueryBounceTest {
 
     @Override
     protected Config getConfig() {

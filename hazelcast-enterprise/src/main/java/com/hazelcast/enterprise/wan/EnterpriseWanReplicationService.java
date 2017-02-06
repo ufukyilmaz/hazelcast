@@ -237,6 +237,12 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         return endpoints.get(target);
     }
 
+    /**
+     * Processes the replication event sent from the source cluster.
+     *
+     * @param data         the serialized event, can be of type {@link WanReplicationEvent} or {@link BatchWanReplicationEvent}
+     * @param wanOperation the operation sent by the source cluster
+     */
     public void handleEvent(final Data data, WanOperation wanOperation) {
         Object event = node.nodeEngine.toObject(data);
         if (event instanceof BatchWanReplicationEvent) {
@@ -394,6 +400,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         }
     }
 
+    /** Returns the partition ID for the first event or -1 if the event batch is empty */
     private int getPartitionId(BatchWanReplicationEvent batchWanReplicationEvent) {
         List<WanReplicationEvent> eventList = batchWanReplicationEvent.getEventList();
         if (eventList.isEmpty()) {

@@ -14,12 +14,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Container to gather batch of {@link WanReplicationEvent} objects.
+ * If {@link com.hazelcast.enterprise.wan.replication.WanReplicationProperties#SNAPSHOT_ENABLED} is true, only the
+ * latest event for a key will be sent.
  */
 public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
 
     private boolean snapshotEnabled;
-    private transient Map<Data, WanReplicationEvent> eventMap
-            = new ConcurrentHashMap<Data, WanReplicationEvent>();
+    private transient Map<Data, WanReplicationEvent> eventMap = new ConcurrentHashMap<Data, WanReplicationEvent>();
     private List<WanReplicationEvent> eventList = new ArrayList<WanReplicationEvent>();
 
     public BatchWanReplicationEvent() {

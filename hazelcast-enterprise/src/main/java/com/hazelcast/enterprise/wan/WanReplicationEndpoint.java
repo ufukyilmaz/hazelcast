@@ -28,6 +28,12 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
      */
     void shutdown();
 
+    /**
+     * Remove the oldest replication event for the same cache/map name and partition ID as {@code wanReplicationEvent} from
+     * the replication queue and decreases the backup event count.
+     *
+     * @param wanReplicationEvent the completed wan event
+     */
     void removeBackup(WanReplicationEvent wanReplicationEvent);
 
     void putBackup(WanReplicationEvent wanReplicationEvent);
@@ -68,6 +74,11 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
     @Override
     void checkWanReplicationQueues();
 
+    /**
+     * Publishes a wan sync event for all or a specific map and for all or some partitions.
+     *
+     * @param syncRequest the wan sync request
+     */
     void publishSyncEvent(WanSyncEvent syncRequest);
 
     void clearQueues();

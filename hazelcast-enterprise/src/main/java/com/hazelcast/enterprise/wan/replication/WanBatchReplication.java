@@ -28,9 +28,12 @@ import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.
 
 /**
  * WAN replication publisher that sends events in batches.
- *
- * Basically, it publishes events either when {@value DEFAULT_BATCH_SIZE} events are enqueued
- * or enqueued events have waited for {@value STRIPED_RUNNABLE_TIMEOUT_SECONDS} seconds.
+ * Basically, it publishes events either when enough events are enqueued or enqueued events have waited for enough time.
+ * <p>
+ * The event count is configurable by {@link WanReplicationProperties#BATCH_SIZE} and is {@value DEFAULT_BATCH_SIZE} by default.
+ * The elapsed time is configurable by {@link WanReplicationProperties#BATCH_MAX_DELAY_MILLIS} and is
+ * {@value DEFAULT_BATCH_MAX_DELAY_MILLIS} by default.
+ * The events are sent to the {@link WanReplicationProperties#ENDPOINTS} depending on the event key partition.
  */
 public class WanBatchReplication extends AbstractWanReplication implements Runnable {
 
@@ -98,10 +101,10 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         }
     }
 
+    /** Drains the staging queue until enough items have been drained or enough time has passed */
     private List<WanReplicationEvent> drainStagingQueue() {
         List<WanReplicationEvent> wanReplicationEventList = new ArrayList<WanReplicationEvent>();
-        while (!(wanReplicationEventList.size() >= batchSize
-                || sendingPeriodPassed(wanReplicationEventList.size()))) {
+        while (!(wanReplicationEventList.size() >= batchSize || sendingPeriodPassed(wanReplicationEventList.size()))) {
             if (!running) {
                 break;
             }
@@ -118,6 +121,13 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         return wanReplicationEventList;
     }
 
+    /**
+     * Submits a batch replication runnable to the striped executor for a specific endpoint and retries if the executor
+     * rejected the task.
+     *
+     * @param target                the endpoint for the event
+     * @param batchReplicationEvent the batch event
+     */
     private void handleBatchReplicationEventObject(final String target, final BatchWanReplicationEvent batchReplicationEvent) {
         StripedExecutor ex = getExecutor();
         boolean taskSubmitted = false;
@@ -137,9 +147,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         return targets.get(index);
     }
 
+    /** Checks if {@link WanReplicationProperties#BATCH_MAX_DELAY_MILLIS} has passed since the last replication was sent */
     private boolean sendingPeriodPassed(int eventQueueSize) {
-        return System.currentTimeMillis() - lastBatchSendTime > batchMaxDelayMillis
-                && eventQueueSize > 0;
+        return System.currentTimeMillis() - lastBatchSendTime > batchMaxDelayMillis && eventQueueSize > 0;
     }
 
     private StripedExecutor getExecutor() {
@@ -161,7 +171,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
     }
 
     /**
-     * {@link StripedRunnable} implementation to send Batch of WAN replication events to target cluster.
+     * {@link StripedRunnable} implementation to send Batch of WAN replication events to target cluster. It will retry
+     * sending the event until it has succeeded or until stopped. The WAN event backups are removed from the replicas
+     * after the batch has been sent and operation response received from the target cluster.
      */
     private class BatchStripedRunnable implements StripedRunnable, TimeoutRunnable {
 
@@ -182,8 +194,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                     connectionWrapper = connectionManager.getConnection(target);
                     Connection conn = connectionWrapper.getConnection();
                     if (conn != null && conn.isAlive()) {
-                        boolean isTargetInvocationSuccessful
-                                = invokeOnWanTarget(conn.getEndPoint(), batchReplicationEvent);
+                        boolean isTargetInvocationSuccessful = invokeOnWanTarget(conn.getEndPoint(), batchReplicationEvent);
                         if (isTargetInvocationSuccessful) {
                             for (WanReplicationEvent event : batchReplicationEvent.getEventList()) {
                                 removeReplicationEvent(event);

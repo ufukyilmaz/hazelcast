@@ -19,14 +19,33 @@ public class PartitionWanEventContainer {
     private PartitionWanEventQueueMap current = mapWanEventQueueMap;
     private PartitionWanEventQueueMap next = cacheWanEventQueueMap;
 
+    /**
+     * Publishes the {@code replicationEvent} for the given {@code mapName} map on the partition {@code partitionId}
+     *
+     * @param mapName             the name of the map for which the event is published
+     * @param wanReplicationEvent the published replication event
+     * @return {@code true} if the element was added to this queue, else {@code false}
+     */
     public boolean publishMapWanEvent(String mapName, WanReplicationEvent wanReplicationEvent) {
         return mapWanEventQueueMap.offerEvent(wanReplicationEvent, mapName, getBackupCount(wanReplicationEvent));
     }
 
+    /**
+     * Return the head of the wan event queue for the {@code mapName}
+     *
+     * @param mapName the map for which an event is polled
+     * @return the replication event
+     */
     public WanReplicationEvent pollMapWanEvent(String mapName) {
         return mapWanEventQueueMap.pollEvent(mapName);
     }
 
+    /**
+     * Return the head of the wan event queue for the {@code cacheName}
+     *
+     * @param cacheName the cache for which an event is polled
+     * @return the replication event
+     */
     public WanReplicationEvent pollCacheWanEvent(String cacheName) {
         return cacheWanEventQueueMap.pollEvent(cacheName);
     }

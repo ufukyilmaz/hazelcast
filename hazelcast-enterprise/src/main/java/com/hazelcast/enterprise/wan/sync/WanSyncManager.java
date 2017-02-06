@@ -42,8 +42,8 @@ public class WanSyncManager {
     private final NodeEngine nodeEngine;
     private final ILogger logger;
 
-    // below fields are only accessed through updater
     private volatile WanSyncStatus syncStatus = WanSyncStatus.READY;
+    /** The processed {@link WanSyncEvent}s count */
     private volatile int syncedPartitionCount;
 
     private volatile boolean running = true;
@@ -85,7 +85,7 @@ public class WanSyncManager {
     }
 
     public WanSyncState getWanSyncState() {
-        return new WanSyncStateImpl(SYNC_STATUS.get(this), SYNCED_PARTITION_COUNT.get(this), activeWanConfig, activePublisher);
+        return new WanSyncStateImpl(syncStatus, syncedPartitionCount, activeWanConfig, activePublisher);
     }
 
     public void populateSyncRequestOnMembers(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {

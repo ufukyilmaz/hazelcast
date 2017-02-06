@@ -9,14 +9,15 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A marker event to initiate WAN sync.
+ * A marker event to initiate WAN sync for some or all partitions and for all or a specific map.
  */
 public class WanSyncEvent implements DataSerializable {
-
     private WanSyncType type;
+    /** The name of the map, can be null in case of {@link WanSyncType#ALL_MAPS} */
     private String name;
+    /** The partitions to be synced. If empty, all partitions will be synced */
     private Set<Integer> partitionSet = new HashSet<Integer>();
-
+    /** The operation which should receive the {@link WanSyncResult} */
     private transient WanSyncOperation op;
 
     @SuppressWarnings("unused")

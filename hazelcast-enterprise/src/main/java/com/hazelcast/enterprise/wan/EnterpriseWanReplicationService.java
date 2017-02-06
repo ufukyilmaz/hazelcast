@@ -19,6 +19,8 @@ import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.LiveOperations;
+import com.hazelcast.spi.LiveOperationsTracker;
 import com.hazelcast.spi.MigrationAwareService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionMigrationEvent;
@@ -35,6 +37,7 @@ import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +51,9 @@ import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
 /**
  * Enterprise implementation for WAN replication.
  */
-@SuppressWarnings("checkstyle:methodcount")
-public class EnterpriseWanReplicationService implements WanReplicationService, MigrationAwareService, PostJoinAwareService {
+@SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
+public class EnterpriseWanReplicationService implements WanReplicationService, MigrationAwareService, PostJoinAwareService,
+        LiveOperationsTracker {
 
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
     private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 1000;
@@ -61,6 +65,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
 
     private final Map<String, WanReplicationPublisherDelegate> wanReplications = initializeWanReplicationPublisherMapping();
     private final Map<String, WanReplicationConsumer> wanConsumers = initializeCustomWanReplicationConsumerMapping();
+    private final Set<Operation> liveOperations = Collections.newSetFromMap(new ConcurrentHashMap<Operation, Boolean>());
     private final Object publisherMutex = new Object();
     private final Object executorMutex = new Object();
     private final Object syncManagerMutex = new Object();
@@ -255,10 +260,10 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
     private void handleRepEvent(final BatchWanReplicationEvent batchWanReplicationEvent, WanOperation op) {
         StripedExecutor ex = getExecutor();
         int partitionId = getPartitionId(batchWanReplicationEvent);
-        BatchWanEventRunnable wanEventStripedRunnable
-                = new BatchWanEventRunnable(batchWanReplicationEvent, op, partitionId);
+        BatchWanEventRunnable wanEventStripedRunnable = new BatchWanEventRunnable(batchWanReplicationEvent, op, partitionId);
         try {
             ex.execute(wanEventStripedRunnable);
+            liveOperations.add(op);
         } catch (RejectedExecutionException ree) {
             logger.warning("Can not handle incoming wan replication event. Retrying.", ree);
             op.sendResponse(false);
@@ -272,6 +277,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         WanEventRunnable wanEventStripedRunnable = new WanEventRunnable(replicationEvent, op, partitionId);
         try {
             ex.execute(wanEventStripedRunnable);
+            liveOperations.add(op);
         } catch (RejectedExecutionException ree) {
             logger.warning("Can not handle incoming wan replication event.", ree);
             op.sendResponse(false);
@@ -310,6 +316,22 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         return postJoinWanOperation;
     }
 
+    @Override
+    public void populate(LiveOperations liveOperations) {
+        // populate for all WanSyncOperation
+        for (WanReplicationPublisherDelegate delegate : wanReplications.values()) {
+            for (WanReplicationEndpoint endpoint : delegate.getEndpoints().values()) {
+                if (endpoint instanceof LiveOperationsTracker) {
+                    ((LiveOperationsTracker) endpoint).populate(liveOperations);
+                }
+            }
+        }
+        // populate for all WanOperation
+        for (Operation op : this.liveOperations) {
+            liveOperations.add(op.getCallerAddress(), op.getCallId());
+        }
+    }
+
     /**
      * {@link StripedRunnable} implementation that is responsible dispatching incoming {@link WanReplicationEvent}s to
      * related {@link ReplicationSupportingService}.
@@ -334,6 +356,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
             } catch (Exception e) {
                 operation.sendResponse(false);
                 logger.severe(e);
+            } finally {
+                liveOperations.remove(operation);
             }
         }
     }
@@ -364,6 +388,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
             } catch (Exception e) {
                 operation.sendResponse(false);
                 logger.severe(e);
+            } finally {
+                liveOperations.remove(operation);
             }
         }
     }

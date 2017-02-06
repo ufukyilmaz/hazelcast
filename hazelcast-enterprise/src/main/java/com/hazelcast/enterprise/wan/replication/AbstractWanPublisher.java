@@ -26,6 +26,8 @@ import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.InternalCompletableFuture;
+import com.hazelcast.spi.LiveOperations;
+import com.hazelcast.spi.LiveOperationsTracker;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.partition.IPartition;
@@ -48,12 +50,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static java.util.Collections.newSetFromMap;
 
 /**
  * Abstract WAN event publisher implementation.
  */
 @SuppressWarnings("checkstyle:methodcount")
-public abstract class AbstractWanPublisher implements WanReplicationPublisher, WanReplicationEndpoint {
+public abstract class AbstractWanPublisher implements WanReplicationPublisher, WanReplicationEndpoint, LiveOperationsTracker {
 
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
     private static final int DEFAULT_STAGING_QUEUE_SIZE = 100;
@@ -82,6 +85,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
 
     private MapService mapService;
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
+    private final Set<Operation> liveOperations = newSetFromMap(new ConcurrentHashMap<Operation, Boolean>());
 
     private final AtomicInteger currentElementCount = new AtomicInteger(0);
     private final AtomicInteger currentBackupElementCount = new AtomicInteger(0);
@@ -405,9 +409,17 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     }
 
     @Override
+    public void populate(LiveOperations liveOperations) {
+        for (Operation op : this.liveOperations) {
+            liveOperations.add(op.getCallerAddress(), op.getCallId());
+        }
+    }
+
+    @Override
     public void publishSyncEvent(WanSyncEvent event) {
         try {
             syncRequests.put(event);
+            liveOperations.add(event.getOp());
         } catch (InterruptedException e) {
             throw rethrow(e);
         }
@@ -511,6 +523,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
                 logger.warning(ex);
             } finally {
                 sendResponse(syncEvent, result);
+                liveOperations.remove(syncEvent.getOp());
             }
         }
 

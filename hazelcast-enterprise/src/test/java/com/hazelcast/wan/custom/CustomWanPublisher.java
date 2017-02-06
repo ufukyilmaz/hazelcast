@@ -31,7 +31,7 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
         while (running) {
             try {
                 WanReplicationEvent event = stagingQueue.take();
-                EVENT_QUEUE.offer(event);
+                EVENT_QUEUE.put(event);
                 removeReplicationEvent(event);
             } catch (InterruptedException e) {
                 e.printStackTrace();

@@ -33,9 +33,10 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
     private static final int INVALIDATION_SEQUENCE_OFFSET = TTL_OFFSET + INT_SIZE_IN_BYTES;
     private static final int UUID_MOST_SIG_BITS_OFFSET = INVALIDATION_SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
     private static final int UUID_LEAST_SIG_BITS_OFFSET = UUID_MOST_SIG_BITS_OFFSET + LONG_SIZE_IN_BYTES;
+    private static final int RECORD_STATE_OFFSET = UUID_LEAST_SIG_BITS_OFFSET + LONG_SIZE_IN_BYTES;
 
     static {
-        VALUE_OFFSET = UUID_LEAST_SIG_BITS_OFFSET + LONG_SIZE_IN_BYTES;
+        VALUE_OFFSET = RECORD_STATE_OFFSET + LONG_SIZE_IN_BYTES;
         SIZE = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
     }
 
@@ -230,6 +231,21 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
 
         return readLong(UUID_MOST_SIG_BITS_OFFSET) == uuid.getMostSignificantBits()
                 && readLong(UUID_LEAST_SIG_BITS_OFFSET) == uuid.getLeastSignificantBits();
+    }
+
+    @Override
+    public long getRecordState() {
+        return readLong(RECORD_STATE_OFFSET);
+    }
+
+    @Override
+    public boolean casRecordState(long expected, long update) {
+        long existing = getRecordState();
+        if (expected == existing) {
+            writeLong(RECORD_STATE_OFFSET, update);
+            return true;
+        }
+        return false;
     }
 
     @Override

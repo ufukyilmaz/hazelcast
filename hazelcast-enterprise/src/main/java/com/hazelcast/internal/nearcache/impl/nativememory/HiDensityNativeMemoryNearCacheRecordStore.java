@@ -13,7 +13,6 @@ import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.ExpirationChecker;
 import com.hazelcast.internal.eviction.MaxSizeChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.internal.hidensity.HiDensityRecordStore;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.internal.nearcache.NearCacheRecord;
@@ -30,7 +29,9 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.Clock;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.internal.nearcache.NearCache.NULL_OBJECT;
+import static com.hazelcast.internal.nearcache.NearCache.CACHED_AS_NULL;
+import static com.hazelcast.internal.nearcache.NearCacheRecord.READ_PERMITTED;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
  * @param <K> the type of the key stored in Near Cache.
@@ -163,6 +164,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
             recordAddress = recordProcessor.allocate(HiDensityNativeMemoryNearCacheRecord.SIZE);
             record = recordProcessor.newRecord();
             record.reset(recordAddress);
+            record.casRecordState(0, READ_PERMITTED);
 
             if (creationTime >= 0) {
                 record.setCreationTime(creationTime);
@@ -197,6 +199,12 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected long getKeyStorageMemoryCost(K key) {
+        if (key instanceof Data && !(key instanceof NativeMemoryData)) {
+            NativeMemoryData nativeKeyData = new NativeMemoryData();
+            nativeKeyData.reset(records.getNativeKeyAddress((Data) key));
+            return getKeyStorageMemoryCost((K) nativeKeyData);
+        }
+
         long slotKeyCost = SLOT_COST_IN_BYTES / 2;
         return key instanceof MemoryBlock ? slotKeyCost + recordAccessor.getSize((MemoryBlock) key) : 0L;
     }
@@ -216,10 +224,16 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
+    protected void updateRecordValue(HiDensityNativeMemoryNearCacheRecord record, V value) {
+        NativeMemoryData nativeValue = toNativeMemoryData(value);
+        record.setValue(nativeValue);
+    }
+
+    @Override
     protected V recordToValue(HiDensityNativeMemoryNearCacheRecord record) {
         if (record.getValue() == null) {
             nearCacheStats.incrementMisses();
-            return (V) NULL_OBJECT;
+            return (V) CACHED_AS_NULL;
         }
         if (!isMemoryBlockValid(record)) {
             return null;
@@ -233,24 +247,56 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
+    protected HiDensityNativeMemoryNearCacheRecord getOrCreateToReserve(K key) {
+        HiDensityNativeMemoryNearCacheRecord recordToReserve = getRecord(key);
+        if (recordToReserve != null) {
+            return recordToReserve;
+        }
+
+        HiDensityNativeMemoryNearCacheRecord record;
+        NativeMemoryData nativeKey = null;
+        try {
+            record = reserveForUpdate.apply(key);
+            nativeKey = toNativeMemoryData(key);
+            records.put(nativeKey, record);
+        } catch (Throwable throwable) {
+            if (isMemoryBlockValid(nativeKey)) {
+                recordProcessor.disposeData(nativeKey);
+            }
+
+            throw rethrow(throwable);
+        }
+
+        return record;
+    }
+
+    @Override
+    protected V updateAndGetReserved(K key, V value, long reservationId, boolean deserialize) {
+        HiDensityNativeMemoryNearCacheRecord reservedRecord = getRecord(key);
+        if (reservedRecord == null) {
+            return null;
+        }
+
+        HiDensityNativeMemoryNearCacheRecord record = updateReservedRecordInternal(key, value, reservedRecord, reservationId);
+        if (!deserialize) {
+            return null;
+        }
+
+        Object cachedValue = record.getValue();
+        return cachedValue instanceof Data ? toValue(cachedValue) : (V) record.getValue();
+    }
+
+    @Override
     protected HiDensityNativeMemoryNearCacheRecord putRecord(K key, HiDensityNativeMemoryNearCacheRecord record) {
+        assert key != null;
+
         NativeMemoryData keyData = toNativeMemoryData(key);
         HiDensityNativeMemoryNearCacheRecord oldRecord = records.put(keyData, record);
         nearCacheStats.incrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) keyData, record));
         if (oldRecord != null) {
-            long oldRecordMemoryCost = getTotalStorageMemoryCost((K) keyData, oldRecord);
-            nearCacheStats.decrementOwnedEntryMemoryCost(oldRecordMemoryCost);
+            nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) keyData, oldRecord));
         }
         return oldRecord;
-    }
-
-    @Override
-    protected void putToRecord(HiDensityNativeMemoryNearCacheRecord record, V value) {
-        NativeMemoryData oldValue = record.getValue();
-        record.setValue(toNativeMemoryData(value));
-        if (isMemoryBlockValid(oldValue)) {
-            recordProcessor.disposeData(oldValue);
-        }
     }
 
     @Override
@@ -337,7 +383,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public int forceEvict() {
         checkAvailable();
-        return records.forceEvict(HiDensityRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE, recordEvictionListener);
+        return records.forceEvict(DEFAULT_FORCED_EVICTION_PERCENTAGE, recordEvictionListener);
     }
 
     @Override

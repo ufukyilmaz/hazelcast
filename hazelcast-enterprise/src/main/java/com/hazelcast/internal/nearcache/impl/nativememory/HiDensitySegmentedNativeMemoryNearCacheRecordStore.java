@@ -286,6 +286,18 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
+    public long tryReserveForUpdate(K key) {
+        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        return segment.tryReserveForUpdate(key);
+    }
+
+    @Override
+    public V tryPublishReserved(K key, V value, long reservationId, boolean deserialize) {
+        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        return segment.tryPublishReserved(key, value, reservationId, deserialize);
+    }
+
+    @Override
     public HazelcastMemoryManager getMemoryManager() {
         return memoryManager;
     }
@@ -400,6 +412,36 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             lock.lock();
             try {
                 super.doEviction();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
+        public long tryReserveForUpdate(K key) {
+            lock.lock();
+            try {
+                return super.tryReserveForUpdate(key);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
+        public V tryPublishReserved(K key, V value, long reservationId, boolean deserialize) {
+            lock.lock();
+            try {
+                return super.tryPublishReserved(key, value, reservationId, deserialize);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
+        public StaleReadDetector getStaleReadDetector() {
+            lock.lock();
+            try {
+                return super.getStaleReadDetector();
             } finally {
                 lock.unlock();
             }

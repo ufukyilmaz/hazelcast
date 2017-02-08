@@ -13,6 +13,7 @@ import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
+import com.hazelcast.version.Version;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.ForceStartException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
@@ -20,7 +21,6 @@ import com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatu
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.Clock;
-import com.hazelcast.version.ClusterVersion;
 
 import java.io.File;
 import java.io.IOException;
@@ -136,7 +136,7 @@ public class ClusterMetadataManager {
     public void prepare() {
         try {
             clusterState = readClusterState(node.getLogger(ClusterStateReader.class), homeDir);
-            ClusterVersion clusterVersion = readClusterVersion(node.getLogger(ClusterVersionReader.class), homeDir);
+            Version clusterVersion = readClusterVersion(node.getLogger(ClusterVersionReader.class), homeDir);
             if (clusterVersion != null) {
                 // validate current codebase version is compatible with the persisted cluster version
                 if (!node.getNodeExtension().isNodeVersionCompatibleWith(clusterVersion)) {
@@ -490,7 +490,7 @@ public class ClusterMetadataManager {
         return hotRestartStatus;
     }
 
-    public void onClusterVersionChange(ClusterVersion newClusterVersion) {
+    public void onClusterVersionChange(Version newClusterVersion) {
         if (logger.isFineEnabled()) {
             logger.fine("Persisting cluster version: " + newClusterVersion);
         }

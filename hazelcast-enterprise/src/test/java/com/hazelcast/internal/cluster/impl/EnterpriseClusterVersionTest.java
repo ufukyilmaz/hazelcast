@@ -3,10 +3,10 @@ package com.hazelcast.internal.cluster.impl;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.cluster.ClusterVersionListener;
+import com.hazelcast.version.Version;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.ClusterVersion;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,9 +41,9 @@ public class EnterpriseClusterVersionTest extends HazelcastTestSupport {
 
     @Test
     public void test_clusterVersionUpgradeFails_whenNodeMajorVersionPlusOne() {
-        ClusterVersion version = cluster.getClusterVersion();
-        assertEquals(ClusterVersion.of(BUILD_INFO.getVersion()), version);
-        ClusterVersion newVersion = new ClusterVersion(version.getMajor()+1, version.getMinor());
+        Version version = cluster.getClusterVersion();
+        assertEquals(Version.of(BUILD_INFO.getVersion()), version);
+        Version newVersion = Version.of(version.getMajor()+1, version.getMinor());
 
         expectedException.expect(VersionMismatchException.class);
         cluster.changeClusterVersion(newVersion);
@@ -52,9 +52,9 @@ public class EnterpriseClusterVersionTest extends HazelcastTestSupport {
     @Test
     public void test_clusterVersionUpgradeSucceeds_whenNodeMinorVersionPlusOne() {
         // since Node.version is private final, manipulate cluster version to current minor-1
-        ClusterVersion originalVersion = cluster.getClusterVersion();
+        Version originalVersion = cluster.getClusterVersion();
         // directly set cluster version to {major, minor-1, patch}
-        ClusterVersion olderVersion = new ClusterVersion(originalVersion.getMajor(), originalVersion.getMinor()-1);
+        Version olderVersion = Version.of(originalVersion.getMajor(), originalVersion.getMinor()-1);
         // supplant with older version
         cluster.getClusterStateManager().clusterVersion = olderVersion;
 
@@ -70,7 +70,7 @@ public class EnterpriseClusterVersionTest extends HazelcastTestSupport {
         }
 
         @Override
-        public void onClusterVersionChange(ClusterVersion newVersion) {
+        public void onClusterVersionChange(Version newVersion) {
             latch.countDown();
         }
     }

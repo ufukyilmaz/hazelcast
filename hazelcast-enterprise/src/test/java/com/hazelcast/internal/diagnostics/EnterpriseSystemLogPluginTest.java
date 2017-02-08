@@ -2,9 +2,9 @@ package com.hazelcast.internal.diagnostics;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.version.Version;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.ClusterVersion;
 import com.hazelcast.version.MemberVersion;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -22,7 +22,7 @@ public class EnterpriseSystemLogPluginTest extends SystemLogPluginTest {
     @Test
     public void testClusterVersionChange() {
         MemberVersion currentVersion = getNode(hz).getVersion();
-        ClusterVersion nextMinorVersion = new ClusterVersion(currentVersion.getMajor(), currentVersion.getMinor() + 1);
+        Version nextMinorVersion = Version.of(currentVersion.getMajor(), currentVersion.getMinor() + 1);
         System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, nextMinorVersion.toString());
         HazelcastInstance instance = hzFactory.newHazelcastInstance(config);
         waitAllForSafeState(hz, instance);

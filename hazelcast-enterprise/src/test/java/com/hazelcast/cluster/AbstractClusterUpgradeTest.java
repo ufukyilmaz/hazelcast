@@ -2,11 +2,10 @@ package com.hazelcast.cluster;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.cluster.ClusterVersionListener;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
+import com.hazelcast.version.Version;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.version.ClusterVersion;
 import com.hazelcast.version.MemberVersion;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,10 +26,10 @@ import static org.junit.Assert.assertEquals;
  */
 public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
 
-    static final ClusterVersion CLUSTER_VERSION_2_0 = ClusterVersion.of("2.0");
-    static final ClusterVersion CLUSTER_VERSION_2_1 = ClusterVersion.of("2.1");
-    static final ClusterVersion CLUSTER_VERSION_2_2 = ClusterVersion.of("2.2");
-    static final ClusterVersion CLUSTER_VERSION_2_3 = ClusterVersion.of("2.3");
+    static final Version CLUSTER_VERSION_2_0 = Version.of("2.0");
+    static final Version CLUSTER_VERSION_2_1 = Version.of("2.1");
+    static final Version CLUSTER_VERSION_2_2 = Version.of("2.2");
+    static final Version CLUSTER_VERSION_2_3 = Version.of("2.3");
 
     static final MemberVersion VERSION_2_0_5 = MemberVersion.of(2, 0, 5);
     static final MemberVersion VERSION_2_1_0 = MemberVersion.of(2, 1, 0);
@@ -136,7 +135,7 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
             private int count = 0;
 
             @Override
-            public void onClusterVersionChange(ClusterVersion newVersion) {
+            public void onClusterVersionChange(Version newVersion) {
                 count++;
                 if (count == 2) {
                     // first time invoked is on listener registration, sleep a lot during
@@ -190,7 +189,7 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
                     e.printStackTrace();
                 }
                 try {
-                    getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_2_0.asClusterVersion());
+                    getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_2_0.asVersion());
                     finished.countDown();
                 }
                 catch (Exception e) {

@@ -34,7 +34,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
 
     private static final int FACTORY_AND_CLASS_ID_BYTE_LENGTH = 8;
     private static final int FACTORY_AND_CLASS_ID_BYTE_COMPRESSED_LENGTH = 2;
-    private static final int VERSION_BYTE_LENGTH = 1;
+    private static final int VERSION_BYTE_LENGTH = 2;
 
     private final HazelcastMemoryManager memoryManager;
     private final ThreadLocal<MemoryAllocator> mallocThreadLocal = new ThreadLocal<MemoryAllocator>();

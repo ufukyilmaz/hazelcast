@@ -25,7 +25,7 @@ import com.hazelcast.nio.serialization.SerializationConcurrencyTest.Person;
 import com.hazelcast.spi.OperationAccessor;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.ClusterVersion;
+import com.hazelcast.version.Version;
 import com.hazelcast.version.MemberVersion;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -58,7 +58,7 @@ import static org.junit.Assert.assertTrue;
 @Category(QuickTest.class)
 public class EnterpriseSerializationTest extends HazelcastTestSupport {
 
-    private static ClusterVersion V3_8 = ClusterVersion.of("3.8");
+    private static Version V3_8 = Version.of("3.8");
 
     private boolean versionedSerializationEnabled;
 
@@ -373,7 +373,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
                 .setVersion(InternalSerializationService.VERSION_1)
                 .setClusterVersionAware(new EnterpriseClusterVersionAware() {
                     @Override
-                    public ClusterVersion getClusterVersion() {
+                    public Version getClusterVersion() {
                         return V3_8;
                     }
                 })
@@ -393,7 +393,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
 
     private static class TestVersionAware implements EnterpriseClusterVersionAware {
         @Override
-        public ClusterVersion getClusterVersion() {
+        public Version getClusterVersion() {
             return V3_8;
         }
     }

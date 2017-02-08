@@ -43,6 +43,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
+import com.hazelcast.version.Version;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.nio.tcp.SymmetricCipherMemberReadHandler;
@@ -59,7 +60,6 @@ import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.Preconditions;
-import com.hazelcast.version.ClusterVersion;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
@@ -505,11 +505,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     // validate that the joining member is at same major and >= minor version as the cluster version at which this cluster
     // operates
     private void validateJoiningMemberVersion(JoinMessage joinMessage) {
-        ClusterVersion clusterVersion = node.getClusterService().getClusterVersion();
+        Version clusterVersion = node.getClusterService().getClusterVersion();
 
-        if (clusterVersion.getMajor() != joinMessage.getVersion().getMajor()
-                || clusterVersion.getMinor() > joinMessage.getVersion().getMinor()) {
-            throw new VersionMismatchException("Joining node's version " + joinMessage.getVersion() + " is not compatible "
+        if (clusterVersion.getMajor() != joinMessage.getMemberVersion().getMajor()
+                || clusterVersion.getMinor() > joinMessage.getMemberVersion().getMinor()) {
+            throw new VersionMismatchException("Joining node's version " + joinMessage.getMemberVersion() + " is not compatible "
                     + "with cluster version " + clusterVersion);
         }
     }
@@ -528,11 +528,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
      * @return {@code true} if compatible, otherwise false.
      */
     @Override
-    public boolean isNodeVersionCompatibleWith(ClusterVersion clusterVersion) {
+    public boolean isNodeVersionCompatibleWith(Version clusterVersion) {
         Preconditions.checkNotNull(clusterVersion);
 
         // there is no compatibility between major versions
-        ClusterVersion nodeVersion = node.getVersion().asClusterVersion();
+        Version nodeVersion = node.getVersion().asVersion();
         if (node.getVersion().getMajor() != clusterVersion.getMajor()) {
             return false;
         }
@@ -541,7 +541,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         // and the check is invoked by the node for this particular node (so for the current codebase version).
         // It means that this method didn't exist prior to 3.8.
 
-        if (nodeVersion.equals(ClusterVersion.of("3.8"))) {
+        if (nodeVersion.equals(Version.of("3.8"))) {
             // 3.8 can't emulate lower versions
             return node.getVersion().getMinor() == clusterVersion.getMinor();
         } else {
@@ -573,7 +573,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public void onClusterVersionChange(ClusterVersion newVersion) {
+    public void onClusterVersionChange(Version newVersion) {
         super.onClusterVersionChange(newVersion);
         if (hotRestartService != null) {
             hotRestartService.getClusterMetadataManager().onClusterVersionChange(newVersion);

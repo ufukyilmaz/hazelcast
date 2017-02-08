@@ -4,7 +4,7 @@ import com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.Version;
+import com.hazelcast.version.Version;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
@@ -15,7 +15,6 @@ import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.ClusterVersion;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.createHeader;
-import static com.hazelcast.nio.Version.UNKNOWN;
+import static com.hazelcast.version.Version.UNKNOWN;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -40,9 +39,9 @@ import static org.mockito.Mockito.when;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSupport {
 
+    private static final byte MAJOR_VERSION_BYTE = 3;
     private static final byte MINOR_VERSION_BYTE = 8;
-    private static final ClusterVersion CLUSTER_VERSION = new ClusterVersion(3, MINOR_VERSION_BYTE);
-    private static final Version SERIALIZATION_VERSION = new Version(MINOR_VERSION_BYTE);
+    private static final Version CLUSTER_VERSION = Version.of(MAJOR_VERSION_BYTE, MINOR_VERSION_BYTE);
 
     private VersionedObjectDataInput input;
     private VersionedObjectDataOutput output;
@@ -133,6 +132,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         when(input.getClassLoader()).thenReturn(getClass().getClassLoader());
         when(input.readByte())
                 .thenReturn(createHeader(false, true, false))
+                .thenReturn(MAJOR_VERSION_BYTE)
                 .thenReturn(MINOR_VERSION_BYTE);
         when(input.readUTF()).thenReturn(original.getClass().getName());
         when(input.readInt()).thenReturn(original.value);
@@ -147,8 +147,8 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         InOrder calls = inOrder(input);
         calls.verify(input).readByte();
         calls.verify(input).readUTF();
-        calls.verify(input).readByte();
-        calls.verify(input).setVersion(SERIALIZATION_VERSION);
+        calls.verify(input, times(2)).readByte();
+        calls.verify(input).setVersion(CLUSTER_VERSION);
         calls.verify(input).getClassLoader();
         calls.verify(input).readInt();
         verifyNoMoreInteractions(input);
@@ -233,6 +233,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         TestUncompressableIdentifiedDataSerializable original = new TestUncompressableIdentifiedDataSerializable(123);
         when(input.readByte())
                 .thenReturn(createHeader(true, true, false))
+                .thenReturn(MAJOR_VERSION_BYTE)
                 .thenReturn(MINOR_VERSION_BYTE);
         when(input.readInt())
                 .thenReturn(original.getFactoryId())
@@ -249,8 +250,8 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         InOrder calls = inOrder(input);
         calls.verify(input).readByte();
         calls.verify(input, times(2)).readInt();
-        calls.verify(input).readByte();
-        calls.verify(input).setVersion(SERIALIZATION_VERSION);
+        calls.verify(input, times(2)).readByte();
+        calls.verify(input).setVersion(CLUSTER_VERSION);
         calls.verify(input).readInt();
         verifyNoMoreInteractions(input);
 
@@ -315,7 +316,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         enterpriseSerializer.write(output, original);
 
         InOrder calls = inOrder(output);
-        calls.verify(output).setVersion(SERIALIZATION_VERSION);
+        calls.verify(output).setVersion(CLUSTER_VERSION);
         calls.verify(output).writeByte(createHeader(false, true, false));
         calls.verify(output).writeUTF(TestVersionedDataSerializable.class.getName());
         calls.verify(output).writeInt(original.value);
@@ -343,10 +344,11 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         enterpriseSerializer.write(output, original);
 
         InOrder calls = inOrder(output);
-        calls.verify(output).setVersion(SERIALIZATION_VERSION);
+        calls.verify(output).setVersion(CLUSTER_VERSION);
         calls.verify(output).writeByte(createHeader(true, true, false));
         calls.verify(output).writeInt(original.getFactoryId());
         calls.verify(output).writeInt(original.getId());
+        calls.verify(output).writeByte(MAJOR_VERSION_BYTE);
         calls.verify(output).writeByte(MINOR_VERSION_BYTE);
         calls.verify(output).writeInt(original.value);
         verifyNoMoreInteractions(output);
@@ -376,7 +378,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
     private static class TestClusterVersionAware implements EnterpriseClusterVersionAware {
         @Override
-        public ClusterVersion getClusterVersion() {
+        public Version getClusterVersion() {
             return CLUSTER_VERSION;
         }
     }

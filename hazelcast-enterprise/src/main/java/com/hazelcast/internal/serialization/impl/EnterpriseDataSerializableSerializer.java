@@ -4,7 +4,7 @@ import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.Version;
+import com.hazelcast.version.Version;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
@@ -15,7 +15,6 @@ import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.nio.serialization.impl.VersionedDataSerializableFactory;
 import com.hazelcast.util.ServiceLoader;
 import com.hazelcast.util.collection.Int2ObjectHashMap;
-import com.hazelcast.version.ClusterVersion;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -167,10 +166,11 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
     }
 
     private Version readVersion(ObjectDataInput in) throws IOException {
+        byte major = in.readByte();
         byte minor = in.readByte();
-        ClusterVersion v = clusterVersionAware.getClusterVersion();
+        Version v = clusterVersionAware.getClusterVersion();
         assert v != null;
-        return Version.of(minor);
+        return Version.of(major, minor);
     }
 
     private DataSerializable createIdentifiedDataSerializable(Version version, int factoryId, int classId) {
@@ -203,7 +203,7 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
 
     @Override
     public void write(ObjectDataOutput out, DataSerializable obj) throws IOException {
-        Version version = (obj instanceof Versioned) ? Version.of(clusterVersionAware.getClusterVersion().getMinor())
+        Version version = (obj instanceof Versioned) ? clusterVersionAware.getClusterVersion()
                 : Version.UNKNOWN;
         setOutputVersion(out, version);
 
@@ -232,7 +232,8 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
         }
 
         if (versioned) {
-            out.writeByte(version.getValue());
+            out.writeByte(version.getMajor());
+            out.writeByte(version.getMinor());
         }
     }
 
@@ -242,7 +243,8 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
 
         out.writeUTF(obj.getClass().getName());
         if (versioned) {
-            out.writeByte(version.getValue());
+            out.writeByte(version.getMajor());
+            out.writeByte(version.getMinor());
         }
     }
 

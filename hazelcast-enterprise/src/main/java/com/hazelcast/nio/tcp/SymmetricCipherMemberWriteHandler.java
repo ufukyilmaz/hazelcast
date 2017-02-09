@@ -2,42 +2,25 @@ package com.hazelcast.nio.tcp;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.networking.WriteHandler;
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.nio.CipherHelper;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.Packet;
-import com.hazelcast.util.ExceptionUtil;
 
 import javax.crypto.Cipher;
 import java.nio.ByteBuffer;
 
+import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
+
 public class SymmetricCipherMemberWriteHandler implements WriteHandler<Packet> {
 
-    private final IOService ioService;
-    private final TcpIpConnection connection;
     private final Cipher cipher;
-    private final ILogger logger;
+
     private ByteBuffer packetBuffer;
-//    private boolean sizeWritten;
     private boolean packetWritten;
 
     public SymmetricCipherMemberWriteHandler(TcpIpConnection connection, IOService ioService) {
-        this.connection = connection;
-        this.ioService = ioService;
-        logger = ioService.getLoggingService().getLogger(getClass().getName());
         packetBuffer = ByteBuffer.allocate(ioService.getSocketSendBufferSize() * IOService.KILO_BYTE);
-        cipher = initCipher();
-    }
-
-    private Cipher initCipher() {
-        try {
-            return CipherHelper.createSymmetricWriterCipher(ioService.getSymmetricEncryptionConfig());
-        } catch (Exception e) {
-            logger.severe("Symmetric Cipher for WriteHandler cannot be initialized.", e);
-            CipherHelper.handleCipherException(e, connection);
-            throw ExceptionUtil.rethrow(e);
-        }
+        cipher = createSymmetricWriterCipher(ioService.getSymmetricEncryptionConfig(), connection);
     }
 
     @Override

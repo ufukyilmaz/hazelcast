@@ -5,11 +5,10 @@ import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.TestUtil;
 import com.hazelcast.nio.MemberSocketInterceptor;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -26,16 +25,15 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class SocketInterceptorTest {
+public class SocketInterceptorTest extends HazelcastTestSupport {
 
-    @Before
     @After
-    public void killAllHazelcastInstances() throws IOException {
+    public void killAllHazelcastInstances() {
         Hazelcast.shutdownAll();
     }
 
     @Test(timeout = 120000)
-    public void testSuccessfulSocketInterceptor() throws InterruptedException {
+    public void testSuccessfulSocketInterceptor() {
         Config config = new Config();
         config.getSecurityConfig().setEnabled(true);
         SocketInterceptorConfig socketInterceptorConfig = new SocketInterceptorConfig();
@@ -46,7 +44,7 @@ public class SocketInterceptorTest {
         HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
 
-        TestUtil.warmUpPartitions(h1, h2);
+        warmUpPartitions(h1, h2);
 
         assertEquals(2, h2.getCluster().getMembers().size());
         assertEquals(2, h1.getCluster().getMembers().size());
@@ -74,6 +72,7 @@ public class SocketInterceptorTest {
     }
 
     public static class MySocketInterceptor implements MemberSocketInterceptor {
+
         final AtomicInteger initCallCount = new AtomicInteger();
         final AtomicInteger acceptCallCount = new AtomicInteger();
         final AtomicInteger connectCallCount = new AtomicInteger();
@@ -81,6 +80,7 @@ public class SocketInterceptorTest {
         final AtomicInteger connectFailureCount = new AtomicInteger();
         final boolean successful;
 
+        @Override
         public void init(Properties properties) {
             initCallCount.incrementAndGet();
         }
@@ -89,6 +89,7 @@ public class SocketInterceptorTest {
             this.successful = successful;
         }
 
+        @Override
         public void onAccept(Socket acceptedSocket) throws IOException {
             acceptCallCount.incrementAndGet();
             try {
@@ -115,6 +116,7 @@ public class SocketInterceptorTest {
             }
         }
 
+        @Override
         public void onConnect(Socket connectedSocket) throws IOException {
             connectCallCount.incrementAndGet();
             try {
@@ -123,7 +125,9 @@ public class SocketInterceptorTest {
                 int multiplyBy = (successful) ? 2 : 1;
                 while (true) {
                     int read = in.read();
-                    if (read == 0) return;
+                    if (read == 0) {
+                        return;
+                    }
                     out.write(read * multiplyBy);
                     out.flush();
                 }

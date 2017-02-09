@@ -2,42 +2,30 @@ package com.hazelcast.nio.tcp;
 
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.nio.CipherHelper;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.Packet;
 import com.hazelcast.spi.impl.packetdispatcher.PacketDispatcher;
-import com.hazelcast.util.ExceptionUtil;
 
 import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
 import java.nio.ByteBuffer;
 
+import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.nio.IOService.KILO_BYTE;
 
 public class SymmetricCipherMemberReadHandler extends MemberReadHandler {
 
-    private final Cipher cipher;
     private final ILogger logger;
-    private final IOService ioService;
+    private final Cipher cipher;
+
     private ByteBuffer cipherBuffer;
     private int size = -1;
 
     public SymmetricCipherMemberReadHandler(TcpIpConnection connection, IOService ioService, PacketDispatcher packetDispatcher) {
         super(connection, packetDispatcher);
-        this.ioService = ioService;
-        this.cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * KILO_BYTE);
         this.logger = ioService.getLoggingService().getLogger(getClass());
-        this.cipher = initCipher();
-    }
-
-    Cipher initCipher() {
-        try {
-            return CipherHelper.createSymmetricReaderCipher(ioService.getSymmetricEncryptionConfig());
-        } catch (Exception e) {
-            logger.severe("Symmetric Cipher for ReadHandler cannot be initialized.", e);
-            CipherHelper.handleCipherException(e, connection);
-            throw ExceptionUtil.rethrow(e);
-        }
+        this.cipher = createSymmetricReaderCipher(ioService.getSymmetricEncryptionConfig(), connection);
+        this.cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * KILO_BYTE);
     }
 
     @Override

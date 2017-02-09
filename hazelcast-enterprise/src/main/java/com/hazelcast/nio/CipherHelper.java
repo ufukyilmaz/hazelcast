@@ -8,14 +8,12 @@ import com.hazelcast.logging.Logger;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
-
-import javax.crypto.spec.SecretKeySpec;
-import javax.crypto.spec.DESedeKeySpec;
-import javax.crypto.spec.PBEParameterSpec;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.DESKeySpec;
+import javax.crypto.spec.DESedeKeySpec;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
-
+import javax.crypto.spec.PBEParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -25,15 +23,49 @@ import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.KeySpec;
 
 import static com.hazelcast.internal.memory.impl.EndiannessUtil.BYTE_ARRAY_ACCESS;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.StringUtil.stringToBytes;
 
 public final class CipherHelper {
 
-    static final ILogger LOGGER = Logger.getLogger(CipherHelper.class);
+    private static final int IV_LENGTH_CBC = 8;
+    private static final int IV_LENGTH_AES = 16;
+
+    private static final ILogger LOGGER = Logger.getLogger(CipherHelper.class);
 
     private static SymmetricCipherBuilder symmetricCipherBuilder;
 
     static {
+        initBouncySecurityProvider();
+    }
+
+    private CipherHelper() {
+    }
+
+    public static Cipher createSymmetricReaderCipher(SymmetricEncryptionConfig config, Connection connection) {
+        return createCipher(config, connection, false, "Symmetric Cipher for ReadHandler cannot be initialized.");
+    }
+
+    public static Cipher createSymmetricWriterCipher(SymmetricEncryptionConfig config, Connection connection) {
+        return createCipher(config, connection, true, "Symmetric Cipher for WriteHandler cannot be initialized.");
+    }
+
+    @SuppressWarnings("SynchronizedMethod")
+    private static synchronized Cipher createCipher(SymmetricEncryptionConfig config, Connection connection,
+                                                    boolean createWriter, String exceptionMessage) {
+        try {
+            if (symmetricCipherBuilder == null) {
+                symmetricCipherBuilder = new SymmetricCipherBuilder(config);
+            }
+            return symmetricCipherBuilder.create(createWriter);
+        } catch (Exception e) {
+            LOGGER.severe(exceptionMessage, e);
+            connection.close(null, e);
+            throw rethrow(e);
+        }
+    }
+
+    static void initBouncySecurityProvider() {
         try {
             if (Boolean.getBoolean("hazelcast.security.bouncy.enabled")) {
                 String provider = "org.bouncycastle.jce.provider.BouncyCastleProvider";
@@ -44,60 +76,32 @@ public final class CipherHelper {
         }
     }
 
-    private CipherHelper() {
-    }
-
-    @SuppressWarnings("SynchronizedMethod")
-    public static synchronized Cipher createSymmetricReaderCipher(SymmetricEncryptionConfig config) throws Exception {
-        if (symmetricCipherBuilder == null) {
-            symmetricCipherBuilder = new SymmetricCipherBuilder(config);
+    static String findKeyAlgorithm(String algorithm) {
+        if (algorithm.indexOf('/') != -1) {
+            return algorithm.substring(0, algorithm.indexOf('/'));
         }
-        return symmetricCipherBuilder.getReaderCipher();
-    }
-
-    @SuppressWarnings("SynchronizedMethod")
-    public static synchronized Cipher createSymmetricWriterCipher(SymmetricEncryptionConfig config) throws Exception {
-        if (symmetricCipherBuilder == null) {
-            symmetricCipherBuilder = new SymmetricCipherBuilder(config);
-        }
-        return symmetricCipherBuilder.getWriterCipher();
-    }
-
-    public static boolean isSymmetricEncryptionEnabled(IOService ioService) {
-        SymmetricEncryptionConfig sec = ioService.getSymmetricEncryptionConfig();
-        return (sec != null && sec.isEnabled());
+        return algorithm;
     }
 
     static class SymmetricCipherBuilder {
+
         final String algorithm;
+        final String passPhrase;
         // 8-byte Salt
         final byte[] salt;
-        final String passPhrase;
         final int iterationCount;
+
         byte[] keyBytes;
 
-        SymmetricCipherBuilder(SymmetricEncryptionConfig sec) {
-            algorithm = sec.getAlgorithm();
-            passPhrase = sec.getPassword();
-            salt = createSalt(sec.getSalt());
-            iterationCount = sec.getIterationCount();
-            keyBytes = sec.getKey();
+        SymmetricCipherBuilder(SymmetricEncryptionConfig config) {
+            algorithm = config.getAlgorithm();
+            passPhrase = config.getPassword();
+            salt = createSalt(config.getSalt());
+            iterationCount = config.getIterationCount();
+            keyBytes = config.getKey();
         }
 
-        private static byte[] createSalt(String saltStr) {
-            long hash = 0;
-            final int prime = 31;
-            char[] chars = saltStr.toCharArray();
-            for (char c : chars) {
-                hash = prime * hash + c;
-            }
-            byte[] result = new byte[Bits.LONG_SIZE_IN_BYTES];
-            EndiannessUtil.writeLongB(BYTE_ARRAY_ACCESS, result, 0, hash);
-            return result;
-        }
-
-        @SuppressWarnings("checkstyle:magicnumber")
-        public Cipher create(boolean encryptMode) {
+        Cipher create(boolean encryptMode) {
             try {
                 int mode = (encryptMode) ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE;
                 Cipher cipher = Cipher.getInstance(algorithm);
@@ -105,17 +109,17 @@ public final class CipherHelper {
                 byte[] saltDigest = buildKeyBytes();
 
                 SecretKey key = null;
-                //CBC mode requires IvParameter with 8 byte input
-                int ivLength = 8;
+                // CBC mode requires IvParameter with 8 byte input
+                int ivLength = IV_LENGTH_CBC;
                 AlgorithmParameterSpec paramSpec = null;
 
                 if (algorithm.startsWith("AES")) {
-                    ivLength = 16;
+                    ivLength = IV_LENGTH_AES;
                     key = new SecretKeySpec(keyBytes, "AES");
                 } else if (algorithm.startsWith("Blowfish")) {
                     key = new SecretKeySpec(keyBytes, "Blowfish");
                 } else if (algorithm.startsWith("DESede")) {
-                    //requires at least 192 bits (24 bytes)
+                    // requires at least 192 bits (24 bytes)
                     KeySpec keySpec = new DESedeKeySpec(keyBytes);
                     key = SecretKeyFactory.getInstance("DESede").generateSecret(keySpec);
                 } else if (algorithm.startsWith("DES")) {
@@ -130,33 +134,13 @@ public final class CipherHelper {
                 cipher.init(mode, key, paramSpec);
                 return cipher;
             } catch (Throwable e) {
-                throw new RuntimeException("unable to create Cipher:" + e.getMessage(), e);
+                throw new RuntimeException("Unable to create Cipher: " + e.getMessage(), e);
             }
-        }
-
-        @SuppressWarnings("checkstyle:magicnumber")
-        private AlgorithmParameterSpec buildFinalAlgorithmParameterSpec(
-                byte[] saltDigest, int ivLength, AlgorithmParameterSpec paramSpec
-        ) {
-            boolean isCBC = algorithm.contains("/CBC/");
-            if (isCBC) {
-                byte[] iv = (ivLength == 8) ? salt : saltDigest;
-                paramSpec = new IvParameterSpec(iv);
-            }
-            return paramSpec;
-        }
-
-        private String findKeyAlgorithm(String algorithm) {
-            String keyAlgorithm = algorithm;
-            if (algorithm.indexOf('/') != -1) {
-                keyAlgorithm = algorithm.substring(0, algorithm.indexOf('/'));
-            }
-            return keyAlgorithm;
         }
 
         @SuppressWarnings("checkstyle:magicnumber")
         private byte[] buildKeyBytes() throws NoSuchAlgorithmException {
-            // 32-bit digest key=pass+salt
+            // 32-bit digest key = pass + salt
             ByteBuffer bbPass = ByteBuffer.allocate(32);
             MessageDigest md = MessageDigest.getInstance("MD5");
             bbPass.put(md.digest(stringToBytes(passPhrase)));
@@ -169,17 +153,26 @@ public final class CipherHelper {
             return saltDigest;
         }
 
-        public Cipher getWriterCipher() {
-            return create(true);
+        private AlgorithmParameterSpec buildFinalAlgorithmParameterSpec(byte[] saltDigest, int ivLength,
+                                                                        AlgorithmParameterSpec paramSpec) {
+            boolean isCBC = algorithm.contains("/CBC/");
+            if (isCBC) {
+                byte[] iv = (ivLength == IV_LENGTH_CBC) ? salt : saltDigest;
+                paramSpec = new IvParameterSpec(iv);
+            }
+            return paramSpec;
         }
 
-        public Cipher getReaderCipher() {
-            return create(false);
+        private static byte[] createSalt(String saltStr) {
+            long hash = 0;
+            final int prime = 31;
+            char[] chars = saltStr.toCharArray();
+            for (char c : chars) {
+                hash = prime * hash + c;
+            }
+            byte[] result = new byte[Bits.LONG_SIZE_IN_BYTES];
+            EndiannessUtil.writeLongB(BYTE_ARRAY_ACCESS, result, 0, hash);
+            return result;
         }
-    }
-
-    public static void handleCipherException(Exception e, Connection connection) {
-        LOGGER.warning(e);
-        connection.close(null, e);
     }
 }

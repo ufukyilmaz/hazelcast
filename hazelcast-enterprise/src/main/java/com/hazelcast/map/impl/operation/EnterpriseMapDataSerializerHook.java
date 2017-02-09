@@ -3,7 +3,6 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.internal.serialization.impl.ArrayDataSerializableFactory;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
-import com.hazelcast.map.impl.query.HDPartitionScanOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.DestroyQueryCacheOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperationFactory;
@@ -95,9 +94,8 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int MAP_REPLICATION = 67;
     // continuous query cache was moved to open source with 3.8
     // public static final int POST_JOIN = 68;
-    public static final int PARTITION_SCAN = 69;
-    public static final int ACCUMULATOR_CONSUMER = 70;
-    public static final int PUT_ALL_PARTITION_AWARE_FACTORY = 71;
+    public static final int ACCUMULATOR_CONSUMER = 69;
+    public static final int PUT_ALL_PARTITION_AWARE_FACTORY = 70;
 
     private static final int LEN = PUT_ALL_PARTITION_AWARE_FACTORY + 1;
 
@@ -505,12 +503,6 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new EnterpriseMapReplicationOperation();
-            }
-        };
-        constructors[PARTITION_SCAN] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPartitionScanOperation();
             }
         };
         constructors[ACCUMULATOR_CONSUMER] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {

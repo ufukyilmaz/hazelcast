@@ -92,7 +92,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
     private void testRead_byteFormat_DS_unversioned(boolean withClass) throws Exception {
         TestDataSerializable original = new TestDataSerializable(123);
         when(input.getClassLoader()).thenReturn(getClass().getClassLoader());
-        when(input.readByte()).thenReturn(createHeader(false, false, false));
+        when(input.readByte()).thenReturn(createHeader(false, false));
         when(input.readUTF()).thenReturn(original.getClass().getName());
         when(input.readInt()).thenReturn(original.value);
 
@@ -131,7 +131,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
         when(input.getClassLoader()).thenReturn(getClass().getClassLoader());
         when(input.readByte())
-                .thenReturn(createHeader(false, true, false))
+                .thenReturn(createHeader(false, true))
                 .thenReturn(MAJOR_VERSION_BYTE)
                 .thenReturn(MINOR_VERSION_BYTE);
         when(input.readUTF()).thenReturn(original.getClass().getName());
@@ -160,7 +160,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
     @Test(expected = IOException.class)
     public void testRead_byteFormat_DS_withIOException() throws Exception {
         when(input.readByte())
-                .thenReturn(createHeader(false, true, false))
+                .thenReturn(createHeader(false, true))
                 .thenThrow(new IOException("expected"));
 
         enterpriseSerializer.read(input);
@@ -169,7 +169,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
     @Test(expected = HazelcastSerializationException.class)
     public void testRead_byteFormat_DS_withHazelcastSerializationException() throws Exception {
         when(input.readByte())
-                .thenReturn(createHeader(false, true, false))
+                .thenReturn(createHeader(false, true))
                 .thenThrow(new HazelcastSerializationException("expected"));
 
         enterpriseSerializer.read(input);
@@ -178,61 +178,26 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
     @Test(expected = HazelcastException.class)
     public void testRead_byteFormat_DS_withHazelcastException() throws Exception {
         when(input.readByte())
-                .thenReturn(createHeader(false, true, false))
+                .thenReturn(createHeader(false, true))
                 .thenThrow(new HazelcastException("expected"));
 
         enterpriseSerializer.read(input);
     }
 
     @Test
-    public void testRead_byteFormat_IDS_unversioned_compressed_withClass() throws Exception {
-        testRead_byteFormat_IDS_unversioned_compressed(true);
+    public void testRead_byteFormat_IDS_versioned_withClass() throws Exception {
+        testRead_byteFormat_IDS_versioned(true);
     }
 
     @Test
-    public void testRead_byteFormat_IDS_unversioned_compressed() throws Exception {
-        testRead_byteFormat_IDS_unversioned_compressed(false);
+    public void testRead_byteFormat_IDS_versioned() throws Exception {
+        testRead_byteFormat_IDS_versioned(false);
     }
 
-    private void testRead_byteFormat_IDS_unversioned_compressed(boolean withClass) throws Exception {
-        TestIdentifiedDataSerializable original = new TestIdentifiedDataSerializable(123);
-        when(input.readByte())
-                .thenReturn(createHeader(true, false, true))
-                .thenReturn((byte) original.getFactoryId())
-                .thenReturn((byte) original.getId());
-        when(input.readInt()).thenReturn(original.value);
-
-        DataSerializable deserialized;
-        if (withClass) {
-            deserialized = enterpriseSerializer.read(input, TestIdentifiedDataSerializable.class);
-        } else {
-            deserialized = enterpriseSerializer.read(input);
-        }
-
-        InOrder calls = inOrder(input);
-        calls.verify(input, times(3)).readByte();
-        calls.verify(input).setVersion(UNKNOWN);
-        calls.verify(input).readInt();
-        verifyNoMoreInteractions(input);
-
-        assertInstanceOf(TestIdentifiedDataSerializable.class, deserialized);
-        assertEquals(original.value, ((TestIdentifiedDataSerializable) deserialized).value);
-    }
-
-    @Test
-    public void testRead_byteFormat_IDS_versioned_uncompressed_withClass() throws Exception {
-        testRead_byteFormat_IDS_versioned_uncompressed(true);
-    }
-
-    @Test
-    public void testRead_byteFormat_IDS_versioned_uncompressed() throws Exception {
-        testRead_byteFormat_IDS_versioned_uncompressed(false);
-    }
-
-    private void testRead_byteFormat_IDS_versioned_uncompressed(boolean withClass) throws Exception {
+    private void testRead_byteFormat_IDS_versioned(boolean withClass) throws Exception {
         TestUncompressableIdentifiedDataSerializable original = new TestUncompressableIdentifiedDataSerializable(123);
         when(input.readByte())
-                .thenReturn(createHeader(true, true, false))
+                .thenReturn(createHeader(true, true))
                 .thenReturn(MAJOR_VERSION_BYTE)
                 .thenReturn(MINOR_VERSION_BYTE);
         when(input.readInt())
@@ -263,7 +228,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
     public void testRead_byteFormat_IDS_whenInvalidFactoryId_thenThrowException() throws Exception {
         TestIdentifiedDataSerializable original = new TestIdentifiedDataSerializable(123);
         when(input.readByte())
-                .thenReturn(createHeader(true, false, true))
+                .thenReturn(createHeader(true, false))
                 .thenReturn(Byte.MIN_VALUE)
                 .thenReturn((byte) original.getId());
         when(input.readInt()).thenReturn(original.value);
@@ -273,7 +238,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
     @Test(expected = IOException.class)
     public void testRead_byteFormat_IDS_withIOException() throws Exception {
-        when(input.readByte()).thenReturn(createHeader(true, false, false));
+        when(input.readByte()).thenReturn(createHeader(true, false));
         when(input.readInt()).thenThrow(new IOException("expected"));
 
         enterpriseSerializer.read(input);
@@ -281,7 +246,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
     @Test(expected = HazelcastSerializationException.class)
     public void testRead_byteFormat_IDS_withHazelcastSerializationException() throws Exception {
-        when(input.readByte()).thenReturn(createHeader(true, false, false));
+        when(input.readByte()).thenReturn(createHeader(true, false));
         when(input.readInt()).thenThrow(new HazelcastSerializationException("expected"));
 
         enterpriseSerializer.read(input);
@@ -289,7 +254,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
     @Test(expected = HazelcastException.class)
     public void testRead_byteFormat_IDS_withHazelcastException() throws Exception {
-        when(input.readByte()).thenReturn(createHeader(true, false, false));
+        when(input.readByte()).thenReturn(createHeader(true, false));
         when(input.readInt()).thenThrow(new HazelcastException("expected"));
 
         enterpriseSerializer.read(input);
@@ -303,7 +268,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
         InOrder calls = inOrder(output);
         calls.verify(output).setVersion(UNKNOWN);
-        calls.verify(output).writeByte(createHeader(false, false, false));
+        calls.verify(output).writeByte(createHeader(false, false));
         calls.verify(output).writeUTF(TestDataSerializable.class.getName());
         calls.verify(output).writeInt(original.value);
         verifyNoMoreInteractions(output);
@@ -317,35 +282,35 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
         InOrder calls = inOrder(output);
         calls.verify(output).setVersion(CLUSTER_VERSION);
-        calls.verify(output).writeByte(createHeader(false, true, false));
+        calls.verify(output).writeByte(createHeader(false, true));
         calls.verify(output).writeUTF(TestVersionedDataSerializable.class.getName());
         calls.verify(output).writeInt(original.value);
         // Mockito calls a hash method on the proxy, so we cannot verifyNoMoreInteractions()
     }
 
     @Test
-    public void testWrite_byteFormat_IDS_unversioned_compressed() throws Exception {
+    public void testWrite_byteFormat_IDS_unversioned() throws Exception {
         TestIdentifiedDataSerializable original = new TestIdentifiedDataSerializable(123);
 
         enterpriseSerializer.write(output, original);
 
         InOrder calls = inOrder(output);
         calls.verify(output).setVersion(UNKNOWN);
-        calls.verify(output).writeByte(createHeader(true, false, true));
-        calls.verify(output, times(2)).writeByte(original.getFactoryId());
+        calls.verify(output).writeByte(createHeader(true, false));
+        calls.verify(output, times(2)).writeInt(original.getFactoryId());
         calls.verify(output).writeInt(original.value);
         verifyNoMoreInteractions(output);
     }
 
     @Test
-    public void testWrite_byteFormat_IDS_versioned_uncompressed() throws Exception {
+    public void testWrite_byteFormat_IDS_versioned() throws Exception {
         TestUncompressableIdentifiedDataSerializable original = new TestUncompressableIdentifiedDataSerializable(123);
 
         enterpriseSerializer.write(output, original);
 
         InOrder calls = inOrder(output);
         calls.verify(output).setVersion(CLUSTER_VERSION);
-        calls.verify(output).writeByte(createHeader(true, true, false));
+        calls.verify(output).writeByte(createHeader(true, true));
         calls.verify(output).writeInt(original.getFactoryId());
         calls.verify(output).writeInt(original.getId());
         calls.verify(output).writeByte(MAJOR_VERSION_BYTE);

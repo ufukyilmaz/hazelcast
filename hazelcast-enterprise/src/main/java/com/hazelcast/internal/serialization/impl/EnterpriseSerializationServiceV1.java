@@ -22,7 +22,6 @@ import java.nio.ByteOrder;
 import java.util.Map;
 
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
-import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isCompressed;
 import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isIdentifiedDataSerializable;
 import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isVersioned;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
@@ -33,7 +32,6 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 public final class EnterpriseSerializationServiceV1 extends SerializationServiceV1 implements EnterpriseSerializationService {
 
     private static final int FACTORY_AND_CLASS_ID_BYTE_LENGTH = 8;
-    private static final int FACTORY_AND_CLASS_ID_BYTE_COMPRESSED_LENGTH = 2;
     private static final int VERSION_BYTE_LENGTH = 2;
 
     private final HazelcastMemoryManager memoryManager;
@@ -239,11 +237,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         ObjectDataInput input = createObjectDataInput(data);
         byte header = input.readByte();
         if (isIdentifiedDataSerializable(header)) {
-            if (isCompressed(header)) {
-                skipBytesSafely(input, FACTORY_AND_CLASS_ID_BYTE_COMPRESSED_LENGTH);
-            } else {
-                skipBytesSafely(input, FACTORY_AND_CLASS_ID_BYTE_LENGTH);
-            }
+            skipBytesSafely(input, FACTORY_AND_CLASS_ID_BYTE_LENGTH);
         } else {
             // read class-name
             input.readUTF();

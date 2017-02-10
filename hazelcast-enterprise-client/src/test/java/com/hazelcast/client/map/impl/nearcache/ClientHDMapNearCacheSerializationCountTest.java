@@ -35,6 +35,7 @@ import com.hazelcast.nio.serialization.PortableFactory;
 import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Test;
@@ -48,7 +49,7 @@ import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMO
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class ClientHDMapNearCacheSerializationCountTest extends HazelcastTestSupport {
 
     protected static final String MAP_NAME = "default";

@@ -282,8 +282,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
             return null;
         }
 
-        Object cachedValue = record.getValue();
-        return cachedValue instanceof Data ? toValue(cachedValue) : (V) record.getValue();
+        return toValue(record.getValue());
     }
 
     @Override

@@ -6,7 +6,7 @@ package com.hazelcast.internal.serialization.impl;
  * Bits are used in the following way (from the least significant to the most significant)
  * 0.) 0=data_serializable, 1=identified_data_serializable
  * 1.) 0=non-versioned, 1=versioned
- * 2.) 0=uncompressed, 1=compressed (either classId and factoryId or class package name)
+ * 2.) unused
  * 3.) unused
  * 4.) unused
  * 5.) unused
@@ -21,7 +21,6 @@ final class EnterpriseDataSerializableHeader {
 
     private static final byte IDENTIFIED_DATA_SERIALIZABLE = 1 << 0;
     private static final byte VERSIONED = 1 << 1;
-    private static final byte COMPRESSED = 1 << 2;
 
     private EnterpriseDataSerializableHeader() {
     }
@@ -34,11 +33,7 @@ final class EnterpriseDataSerializableHeader {
         return (header & VERSIONED) != 0;
     }
 
-    static boolean isCompressed(byte header) {
-        return (header & COMPRESSED) != 0;
-    }
-
-    static byte createHeader(boolean identified, boolean versioned, boolean compressed) {
+    static byte createHeader(boolean identified, boolean versioned) {
         byte header = 0;
 
         if (identified) {
@@ -46,9 +41,6 @@ final class EnterpriseDataSerializableHeader {
         }
         if (versioned) {
             header |= VERSIONED;
-        }
-        if (compressed) {
-            header |= COMPRESSED;
         }
 
         return header;

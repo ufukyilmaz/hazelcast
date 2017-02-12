@@ -16,38 +16,26 @@ public class EnterpriseDataSerializableHeaderTest {
 
     @Test
     public void identified() {
-        byte header = EnterpriseDataSerializableHeader.createHeader(true, false, false);
+        byte header = EnterpriseDataSerializableHeader.createHeader(true, false);
 
         assertTrue(EnterpriseDataSerializableHeader.isIdentifiedDataSerializable(header));
         assertFalse(EnterpriseDataSerializableHeader.isVersioned(header));
-        assertFalse(EnterpriseDataSerializableHeader.isCompressed(header));
     }
 
     @Test
     public void versioned() {
-        byte header = EnterpriseDataSerializableHeader.createHeader(false, true, false);
+        byte header = EnterpriseDataSerializableHeader.createHeader(false, true);
 
         assertFalse(EnterpriseDataSerializableHeader.isIdentifiedDataSerializable(header));
         assertTrue(EnterpriseDataSerializableHeader.isVersioned(header));
-        assertFalse(EnterpriseDataSerializableHeader.isCompressed(header));
-    }
-
-    @Test
-    public void compressed() {
-        byte header = EnterpriseDataSerializableHeader.createHeader(false, false, true);
-
-        assertFalse(EnterpriseDataSerializableHeader.isIdentifiedDataSerializable(header));
-        assertFalse(EnterpriseDataSerializableHeader.isVersioned(header));
-        assertTrue(EnterpriseDataSerializableHeader.isCompressed(header));
     }
 
     @Test
     public void all() {
-        byte header = EnterpriseDataSerializableHeader.createHeader(true, true, true);
+        byte header = EnterpriseDataSerializableHeader.createHeader(true, true);
 
         assertTrue(EnterpriseDataSerializableHeader.isIdentifiedDataSerializable(header));
         assertTrue(EnterpriseDataSerializableHeader.isVersioned(header));
-        assertTrue(EnterpriseDataSerializableHeader.isCompressed(header));
     }
 
 }

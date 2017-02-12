@@ -4,7 +4,6 @@ import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.version.Version;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
@@ -15,13 +14,13 @@ import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.nio.serialization.impl.VersionedDataSerializableFactory;
 import com.hazelcast.util.ServiceLoader;
 import com.hazelcast.util.collection.Int2ObjectHashMap;
+import com.hazelcast.version.Version;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
 import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.createHeader;
-import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isCompressed;
 import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isIdentifiedDataSerializable;
 import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isVersioned;
 import static com.hazelcast.internal.serialization.impl.SerializationConstants.CONSTANT_TYPE_DATA_SERIALIZABLE;
@@ -143,13 +142,8 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
         int classId = 0;
         try {
             // read factoryId & classId
-            if (isCompressed(header)) {
-                factoryId = in.readByte();
-                classId = in.readByte();
-            } else {
-                factoryId = in.readInt();
-                classId = in.readInt();
-            }
+            factoryId = in.readInt();
+            classId = in.readInt();
 
             // read version
             Version version = isVersioned(header) ? readVersion(in) : Version.UNKNOWN;
@@ -218,18 +212,12 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
     private void writeIdentifiedDataSerializable(
             ObjectDataOutput out, IdentifiedDataSerializable obj, Version version) throws IOException {
 
-        boolean compressed = areIdsCompressable(obj);
         boolean versioned = version != Version.UNKNOWN;
 
-        out.writeByte(createHeader(true, versioned, compressed));
+        out.writeByte(createHeader(true, versioned));
 
-        if (compressed) {
-            out.writeByte(obj.getFactoryId());
-            out.writeByte(obj.getId());
-        } else {
-            out.writeInt(obj.getFactoryId());
-            out.writeInt(obj.getId());
-        }
+        out.writeInt(obj.getFactoryId());
+        out.writeInt(obj.getId());
 
         if (versioned) {
             out.writeByte(version.getMajor());
@@ -239,7 +227,7 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
 
     private void writeDataSerializable(ObjectDataOutput out, DataSerializable obj, Version version) throws IOException {
         boolean versioned = version != Version.UNKNOWN;
-        out.writeByte(createHeader(false, versioned, false));
+        out.writeByte(createHeader(false, versioned));
 
         out.writeUTF(obj.getClass().getName());
         if (versioned) {

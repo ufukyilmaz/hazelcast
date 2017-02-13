@@ -175,11 +175,18 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
                         WANQueueFullBehavior.THROW_EXCEPTION).setProperties(replicationProperties).
                                                 setClassName("com.hazelcast.enterprise.wan.replication.WanBatchReplication")));
 
-        cfg.addMapConfig(new MapConfig(MAP_NAME).setBackupCount(1).setInMemoryFormat(BINARY).setTimeToLiveSeconds(900).
-                setMaxIdleSeconds(900).setEvictionPolicy(EvictionPolicy.LRU).setEvictionPercentage(25).
-                                                        setWanReplicationRef(new WanReplicationRef(wanReplicationName,
-                                                                "com.hazelcast.map.merge.PassThroughMergePolicy",
-                                                                new ArrayList<String>(), true)));
+        cfg.addMapConfig(
+                new MapConfig(MAP_NAME)
+                        .setBackupCount(1)
+                        .setInMemoryFormat(BINARY)
+                        .setTimeToLiveSeconds(900)
+                        .setMaxIdleSeconds(900)
+                        .setEvictionPolicy(EvictionPolicy.LRU)
+                        .setWanReplicationRef(new WanReplicationRef(
+                                wanReplicationName,
+                                "com.hazelcast.map.merge.PassThroughMergePolicy",
+                                new ArrayList<String>(),
+                                true)));
 
         return cfg;
     }

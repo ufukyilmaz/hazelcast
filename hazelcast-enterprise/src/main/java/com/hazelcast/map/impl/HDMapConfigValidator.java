@@ -97,8 +97,10 @@ public final class HDMapConfigValidator {
         if (DEFAULT_MIN_EVICTION_CHECK_MILLIS != mapConfig.getMinEvictionCheckMillis()
                 || DEFAULT_EVICTION_PERCENTAGE != mapConfig.getEvictionPercentage()) {
 
-            LOGGER.warning("Beware that eviction mechanism is different for NATIVE in-memory format. "
-                    + "For this in-memory format, `minEvictionCheckMillis` and `evictionPercentage` has no effect");
+            LOGGER.warning("`minEvictionCheckMillis` and `evictionPercentage` options"
+                    + " are deprecated due to a change of the eviction mechanism."
+                    + " Eviction mechanism uses a probabilistic algorithm based on sampling."
+                    + " Please see documentation for further details.");
         }
     }
 

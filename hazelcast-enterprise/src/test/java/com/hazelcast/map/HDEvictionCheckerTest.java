@@ -141,7 +141,7 @@ public class HDEvictionCheckerTest extends HazelcastTestSupport {
 
         config.getMapConfig("default")
                 .setEvictionPolicy(EvictionPolicy.LRU)
-                .setMaxSizeConfig(maxSizeConfig).setMinEvictionCheckMillis(0);
+                .setMaxSizeConfig(maxSizeConfig);
 
         return config;
     }

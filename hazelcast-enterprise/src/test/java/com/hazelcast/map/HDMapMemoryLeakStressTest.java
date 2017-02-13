@@ -158,8 +158,6 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         mapConfig.setBackupCount(1);
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         mapConfig.setStatisticsEnabled(true);
-        mapConfig.setMinEvictionCheckMillis(0L);
-        mapConfig.setEvictionPercentage(5);
         mapConfig.setEvictionPolicy(EvictionPolicy.LRU);
         mapConfig.setOptimizeQueries(true);
 

@@ -230,17 +230,16 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         }
         removeLocal();
         updateStats(wanReplicationEvent);
-        Data wanReplicationEventData
-                = node.nodeEngine.getSerializationService().toData(wanReplicationEvent);
-        OperationService operationService = node.nodeEngine.getOperationService();
-        EnterpriseReplicationEventObject evObj
-                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
-        int backupCount = evObj.getBackupCount();
-        int clusterSize = node.getClusterService().getSize();
-        int partitionId = getPartitionId(evObj.getKey());
-        List<InternalCompletableFuture> futures = new ArrayList<InternalCompletableFuture>(backupCount);
+        final Data wanReplicationEventData = node.getSerializationService().toData(wanReplicationEvent);
+        final OperationService operationService = node.nodeEngine.getOperationService();
+        final EnterpriseReplicationEventObject evObj = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
+        final int maxAllowedBackupCount = node.getPartitionService().getMaxAllowedBackupCount();
+        final int backupCount = evObj.getBackupCount();
+        final int partitionId = getPartitionId(evObj.getKey());
+        final List<InternalCompletableFuture> futures = new ArrayList<InternalCompletableFuture>(backupCount);
+
         try {
-            for (int i = 0; i < backupCount && i < clusterSize - 1; i++) {
+            for (int i = 0; i < backupCount && i < maxAllowedBackupCount; i++) {
                 Operation ewrRemoveOperation
                         = new EWRRemoveBackupOperation(wanReplicationName, targetGroupName, wanReplicationEventData);
                 InternalCompletableFuture<Object> future = operationService

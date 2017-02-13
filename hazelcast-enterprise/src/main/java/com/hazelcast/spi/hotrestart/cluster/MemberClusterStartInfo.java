@@ -4,12 +4,16 @@ import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.SerializableByConvention;
 
 import java.io.IOException;
+
+import static com.hazelcast.nio.serialization.SerializableByConvention.Reason.PUBLIC_API;
 
 /**
  * Contains information about the state read from the disk and the progress of a node during cluster start
  */
+@SerializableByConvention(PUBLIC_API)
 public class MemberClusterStartInfo implements DataSerializable {
 
     /**

@@ -3,16 +3,20 @@ package com.hazelcast.enterprise.wan;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.SerializableByConvention;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.hazelcast.nio.serialization.SerializableByConvention.Reason.PUBLIC_API;
+
 /**
  * WAN event queue map of a partition.
  * Contains all map/cache event queues of a partition.
  */
+@SerializableByConvention(PUBLIC_API)
 public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanReplicationEventQueue> implements DataSerializable {
 
     private static final long serialVersionUID = 1L;

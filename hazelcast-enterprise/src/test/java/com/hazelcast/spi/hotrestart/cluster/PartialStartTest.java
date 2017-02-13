@@ -425,8 +425,6 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         HazelcastInstance[] instances = startInstancesAndChangeClusterState(ClusterState.PASSIVE);
         Address[] addresses = getAddresses(instances);
 
-        HazelcastInstance[] survivingInstances = new HazelcastInstance[nodeCount - 1];
-        arraycopy(instances, 1, survivingInstances, 0, survivingInstances.length);
         for (int i = 1; i < instances.length; i++) {
             terminateWithOverwrittenACTIVEClusterState(instances[i]);
         }

@@ -10,6 +10,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.partition.PartitionLostListenerStressTest.EventCollectingPartitionLostListener;
 import com.hazelcast.spi.InternalCompletableFuture;
@@ -66,6 +68,8 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
         NONE, PARTIAL, ALL
     }
 
+    private final ILogger logger = Logger.getLogger(getClass());
+    
     protected final String[] mapNames = new String[]{"map0", "map1", "map2", "map3", "map4", "map5", "map6"};
     protected final String[] cacheNames = new String[]{"cache0", "cache1", "cache2", "cache3", "cache4", "cache5", "cache6"};
 
@@ -159,7 +163,7 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
                         HazelcastInstance instance = restartInstance(address, listener, clusterStartPolicy, version);
                         instancesList.add(instance);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        logger.severe(e);
                     } finally {
                         latch.countDown();
                     }
@@ -330,7 +334,6 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
         config.addListenerConfig(new ListenerConfig(partitionLostListener));
 
         config.setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
-        config.setInstanceName(instanceName);
 
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT));
 
@@ -443,8 +446,7 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
                     addressChangePolicy = AddressChangePolicy.NONE;
                     restartInstance(address);
                 } catch (Throwable e) {
-                    System.err.println("Restart for " + address + " failed! -> " + e.getMessage());
-                    e.printStackTrace();
+                    logger.severe("Restart for " + address + " failed!", e);
                 }
             }
         });

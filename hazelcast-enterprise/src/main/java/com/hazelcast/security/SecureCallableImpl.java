@@ -34,10 +34,11 @@ import com.hazelcast.logging.LoggingService;
 import com.hazelcast.mapreduce.JobTracker;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.quorum.QuorumService;
 import com.hazelcast.ringbuffer.Ringbuffer;
 import com.hazelcast.scheduledexecutor.IScheduledExecutorService;
+import com.hazelcast.security.impl.SecurityDataSerializerHook;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.security.permission.AtomicLongPermission;
 import com.hazelcast.security.permission.AtomicReferencePermission;
@@ -87,7 +88,7 @@ import static com.hazelcast.nio.IOUtil.closeResource;
         "checkstyle:methodcount",
         "checkstyle:classdataabstractioncoupling",
         "checkstyle:classfanoutcomplexity"})
-public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSerializable {
+public final class SecureCallableImpl<V> implements SecureCallable<V>, IdentifiedDataSerializable {
 
     private static final Map<String, Map<String, String>> SERVICE_TO_METHODMAP = new HashMap<String, Map<String, String>>();
 
@@ -140,6 +141,16 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
     @Override
     public String toString() {
         return "SecureCallable [subject=" + subject + ", callable=" + callable + "]";
+    }
+
+    @Override
+    public int getFactoryId() {
+        return SecurityDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return SecurityDataSerializerHook.SECURE_CALLABLE;
     }
 
     @Override

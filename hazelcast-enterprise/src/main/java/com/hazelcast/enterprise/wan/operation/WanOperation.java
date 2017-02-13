@@ -1,11 +1,13 @@
 package com.hazelcast.enterprise.wan.operation;
 
 import com.hazelcast.config.WanAcknowledgeType;
+import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.internal.cluster.impl.operations.WanReplicationOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.Operation;
 
 import java.io.IOException;
@@ -13,7 +15,7 @@ import java.io.IOException;
 /**
  * Operation sent from the source to the target WAN members.
  */
-public class WanOperation extends Operation implements WanReplicationOperation {
+public class WanOperation extends Operation implements WanReplicationOperation, IdentifiedDataSerializable {
 
     private Data event;
     private WanAcknowledgeType acknowledgeType;
@@ -36,6 +38,16 @@ public class WanOperation extends Operation implements WanReplicationOperation {
     @Override
     public boolean returnsResponse() {
         return false;
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EWRDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EWRDataSerializerHook.WAN_OPERATION;
     }
 
     @Override

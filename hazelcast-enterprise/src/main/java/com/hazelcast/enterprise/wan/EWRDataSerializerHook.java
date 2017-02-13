@@ -7,8 +7,12 @@ import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
 import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
+import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.enterprise.wan.sync.GetMapPartitionDataOperation;
+import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncOperation;
+import com.hazelcast.enterprise.wan.sync.WanSyncResult;
+import com.hazelcast.enterprise.wan.sync.WanSyncStarterOperation;
 import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
@@ -20,6 +24,10 @@ import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_WAN_REPLICATION_DS_FACTORY;
 import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_WAN_REPLICATION_DS_FACTORY_ID;
 
+/**
+ * DataSerializerHook for Enterprise WAN objects
+ */
+@SuppressWarnings("checkstyle:javadocvariable")
 public class EWRDataSerializerHook implements DataSerializerHook {
 
     /**
@@ -28,75 +36,24 @@ public class EWRDataSerializerHook implements DataSerializerHook {
     public static final int F_ID = FactoryIdHelper.getFactoryId(ENTERPRISE_WAN_REPLICATION_DS_FACTORY,
             ENTERPRISE_WAN_REPLICATION_DS_FACTORY_ID);
 
-    /**
-     * Id of {@link BatchWanReplicationEvent}
-     */
     public static final int BATCH_WAN_REP_EVENT = 0;
-
-    /**
-     * Id of {@link EWRPutOperation}
-     */
     public static final int EWR_PUT_OPERATION = 1;
-
-    /**
-     * Id of {@link EWRPutBackupOperation}
-     */
     public static final int EWR_PUT_BACKUP_OPERATION = 2;
-
-    /**
-     * Id of {@link EWRMigrationContainer}
-     */
     public static final int EWR_QUEUE_CONTAINER = 3;
-
-    /**
-     * Id of {@link EWRQueueReplicationOperation}
-     */
     public static final int EWR_QUEUE_REPLICATION_OPERATION = 4;
-
-    /**
-     * Id of {@link EWRRemoveBackupOperation}
-     */
     public static final int EWR_REMOVE_BACKUP_OPERATION = 5;
-
-    /**
-     * Id of {@link com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate}
-     */
     public static final int MAP_REPLICATION_UPDATE = 6;
-
-    /**
-     * Id of {@link com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove}
-     */
     public static final int MAP_REPLICATION_REMOVE = 7;
-
-    /**
-     * Id of {@link com.hazelcast.cache.wan.CacheReplicationUpdate}
-     */
     public static final int CACHE_REPLICATION_UPDATE = 8;
-
-    /**
-     * Id of {@link com.hazelcast.cache.wan.CacheReplicationRemove}
-     */
     public static final int CACHE_REPLICATION_REMOVE = 9;
-
-    /**
-     * Id of {@link com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync}
-     */
     public static final int MAP_REPLICATION_SYNC = 10;
-
-    /**
-     * Id of {@link com.hazelcast.enterprise.wan.sync.WanSyncOperation}
-     */
     public static final int WAN_SYNC_OPERATION = 11;
-
-    /**
-     * Id of {@link com.hazelcast.enterprise.wan.sync.GetMapPartitionDataOperation}
-     */
     public static final int GET_MAP_PARTITION_DATA_OPERATION = 12;
-
-    /**
-     * Id of {@link com.hazelcast.enterprise.wan.operation.PostJoinWanOperation}
-     */
     public static final int POST_JOIN_WAN_OPERATION = 13;
+    public static final int WAN_OPERATION = 14;
+    public static final int WAN_SYNC_EVENT = 15;
+    public static final int WAN_SYNC_RESULT = 16;
+    public static final int WAN_SYNC_STARTER_OPERATION = 17;
 
     @Override
     public int getFactoryId() {
@@ -138,6 +95,14 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                         return new GetMapPartitionDataOperation();
                     case POST_JOIN_WAN_OPERATION:
                         return new PostJoinWanOperation();
+                    case WAN_OPERATION:
+                        return new WanOperation();
+                    case WAN_SYNC_EVENT:
+                        return new WanSyncEvent();
+                    case WAN_SYNC_RESULT:
+                        return new WanSyncResult();
+                    case WAN_SYNC_STARTER_OPERATION:
+                        return new WanSyncStarterOperation();
                 }
                 throw new IllegalArgumentException("Unknown type-id: " + typeId);
             }

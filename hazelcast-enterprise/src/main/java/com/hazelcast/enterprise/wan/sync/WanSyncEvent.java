@@ -1,8 +1,9 @@
 package com.hazelcast.enterprise.wan.sync;
 
+import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -11,7 +12,7 @@ import java.util.Set;
 /**
  * A marker event to initiate WAN sync for some or all partitions and for all or a specific map.
  */
-public class WanSyncEvent implements DataSerializable {
+public class WanSyncEvent implements IdentifiedDataSerializable {
     private WanSyncType type;
     /** The name of the map, can be null in case of {@link WanSyncType#ALL_MAPS} */
     private String name;
@@ -56,6 +57,16 @@ public class WanSyncEvent implements DataSerializable {
 
     public void setPartitionSet(Set<Integer> partitionSet) {
         this.partitionSet = partitionSet;
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EWRDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EWRDataSerializerHook.WAN_SYNC_EVENT;
     }
 
     @Override

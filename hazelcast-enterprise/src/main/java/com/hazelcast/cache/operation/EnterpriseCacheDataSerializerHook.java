@@ -14,6 +14,7 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
 
     public static final int WAN_MERGE = 0;
     public static final int WAN_REMOVE = 1;
+    public static final int SEGMENT_DESTROY = 2;
 
     @Override
     public int getFactoryId() {
@@ -31,6 +32,8 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
                         return new WanCacheMergeOperation();
                     case WAN_REMOVE:
                         return new WanCacheRemoveOperation();
+                    case SEGMENT_DESTROY:
+                        return new CacheSegmentDestroyOperation();
                 }
                 throw new IllegalArgumentException("Unknown type-id: " + typeId);
             }

@@ -2,13 +2,14 @@ package com.hazelcast.security;
 
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.security.impl.SecurityDataSerializerHook;
 
 import java.io.IOException;
 import java.security.Principal;
 
 
-public final class ClusterPrincipal implements Principal, DataSerializable {
+public final class ClusterPrincipal implements Principal, IdentifiedDataSerializable {
 
     private Credentials credentials;
 
@@ -39,6 +40,16 @@ public final class ClusterPrincipal implements Principal, DataSerializable {
 
     public String toString() {
         return "ClusterPrincipal [principal=" + getPrincipal() + ", endpoint=" + getEndpoint() + "]";
+    }
+
+    @Override
+    public int getFactoryId() {
+        return SecurityDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return SecurityDataSerializerHook.CLUSTER_PRINCIPAL;
     }
 
     public void writeData(ObjectDataOutput out) throws IOException {

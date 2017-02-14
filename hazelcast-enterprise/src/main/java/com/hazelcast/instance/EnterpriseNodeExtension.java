@@ -191,7 +191,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
         systemLogger.info("Hazelcast Enterprise " + buildInfo.getVersion()
                 + " (" + build + ") starting at " + node.getThisAddress());
-        systemLogger.info("Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.");
+        systemLogger.info("Copyright (c) 2008-2017, Hazelcast, Inc. All Rights Reserved.");
     }
 
     @Override

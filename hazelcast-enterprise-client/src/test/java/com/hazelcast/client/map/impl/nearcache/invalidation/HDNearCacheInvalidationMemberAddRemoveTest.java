@@ -7,7 +7,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
@@ -16,7 +16,7 @@ import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDCon
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class})
+@Category({SlowTest.class})
 public class HDNearCacheInvalidationMemberAddRemoveTest extends InvalidationMemberAddRemoveTest {
 
     @Override

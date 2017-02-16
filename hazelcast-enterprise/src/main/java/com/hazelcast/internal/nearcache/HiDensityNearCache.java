@@ -10,12 +10,15 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.ExecutionService;
 import com.hazelcast.spi.serialization.SerializationService;
-import com.hazelcast.util.EmptyStatement;
 
 import java.util.Collection;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.internal.nearcache.NearCacheRecord.NOT_RESERVED;
+import static com.hazelcast.util.EmptyStatement.ignore;
 import static com.hazelcast.util.Preconditions.checkNotNull;
+import static java.lang.String.format;
+import static java.util.logging.Level.WARNING;
 
 /**
  * {@link com.hazelcast.internal.nearcache.NearCache} implementation for Hi-Density cache.
@@ -39,7 +42,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
                               NearCacheRecordStore<K, V> nearCacheRecordStore, SerializationService serializationService,
                               ExecutionService executionService, ClassLoader classLoader) {
         super(name, nearCacheConfig, nearCacheRecordStore, serializationService, executionService, classLoader);
-        this.nearCacheManager = nearCacheManager;
+        this.nearCacheManager = checkNotNull(nearCacheManager, "nearCacheManager cannot be null");
     }
 
     @Override
@@ -69,110 +72,139 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
 
     @Override
     public void put(K key, V value) {
-        checkNotNull(key, "key cannot be null on put!");
+        assert key != null : "key cannot be null";
 
-        NativeOutOfMemoryError oomeError;
-        boolean anyAvailableNearCacheToEvict;
-
+        boolean memoryCompacted = false;
         do {
-            anyAvailableNearCacheToEvict = false;
-
             try {
-                // try to put new record to Near Cache
                 super.put(key, value);
-                oomeError = null;
                 break;
-            } catch (NativeOutOfMemoryError oome) {
-                oomeError = oome;
+            } catch (NativeOutOfMemoryError error) {
+                ignore(error);
             }
 
-            // if there is any record, this means that this Near Cache is a candidate for eviction
-            if (nearCacheRecordStore.size() > 0) {
-                try {
-                    anyAvailableNearCacheToEvict = true;
-                    // evict a record from this Near Cache regardless from eviction max-size policy
-                    nearCacheRecordStore.doEviction();
-                    // try to put new record to this Near Cache after eviction
-                    super.put(key, value);
-                    oomeError = null;
-                    break;
-                } catch (NativeOutOfMemoryError oome) {
-                    oomeError = oome;
-                }
+            if (evictRecordStores()) {
+                continue;
             }
 
-            try {
-                if (tryToPutByEvictingOnOtherNearCaches(key, value)) {
-                    // there is no OOME and eviction is done, this means that record successfully put to Near Cache
-                    oomeError = null;
-                    break;
-                }
-            } catch (NativeOutOfMemoryError oome) {
-                anyAvailableNearCacheToEvict = true;
-                oomeError = oome;
+            if (memoryCompacted) {
+                handleNativeOOME(key);
+                break;
             }
 
-            // if put still cannot be done and there are evictable Near Caches, keep on trying
-        } while (anyAvailableNearCacheToEvict);
+            compactMemory();
+            memoryCompacted = true;
 
-        checkAndHandleOOME(key, value, oomeError);
+        } while (true);
     }
 
-    private boolean tryToPutByEvictingOnOtherNearCaches(K key, V value) {
-        if (nearCacheManager == null) {
-            return false;
+    @Override
+    public long tryReserveForUpdate(K key) {
+        assert key != null : "key cannot be null";
+
+        boolean memoryCompacted = false;
+        do {
+            try {
+                return super.tryReserveForUpdate(key);
+            } catch (NativeOutOfMemoryError error) {
+                ignore(error);
+            }
+
+            if (evictRecordStores()) {
+                continue;
+            }
+
+            if (memoryCompacted) {
+                handleNativeOOME(key);
+                break;
+            }
+
+            compactMemory();
+            memoryCompacted = true;
+
+        } while (true);
+
+        return NOT_RESERVED;
+    }
+
+    @Override
+    public V tryPublishReserved(K key, V value, long reservationId, boolean deserialize) {
+        assert key != null : "key cannot be null";
+
+        boolean memoryCompacted = false;
+        do {
+            try {
+                return super.tryPublishReserved(key, value, reservationId, deserialize);
+            } catch (NativeOutOfMemoryError error) {
+                ignore(error);
+            }
+
+            if (evictRecordStores()) {
+                continue;
+            }
+
+            if (memoryCompacted) {
+                handleNativeOOME(key);
+                break;
+            }
+
+            compactMemory();
+            memoryCompacted = true;
+
+        } while (true);
+
+        return null;
+    }
+
+    private void handleNativeOOME(K key) {
+        // there may be an existing entry in Near Cache for the specified `key`, to be in safe side, remove that entry,
+        // otherwise stale value for that `key` may be seen indefinitely. This removal will make subsequent gets to fetch
+        // the value from underlying IMap/cache
+        super.remove(key);
+
+        // due to the ongoing compaction, one user thread may not see sufficient space to put entry into Near Cache;
+        // in that case, skipping NativeOutOfMemoryError instead of throwing it to user (even eviction is configured)
+        // this is because Near Cache feature is an optimization and it is okay not to put some entries;
+        // we are expecting to put next entries into Near Cache after compaction or after Near Cache invalidation
+        if (logger.isLoggable(WARNING)) {
+            logger.warning(format("Entry can not be put into Near Cache for this time: nearCacheName=%s", name));
         }
-        NativeOutOfMemoryError oomeError = null;
-        boolean anyOtherAvailableNearCacheToEvict = false;
+    }
+
+    // evict a record from a record-store regardless from eviction max-size policy
+    private boolean evictRecordStores() {
+        // First: Try to evict this near caches record-store.
+        if (evict(nearCacheRecordStore)) {
+            return true;
+        }
+
+        // Second: Try to evict any other record-stores.
         Collection<NearCache> nearCacheList = nearCacheManager.listAllNearCaches();
         for (NearCache nearCache : nearCacheList) {
-            if (nearCache != this && nearCache instanceof HiDensityNearCache && nearCache.size() > 0) {
-                HiDensityNearCache hiDensityNearCache = (HiDensityNearCache) nearCache;
-                try {
-                    // evict a record regardless from eviction max-size policy
-                    hiDensityNearCache.nearCacheRecordStore.doEviction();
-                    anyOtherAvailableNearCacheToEvict = true;
-                    // try to put new record to Near Cache after eviction
-                    super.put(key, value);
-                    oomeError = null;
-                    break;
-                } catch (NativeOutOfMemoryError oome) {
-                    oomeError = oome;
-                } catch (IllegalStateException e) {
-                    // Near Cache may be destroyed at this time, so just ignore exception
-                    EmptyStatement.ignore(e);
+            if (nearCache != this && nearCache instanceof HiDensityNearCache) {
+                if (evict(((HiDensityNearCache) nearCache).nearCacheRecordStore)) {
+                    return true;
                 }
             }
         }
-        if (oomeError != null) {
-            throw oomeError;
-        }
-        return anyOtherAvailableNearCacheToEvict;
+
+        return false;
     }
 
-    private void checkAndHandleOOME(K key, V value, NativeOutOfMemoryError oomeError) {
-        if (oomeError == null) {
-            return;
+    private static boolean evict(NearCacheRecordStore nearCacheRecordStore) {
+        if (nearCacheRecordStore.size() == 0) {
+            return false;
         }
 
+        // evict a record from this Near Cache regardless from eviction max-size policy
+        nearCacheRecordStore.doEviction();
+        return true;
+    }
+
+    private void compactMemory() {
         assert memoryManager != null : "memoryManager cannot be null";
 
         memoryManager.compact();
-
-        // try for last time after compaction
-        try {
-            super.put(key, value);
-        } catch (NativeOutOfMemoryError e) {
-            // there may be an existing entry in Near Cache for the specified `key`, to be in safe side, remove that entry,
-            // otherwise stale value for that `key` may be seen indefinitely. This removal will make subsequent gets to fetch
-            // the value from underlying IMap/cache
-            super.remove(key);
-            // due to the ongoing compaction, one user thread may not see sufficient space to put entry into Near Cache;
-            // in that case, skipping NativeOutOfMemoryError instead of throwing it to user (even eviction is configured)
-            // this is because Near Cache feature is an optimization and it is okay not to put some entries;
-            // we are expecting to put next entries into Near Cache after compaction or after Near Cache invalidation
-            logger.warning("Entry can not be put into Near Cache for this time");
-        }
     }
 
     // just for testing

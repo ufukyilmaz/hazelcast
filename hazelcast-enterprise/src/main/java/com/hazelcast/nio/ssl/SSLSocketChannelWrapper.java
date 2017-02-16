@@ -22,9 +22,10 @@ import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 
 public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
 
+    static final int EXPAND_FACTOR = 2;
     private static final boolean DEBUG = false;
 
-    private final ByteBuffer applicationBuffer;
+    private ByteBuffer applicationBuffer;
     private final Object lock = new Object();
     private final ByteBuffer emptyBuffer;
     private final ByteBuffer netOutBuffer;
@@ -166,12 +167,12 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                 log("application buffer = " + applicationBuffer);
                 log("==============");
             }
+
             if (sslEngineResult.getStatus() == BUFFER_OVERFLOW) {
-                if (DEBUG) {
-                    log(" ----------- unwrap exit ----------------");
-                }
-                return applicationBuffer;
+                // the appBuffer wasn't big enough, so lets expand it.
+                applicationBuffer = expandBuffer(applicationBuffer);
             }
+
             if (sslEngineResult.getHandshakeStatus() == NEED_TASK) {
                 handleTasks();
             } else if (sslEngineResult.getHandshakeStatus() == FINISHED || sslEngineResult.getStatus() == BUFFER_UNDERFLOW) {
@@ -199,6 +200,24 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
             }
             task.run();
         }
+    }
+
+    /**
+     * Expands the original ByteBuffer. This method expects the original buffer to be in write mode and the resulting
+     * ByteBuffer will also be in write mode.
+     */
+    static ByteBuffer expandBuffer(ByteBuffer original) {
+        int oldCapacity = original.capacity();
+
+        int newCapacity = oldCapacity * EXPAND_FACTOR;
+
+        ByteBuffer expanded = ByteBuffer.allocate(newCapacity);
+
+        original.flip();
+
+        expanded.put(original);
+
+        return expanded;
     }
 
     @Override

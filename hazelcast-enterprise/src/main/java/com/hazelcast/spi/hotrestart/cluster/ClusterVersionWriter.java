@@ -11,7 +11,7 @@ import java.io.IOException;
  */
 class ClusterVersionWriter extends AbstractMetadataWriter<Version> {
 
-    static final String NULL_VERSION = "null";
+    static final String UNKNOWN_VERSION = "null";
     static final String FILE_NAME = "cluster-version.txt";
 
     ClusterVersionWriter(File homeDir) {
@@ -25,6 +25,6 @@ class ClusterVersionWriter extends AbstractMetadataWriter<Version> {
 
     @Override
     synchronized void doWrite(DataOutput out, Version newVersion) throws IOException {
-        out.writeUTF(newVersion == null ? NULL_VERSION : newVersion.toString());
+        out.writeUTF(newVersion.isUnknown() ? UNKNOWN_VERSION : newVersion.toString());
     }
 }

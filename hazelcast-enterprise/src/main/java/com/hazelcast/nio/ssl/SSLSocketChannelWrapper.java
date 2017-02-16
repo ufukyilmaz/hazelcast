@@ -173,9 +173,6 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                 return applicationBuffer;
             }
             if (sslEngineResult.getHandshakeStatus() == NEED_TASK) {
-                if (DEBUG) {
-                    log("Handshake NEED TASK");
-                }
                 handleTasks();
             } else if (sslEngineResult.getHandshakeStatus() == FINISHED || sslEngineResult.getStatus() == BUFFER_UNDERFLOW) {
                 if (DEBUG) {
@@ -191,6 +188,10 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     }
 
     private void handleTasks() {
+        if (DEBUG) {
+            log("Handshake NEED TASK");
+        }
+
         Runnable task;
         while ((task = sslEngine.getDelegatedTask()) != null) {
             if (DEBUG) {

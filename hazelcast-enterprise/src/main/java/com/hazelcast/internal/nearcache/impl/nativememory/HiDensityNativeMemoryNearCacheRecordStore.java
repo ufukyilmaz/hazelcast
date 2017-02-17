@@ -225,8 +225,16 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected void updateRecordValue(HiDensityNativeMemoryNearCacheRecord record, V value) {
-        NativeMemoryData nativeValue = toNativeMemoryData(value);
-        record.setValue(nativeValue);
+        NativeMemoryData nativeValue = null;
+        try {
+            nativeValue = toNativeMemoryData(value);
+            record.setValue(nativeValue);
+        } catch (Throwable throwable) {
+            if (isMemoryBlockValid(nativeValue)) {
+                recordProcessor.disposeData(nativeValue);
+            }
+            throw rethrow(throwable);
+        }
     }
 
     @Override

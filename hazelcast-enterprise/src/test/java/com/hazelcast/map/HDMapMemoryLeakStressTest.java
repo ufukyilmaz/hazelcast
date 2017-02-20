@@ -127,7 +127,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         CountDownLatch latch = new CountDownLatch(threads);
 
         for (int i = 0; i < threads; i++) {
-            new WorkerThread(map, latch).start();
+            new WorkerThread(map, latch, done).start();
         }
 
         assertOpenEventually(latch, TIMEOUT * 2);
@@ -175,16 +175,16 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         private final IMap<Integer, byte[]> map;
         private final CountDownLatch latch;
         private final Random rand = new Random();
+        private final AtomicBoolean running;
 
-        WorkerThread(IMap<Integer, byte[]> map, CountDownLatch latch) {
+        WorkerThread(IMap<Integer, byte[]> map, CountDownLatch latch, AtomicBoolean running) {
             this.map = map;
             this.latch = latch;
+            this.running = running;
         }
 
         public void run() {
-            int counter = 0;
-            long start = System.currentTimeMillis();
-            while (true) {
+            while (running.get()) {
                 try {
                     int key = rand.nextInt(KEY_RANGE);
                     int op = rand.nextInt(OP_SET.length);
@@ -192,11 +192,8 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                 } catch (NativeOutOfMemoryError e) {
                     EmptyStatement.ignore(e);
                 }
-
-                if (++counter % 5000 == 0 && (start + TIMEOUT) < System.currentTimeMillis()) {
-                    break;
-                }
             }
+
             latch.countDown();
         }
 

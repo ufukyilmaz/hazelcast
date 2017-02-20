@@ -20,6 +20,8 @@ import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
+import com.hazelcast.internal.metrics.MetricsProvider;
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.networking.ReadHandler;
 import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
 import com.hazelcast.internal.networking.WriteHandler;
@@ -79,7 +81,7 @@ import static com.hazelcast.util.StringUtil.isNullOrEmpty;
         "checkstyle:classfanoutcomplexity",
         "checkstyle:methodcount"
 })
-public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
+public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension, MetricsProvider {
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
     private static final NoopInternalHotRestartService NOOP_INTERNAL_HOT_RESTART_SERVICE = new NoopInternalHotRestartService();
     private static final NoOpHotRestartService NO_OP_HOT_RESTART_SERVICE = new NoOpHotRestartService();
@@ -614,5 +616,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             }
         }
         return super.createMemberUuid(address);
+    }
+
+    @Override
+    public void provideMetrics(MetricsRegistry registry) {
+        if (memoryManager != null) {
+            registry.scanAndRegister(memoryManager, "memorymanager");
+            if (memoryManager instanceof MetricsProvider) {
+                ((MetricsProvider) memoryManager).provideMetrics(registry);
+            }
+        }
     }
 }

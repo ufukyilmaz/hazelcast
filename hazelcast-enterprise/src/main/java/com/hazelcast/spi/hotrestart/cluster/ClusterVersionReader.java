@@ -7,7 +7,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 
-import static com.hazelcast.spi.hotrestart.cluster.ClusterVersionWriter.NULL_VERSION;
+import static com.hazelcast.spi.hotrestart.cluster.ClusterVersionWriter.UNKNOWN_VERSION;
 
 /**
  * Reads cluster version from a specific file.
@@ -16,7 +16,7 @@ class ClusterVersionReader extends AbstractMetadataReader {
 
     private final ILogger logger;
 
-    private Version clusterVersion;
+    private Version clusterVersion = Version.UNKNOWN;
 
     ClusterVersionReader(ILogger logger, File homeDir) {
         super(homeDir);
@@ -37,9 +37,7 @@ class ClusterVersionReader extends AbstractMetadataReader {
     @Override
     void doRead(DataInputStream in) throws IOException {
         String name = in.readUTF();
-        if (name.equals(NULL_VERSION)) {
-            clusterVersion = null;
-        } else {
+        if (!name.equals(UNKNOWN_VERSION)) {
             clusterVersion = Version.of(name);
         }
         if (logger.isFineEnabled()) {

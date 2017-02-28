@@ -25,8 +25,8 @@ import com.hazelcast.nio.serialization.SerializationConcurrencyTest.Person;
 import com.hazelcast.spi.OperationAccessor;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.Version;
 import com.hazelcast.version.MemberVersion;
+import com.hazelcast.version.Version;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -378,6 +378,57 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
                     }
                 })
                 .build();
+    }
+
+    @Test
+    public void testNotVersionedDataSerializable_outputHasUnknownVersion() {
+        TestVersionAware testVersionAware = new TestVersionAware();
+        InternalSerializationService serializationService = builder().setClusterVersionAware(testVersionAware).build();
+        SerializationV1Dataserializable object = new SerializationV1Dataserializable();
+        serializationService.toData(object);
+        assertEquals("ObjectDataOutput.getVersion should be UNKNOWN", Version.UNKNOWN,
+                object.getVersion());
+    }
+
+    @Test
+    public void testNotVersionedDataSerializable_inputHasUnknownVersion() {
+        TestVersionAware testVersionAware = new TestVersionAware();
+        InternalSerializationService serializationService = builder().setClusterVersionAware(testVersionAware).build();
+        SerializationV1Dataserializable object = new SerializationV1Dataserializable();
+        SerializationV1Dataserializable otherObject = serializationService.toObject(serializationService.toData(object));
+        assertEquals("ObjectDataInput.getVersion should be UNKNOWN", Version.UNKNOWN,
+                otherObject.getVersion());
+    }
+
+    @Test
+    public void testVersionedDataSerializable_outputHasClusterVersion_whenVersionedSerializationEnabled() {
+        TestVersionAware testVersionAware = new TestVersionAware();
+        InternalSerializationService serializationService = builder().setClusterVersionAware(testVersionAware).build();
+        VersionedDataSerializable object = new VersionedDataSerializable();
+        serializationService.toData(object);
+        if (versionedSerializationEnabled) {
+            assertEquals("ObjectDataOutput.getVersion should be set to cluster version", testVersionAware.getClusterVersion(),
+                    object.getVersion());
+        } else {
+            assertEquals("ObjectDataOutput.getVersion should be UNKNOWN", Version.UNKNOWN,
+                    object.getVersion());
+        }
+    }
+
+    @Test
+    public void testVersionedDataSerializable_inputHasClusterVersion_whenVersionedSerializationEnabled() {
+        TestVersionAware testVersionAware = new TestVersionAware();
+        InternalSerializationService serializationService = builder().setClusterVersionAware(testVersionAware).build();
+        VersionedDataSerializable object = new VersionedDataSerializable();
+        VersionedDataSerializable otherObject = serializationService.toObject(serializationService.toData(object));
+        if (versionedSerializationEnabled) {
+            assertEquals("ObjectDataInput.getVersion should be set to cluster version",
+                    testVersionAware.getClusterVersion(),
+                    otherObject.getVersion());
+        } else {
+            assertEquals("ObjectDataInput.getVersion should be UNKNOWN", Version.UNKNOWN,
+                    otherObject.getVersion());
+        }
     }
 
     @Parameterized.Parameters(name = "{index}: versionedSerializationEnabled = {0}")

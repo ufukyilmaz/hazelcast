@@ -66,8 +66,8 @@ public final class HDMapConfigValidator {
         checkTrue(nativeMemoryConfig.isEnabled(), "Enable native memory config to use NATIVE in-memory-format for Near Cache");
 
         if (client && nearCacheConfig.isCacheLocalEntries()) {
-            LOGGER.warning("The Near Cache option `cache-local-entries` is not supported in client configurations. "
-                    + "Remove this option from your client configuration, future versions may fail startup with an exception.");
+            throw new IllegalArgumentException("The Near Cache option `cache-local-entries` is not supported in"
+                    + " client configurations. ");
         }
     }
 

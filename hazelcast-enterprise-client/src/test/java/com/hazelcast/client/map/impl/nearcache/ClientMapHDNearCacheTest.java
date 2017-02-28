@@ -5,7 +5,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.map.HDTestSupport;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -21,6 +20,7 @@ import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
+import static com.hazelcast.map.HDTestSupport.getHDConfig;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
@@ -46,16 +46,14 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
                 .setSize(new MemorySize(32, MemoryUnit.MEGABYTES))
                 .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
 
-        ClientConfig clientConfig = super.newClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE);
-        clientConfig.setNativeMemoryConfig(nativeMemoryConfig);
-
-        return clientConfig;
+        return super.newClientConfig()
+                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
+                .setNativeMemoryConfig(nativeMemoryConfig);
     }
 
     @Override
     protected Config newConfig() {
-        Config config = HDTestSupport.getHDConfig(super.newConfig());
+        Config config = getHDConfig(super.newConfig());
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE);
         config.getMapConfig("default").setInMemoryFormat(NATIVE);
         return config;
@@ -64,7 +62,6 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
     @Override
     protected NearCacheConfig newNearCacheConfigWithEntryCountEviction(EvictionPolicy evictionPolicy, int size) {
         NearCacheConfig nearCacheConfig = newNearCacheConfig();
-
         nearCacheConfig.getEvictionConfig()
                 .setEvictionPolicy(evictionPolicy)
                 .setMaximumSizePolicy(ENTRY_COUNT)

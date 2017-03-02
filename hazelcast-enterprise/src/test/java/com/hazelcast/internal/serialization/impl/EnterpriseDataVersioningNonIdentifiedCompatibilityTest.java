@@ -21,6 +21,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
+import static com.hazelcast.instance.BuildInfoProvider.BUILD_INFO;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static org.junit.Assert.assertEquals;
 
@@ -34,7 +35,8 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
-    private static Version V3_8 = Version.of(3, 8);
+    private static final Version V3_8 = Version.of(3, 8);
+    private static final Version CURRENT_VERSION = Version.of(BUILD_INFO.getVersion());
 
     @Rule
     public ExpectedException expected = ExpectedException.none();
@@ -52,7 +54,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestDataSerializable deserialized = newSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(CURRENT_VERSION, original.serializationVersion);
         assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
@@ -65,7 +67,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(Version.UNKNOWN, original.serializationVersion);
-        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+        assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
     @Test
@@ -77,7 +79,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(Version.UNKNOWN, original.serializationVersion);
-        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+        assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
     @Test
@@ -88,7 +90,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestVersionedDataSerializable deserialized = newSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(CURRENT_VERSION, original.serializationVersion);
         assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
@@ -101,7 +103,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(V3_8, original.serializationVersion);
-        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+        assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
     @Test
@@ -113,7 +115,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(V3_8, original.serializationVersion);
-        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+        assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
     @Test
@@ -152,7 +154,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestVersionedDataSerializable deserialized = newSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(CURRENT_VERSION, original.serializationVersion);
         assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
@@ -169,7 +171,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(Version.UNKNOWN, original.serializationVersion);
-        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+        assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
     @Test
@@ -185,7 +187,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(Version.UNKNOWN, original.serializationVersion);
-        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+        assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
     @Test
@@ -200,7 +202,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestVersionedDataSerializable deserialized = newSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(CURRENT_VERSION, original.serializationVersion);
         assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
@@ -212,7 +214,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestVersionedDataSerializable deserialized = newSS.toObject(data, TestVersionedDataSerializable.class);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(CURRENT_VERSION, original.serializationVersion);
         assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
@@ -224,7 +226,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestVersionedDataSerializable deserialized = newSS.toObject(data, TestVersionedDataSerializable.class);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(CURRENT_VERSION, original.serializationVersion);
         assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
@@ -237,7 +239,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(Version.UNKNOWN, original.serializationVersion);
-        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+        assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
     @Test
@@ -249,7 +251,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(Version.UNKNOWN, original.serializationVersion);
-        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+        assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
 
@@ -275,7 +277,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestDataSerializable deserialized = newSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(CURRENT_VERSION, original.serializationVersion);
         assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
@@ -288,7 +290,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestDataSerializable deserialized = newSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(CURRENT_VERSION, original.serializationVersion);
         assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
@@ -302,7 +304,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(V3_8, original.serializationVersion);
-        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+        assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
     @Test
@@ -315,7 +317,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(V3_8, original.serializationVersion);
-        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+        assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
     @Test

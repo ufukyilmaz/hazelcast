@@ -45,6 +45,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Random;
 
+import static com.hazelcast.instance.BuildInfoProvider.BUILD_INFO;
 import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -59,6 +60,7 @@ import static org.junit.Assert.assertTrue;
 public class EnterpriseSerializationTest extends HazelcastTestSupport {
 
     private static Version V3_8 = Version.of("3.8");
+    private static Version CURRENT_VERSION = Version.of(BUILD_INFO.getVersion());
 
     private boolean versionedSerializationEnabled;
 
@@ -386,7 +388,8 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         InternalSerializationService serializationService = builder().setClusterVersionAware(testVersionAware).build();
         SerializationV1Dataserializable object = new SerializationV1Dataserializable();
         serializationService.toData(object);
-        assertEquals("ObjectDataOutput.getVersion should be UNKNOWN", Version.UNKNOWN,
+        Version expected = expectedVersion(false);
+        assertEquals("ObjectDataOutput.getVersion should be " + expected, expected,
                 object.getVersion());
     }
 
@@ -396,7 +399,8 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         InternalSerializationService serializationService = builder().setClusterVersionAware(testVersionAware).build();
         SerializationV1Dataserializable object = new SerializationV1Dataserializable();
         SerializationV1Dataserializable otherObject = serializationService.toObject(serializationService.toData(object));
-        assertEquals("ObjectDataInput.getVersion should be UNKNOWN", Version.UNKNOWN,
+        Version expected = expectedVersion(false);
+        assertEquals("ObjectDataInput.getVersion should be " + expected, expected,
                 otherObject.getVersion());
     }
 
@@ -406,13 +410,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         InternalSerializationService serializationService = builder().setClusterVersionAware(testVersionAware).build();
         VersionedDataSerializable object = new VersionedDataSerializable();
         serializationService.toData(object);
-        if (versionedSerializationEnabled) {
-            assertEquals("ObjectDataOutput.getVersion should be set to cluster version", testVersionAware.getClusterVersion(),
-                    object.getVersion());
-        } else {
-            assertEquals("ObjectDataOutput.getVersion should be UNKNOWN", Version.UNKNOWN,
-                    object.getVersion());
-        }
+        assertEquals(expectedVersion(true), object.getVersion());
     }
 
     @Test
@@ -421,13 +419,20 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         InternalSerializationService serializationService = builder().setClusterVersionAware(testVersionAware).build();
         VersionedDataSerializable object = new VersionedDataSerializable();
         VersionedDataSerializable otherObject = serializationService.toObject(serializationService.toData(object));
+        assertEquals(expectedVersion(true), otherObject.getVersion());
+    }
+
+    // when versioned serialization is enabled:
+    //  if DataSerializable is not versioned -> expect UNKNOWN
+    //  if DataSerializable is versioned -> expect version of VersionAware in serialization service
+    // when versioned serialization is disabled
+    //  expect current cluster version anyway as in this case the OSS DataSerializableSerializer is used,
+    //  which is not version-aware)
+    private Version expectedVersion(boolean versionedSerializable) {
         if (versionedSerializationEnabled) {
-            assertEquals("ObjectDataInput.getVersion should be set to cluster version",
-                    testVersionAware.getClusterVersion(),
-                    otherObject.getVersion());
+            return versionedSerializable ? V3_8 : Version.UNKNOWN;
         } else {
-            assertEquals("ObjectDataInput.getVersion should be UNKNOWN", Version.UNKNOWN,
-                    otherObject.getVersion());
+            return CURRENT_VERSION;
         }
     }
 

@@ -1,11 +1,11 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.EnterpriseCacheService;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageMaxSizeChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.internal.eviction.CompositeMaxSizeChecker;
-import com.hazelcast.internal.eviction.MaxSizeChecker;
+import com.hazelcast.internal.eviction.CompositeEvictionChecker;
+import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -80,7 +80,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    protected MaxSizeChecker createCacheMaxSizeChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
+    protected EvictionChecker createCacheEvictionChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
         // max-size checker is created before internal map,
         // so in case of failure because of invalid max-size policy,
         // since there is no allocated native memory yet,
@@ -107,15 +107,15 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
              //   imposed by the Hot Restart configuration.
              //
              // therefore no need to set up a composite policy checker, only the local one is enough
-            return new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(memoryManager, size, maxNativeMemory);
+            return new HiDensityFreeNativeMemoryPercentageEvictionChecker(memoryManager, size, maxNativeMemory);
         } else {
             // the configured policy is other than FREE_NATIVE_MEMORY_PERCENTAGE,
             // we must additionally apply the free memory check that meets Hot Restart's demands
             // therefore create a composite checker with both checks
-            return CompositeMaxSizeChecker.newCompositeMaxSizeChecker(
-                    CompositeMaxSizeChecker.CompositionOperator.OR,
-                    super.createCacheMaxSizeChecker(size, maxSizePolicy),
-                    new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(
+            return CompositeEvictionChecker.newCompositeEvictionChecker(
+                    CompositeEvictionChecker.CompositionOperator.OR,
+                    super.createCacheEvictionChecker(size, maxSizePolicy),
+                    new HiDensityFreeNativeMemoryPercentageEvictionChecker(
                             memoryManager, hotRestartMinFreeNativeMemoryPercentage, maxNativeMemory));
         }
     }

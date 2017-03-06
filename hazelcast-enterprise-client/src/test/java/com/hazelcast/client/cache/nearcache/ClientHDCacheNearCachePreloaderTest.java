@@ -19,23 +19,22 @@ public class ClientHDCacheNearCachePreloaderTest extends ClientCacheNearCachePre
 
     @Parameters(name = "invalidationOnChange:{0}")
     public static Collection<Object[]> parameters() {
-        // FIXME: the Near Cache pre-loader doesn't work with enabled invalidations due to a known getAll() issue!
         return Arrays.asList(new Object[][]{
                 {false},
-                //{true},
+                {true},
         });
     }
 
     @Test(timeout = TEST_TIMEOUT)
     @Category(SlowTest.class)
     public void testStoreAndLoad_withIntegerKeys_withInMemoryFormatNative() {
-        storeAndLoad(2342, false, InMemoryFormat.NATIVE);
+        storeAndLoad(2342, KeyType.INTEGER, InMemoryFormat.NATIVE);
     }
 
     @Test(timeout = TEST_TIMEOUT)
     @Category(SlowTest.class)
     public void testStoreAndLoad_withStringKeys_withInMemoryFormatNative() {
-        storeAndLoad(4223, true, InMemoryFormat.NATIVE);
+        storeAndLoad(4223, KeyType.STRING, InMemoryFormat.NATIVE);
     }
 
     @Override

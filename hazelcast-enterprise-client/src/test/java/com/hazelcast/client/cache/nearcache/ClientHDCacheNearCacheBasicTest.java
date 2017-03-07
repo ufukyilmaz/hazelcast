@@ -12,12 +12,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
 import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDConfig;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
+import static java.util.Arrays.asList;
 
 /**
  * Basic HiDensity Near Cache tests for {@link com.hazelcast.cache.ICache} on Hazelcast clients.
@@ -25,11 +25,11 @@ import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category(QuickTest.class)
-public class BasicClientHDCacheNearCacheTest extends BasicClientCacheNearCacheTest {
+public class ClientHDCacheNearCacheBasicTest extends ClientCacheNearCacheBasicTest {
 
     @Parameters(name = "format:{0} {1}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {InMemoryFormat.BINARY, LocalUpdatePolicy.INVALIDATE},
                 {InMemoryFormat.BINARY, LocalUpdatePolicy.CACHE_ON_UPDATE},
                 {InMemoryFormat.OBJECT, LocalUpdatePolicy.INVALIDATE},

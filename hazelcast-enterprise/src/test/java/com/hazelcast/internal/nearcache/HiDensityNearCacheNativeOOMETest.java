@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.mockito.verification.VerificationMode;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -96,21 +97,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
 
         // recordStore.put() succeeds after the first forced eviction on the same Near Cache
         verifyPutOnRecordStore(2);
-        verifyForcedEviction(nearCacheRecordStore);
-        verifyNoMoreInteractions(nearCacheRecordStore);
-    }
-
-    @Test
-    public void putWithNativeOOME_afterEvictionOnSameNearCache_withoutNearCacheManager() {
-        createNearCache(null);
-        doThrow(NATIVE_OOME).doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(KEY), eq(VALUE));
-        doReturn(1).when(nearCacheRecordStore).size();
-
-        nearCache.put(KEY, VALUE);
-
-        // recordStore.put() succeeds in the second loop after the first forced eviction didn't work
-        verifyPutOnRecordStore(3);
-        verifyForcedEviction(nearCacheRecordStore);
+        verifyForcedEviction(nearCacheRecordStore, times(1));
         verifyNoMoreInteractions(nearCacheRecordStore);
     }
 
@@ -124,7 +111,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
 
         // recordStore.put() succeeds in the second loop after the first forced eviction didn't work
         verifyPutOnRecordStore(3);
-        verifyForcedEviction(nearCacheRecordStore);
+        verifyForcedEviction(nearCacheRecordStore, times(2));
         verifyNoMoreInteractions(nearCacheRecordStore);
     }
 
@@ -144,7 +131,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
         verify(nearCacheRecordStore).size();
         verifyNoMoreInteractions(nearCacheRecordStore);
 
-        verifyForcedEviction(otherNearCacheRecordStore);
+        verifyForcedEviction(otherNearCacheRecordStore, times(1));
         verifyNoMoreInteractions(otherNearCacheRecordStore);
     }
 
@@ -161,10 +148,10 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
 
         // recordStore.put() succeeds in the second loop after the first forced eviction on the other Near Cache didn't work
         verifyPutOnRecordStore(3);
-        verify(nearCacheRecordStore).size();
+        verify(nearCacheRecordStore, times(2)).size();
         verifyNoMoreInteractions(nearCacheRecordStore);
 
-        verifyForcedEviction(otherNearCacheRecordStore);
+        verifyForcedEviction(otherNearCacheRecordStore, times(2));
         verifyNoMoreInteractions(otherNearCacheRecordStore);
     }
 
@@ -199,7 +186,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
 
         // recordStore.put() doesn't succeed at all and we finally give up by removing the actual key from the RecordStore
         verifyPutOnRecordStore(2);
-        verify(nearCacheRecordStore).size();
+        verify(nearCacheRecordStore, times(2)).size();
         verify(nearCacheRecordStore).remove(eq(KEY));
         verifyNoMoreInteractions(nearCacheRecordStore);
     }
@@ -230,9 +217,9 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
         verify(nearCacheRecordStore, times(times)).put(eq(KEY), eq(VALUE));
     }
 
-    private void verifyForcedEviction(NearCacheRecordStore<String, String> recordStore) {
-        verify(recordStore).size();
-        verify(recordStore).doEviction();
+    private void verifyForcedEviction(NearCacheRecordStore<String, String> recordStore, VerificationMode verificationMode) {
+        verify(recordStore, verificationMode).size();
+        verify(recordStore, verificationMode).doEviction();
     }
 
     @SuppressWarnings("unchecked")

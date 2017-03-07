@@ -20,7 +20,7 @@ import static org.junit.Assert.assertNotNull;
 @Category({QuickTest.class, ParallelTest.class})
 public class MemoryBlockDataInputTest extends AbstractEnterpriseSerializationTest {
 
-    final static byte[] INIT_DATA = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    private static final byte[] INIT_DATA = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     private MemoryBlockDataInput in;
 

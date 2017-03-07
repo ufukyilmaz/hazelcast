@@ -21,11 +21,11 @@ import java.util.Properties;
 @Category(QuickTest.class)
 public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
 
-    private final TestHazelcastFactory hazelcastFactory = new TestHazelcastFactory();
+    private static final String USER_NAME = "user";
+    private static final String KEY1 = "abc";
+    private static final String KEY2 = "xyz";
 
-    private final static String username = "user";
-    private final static String key1 = "abc";
-    private final static String key2 = "xyz";
+    private final TestHazelcastFactory hazelcastFactory = new TestHazelcastFactory();
 
     @After
     public void cleanup() {
@@ -34,17 +34,17 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
 
     @Test
     public void testCustomCredentials() {
-        Config config = getConfig(username, key1, key2);
+        Config config = getConfig(USER_NAME, KEY1, KEY2);
         hazelcastFactory.newHazelcastInstance(config);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(username, key1, key2));
+        clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(USER_NAME, KEY1, KEY2));
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testMissingCredentials() {
-        Config config = getConfig(username, key1, key2);
+        Config config = getConfig(USER_NAME, KEY1, KEY2);
         hazelcastFactory.newHazelcastInstance(config);
 
         hazelcastFactory.newHazelcastClient();
@@ -52,11 +52,11 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
 
     @Test(expected = IllegalStateException.class)
     public void testWrongCredentials() {
-        Config config = getConfig(username, key1, key2);
+        Config config = getConfig(USER_NAME, KEY1, KEY2);
         hazelcastFactory.newHazelcastInstance(config);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(username, "zzz", "zzz"));
+        clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(USER_NAME, "zzz", "zzz"));
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 

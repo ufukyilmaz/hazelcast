@@ -1,17 +1,17 @@
 package com.hazelcast.internal.nearcache.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.impl.nativememory.CacheHiDensityRecordProcessor;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityEntryCountMaxSizeChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageMaxSizeChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeMaxSizeChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageMaxSizeChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeMaxSizeChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityEntryCountEvictionChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeEvictionChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageEvictionChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeEvictionChecker;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.adapter.DataStructureAdapter;
 import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.ExpirationChecker;
-import com.hazelcast.internal.eviction.MaxSizeChecker;
+import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
@@ -98,7 +98,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    protected MaxSizeChecker createNearCacheMaxSizeChecker(EvictionConfig evictionConfig, NearCacheConfig nearCacheConfig) {
+    protected EvictionChecker createNearCacheEvictionChecker(EvictionConfig evictionConfig, NearCacheConfig nearCacheConfig) {
         ensureInitialized(nearCacheConfig);
 
         EvictionConfig.MaxSizePolicy maxSizePolicy = evictionConfig.getMaximumSizePolicy();
@@ -111,15 +111,15 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
                 .getMemoryManager().getMemoryStats().getMaxNative();
         switch (maxSizePolicy) {
             case ENTRY_COUNT:
-                return new HiDensityEntryCountMaxSizeChecker(storageInfo, size);
+                return new HiDensityEntryCountEvictionChecker(storageInfo, size);
             case USED_NATIVE_MEMORY_SIZE:
-                return new HiDensityUsedNativeMemorySizeMaxSizeChecker(storageInfo, size);
+                return new HiDensityUsedNativeMemorySizeEvictionChecker(storageInfo, size);
             case USED_NATIVE_MEMORY_PERCENTAGE:
-                return new HiDensityUsedNativeMemoryPercentageMaxSizeChecker(storageInfo, size, maxNativeMemory);
+                return new HiDensityUsedNativeMemoryPercentageEvictionChecker(storageInfo, size, maxNativeMemory);
             case FREE_NATIVE_MEMORY_SIZE:
-                return new HiDensityFreeNativeMemorySizeMaxSizeChecker(memoryManager, size);
+                return new HiDensityFreeNativeMemorySizeEvictionChecker(memoryManager, size);
             case FREE_NATIVE_MEMORY_PERCENTAGE:
-                return new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(memoryManager, size, maxNativeMemory);
+                return new HiDensityFreeNativeMemoryPercentageEvictionChecker(memoryManager, size, maxNativeMemory);
             default:
                 throw new IllegalArgumentException("Invalid max-size policy "
                         + '(' + maxSizePolicy + ") for " + getClass().getName() + "! Only "

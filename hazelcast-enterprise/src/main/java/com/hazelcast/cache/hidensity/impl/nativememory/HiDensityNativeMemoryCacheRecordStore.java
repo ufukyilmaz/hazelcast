@@ -4,10 +4,10 @@ import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageMaxSizeChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeMaxSizeChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageMaxSizeChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeMaxSizeChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeEvictionChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageEvictionChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeEvictionChecker;
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
@@ -18,7 +18,7 @@ import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.elastic.SlottableIterator;
-import com.hazelcast.internal.eviction.MaxSizeChecker;
+import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -91,7 +91,7 @@ public class HiDensityNativeMemoryCacheRecordStore
      *                                  property is false
      */
     @Override
-    protected MaxSizeChecker createCacheMaxSizeChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
+    protected EvictionChecker createCacheEvictionChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
         if (maxSizePolicy == null) {
             if (isInvalidMaxSizePolicyExceptionDisabled()) {
                 // don't throw exception, just ignore max-size policy
@@ -105,13 +105,13 @@ public class HiDensityNativeMemoryCacheRecordStore
                 .getMemoryManager().getMemoryStats().getMaxNative();
         switch (maxSizePolicy) {
             case USED_NATIVE_MEMORY_SIZE:
-                return new HiDensityUsedNativeMemorySizeMaxSizeChecker(cacheInfo, size);
+                return new HiDensityUsedNativeMemorySizeEvictionChecker(cacheInfo, size);
             case USED_NATIVE_MEMORY_PERCENTAGE:
-                return new HiDensityUsedNativeMemoryPercentageMaxSizeChecker(cacheInfo, size, maxNativeMemory);
+                return new HiDensityUsedNativeMemoryPercentageEvictionChecker(cacheInfo, size, maxNativeMemory);
             case FREE_NATIVE_MEMORY_SIZE:
-                return new HiDensityFreeNativeMemorySizeMaxSizeChecker(memoryManager, size);
+                return new HiDensityFreeNativeMemorySizeEvictionChecker(memoryManager, size);
             case FREE_NATIVE_MEMORY_PERCENTAGE:
-                return new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(memoryManager, size, maxNativeMemory);
+                return new HiDensityFreeNativeMemoryPercentageEvictionChecker(memoryManager, size, maxNativeMemory);
             default:
                 if (isInvalidMaxSizePolicyExceptionDisabled()) {
                     // don't throw exception, just ignore max-size policy

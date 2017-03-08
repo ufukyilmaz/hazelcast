@@ -35,11 +35,17 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     private volatile boolean handshakeCompleted;
     private SSLEngineResult sslEngineResult;
 
-    public SSLSocketChannelWrapper(SSLContext sslContext, SocketChannel sc, boolean client) throws Exception {
+    public SSLSocketChannelWrapper(SSLContext sslContext, SocketChannel sc, boolean client,
+                                   String mutualAuthentication) throws Exception {
         super(sc);
         sslEngine = sslContext.createSSLEngine();
         sslEngine.setUseClientMode(client);
         sslEngine.setEnableSessionCreation(true);
+        if ("REQUIRED".equals(mutualAuthentication)) {
+            sslEngine.setNeedClientAuth(true);
+        } else if ("OPTIONAL".equals(mutualAuthentication)) {
+            sslEngine.setWantClientAuth(true);
+        }
         SSLSession session = sslEngine.getSession();
         applicationBuffer = ByteBuffer.allocate(session.getApplicationBufferSize());
         emptyBuffer = ByteBuffer.allocate(0);

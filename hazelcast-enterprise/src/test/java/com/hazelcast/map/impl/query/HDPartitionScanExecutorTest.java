@@ -52,5 +52,4 @@ public class HDPartitionScanExecutorTest {
         Collection<QueryableEntry> result = executor.execute("Map", predicate, asList(1));
         assertEquals(0, result.size());
     }
-
 }

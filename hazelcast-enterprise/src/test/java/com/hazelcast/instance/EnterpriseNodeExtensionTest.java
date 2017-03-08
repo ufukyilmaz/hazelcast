@@ -123,5 +123,4 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
         expected.expect(VersionMismatchException.class);
         nodeExtension.validateJoinRequest(joinMessage);
     }
-
 }

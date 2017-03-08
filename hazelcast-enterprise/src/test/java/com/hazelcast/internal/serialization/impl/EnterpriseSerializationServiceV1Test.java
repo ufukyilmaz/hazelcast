@@ -12,7 +12,6 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
-
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseSerializationServiceV1Test {
@@ -44,5 +43,4 @@ public class EnterpriseSerializationServiceV1Test {
             return V3_8;
         }
     }
-
 }

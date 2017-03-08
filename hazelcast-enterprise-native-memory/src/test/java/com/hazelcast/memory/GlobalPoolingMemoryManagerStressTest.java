@@ -91,9 +91,11 @@ public class GlobalPoolingMemoryManagerStressTest extends HazelcastTestSupport {
     }
 
     private static class AllocatorThread extends Thread {
+
         private final Queue<AllocatedBlock> allocatedBlockQueue;
         private final GlobalPoolingMemoryManager memoryManager;
         private final long deadline;
+
         private volatile Throwable throwable;
 
         private AllocatorThread(GlobalPoolingMemoryManager memoryManager, Queue blockQueue, long deadline) {
@@ -136,6 +138,7 @@ public class GlobalPoolingMemoryManagerStressTest extends HazelcastTestSupport {
     }
 
     private static class AllocatedBlock {
+
         private long address;
         private long size;
 
@@ -144,5 +147,4 @@ public class GlobalPoolingMemoryManagerStressTest extends HazelcastTestSupport {
             this.size = size;
         }
     }
-
 }

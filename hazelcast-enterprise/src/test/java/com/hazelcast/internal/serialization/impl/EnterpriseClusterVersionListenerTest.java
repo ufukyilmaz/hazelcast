@@ -29,5 +29,4 @@ public class EnterpriseClusterVersionListenerTest {
 
         assertEquals(V3_6, listener.getClusterVersion());
     }
-
 }

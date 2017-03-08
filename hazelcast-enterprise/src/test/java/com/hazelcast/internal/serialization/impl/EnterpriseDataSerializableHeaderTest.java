@@ -37,5 +37,4 @@ public class EnterpriseDataSerializableHeaderTest {
         assertTrue(EnterpriseDataSerializableHeader.isIdentifiedDataSerializable(header));
         assertTrue(EnterpriseDataSerializableHeader.isVersioned(header));
     }
-
 }

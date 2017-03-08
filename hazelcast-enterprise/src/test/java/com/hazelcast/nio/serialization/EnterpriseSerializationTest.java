@@ -327,7 +327,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         String host = "127.0.0.1";
         int port = 5000;
 
-        Member member = new MemberImpl(new Address(host, port), MemberVersion.UNKNOWN, false, uuid, null);
+        Member member = new MemberImpl(new Address(host, port), MemberVersion.UNKNOWN, false, uuid);
 
         testMemberLeftException(uuid, host, port, member);
     }

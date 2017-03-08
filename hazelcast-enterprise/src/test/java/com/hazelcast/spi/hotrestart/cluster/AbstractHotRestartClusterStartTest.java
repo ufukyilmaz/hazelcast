@@ -378,7 +378,7 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
         for (HazelcastInstance instance : instances) {
             Node node = getNode(instance);
             assertNotNull(node);
-            assertTrue("node: " + getAddress(instance), node.joined());
+            assertTrue("node: " + getAddress(instance), node.getClusterService().isJoined());
             assertEquals("node: " + getAddress(instance), expectedNodeState, node.getState());
             assertEquals("node: " + getAddress(instance), expectedClusterState, instance.getCluster().getClusterState());
         }

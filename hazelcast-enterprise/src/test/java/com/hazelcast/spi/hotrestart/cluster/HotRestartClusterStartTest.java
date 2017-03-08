@@ -124,7 +124,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
         HazelcastInstance[] instances = restartInstances(addresses);
         if (instances.length == 1) {
             HazelcastInstance instance = instances[0];
-            assertTrue(getNode(instance).joined());
+            assertTrue(getClusterService(instance).isJoined());
             assertClusterSizeEventually(1, instance);
         } else {
             assertEquals(0, instances.length);
@@ -139,7 +139,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
         deleteHotRestartDirectoryOfNode(randomAddress);
 
         HazelcastInstance instance = restartInstance(randomAddress);
-        assertTrue(getNode(instance).joined());
+        assertTrue(getClusterService(instance).isJoined());
 
         HazelcastInstance[] instances = restartInstances(removeAddress(addresses, randomAddress));
         assertEquals(0, instances.length);
@@ -164,7 +164,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
         Address[] addresses = startAndTerminateInstances(4);
 
         HazelcastInstance unknownNode = startNewInstance();
-        assertTrue(getNode(unknownNode).joined());
+        assertTrue(getClusterService(unknownNode).isJoined());
 
         HazelcastInstance[] instances = restartInstances(addresses);
         assertEquals(0, instances.length);

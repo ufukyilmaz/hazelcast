@@ -40,7 +40,7 @@ class MemberListReader extends AbstractMetadataReader {
         Address address = readAddress(in);
         boolean localMember = in.readBoolean();
         MemberVersion version = MemberVersion.of(in.readUTF());
-        return new MemberImpl(address, version, localMember, uuid, null);
+        return new MemberImpl(address, version, localMember, uuid);
     }
 
     @Override

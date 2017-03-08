@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan.connection;
 
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.instance.Node;
-import com.hazelcast.internal.cluster.impl.operations.AuthorizationOperation;
+import com.hazelcast.internal.cluster.impl.operations.AuthorizationOp;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Connection;
@@ -143,7 +143,7 @@ public class WanConnectionManager {
     }
 
     private boolean checkAuthorization(String groupName, String groupPassword, Address target) {
-        Operation authorizationCall = new AuthorizationOperation(groupName, groupPassword);
+        Operation authorizationCall = new AuthorizationOp(groupName, groupPassword);
         OperationService operationService = node.nodeEngine.getOperationService();
         String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
         InvocationBuilder invocationBuilder = operationService.createInvocationBuilder(serviceName, authorizationCall, target);

@@ -1,24 +1,7 @@
-/*
- * Copyright (c) 2008-2017, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.client.map.impl.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
-import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
@@ -52,12 +35,11 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientHDMapNearCacheSerializationCountTest extends HazelcastTestSupport {
 
-    protected static final String MAP_NAME = "default";
-    protected static final AtomicInteger SERIALIZE_COUNT = new AtomicInteger();
-    protected static final AtomicInteger DESERIALIZE_COUNT = new AtomicInteger();
+    private static final String MAP_NAME = "default";
+    private static final AtomicInteger SERIALIZE_COUNT = new AtomicInteger();
+    private static final AtomicInteger DESERIALIZE_COUNT = new AtomicInteger();
 
-    protected TestHazelcastFactory hazelcastFactory = new TestHazelcastFactory();
-    protected IMap<String, SerializationCountingData> map;
+    private TestHazelcastFactory hazelcastFactory = new TestHazelcastFactory();
 
     @After
     public void tearDown() {
@@ -73,7 +55,7 @@ public class ClientHDMapNearCacheSerializationCountTest extends HazelcastTestSup
         prepareSerializationConfig(config.getSerializationConfig());
 
         HazelcastInstance client = hazelcastFactory.newHazelcastClient(config);
-        map = client.getMap(MAP_NAME);
+        IMap<String, SerializationCountingData> map = client.getMap(MAP_NAME);
 
         String key = randomString();
         SerializationCountingData value = new SerializationCountingData();
@@ -87,28 +69,27 @@ public class ClientHDMapNearCacheSerializationCountTest extends HazelcastTestSup
         assertAndReset(0, 1);
     }
 
-    protected ClientConfig newClientConfig(String mapName) {
-        NativeMemoryConfig memoryConfig = new NativeMemoryConfig();
-        memoryConfig.setEnabled(true);
-        memoryConfig.setSize(new MemorySize(32, MemoryUnit.MEGABYTES));
-        memoryConfig.setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
+    private ClientConfig newClientConfig(String mapName) {
+        NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(new MemorySize(32, MemoryUnit.MEGABYTES))
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
 
-        NearCacheConfig nearCacheConfig = new NearCacheConfig();
-        EvictionConfig evictionConfig = nearCacheConfig.getEvictionConfig();
-        evictionConfig.setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE);
-        evictionConfig.setSize(90);
-        nearCacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        nearCacheConfig.setInvalidateOnChange(true);
-        nearCacheConfig.setName(mapName);
+        NearCacheConfig nearCacheConfig = new NearCacheConfig()
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setInvalidateOnChange(true)
+                .setName(mapName);
 
-        ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setNativeMemoryConfig(memoryConfig);
-        clientConfig.addNearCacheConfig(nearCacheConfig);
+        nearCacheConfig.getEvictionConfig()
+                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(90);
 
-        return clientConfig;
+        return new ClientConfig()
+                .setNativeMemoryConfig(memoryConfig)
+                .addNearCacheConfig(nearCacheConfig);
     }
 
-    protected void prepareSerializationConfig(SerializationConfig serializationConfig) {
+    private static void prepareSerializationConfig(SerializationConfig serializationConfig) {
         ClassDefinition classDefinition = new ClassDefinitionBuilder(SerializationCountingData.FACTORY_ID,
                 ClientMapNearCacheSerializationCountTest.SerializationCountingData.CLASS_ID).build();
         serializationConfig.addClassDefinition(classDefinition);
@@ -121,17 +102,17 @@ public class ClientHDMapNearCacheSerializationCountTest extends HazelcastTestSup
         });
     }
 
-    protected void assertAndReset(int serializeCount, int deserializeCount) {
+    private static void assertAndReset(int serializeCount, int deserializeCount) {
         assertEquals(serializeCount, SERIALIZE_COUNT.getAndSet(0));
         assertEquals(deserializeCount, DESERIALIZE_COUNT.getAndSet(0));
     }
 
-    protected static class SerializationCountingData implements Portable {
+    private static class SerializationCountingData implements Portable {
 
-        static int FACTORY_ID = 1;
-        static int CLASS_ID = 1;
+        private static int FACTORY_ID = 1;
+        private static int CLASS_ID = 1;
 
-        public SerializationCountingData() {
+        SerializationCountingData() {
         }
 
         @Override

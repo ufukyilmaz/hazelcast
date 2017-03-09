@@ -9,17 +9,17 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
 import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDConfig;
+import static java.util.Arrays.asList;
 
 public class ClientHDMapNearCachePreloaderTest extends ClientMapNearCachePreloaderTest {
 
     @Parameters(name = "invalidationOnChange:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {false},
                 {true},
         });

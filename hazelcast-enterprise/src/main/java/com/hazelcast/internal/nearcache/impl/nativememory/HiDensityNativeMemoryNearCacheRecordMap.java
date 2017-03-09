@@ -7,13 +7,16 @@ import com.hazelcast.internal.hidensity.impl.SampleableEvictableHiDensityRecordM
 import com.hazelcast.internal.nearcache.impl.SampleableNearCacheRecordMap;
 import com.hazelcast.nio.serialization.Data;
 
+/**
+ * {@link SampleableNearCacheRecordMap} implementation for off-heap Near Caches.
+ */
 public class HiDensityNativeMemoryNearCacheRecordMap
         extends SampleableEvictableHiDensityRecordMap<HiDensityNativeMemoryNearCacheRecord>
         implements SampleableNearCacheRecordMap<Data, HiDensityNativeMemoryNearCacheRecord> {
 
-    public HiDensityNativeMemoryNearCacheRecordMap(int initialCapacity,
-                                                   HiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord> recordProcessor,
-                                                   HiDensityStorageInfo storageInfo) {
+    HiDensityNativeMemoryNearCacheRecordMap(int initialCapacity,
+                                            HiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord> recordProcessor,
+                                            HiDensityStorageInfo storageInfo) {
         super(initialCapacity, recordProcessor, storageInfo);
     }
 
@@ -29,7 +32,6 @@ public class HiDensityNativeMemoryNearCacheRecordMap
         public long getExpirationTime() {
             return getEntryValue().getExpirationTime();
         }
-
     }
 
     @Override

@@ -11,6 +11,9 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
+/**
+ * Implementation of {@link HiDensityNearCacheRecord} to store {@link NativeMemoryData} type objects.
+ */
 @SuppressWarnings("checkstyle:methodcount")
 public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheRecord {
 
@@ -170,10 +173,9 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
     public void setExpirationTime(long expirationTime) {
         long creationTime = getCreationTime();
         long timeDiff = expirationTime - creationTime;
-        int newTtl =
-                expirationTime >= creationTime
-                        ? (timeDiff > Integer.MAX_VALUE ? -1 : (int) timeDiff)
-                        : -1;
+        int newTtl = expirationTime >= creationTime
+                ? (timeDiff > Integer.MAX_VALUE ? -1 : (int) timeDiff)
+                : -1;
         setTtlMillis(newTtl);
     }
 
@@ -228,7 +230,6 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
         if (uuid == null) {
             return false;
         }
-
         return readLong(UUID_MOST_SIG_BITS_OFFSET) == uuid.getMostSignificantBits()
                 && readLong(UUID_LEAST_SIG_BITS_OFFSET) == uuid.getLeastSignificantBits();
     }
@@ -258,9 +259,7 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
         }
 
         HiDensityNativeMemoryNearCacheRecord record = (HiDensityNativeMemoryNearCacheRecord) o;
-
         return address == record.address && size == record.size;
-
     }
 
     @Override

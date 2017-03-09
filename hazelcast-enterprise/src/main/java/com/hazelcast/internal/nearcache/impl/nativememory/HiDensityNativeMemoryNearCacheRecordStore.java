@@ -34,8 +34,11 @@ import static com.hazelcast.internal.nearcache.NearCacheRecord.READ_PERMITTED;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
- * @param <K> the type of the key stored in Near Cache.
- * @param <V> the type of the value stored in Near Cache.
+ * {@link com.hazelcast.internal.nearcache.NearCacheRecordStore} implementation for Near Caches
+ * with {@link com.hazelcast.config.InMemoryFormat#NATIVE} in-memory-format.
+ *
+ * @param <K> the type of the key stored in Near Cache
+ * @param <V> the type of the value stored in Near Cache
  */
 public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         extends AbstractNearCacheRecordStore<K, V, Data, HiDensityNativeMemoryNearCacheRecord,
@@ -271,10 +274,8 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
             if (isMemoryBlockValid(nativeKey)) {
                 recordProcessor.disposeData(nativeKey);
             }
-
             throw rethrow(throwable);
         }
-
         return record;
     }
 
@@ -352,8 +353,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    protected void onRemoveError(K key, HiDensityNativeMemoryNearCacheRecord record,
-                                 boolean removed, Throwable error) {
+    protected void onRemoveError(K key, HiDensityNativeMemoryNearCacheRecord record, boolean removed, Throwable error) {
         // if record has been somehow removed and if it is still valid, dispose it and its data
         if (removed && isMemoryBlockValid(record)) {
             recordProcessor.dispose(record);

@@ -26,10 +26,10 @@ import static java.lang.Runtime.getRuntime;
 
 /**
  * Segmented {@link HiDensityNearCacheRecordStore} which improves performance by using multiple
- * {@link HiDensityNativeMemoryNearCacheRecordStore} in parallel.
+ * {@link HiDensityNativeMemoryNearCacheRecordStore} instances in parallel.
  *
- * @param <K> the type of the key stored in Near Cache.
- * @param <V> the type of the value stored in Near Cache.
+ * @param <K> the type of the key stored in Near Cache
+ * @param <V> the type of the value stored in Near Cache
  */
 public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         implements HiDensityNearCacheRecordStore<K, V, HiDensityNativeMemoryNearCacheRecord> {

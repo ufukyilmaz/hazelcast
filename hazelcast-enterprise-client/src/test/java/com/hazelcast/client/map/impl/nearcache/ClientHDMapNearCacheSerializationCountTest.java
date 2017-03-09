@@ -91,7 +91,7 @@ public class ClientHDMapNearCacheSerializationCountTest extends HazelcastTestSup
 
     private static void prepareSerializationConfig(SerializationConfig serializationConfig) {
         ClassDefinition classDefinition = new ClassDefinitionBuilder(SerializationCountingData.FACTORY_ID,
-                ClientMapNearCacheSerializationCountTest.SerializationCountingData.CLASS_ID).build();
+                SerializationCountingData.CLASS_ID).build();
         serializationConfig.addClassDefinition(classDefinition);
 
         serializationConfig.addPortableFactory(SerializationCountingData.FACTORY_ID, new PortableFactory() {

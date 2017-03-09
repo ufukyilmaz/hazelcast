@@ -1,138 +1,64 @@
 package com.hazelcast.client.map.impl.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.client.test.TestHazelcastFactory;
-import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.config.SerializationConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.nio.serialization.ClassDefinition;
-import com.hazelcast.nio.serialization.ClassDefinitionBuilder;
-import com.hazelcast.nio.serialization.Portable;
-import com.hazelcast.nio.serialization.PortableFactory;
-import com.hazelcast.nio.serialization.PortableReader;
-import com.hazelcast.nio.serialization.PortableWriter;
-import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.config.Config;
+import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.After;
-import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Collection;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
-import static org.junit.Assert.assertEquals;
+import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
+import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDConfig;
+import static com.hazelcast.config.InMemoryFormat.BINARY;
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
+import static java.util.Arrays.asList;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+/**
+ * HiDensity Near Cache serialization count tests for {@link com.hazelcast.core.IMap} on Hazelcast clients.
+ */
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class ClientHDMapNearCacheSerializationCountTest extends HazelcastTestSupport {
+public class ClientHDMapNearCacheSerializationCountTest extends ClientMapNearCacheSerializationCountTest {
 
-    private static final String MAP_NAME = "default";
-    private static final AtomicInteger SERIALIZE_COUNT = new AtomicInteger();
-    private static final AtomicInteger DESERIALIZE_COUNT = new AtomicInteger();
+    @Parameters(name = "mapFormat:{2} nearCacheFormat:{3}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, null,},
+                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, NATIVE,},
+                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, BINARY,},
+                {new int[]{1, 0, 0}, new int[]{0, 1, 0}, NATIVE, OBJECT,},
 
-    private TestHazelcastFactory hazelcastFactory = new TestHazelcastFactory();
+                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, null,},
+                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, NATIVE,},
+                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, BINARY,},
+                {new int[]{1, 0, 0}, new int[]{0, 1, 0}, BINARY, OBJECT,},
 
-    @After
-    public void tearDown() {
-        DESERIALIZE_COUNT.set(0);
-        SERIALIZE_COUNT.set(0);
-        hazelcastFactory.terminateAll();
-    }
-
-    @Test
-    public void testDeserializationCountWith_NativeNearCache_invalidateLocalUpdatePolicy() {
-        hazelcastFactory.newHazelcastInstance();
-        ClientConfig config = newClientConfig(MAP_NAME);
-        prepareSerializationConfig(config.getSerializationConfig());
-
-        HazelcastInstance client = hazelcastFactory.newHazelcastClient(config);
-        IMap<String, SerializationCountingData> map = client.getMap(MAP_NAME);
-
-        String key = randomString();
-        SerializationCountingData value = new SerializationCountingData();
-        map.put(key, value);
-        assertAndReset(1, 0);
-
-        map.get(key);
-        assertAndReset(0, 1);
-
-        map.get(key);
-        assertAndReset(0, 1);
-    }
-
-    private ClientConfig newClientConfig(String mapName) {
-        NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
-                .setEnabled(true)
-                .setSize(new MemorySize(32, MemoryUnit.MEGABYTES))
-                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
-
-        NearCacheConfig nearCacheConfig = new NearCacheConfig()
-                .setInMemoryFormat(InMemoryFormat.NATIVE)
-                .setInvalidateOnChange(true)
-                .setName(mapName);
-
-        nearCacheConfig.getEvictionConfig()
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
-                .setSize(90);
-
-        return new ClientConfig()
-                .setNativeMemoryConfig(memoryConfig)
-                .addNearCacheConfig(nearCacheConfig);
-    }
-
-    private static void prepareSerializationConfig(SerializationConfig serializationConfig) {
-        ClassDefinition classDefinition = new ClassDefinitionBuilder(SerializationCountingData.FACTORY_ID,
-                SerializationCountingData.CLASS_ID).build();
-        serializationConfig.addClassDefinition(classDefinition);
-
-        serializationConfig.addPortableFactory(SerializationCountingData.FACTORY_ID, new PortableFactory() {
-            @Override
-            public Portable create(int classId) {
-                return new SerializationCountingData();
-            }
+                {new int[]{1, 1, 1}, new int[]{1, 1, 1}, OBJECT, null,},
+                {new int[]{1, 1, 0}, new int[]{1, 1, 1}, OBJECT, NATIVE,},
+                {new int[]{1, 1, 0}, new int[]{1, 1, 1}, OBJECT, BINARY,},
+                {new int[]{1, 1, 0}, new int[]{1, 1, 0}, OBJECT, OBJECT,},
         });
     }
 
-    private static void assertAndReset(int serializeCount, int deserializeCount) {
-        assertEquals(serializeCount, SERIALIZE_COUNT.getAndSet(0));
-        assertEquals(deserializeCount, DESERIALIZE_COUNT.getAndSet(0));
+    @Override
+    protected Config getConfig() {
+        return getHDConfig();
     }
 
-    private static class SerializationCountingData implements Portable {
-
-        private static int FACTORY_ID = 1;
-        private static int CLASS_ID = 1;
-
-        SerializationCountingData() {
-        }
-
-        @Override
-        public int getFactoryId() {
-            return FACTORY_ID;
-        }
-
-        @Override
-        public int getClassId() {
-            return CLASS_ID;
-        }
-
-        @Override
-        public void writePortable(PortableWriter writer) throws IOException {
-            SERIALIZE_COUNT.incrementAndGet();
-        }
-
-        @Override
-        public void readPortable(PortableReader reader) throws IOException {
-            DESERIALIZE_COUNT.incrementAndGet();
-        }
+    @Override
+    protected ClientConfig getClientConfig() {
+        return new ClientConfig()
+                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
+                .setNativeMemoryConfig(createNativeMemoryConfig());
     }
 }

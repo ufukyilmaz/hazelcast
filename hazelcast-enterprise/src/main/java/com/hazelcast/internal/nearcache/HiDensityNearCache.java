@@ -8,7 +8,7 @@ import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.ExecutionService;
+import com.hazelcast.spi.TaskScheduler;
 import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.Collection;
@@ -33,15 +33,15 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     private HazelcastMemoryManager memoryManager;
 
     public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheManager nearCacheManager,
-                              EnterpriseSerializationService serializationService, ExecutionService executionService,
+                              EnterpriseSerializationService serializationService, TaskScheduler scheduler,
                               ClassLoader classLoader) {
-        this(name, nearCacheConfig, nearCacheManager, null, serializationService, executionService, classLoader);
+        this(name, nearCacheConfig, nearCacheManager, null, serializationService, scheduler, classLoader);
     }
 
     public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheManager nearCacheManager,
                               NearCacheRecordStore<K, V> nearCacheRecordStore, SerializationService serializationService,
-                              ExecutionService executionService, ClassLoader classLoader) {
-        super(name, nearCacheConfig, nearCacheRecordStore, serializationService, executionService, classLoader);
+                              TaskScheduler scheduler, ClassLoader classLoader) {
+        super(name, nearCacheConfig, nearCacheRecordStore, serializationService, scheduler, classLoader);
         this.nearCacheManager = checkNotNull(nearCacheManager, "nearCacheManager cannot be null");
     }
 

@@ -198,7 +198,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     private HiDensityNearCache<String, String> createNearCache(String name, NearCacheManager nearCacheManager,
                                                                NearCacheRecordStore<String, String> recordStore) {
         HiDensityNearCache<String, String> nearCache = new HiDensityNearCache<String, String>(name, nearCacheConfig,
-                nearCacheManager, recordStore, serializationService, executionService, null);
+                nearCacheManager, recordStore, serializationService, executionService.getGlobalTaskScheduler(), null);
         nearCache.setMemoryManager(memoryManager);
 
         nearCaches.add(nearCache);

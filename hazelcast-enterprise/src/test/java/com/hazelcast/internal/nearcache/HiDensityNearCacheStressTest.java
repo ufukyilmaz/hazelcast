@@ -65,14 +65,14 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
     }
 
     private NearCacheManager newNearCacheManager() {
-        return new HiDensityNearCacheManager(ess, executionService, null);
+        return new HiDensityNearCacheManager(ess, executionService.getGlobalTaskScheduler(), null);
     }
 
     @Override
     protected NearCache<Integer, String> createNearCache(String name, NearCacheConfig nearCacheConfig,
                                                          ManagedNearCacheRecordStore nearCacheRecordStore) {
         return new HiDensityNearCache<Integer, String>(name, nearCacheConfig, newNearCacheManager(),
-                nearCacheRecordStore, ess, executionService, null);
+                nearCacheRecordStore, ess, executionService.getGlobalTaskScheduler(), null);
     }
 
     private String getValuePrefix() {
@@ -86,7 +86,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
     public void putAndGetOnSoManyRecordsWithoutOOME() {
         NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
         NearCache<Integer, String> nearCache = new HiDensityNearCache<Integer, String>(DEFAULT_NEAR_CACHE_NAME, nearCacheConfig,
-                newNearCacheManager(), ess, executionService, null);
+                newNearCacheManager(), ess, executionService.getGlobalTaskScheduler(), null);
         nearCache.initialize();
 
         String VALUE_PREFIX = getValuePrefix();
@@ -108,7 +108,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
 
             NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
             NearCache<Integer, byte[]> nearCache = new HiDensityNearCache<Integer, byte[]>(DEFAULT_NEAR_CACHE_NAME, nearCacheConfig,
-                    newNearCacheManager(), ess, executionService, null);
+                    newNearCacheManager(), ess, executionService.getGlobalTaskScheduler(), null);
             nearCache.initialize();
 
             byte[] value = new byte[(int) valueSize.bytes()];
@@ -127,7 +127,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
         final NearCache<Integer, String> nearCache = new HiDensityNearCache<Integer, String>(
                 DEFAULT_NEAR_CACHE_NAME,
                 nearCacheConfig, newNearCacheManager(),
-                ess, executionService, null);
+                ess, executionService.getGlobalTaskScheduler(), null);
         nearCache.initialize();
 
         final int threadCount = 9;

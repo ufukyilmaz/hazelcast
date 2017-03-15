@@ -13,7 +13,7 @@ public class HDPutTransientOperation extends HDBasePutOperation {
 
     @Override
     protected void runInternal() {
-        recordStore.putTransient(dataKey, dataValue, ttl);
+        dataOldValue = mapServiceContext.toData(recordStore.putTransient(dataKey, dataValue, ttl));
         putTransient = true;
     }
 

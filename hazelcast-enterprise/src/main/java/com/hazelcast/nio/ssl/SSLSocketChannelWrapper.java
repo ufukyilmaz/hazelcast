@@ -13,6 +13,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_WRAP;
+import static javax.net.ssl.SSLEngineResult.Status.BUFFER_OVERFLOW;
+import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
+
 public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
 
     private static final boolean DEBUG = false;
@@ -67,11 +74,11 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
             }
             sslEngine.beginHandshake();
             writeInternal(emptyBuffer);
-            while (counter++ < 250 && sslEngineResult.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.FINISHED) {
+            while (counter++ < 250 && sslEngineResult.getHandshakeStatus() != FINISHED) {
                 if (DEBUG) {
                     log("Handshake status: " + sslEngineResult.getHandshakeStatus());
                 }
-                if (sslEngineResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_UNWRAP) {
+                if (sslEngineResult.getHandshakeStatus() == NEED_UNWRAP) {
                     if (DEBUG) {
                         log("Begin UNWRAP");
                     }
@@ -91,14 +98,14 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                     if (DEBUG) {
                         log("Done UNWRAP: " + sslEngineResult.getHandshakeStatus());
                     }
-                    if (sslEngineResult.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.FINISHED) {
+                    if (sslEngineResult.getHandshakeStatus() != FINISHED) {
                         emptyBuffer.clear();
                         writeInternal(emptyBuffer);
                         if (DEBUG) {
                             log("Done WRAP after UNWRAP: " + sslEngineResult.getHandshakeStatus());
                         }
                     }
-                } else if (sslEngineResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_WRAP) {
+                } else if (sslEngineResult.getHandshakeStatus() == NEED_WRAP) {
                     if (DEBUG) {
                         log("Begin WRAP");
                     }
@@ -118,7 +125,7 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                     }
                 }
             }
-            if (sslEngineResult.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.FINISHED) {
+            if (sslEngineResult.getHandshakeStatus() != FINISHED) {
                 throw new SSLHandshakeException("SSL handshake failed after " + counter
                         + " trials! -> " + sslEngineResult.getHandshakeStatus());
             }
@@ -159,19 +166,18 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                 log("application buffer = " + applicationBuffer);
                 log("==============");
             }
-            if (sslEngineResult.getStatus() == SSLEngineResult.Status.BUFFER_OVERFLOW) {
+            if (sslEngineResult.getStatus() == BUFFER_OVERFLOW) {
                 if (DEBUG) {
                     log(" ----------- unwrap exit ----------------");
                 }
                 return applicationBuffer;
             }
-            if (sslEngineResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_TASK) {
+            if (sslEngineResult.getHandshakeStatus() == NEED_TASK) {
                 if (DEBUG) {
                     log("Handshake NEED TASK");
                 }
                 handleTasks();
-            } else if (sslEngineResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED
-                    || sslEngineResult.getStatus() == SSLEngineResult.Status.BUFFER_UNDERFLOW) {
+            } else if (sslEngineResult.getHandshakeStatus() == FINISHED || sslEngineResult.getStatus() == BUFFER_UNDERFLOW) {
                 if (DEBUG) {
                     log(" ----------- unwrap exit ----------------");
                 }

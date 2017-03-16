@@ -188,30 +188,25 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
         if (!handshakeCompleted) {
             handshake();
         }
+
         int readBytesCount = 0;
-        int limit;
         if (applicationBuffer.hasRemaining()) {
-            limit = Math.min(applicationBuffer.remaining(), output.remaining());
-            for (int i = 0; i < limit; i++) {
-                output.put(applicationBuffer.get());
-                readBytesCount++;
-            }
+            readBytesCount += readFromApplicationBuffer(output);
             return readBytesCount;
         }
+
         if (netInBuffer.hasRemaining()) {
             unwrap(netInBuffer);
             applicationBuffer.flip();
-            limit = Math.min(applicationBuffer.remaining(), output.remaining());
-            for (int i = 0; i < limit; i++) {
-                output.put(applicationBuffer.get());
-                readBytesCount++;
-            }
+            readBytesCount += readFromApplicationBuffer(output);
         }
+
         if (netInBuffer.hasRemaining()) {
             netInBuffer.compact();
         } else {
             netInBuffer.clear();
         }
+
         if (socketChannel.read(netInBuffer) == -1) {
             netInBuffer.clear();
             netInBuffer.flip();
@@ -221,12 +216,25 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
         netInBuffer.flip();
         unwrap(netInBuffer);
         applicationBuffer.flip();
-        limit = Math.min(applicationBuffer.remaining(), output.remaining());
-        for (int i = 0; i < limit; i++) {
-            output.put(applicationBuffer.get());
-            readBytesCount++;
-        }
+        readBytesCount += readFromApplicationBuffer(output);
         return readBytesCount;
+    }
+
+    private int readFromApplicationBuffer(ByteBuffer output) {
+        int appBufferRemaining = applicationBuffer.remaining();
+        int outputRemaining = output.remaining();
+
+        if (outputRemaining < appBufferRemaining) {
+            // there is not enough space to all data, so lets copy what we can copy.
+            for (int i = 0; i < outputRemaining; i++) {
+                output.put(applicationBuffer.get());
+            }
+            return outputRemaining;
+        } else {
+            // there is enough space to copy all data
+            output.put(applicationBuffer);
+            return appBufferRemaining;
+        }
     }
 
     @Override

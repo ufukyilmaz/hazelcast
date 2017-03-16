@@ -13,7 +13,8 @@ public class HiDensityNearCacheManagerTest extends NearCacheManagerTestSupport {
 
     @Override
     protected NearCacheManager createNearCacheManager() {
-        return new HiDensityNearCacheManager(((EnterpriseSerializationService) ss), executionService, null);
+        return new HiDensityNearCacheManager(((EnterpriseSerializationService) ss),
+                executionService.getGlobalTaskScheduler(), null);
     }
 
     @Test

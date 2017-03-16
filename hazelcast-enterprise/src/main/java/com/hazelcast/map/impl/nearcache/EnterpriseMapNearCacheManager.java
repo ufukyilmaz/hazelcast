@@ -21,7 +21,7 @@ public class EnterpriseMapNearCacheManager extends MapNearCacheManager {
     protected <K, V> NearCache<K, V> createNearCache(String name, NearCacheConfig nearCacheConfig) {
         if (NATIVE == nearCacheConfig.getInMemoryFormat()) {
             return new HiDensityNearCache<K, V>(name, nearCacheConfig, this,
-                    (EnterpriseSerializationService) serializationService, executionService, classLoader);
+                    (EnterpriseSerializationService) serializationService, scheduler, classLoader);
         }
 
         return super.createNearCache(name, nearCacheConfig);

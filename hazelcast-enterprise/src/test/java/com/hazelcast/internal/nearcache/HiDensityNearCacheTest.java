@@ -46,7 +46,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     }
 
     private NearCacheManager newNearCacheManager() {
-        return new HiDensityNearCacheManager(ess, executionService, null);
+        return new HiDensityNearCacheManager(ess, executionService.getGlobalTaskScheduler(), null);
     }
 
     @Override
@@ -65,7 +65,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     protected NearCache<Integer, String> createNearCache(String name, NearCacheConfig nearCacheConfig,
                                                          ManagedNearCacheRecordStore nearCacheRecordStore) {
         return new HiDensityNearCache<Integer, String>(name, nearCacheConfig, newNearCacheManager(),
-                nearCacheRecordStore, ss, executionService, null);
+                nearCacheRecordStore, ss, executionService.getGlobalTaskScheduler(), null);
     }
 
     @Test
@@ -152,7 +152,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
             NearCache<Integer, byte[]> nearCache = new HiDensityNearCache<Integer, byte[]>(
                     DEFAULT_NEAR_CACHE_NAME,
                     nearCacheConfig, newNearCacheManager(),
-                    ess, executionService, null);
+                    ess, executionService.getGlobalTaskScheduler(), null);
             nearCache.initialize();
 
             byte[] value = new byte[(int) (2 * memorySize.bytes())];

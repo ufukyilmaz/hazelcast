@@ -68,6 +68,12 @@ public class HiDensityClientCacheQuorumTestSupport extends HazelcastTestSupport 
         initializeClients();
         initializeCaches();
         cluster.splitFiveMembersThreeAndTwo();
+
+        assertClusterSizeEventually(3, c1);
+        assertClusterSizeEventually(3, c2);
+        assertClusterSizeEventually(3, c3);
+        assertClusterSizeEventually(2, c4);
+        assertClusterSizeEventually(2, c5);
     }
 
     private static void initializeClients() {

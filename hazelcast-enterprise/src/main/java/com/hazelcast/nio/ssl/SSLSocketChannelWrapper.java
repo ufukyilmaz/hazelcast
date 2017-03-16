@@ -23,9 +23,8 @@ import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
 
     static final int EXPAND_FACTOR = 2;
-
+    private final Object mutex = new Object();
     private ByteBuffer applicationBuffer;
-    private final Object lock = new Object();
     private final ByteBuffer emptyBuffer;
     private final ByteBuffer netOutBuffer;
     // "reliable" write transport
@@ -61,10 +60,7 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
             "checkstyle:magicnumber"
     })
     private void handshake() throws IOException {
-        if (handshakeCompleted) {
-            return;
-        }
-        synchronized (lock) {
+        synchronized (mutex) {
             if (handshakeCompleted) {
                 return;
             }
@@ -113,9 +109,7 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
         applicationBuffer.clear();
 
         while (b.hasRemaining()) {
-            synchronized (lock) {
-                sslEngineResult = sslEngine.unwrap(b, applicationBuffer);
-            }
+            sslEngineResult = sslEngine.unwrap(b, applicationBuffer);
 
             if (sslEngineResult.getStatus() == BUFFER_OVERFLOW) {
                 // the appBuffer wasn't big enough, so lets expand it.
@@ -165,9 +159,7 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     }
 
     private int writeInternal(ByteBuffer input) throws IOException {
-        synchronized (lock) {
-            sslEngineResult = sslEngine.wrap(input, netOutBuffer);
-        }
+        sslEngineResult = sslEngine.wrap(input, netOutBuffer);
         netOutBuffer.flip();
         int written = socketChannel.write(netOutBuffer);
         if (netOutBuffer.hasRemaining()) {

@@ -1,27 +1,34 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.concurrent.lock.LockWaitNotifyKey;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
+import com.hazelcast.core.ExecutionCallback;
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.ManagedContext;
-import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.core.Offloadable;
+import com.hazelcast.core.ReadOnly;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
-import com.hazelcast.map.impl.LazyMapEntry;
-import com.hazelcast.map.impl.LocalMapStatsProvider;
 import com.hazelcast.map.impl.MapContainer;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.monitor.impl.LocalMapStatsImpl;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
+import com.hazelcast.spi.BlockingOperation;
+import com.hazelcast.spi.DefaultObjectNamespace;
 import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.WaitNotifyKey;
+import com.hazelcast.spi.exception.RetryableHazelcastException;
 import com.hazelcast.spi.impl.MutatingOperation;
+import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.Clock;
 
@@ -31,20 +38,36 @@ import java.util.Map;
 import static com.hazelcast.core.EntryEventType.ADDED;
 import static com.hazelcast.core.EntryEventType.REMOVED;
 import static com.hazelcast.core.EntryEventType.UPDATED;
+import static com.hazelcast.core.Offloadable.NO_OFFLOADING;
 import static com.hazelcast.map.impl.EntryViews.createSimpleEntryView;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.recordstore.RecordStore.DEFAULT_TTL;
+import static com.hazelcast.spi.ExecutionService.OFFLOADABLE_EXECUTOR;
 
 /**
+ * Contains HD Version of the Offloadable contract for EntryProcessor.
+ * See the javadoc on {@link EntryOperation} for full documentation.
+ *
  * GOTCHA : This operation LOADS missing keys from map-store, in contrast with PartitionWideEntryOperation.
  */
-public class HDEntryOperation extends HDLockAwareOperation implements BackupAwareOperation, MutatingOperation {
+@SuppressWarnings("checkstyle:methodcount")
+public class HDEntryOperation extends HDKeyBasedMapOperation implements BackupAwareOperation, MutatingOperation,
+        BlockingOperation {
 
-    protected Object oldValue;
     private EntryProcessor entryProcessor;
-    private EntryEventType eventType;
-    private Object response;
+
+    private transient boolean offloading;
+
+    // HDEntryOperation
+    private transient Object oldValue;
+    private transient EntryEventType eventType;
+    private transient Object response;
     private transient Object dataValue;
+
+    // HDEntryOffloadableOperation
+    private transient boolean readOnly;
+    private transient long begin;
+    private transient OperationServiceImpl ops;
 
     public HDEntryOperation() {
     }
@@ -58,6 +81,19 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
     public void innerBeforeRun() throws Exception {
         super.innerBeforeRun();
 
+        if (entryProcessor instanceof Offloadable) {
+            String executorName = ((Offloadable) entryProcessor).getExecutorName();
+            if (!executorName.equals(NO_OFFLOADING)) {
+                offloading = true;
+            }
+        }
+
+        if (offloading) {
+            this.ops = (OperationServiceImpl) getNodeEngine().getOperationService();
+            this.begin = getNow();
+            this.readOnly = entryProcessor instanceof ReadOnly;
+        }
+
         SerializationService serializationService = getNodeEngine().getSerializationService();
         ManagedContext managedContext = serializationService.getManagedContext();
         managedContext.initialize(entryProcessor);
@@ -65,6 +101,160 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
 
     @Override
     protected void runInternal() {
+        if (offloading) {
+            runOffloaded();
+        } else {
+            runVanilla();
+        }
+    }
+
+    private void runOffloaded() {
+        if (!(entryProcessor instanceof Offloadable)) {
+            throw new HazelcastException("EntryProcessor is expected to implement Offloadable for this operation");
+        }
+        if (readOnly && entryProcessor.getBackupProcessor() != null) {
+            throw new HazelcastException("EntryProcessor.getBackupProcessor() should return null if ReadOnly implemented");
+        }
+
+        Object value = recordStore.get(dataKey, false);
+        value = new HeapData(((Data) value).toByteArray());
+
+        String executorName = ((Offloadable) entryProcessor).getExecutorName();
+        executorName = executorName.equals(Offloadable.OFFLOADABLE_EXECUTOR) ? OFFLOADABLE_EXECUTOR : executorName;
+
+        if (readOnly) {
+            runOffloadedReadOnlyEntryProcessor(value, executorName);
+        } else {
+            runOffloadedModifyingEntryProcessor(value, executorName);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void runOffloadedReadOnlyEntryProcessor(final Object previousValue, String executorName) {
+        ops.onStartAsyncOperation(this);
+        getNodeEngine().getExecutionService().execute(executorName, new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final Map.Entry entry = createMapEntry(dataKey, previousValue);
+                    final Data result = process(entry);
+                    if (!noOp(entry, previousValue)) {
+                        throw new HazelcastException("It is not allowed to modify an entry in a ReadOnly EntryProcessor");
+                    }
+                    getOperationResponseHandler().sendResponse(HDEntryOperation.this, result);
+                } catch (Throwable t) {
+                    getOperationResponseHandler().sendResponse(HDEntryOperation.this, t);
+                } finally {
+                    ops.onCompletionAsyncOperation(HDEntryOperation.this);
+                }
+            }
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private void runOffloadedModifyingEntryProcessor(final Object previousValue, String executorName) {
+        final OperationServiceImpl ops = (OperationServiceImpl) getNodeEngine().getOperationService();
+
+        final Data finalDataKey = dataKey;
+        final String finalCaller = getCallerUuid();
+        final long finalThreadId = threadId;
+        final long finalCallId = getCallId();
+        final long finalBegin = begin;
+
+        // The off-loading uses local locks, since the locking is used only on primary-replica.
+        // The locks are not supposed to be migrated on partition migration or partition promotion & downgrade.
+        recordStore.localLock(finalDataKey, finalCaller, finalThreadId, finalCallId, -1);
+
+        ops.onStartAsyncOperation(this);
+        getNodeEngine().getExecutionService().execute(executorName, new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final Map.Entry entry = createMapEntry(dataKey, previousValue);
+                    final Data result = process(entry);
+                    if (!noOp(entry, previousValue)) {
+                        Data newValue = toData(entry.getValue());
+
+                        EntryEventType modificationType;
+                        if (entry.getValue() == null) {
+                            modificationType = REMOVED;
+                        } else {
+                            modificationType = (previousValue == null) ? ADDED : UPDATED;
+                        }
+
+                        updateAndUnlock(toData(previousValue), newValue, modificationType, finalCaller, finalThreadId,
+                                result, finalBegin);
+                    } else {
+                        unlockOnly(result, finalCaller, finalThreadId, finalBegin);
+                    }
+                } catch (Throwable t) {
+                    unlockOnly(t, finalCaller, finalThreadId, finalBegin);
+                }
+            }
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updateAndUnlock(Data previousValue, Data newValue, EntryEventType modificationType, String caller,
+                                 long threadId, final Object result, long now) {
+        HDEntryOffloadableSetUnlockOperation updateOperation = new HDEntryOffloadableSetUnlockOperation(name, modificationType,
+                dataKey, previousValue, newValue, caller, threadId, now, entryProcessor.getBackupProcessor());
+
+        updateOperation.setPartitionId(getPartitionId());
+        ops.invokeOnPartition(updateOperation).andThen(new ExecutionCallback<Object>() {
+            @Override
+            public void onResponse(Object response) {
+                try {
+                    getOperationResponseHandler().sendResponse(HDEntryOperation.this, result);
+                } finally {
+                    ops.onCompletionAsyncOperation(HDEntryOperation.this);
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                try {
+                    // EntryOffloadableLockMismatchException is a marker send from the EntryOffloadableSetUnlockOperation
+                    // meaning that the whole invocation of the EntryOperation should be retried
+                    if (t instanceof EntryOffloadableLockMismatchException) {
+                        t = new RetryableHazelcastException(t.getMessage(), t);
+                    }
+                    getOperationResponseHandler().sendResponse(HDEntryOperation.this, t);
+                } finally {
+                    ops.onCompletionAsyncOperation(HDEntryOperation.this);
+                }
+            }
+        });
+    }
+
+    private void unlockOnly(final Object result, String caller, long threadId, long now) {
+        updateAndUnlock(null, null, null, caller, threadId, result, now);
+    }
+
+    @Override
+    public void onExecutionFailure(Throwable e) {
+        if (offloading) {
+            // This is required since if the returnsResponse() method returns false there won't be any response sent
+            // to the invoking party - this means that the operation won't be retried if the exception is instanceof
+            // HazelcastRetryableException
+            sendResponse(e);
+        } else {
+            super.onExecutionFailure(e);
+        }
+    }
+
+    @Override
+    public boolean returnsResponse() {
+        if (offloading) {
+            // This has to be false, since the operation uses the deferred-response mechanism.
+            // This method returns false, but the response will be send later on using the response handler
+            return false;
+        } else {
+            return super.returnsResponse();
+        }
+    }
+
+    private void runVanilla() {
         final long now = getNow();
         oldValue = recordStore.get(dataKey, false);
 
@@ -73,9 +263,15 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
         response = process(entry);
 
         // first call noOp, other if checks below depends on it.
-        if (noOp(entry)) {
+        if (noOp(entry, oldValue)) {
             return;
         }
+
+        // at this stage we see that the entry has been modified which is not allowed for readOnly processors
+        if (entryProcessor instanceof ReadOnly) {
+            throw new HazelcastException("ReadOnly processor is not allowed to make any changes to the processed Entry");
+        }
+
         if (entryRemoved(entry, now)) {
             return;
         }
@@ -84,23 +280,38 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
 
     @Override
     public void afterRun() throws Exception {
-        super.afterRun();
-        if (eventType == null) {
-            return;
+        if (!offloading) {
+            super.afterRun();
+            if (eventType == null) {
+                return;
+            }
+            mapServiceContext.interceptAfterPut(name, dataValue);
+            if (isPostProcessing(recordStore)) {
+                Record record = recordStore.getRecord(dataKey);
+                dataValue = record == null ? null : record.getValue();
+            }
+
+            invalidateNearCache(dataKey);
+            publishEntryEvent();
+            publishWanReplicationEvent();
+            evict(dataKey);
+
+            disposeDeferredBlocks();
         }
-        mapServiceContext.interceptAfterPut(name, dataValue);
-        if (isPostProcessing(recordStore)) {
-            Record record = recordStore.getRecord(dataKey);
-            dataValue = record == null ? null : record.getValue();
+    }
+
+    @Override
+    public final WaitNotifyKey getWaitKey() {
+        return new LockWaitNotifyKey(new DefaultObjectNamespace(MapService.SERVICE_NAME, name), dataKey);
+    }
+
+    @Override
+    public boolean shouldWait() {
+        // optimisation for ReadOnly processors -> they will not wait for the lock
+        if (entryProcessor instanceof ReadOnly) {
+            return false;
         }
-
-
-        invalidateNearCache(dataKey);
-        publishEntryEvent();
-        publishWanReplicationEvent();
-        evict(dataKey);
-
-        disposeDeferredBlocks();
+        return !recordStore.canAcquireLock(dataKey, getCallerUuid(), getThreadId());
     }
 
     @Override
@@ -110,17 +321,26 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
 
     @Override
     public Object getResponse() {
+        if (offloading) {
+            return null;
+        }
         return response;
     }
 
     @Override
     public Operation getBackupOperation() {
+        if (offloading) {
+            return null;
+        }
         EntryBackupProcessor backupProcessor = entryProcessor.getBackupProcessor();
         return backupProcessor != null ? new HDEntryBackupOperation(name, dataKey, backupProcessor) : null;
     }
 
     @Override
     public boolean shouldBackup() {
+        if (offloading) {
+            return false;
+        }
         return mapContainer.getTotalBackupCount() > 0 && entryProcessor.getBackupProcessor() != null;
     }
 
@@ -141,20 +361,6 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
     private Data toData(Object obj) {
         final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
         return mapServiceContext.toData(obj);
-    }
-
-    private long getNow() {
-        return Clock.currentTimeMillis();
-    }
-
-    /**
-     * noOp in two cases:
-     * - setValue not called on entry,
-     * - entry does not exist and no add operation is done.
-     */
-    private boolean noOp(Map.Entry entry) {
-        final LazyMapEntry mapEntrySimple = (LazyMapEntry) entry;
-        return !mapEntrySimple.isModified() || (oldValue == null && entry.getValue() == null);
     }
 
     private boolean entryRemoved(Map.Entry entry, long now) {
@@ -184,18 +390,6 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
         return toData(result);
     }
 
-    private Map.Entry createMapEntry(Data key, Object value) {
-        InternalSerializationService serializationService
-                = (InternalSerializationService) getNodeEngine().getSerializationService();
-        return new LazyMapEntry(key, value, serializationService, mapContainer.getExtractors());
-    }
-
-    private LocalMapStatsImpl getLocalMapStats() {
-        final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        final LocalMapStatsProvider localMapStatsProvider = mapServiceContext.getLocalMapStatsProvider();
-        return localMapStatsProvider.getLocalMapStatsImpl(name);
-    }
-
     private boolean hasRegisteredListenerForThisMap() {
         final EventService eventService = getNodeEngine().getEventService();
         return eventService.hasEventRegistration(SERVICE_NAME, name);
@@ -217,7 +411,6 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
     private void publishEntryEvent() {
         if (hasRegisteredListenerForThisMap()) {
             nullifyOldValueIfNecessary();
-            final MapEventPublisher mapEventPublisher = getMapEventPublisher();
             mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, oldValue, dataValue);
         }
     }
@@ -228,7 +421,6 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
                 && mapContainer.getWanMergePolicy() == null) {
             return;
         }
-        final MapEventPublisher mapEventPublisher = getMapEventPublisher();
         final Data key = dataKey;
 
         if (REMOVED.equals(eventType)) {
@@ -241,11 +433,6 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
                 mapEventPublisher.publishWanReplicationUpdate(name, entryView);
             }
         }
-    }
-
-    private MapEventPublisher getMapEventPublisher() {
-        final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        return mapServiceContext.getMapEventPublisher();
     }
 
     @Override

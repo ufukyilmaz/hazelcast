@@ -1,6 +1,7 @@
 package com.hazelcast.nio.ssl;
 
 import com.hazelcast.config.SSLConfig;
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.networking.SocketChannelWrapper;
 import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
 
@@ -8,7 +9,8 @@ import java.nio.channels.SocketChannel;
 
 public class SSLSocketChannelWrapperFactory implements SocketChannelWrapperFactory {
 
-    final SSLContextFactory sslContextFactory;
+    private final SSLContextFactory sslContextFactory;
+    private final String mutualAuthentication;
 
     public SSLSocketChannelWrapperFactory(SSLConfig sslConfig) {
         SSLContextFactory sslContextFactoryObject = (SSLContextFactory) sslConfig.getFactoryImplementation();
@@ -22,14 +24,16 @@ public class SSLSocketChannelWrapperFactory implements SocketChannelWrapperFacto
             }
             sslContextFactoryObject.init(sslConfig.getProperties());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new HazelcastException(e);
         }
         sslContextFactory = sslContextFactoryObject;
+        mutualAuthentication = BasicSSLContextFactory.getProperty(sslConfig.getProperties(), "mutualAuthentication");
     }
 
     @Override
     public SocketChannelWrapper wrapSocketChannel(SocketChannel socketChannel, boolean client) throws Exception {
-        return new SSLSocketChannelWrapper(sslContextFactory.getSSLContext(), socketChannel, client);
+        return new SSLSocketChannelWrapper(sslContextFactory.getSSLContext(), socketChannel,
+                client, mutualAuthentication);
     }
 
     @Override

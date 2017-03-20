@@ -16,7 +16,13 @@ The following are the new features introduced with 3.8 release.
 
 2. Enhancements
 
-This section lists the enhancements performed for Hazelcast 3.8 release.
+This section lists the enhancements performed for Hazelcast 3.8 and 3.8.x releases.
+
+*3.8.1 Enhancements*
+
+- Mutual authentication with TLS certificates: It allows the clients also to have their keyStores and members to have their trustStores so that the members can know which clients they can trust.
+
+*3.8 Enhancements*
 
 - Fast Aggregations for Queries: Please refer to Fast Aggregations section.
 - Projections for Queries: Please refer to Projections section.
@@ -59,6 +65,23 @@ The following are the other improvements performed to solve the enhancement issu
 3. Fixes
 
 This section lists the fixed issues for Hazelcast 3.8 and 3.8.x releases.
+
+*3.8.1 Fixes*
+
+- Updates performed with IMap's putTransient method should trigger EntryUpdatedListener. [10077]
+- Missing documentation for configuring log4j2 as logging framework. [9970]
+- Management Center section in the Reference Manual is misleading when it explains tool's behavior for clusters having more than two members. [9969]
+- Multicast configuration's trusted-interfaces element is not handled properly on startup of the members. [9953]
+- For Hazelcast 3.7.*, MigrationListener's migrationStarted and migrationCompleted methods are called for all partitions. [9919]
+- While performing async operations test, OOME is thrown due to exceeding garbage collection overhead, at the client side. [9665]
+- Behavior of aggregators when extracted value is null should be well-documented. [9858]
+- Hazelcast Java client disconnects from the cluster with heartbeat problems. [8956]
+- Currently the near cache updates does not guarantee the order of events for a certain key. The updates are performed via asynchronous executor runs and it does not guarantee the order of updates. Furthermore, the invalidations via event service is also not ordered. [8652]
+- Client's near cache implementation uses userExecutor which is also used for other purposes such as making callbacks to lifecycle listeners. A client may block an operation of the near cache updates by a slow lifecycle listener. This needs to be addressed. [8651]
+- Client has a configurable hazelcast.client.max.concurrent.invocations property which limits the outstanding client requests. It is observed that at some cases, for async calls, it is possible that this limit may not work as expected and this may cause outstanding requests to grow which may cause OOM. [8568]
+- When using a Hazelcast Client instance, if the redoOperation is set to true, operations which failed to be sent to the cluster are retried, but failures from executing the operation itself in the cluster are not. [8545]
+- While updating the Hazelcast maps in the clustered environment, the exception TargetNotMember is thrown. [7584]
+
 
 *3.8 Fixes*
 

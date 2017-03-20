@@ -12,6 +12,8 @@ import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.instance.BuildInfo;
 import com.hazelcast.instance.BuildInfoProvider;
+import com.hazelcast.internal.metrics.MetricsProvider;
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.internal.nearcache.NearCacheManager;
 import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
@@ -41,13 +43,15 @@ import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature
 /**
  * Enterprise implementation of <tt>ClientExtension</tt>.
  */
-public class EnterpriseClientExtension extends DefaultClientExtension {
+public class EnterpriseClientExtension extends DefaultClientExtension implements MetricsProvider {
 
     private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
     private final EnterpriseClientVersionAware versionAware = new EnterpriseClientVersionAware(buildInfo.getVersion());
 
     private volatile SocketInterceptor socketInterceptor;
     private volatile License license;
+
+    private HazelcastMemoryManager memoryManager;
 
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
@@ -74,7 +78,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
             EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();
             SerializationConfig serializationConfig = config.getSerializationConfig() != null ? config
                     .getSerializationConfig() : new SerializationConfig();
-            ss = builder.setMemoryManager(getMemoryManager(client))
+            memoryManager = getMemoryManager(client);
+            ss = builder.setMemoryManager(memoryManager)
                     .setClassLoader(configClassLoader)
                     .setConfig(serializationConfig)
                     .setManagedContext(new HazelcastClientManagedContext(client, config.getManagedContext()))
@@ -165,6 +170,16 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         }
 
         throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);
+    }
+
+    @Override
+    public void provideMetrics(MetricsRegistry registry) {
+        if (memoryManager != null) {
+            registry.scanAndRegister(memoryManager, "memorymanager");
+            if (memoryManager instanceof MetricsProvider) {
+                ((MetricsProvider) memoryManager).provideMetrics(registry);
+            }
+        }
     }
 
     private static class EnterpriseClientVersionAware implements EnterpriseClusterVersionAware {

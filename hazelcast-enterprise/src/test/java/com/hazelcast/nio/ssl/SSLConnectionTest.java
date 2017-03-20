@@ -103,7 +103,7 @@ public class SSLConnectionTest {
 
             final AtomicReference<Error> error = new AtomicReference<Error>();
             SSLContext clientContext = createClientSslContext();
-            socketChannel = new SSLSocketChannelWrapper(clientContext, SocketChannel.open(), true);
+            socketChannel = new SSLSocketChannelWrapper(clientContext, SocketChannel.open(), true, null);
             socketChannel.connect(new InetSocketAddress(PORT));
             final CountDownLatch latch = new CountDownLatch(2);
 
@@ -227,7 +227,7 @@ public class SSLConnectionTest {
             SocketChannelWrapper socketChannel = null;
             try {
                 SSLContext context = createServerSslContext();
-                socketChannel = new SSLSocketChannelWrapper(context, ssc.accept(), false);
+                socketChannel = new SSLSocketChannelWrapper(context, ssc.accept(), false, null);
                 final CountDownLatch latch = new CountDownLatch(2);
                 final BlockingQueue<Integer> queue = new ArrayBlockingQueue<Integer>(count);
 

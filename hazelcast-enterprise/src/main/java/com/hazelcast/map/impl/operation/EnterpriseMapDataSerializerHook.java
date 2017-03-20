@@ -96,8 +96,9 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     // public static final int POST_JOIN = 68;
     public static final int ACCUMULATOR_CONSUMER = 69;
     public static final int PUT_ALL_PARTITION_AWARE_FACTORY = 70;
+    public static final int ENTRY_OFFLOADABLE_SET_UNLOCK = 71;
 
-    private static final int LEN = PUT_ALL_PARTITION_AWARE_FACTORY + 1;
+    private static final int LEN = ENTRY_OFFLOADABLE_SET_UNLOCK + 1;
 
     @Override
     public int getFactoryId() {
@@ -515,6 +516,12 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new HDPutAllPartitionAwareOperationFactory();
+            }
+        };
+        constructors[ENTRY_OFFLOADABLE_SET_UNLOCK] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDEntryOffloadableSetUnlockOperation();
             }
         };
 

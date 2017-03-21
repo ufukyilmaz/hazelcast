@@ -3,6 +3,8 @@ package com.hazelcast.memory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
+import com.hazelcast.internal.metrics.MetricsProvider;
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
 import com.hazelcast.util.ExceptionUtil;
@@ -11,7 +13,7 @@ import com.hazelcast.util.function.LongLongConsumer;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
-public final class StandardMemoryManager implements HazelcastMemoryManager {
+public final class StandardMemoryManager implements HazelcastMemoryManager, MetricsProvider {
 
     /**
      * System property to enable debug mode of {@link StandardMemoryManager}.
@@ -210,5 +212,10 @@ public final class StandardMemoryManager implements HazelcastMemoryManager {
     @Override
     public long newSequence() {
         return sequenceGenerator.inc();
+    }
+
+    @Override
+    public void provideMetrics(MetricsRegistry registry) {
+        registry.scanAndRegister(memoryStats, "memorymanager.stats");
     }
 }

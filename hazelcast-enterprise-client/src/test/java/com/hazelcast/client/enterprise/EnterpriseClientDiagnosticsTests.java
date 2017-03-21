@@ -48,18 +48,9 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
 
     private final TestHazelcastFactory hazelcastFactory = new TestHazelcastFactory();
 
-    private HazelcastInstance client;
-
     @Before
-    public void setUp() throws IOException {
+    public void setUp() {
         hazelcastFactory.newHazelcastInstance();
-
-        ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setNativeMemoryConfig(createNativeMemoryConfig());
-        clientConfig.setProperty("hazelcast.diagnostics.enabled", "true");
-        clientConfig.setProperty("hazelcast.diagnostics.metric.level", "INFO");
-        clientConfig.setProperty("hazelcast.diagnostics.directory", temporaryFolder.newFolder().getAbsolutePath());
-        client = hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
     @After
@@ -68,7 +59,9 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
     }
 
     @Test
-    public void assertMemoryMetricsRegisteredWhenConfigured() {
+    public void assertMemoryMetricsRegisteredWhenNativeMemoryIsEnabled() throws IOException {
+        ClientConfig clientConfig = makeClientConfig(true);
+        HazelcastInstance client = hazelcastFactory.newHazelcastClient(clientConfig);
         HazelcastClientInstanceImpl clientImpl = ClientTestUtil.getHazelcastClientInstanceImpl(client);
 
         MetricsRegistryImpl metricsRegistry = clientImpl.getMetricsRegistry();
@@ -82,7 +75,35 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
         assertContains(metrics, "memorymanager.stats.usedNative");
     }
 
-    public NativeMemoryConfig createNativeMemoryConfig() {
+    @Test
+    public void assertMemoryMetricsNotRegisteredWhenNativeMemoryIsDisabled() throws IOException {
+        ClientConfig clientConfig = makeClientConfig(false);
+        HazelcastInstance client = hazelcastFactory.newHazelcastClient(clientConfig);
+        HazelcastClientInstanceImpl clientImpl = ClientTestUtil.getHazelcastClientInstanceImpl(client);
+
+        MetricsRegistryImpl metricsRegistry = clientImpl.getMetricsRegistry();
+        Set<String> metrics = metricsRegistry.getNames();
+
+        assertNotContains(metrics, "memorymanager.stats.committedNative");
+        assertNotContains(metrics, "memorymanager.stats.freeNative");
+        assertNotContains(metrics, "memorymanager.stats.maxMetadata");
+        assertNotContains(metrics, "memorymanager.stats.maxNative");
+        assertNotContains(metrics, "memorymanager.stats.usedMetadata");
+        assertNotContains(metrics, "memorymanager.stats.usedNative");
+    }
+
+    private ClientConfig makeClientConfig(boolean enableNativeMemory) throws IOException {
+        ClientConfig clientConfig = new ClientConfig();
+        if (enableNativeMemory) {
+            clientConfig.setNativeMemoryConfig(makeNativeMemoryConfig());
+        }
+        clientConfig.setProperty("hazelcast.diagnostics.enabled", "true");
+        clientConfig.setProperty("hazelcast.diagnostics.metric.level", "INFO");
+        clientConfig.setProperty("hazelcast.diagnostics.directory", temporaryFolder.newFolder().getAbsolutePath());
+        return clientConfig;
+    }
+
+    public NativeMemoryConfig makeNativeMemoryConfig() {
         return new NativeMemoryConfig()
                 .setEnabled(true)
                 .setSize(new MemorySize(16, MemoryUnit.MEGABYTES))

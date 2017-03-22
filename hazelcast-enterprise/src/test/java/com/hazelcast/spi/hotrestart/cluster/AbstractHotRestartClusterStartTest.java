@@ -162,7 +162,7 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
                     try {
                         HazelcastInstance instance = restartInstance(address, listener, clusterStartPolicy, version);
                         instancesList.add(instance);
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         logger.severe(e);
                     } finally {
                         latch.countDown();

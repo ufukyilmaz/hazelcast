@@ -35,13 +35,9 @@ import static com.hazelcast.util.ExceptionUtil.rethrow;
  * </ol>
  * <p>
  * This is the enterprise version of the DataSerializableSerializer that handles the versioning.
- * Each object annotated by the @Versioned annotation will get the cluster minor version included in the byte stream
+ * Each object annotated by the @Versioned annotation will get the cluster major.minor version included in the byte stream
  * if the cluster version is not set to UNKNOWN.
  * It is only used if rolling-upgrades are enabled (for backward compatibility).
- * <p>
- * Why do we only send the minor version?
- * <p>
- * We don't send the major version since the versioning works only across minor releases.
  * <p>
  * We don't send the patch version since there it is impossible to put patch version releases in a time ordered sequence.
  * 3.8.5 might have been released after 3.9.2. In order to know that we would have to hard-code the release order
@@ -145,7 +141,8 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
             factoryId = in.readInt();
             classId = in.readInt();
 
-            // read version
+            // if version was previously set while processing an outer object, keep its current value and restore it in the end
+            Version previousVersion = in.getVersion();
             Version version = isVersioned(header) ? readVersion(in) : Version.UNKNOWN;
             setInputVersion(in, version);
 
@@ -153,6 +150,8 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
             DataSerializable ds = instance != null ? instance : createIdentifiedDataSerializable(version, factoryId, classId);
             ds.readData(in);
 
+            // restore the original version
+            setInputVersion(in, previousVersion);
             return ds;
         } catch (Exception ex) {
             throw rethrowIdsReadException(factoryId, classId, ex);
@@ -182,12 +181,17 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
     private DataSerializable readDataSerializable(ObjectDataInput in, byte header, DataSerializable instance) throws IOException {
         String className = in.readUTF();
         try {
+            // if version was previously set while processing an outer object, keep its current value and restore it in the end
+            Version previousVersion = in.getVersion();
             Version version = isVersioned(header) ? readVersion(in) : Version.UNKNOWN;
             setInputVersion(in, version);
 
             DataSerializable ds = instance != null ? instance
                     : ClassLoaderUtil.<DataSerializable>newInstance(in.getClassLoader(), className);
             ds.readData(in);
+
+            // restore the original version
+            setInputVersion(in, previousVersion);
 
             return ds;
         } catch (Exception ex) {
@@ -197,6 +201,10 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
 
     @Override
     public void write(ObjectDataOutput out, DataSerializable obj) throws IOException {
+
+        // if version was previously set while processing an outer object, keep its current value and restore it in the end
+        Version previousVersion = out.getVersion();
+
         Version version = (obj instanceof Versioned) ? clusterVersionAware.getClusterVersion()
                 : Version.UNKNOWN;
         setOutputVersion(out, version);
@@ -207,6 +215,9 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
             writeDataSerializable(out, obj, version);
         }
         obj.writeData(out);
+
+        // restore the original version
+        setOutputVersion(out, previousVersion);
     }
 
     private void writeIdentifiedDataSerializable(

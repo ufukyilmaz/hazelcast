@@ -95,6 +95,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         when(input.readByte()).thenReturn(createHeader(false, false));
         when(input.readUTF()).thenReturn(original.getClass().getName());
         when(input.readInt()).thenReturn(original.value);
+        when(input.getVersion()).thenReturn(Version.UNKNOWN);
 
         DataSerializable deserialized;
         if (withClass) {
@@ -106,11 +107,13 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         InOrder calls = inOrder(input);
         calls.verify(input).readByte();
         calls.verify(input).readUTF();
+        calls.verify(input).getVersion();
         calls.verify(input).setVersion(UNKNOWN);
         if (!withClass) {
             calls.verify(input).getClassLoader();
         }
         calls.verify(input).readInt();
+        calls.verify(input).setVersion(UNKNOWN);
         verifyNoMoreInteractions(input);
 
         assertInstanceOf(TestDataSerializable.class, deserialized);
@@ -136,6 +139,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
                 .thenReturn(MINOR_VERSION_BYTE);
         when(input.readUTF()).thenReturn(original.getClass().getName());
         when(input.readInt()).thenReturn(original.value);
+        when(input.getVersion()).thenReturn(UNKNOWN);
 
         DataSerializable deserialized;
         if (withClass) {
@@ -147,10 +151,12 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         InOrder calls = inOrder(input);
         calls.verify(input).readByte();
         calls.verify(input).readUTF();
+        calls.verify(input).getVersion();
         calls.verify(input, times(2)).readByte();
         calls.verify(input).setVersion(CLUSTER_VERSION);
         calls.verify(input).getClassLoader();
         calls.verify(input).readInt();
+        calls.verify(input).setVersion(UNKNOWN);
         verifyNoMoreInteractions(input);
 
         assertInstanceOf(TestVersionedDataSerializable.class, deserialized);
@@ -204,6 +210,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
                 .thenReturn(original.getFactoryId())
                 .thenReturn(original.getId())
                 .thenReturn(original.value);
+        when(input.getVersion()).thenReturn(UNKNOWN);
 
         DataSerializable deserialized;
         if (withClass) {
@@ -215,9 +222,11 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         InOrder calls = inOrder(input);
         calls.verify(input).readByte();
         calls.verify(input, times(2)).readInt();
+        calls.verify(input).getVersion();
         calls.verify(input, times(2)).readByte();
         calls.verify(input).setVersion(CLUSTER_VERSION);
         calls.verify(input).readInt();
+        calls.verify(input).setVersion(UNKNOWN);
         verifyNoMoreInteractions(input);
 
         assertInstanceOf(TestUncompressableIdentifiedDataSerializable.class, deserialized);
@@ -263,14 +272,17 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
     @Test
     public void testWrite_byteFormat_DS_unversioned() throws Exception {
         TestDataSerializable original = new TestDataSerializable(123);
+        when(output.getVersion()).thenReturn(UNKNOWN);
 
         enterpriseSerializer.write(output, original);
 
         InOrder calls = inOrder(output);
+        calls.verify(output).getVersion();
         calls.verify(output).setVersion(UNKNOWN);
         calls.verify(output).writeByte(createHeader(false, false));
         calls.verify(output).writeUTF(TestDataSerializable.class.getName());
         calls.verify(output).writeInt(original.value);
+        calls.verify(output).setVersion(UNKNOWN);
         verifyNoMoreInteractions(output);
     }
 
@@ -291,24 +303,27 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
     @Test
     public void testWrite_byteFormat_IDS_unversioned() throws Exception {
         TestIdentifiedDataSerializable original = new TestIdentifiedDataSerializable(123);
-
+        when(output.getVersion()).thenReturn(UNKNOWN);
         enterpriseSerializer.write(output, original);
 
         InOrder calls = inOrder(output);
+        calls.verify(output).getVersion();
         calls.verify(output).setVersion(UNKNOWN);
         calls.verify(output).writeByte(createHeader(true, false));
         calls.verify(output, times(2)).writeInt(original.getFactoryId());
         calls.verify(output).writeInt(original.value);
+        calls.verify(output).setVersion(UNKNOWN);
         verifyNoMoreInteractions(output);
     }
 
     @Test
     public void testWrite_byteFormat_IDS_versioned() throws Exception {
         TestUncompressableIdentifiedDataSerializable original = new TestUncompressableIdentifiedDataSerializable(123);
-
+        when(output.getVersion()).thenReturn(UNKNOWN);
         enterpriseSerializer.write(output, original);
 
         InOrder calls = inOrder(output);
+        calls.verify(output).getVersion();
         calls.verify(output).setVersion(CLUSTER_VERSION);
         calls.verify(output).writeByte(createHeader(true, true));
         calls.verify(output).writeInt(original.getFactoryId());
@@ -316,6 +331,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         calls.verify(output).writeByte(MAJOR_VERSION_BYTE);
         calls.verify(output).writeByte(MINOR_VERSION_BYTE);
         calls.verify(output).writeInt(original.value);
+        calls.verify(output).setVersion(UNKNOWN);
         verifyNoMoreInteractions(output);
     }
 

@@ -13,6 +13,8 @@ import com.hazelcast.memory.MemoryUnit;
 
 import javax.cache.CacheManager;
 
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
+
 /**
  * Support class to provide hd specific configuration for map tests
  */
@@ -21,10 +23,18 @@ public final class HDTestSupport {
     public static final MemorySize NATIVE_MEMORY_SIZE = new MemorySize(32, MemoryUnit.MEGABYTES);
 
     public static Config getHDConfig() {
-        return getHDConfig(new Config());
+        return getHDConfig(new Config(), STANDARD);
     }
 
     public static Config getHDConfig(Config config) {
+        return getHDConfig(config, STANDARD);
+    }
+
+    public static Config getHDConfig(NativeMemoryConfig.MemoryAllocatorType allocatorType) {
+        return getHDConfig(new Config(), allocatorType);
+    }
+
+    private static Config getHDConfig(Config config, NativeMemoryConfig.MemoryAllocatorType allocatorType) {
         MapConfig mapConfig = new MapConfig()
                 .setName("default")
                 .setInMemoryFormat(InMemoryFormat.NATIVE);
@@ -32,7 +42,7 @@ public final class HDTestSupport {
         NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
                 .setSize(NATIVE_MEMORY_SIZE)
-                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
+                .setAllocatorType(allocatorType);
 
         return config
                 .addMapConfig(mapConfig)

@@ -3,9 +3,17 @@ package com.hazelcast.map.impl;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecord;
+import com.hazelcast.memory.MemoryBlock;
+
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 public class NativeMapEntryCostEstimator
-        implements EntryCostEstimator<NativeMemoryData, HDRecord> {
+        implements EntryCostEstimator<NativeMemoryData, MemoryBlock> {
+
+    /**
+     * See {@link com.hazelcast.elastic.map.BehmSlotAccessor#SLOT_LENGTH}
+     */
+    private static final int SLOT_COST_IN_BYTES = 16;
 
     private volatile long additionalCostOfBehmSlots;
 
@@ -31,13 +39,28 @@ public class NativeMapEntryCostEstimator
     }
 
     @Override
-    public long calculateValueCost(HDRecord value) {
-        throw new UnsupportedOperationException();
+    public long calculateValueCost(MemoryBlock record) {
+        if (record instanceof HDRecord) {
+            return getSize(record) + getSize((MemoryBlock) ((HDRecord) record).getValue());
+        }
+
+        return getSize(record);
     }
 
     @Override
-    public long calculateEntryCost(NativeMemoryData key, HDRecord value) {
-        throw new UnsupportedOperationException();
+    public long calculateEntryCost(NativeMemoryData key, MemoryBlock record) {
+        if (record instanceof HDRecord) {
+            return getSize(record)
+                    + getSize((MemoryBlock) ((HDRecord) record).getValue())
+                    + getSize(key)
+                    + SLOT_COST_IN_BYTES;
+        }
+
+        return getSize(key) + getSize(record) + SLOT_COST_IN_BYTES;
+    }
+
+    private long getSize(MemoryBlock block) {
+        return block != null && block.address() != NULL_ADDRESS ? recordProcessor.getSize(block) : 0L;
     }
 
 }

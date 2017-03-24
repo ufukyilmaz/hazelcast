@@ -215,7 +215,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected long getRecordStorageMemoryCost(HiDensityNativeMemoryNearCacheRecord record) {
         long slotValueCost = SLOT_COST_IN_BYTES / 2;
-        return slotValueCost + recordAccessor.getSize(record);
+        return slotValueCost + recordAccessor.getSize(record) + recordAccessor.getSize(record.getValue());
     }
 
     @Override

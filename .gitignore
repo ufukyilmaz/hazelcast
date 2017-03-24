@@ -9,3 +9,4 @@ target/
 *dependency-reduced-pom.xml
 .attach_pid*
 hot-restart/
+hazelcast-enterprise/src/main/java/com/hazelcast/instance/GeneratedEnterpriseBuildProperties.java

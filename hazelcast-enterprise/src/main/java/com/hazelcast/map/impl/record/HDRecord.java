@@ -29,7 +29,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
      * +--------------------------+--------------------+
      * | Creation Time            |   8 bytes (long)   |
      * +--------------------------+--------------------+
-     * | Time To live             |   4 bytes (int)    |
+     * | Time To live             |   8 bytes (long)   |
      * +--------------------------+--------------------+
      * | Last Access Time         |   4 bytes (int)    |
      * +--------------------------+--------------------+
@@ -44,7 +44,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
      * | Sequence                 |   4 bytes (int)    |
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      *
-     * Total size = 60 bytes
+     * Total size = 64 bytes
      */
 
 

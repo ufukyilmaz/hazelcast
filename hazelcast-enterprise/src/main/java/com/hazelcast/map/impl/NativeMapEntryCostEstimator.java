@@ -15,7 +15,7 @@ public class NativeMapEntryCostEstimator
      */
     private static final int SLOT_COST_IN_BYTES = 16;
 
-    private volatile long additionalCostOfBehmSlots;
+    private volatile long estimate;
 
     private final HiDensityRecordProcessor recordProcessor;
 
@@ -25,17 +25,17 @@ public class NativeMapEntryCostEstimator
 
     @Override
     public long getEstimate() {
-        return recordProcessor.getUsedMemory() + additionalCostOfBehmSlots;
+        return estimate;
     }
 
     @Override
     public void adjustEstimateBy(long adjustment) {
-        additionalCostOfBehmSlots += adjustment;
+        estimate += adjustment;
     }
 
     @Override
     public void reset() {
-        throw new UnsupportedOperationException();
+        estimate = 0;
     }
 
     @Override

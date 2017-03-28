@@ -63,8 +63,8 @@ public class HDLocalMapStatsTest extends LocalMapStatsTest {
         map.put("Key_0", 0);
 
         // Sizes as expected from the POOLED memory allocator
-        int hdRecordDefaultCost = 128; // 64bytes (hd record structure) + 1byte (memory manager header)
-                                       // can't fit in 64bytes block, so next size is 128bytes
+        int hdRecordDefaultCost = 64; // 60bytes (hd record structure) + 1byte (memory manager header)
+                                       // next available buddy block that fits, is 64bytes
         int keyCost = 32; // 4 bytes NativeMemoryData + 17 bytes actual data + 1 (memory manager header)
                           // next available block that fits is 32 bytes;
         int valueCost = 32; // 4 bytes NativeMemoryData + 12 bytes actual data + 1 (memory manager header)

@@ -29,7 +29,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
      * +--------------------------+--------------------+
      * | Creation Time            |   8 bytes (long)   |
      * +--------------------------+--------------------+
-     * | Time To live             |   8 bytes (long)   |
+     * | Time To live             |   4 bytes (int)    |
      * +--------------------------+--------------------+
      * | Last Access Time         |   4 bytes (int)    |
      * +--------------------------+--------------------+
@@ -44,7 +44,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
      * | Sequence                 |   4 bytes (int)    |
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      *
-     * Total size = 64 bytes
+     * Total size = 60 bytes
      */
 
 
@@ -58,7 +58,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     static final int VERSION_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
     static final int CREATION_TIME_OFFSET = VERSION_OFFSET + LONG_SIZE_IN_BYTES;
     static final int TTL_OFFSET = CREATION_TIME_OFFSET + LONG_SIZE_IN_BYTES;
-    static final int LAST_ACCESS_TIME_OFFSET = TTL_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int LAST_ACCESS_TIME_OFFSET = TTL_OFFSET + INT_SIZE_IN_BYTES;
     static final int LAST_UPDATE_TIME_OFFSET = LAST_ACCESS_TIME_OFFSET + INT_SIZE_IN_BYTES;
     static final int HITS = LAST_UPDATE_TIME_OFFSET + INT_SIZE_IN_BYTES;
     static final int LAST_STORED_TIME_OFFSET = HITS + INT_SIZE_IN_BYTES;

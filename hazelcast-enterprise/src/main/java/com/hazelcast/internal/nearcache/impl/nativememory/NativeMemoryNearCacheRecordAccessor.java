@@ -9,19 +9,19 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
- * Accessor for {@link HiDensityNativeMemoryNearCacheRecord} to create, read, dispose record or its data.
+ * Accessor for {@link NativeMemoryNearCacheRecord} to create, read, dispose record or its data.
  */
-public class HiDensityNativeMemoryNearCacheRecordAccessor
-        extends AbstractHiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> {
+public class NativeMemoryNearCacheRecordAccessor
+        extends AbstractHiDensityRecordAccessor<NativeMemoryNearCacheRecord> {
 
-    HiDensityNativeMemoryNearCacheRecordAccessor(EnterpriseSerializationService ss,
-                                                 HazelcastMemoryManager memoryManager) {
+    NativeMemoryNearCacheRecordAccessor(EnterpriseSerializationService ss,
+                                        HazelcastMemoryManager memoryManager) {
         super(ss, memoryManager);
     }
 
     @Override
-    protected HiDensityNativeMemoryNearCacheRecord createRecord() {
-        return new HiDensityNativeMemoryNearCacheRecord(this);
+    protected NativeMemoryNearCacheRecord createRecord() {
+        return new NativeMemoryNearCacheRecord(this);
     }
 
     @Override
@@ -32,8 +32,8 @@ public class HiDensityNativeMemoryNearCacheRecordAccessor
         if (address1 == NULL_ADDRESS || address2 == NULL_ADDRESS) {
             return false;
         }
-        long valueAddress1 = AMEM.getLong(address1 + HiDensityNativeMemoryNearCacheRecord.VALUE_OFFSET);
-        long valueAddress2 = AMEM.getLong(address2 + HiDensityNativeMemoryNearCacheRecord.VALUE_OFFSET);
+        long valueAddress1 = AMEM.getLong(address1 + NativeMemoryNearCacheRecord.VALUE_OFFSET);
+        long valueAddress2 = AMEM.getLong(address2 + NativeMemoryNearCacheRecord.VALUE_OFFSET);
         return NativeMemoryDataUtil.equals(valueAddress1, valueAddress2);
     }
 }

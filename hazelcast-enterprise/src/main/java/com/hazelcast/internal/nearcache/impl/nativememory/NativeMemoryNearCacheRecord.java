@@ -15,7 +15,7 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
  * Implementation of {@link HiDensityNearCacheRecord} to store {@link NativeMemoryData} type objects.
  */
 @SuppressWarnings("checkstyle:methodcount")
-public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheRecord {
+public class NativeMemoryNearCacheRecord extends HiDensityNearCacheRecord {
 
     /**
      * Size of a Hi-Density Near Cache record.
@@ -43,9 +43,9 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
         SIZE = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
     }
 
-    private HiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> nearCacheRecordAccessor;
+    private HiDensityRecordAccessor<NativeMemoryNearCacheRecord> nearCacheRecordAccessor;
 
-    public HiDensityNativeMemoryNearCacheRecord(HiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> accessor) {
+    public NativeMemoryNearCacheRecord(HiDensityRecordAccessor<NativeMemoryNearCacheRecord> accessor) {
         this.nearCacheRecordAccessor = accessor;
     }
 
@@ -130,7 +130,7 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
     }
 
     @Override
-    public HiDensityNativeMemoryNearCacheRecord reset(long address) {
+    public NativeMemoryNearCacheRecord reset(long address) {
         setAddress(address);
         setSize(SIZE);
         return this;
@@ -258,7 +258,7 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
             return false;
         }
 
-        HiDensityNativeMemoryNearCacheRecord record = (HiDensityNativeMemoryNearCacheRecord) o;
+        NativeMemoryNearCacheRecord record = (NativeMemoryNearCacheRecord) o;
         return address == record.address && size == record.size;
     }
 

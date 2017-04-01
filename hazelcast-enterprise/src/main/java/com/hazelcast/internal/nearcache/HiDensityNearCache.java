@@ -2,7 +2,7 @@ package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.nearcache.impl.DefaultNearCache;
-import com.hazelcast.internal.nearcache.impl.nativememory.HiDensitySegmentedNativeMemoryNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.impl.nativememory.SegmentedNativeMemoryNearCacheRecordStore;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.HazelcastMemoryManager;
@@ -64,7 +64,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     protected NearCacheRecordStore<K, V> createNearCacheRecordStore(String name, NearCacheConfig nearCacheConfig) {
         if (NATIVE == nearCacheConfig.getInMemoryFormat()) {
             EnterpriseSerializationService ss = (EnterpriseSerializationService) serializationService;
-            return new HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>(name, nearCacheConfig, ss, classLoader);
+            return new SegmentedNativeMemoryNearCacheRecordStore<K, V>(name, nearCacheConfig, ss, classLoader);
         }
 
         return super.createNearCacheRecordStore(name, nearCacheConfig);

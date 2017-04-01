@@ -5,7 +5,7 @@ import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.internal.nearcache.impl.nativememory.HiDensityNativeMemoryNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.impl.nativememory.NativeMemoryNearCacheRecordStore;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -66,7 +66,7 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
         NearCacheRecordStore recordStore;
         switch (inMemoryFormat) {
             case NATIVE:
-                recordStore = new HiDensityNativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess, null);
+                recordStore = new NativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess, null);
                 break;
             default:
                 recordStore = super.createNearCacheRecordStore(nearCacheConfig, inMemoryFormat);

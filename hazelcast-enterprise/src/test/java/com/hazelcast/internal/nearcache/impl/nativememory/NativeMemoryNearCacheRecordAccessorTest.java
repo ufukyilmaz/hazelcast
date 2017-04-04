@@ -21,11 +21,11 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class HiDensityNativeMemoryNearCacheRecordAccessorTest {
+public class NativeMemoryNearCacheRecordAccessorTest {
 
     private PoolingMemoryManager memoryManager;
     private EnterpriseSerializationService serializationService;
-    private HiDensityNativeMemoryNearCacheRecordAccessor accessor;
+    private NativeMemoryNearCacheRecordAccessor accessor;
 
     @Before
     public void setup() {
@@ -33,7 +33,7 @@ public class HiDensityNativeMemoryNearCacheRecordAccessorTest {
         memoryManager = new PoolingMemoryManager(memorySize);
         memoryManager.registerThread(Thread.currentThread());
         serializationService = new EnterpriseSerializationServiceBuilder().setMemoryManager(memoryManager).build();
-        accessor = new HiDensityNativeMemoryNearCacheRecordAccessor(serializationService, memoryManager);
+        accessor = new NativeMemoryNearCacheRecordAccessor(serializationService, memoryManager);
     }
 
     @After
@@ -43,7 +43,7 @@ public class HiDensityNativeMemoryNearCacheRecordAccessorTest {
 
     @Test
     public void test_createRecord() {
-        assertTrue(accessor.createRecord() instanceof HiDensityNativeMemoryNearCacheRecord);
+        assertTrue(accessor.createRecord() instanceof NativeMemoryNearCacheRecord);
     }
 
     @Test
@@ -64,11 +64,11 @@ public class HiDensityNativeMemoryNearCacheRecordAccessorTest {
 
     @Test
     public void test_isEqual_equals_when_values_are_same() {
-        long recordAddress1 = memoryManager.allocate(HiDensityNativeMemoryNearCacheRecord.SIZE);
-        long recordAddress2 = memoryManager.allocate(HiDensityNativeMemoryNearCacheRecord.SIZE);
+        long recordAddress1 = memoryManager.allocate(NativeMemoryNearCacheRecord.SIZE);
+        long recordAddress2 = memoryManager.allocate(NativeMemoryNearCacheRecord.SIZE);
 
-        HiDensityNativeMemoryNearCacheRecord record1 = accessor.newRecord().reset(recordAddress1);
-        HiDensityNativeMemoryNearCacheRecord record2 = accessor.newRecord().reset(recordAddress2);
+        NativeMemoryNearCacheRecord record1 = accessor.newRecord().reset(recordAddress1);
+        NativeMemoryNearCacheRecord record2 = accessor.newRecord().reset(recordAddress2);
 
         NativeMemoryData value1 = serializationService.toData(1, DataType.NATIVE);
         NativeMemoryData value2 = serializationService.toData(1, DataType.NATIVE);
@@ -81,11 +81,11 @@ public class HiDensityNativeMemoryNearCacheRecordAccessorTest {
 
     @Test
     public void test_isEqual_notEquals_when_values_are_different() {
-        long recordAddress1 = memoryManager.allocate(HiDensityNativeMemoryNearCacheRecord.SIZE);
-        long recordAddress2 = memoryManager.allocate(HiDensityNativeMemoryNearCacheRecord.SIZE);
+        long recordAddress1 = memoryManager.allocate(NativeMemoryNearCacheRecord.SIZE);
+        long recordAddress2 = memoryManager.allocate(NativeMemoryNearCacheRecord.SIZE);
 
-        HiDensityNativeMemoryNearCacheRecord record1 = accessor.newRecord().reset(recordAddress1);
-        HiDensityNativeMemoryNearCacheRecord record2 = accessor.newRecord().reset(recordAddress2);
+        NativeMemoryNearCacheRecord record1 = accessor.newRecord().reset(recordAddress1);
+        NativeMemoryNearCacheRecord record2 = accessor.newRecord().reset(recordAddress2);
 
         NativeMemoryData value1 = serializationService.toData(1, DataType.NATIVE);
         NativeMemoryData value2 = serializationService.toData(2, DataType.NATIVE);

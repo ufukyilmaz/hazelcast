@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * Iterates over the keys of an array of {@link HiDensityNativeMemoryNearCacheRecordStore} instances.
+ * Iterates over the keys of an array of {@link NativeMemoryNearCacheRecordStore} instances.
  *
  * The iterator dynamically locks and unlocks the provided {@link LockableNearCacheRecordStoreSegment}.
  *
@@ -19,7 +19,7 @@ class LockableNearCacheRecordStoreSegmentIterator implements Iterator<Data>, Clo
 
     private final Thread ownerThread = Thread.currentThread();
 
-    private final HiDensityNativeMemoryNearCacheRecordStore[] segments;
+    private final NativeMemoryNearCacheRecordStore[] segments;
     private final boolean[] obtainedLocks;
 
     private int segmentIndex = -1;
@@ -27,7 +27,7 @@ class LockableNearCacheRecordStoreSegmentIterator implements Iterator<Data>, Clo
     private LockableNearCacheRecordStoreSegment segment;
     private Iterator<Data> segmentKeySetIterator;
 
-    LockableNearCacheRecordStoreSegmentIterator(HiDensityNativeMemoryNearCacheRecordStore[] segments) {
+    LockableNearCacheRecordStoreSegmentIterator(NativeMemoryNearCacheRecordStore[] segments) {
         this.segments = segments;
         this.obtainedLocks = new boolean[segments.length];
     }

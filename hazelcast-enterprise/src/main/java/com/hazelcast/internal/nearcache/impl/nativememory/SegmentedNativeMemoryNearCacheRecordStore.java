@@ -26,13 +26,13 @@ import static java.lang.Runtime.getRuntime;
 
 /**
  * Segmented {@link HiDensityNearCacheRecordStore} which improves performance by using multiple
- * {@link HiDensityNativeMemoryNearCacheRecordStore} instances in parallel.
+ * {@link NativeMemoryNearCacheRecordStore} instances in parallel.
  *
  * @param <K> the type of the key stored in Near Cache
  * @param <V> the type of the value stored in Near Cache
  */
-public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
-        implements HiDensityNearCacheRecordStore<K, V, HiDensityNativeMemoryNearCacheRecord> {
+public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
+        implements HiDensityNearCacheRecordStore<K, V, NativeMemoryNearCacheRecord> {
 
     private final int hashSeed;
     private final int segmentMask;
@@ -41,16 +41,16 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     private final ClassLoader classLoader;
     private final NearCacheStatsImpl nearCacheStats;
     private final HazelcastMemoryManager memoryManager;
-    private final HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
+    private final NativeMemoryNearCacheRecordStore<K, V>[] segments;
     private final NearCachePreloader<Data> nearCachePreloader;
 
     private volatile StaleReadDetector staleReadDetector = ALWAYS_FRESH;
 
     @SuppressWarnings("checkstyle:magicnumber")
-    public HiDensitySegmentedNativeMemoryNearCacheRecordStore(String name,
-                                                              NearCacheConfig nearCacheConfig,
-                                                              EnterpriseSerializationService serializationService,
-                                                              ClassLoader classLoader) {
+    public SegmentedNativeMemoryNearCacheRecordStore(String name,
+                                                     NearCacheConfig nearCacheConfig,
+                                                     EnterpriseSerializationService serializationService,
+                                                     ClassLoader classLoader) {
         this.serializationService = serializationService;
         this.classLoader = classLoader;
         this.nearCacheStats = new NearCacheStatsImpl();
@@ -87,11 +87,11 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @SuppressWarnings("unchecked")
-    private HiDensityNativeMemoryNearCacheRecordStore<K, V>[] createSegments(NearCacheConfig nearCacheConfig,
-                                                                             NearCacheStatsImpl nearCacheStats,
-                                                                             HiDensityStorageInfo storageInfo,
-                                                                             int segmentSize) {
-        HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments = new HiDensityNativeMemoryNearCacheRecordStore[segmentSize];
+    private NativeMemoryNearCacheRecordStore<K, V>[] createSegments(NearCacheConfig nearCacheConfig,
+                                                                    NearCacheStatsImpl nearCacheStats,
+                                                                    HiDensityStorageInfo storageInfo,
+                                                                    int segmentSize) {
+        NativeMemoryNearCacheRecordStore<K, V>[] segments = new NativeMemoryNearCacheRecordStore[segmentSize];
         for (int i = 0; i < segmentSize; i++) {
             segments[i] = new HiDensityNativeMemoryNearCacheRecordStoreSegment(nearCacheConfig, nearCacheStats,
                     storageInfo, serializationService, classLoader);
@@ -126,30 +126,30 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public V get(K key) {
-        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         return segment.get(key);
     }
 
     @Override
     public void put(K key, V value) {
-        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         segment.put(key, value);
     }
 
     @Override
     public boolean remove(K key) {
-        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         return segment.remove(key);
     }
 
-    private HiDensityNativeMemoryNearCacheRecordStore<K, V> segmentFor(K key) {
+    private NativeMemoryNearCacheRecordStore<K, V> segmentFor(K key) {
         int hash = hash(key);
         return segments[(hash >>> segmentShift) & segmentMask];
     }
 
     @Override
     public void clear() {
-        for (HiDensityNativeMemoryNearCacheRecordStore segment : segments) {
+        for (NativeMemoryNearCacheRecordStore segment : segments) {
             segment.clear();
         }
 
@@ -159,7 +159,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void destroy() {
-        for (HiDensityNativeMemoryNearCacheRecordStore segment : segments) {
+        for (NativeMemoryNearCacheRecordStore segment : segments) {
             segment.destroy();
         }
 
@@ -205,7 +205,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public int size() {
         int size = 0;
-        for (HiDensityNativeMemoryNearCacheRecordStore segment : segments) {
+        for (NativeMemoryNearCacheRecordStore segment : segments) {
             size += segment.size();
         }
         return size;
@@ -215,7 +215,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     public int forceEvict() {
         int evictedCount = 0;
         for (int i = 0; i < segments.length; i++) {
-            HiDensityNativeMemoryNearCacheRecordStore segment = segments[i];
+            NativeMemoryNearCacheRecordStore segment = segments[i];
             evictedCount += segment.forceEvict();
         }
         return evictedCount;
@@ -228,7 +228,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             if (currentThread.isInterrupted()) {
                 return;
             }
-            HiDensityNativeMemoryNearCacheRecordStore segment = segments[i];
+            NativeMemoryNearCacheRecordStore segment = segments[i];
             segment.doExpiration();
         }
     }
@@ -240,7 +240,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             if (currentThread.isInterrupted()) {
                 return;
             }
-            HiDensityNativeMemoryNearCacheRecordStore segment = segments[i];
+            NativeMemoryNearCacheRecordStore segment = segments[i];
             segment.doEvictionIfRequired();
         }
     }
@@ -252,7 +252,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             if (currentThread.isInterrupted()) {
                 return;
             }
-            HiDensityNativeMemoryNearCacheRecordStore segment = segments[i];
+            NativeMemoryNearCacheRecordStore segment = segments[i];
             segment.doEviction();
         }
     }
@@ -275,7 +275,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public void setStaleReadDetector(StaleReadDetector staleReadDetector) {
         this.staleReadDetector = staleReadDetector;
-        for (HiDensityNativeMemoryNearCacheRecordStore<K, V> segment : segments) {
+        for (NativeMemoryNearCacheRecordStore<K, V> segment : segments) {
             segment.setStaleReadDetector(staleReadDetector);
         }
     }
@@ -287,13 +287,13 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public long tryReserveForUpdate(K key) {
-        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         return segment.tryReserveForUpdate(key);
     }
 
     @Override
     public V tryPublishReserved(K key, V value, long reservationId, boolean deserialize) {
-        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         return segment.tryPublishReserved(key, value, reservationId, deserialize);
     }
 
@@ -306,7 +306,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
      * Represents a segment block (lockable by a thread) in this Near Cache storage.
      */
     class HiDensityNativeMemoryNearCacheRecordStoreSegment
-            extends HiDensityNativeMemoryNearCacheRecordStore<K, V>
+            extends NativeMemoryNearCacheRecordStore<K, V>
             implements LockableNearCacheRecordStoreSegment {
 
         private static final long READ_LOCK_TIMEOUT_IN_MILLISECONDS = 25;

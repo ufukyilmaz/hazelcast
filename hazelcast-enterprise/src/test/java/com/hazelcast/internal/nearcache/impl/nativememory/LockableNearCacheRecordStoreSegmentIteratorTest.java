@@ -34,7 +34,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     public void testIterator_whenAllLocksAreReleased_thenCloseThrowsNoException() throws Exception {
         LockableTestSegment firstSegment = new LockableTestSegment(FIRST_DATA, false);
         LockableTestSegment secondSegment = new LockableTestSegment(SECOND_DATA, false);
-        iterator = new LockableNearCacheRecordStoreSegmentIterator(new HiDensityNativeMemoryNearCacheRecordStore[]{
+        iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
                 firstSegment, secondSegment
         });
 
@@ -70,7 +70,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     @Test(expected = IOException.class)
     public void testIterator_whenUnlockFails_thenCloseThrowsIOException() throws Exception {
         LockableTestSegment segment = new LockableTestSegment(FIRST_DATA, true);
-        iterator = new LockableNearCacheRecordStoreSegmentIterator(new HiDensityNativeMemoryNearCacheRecordStore[]{
+        iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
                 segment
         });
 
@@ -99,7 +99,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     @Test
     public void test_whenNextIsCalledWithoutHasNext_thenSegmentIsInitializedAndLocked() {
         LockableTestSegment segment = new LockableTestSegment(FIRST_DATA, false);
-        iterator = new LockableNearCacheRecordStoreSegmentIterator(new HiDensityNativeMemoryNearCacheRecordStore[]{
+        iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
                 segment
         });
 
@@ -114,7 +114,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     public void test_whenNextIsCalledWithoutHasNext_thenNextSegmentIsInitializedAndLocked() {
         LockableTestSegment firstSegment = new LockableTestSegment(FIRST_DATA, false);
         LockableTestSegment secondSegment = new LockableTestSegment(SECOND_DATA, false);
-        iterator = new LockableNearCacheRecordStoreSegmentIterator(new HiDensityNativeMemoryNearCacheRecordStore[]{
+        iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
                 firstSegment, secondSegment
         });
 
@@ -133,7 +133,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     @Test
     public void test_whenNextIsCalledAfterLastElement_thenNoSuchElementExceptionIsThrown() {
         LockableTestSegment segment = new LockableTestSegment(FIRST_DATA, false);
-        iterator = new LockableNearCacheRecordStoreSegmentIterator(new HiDensityNativeMemoryNearCacheRecordStore[]{
+        iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
                 segment
         });
 
@@ -159,7 +159,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
         LockableTestSegment firstEmptySegment = new LockableTestSegment();
         LockableTestSegment secondEmptySegment = new LockableTestSegment();
         LockableTestSegment segment = new LockableTestSegment(FIRST_DATA, false);
-        iterator = new LockableNearCacheRecordStoreSegmentIterator(new HiDensityNativeMemoryNearCacheRecordStore[]{
+        iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
                 firstEmptySegment,
                 secondEmptySegment,
                 segment
@@ -187,7 +187,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testRemove() {
-        iterator = new LockableNearCacheRecordStoreSegmentIterator(new HiDensityNativeMemoryNearCacheRecordStore[0]);
+        iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[0]);
 
         iterator.remove();
     }
@@ -195,7 +195,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     @Test
     public void testThreadSafety_whenLockingIsCalledFromOtherThread_thenThrowException() throws Exception {
         LockableTestSegment segment = new LockableTestSegment(FIRST_DATA, false);
-        iterator = new LockableNearCacheRecordStoreSegmentIterator(new HiDensityNativeMemoryNearCacheRecordStore[]{
+        iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
                 segment
         });
 
@@ -230,7 +230,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     public void testThreadSafety_whenUnlockingIsCalledFromOtherThread_thenThrowException() throws Exception {
         LockableTestSegment firstSegment = new LockableTestSegment(FIRST_DATA, false);
         LockableTestSegment secondSegment = new LockableTestSegment();
-        iterator = new LockableNearCacheRecordStoreSegmentIterator(new HiDensityNativeMemoryNearCacheRecordStore[]{
+        iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
                 firstSegment, secondSegment
         });
 
@@ -270,7 +270,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     }
 
     private static class LockableTestSegment
-            extends HiDensityNativeMemoryNearCacheRecordStore
+            extends NativeMemoryNearCacheRecordStore
             implements LockableNearCacheRecordStoreSegment {
 
         private final Iterator<Data> iterator;

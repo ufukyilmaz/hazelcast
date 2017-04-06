@@ -15,6 +15,7 @@ package com.hazelcast.instance;
  * The fields are read via reflection at {@link com.hazelcast.instance.BuildInfoProvider}
  *
  */
+@SuppressWarnings("checkstyle:javadocvariable")
 public final class GeneratedEnterpriseBuildProperties {
     public static final String VERSION = "${project.version}";
     public static final String BUILD = "${timestamp}";

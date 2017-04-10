@@ -1,12 +1,22 @@
 package com.hazelcast.test.starter;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-class ProxyInvocationHandler implements InvocationHandler {
+class ProxyInvocationHandler implements InvocationHandler, Serializable {
+
     private final Object delegate;
-
 
     ProxyInvocationHandler(Object delegate) {
         this.delegate = delegate;
@@ -14,52 +24,81 @@ class ProxyInvocationHandler implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        ClassLoader targetClassLoader = proxy.getClass().getClassLoader();
         Utils.debug("Proxy " + this + " called. Method: " + method);
         Class<?> delegateClass = delegate.getClass();
         Method methodDelegate = getMethodDelegate(method, delegateClass);
 
-        Class<?> returnType = method.getReturnType();
+        Type returnType = method.getGenericReturnType();
+        Type delegateReturnType = methodDelegate.getGenericReturnType();
         ClassLoader delegateClassClassLoader = delegateClass.getClassLoader();
-        Object[] newArgs = proxyArgumentsIfNeeded(proxy, args, delegateClassClassLoader);
+        Object[] newArgs = HazelcastProxyFactory.proxyArgumentsIfNeeded(args, delegateClassClassLoader);
         Object delegateResult = invokeMethodDelegate(methodDelegate, newArgs);
-        // if there return types are equals -> they are loaded
-        // by the same classloader -> no need to proxy what it returns
-        if (methodDelegate.getReturnType().equals(returnType) || delegateResult == null) {
+        if (!shouldProxy(method, methodDelegate, delegateResult)) {
             return delegateResult;
         }
 
-        //at this point we know the delegate return something loaded by
-        //different class then the proxy -> we need to proxy the result
-        Class<?>[] interfaces = getAllInterfaces(returnType);
-        ClassLoader targetClassLoader = proxy.getClass().getClassLoader();
-        Object resultingProxy = HazelcastProxyFactory.generateProxyForInterface(delegateResult, targetClassLoader, interfaces);
-        printInfoAboutResultProxy(resultingProxy);
-        return resultingProxy;
+        if (returnType instanceof ParameterizedType) {
+            ParameterizedType parameterizedReturnType = (ParameterizedType) returnType;
+            ParameterizedType parameterizedDelegateReturnType = (ParameterizedType) delegateReturnType;
+
+            if (Collection.class.isAssignableFrom((Class) parameterizedDelegateReturnType.getRawType())) {
+                Collection result;
+                Collection delegateCollectionResult = (Collection) delegateResult;
+                // check if the raw types are equal: if yes, then return a collection of the same type
+                // otherwise proxy it
+                if (parameterizedDelegateReturnType.getRawType().equals(parameterizedReturnType.getRawType())) {
+                    result = delegateCollectionResult;
+                } else {
+                    result = (Collection) proxyReturnObject(targetClassLoader, method.getReturnType(), delegateResult);
+                }
+
+                // if the parameter type is not equal, need to proxy it
+                Type returnParameterType = parameterizedReturnType.getActualTypeArguments()[0];
+                Type delegateParameterType = parameterizedDelegateReturnType.getActualTypeArguments()[0];
+                // if the type argument is equal, just return the result, otherwise proxy each item in the collection
+                if (returnParameterType.equals(delegateParameterType)) {
+                    return result;
+                } else {
+                    Collection temp = newCollectionFor((Class) parameterizedDelegateReturnType.getRawType());
+                    for (Object o : delegateCollectionResult) {
+                        // assuming the return type argument is not parameterized itself and cast to class
+                        temp.add(proxyReturnObject(targetClassLoader, (Class) returnParameterType, o));
+                    }
+                    try {
+                        result.clear();
+                        result.addAll(temp);
+                        return result;
+                    } catch (UnsupportedOperationException e) {
+                        return temp;
+                    }
+                }
+            } else {
+                return proxyReturnObject(targetClassLoader, method.getReturnType(), delegateResult);
+            }
+        } else {
+            // at this point we know the delegate returned something loaded by
+            // different classloader than the proxy -> we need to proxy the result
+            return proxyReturnObject(targetClassLoader, method.getReturnType(), delegateResult);
+        }
     }
 
-    private Object[] proxyArgumentsIfNeeded(Object proxy, Object[] args, ClassLoader delegateClassClassLoader) throws ClassNotFoundException {
-        if (args == null) {
-            return null;
+    /**
+     *
+     * @param targetClassLoader the classloader on which the proxy will be created
+     * @param returnClass       the expected Class of the proxy to be created
+     * @param delegate    the object to be delegated to by the proxy
+     * @return                  a proxy to delegate
+     */
+    private Object proxyReturnObject(ClassLoader targetClassLoader, Class<?> returnClass, Object delegate) {
+        Object resultingProxy = null;
+        try {
+            resultingProxy = HazelcastProxyFactory.proxyObjectForStarter(targetClassLoader, delegate);
+        } catch (Exception e) {
+            throw new GuardianException(e);
         }
-
-        Object[] newArgs = new Object[args.length];
-        for (int i = 0; i < args.length; i++) {
-            Object arg = args[i];
-            if (arg == null || arg.getClass().getClassLoader() == String.class.getClassLoader()) {
-                newArgs[i] = arg;
-            } else {
-                Class<?>[] ifaces = getAllInterfaces(arg.getClass());
-                Class<?>[] delegateIfaces = new Class<?>[ifaces.length];
-                for (int j = 0; j < ifaces.length; j++) {
-                    Class<?> clazz = ifaces[j];
-                    Class<?> delegateInterface = delegateClassClassLoader.loadClass(clazz.getName());
-                    delegateIfaces[j] = delegateInterface;
-                }
-                Object newArg = HazelcastProxyFactory.generateProxyForInterface(arg, delegateClassClassLoader, delegateIfaces);
-                newArgs[i] = newArg;
-            }
-        }
-        return newArgs;
+        printInfoAboutResultProxy(resultingProxy);
+        return resultingProxy;
     }
 
     private Object invokeMethodDelegate(Method methodDelegate, Object[] args) throws Throwable {
@@ -101,16 +140,6 @@ class ProxyInvocationHandler implements InvocationHandler {
         return methodDelegate;
     }
 
-    private Class<?>[] getAllInterfaces(Class<?> type) {
-        Class<?>[] interfaces = type.getInterfaces();
-        //if the return type itself is an interface then we have to add it
-        //to the list of interfaces implemented by the proxy
-        if (type.isInterface()) {
-            interfaces = Utils.concatItems(interfaces, type);
-        }
-        return interfaces;
-    }
-
     private static void printInfoAboutResultProxy(Object resultingProxy) {
         if (!Utils.DEBUG_ENABLED) {
             return;
@@ -122,4 +151,37 @@ class ProxyInvocationHandler implements InvocationHandler {
             Utils.debug(iface + ", loaded by " + iface.getClassLoader());
         }
     }
+
+    /**
+     * @return a new Collection object of a class that is assignable from the given type
+     */
+    private static Collection newCollectionFor(Class type) {
+        if (Set.class.isAssignableFrom(type)) {
+            return new HashSet();
+        } else if (List.class.isAssignableFrom(type)) {
+            return new ArrayList();
+        } else if (Queue.class.isAssignableFrom(type)) {
+            return new ConcurrentLinkedQueue();
+        } else {
+            throw new UnsupportedOperationException("Cannot locate collection type for " + type);
+        }
+    }
+
+    private boolean shouldProxy(Method proxyMethod, Method delegateMethod, Object delegateResult) {
+        if (delegateResult == null) {
+            return false;
+        }
+
+        Type returnType = proxyMethod.getGenericReturnType();
+        if (returnType instanceof ParameterizedType) {
+            return true;
+        }
+
+        // if there return types are equals -> they are loaded
+        // by the same classloader -> no need to proxy what it returns
+        Class<?> returnClass = proxyMethod.getReturnType();
+        Class<?> delegateReturnClass = delegateMethod.getReturnType();
+        return !(returnClass.equals(delegateReturnClass));
+    }
+
 }

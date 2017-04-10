@@ -27,15 +27,14 @@ import static java.util.Arrays.asList;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore
 public class ClientHDMapNearCacheBasicTest extends ClientMapNearCacheBasicTest {
 
     @Parameters(name = "format:{0}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {InMemoryFormat.BINARY},
-                //{InMemoryFormat.OBJECT},
-                //{InMemoryFormat.NATIVE},
+                {InMemoryFormat.OBJECT},
+                {InMemoryFormat.NATIVE},
         });
     }
 
@@ -49,5 +48,10 @@ public class ClientHDMapNearCacheBasicTest extends ClientMapNearCacheBasicTest {
         return new ClientConfig()
                 .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
+    }
+
+    @Ignore
+    public void whenRemoveAllIsUsed_thenNearCacheShouldBeInvalidated_onDataAdapter(){
+
     }
 }

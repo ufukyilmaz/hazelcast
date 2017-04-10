@@ -15,10 +15,9 @@ import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
- *
  * NativeMemoryData is in the form of
  * <pre>
- *|SIZE|PARTITION HASH CODE|TYPE-ID|SERIALIZER DATA|
+ * |SIZE|PARTITION HASH CODE|TYPE-ID|SERIALIZER DATA|
  * </pre>
  *
  * @author mdogan 12/10/13
@@ -82,6 +81,11 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
         byte[] buffer = new byte[len];
         copyTo(NATIVE_MEMORY_DATA_OVERHEAD, buffer, ARRAY_BYTE_BASE_OFFSET, len);
         return buffer;
+    }
+
+    @Override
+    public void copyTo(byte[] dest, int destPos) {
+        copyTo(NATIVE_MEMORY_DATA_OVERHEAD, dest, ARRAY_BYTE_BASE_OFFSET + destPos, totalSize());
     }
 
     @Override

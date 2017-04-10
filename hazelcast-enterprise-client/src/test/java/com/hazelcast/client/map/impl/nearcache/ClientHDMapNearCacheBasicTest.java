@@ -7,6 +7,7 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -26,14 +27,15 @@ import static java.util.Arrays.asList;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
+@Ignore
 public class ClientHDMapNearCacheBasicTest extends ClientMapNearCacheBasicTest {
 
     @Parameters(name = "format:{0}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {InMemoryFormat.BINARY},
-                {InMemoryFormat.OBJECT},
-                {InMemoryFormat.NATIVE},
+                //{InMemoryFormat.OBJECT},
+                //{InMemoryFormat.NATIVE},
         });
     }
 

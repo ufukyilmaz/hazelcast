@@ -4,14 +4,13 @@ import com.hazelcast.concurrent.lock.LockWaitNotifyKey;
 import com.hazelcast.core.OperationTimeoutException;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.BlockingOperation;
 import com.hazelcast.spi.DefaultObjectNamespace;
 import com.hazelcast.spi.ReadonlyOperation;
 import com.hazelcast.spi.WaitNotifyKey;
 
 public final class HDGetOperation extends HDKeyBasedMapOperation
-        implements IdentifiedDataSerializable, BlockingOperation, ReadonlyOperation {
+        implements BlockingOperation, ReadonlyOperation {
 
     private Data result;
 
@@ -24,7 +23,14 @@ public final class HDGetOperation extends HDKeyBasedMapOperation
 
     @Override
     protected void runInternal() {
-        result = mapServiceContext.toData(recordStore.get(dataKey, false));
+        Object record = recordStore.get(dataKey, false);
+        if (!executedLocally() && record instanceof Data) {
+            // in case of a 'remote' call (e..g a client call) we prevent making an onheap copy of the offheap data
+            result = (Data) record;
+        } else {
+            // in case of a local call, we do make a copy so we can safely share it with e.g. near cache invalidation
+            result = mapService.getMapServiceContext().toData(record);
+        }
     }
 
     @Override

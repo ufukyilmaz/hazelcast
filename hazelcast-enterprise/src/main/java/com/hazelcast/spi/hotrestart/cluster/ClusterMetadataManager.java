@@ -6,6 +6,7 @@ import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
@@ -13,7 +14,6 @@ import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
-import com.hazelcast.version.Version;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.ForceStartException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
@@ -21,6 +21,7 @@ import com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatu
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.Clock;
+import com.hazelcast.version.Version;
 
 import java.io.File;
 import java.io.IOException;
@@ -437,7 +438,8 @@ public class ClusterMetadataManager {
     }
 
     public void onMembershipChange() {
-        if (isStartCompleted() && node.joined()) {
+        ClusterService clusterService = node.getClusterService();
+        if (isStartCompleted() && clusterService.isJoined()) {
             persistMembers();
         } else if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
             hotRestartStatusLock.lock();
@@ -450,7 +452,7 @@ public class ClusterMetadataManager {
 
                     for (Member member : restoredMembers) {
                         Address address = member.getAddress();
-                        if (node.getClusterService().getMember(address) == null
+                        if (clusterService.getMember(address) == null
                                 && memberClusterStartInfos.remove(address) != null) {
                             logger.warning("Member cluster start info of " + address + " is removed as it has left the cluster");
                         }
@@ -463,7 +465,7 @@ public class ClusterMetadataManager {
     }
 
     public void onPartitionStateChange() {
-        if (!node.joined()) {
+        if (!node.getClusterService().isJoined()) {
             // Node is being shutdown.
             // Partition events at this point can be ignored,
             // latest partition state will be persisted during HotRestartIntegrationService shutdown.
@@ -816,7 +818,7 @@ public class ClusterMetadataManager {
 
     public void receiveHotRestartStatus(Address sender, HotRestartClusterStartStatus result,
                                         Set<String> excludedMemberUuids, ClusterState clusterState) {
-        if (node.joined()) {
+        if (node.getClusterService().isJoined()) {
             Address master = node.getMasterAddress();
             if (master.equals(sender) || node.isMaster()) {
                 handleHotRestartStatus(sender, result, excludedMemberUuids, clusterState);
@@ -940,7 +942,7 @@ public class ClusterMetadataManager {
             if (newAddress == null) {
                 updatedMembers.add(member);
             } else {
-                updatedMembers.add(new MemberImpl(newAddress, member.getVersion(), member.localMember(), member.getUuid(), null));
+                updatedMembers.add(new MemberImpl(newAddress, member.getVersion(), member.localMember(), member.getUuid()));
             }
         }
 

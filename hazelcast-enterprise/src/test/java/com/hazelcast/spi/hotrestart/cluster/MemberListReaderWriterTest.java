@@ -36,7 +36,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
     void setupInternal() {
         Address address = new Address("127.0.0.1", localAddress, 5701);
         MemberImpl localMember = new MemberImpl(address, MemberVersion.of(BUILD_INFO.getVersion()), true,
-                newUnsecureUuidString(), null);
+                newUnsecureUuidString());
         when(node.getLocalMember()).thenReturn(localMember);
     }
 
@@ -98,7 +98,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
         Address[] addresses = initializeAddresses(memberCount - 1);
         Collection<Member> members = new HashSet<Member>(memberCount);
         for (Address address : addresses) {
-            members.add(new MemberImpl(address, MemberVersion.of(BUILD_INFO.getVersion()), false, newUnsecureUuidString(), null));
+            members.add(new MemberImpl(address, MemberVersion.of(BUILD_INFO.getVersion()), false, newUnsecureUuidString()));
         }
         members.add(new MemberImpl(node.getLocalMember()));
         return members;

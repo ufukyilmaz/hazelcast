@@ -9,6 +9,7 @@ import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.cluster.ClusterService;
+import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.HazelcastMemoryManager;
@@ -632,7 +633,8 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
      *                    Otherwise, it only resets itself, clears the hot restart data and gets a new uuid.
      */
     private void handleForceStart(boolean isAfterJoin) {
-        if (!isAfterJoin && node.joined()) {
+        ClusterServiceImpl clusterService = node.getClusterService();
+        if (!isAfterJoin && clusterService.isJoined()) {
             logger.info("No need to reset hot restart data since node is joined and it will force-start itself.");
             return;
         }
@@ -645,11 +647,11 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
 
         logger.info("Resetting cluster state to ACTIVE");
 
-        setClusterState(node.getClusterService(), ClusterState.ACTIVE, false);
+        setClusterState(clusterService, ClusterState.ACTIVE, false);
 
         node.getJoiner().setTargetAddress(null);
 
-        node.getClusterService().reset();
+        clusterService.reset();
 
         if (isAfterJoin) {
             try {

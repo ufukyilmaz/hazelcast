@@ -24,7 +24,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 
 import static com.hazelcast.instance.BuildInfoProvider.BUILD_INFO;
-import static com.hazelcast.internal.cluster.impl.Versions.V3_8;
+import static com.hazelcast.internal.cluster.Versions.V3_8;
 import static org.junit.Assert.assertEquals;
 
 /**

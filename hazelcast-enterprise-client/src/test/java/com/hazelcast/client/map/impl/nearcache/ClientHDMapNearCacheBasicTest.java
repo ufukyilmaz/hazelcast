@@ -7,7 +7,6 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -48,10 +47,5 @@ public class ClientHDMapNearCacheBasicTest extends ClientMapNearCacheBasicTest {
         return new ClientConfig()
                 .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
-    }
-
-    @Ignore
-    public void whenRemoveAllIsUsed_thenNearCacheShouldBeInvalidated_onDataAdapter(){
-
     }
 }

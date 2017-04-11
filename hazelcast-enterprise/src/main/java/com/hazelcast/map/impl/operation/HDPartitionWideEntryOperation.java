@@ -42,9 +42,13 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
 
     @Override
     protected void runInternal() {
-        long now = getNow();
+        final long now = getNow();
+        final int entryCount = recordStore.size();
 
-        responses = new MapEntries(recordStore.size());
+        Container removedEntryRecordPairs = new Container(entryCount, newEntryRemoveHandler(now, false));
+        Container addedOrUpdatedEntryRecordPairs = new Container(entryCount, newEntryAddOrUpdateHandler(now, false));
+        responses = new MapEntries(entryCount);
+
         Iterator<Record> iterator = recordStore.iterator(now, false);
         while (iterator.hasNext()) {
             Record record = iterator.next();
@@ -66,13 +70,23 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
             if (noOp(entry, oldValue)) {
                 continue;
             }
-            if (entryRemoved(entry, dataKey, oldValue, now)) {
+
+            if (isEntryRemoved(entry)) {
+                removedEntryRecordPairs.add(entry, record);
                 continue;
             }
-            entryAddedOrUpdated(entry, dataKey, oldValue, now);
 
-            evict(dataKey);
+            addedOrUpdatedEntryRecordPairs.add(entry, record);
         }
+
+        removedEntryRecordPairs.process();
+        addedOrUpdatedEntryRecordPairs.process();
+    }
+
+    @Override
+    public void afterRun() throws Exception {
+        evict(null);
+        super.afterRun();
     }
 
     @Override

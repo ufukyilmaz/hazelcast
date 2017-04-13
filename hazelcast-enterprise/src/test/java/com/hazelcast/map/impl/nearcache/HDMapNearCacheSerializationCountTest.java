@@ -39,10 +39,10 @@ public class HDMapNearCacheSerializationCountTest extends MapNearCacheSerializat
                 {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, BINARY},
                 {new int[]{1, 0, 0}, new int[]{0, 1, 0}, BINARY, OBJECT},
 
-                {new int[]{1, 1, 1}, new int[]{2, 1, 1}, OBJECT, null},
-                {new int[]{1, 1, 0}, new int[]{2, 1, 1}, OBJECT, NATIVE},
-                {new int[]{1, 1, 0}, new int[]{2, 1, 1}, OBJECT, BINARY},
-                {new int[]{1, 1, 0}, new int[]{2, 1, 0}, OBJECT, OBJECT},
+                {new int[]{1, 1, 1}, new int[]{1, 1, 1}, OBJECT, null},
+                {new int[]{1, 1, 0}, new int[]{1, 1, 1}, OBJECT, NATIVE},
+                {new int[]{1, 1, 0}, new int[]{1, 1, 1}, OBJECT, BINARY},
+                {new int[]{1, 1, 0}, new int[]{1, 1, 0}, OBJECT, OBJECT},
         });
     }
 

@@ -17,6 +17,8 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.PartitionAwareOperation;
+import com.hazelcast.spi.ServiceNamespace;
+import com.hazelcast.spi.ServiceNamespaceAware;
 import com.hazelcast.spi.impl.AbstractNamedOperation;
 import com.hazelcast.util.ExceptionUtil;
 
@@ -28,7 +30,7 @@ import java.util.logging.Level;
  */
 abstract class AbstractHiDensityCacheOperation
         extends AbstractNamedOperation
-        implements PartitionAwareOperation, IdentifiedDataSerializable {
+        implements PartitionAwareOperation, ServiceNamespaceAware, IdentifiedDataSerializable {
 
     protected static final int FORCED_EVICTION_RETRY_COUNT =
             ICacheRecordStore.UNIT_PERCENTAGE / HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
@@ -276,6 +278,16 @@ abstract class AbstractHiDensityCacheOperation
 
     public void setCompletionId(int completionId) {
         this.completionId = completionId;
+    }
+
+    @Override
+    public ServiceNamespace getServiceNamespace() {
+        ICacheRecordStore recordStore = cache;
+        if (recordStore == null) {
+            EnterpriseCacheService service = getService();
+            recordStore = service.getOrCreateRecordStore(name, getPartitionId());
+        }
+        return recordStore.getObjectNamespace();
     }
 
     @Override

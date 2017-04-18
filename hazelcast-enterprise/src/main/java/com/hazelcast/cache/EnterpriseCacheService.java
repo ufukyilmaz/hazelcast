@@ -4,9 +4,9 @@ import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.HiDensityCacheStorageInfo;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HotRestartHiDensityNativeMemoryCacheRecordStore;
-import com.hazelcast.cache.hidensity.operation.CacheReplicationOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSegmentShutdownOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
+import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
 import com.hazelcast.cache.hotrestart.HotRestartEnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.CacheContext;
 import com.hazelcast.cache.impl.CacheEventContext;
@@ -21,6 +21,7 @@ import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
 import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
 import com.hazelcast.cache.impl.merge.entry.LazyCacheEntryView;
 import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
+import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
 import com.hazelcast.cache.impl.wan.CacheFilterProvider;
 import com.hazelcast.cache.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
@@ -40,8 +41,6 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
@@ -455,19 +454,12 @@ public class EnterpriseCacheService
         }
     }
 
-    /**
-     * Creates a {@link com.hazelcast.cache.hidensity.operation.CacheReplicationOperation} to start the replication.
-     *
-     * @param event the {@link PartitionReplicationEvent} holds the <code>partitionId</code>
-     *              and <code>replica index</code>.
-     * @return the created {@link com.hazelcast.cache.hidensity.operation.CacheReplicationOperation}
-     */
     @Override
-    public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
-        CachePartitionSegment segment = segments[event.getPartitionId()];
-        CacheReplicationOperation op =
-                new CacheReplicationOperation(segment, event.getReplicaIndex());
-        return op.isEmpty() ? null : op;
+    /**
+     * Creates a {@link HiDensityCacheReplicationOperation} to start the replication.
+     */
+    protected CacheReplicationOperation newCacheReplicationOperation() {
+        return new HiDensityCacheReplicationOperation();
     }
 
     /**

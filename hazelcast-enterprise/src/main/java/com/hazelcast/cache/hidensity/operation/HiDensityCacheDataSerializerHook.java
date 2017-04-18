@@ -104,7 +104,7 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
                 case PUT_ALL:
                     return new CachePutAllOperation();
                 case CACHE_REPLICATION:
-                    return new CacheReplicationOperation();
+                    return new HiDensityCacheReplicationOperation();
                 case CACHE_SEGMENT_SHUTDOWN:
                     return new CacheSegmentShutdownOperation();
                 default:

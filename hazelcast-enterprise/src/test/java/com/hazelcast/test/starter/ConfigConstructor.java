@@ -13,45 +13,23 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class Configuration {
-    public static final File WORKING_DIRECTORY = Files.createTempDir();
+/**
+ * Clone the configuration from {@code mainConfig} to a new configuration object loaded in the
+ * target {@code classloader}. The returned configuration has its classloader set to the target classloader.
+ */
+public class ConfigConstructor extends AbstractStarterObjectConstructor {
 
-    /**
-     * Clone the configuration from {@code mainConfig} to a new configuration object loaded in the
-     * target {@code classloader}. The returned configuration has its classloader set to the target classloader.
-     *
-     * @param mainConfig    the original {@code com.hazelcast.config.Config} object
-     * @param classloader   target classloader
-     * @return              an object of type {@code com.hazelcast.config.Config} loaded in the target
-     *                      classloader.
-     */
-    public static Object configForClassLoader(Object mainConfig, ClassLoader classloader)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException,
-            NoSuchMethodException {
-        Class<?> configClass = classloader.loadClass("com.hazelcast.config.Config");
-        Object otherConfig = cloneConfig(mainConfig, classloader);
-
-        Method setClassLoaderMethod = configClass.getMethod("setClassLoader", ClassLoader.class);
-        setClassLoaderMethod.invoke(otherConfig, classloader);
-        return otherConfig;
+    public ConfigConstructor(Class<?> targetClass) {
+        super(targetClass);
     }
 
-    /**
-     * Clone the client configuration from {@code mainConfig} to a new configuration object loaded in the
-     * target {@code classloader}. The returned configuration has its classloader set to the target classloader.
-     *
-     * @param mainConfig    the original {@code com.hazelcast.config.Config} object
-     * @param classloader   target classloader
-     * @return              an object of type {@code com.hazelcast.config.Config} loaded in the target
-     *                      classloader.
-     */
-    public static Object clientConfigForClassLoader(Object mainConfig, ClassLoader classloader)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException,
-            NoSuchMethodException {
-        Class<?> configClass = classloader.loadClass("com.hazelcast.client.config.ClientConfig");
-        Object otherConfig = cloneConfig(mainConfig, classloader);
+    @Override
+    Object createNew0(Object delegate)
+            throws Exception {
+        ClassLoader classloader = targetClass.getClassLoader();
+        Object otherConfig = cloneConfig(delegate, classloader);
 
-        Method setClassLoaderMethod = configClass.getMethod("setClassLoader", ClassLoader.class);
+        Method setClassLoaderMethod = targetClass.getMethod("setClassLoader", ClassLoader.class);
         setClassLoaderMethod.invoke(otherConfig, classloader);
         return otherConfig;
     }

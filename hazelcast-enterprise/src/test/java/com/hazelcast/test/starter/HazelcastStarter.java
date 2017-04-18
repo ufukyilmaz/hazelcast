@@ -16,6 +16,7 @@
 
 package com.hazelcast.test.starter;
 
+import com.google.common.io.Files;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -33,6 +34,8 @@ import static com.hazelcast.test.starter.HazelcastProxyFactory.proxyObjectForSta
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 public class HazelcastStarter {
+
+    public static final File WORKING_DIRECTORY = Files.createTempDir();
 
     // Cache downloaded files & classloader used to load their classes per version string
     private static final ConcurrentMap<String, HazelcastVersionClassloaderFuture> loadedVersions =
@@ -125,7 +128,7 @@ public class HazelcastStarter {
             Method setClassLoaderMethod = configClass.getMethod("setClassLoader", ClassLoader.class);
             setClassLoaderMethod.invoke(config, classloader);
         } else {
-            config = Configuration.configForClassLoader(configTemplate, classloader);
+            config = proxyObjectForStarter(classloader, configTemplate);
         }
         return config;
     }
@@ -180,12 +183,12 @@ public class HazelcastStarter {
     }
 
     private static File getOrCreateVersionVersionDirectory(String version) {
-        File workingDir = Configuration.WORKING_DIRECTORY;
+        File workingDir = WORKING_DIRECTORY;
         if (!workingDir.isDirectory() || !workingDir.exists()) {
             throw new GuardianException("Working directory " + workingDir + " does not exist.");
         }
 
-        File versionDir = new File(Configuration.WORKING_DIRECTORY, version);
+        File versionDir = new File(WORKING_DIRECTORY, version);
         versionDir.mkdir();
         return versionDir;
     }

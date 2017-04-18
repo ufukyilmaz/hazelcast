@@ -8,6 +8,15 @@ import java.util.Enumeration;
 
 import static com.hazelcast.nio.IOUtil.toByteArray;
 
+/**
+ * Classloader which delegates to its parent except when the fully qualified name of the class starts with
+ * "com.hazelcast". In this case:
+ *  - if the class is a test class, then locate its bytes from the parent classloader but load it as a new class
+ *  in the target class loader. This way user objects implemented in test classpath are loaded on the target classloader
+ *  therefore implement the appropriate loaded class for any Hazelcast interfaces they implement (eg EntryListener,
+ *  Predicate etc).
+ *  - otherwise load the requested class from the URLs given to this classloader as constructor argument.
+ */
 public class HazelcastAPIDelegatingClassloader extends URLClassLoader {
     private Object mutex = new Object();
 
@@ -61,7 +70,7 @@ public class HazelcastAPIDelegatingClassloader extends URLClassLoader {
     }
 
     /**
-     * Attempts to locate a class file as a resource in parent classpath, then loads the class in this classloader
+     * Attempts to locate a class' bytes as a resource in parent classpath, then loads the class in this classloader.
      * @return
      */
     private Class<?> findClassInParentURLs(final String name) {
@@ -82,6 +91,7 @@ public class HazelcastAPIDelegatingClassloader extends URLClassLoader {
         return null;
     }
 
+    // delegate to parent if class is not under com.hazelcast package or if class is ProxyInvocationHandler itself.
     private boolean shouldDelegate(String name) {
         if (!name.startsWith("com.hazelcast")) {
             return true;
@@ -101,7 +111,7 @@ public class HazelcastAPIDelegatingClassloader extends URLClassLoader {
             return false;
         }
 
-        if ((name.contains("Test") || name.contains(".test")) && !name.contains("ProxyInvocationHandler")) {
+        if (name.contains("Test") || name.contains(".test")) {
             return true;
         }
 

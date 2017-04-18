@@ -2,6 +2,7 @@ package com.hazelcast.test.starter;
 
 import com.hazelcast.core.IFunction;
 import com.hazelcast.util.ConcurrentReferenceHashMap;
+import com.hazelcast.util.ConstructorFunction;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.method.MethodList;
@@ -15,8 +16,6 @@ import net.bytebuddy.implementation.attribute.MethodAttributeAppender;
 import net.bytebuddy.matcher.ElementMatchers;
 import net.bytebuddy.matcher.LatentMatcher;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
@@ -26,13 +25,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.util.ConcurrentReferenceHashMap.ReferenceType.STRONG;
-import static com.hazelcast.util.Preconditions.checkHasText;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 import static net.bytebuddy.jar.asm.Opcodes.ACC_PUBLIC;
 import static net.bytebuddy.matcher.ElementMatchers.is;
@@ -50,10 +45,16 @@ public class HazelcastProxyFactory {
     private static final ConcurrentReferenceHashMap<ProxySource, Class<?>> PROXIES
             = new ConcurrentReferenceHashMap<ProxySource, Class<?>>(16, STRONG, STRONG);
 
+    // <Class toProxy, ClassLoader targetClassLoader> -> ConstructorFunction<?>
+    private static final ConcurrentReferenceHashMap<Class<?>, ConstructorFunction<Object, Object>> CONSTRUCTORS
+            = new ConcurrentReferenceHashMap<Class<?>, ConstructorFunction<Object, Object>>(16, STRONG, STRONG);
+
     private static final String CLASS_NAME_ENTRY_EVENT = "com.hazelcast.core.EntryEvent";
     private static final String CLASS_NAME_LIFECYCLE_EVENT = "com.hazelcast.core.LifecycleEvent";
     private static final String CLASS_NAME_DATA_AWARE_ENTRY_EVENT = "com.hazelcast.map.impl.DataAwareEntryEvent";
     private static final String CLASS_NAME_MAP_EVENT = "com.hazelcast.core.MapEvent";
+    private static final String CLASS_NAME_CONFIG = "com.hazelcast.config.Config";
+    private static final String CLASS_NAME_CLIENT_CONFIG = "com.hazelcast.client.config.ClientConfig";
     private static final String CLASS_NAME_DATA_HZ_INSTANCE_PROXY = "com.hazelcast.instance.HazelcastInstanceProxy";
     private static final String CLASS_NAME_DATA_HZ_INSTANCE_IMPL = "com.hazelcast.instance.HazelcastInstanceImpl";
 
@@ -61,6 +62,8 @@ public class HazelcastProxyFactory {
         Set<String> notProxiedClasses = new HashSet<String>();
         notProxiedClasses.add(CLASS_NAME_DATA_AWARE_ENTRY_EVENT);
         notProxiedClasses.add(CLASS_NAME_MAP_EVENT);
+        notProxiedClasses.add(CLASS_NAME_CONFIG);
+        notProxiedClasses.add(CLASS_NAME_CLIENT_CONFIG);
         NO_PROXYING_WHITELIST = notProxiedClasses;
 
         Set<String> subclassProxiedClasses = new HashSet<String>();
@@ -162,8 +165,8 @@ public class HazelcastProxyFactory {
             throws ClassNotFoundException, IllegalAccessException, InstantiationException,
             NoSuchMethodException, InvocationTargetException {
         // obtain class in targetClassLoader
-        Class<?> delegateClass = targetClassLoader.loadClass(arg.getClass().getName());
-        return construct(targetClassLoader, delegateClass, arg);
+        Class<?> targetClass = targetClassLoader.loadClass(arg.getClass().getName());
+        return construct(targetClass, arg);
     }
 
     /**
@@ -227,7 +230,7 @@ public class HazelcastProxyFactory {
                                       .getLoaded();
             }
         });
-        return construct(targetClassLoader, targetClass, arg);
+        return construct(targetClass, arg);
     }
 
     /**
@@ -250,136 +253,78 @@ public class HazelcastProxyFactory {
         return ProxyPolicy.JDK_PROXY;
     }
 
-    private static Object construct(ClassLoader starterClassLoader, Class<?> klass, Object delegate)
+    private static Object construct(Class<?> klass, Object delegate)
             throws IllegalAccessException, InstantiationException, ClassNotFoundException,
             NoSuchMethodException, InvocationTargetException {
-        String className = delegate.getClass().getName();
-        if (className.equals(CLASS_NAME_DATA_AWARE_ENTRY_EVENT)) {
-            return constructDataAwareEntryEvent(starterClassLoader, klass, delegate);
-        } else if (className.equals(CLASS_NAME_MAP_EVENT)) {
-            return constructMapEvent(starterClassLoader, klass, delegate);
-        } else if (className.equals(CLASS_NAME_LIFECYCLE_EVENT)) {
-            return constructLifecycleEvent(starterClassLoader, klass, delegate);
-        } else if (className.equals(CLASS_NAME_DATA_HZ_INSTANCE_PROXY)) {
-            return proxyHazelcastInstanceProxy(starterClassLoader, klass, delegate);
-        } else if (className.equals(CLASS_NAME_DATA_HZ_INSTANCE_IMPL)) {
-            return constructHazelInstanceImpl(starterClassLoader, klass, delegate);
-        } else {
-            throw new UnsupportedOperationException("Cannot proxy " + delegate.getClass());
-        }
+
+        ConstructorFunction<Object, Object> constructorFunction = CONSTRUCTORS.applyIfAbsent(klass,
+                new IFunction<Class<?>, ConstructorFunction<Object, Object>>() {
+                    @Override
+                    public ConstructorFunction<Object, Object> apply(Class<?> input) {
+                        String className = input.getName();
+                        if (className.equals(CLASS_NAME_DATA_AWARE_ENTRY_EVENT)) {
+                            return new DataAwareEntryEventConstructor(input);
+                        } else if (className.equals(CLASS_NAME_MAP_EVENT)) {
+                            return new MapEventConstructor(input);
+                        } else if (className.equals(CLASS_NAME_LIFECYCLE_EVENT)) {
+                            return new LifecycleEventConstructor(input);
+                        } else if (className.equals(CLASS_NAME_CONFIG) ||
+                                className.equals(CLASS_NAME_CLIENT_CONFIG)) {
+                            return new ConfigConstructor(input);
+                        } else {
+                            throw new UnsupportedOperationException("Cannot construct target object "
+                                    + "for target class" + input + " on classloader " + input.getClassLoader());
+                        }
+                    }
+                });
+
+        return constructorFunction.createNew(delegate);
     }
 
-    private static Object constructDataAwareEntryEvent(ClassLoader starterClassLoader, Class<?> targetClass,
-                                                       Object delegate)
-            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
-            InvocationTargetException, InstantiationException {
-        // locate required classes on target class loader
-        Class<?> dataClass = starterClassLoader.loadClass("com.hazelcast.nio.serialization.Data");
-        Class<?> memberClass = starterClassLoader.loadClass("com.hazelcast.core.Member");
-        Class<?> serServiceClass = starterClassLoader.loadClass("com.hazelcast.spi.serialization.SerializationService");
-        Constructor<?> constructor = targetClass.getConstructor(memberClass, Integer.TYPE, String.class, dataClass,
-                dataClass, dataClass, dataClass, serServiceClass);
-
-        Object serializationService = getFieldValueReflectively(delegate, "serializationService");
-        Object source = getFieldValueReflectively(delegate, "source");
-        Object member = getFieldValueReflectively(delegate, "member");
-        Object entryEventType = getFieldValueReflectively(delegate, "entryEventType");
-        Integer eventTypeId = (Integer) entryEventType.getClass().getMethod("getType").invoke(entryEventType);
-        Object dataKey = getFieldValueReflectively(delegate, "dataKey");
-        Object dataNewValue = getFieldValueReflectively(delegate, "dataNewValue");
-        Object dataOldValue = getFieldValueReflectively(delegate, "dataOldValue");
-        Object dataMergingValue = getFieldValueReflectively(delegate, "dataMergingValue");
-
-        Object[] args = new Object[] {member, eventTypeId.intValue(), source,
-                                      dataKey, dataNewValue,
-                                      dataOldValue, dataMergingValue,
-                                      serializationService};
-
-        Object[] proxiedArgs = proxyArgumentsIfNeeded(args, starterClassLoader);
-
-        return constructor.newInstance(proxiedArgs);
-    }
-
-    private static Object constructMapEvent(ClassLoader starterClassLoader, Class<?> targetClass,
-                                                       Object delegate)
-            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
-            InvocationTargetException, InstantiationException {
-        // locate required classes on target class loader
-        Class<?> memberClass = starterClassLoader.loadClass("com.hazelcast.core.Member");
-        Constructor<?> constructor = targetClass.getConstructor(Object.class, memberClass, Integer.TYPE, Integer.TYPE);
-
-        Object source = getFieldValueReflectively(delegate, "source");
-        Object member = getFieldValueReflectively(delegate, "member");
-        Object entryEventType = getFieldValueReflectively(delegate, "entryEventType");
-        Integer eventTypeId = (Integer) entryEventType.getClass().getMethod("getType").invoke(entryEventType);
-        Object numberOfKeysAffected = getFieldValueReflectively(delegate, "numberOfEntriesAffected");
-
-        Object[] args = new Object[] {source, member, eventTypeId.intValue(), numberOfKeysAffected};
-
-        Object[] proxiedArgs = proxyArgumentsIfNeeded(args, starterClassLoader);
-
-        return constructor.newInstance(proxiedArgs);
-    }
-
-    private static Object constructLifecycleEvent(ClassLoader starterClassLoader, Class<?> subclass,
-                                                  Object delegate)
-            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
-            InvocationTargetException, InstantiationException {
-        // locate required classes on target class loader
-        Class<?> stateClass = starterClassLoader.loadClass("com.hazelcast.core.LifecycleEvent$LifecycleState");
-        Constructor<?> constructor = subclass.getDeclaredConstructor(stateClass);
-
-        Object state = getFieldValueReflectively(delegate, "state");
-        Object[] args = new Object[] {state};
-        Object[] proxiedArgs = proxyArgumentsIfNeeded(args, starterClassLoader);
-
-        return constructor.newInstance(proxiedArgs);
-    }
-
-    private static Object proxyHazelcastInstanceProxy(ClassLoader starterClassLoader, Class<?> subclass,
-                                                      Object delegate)
-            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
-            InvocationTargetException, InstantiationException {
-        // locate required classes on target class loader
-        Class<?> hzInstanceImplClass = starterClassLoader.loadClass("com.hazelcast.instance.HazelcastInstanceImpl");
-        Constructor<?> constructor = subclass.getDeclaredConstructor(hzInstanceImplClass);
-        if (!constructor.isAccessible()) {
-            constructor.setAccessible(true);
-        }
-
-        Object hzInstanceImpl = getFieldValueReflectively(delegate, "original");
-        Object[] args = new Object[] {hzInstanceImpl};
-        Object[] proxiedArgs = proxyArgumentsIfNeeded(args, starterClassLoader);
-
-        return constructor.newInstance(proxiedArgs);
-    }
+//    private static Object proxyHazelcastInstanceProxy(ClassLoader starterClassLoader, Class<?> subclass,
+//                                                      Object delegate)
+//            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
+//            InvocationTargetException, InstantiationException {
+//        // locate required classes on target class loader
+//        Class<?> hzInstanceImplClass = starterClassLoader.loadClass("com.hazelcast.instance.HazelcastInstanceImpl");
+//        Constructor<?> constructor = subclass.getDeclaredConstructor(hzInstanceImplClass);
+//        if (!constructor.isAccessible()) {
+//            constructor.setAccessible(true);
+//        }
+//
+//        Object hzInstanceImpl = getFieldValueReflectively(delegate, "original");
+//        Object[] args = new Object[] {hzInstanceImpl};
+//        Object[] proxiedArgs = proxyArgumentsIfNeeded(args, starterClassLoader);
+//
+//        return constructor.newInstance(proxiedArgs);
+//    }
 
     // klass is the actual Class object for "com.hazelcast.instance.HazelcastInstanceImpl" in target class loader
     // (not a subclass or proxy)
-    private static Object constructHazelInstanceImpl(ClassLoader starterClassLoader, Class<?> klass,
-                                                     Object delegate)
-            throws IllegalAccessException, InstantiationException, InvocationTargetException,
-            ClassNotFoundException, NoSuchMethodException {
-
-        Class<?> configClass = starterClassLoader.loadClass("com.hazelcast.config.Config");
-        Class<?> nodeContextClass = starterClassLoader.loadClass("com.hazelcast.instance.NodeContext");
-        Constructor<?> hzInstanceImplCtor = klass.getDeclaredConstructor(String.class, configClass,
-                nodeContextClass);
-        if (!hzInstanceImplCtor.isAccessible()) {
-            hzInstanceImplCtor.setAccessible(true);
-        }
-
-        // constructor arguments
-        String name = (String) getFieldValueReflectively(delegate, "name");
-        Object node = getFieldValueReflectively(delegate, "node");
-        Object config = getFieldValueReflectively(node, "config");
-        Object targetConfig = Configuration.configForClassLoader(config, HazelcastProxyFactory.class.getClassLoader());
-        Class<?> defaultNodeContextClass = starterClassLoader.loadClass("com.hazelcast.instance.DefaultNodeContext");
-        Object nodeContext = defaultNodeContextClass.newInstance();
-
-        Object[] ctorArgs = new Object[] {name, targetConfig, nodeContext};
-        return hzInstanceImplCtor.newInstance(ctorArgs);
-    }
+//    private static Object constructHazelInstanceImpl(ClassLoader starterClassLoader, Class<?> klass,
+//                                                     Object delegate)
+//            throws IllegalAccessException, InstantiationException, InvocationTargetException,
+//            ClassNotFoundException, NoSuchMethodException {
+//
+//        Class<?> configClass = starterClassLoader.loadClass("com.hazelcast.config.Config");
+//        Class<?> nodeContextClass = starterClassLoader.loadClass("com.hazelcast.instance.NodeContext");
+//        Constructor<?> hzInstanceImplCtor = klass.getDeclaredConstructor(String.class, configClass,
+//                nodeContextClass);
+//        if (!hzInstanceImplCtor.isAccessible()) {
+//            hzInstanceImplCtor.setAccessible(true);
+//        }
+//
+//        // constructor arguments
+//        String name = (String) getFieldValueReflectively(delegate, "name");
+//        Object node = getFieldValueReflectively(delegate, "node");
+//        Object config = getFieldValueReflectively(node, "config");
+//        Object targetConfig = Configuration.configForClassLoader(config, HazelcastProxyFactory.class.getClassLoader());
+//        Class<?> defaultNodeContextClass = starterClassLoader.loadClass("com.hazelcast.instance.DefaultNodeContext");
+//        Object nodeContext = defaultNodeContextClass.newInstance();
+//
+//        Object[] ctorArgs = new Object[] {name, targetConfig, nodeContext};
+//        return hzInstanceImplCtor.newInstance(ctorArgs);
+//    }
 
     /**
      * Return all interfaces implemented by {@code type}, along with {@code type} itself if it is an interface
@@ -419,37 +364,6 @@ public class HazelcastProxyFactory {
             addOwnInterfaces(superClass, interfaces);
             superClass = superClass.getSuperclass();
         }
-    }
-
-    private static Object getFieldValueReflectively(Object arg, String fieldName)
-            throws IllegalAccessException {
-        checkNotNull(arg, "Argument cannot be null");
-        checkHasText(fieldName, "Field name cannot be null");
-
-        Field field = getAllFieldsByName(arg.getClass()).get(fieldName);
-        if (field == null) {
-            throw new NoSuchFieldError("Field " + fieldName + " does not exist on object " + arg);
-        }
-
-        field.setAccessible(true);
-        return field.get(arg);
-    }
-
-    private static Map<String, Field> getAllFieldsByName(Class<?> clazz) {
-        ConcurrentMap<String, Field> fields = new ConcurrentHashMap<String, Field>();
-        Field[] ownFields = clazz.getDeclaredFields();
-        for (Field field : ownFields) {
-            fields.put(field.getName(), field);
-        }
-        Class<?> superClass = clazz.getSuperclass();
-        while (superClass != null) {
-            ownFields = superClass.getDeclaredFields();
-            for (Field field : ownFields) {
-                fields.putIfAbsent(field.getName(), field);
-            }
-            superClass = superClass.getSuperclass();
-        }
-        return fields;
     }
 
     /**

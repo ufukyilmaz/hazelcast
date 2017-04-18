@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.map.EntryBackupProcessor;
+import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -24,9 +25,14 @@ public class HDPartitionWideEntryBackupOperation extends AbstractHDMultipleEntry
 
     @Override
     protected void runInternal() {
-        long now = getNow();
+        final long now = getNow();
+        final int entryCount = recordStore.size();
 
-        Iterator<Record> iterator = recordStore.iterator(now, true);
+        Container removedEntryRecordPairs = new Container(entryCount, newEntryRemoveHandler(now, true));
+        Container addedOrUpdatedEntryRecordPairs = new Container(entryCount, newEntryAddOrUpdateHandler(now, true));
+        responses = new MapEntries(entryCount);
+
+        Iterator<Record> iterator = recordStore.iterator(now, false);
         while (iterator.hasNext()) {
             Record record = iterator.next();
             Data dataKey = record.getKey();
@@ -35,21 +41,33 @@ public class HDPartitionWideEntryBackupOperation extends AbstractHDMultipleEntry
             if (!applyPredicate(dataKey, oldValue)) {
                 continue;
             }
-            final Map.Entry entry = createMapEntry(dataKey, oldValue);
 
+            Map.Entry entry = createMapEntry(dataKey, oldValue);
             processBackup(entry);
 
+            // First call noOp, other if checks below depends on it.
             if (noOp(entry, oldValue)) {
                 continue;
             }
-            if (entryRemovedBackup(entry, dataKey)) {
+
+            if (isEntryRemoved(entry)) {
+                removedEntryRecordPairs.add(entry, record);
                 continue;
             }
-            entryAddedOrUpdatedBackup(entry, dataKey);
 
-            evict(dataKey);
+            addedOrUpdatedEntryRecordPairs.add(entry, record);
         }
+
+        removedEntryRecordPairs.process();
+        addedOrUpdatedEntryRecordPairs.process();
     }
+
+    @Override
+    public void afterRun() throws Exception {
+        evict(null);
+        super.afterRun();
+    }
+
 
     protected Predicate getPredicate() {
         return null;

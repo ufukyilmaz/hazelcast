@@ -21,12 +21,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.hazelcast.nio.ClassLoaderUtil.getAllInterfaces;
 import static com.hazelcast.util.ConcurrentReferenceHashMap.ReferenceType.STRONG;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 import static net.bytebuddy.jar.asm.Opcodes.ACC_PUBLIC;
@@ -45,7 +44,7 @@ public class HazelcastProxyFactory {
     private static final ConcurrentReferenceHashMap<ProxySource, Class<?>> PROXIES
             = new ConcurrentReferenceHashMap<ProxySource, Class<?>>(16, STRONG, STRONG);
 
-    // <Class toProxy, ClassLoader targetClassLoader> -> ConstructorFunction<?>
+    // <Class targetClass, ClassLoader targetClassLoader> -> ConstructorFunction<?>
     private static final ConcurrentReferenceHashMap<Class<?>, ConstructorFunction<Object, Object>> CONSTRUCTORS
             = new ConcurrentReferenceHashMap<Class<?>, ConstructorFunction<Object, Object>>(16, STRONG, STRONG);
 
@@ -55,8 +54,6 @@ public class HazelcastProxyFactory {
     private static final String CLASS_NAME_MAP_EVENT = "com.hazelcast.core.MapEvent";
     private static final String CLASS_NAME_CONFIG = "com.hazelcast.config.Config";
     private static final String CLASS_NAME_CLIENT_CONFIG = "com.hazelcast.client.config.ClientConfig";
-    private static final String CLASS_NAME_DATA_HZ_INSTANCE_PROXY = "com.hazelcast.instance.HazelcastInstanceProxy";
-    private static final String CLASS_NAME_DATA_HZ_INSTANCE_IMPL = "com.hazelcast.instance.HazelcastInstanceImpl";
 
     static {
         Set<String> notProxiedClasses = new HashSet<String>();
@@ -178,30 +175,8 @@ public class HazelcastProxyFactory {
      * @return
      */
     private static <T> T generateProxyForInterface(Object delegate, ClassLoader proxyTargetClassloader, Class<?>...expectedInterfaces) {
-        if (!checkImplementInterfaces(delegate, expectedInterfaces)) {
-            throw new GuardianException("Cannot create proxy for class " + delegate);
-        }
         InvocationHandler myInvocationHandler = new ProxyInvocationHandler(delegate);
         return (T) Proxy.newProxyInstance(proxyTargetClassloader, expectedInterfaces, myInvocationHandler);
-    }
-
-    private static boolean checkImplementInterfaces(Object o, Class<?>...ifaces) {
-        //        for (Class<?> iface : ifaces) {
-        //            if (!checkImplementInterface(o, iface)) {
-        //                return false;
-        //            }
-        //        }
-        return true;
-    }
-
-    private static boolean checkImplementInterface(Object o, Class<?> iface) {
-        Class<?>[] interfaces = o.getClass().getInterfaces();
-        for (Class<?> current : interfaces) {
-            if (current.getName().equals(iface.getName())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -222,8 +197,8 @@ public class HazelcastProxyFactory {
         targetClass = PROXIES.applyIfAbsent(proxySource, new IFunction<ProxySource, Class<?>>() {
             @Override
             public Class<?> apply(ProxySource input) {
-                return new ByteBuddy().subclass(input.getKlass(), AllAsPublicConstructorStrategy.INSTANCE)
-                                      .method(ElementMatchers.isDeclaredBy(input.getKlass()))
+                return new ByteBuddy().subclass(input.getToProxy(), AllAsPublicConstructorStrategy.INSTANCE)
+                                      .method(ElementMatchers.isDeclaredBy(input.getToProxy()))
                                       .intercept(InvocationHandlerAdapter.of(new ProxyInvocationHandler(arg)))
                                       .make()
                                       .load(input.getTargetClassLoader())
@@ -281,51 +256,6 @@ public class HazelcastProxyFactory {
         return constructorFunction.createNew(delegate);
     }
 
-//    private static Object proxyHazelcastInstanceProxy(ClassLoader starterClassLoader, Class<?> subclass,
-//                                                      Object delegate)
-//            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
-//            InvocationTargetException, InstantiationException {
-//        // locate required classes on target class loader
-//        Class<?> hzInstanceImplClass = starterClassLoader.loadClass("com.hazelcast.instance.HazelcastInstanceImpl");
-//        Constructor<?> constructor = subclass.getDeclaredConstructor(hzInstanceImplClass);
-//        if (!constructor.isAccessible()) {
-//            constructor.setAccessible(true);
-//        }
-//
-//        Object hzInstanceImpl = getFieldValueReflectively(delegate, "original");
-//        Object[] args = new Object[] {hzInstanceImpl};
-//        Object[] proxiedArgs = proxyArgumentsIfNeeded(args, starterClassLoader);
-//
-//        return constructor.newInstance(proxiedArgs);
-//    }
-
-    // klass is the actual Class object for "com.hazelcast.instance.HazelcastInstanceImpl" in target class loader
-    // (not a subclass or proxy)
-//    private static Object constructHazelInstanceImpl(ClassLoader starterClassLoader, Class<?> klass,
-//                                                     Object delegate)
-//            throws IllegalAccessException, InstantiationException, InvocationTargetException,
-//            ClassNotFoundException, NoSuchMethodException {
-//
-//        Class<?> configClass = starterClassLoader.loadClass("com.hazelcast.config.Config");
-//        Class<?> nodeContextClass = starterClassLoader.loadClass("com.hazelcast.instance.NodeContext");
-//        Constructor<?> hzInstanceImplCtor = klass.getDeclaredConstructor(String.class, configClass,
-//                nodeContextClass);
-//        if (!hzInstanceImplCtor.isAccessible()) {
-//            hzInstanceImplCtor.setAccessible(true);
-//        }
-//
-//        // constructor arguments
-//        String name = (String) getFieldValueReflectively(delegate, "name");
-//        Object node = getFieldValueReflectively(delegate, "node");
-//        Object config = getFieldValueReflectively(node, "config");
-//        Object targetConfig = Configuration.configForClassLoader(config, HazelcastProxyFactory.class.getClassLoader());
-//        Class<?> defaultNodeContextClass = starterClassLoader.loadClass("com.hazelcast.instance.DefaultNodeContext");
-//        Object nodeContext = defaultNodeContextClass.newInstance();
-//
-//        Object[] ctorArgs = new Object[] {name, targetConfig, nodeContext};
-//        return hzInstanceImplCtor.newInstance(ctorArgs);
-//    }
-
     /**
      * Return all interfaces implemented by {@code type}, along with {@code type} itself if it is an interface
      * @param type
@@ -342,45 +272,21 @@ public class HazelcastProxyFactory {
         return interfaces.toArray(new Class<?>[0]);
     }
 
-    // copied over from upstream/master/ClassLoaderUtil
-    private static Class<?>[] getAllInterfaces(Class<?> clazz) {
-        Collection<Class<?>> interfaces = new HashSet<Class<?>>();
-        addOwnInterfaces(clazz, interfaces);
-        addInterfacesOfSuperclasses(clazz, interfaces);
-        return interfaces.toArray(new Class<?>[0]);
-    }
-
-    private static void addOwnInterfaces(Class<?> clazz, Collection<Class<?>> allInterfaces) {
-        Class<?>[] interfaces = clazz.getInterfaces();
-        Collections.addAll(allInterfaces, interfaces);
-        for (Class cl : interfaces) {
-            addOwnInterfaces(cl, allInterfaces);
-        }
-    }
-
-    private static void addInterfacesOfSuperclasses(Class<?> clazz, Collection<Class<?>> interfaces) {
-        Class<?> superClass = clazz.getSuperclass();
-        while (superClass != null) {
-            addOwnInterfaces(superClass, interfaces);
-            superClass = superClass.getSuperclass();
-        }
-    }
-
     /**
      * (Class toProxy, ClassLoader targetClassLoader) tuple that is used as a key for caching the generated
      * proxy class for {@code toProxy} on {@code targetClassloader}.
      */
     private static class ProxySource {
-        private final Class<?> klass;
+        private final Class<?> toProxy;
         private final ClassLoader targetClassLoader;
 
-        public ProxySource(Class<?> klass, ClassLoader targetClassLoader) {
-            this.klass = klass;
+        public ProxySource(Class<?> toProxy, ClassLoader targetClassLoader) {
+            this.toProxy = toProxy;
             this.targetClassLoader = targetClassLoader;
         }
 
-        public Class<?> getKlass() {
-            return klass;
+        public Class<?> getToProxy() {
+            return toProxy;
         }
 
         public ClassLoader getTargetClassLoader() {
@@ -398,7 +304,7 @@ public class HazelcastProxyFactory {
 
             ProxySource that = (ProxySource) o;
 
-            if (!klass.equals(that.klass)) {
+            if (!toProxy.equals(that.toProxy)) {
                 return false;
             }
             return targetClassLoader.equals(that.targetClassLoader);
@@ -406,7 +312,7 @@ public class HazelcastProxyFactory {
 
         @Override
         public int hashCode() {
-            int result = klass.hashCode();
+            int result = toProxy.hashCode();
             result = 31 * result + targetClassLoader.hashCode();
             return result;
         }

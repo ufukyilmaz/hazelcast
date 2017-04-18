@@ -117,6 +117,8 @@ public class HazelcastVersionLocator {
             HttpEntity entity = response.getEntity();
             FileOutputStream  fos = new FileOutputStream(targetFile);
             entity.writeTo(fos);
+            fos.close();
+            targetFile.deleteOnExit();
             return targetFile;
         } catch (IOException e) {
             throw Utils.rethrow(e);

@@ -7,6 +7,7 @@ import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.impl.MapContainer;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.record.Record;
@@ -65,8 +66,11 @@ public class HDEntryOffloadableSetUnlockOperation extends HDKeyBasedMapOperation
     @Override
     public void runInternal() {
         verifyLock();
-        updateRecordStore();
-        unlockKey();
+        try {
+            updateRecordStore();
+        } finally {
+            unlockKey();
+        }
     }
 
     private void verifyLock() {
@@ -96,8 +100,9 @@ public class HDEntryOffloadableSetUnlockOperation extends HDKeyBasedMapOperation
     private void unlockKey() {
         boolean unlocked = recordStore.unlock(dataKey, caller, threadId, getCallId());
         if (!unlocked) {
-            getLogger().severe(String.format("\"EntryOffloadableSetUnlockOperation finished but the unlock method "
-                    + "returned false  caller=%s and threadId=%d", caller, threadId));
+            throw new IllegalStateException(
+                    String.format("Unexpected error! EntryOffloadableSetUnlockOperation finished but the unlock method "
+                            + "returned false for caller=%s and threadId=%d", caller, threadId));
         }
     }
 
@@ -107,12 +112,12 @@ public class HDEntryOffloadableSetUnlockOperation extends HDKeyBasedMapOperation
         if (modificationType == null) {
             return;
         }
+
         mapServiceContext.interceptAfterPut(name, dataValue);
         if (isPostProcessing(recordStore)) {
             Record record = recordStore.getRecord(dataKey);
             dataValue = record == null ? null : toData(record.getValue());
         }
-
         invalidateNearCache(dataKey);
         publishEntryEvent();
         publishWanReplicationEvent();
@@ -216,6 +221,11 @@ public class HDEntryOffloadableSetUnlockOperation extends HDKeyBasedMapOperation
     @Override
     public WaitNotifyKey getNotifiedKey() {
         return new LockWaitNotifyKey(new DefaultObjectNamespace(SERVICE_NAME, name), dataKey);
+    }
+
+    @Override
+    public String getServiceName() {
+        return MapService.SERVICE_NAME;
     }
 
     @Override

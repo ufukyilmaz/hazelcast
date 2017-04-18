@@ -110,19 +110,6 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
     boolean replace(Data key, Object oldValue, Object newValue, String caller, int completionId);
 
     /**
-     * Replaces the already stored value with the new {@code value}
-     * mapped by the specified {@code key} to this {@link HiDensityCacheRecordStore}
-     * if there is a value with the specified {@code key} and
-     * returns the old value of the replaced record if exist.
-     *
-     * @param key    the key of the {@code value} to be put
-     * @param value  the value to be put
-     * @param caller the ID which represents the caller
-     * @return the old value of the record with the specified {@code key} if exist, otherwise {@code null}
-     */
-    Object getAndReplace(Data key, Object value, String caller, int completionId);
-
-    /**
      * Returns a slottable iterator for this {@link HiDensityCacheRecordStore} to iterate over records.
      *
      * @param slot the slot number (or index) to start the {@code iterator}

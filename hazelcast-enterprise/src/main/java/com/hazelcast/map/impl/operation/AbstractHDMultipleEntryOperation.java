@@ -4,6 +4,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
+import com.hazelcast.core.IBiFunction;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
@@ -112,6 +113,10 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
     protected boolean noOp(Map.Entry entry, Object oldValue) {
         final LazyMapEntry mapEntrySimple = (LazyMapEntry) entry;
         return !mapEntrySimple.isModified() || (oldValue == null && entry.getValue() == null);
+    }
+
+    protected static boolean isEntryRemoved(Map.Entry entry) {
+        return entry.getValue() == null;
     }
 
     protected boolean entryRemoved(Map.Entry entry, Data key, Object oldValue, long now) {
@@ -267,6 +272,67 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
 
         public void setEventType(EntryEventType eventType) {
             this.eventType = eventType;
+        }
+    }
+
+    protected IBiFunction<Map.Entry, Record, Void> newEntryAddOrUpdateHandler(final long now, final boolean backup) {
+        return new IBiFunction<Map.Entry, Record, Void>() {
+            @Override
+            public Void apply(Map.Entry entry, Record record) {
+                if (backup) {
+                    entryAddedOrUpdatedBackup(entry, record.getKey());
+                } else {
+                    entryAddedOrUpdated(entry, record.getKey(), record.getValue(), now);
+                }
+                return null;
+            }
+        };
+    }
+
+    protected IBiFunction<Map.Entry, Record, Void> newEntryRemoveHandler(final long now, final boolean backup) {
+        return new IBiFunction<Map.Entry, Record, Void>() {
+            @Override
+            public Void apply(Map.Entry entry, Record record) {
+                if (backup) {
+                    entryRemovedBackup(entry, record.getKey());
+                } else {
+                    entryRemoved(entry, record.getKey(), record.getValue(), now);
+                }
+                return null;
+            }
+        };
+    }
+
+    static final class Container {
+        int size;
+        List<Object> objects;
+        IBiFunction<Map.Entry, Record, Void> handler;
+
+        Container(int size, IBiFunction<Map.Entry, Record, Void> handler) {
+            this.size = size;
+            this.handler = handler;
+        }
+
+        void add(Map.Entry entry, Record record) {
+            if (objects == null) {
+                objects = new ArrayList<Object>(size);
+            }
+
+            objects.add(entry);
+            objects.add(record);
+        }
+
+        void process() {
+            if (objects == null) {
+                return;
+            }
+
+            for (int i = 0; i < objects.size(); ) {
+                Map.Entry entry = (Map.Entry) objects.get(i++);
+                Record record = (Record) objects.get(i++);
+
+                handler.apply(entry, record);
+            }
         }
     }
 

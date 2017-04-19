@@ -382,6 +382,14 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * This implementation achieves ordering of keys in the same partition by
+     * sending {@link EWRPutOperation} to the partition owner. The partition ID
+     * is equal to the partition for the key contained in the {@code wanReplicationEvent}.
+     *
+     * @param wanReplicationEvent the WAN event to publish
+     */
     @Override
     public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         EnterpriseReplicationEventObject replicationEventObject
@@ -393,6 +401,13 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         invokeOnPartition(wanReplicationEvent.getServiceName(), replicationEventObject.getKey(), ewrPutOperation);
     }
 
+    /**
+     * Invokes the {@code operation} on the partition owner for the {@code key}
+     *
+     * @param serviceName the service name for this operation
+     * @param key         the key defining the target partition for the operation
+     * @param operation   the operation to be invoked
+     */
     private void invokeOnPartition(String serviceName, Data key, Operation operation) {
         try {
             int partitionId = node.nodeEngine.getPartitionService().getPartitionId(key);

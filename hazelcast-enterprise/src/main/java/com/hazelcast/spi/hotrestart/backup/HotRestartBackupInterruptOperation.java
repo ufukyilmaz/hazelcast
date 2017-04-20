@@ -1,13 +1,9 @@
 package com.hazelcast.spi.hotrestart.backup;
 
-import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.spi.ExceptionAction;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.exception.TargetNotMemberException;
 import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
-import com.hazelcast.transaction.TransactionException;
 
 /**
  * Operation for interruption of the member hot restart backup task.
@@ -27,23 +23,6 @@ public class HotRestartBackupInterruptOperation extends Operation implements All
         if (service != null) {
             service.interruptLocalBackupTask();
         }
-    }
-
-    @Override
-    public void logError(Throwable e) {
-        if (e instanceof TransactionException) {
-            getLogger().severe(e.getMessage());
-        } else {
-            super.logError(e);
-        }
-    }
-
-    @Override
-    public ExceptionAction onInvocationException(Throwable throwable) {
-        if (throwable instanceof MemberLeftException || throwable instanceof TargetNotMemberException) {
-            return ExceptionAction.THROW_EXCEPTION;
-        }
-        return super.onInvocationException(throwable);
     }
 
     @Override

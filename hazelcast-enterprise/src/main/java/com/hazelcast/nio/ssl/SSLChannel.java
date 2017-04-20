@@ -1,9 +1,10 @@
 package com.hazelcast.nio.ssl;
 
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.tcp.PlainChannel;
 import com.hazelcast.util.EmptyStatement;
 
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+import static com.hazelcast.nio.IOUtil.newByteBuffer;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
@@ -24,34 +26,32 @@ public class SSLChannel extends PlainChannel {
 
     static final int EXPAND_FACTOR = 2;
 
+    private final ILogger logger = Logger.getLogger(SSLChannel.class);
+
     private ByteBuffer applicationBuffer;
     private final Object lock = new Object();
     private final ByteBuffer emptyBuffer;
     private final ByteBuffer netOutBuffer;
-    // "reliable" write transport
     private final ByteBuffer netInBuffer;
-    // "reliable" read transport
     private final SSLEngine sslEngine;
     private volatile boolean handshakeCompleted;
     private SSLEngineResult sslEngineResult;
 
-    public SSLChannel(SSLContext sslContext, SocketChannel sc, boolean client,
-                      String mutualAuthentication) throws Exception {
+    public SSLChannel(SSLEngine sslEngine, SocketChannel sc, String mutualAuthentication, boolean directBuffer) throws Exception {
         super(sc);
-        sslEngine = sslContext.createSSLEngine();
-        sslEngine.setUseClientMode(client);
-        sslEngine.setEnableSessionCreation(true);
+        this.sslEngine = sslEngine;
         if ("REQUIRED".equals(mutualAuthentication)) {
             sslEngine.setNeedClientAuth(true);
         } else if ("OPTIONAL".equals(mutualAuthentication)) {
             sslEngine.setWantClientAuth(true);
         }
         SSLSession session = sslEngine.getSession();
-        applicationBuffer = ByteBuffer.allocate(session.getApplicationBufferSize());
+        applicationBuffer = newByteBuffer(session.getApplicationBufferSize(), directBuffer);
         emptyBuffer = ByteBuffer.allocate(0);
         int netBufferMax = session.getPacketBufferSize();
-        netOutBuffer = ByteBuffer.allocate(netBufferMax);
-        netInBuffer = ByteBuffer.allocate(netBufferMax);
+        netOutBuffer = newByteBuffer(netBufferMax, directBuffer);
+        netInBuffer = newByteBuffer(netBufferMax, directBuffer);
+        sslEngine.beginHandshake();
     }
 
     @SuppressWarnings({
@@ -66,7 +66,6 @@ public class SSLChannel extends PlainChannel {
                 return;
             }
             int counter = 0;
-            sslEngine.beginHandshake();
             writeInternal(emptyBuffer);
             while (counter++ < 250 && sslEngineResult.getHandshakeStatus() != FINISHED) {
                 if (sslEngineResult.getHandshakeStatus() == NEED_UNWRAP) {
@@ -99,6 +98,13 @@ public class SSLChannel extends PlainChannel {
                 throw new SSLHandshakeException("SSL handshake failed after " + counter
                         + " trials! -> " + sslEngineResult.getHandshakeStatus());
             }
+
+            if (logger.isFineEnabled()) {
+                SSLSession sslSession = sslEngine.getSession();
+                logger.fine("handshake finished, channel=" + this + " protocol=" + sslSession.getProtocol() + ", cipherSuite="
+                        + sslSession.getCipherSuite());
+            }
+
             applicationBuffer.clear();
             applicationBuffer.flip();
             handshakeCompleted = true;
@@ -142,7 +148,7 @@ public class SSLChannel extends PlainChannel {
 
         int newCapacity = oldCapacity * EXPAND_FACTOR;
 
-        ByteBuffer expanded = ByteBuffer.allocate(newCapacity);
+        ByteBuffer expanded = newByteBuffer(newCapacity, original.isDirect());
 
         original.flip();
 
@@ -244,6 +250,6 @@ public class SSLChannel extends PlainChannel {
 
     @Override
     public String toString() {
-        return "SSLChannel{" + "socketChannel=" + socketChannel + '}';
+        return "SSLChannel{" + getLocalSocketAddress() + "->" + getRemoteSocketAddress() + '}';
     }
 }

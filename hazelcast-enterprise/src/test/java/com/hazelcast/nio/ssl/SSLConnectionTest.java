@@ -22,6 +22,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -104,7 +105,10 @@ public class SSLConnectionTest {
 
             final AtomicReference<Error> error = new AtomicReference<Error>();
             SSLContext clientContext = createClientSslContext();
-            channel = new SSLChannel(clientContext, SocketChannel.open(), true, null);
+            SSLEngine sslEngine = clientContext.createSSLEngine();
+            sslEngine.setUseClientMode(true);
+            sslEngine.setEnableSessionCreation(true);
+            channel = new SSLChannel(sslEngine, SocketChannel.open(), null, false);
             channel.socketChannel().connect(new InetSocketAddress(PORT));
             final CountDownLatch latch = new CountDownLatch(2);
 
@@ -148,11 +152,11 @@ public class SSLConnectionTest {
 
     private abstract class ChannelReader implements Runnable {
         final int count;
-        final Channel socketChannel;
+        final Channel channel;
         final CountDownLatch latch;
 
-        private ChannelReader(Channel socketChannel, int count, CountDownLatch latch) {
-            this.socketChannel = socketChannel;
+        private ChannelReader(Channel channel, int count, CountDownLatch latch) {
+            this.channel = channel;
             this.count = count;
             this.latch = latch;
         }
@@ -162,7 +166,7 @@ public class SSLConnectionTest {
             try {
                 for (int i = 0; i < count; i++) {
                     while (in.hasRemaining()) {
-                        socketChannel.read(in);
+                        channel.read(in);
                     }
                     in.flip();
                     int read = in.getInt();
@@ -181,11 +185,11 @@ public class SSLConnectionTest {
 
     private abstract class ChannelWriter implements Runnable {
         final int count;
-        final Channel socketChannel;
+        final Channel channel;
         final CountDownLatch latch;
 
-        private ChannelWriter(Channel socketChannel, int count, CountDownLatch latch) {
-            this.socketChannel = socketChannel;
+        private ChannelWriter(Channel channel, int count, CountDownLatch latch) {
+            this.channel = channel;
             this.count = count;
             this.latch = latch;
         }
@@ -198,7 +202,7 @@ public class SSLConnectionTest {
                     out.putInt(data);
                     out.flip();
                     while (out.hasRemaining()) {
-                        socketChannel.write(out);
+                        channel.write(out);
                     }
                     out.clear();
                 }
@@ -225,19 +229,22 @@ public class SSLConnectionTest {
         }
 
         public void run() {
-            Channel socketChannel = null;
+            Channel channel = null;
             try {
                 SSLContext context = createServerSslContext();
-                socketChannel = new SSLChannel(context, ssc.accept(), false, null);
+                SSLEngine sslEngine = context.createSSLEngine();
+                sslEngine.setUseClientMode(false);
+                sslEngine.setEnableSessionCreation(true);
+                channel = new SSLChannel(sslEngine, ssc.accept(), null, false);
                 final CountDownLatch latch = new CountDownLatch(2);
                 final BlockingQueue<Integer> queue = new ArrayBlockingQueue<Integer>(count);
 
-                ex.execute(new ChannelReader(socketChannel, count, latch) {
+                ex.execute(new ChannelReader(channel, count, latch) {
                     void processData(int i, int data) throws Exception {
                         queue.add(data);
                     }
                 });
-                ex.execute(new ChannelWriter(socketChannel, count, latch) {
+                ex.execute(new ChannelWriter(channel, count, latch) {
                     int prepareData(int i) throws Exception {
                         int data = queue.poll(30, TimeUnit.SECONDS);
                         return data * 2 + 1;
@@ -248,7 +255,7 @@ public class SSLConnectionTest {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                IOUtil.closeResource(socketChannel);
+                IOUtil.closeResource(channel);
             }
         }
     }

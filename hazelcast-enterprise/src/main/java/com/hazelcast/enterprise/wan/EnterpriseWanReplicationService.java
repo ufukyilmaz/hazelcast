@@ -17,7 +17,6 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.LocalWanStatsImpl;
-import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.LiveOperations;
 import com.hazelcast.spi.LiveOperationsTracker;
@@ -28,7 +27,7 @@ import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.partition.MigrationEndpoint;
-import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.util.ConstructorFunction;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.util.executor.StripedRunnable;
@@ -47,6 +46,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
+import static com.hazelcast.nio.ClassLoaderUtil.getOrCreate;
+import static com.hazelcast.util.ConcurrencyUtil.getOrPutSynchronized;
 
 /**
  * Enterprise implementation for WAN replication.
@@ -63,37 +64,53 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
     private volatile WanSyncManager syncManager;
     private final ILogger logger;
 
-    private final Map<String, WanReplicationPublisherDelegate> wanReplications = initializeWanReplicationPublisherMapping();
-    private final Map<String, WanReplicationConsumer> wanConsumers = initializeCustomWanReplicationConsumerMapping();
+    /** Publisher delegates grouped by WAN replication config name */
+    private final ConcurrentHashMap<String, WanReplicationPublisherDelegate> wanReplications
+            = new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
+    /** Consumer implementations grouped by WAN replication config name */
+    private final Map<String, WanReplicationConsumer> wanConsumers
+            = new ConcurrentHashMap<String, WanReplicationConsumer>(2);
+
+    /**
+     * Operations which are processed on threads other than the operation thread. We must report these operations
+     * to the operation system for it to send operation heartbeats to the operation sender.
+     */
     private final Set<Operation> liveOperations = Collections.newSetFromMap(new ConcurrentHashMap<Operation, Boolean>());
     private final Object publisherMutex = new Object();
     private final Object executorMutex = new Object();
     private final Object syncManagerMutex = new Object();
     private volatile StripedExecutor executor;
+    private final ConstructorFunction<String, WanReplicationPublisherDelegate> publisherDelegateConstructor =
+            new ConstructorFunction<String, WanReplicationPublisherDelegate>() {
+                @Override
+                public WanReplicationPublisherDelegate createNew(String name) {
+                    final WanReplicationConfig replicationConfig = node.getConfig().getWanReplicationConfig(name);
+                    final List<WanPublisherConfig> publisherConfigs = replicationConfig.getWanPublisherConfigs();
+                    return new WanReplicationPublisherDelegate(name, createPublishers(replicationConfig, publisherConfigs));
+                }
+            };
 
     public EnterpriseWanReplicationService(Node node) {
         this.node = node;
         this.logger = node.getLogger(EnterpriseWanReplicationService.class.getName());
     }
 
+    /**
+     * Construct and initialize all WAN consumers by fetching the class names or implementations from the config and store them
+     * under the WAN replication config name in {@link #wanConsumers}.
+     */
     public void initializeCustomConsumers() {
-        Map<String, WanReplicationConfig> configs = node.getConfig().getWanReplicationConfigs();
+        final Map<String, WanReplicationConfig> configs = node.getConfig().getWanReplicationConfigs();
         if (configs != null) {
             for (Map.Entry<String, WanReplicationConfig> wanReplicationConfigEntry : configs.entrySet()) {
-                WanConsumerConfig consumerConfig = wanReplicationConfigEntry.getValue().getWanConsumerConfig();
-
+                final WanConsumerConfig consumerConfig = wanReplicationConfigEntry.getValue().getWanConsumerConfig();
                 if (consumerConfig != null) {
-                    WanReplicationConsumer consumer;
-                    if (consumerConfig.getImplementation() != null) {
-                        consumer = (WanReplicationConsumer) consumerConfig.getImplementation();
-                    } else if (consumerConfig.getClassName() != null) {
-                        try {
-                            consumer = ClassLoaderUtil
-                                    .newInstance(node.getConfigClassLoader(), consumerConfig.getClassName());
-                        } catch (Exception e) {
-                            throw ExceptionUtil.rethrow(e);
-                        }
-                    } else {
+                    final WanReplicationConsumer consumer = getOrCreate(
+                            (WanReplicationConsumer) consumerConfig.getImplementation(),
+                            node.getConfigClassLoader(),
+                            consumerConfig.getClassName());
+
+                    if (consumer == null) {
                         throw new InvalidConfigurationException("Either \'implementation\' or \'className\' "
                                 + "attribute need to be set in WanConsumerConfig");
                     }
@@ -184,62 +201,54 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
 
     @Override
     public WanReplicationPublisher getWanReplicationPublisher(String name) {
-        WanReplicationPublisherDelegate wr = wanReplications.get(name);
-        if (wr != null) {
-            return wr;
+        if (!wanReplications.containsKey(name) && node.getConfig().getWanReplicationConfig(name) == null) {
+            return null;
         }
-        synchronized (publisherMutex) {
-            wr = wanReplications.get(name);
-            if (wr != null) {
-                return wr;
-            }
-            WanReplicationConfig wanReplicationConfig = node.getConfig().getWanReplicationConfig(name);
-            if (wanReplicationConfig == null) {
-                return null;
-            }
-            List<WanPublisherConfig> publisherConfigs = wanReplicationConfig.getWanPublisherConfigs();
-            Map<String, WanReplicationEndpoint> targetEndpoints = new HashMap<String, WanReplicationEndpoint>();
+        return getOrPutSynchronized(wanReplications, name, publisherMutex, publisherDelegateConstructor);
+    }
 
-            if (!publisherConfigs.isEmpty()) {
-                for (WanPublisherConfig wanPublisherConfig : publisherConfigs) {
-                    WanReplicationEndpoint target;
-                    if (wanPublisherConfig.getImplementation() != null) {
-                        target = (WanReplicationEndpoint) wanPublisherConfig.getImplementation();
-                    } else if (wanPublisherConfig.getClassName() != null) {
-                        target = createWanReplicationEndpoint(wanPublisherConfig.getClassName());
-                    } else {
-                        throw new InvalidConfigurationException("Either \'implementation\' or \'className\' "
-                                + "attribute need to be set in WanPublisherConfig");
-                    }
-                    String groupName = wanPublisherConfig.getGroupName();
-                    target.init(node, wanReplicationConfig, wanPublisherConfig);
-                    targetEndpoints.put(groupName, target);
+    /** Instantiate and initialize the {@link WanReplicationEndpoint}s and group by endpoint group name */
+    private Map<String, WanReplicationEndpoint> createPublishers(
+            WanReplicationConfig wanReplicationConfig,
+            List<WanPublisherConfig> publisherConfigs) {
+        final Map<String, WanReplicationEndpoint> targetEndpoints = new HashMap<String, WanReplicationEndpoint>();
+        if (!publisherConfigs.isEmpty()) {
+            for (WanPublisherConfig publisherConfig : publisherConfigs) {
+                final WanReplicationEndpoint endpoint = getOrCreate(
+                        (WanReplicationEndpoint) publisherConfig.getImplementation(),
+                        node.getConfigClassLoader(),
+                        publisherConfig.getClassName());
+                if (endpoint == null) {
+                    throw new InvalidConfigurationException("Either \'implementation\' or \'className\' "
+                            + "attribute need to be set in WanPublisherConfig");
                 }
+                final String groupName = publisherConfig.getGroupName();
+                endpoint.init(node, wanReplicationConfig, publisherConfig);
+                targetEndpoints.put(groupName, endpoint);
             }
-            wr = new WanReplicationPublisherDelegate(name, targetEndpoints);
-            wanReplications.put(name, wr);
-            return wr;
         }
+        return targetEndpoints;
     }
 
-    private WanReplicationEndpoint createWanReplicationEndpoint(String className) {
-        try {
-            return ClassLoaderUtil
-                    .newInstance(node.getConfigClassLoader(), className);
-        } catch (Exception e) {
-            throw ExceptionUtil.rethrow(e);
-        }
-    }
-
-    public WanReplicationEndpoint getEndpoint(String wanReplicationName, String target) {
-        WanReplicationPublisherDelegate publisherDelegate
+    /**
+     * Return a WAN replication configured under a WAN replication config with the name {@code wanReplicationName}
+     * and with a group name of {@code target}.
+     *
+     * @param wanReplicationName the name of the {@link WanReplicationConfig}
+     * @param groupName          the group name of the publisher
+     * @return the wan endpoint
+     * @see WanReplicationConfig#getName
+     * @see WanPublisherConfig#getGroupName
+     */
+    public WanReplicationEndpoint getEndpoint(String wanReplicationName, String groupName) {
+        final WanReplicationPublisherDelegate publisherDelegate
                 = (WanReplicationPublisherDelegate) getWanReplicationPublisher(wanReplicationName);
         if (publisherDelegate == null) {
             throw new InvalidConfigurationException("WAN Replication Config doesn't exist with WAN configuration name "
-                    + wanReplicationName + " and publisher target group name " + target);
+                    + wanReplicationName + " and publisher target group name " + groupName);
         }
-        Map<String, WanReplicationEndpoint> endpoints = publisherDelegate.getEndpoints();
-        return endpoints.get(target);
+        final Map<String, WanReplicationEndpoint> endpoints = publisherDelegate.getEndpoints();
+        return endpoints.get(groupName);
     }
 
     /**
@@ -527,7 +536,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         if (addWanReplicationConfigIfAbsent(wanConfig)) {
             getWanReplicationPublisher(wanConfig.getName());
         } else {
-            logger.warning("Ignoring new WAN config request. A WanReplicationConfig is already exists with the given name: "
+            logger.warning("Ignoring new WAN config request. A WanReplicationConfig already exists with the given name: "
                     + wanConfig.getName());
         }
     }
@@ -554,14 +563,6 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
     public WanSyncManager getSyncManager() {
         initializeSyncManagerIfNeeded();
         return syncManager;
-    }
-
-    private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWanReplicationPublisherMapping() {
-        return new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
-    }
-
-    private ConcurrentHashMap<String, WanReplicationConsumer> initializeCustomWanReplicationConsumerMapping() {
-        return new ConcurrentHashMap<String, WanReplicationConsumer>(2);
     }
 
     private void initializeSyncManagerIfNeeded() {

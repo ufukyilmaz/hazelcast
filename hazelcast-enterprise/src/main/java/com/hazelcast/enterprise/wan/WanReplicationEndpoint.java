@@ -65,7 +65,8 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
     void resume();
 
     /**
-     * Gathers statistics of related {@link WanReplicationEndpoint} instance.
+     * Gathers statistics of related {@link WanReplicationEndpoint} instance. This method will always return the
+     * same instance.
      *
      * @return {@link LocalWanPublisherStats}
      */

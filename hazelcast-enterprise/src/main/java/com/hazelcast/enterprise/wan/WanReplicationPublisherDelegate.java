@@ -9,12 +9,13 @@ import com.hazelcast.wan.WanReplicationPublisher;
 import java.util.Map;
 
 /**
- * Delegating WAN replication publisher implementation.
+ * Delegating WAN replication publisher implementation. This implementation is a container for multiple WAN publisher
+ * endpoints. When publishing an event on this delegate, all endpoints are notified.
  */
-public final class WanReplicationPublisherDelegate
-        implements WanReplicationPublisher {
-
+public final class WanReplicationPublisherDelegate implements WanReplicationPublisher {
+    /** The WAN replication name */
     final String name;
+    /** WAN publisher endpoints, grouped by group name */
     final Map<String, WanReplicationEndpoint> endpoints;
 
     public WanReplicationPublisherDelegate(String name, Map<String, WanReplicationEndpoint> endpoints) {

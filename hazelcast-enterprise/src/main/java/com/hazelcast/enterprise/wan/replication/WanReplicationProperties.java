@@ -5,6 +5,7 @@ import com.hazelcast.config.properties.PropertyDefinition;
 import com.hazelcast.config.properties.PropertyTypeConverter;
 import com.hazelcast.config.properties.SimplePropertyDefinition;
 import com.hazelcast.config.properties.ValueValidator;
+import com.hazelcast.enterprise.wan.connection.WanConnectionManager;
 
 import java.util.Map;
 
@@ -58,8 +59,31 @@ public final class WanReplicationProperties {
     /**
      * Comma separated list of target cluster members, e.g. {@code 127.0.0.1:5701, 127.0.0.1:5702}.
      */
-    public static final PropertyDefinition ENDPOINTS
-            = property("endpoints", false, PropertyTypeConverter.STRING);
+    public static final PropertyDefinition ENDPOINTS = property("endpoints", PropertyTypeConverter.STRING);
+
+    /**
+     * Period in seconds in which WAN tries to discover new endpoints and reestablish connections to failed endpoints.
+     * Default is 10 (seconds).
+     */
+    public static final PropertyDefinition DISCOVERY_PERIOD = property("discovery.period", PropertyTypeConverter.INTEGER);
+
+    /**
+     * The maximum number of endpoints that WAN will connect to when using a discovery mechanism to define endpoints.
+     * Default is {@link WanConnectionManager#DEFAULT_MAX_ENDPOINTS}.
+     * This property has no effect when static endpoint IPs are defined using the {@link #ENDPOINTS} property.
+     */
+    public static final PropertyDefinition MAX_ENDPOINTS = property("maxEndpoints", PropertyTypeConverter.INTEGER);
+
+    /**
+     * The number of threads that the {@link WanBatchReplication} executor will have. The executor is used to send WAN
+     * events to the endpoints and ideally you want to have one thread per endpoint.
+     * If this property is omitted and you have specified the {@link #ENDPOINTS} property, this will be the case.
+     * If, on the other hand, you are using WAN with the discovery SPI and you have not specified this property, the executor
+     * will be sized to the initial number of discovered endpoints. This can lead to performance issues if the number of
+     * endpoints changes in the future - either contention on a too small number of threads or wasted threads that will not be
+     * performing any work.
+     */
+    public static final PropertyDefinition EXECUTOR_THREAD_COUNT = property("executorThreadCount", PropertyTypeConverter.INTEGER);
 
     private WanReplicationProperties() {
     }

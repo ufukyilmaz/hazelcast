@@ -147,7 +147,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
+    protected void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
         assertTrueEventually(new AssertTask() {
             public void run() {
                 assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceCluster));

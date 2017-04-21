@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.connection;
 
+import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Connection;
 
 /**
@@ -7,22 +8,16 @@ import com.hazelcast.nio.Connection;
  */
 public class WanConnectionWrapper {
 
-    private String targetAddress;
-    private String targetGroupName;
+    private Address targetAddress;
     private Connection connection;
 
-    public WanConnectionWrapper(String targetAddress, String targetGroupName, Connection connection) {
+    public WanConnectionWrapper(Address targetAddress, Connection connection) {
         this.targetAddress = targetAddress;
-        this.targetGroupName = targetGroupName;
         this.connection = connection;
     }
 
-    public String getTargetAddress() {
+    public Address getTargetAddress() {
         return targetAddress;
-    }
-
-    public String getTargetGroupName() {
-        return targetGroupName;
     }
 
     public Connection getConnection() {

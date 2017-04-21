@@ -35,6 +35,7 @@ import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.function.Supplier;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -66,6 +67,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
+@Ignore
 public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
     @Parameters(name = "addressChangePolicy:{0}")

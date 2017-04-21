@@ -526,7 +526,7 @@ public class ClusterMetadataManager {
             }
 
             this.excludedMemberUuids = unmodifiableSet(excludedMemberUuids);
-            node.getClusterService().shrinkMembersRemovedWhileClusterIsNotActiveState(this.excludedMemberUuids);
+            node.getClusterService().shrinkMembersRemovedInNotJoinableState(this.excludedMemberUuids);
             this.clusterState = ClusterState.ACTIVE;
             this.hotRestartStatus = CLUSTER_START_SUCCEEDED;
 
@@ -847,7 +847,7 @@ public class ClusterMetadataManager {
                 // ORDER IS IMPORTANT. excludedMemberUuids is set before hotRestartStatus since hotRestartStatus can be read
                 // without acquiring the lock and excludedMemberUuids should be there once it is success.
                 this.excludedMemberUuids = unmodifiableSet(new HashSet<String>(excludedMemberUuids));
-                node.getClusterService().shrinkMembersRemovedWhileClusterIsNotActiveState(this.excludedMemberUuids);
+                node.getClusterService().shrinkMembersRemovedInNotJoinableState(this.excludedMemberUuids);
                 if (result == CLUSTER_START_SUCCEEDED && !excludedMemberUuids.contains(node.getThisUuid())) {
                     this.clusterState = clusterState;
                 }
@@ -1247,7 +1247,7 @@ public class ClusterMetadataManager {
                 // cluster start is success. just send the current member list except the excluded ones
                 ClusterServiceImpl clusterService = node.getClusterService();
                 Map<String, Address> expectedMembers = new HashMap<String, Address>();
-                for (Member member : clusterService.getCurrentMembersAndMembersRemovedWhileClusterIsNotActive()) {
+                for (Member member : clusterService.getCurrentMembersAndMembersRemovedInNotJoinableState()) {
                     if (excludedMemberUuids.contains(member.getUuid())) {
                         continue;
                     }
@@ -1300,7 +1300,7 @@ public class ClusterMetadataManager {
             Set<String> excludedMemberUuids = collectExcludedMemberUuids(memberUuidsByPartitionTableVersion);
 
             this.excludedMemberUuids = unmodifiableSet(excludedMemberUuids);
-            node.getClusterService().shrinkMembersRemovedWhileClusterIsNotActiveState(this.excludedMemberUuids);
+            node.getClusterService().shrinkMembersRemovedInNotJoinableState(this.excludedMemberUuids);
             hotRestartStatus = CLUSTER_START_SUCCEEDED;
 
             logger.warning("Partial data recovery is set. Excluded member uuids: " + excludedMemberUuids);
@@ -1388,7 +1388,7 @@ public class ClusterMetadataManager {
     private void persistMembers() {
         try {
             ClusterServiceImpl clusterService = node.getClusterService();
-            Collection<Member> allMembers = clusterService.getCurrentMembersAndMembersRemovedWhileClusterIsNotActive();
+            Collection<Member> allMembers = clusterService.getCurrentMembersAndMembersRemovedInNotJoinableState();
             if (logger.isFineEnabled()) {
                 logger.fine("Persisting " + allMembers.size() + " (active & passive) members -> " + allMembers);
             }

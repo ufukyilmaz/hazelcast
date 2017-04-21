@@ -30,6 +30,6 @@ public final class ClusterStateManagerAccessor {
     }
 
     public static void addMembersRemovedInNotActiveState(ClusterServiceImpl clusterService, Collection<MemberImpl> members) {
-        clusterService.addMembersRemovedInNotActiveState(members);
+        clusterService.addMembersRemovedInNotJoinableState(members);
     }
 }

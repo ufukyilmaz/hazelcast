@@ -26,7 +26,6 @@ import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
-import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.ExpectedRuntimeException;
@@ -35,7 +34,6 @@ import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.function.Supplier;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -67,7 +65,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore
 public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
     @Parameters(name = "addressChangePolicy:{0}")
@@ -197,6 +194,9 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         assertInstancesJoined(addresses.length, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
     }
 
+    // In 3.7, we had a bug as following:
+    // After a member makes a graceful restart after a force start, it force starts itself instead of doing a restart.
+    // We fixed this bug in 3.8 and verify the correct behaviour with this test.
     @Test
     public void testForceStart_thenGracefulRestart() {
         HazelcastInstance[] instances = startNewInstances(nodeCount);
@@ -225,6 +225,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
         assertNotNull(instanceToRestart);
 
+        changeClusterStateEventually(instanceToRestart, ClusterState.FROZEN);
         Address address = getAddress(instanceToRestart);
         instanceToRestart.getLifecycleService().terminate();
         restartInstance(address);

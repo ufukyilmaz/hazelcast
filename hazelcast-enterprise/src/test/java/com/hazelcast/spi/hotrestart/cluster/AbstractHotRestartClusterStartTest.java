@@ -120,10 +120,17 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
         return startNewInstances(numberOfInstances, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
     }
 
-    HazelcastInstance[] startNewInstances(int numberOfInstances, final HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+    HazelcastInstance[] startNewInstances(int numberOfInstances,
+                                          final HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+        return startNewInstances(numberOfInstances, clusterStartPolicy, null);
+    }
+
+    HazelcastInstance[] startNewInstances(int numberOfInstances,
+                                          final HotRestartClusterDataRecoveryPolicy clusterStartPolicy,
+                                          MemberVersion codebaseVersion) {
         List<HazelcastInstance> instancesList = new ArrayList<HazelcastInstance>();
         for (int i = 0; i < numberOfInstances; i++) {
-            HazelcastInstance instance = startNewInstance(null, clusterStartPolicy);
+            HazelcastInstance instance = startNewInstance(null, clusterStartPolicy, codebaseVersion);
             instancesList.add(instance);
         }
         return instancesList.toArray(new HazelcastInstance[instancesList.size()]);
@@ -183,13 +190,33 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
 
     HazelcastInstance startNewInstance(ClusterHotRestartEventListener listener,
                                        HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+        return startNewInstance(listener, clusterStartPolicy, null);
+    }
+
+    HazelcastInstance startNewInstance(ClusterHotRestartEventListener listener,
+                                       HotRestartClusterDataRecoveryPolicy clusterStartPolicy,
+                                       MemberVersion codebaseVersion) {
         Address address = factory.nextAddress();
 
         String instanceName = "instance_" + instanceNameIndex.getAndIncrement();
         assertNull(instanceNames.putIfAbsent(address, instanceName));
 
         Config config = newConfig(instanceName, listener, clusterStartPolicy);
-        return factory.newHazelcastInstance(address, config);
+        if (codebaseVersion == null) {
+            return factory.newHazelcastInstance(address, config);
+        } else {
+            String existingHazelcastVersionValue = System.getProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
+            try {
+                System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, codebaseVersion.toString());
+                return factory.newHazelcastInstance(address, config);
+            } finally {
+                if (existingHazelcastVersionValue == null) {
+                    System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
+                } else {
+                    System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, existingHazelcastVersionValue);
+                }
+            }
+        }
     }
 
     HazelcastInstance restartInstance(Address address) {

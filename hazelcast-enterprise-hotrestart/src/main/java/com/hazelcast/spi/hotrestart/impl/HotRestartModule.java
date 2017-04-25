@@ -62,6 +62,7 @@ public final class HotRestartModule {
             }
             di.dep(MemoryAllocator.class, malloc);
         }
+        Class<? extends GcHelper> gcHelperClass = isOffHeap ? GcHelper.OffHeap.class : GcHelper.OnHeap.class;
         di.dep(di)
           .dep(HazelcastProperties.class, properties)
           .dep(new BackupExecutor()).disposable()
@@ -74,7 +75,7 @@ public final class HotRestartModule {
           .dep("testGcMutex", new Object())
           .dep(new RecordDataHolder())
           .dep(GcLogger.class)
-          .dep(GcHelper.class, isOffHeap ? GcHelper.OffHeap.class : GcHelper.OnHeap.class).disposable()
+          .dep(GcHelper.class, gcHelperClass).disposable()
           .dep("persistenceConveyor", concurrentConveyorSingleQueue(null,
                   new ManyToOneConcurrentArrayQueue<Runnable>(MUTATOR_QUEUE_CAPACITY)))
           .dep("gcConveyor", concurrentConveyorSingleQueue(null,

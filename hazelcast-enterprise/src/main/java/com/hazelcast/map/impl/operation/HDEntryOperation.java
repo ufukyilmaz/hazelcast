@@ -9,9 +9,11 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.Offloadable;
 import com.hazelcast.core.ReadOnly;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
+import com.hazelcast.map.impl.LockAwareLazyMapEntry;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
@@ -140,7 +142,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation implements BackupAw
             @Override
             public void run() {
                 try {
-                    final Map.Entry entry = createMapEntry(dataKey, previousValue);
+                    final Map.Entry entry = createMapEntry(dataKey, previousValue, null);
                     final Data result = process(entry);
                     if (!noOp(entry, previousValue)) {
                         throwModificationInReadOnlyException();
@@ -184,7 +186,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation implements BackupAw
                 @Override
                 public void run() {
                     try {
-                        final Map.Entry entry = createMapEntry(dataKey, previousValue);
+                        final Map.Entry entry = createMapEntry(dataKey, previousValue, null);
                         final Data result = process(entry);
                         if (!noOp(entry, previousValue)) {
                             Data newValue = toData(entry.getValue());
@@ -337,8 +339,8 @@ public class HDEntryOperation extends HDKeyBasedMapOperation implements BackupAw
     private void runVanilla() {
         final long now = getNow();
         oldValue = recordStore.get(dataKey, false);
-
-        Map.Entry entry = createMapEntry(dataKey, oldValue);
+        boolean locked = recordStore.isLocked(dataKey);
+        Map.Entry entry = createMapEntry(dataKey, oldValue, locked);
 
         response = process(entry);
 
@@ -532,6 +534,12 @@ public class HDEntryOperation extends HDKeyBasedMapOperation implements BackupAw
                 mapEventPublisher.publishWanReplicationUpdate(name, entryView);
             }
         }
+    }
+
+    private Map.Entry createMapEntry(Data key, Object value, Boolean locked) {
+        InternalSerializationService serializationService
+                = ((InternalSerializationService) getNodeEngine().getSerializationService());
+        return new LockAwareLazyMapEntry(key, value, serializationService, mapContainer.getExtractors(), locked);
     }
 
     @Override

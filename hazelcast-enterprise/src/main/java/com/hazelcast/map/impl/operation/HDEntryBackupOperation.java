@@ -4,7 +4,9 @@ import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.EntryBackupProcessor;
+import com.hazelcast.map.impl.LockAwareLazyMapEntry;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.record.Record;
@@ -102,6 +104,13 @@ public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements Ba
         Object value = entry.getValue();
         recordStore.putBackup(dataKey, value);
         publishWanReplicationEvent(EntryEventType.UPDATED);
+    }
+
+    private Map.Entry createMapEntry(Data key, Object value) {
+        InternalSerializationService serializationService
+                = ((InternalSerializationService) getNodeEngine().getSerializationService());
+        boolean locked = recordStore.isLocked(key);
+        return new LockAwareLazyMapEntry(key, value, serializationService, mapContainer.getExtractors(), locked);
     }
 
     @Override

@@ -1,6 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.LazyMapEntry;
 import com.hazelcast.map.impl.LocalMapStatsProvider;
 import com.hazelcast.map.impl.MapService;
@@ -49,12 +48,6 @@ public abstract class HDKeyBasedMapOperation extends HDMapOperation implements P
         this.dataKey = dataKey;
         this.dataValue = dataValue;
         this.ttl = ttl;
-    }
-
-    protected Map.Entry createMapEntry(Data key, Object value) {
-        InternalSerializationService serializationService
-                = (InternalSerializationService) getNodeEngine().getSerializationService();
-        return new LazyMapEntry(key, value, serializationService, mapContainer.getExtractors());
     }
 
     protected boolean noOp(Map.Entry entry, Object oldValue) {

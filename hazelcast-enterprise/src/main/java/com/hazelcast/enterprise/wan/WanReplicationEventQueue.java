@@ -3,14 +3,18 @@ package com.hazelcast.enterprise.wan;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.SerializableByConvention;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static com.hazelcast.nio.serialization.SerializableByConvention.Reason.PUBLIC_API;
+
 /**
  * WAN replication event queue wrapper.
  */
+@SerializableByConvention(PUBLIC_API)
 public class WanReplicationEventQueue extends ConcurrentLinkedQueue<WanReplicationEvent> implements DataSerializable {
 
     private int backupCount;

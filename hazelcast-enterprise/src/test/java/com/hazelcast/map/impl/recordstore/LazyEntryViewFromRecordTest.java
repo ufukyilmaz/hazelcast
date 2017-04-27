@@ -1,7 +1,6 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.NodeExtension;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
@@ -208,13 +207,12 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
     }
 
     private PartitionOperationThread getPartitionOperationThread(OperationQueue queue) {
-        HazelcastThreadGroup hazelcastThreadGroup = new HazelcastThreadGroup("instance", LOGGER, getClass().getClassLoader());
         NodeExtension nodeExtension = mock(NodeExtension.class);
 
         OperationRunner operationRunner = mock(OperationRunner.class);
         OperationRunner[] operationRunners = new OperationRunner[]{operationRunner};
 
-        return new PartitionOperationThread("POThread", 0, queue, LOGGER, hazelcastThreadGroup, nodeExtension, operationRunners);
+        return new PartitionOperationThread("POThread", 0, queue, LOGGER, nodeExtension, operationRunners, getClass().getClassLoader());
     }
 
     private static HDRecord getHDRecord(Data dataKey, Data dataValue) {

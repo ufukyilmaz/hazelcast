@@ -5,7 +5,6 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
-import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.nio.Address;
 import com.hazelcast.util.EmptyStatement;
@@ -27,6 +26,7 @@ import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.EXECUTOR_THREAD_COUNT;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.SNAPSHOT_ENABLED;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.getProperty;
+import static com.hazelcast.util.ThreadUtil.createThreadName;
 
 /**
  * WAN replication publisher that sends events in batches.
@@ -182,10 +182,8 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         if (executor == null) {
             synchronized (mutex) {
                 if (executor == null) {
-                    HazelcastThreadGroup threadGroup = node.getHazelcastThreadGroup();
                     executor = new StripedExecutor(node.getLogger(WanBatchReplication.class),
-                            threadGroup.getThreadNamePrefix("wan-batch-replication"),
-                            threadGroup.getInternalThreadGroup(),
+                            createThreadName(node.hazelcastInstance.getName(), "wan-batch-replication"),
                             executorThreadCount > 0 ? executorThreadCount : threadCount,
                             STRIPED_RUNNABLE_JOB_QUEUE_SIZE);
                 }

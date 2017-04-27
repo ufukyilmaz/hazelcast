@@ -23,8 +23,9 @@ import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
 
     static final int EXPAND_FACTOR = 2;
-    private final Object mutex = new Object();
+
     private ByteBuffer applicationBuffer;
+    private final Object lock = new Object();
     private final ByteBuffer emptyBuffer;
     private final ByteBuffer netOutBuffer;
     // "reliable" write transport
@@ -60,7 +61,7 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
             "checkstyle:magicnumber"
     })
     private void handshake() throws IOException {
-        synchronized (mutex) {
+        synchronized (lock) {
             if (handshakeCompleted) {
                 return;
             }

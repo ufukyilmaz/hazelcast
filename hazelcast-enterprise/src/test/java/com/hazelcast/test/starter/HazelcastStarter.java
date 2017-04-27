@@ -1,4 +1,4 @@
-package info.jerrinot.compatibilityguardian;
+package com.hazelcast.test.starter;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
@@ -9,8 +9,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import static info.jerrinot.compatibilityguardian.Utils.rethrow;
 
 public class HazelcastStarter {
 
@@ -45,15 +43,15 @@ public class HazelcastStarter {
             return HazelcastProxyFactory.proxy(delegate);
 
         } catch (ClassNotFoundException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } catch (NoSuchMethodException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } catch (IllegalAccessException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } catch (InvocationTargetException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } catch (InstantiationException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } finally {
             if (contextClassLoader != null) {
                 Thread.currentThread().setContextClassLoader(contextClassLoader);
@@ -82,15 +80,15 @@ public class HazelcastStarter {
             return HazelcastProxyFactory.proxy(delegate);
 
         } catch (ClassNotFoundException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } catch (NoSuchMethodException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } catch (IllegalAccessException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } catch (InvocationTargetException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } catch (InstantiationException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } finally {
             if (contextClassLoader != null) {
                 Thread.currentThread().setContextClassLoader(contextClassLoader);
@@ -104,7 +102,7 @@ public class HazelcastStarter {
             try {
                 urls[i] = files[i].toURL();
             } catch (MalformedURLException e) {
-                throw rethrow(e);
+                throw Utils.rethrow(e);
             }
         }
         return urls;

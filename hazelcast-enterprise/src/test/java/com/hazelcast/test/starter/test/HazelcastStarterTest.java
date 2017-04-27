@@ -1,9 +1,10 @@
-package info.jerrinot.compatibilityguardian;
+package com.hazelcast.test.starter.test;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IMap;
+import com.hazelcast.test.starter.HazelcastStarter;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;

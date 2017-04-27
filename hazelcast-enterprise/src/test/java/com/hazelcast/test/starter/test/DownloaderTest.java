@@ -1,8 +1,9 @@
-package info.jerrinot.compatibilityguardian;
+package com.hazelcast.test.starter.test;
 
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.hazelcast.test.starter.Downloader;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;

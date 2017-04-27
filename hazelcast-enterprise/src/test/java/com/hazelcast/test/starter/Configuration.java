@@ -1,4 +1,4 @@
-package info.jerrinot.compatibilityguardian;
+package com.hazelcast.test.starter;
 
 import com.hazelcast.config.Config;
 

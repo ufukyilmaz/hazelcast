@@ -1,4 +1,4 @@
-package info.jerrinot.compatibilityguardian;
+package com.hazelcast.test.starter;
 
 public class GuardianException extends RuntimeException {
 

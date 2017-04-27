@@ -1,12 +1,8 @@
-package info.jerrinot.compatibilityguardian;
+package com.hazelcast.test.starter;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
-import static info.jerrinot.compatibilityguardian.Utils.concatItems;
-import static info.jerrinot.compatibilityguardian.Utils.debug;
-import static info.jerrinot.compatibilityguardian.Utils.rethrow;
 
 class ProxyInvocationHandler implements InvocationHandler {
     private final Object delegate;
@@ -18,7 +14,7 @@ class ProxyInvocationHandler implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        debug("Proxy " + this + " called. Method: " + method);
+        Utils.debug("Proxy " + this + " called. Method: " + method);
         Class<?> delegateClass = delegate.getClass();
         Method methodDelegate = getMethodDelegate(method, delegateClass);
 
@@ -72,7 +68,7 @@ class ProxyInvocationHandler implements InvocationHandler {
             methodDelegate.setAccessible(true);
             delegateResult = methodDelegate.invoke(delegate, args);
         } catch (IllegalAccessException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         } catch (InvocationTargetException e) {
             throw e.getTargetException();
         }
@@ -92,7 +88,7 @@ class ProxyInvocationHandler implements InvocationHandler {
                         Class<?> delegateParameterType = delegateClassLoader.loadClass(parameterType.getName());
                         parameterTypes[i] = delegateParameterType;
                     } catch (ClassNotFoundException e) {
-                        throw rethrow(e);
+                        throw Utils.rethrow(e);
                     }
                 }
             }
@@ -100,7 +96,7 @@ class ProxyInvocationHandler implements InvocationHandler {
         try {
             methodDelegate = delegateClass.getMethod(method.getName(), parameterTypes);
         } catch (NoSuchMethodException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         }
         return methodDelegate;
     }
@@ -110,7 +106,7 @@ class ProxyInvocationHandler implements InvocationHandler {
         //if the return type itself is an interface then we have to add it
         //to the list of interfaces implemented by the proxy
         if (type.isInterface()) {
-            interfaces = concatItems(interfaces, type);
+            interfaces = Utils.concatItems(interfaces, type);
         }
         return interfaces;
     }
@@ -119,11 +115,11 @@ class ProxyInvocationHandler implements InvocationHandler {
         if (!Utils.DEBUG_ENABLED) {
             return;
         }
-        debug("Returning proxy " + resultingProxy + ", loaded by " + resultingProxy.getClass().getClassLoader());
+        Utils.debug("Returning proxy " + resultingProxy + ", loaded by " + resultingProxy.getClass().getClassLoader());
         Class<?>[] ifaces = resultingProxy.getClass().getInterfaces();
-        debug("The proxy implementes intefaces: ");
+        Utils.debug("The proxy implementes intefaces: ");
         for (Class<?> iface : ifaces) {
-            debug(iface + ", loaded by " + iface.getClassLoader());
+            Utils.debug(iface + ", loaded by " + iface.getClassLoader());
         }
     }
 }

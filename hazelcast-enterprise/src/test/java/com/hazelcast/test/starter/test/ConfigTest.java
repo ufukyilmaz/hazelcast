@@ -1,4 +1,4 @@
-package info.jerrinot.compatibilityguardian;
+package com.hazelcast.test.starter.test;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ListConfig;
@@ -6,8 +6,8 @@ import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.config.MapConfig;
 import org.junit.Test;
 
-import static info.jerrinot.compatibilityguardian.Configuration.*;
-import static org.junit.Assert.*;
+import static com.hazelcast.test.starter.Configuration.*;
+import static org.junit.Assert.assertEquals;
 
 public class ConfigTest {
 

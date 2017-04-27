@@ -1,4 +1,4 @@
-package info.jerrinot.compatibilityguardian;
+package com.hazelcast.test.starter;
 
 import com.google.common.io.Files;
 import okhttp3.OkHttpClient;
@@ -7,8 +7,6 @@ import okhttp3.Response;
 
 import java.io.File;
 import java.io.IOException;
-
-import static info.jerrinot.compatibilityguardian.Utils.rethrow;
 
 public class Downloader {
     private static final String MEMBER_URL = "https://repo1.maven.org/maven2/com/hazelcast/hazelcast/%1$s/hazelcast-%1$s.jar";
@@ -56,7 +54,7 @@ public class Downloader {
             Files.write(bytes, targetFile);
             return targetFile;
         } catch (IOException e) {
-            throw rethrow(e);
+            throw Utils.rethrow(e);
         }
     }
 

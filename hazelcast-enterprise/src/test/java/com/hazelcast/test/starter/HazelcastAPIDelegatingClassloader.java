@@ -1,11 +1,9 @@
-package info.jerrinot.compatibilityguardian;
+package com.hazelcast.test.starter;
 
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Enumeration;
-
-import static info.jerrinot.compatibilityguardian.Utils.debug;
 
 public class HazelcastAPIDelegatingClassloader extends URLClassLoader {
     private Object mutex = new Object();
@@ -16,7 +14,7 @@ public class HazelcastAPIDelegatingClassloader extends URLClassLoader {
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
-        debug("Calling getResource with " + name);
+        Utils.debug("Calling getResource with " + name);
         if (name.contains("hazelcast")) {
             return findResources(name);
         }
@@ -25,7 +23,7 @@ public class HazelcastAPIDelegatingClassloader extends URLClassLoader {
 
     @Override
     public URL getResource(String name) {
-        debug("Getting resource " + name);
+        Utils.debug("Getting resource " + name);
         if (name.contains("hazelcast")) {
             return findResource(name);
         }

@@ -1,10 +1,15 @@
 package com.hazelcast.map.hotrestart;
 
 import com.hazelcast.aggregation.Aggregators;
+import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.nio.Address;
+import com.hazelcast.query.QueryConstants;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.spi.impl.proxyservice.InternalProxyService;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
@@ -36,6 +41,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     @Parameterized.Parameter(3)
     public int clusterSize;
     private IMap<Integer, String> map;
+    private boolean addIndex;
 
     @Parameterized.Parameters(name = "memoryFormat:{0},clusterSize:{3}")
     public static Collection<Object[]> parameters() {
@@ -134,6 +140,15 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
             Collection<String> names = proxyService.getDistributedObjectNames(MapService.SERVICE_NAME);
             assertThat(names, hasItem(mapName));
         }
+
+        map = createMap();
+        assertEquals(KEY_COUNT, map.size());
+    }
+
+    @Test
+    public void mapProxy_shouldBeCreated_afterHotRestart_withIndex() throws Exception {
+        addIndex = true;
+        mapProxy_shouldBeCreated_afterHotRestart();
     }
 
     @Test
@@ -205,5 +220,15 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     private void resetFixture() throws Exception {
         restartInstances(clusterSize);
         map = createMap();
+    }
+
+    @Override
+    Config makeConfig(Address address, int backupCount) {
+        Config config = super.makeConfig(address, backupCount);
+        MapConfig mapConfig = config.getMapConfig(mapName);
+        if (addIndex) {
+            mapConfig.addMapIndexConfig(new MapIndexConfig(QueryConstants.THIS_ATTRIBUTE_NAME.value(), false));
+        }
+        return config;
     }
 }

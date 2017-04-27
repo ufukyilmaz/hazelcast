@@ -44,6 +44,7 @@ import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
@@ -282,7 +283,9 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             String name = mapContainer.getName();
             hotRestartService.ensureHasConfiguration(MapService.SERVICE_NAME, name, null);
             prefix = hotRestartService.registerRamStore(this, MapService.SERVICE_NAME, name, partitionId);
-            nodeEngine.getProxyService().initializeDistributedObject(MapService.SERVICE_NAME, name);
+
+            ProxyServiceImpl proxyService = (ProxyServiceImpl) nodeEngine.getProxyService();
+            proxyService.getOrCreateRegistry(MapService.SERVICE_NAME).getOrCreateProxyFuture(name, false, false);
         }
         return new EnterpriseRecordStore(mapContainer, partitionId, keyLoader, logger, hotRestartConfig, prefix);
     }

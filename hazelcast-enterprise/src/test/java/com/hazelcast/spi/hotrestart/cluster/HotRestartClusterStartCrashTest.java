@@ -1,6 +1,8 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.Member;
@@ -11,6 +13,7 @@ import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -49,6 +52,8 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         return Arrays.asList(new Object[]{NONE, PARTIAL, ALL});
     }
 
+    private int memberlistPublishPeriod = -1;
+
     @Test
     public void testClusterHotRestartEventListenerRegistration() {
         Address address = startAndTerminateInstance();
@@ -69,6 +74,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
     @Test
     public void testMasterRestartAfterNodesJoin() {
+        memberlistPublishPeriod = 1;
         Address[] addresses = startAndTerminateInstances(4);
 
         final AtomicBoolean crash = new AtomicBoolean(false);
@@ -84,6 +90,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
     @Test
     public void testMemberRestartAfterNodesJoin() {
+        memberlistPublishPeriod = 1;
         Address[] addresses = startAndTerminateInstances(4);
 
         final AtomicBoolean crash = new AtomicBoolean(false);
@@ -134,6 +141,19 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         assertInstancesJoinedEventually(addresses.length, NodeState.PASSIVE, ClusterState.PASSIVE);
     }
 
+    @Override
+    Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
+            HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+        Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
+
+        if (memberlistPublishPeriod > 0) {
+            config.setProperty(GroupProperty.MEMBER_LIST_PUBLISH_INTERVAL_SECONDS.getName(),
+                    String.valueOf(memberlistPublishPeriod));
+        }
+
+        return config;
+    }
+
     private class CrashMemberOnAllMembersJoin extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final boolean crashMaster;
@@ -157,6 +177,11 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             final Node node = getNode(instance);
             boolean shouldCrash = (crashMaster && node.isMaster()) || (!crashMaster && !node.isMaster());
             if (shouldCrash && crash.compareAndSet(false, true)) {
+                Collection<HazelcastInstance> instances = getAllInstances();
+                for (HazelcastInstance hz : instances) {
+                    assertClusterSizeEventually(members.size(), hz);
+                }
+
                 startNodeAfterTermination(node);
                 throw new HotRestartException("hot restart is failed manually!");
             }

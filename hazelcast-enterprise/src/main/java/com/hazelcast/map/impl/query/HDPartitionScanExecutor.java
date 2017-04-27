@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.query;
 
 import com.hazelcast.query.Predicate;
+import com.hazelcast.query.impl.QueryableEntriesSegment;
 import com.hazelcast.query.impl.QueryableEntry;
 
 import java.util.Collection;
@@ -20,6 +21,11 @@ public class HDPartitionScanExecutor implements PartitionScanExecutor {
         }
         int partitionId = partitions.iterator().next();
         return partitionScanRunner.run(mapName, predicate, partitionId);
+    }
+
+    @Override
+    public QueryableEntriesSegment execute(String mapName, Predicate predicate, int partitionId, int tableIndex, int fetchSize) {
+        return partitionScanRunner.run(mapName, predicate, partitionId, tableIndex, fetchSize);
     }
 
 }

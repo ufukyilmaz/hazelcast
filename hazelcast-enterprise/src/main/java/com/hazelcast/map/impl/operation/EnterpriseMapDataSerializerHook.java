@@ -97,8 +97,9 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int ACCUMULATOR_CONSUMER = 69;
     public static final int PUT_ALL_PARTITION_AWARE_FACTORY = 70;
     public static final int ENTRY_OFFLOADABLE_SET_UNLOCK = 71;
+    public static final int FETCH_WITH_QUERY = 72;
 
-    private static final int LEN = ENTRY_OFFLOADABLE_SET_UNLOCK + 1;
+    private static final int LEN = FETCH_WITH_QUERY + 1;
 
     @Override
     public int getFactoryId() {
@@ -522,6 +523,12 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new HDEntryOffloadableSetUnlockOperation();
+            }
+        };
+        constructors[FETCH_WITH_QUERY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDMapFetchWithQueryOperation();
             }
         };
 

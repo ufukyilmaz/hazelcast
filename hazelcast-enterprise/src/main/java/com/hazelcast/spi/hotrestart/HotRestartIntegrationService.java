@@ -60,6 +60,7 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOnHeapHotRestartStore;
 import static com.hazelcast.util.Clock.currentTimeMillis;
+import static com.hazelcast.util.ThreadUtil.createThreadName;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -524,7 +525,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
 
     private HotRestartStoreConfig newHotRestartStoreConfig(int storeId, boolean onheap) {
         File dir = storeDir(storeId, onheap);
-        String name = node.getHazelcastThreadGroup().getThreadNamePrefix(dir.getName());
+        String name = createThreadName(node.hazelcastInstance.getName(), dir.getName());
         return new HotRestartStoreConfig()
                 .setStoreName(name)
                 .setHomeDir(dir)

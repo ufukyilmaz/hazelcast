@@ -5,7 +5,6 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
-import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.nio.Connection;
 import com.hazelcast.nio.serialization.Data;
@@ -25,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.BATCH_SIZE;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.SNAPSHOT_ENABLED;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.getProperty;
+import static com.hazelcast.util.ThreadUtil.createThreadName;
 
 /**
  * WAN replication publisher that sends events in batches.
@@ -101,7 +101,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         }
     }
 
-    /** Drains the staging queue until enough items have been drained or enough time has passed */
+    /**
+     * Drains the staging queue until enough items have been drained or enough time has passed
+     */
     private List<WanReplicationEvent> drainStagingQueue() {
         List<WanReplicationEvent> wanReplicationEventList = new ArrayList<WanReplicationEvent>();
         while (!(wanReplicationEventList.size() >= batchSize || sendingPeriodPassed(wanReplicationEventList.size()))) {
@@ -147,7 +149,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         return targets.get(index);
     }
 
-    /** Checks if {@link WanReplicationProperties#BATCH_MAX_DELAY_MILLIS} has passed since the last replication was sent */
+    /**
+     * Checks if {@link WanReplicationProperties#BATCH_MAX_DELAY_MILLIS} has passed since the last replication was sent
+     */
     private boolean sendingPeriodPassed(int eventQueueSize) {
         return System.currentTimeMillis() - lastBatchSendTime > batchMaxDelayMillis && eventQueueSize > 0;
     }
@@ -157,10 +161,8 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         if (ex == null) {
             synchronized (mutex) {
                 if (executor == null) {
-                    HazelcastThreadGroup threadGroup = node.getHazelcastThreadGroup();
                     executor = new StripedExecutor(node.getLogger(WanBatchReplication.class),
-                            threadGroup.getThreadNamePrefix("wan-batch-replication"),
-                            threadGroup.getInternalThreadGroup(),
+                            createThreadName(node.hazelcastInstance.getName(), "wan-batch-replication"),
                             targets.size(),
                             STRIPED_RUNNABLE_JOB_QUEUE_SIZE);
                 }

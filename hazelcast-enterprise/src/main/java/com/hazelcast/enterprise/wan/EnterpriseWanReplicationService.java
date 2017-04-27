@@ -11,7 +11,6 @@ import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
-import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.LocalWanStats;
@@ -47,6 +46,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
+import static com.hazelcast.util.ThreadUtil.createThreadName;
 
 /**
  * Enterprise implementation for WAN replication.
@@ -426,7 +426,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         }
     }
 
-    /** Returns the partition ID for the first event or -1 if the event batch is empty */
+    /**
+     * Returns the partition ID for the first event or -1 if the event batch is empty
+     */
     private int getPartitionId(BatchWanReplicationEvent batchWanReplicationEvent) {
         List<WanReplicationEvent> eventList = batchWanReplicationEvent.getEventList();
         if (eventList.isEmpty()) {
@@ -445,10 +447,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         if (ex == null) {
             synchronized (executorMutex) {
                 if (executor == null) {
-                    HazelcastThreadGroup hazelcastThreadGroup = node.getHazelcastThreadGroup();
-                    String prefix = hazelcastThreadGroup.getThreadNamePrefix("wan");
-                    ThreadGroup threadGroup = hazelcastThreadGroup.getInternalThreadGroup();
-                    executor = new StripedExecutor(logger, prefix, threadGroup,
+                    String prefix = createThreadName(node.hazelcastInstance.getName(), "wan");
+                    executor = new StripedExecutor(logger, prefix,
                             DEFAULT_POOL_SIZE, STRIPED_RUNNABLE_JOB_QUEUE_SIZE);
                 }
                 ex = executor;

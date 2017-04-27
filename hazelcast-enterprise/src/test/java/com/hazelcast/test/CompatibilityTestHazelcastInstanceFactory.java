@@ -10,7 +10,12 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A TestHazelcastInstanceFactory to be used to create HazelcastInstances in compatibility tests.
+ * A factory used to create HazelcastInstances in compatibility tests. Each invocation to any variant of
+ * {@code newHazelcastInstance} methods cycles through an array of well-known previous versions which
+ * must be compatible with current version. Once as many {@link HazelcastInstance}s as the count of previous versions
+ * is created, subsequent {@code newHazelcastInstance} invocations will create current-version instances. The
+ * minimum number of members to have in a cluster in order to test compatibility is
+ * {@link #getKnownPreviousVersionsCount()} + 1.
  */
 public class CompatibilityTestHazelcastInstanceFactory {
 
@@ -24,12 +29,29 @@ public class CompatibilityTestHazelcastInstanceFactory {
     public CompatibilityTestHazelcastInstanceFactory() {
     }
 
+    /**
+     * Creates a new {@link HazelcastInstance} with default configuration.
+     */
     public HazelcastInstance newHazelcastInstance() {
         return nextInstance();
     }
 
+    /**
+     * Creates a new {@link HazelcastInstance} with the given configuration.
+     */
     public HazelcastInstance newHazelcastInstance(Config config) {
         return nextInstance(config);
+    }
+
+    /**
+     * Create a cluster consisting of members of all known previous Hazelcast versions and one member running
+     * on current version.
+     * @see #getKnownPreviousVersionsCount()
+     * @param config the configuration template to use for starting each Hazelcast instance. Can be {@code null}.
+     * @return a {@code HazelcastInstance[]} where the last element is always the current-version Hazelcast member.
+     */
+    public HazelcastInstance[] newInstances(Config config) {
+        return newInstances(config,VERSIONS.length + 1);
     }
 
     public HazelcastInstance[] newInstances(Config config, int nodeCount) {
@@ -39,16 +61,31 @@ public class CompatibilityTestHazelcastInstanceFactory {
         return instances.toArray(new HazelcastInstance[0]);
     }
 
+    /**
+     * Shutdown all instances started by this factory.
+     */
     public void shutdownAll() {
         for (HazelcastInstance hz : instances) {
             hz.shutdown();
         }
     }
 
+    /**
+     * Terminate all instances started by this factory.
+     */
     public void terminateAll() {
         for (HazelcastInstance hz : instances) {
             hz.getLifecycleService().terminate();
         }
+    }
+
+    /**
+     * @return number of known previous Hazelcast versions. In order to test compatibility, a cluster consisting
+     * of at least that many + 1 members should be started, so that all previous members and one current version
+     * member participate in the cluster.
+     */
+    public int getKnownPreviousVersionsCount() {
+        return VERSIONS.length;
     }
 
     // return the version of the next instance to be created
@@ -64,12 +101,7 @@ public class CompatibilityTestHazelcastInstanceFactory {
     }
 
     private HazelcastInstance nextInstance() {
-        String nextVersion = nextVersion();
-        if (nextVersion == CURRENT_VERSION) {
-            return HazelcastInstanceFactory.newHazelcastInstance(null);
-        } else {
-            return HazelcastStarter.newHazelcastInstance(nextVersion);
-        }
+        return nextInstance(null);
     }
 
     private HazelcastInstance nextInstance(Config config) {

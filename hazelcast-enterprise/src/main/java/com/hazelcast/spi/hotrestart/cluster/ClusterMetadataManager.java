@@ -55,6 +55,7 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.
 import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_FAILED;
 import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_IN_PROGRESS;
 import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_SUCCESSFUL;
+import static com.hazelcast.util.ThreadUtil.createThreadName;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.sleep;
@@ -218,7 +219,7 @@ public class ClusterMetadataManager {
             listener.onDataLoadStart(node.getThisAddress());
         }
         dataLoadStartTime = Clock.currentTimeMillis();
-        pingThread = new Thread(node.getHazelcastThreadGroup().getThreadNamePrefix("cluster-start-ping-thread")) {
+        pingThread = new Thread(createThreadName(node.hazelcastInstance.getName(), "cluster-start-ping-thread")) {
             @Override
             public void run() {
                 while (ping()) {
@@ -840,7 +841,7 @@ public class ClusterMetadataManager {
         try {
             if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
                 logger.info("Setting cluster-wide start status to " + result + " with cluster state " + clusterState
-                        +  " received from: " + sender);
+                        + " received from: " + sender);
 
                 // ORDER IS IMPORTANT. excludedMemberUuids is set before hotRestartStatus since hotRestartStatus can be read
                 // without acquiring the lock and excludedMemberUuids should be there once it is success.
@@ -1034,7 +1035,7 @@ public class ClusterMetadataManager {
      * Fails with an {@code HotRestartException} if a member is joined but that doesn't exist in restored members.
      *
      * @param restoredMemberUuids restored member uuid set
-     * @param members current members
+     * @param members             current members
      */
     private void failIfUnexpectedMemberJoins(Set<String> restoredMemberUuids, Collection<MemberImpl> members) {
         for (MemberImpl member : members) {

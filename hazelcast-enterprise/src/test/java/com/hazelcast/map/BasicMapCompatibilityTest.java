@@ -21,7 +21,7 @@ public class BasicMapCompatibilityTest extends BasicMapTest {
     public void init() {
         CompatibilityTestHazelcastInstanceFactory factory = new CompatibilityTestHazelcastInstanceFactory();
         Config config = getConfig();
-        instances = factory.newInstances(config, INSTANCE_COUNT);
+        instances = factory.newInstances(config);
     }
 
     @After

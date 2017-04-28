@@ -54,6 +54,7 @@ public class HazelcastProxyFactory {
     private static final String CLASS_NAME_MAP_EVENT = "com.hazelcast.core.MapEvent";
     private static final String CLASS_NAME_CONFIG = "com.hazelcast.config.Config";
     private static final String CLASS_NAME_CLIENT_CONFIG = "com.hazelcast.client.config.ClientConfig";
+    private static final String CLASS_NAME_ADDRESS = "com.hazelcast.nio.Address";
 
     static {
         Set<String> notProxiedClasses = new HashSet<String>();
@@ -61,6 +62,7 @@ public class HazelcastProxyFactory {
         notProxiedClasses.add(CLASS_NAME_MAP_EVENT);
         notProxiedClasses.add(CLASS_NAME_CONFIG);
         notProxiedClasses.add(CLASS_NAME_CLIENT_CONFIG);
+        notProxiedClasses.add(CLASS_NAME_ADDRESS);
         NO_PROXYING_WHITELIST = notProxiedClasses;
 
         Set<String> subclassProxiedClasses = new HashSet<String>();
@@ -243,6 +245,8 @@ public class HazelcastProxyFactory {
                             return new MapEventConstructor(input);
                         } else if (className.equals(CLASS_NAME_LIFECYCLE_EVENT)) {
                             return new LifecycleEventConstructor(input);
+                        } else if (className.equals(CLASS_NAME_ADDRESS)) {
+                            return new AddressConstructor(input);
                         } else if (className.equals(CLASS_NAME_CONFIG) ||
                                 className.equals(CLASS_NAME_CLIENT_CONFIG)) {
                             return new ConfigConstructor(input);

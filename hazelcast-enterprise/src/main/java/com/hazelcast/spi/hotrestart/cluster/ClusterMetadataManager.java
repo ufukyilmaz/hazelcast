@@ -56,6 +56,7 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.
 import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_FAILED;
 import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_IN_PROGRESS;
 import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_SUCCESSFUL;
+import static com.hazelcast.util.ThreadUtil.createThreadName;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.sleep;
@@ -219,7 +220,7 @@ public class ClusterMetadataManager {
             listener.onDataLoadStart(node.getThisAddress());
         }
         dataLoadStartTime = Clock.currentTimeMillis();
-        pingThread = new Thread(node.getHazelcastThreadGroup().getThreadNamePrefix("cluster-start-ping-thread")) {
+        pingThread = new Thread(createThreadName(node.hazelcastInstance.getName(), "cluster-start-ping-thread")) {
             @Override
             public void run() {
                 while (ping()) {

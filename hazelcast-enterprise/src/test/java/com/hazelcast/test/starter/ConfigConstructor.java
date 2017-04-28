@@ -32,7 +32,7 @@ public class ConfigConstructor extends AbstractStarterObjectConstructor {
     }
 
     private static boolean isGetter(Method method) {
-        if (!method.getName().startsWith("get")) {
+        if (!method.getName().startsWith("get") && !method.getName().startsWith("is")) {
             return false;
         }
         if (method.getParameterTypes().length != 0) {
@@ -51,13 +51,19 @@ public class ConfigConstructor extends AbstractStarterObjectConstructor {
         }
 
         Class thisConfigClass = thisConfigObject.getClass();
+        if (isImmutableJavaType(thisConfigClass)) {
+            return thisConfigObject;
+        }
 
         Class<?> otherConfigClass = classloader.loadClass(thisConfigClass.getName());
         Object otherConfigObject = otherConfigClass.newInstance();
 
         for (Method method : thisConfigClass.getMethods()) {
             Class returnType = method.getReturnType();
-            if (isGetter(method) && hasSetter(otherConfigClass, returnType, creatSetterName(method))) {
+            Method setter;
+            if (isGetter(method)
+                    && (setter = getSetter(otherConfigClass, getOtherReturnType(classloader, returnType), createSetterName(method))) != null) {
+
                 if (Properties.class.isAssignableFrom(returnType)) {
                     //ignore
                 } else if (Map.class.isAssignableFrom(returnType) || ConcurrentMap.class.isAssignableFrom(returnType)) {
@@ -69,7 +75,7 @@ public class ConfigConstructor extends AbstractStarterObjectConstructor {
                         Object otherMapItem = cloneConfig(value, classloader);
                         otherMap.put(key, otherMapItem);
                     }
-                    updateConfig(otherConfigClass, returnType, creatSetterName(method), otherConfigObject, otherMap);
+                    updateConfig(setter, otherConfigObject, otherMap);
                 } else if (returnType.equals(List.class)) {
                     List list = (List) method.invoke(thisConfigObject, null);
                     List otherList = new ArrayList();
@@ -77,21 +83,21 @@ public class ConfigConstructor extends AbstractStarterObjectConstructor {
                         Object otherItem = cloneConfig(item, classloader);
                         otherList.add(otherItem);
                     }
-                    updateConfig(otherConfigClass, returnType, creatSetterName(method), otherConfigObject, otherList);
+                    updateConfig(setter, otherConfigObject, otherList);
                 } else if (returnType.isEnum()) {
                     Enum thisSubConfigObject = (Enum) method.invoke(thisConfigObject, null);
                     Class otherEnumClass = classloader.loadClass(thisSubConfigObject.getClass().getName());
                     Object otherEnumValue = Enum.valueOf(otherEnumClass, thisSubConfigObject.name());
-                    updateConfig(otherConfigClass, returnType, creatSetterName(method), otherConfigObject, otherEnumValue);
-                } else if (returnType.getName().startsWith("java")) {
+                    updateConfig(setter, otherConfigObject, otherEnumValue);
+                } else if (returnType.getName().startsWith("java") || returnType.isPrimitive()) {
                     Object thisSubConfigObject = method.invoke(thisConfigObject, null);
-                    updateConfig(otherConfigClass, returnType, creatSetterName(method), otherConfigObject, thisSubConfigObject);
+                    updateConfig(setter, otherConfigObject, thisSubConfigObject);
                 } else if (returnType.getName().startsWith("com.hazelcast.memory.MemorySize")) {
                     //ignore
                 } else if (returnType.getName().startsWith("com.hazelcast")) {
                     Object thisSubConfigObject = method.invoke(thisConfigObject, null);
                     Object otherSubConfig = cloneConfig(thisSubConfigObject, classloader);
-                    updateConfig(otherConfigClass, returnType, creatSetterName(method), otherConfigObject, otherSubConfig);
+                    updateConfig(setter, otherConfigObject, otherSubConfig);
                 } else {
                     //
                 }
@@ -100,22 +106,42 @@ public class ConfigConstructor extends AbstractStarterObjectConstructor {
         return otherConfigObject;
     }
 
-    private static boolean hasSetter(Class otherConfigClass, Class returnType, String setterName) {
-        try {
-            otherConfigClass.getMethod(setterName, returnType);
+    private static boolean isImmutableJavaType(Class type) {
+        if (type.isPrimitive()) {
             return true;
-        } catch (NoSuchMethodException e) {
+        }
+        if (type == String.class) {
+            return true;
+        }
+        if (type == Boolean.class) {
+            return true;
+        }
+        if (Number.class.isAssignableFrom(type)) {
+            return true;
         }
         return false;
     }
 
-    private static void updateConfig(Class otherConfigClass, Class returnType, String setterName, Object otherConfigObject,
-            Object value) {
-        Method setterMethod = null;
+    private static Class<?> getOtherReturnType(ClassLoader classloader, Class returnType)
+            throws ClassNotFoundException {
+        String returnTypeName = returnType.getName();
+        if (returnTypeName.startsWith("com.hazelcast")) {
+            return classloader.loadClass(returnTypeName);
+        }
+        return returnType;
+    }
+
+    private static Method getSetter(Class otherConfigClass, Class returnType, String setterName) {
         try {
-            setterMethod = otherConfigClass.getMethod(setterName, returnType);
-            setterMethod.invoke(otherConfigObject, value);
+            return otherConfigClass.getMethod(setterName, returnType);
         } catch (NoSuchMethodException e) {
+        }
+        return null;
+    }
+
+    private static void updateConfig(Method setterMethod, Object otherConfigObject, Object value) {
+        try {
+            setterMethod.invoke(otherConfigObject, value);
         } catch (IllegalAccessException e) {
         } catch (InvocationTargetException e) {
         } catch (IllegalArgumentException e) {
@@ -124,8 +150,14 @@ public class ConfigConstructor extends AbstractStarterObjectConstructor {
         }
     }
 
-    private static String creatSetterName(Method getter) {
-        return "s" + getter.getName().substring(1);
+    private static String createSetterName(Method getter) {
+        if (getter.getName().startsWith("get")) {
+            return "s" + getter.getName().substring(1);
+        }
+        if (getter.getName().startsWith("is")) {
+            return "set" + getter.getName().substring(2);
+        }
+        throw new IllegalArgumentException("Unknown getter method name: " + getter.getName());
     }
 
     public static Object getValue(Object obj, String getter)

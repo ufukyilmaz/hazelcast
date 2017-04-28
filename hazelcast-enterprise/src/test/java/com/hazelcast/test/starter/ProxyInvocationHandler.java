@@ -8,7 +8,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -146,7 +146,7 @@ class ProxyInvocationHandler implements InvocationHandler, Serializable {
         }
         Utils.debug("Returning proxy " + resultingProxy + ", loaded by " + resultingProxy.getClass().getClassLoader());
         Class<?>[] ifaces = resultingProxy.getClass().getInterfaces();
-        Utils.debug("The proxy implementes intefaces: ");
+        Utils.debug("The proxy implements interfaces: ");
         for (Class<?> iface : ifaces) {
             Utils.debug(iface + ", loaded by " + iface.getClassLoader());
         }
@@ -157,7 +157,8 @@ class ProxyInvocationHandler implements InvocationHandler, Serializable {
      */
     private static Collection newCollectionFor(Class type) {
         if (Set.class.isAssignableFrom(type)) {
-            return new HashSet();
+            // original set might be ordered
+            return new LinkedHashSet();
         } else if (List.class.isAssignableFrom(type)) {
             return new ArrayList();
         } else if (Queue.class.isAssignableFrom(type)) {

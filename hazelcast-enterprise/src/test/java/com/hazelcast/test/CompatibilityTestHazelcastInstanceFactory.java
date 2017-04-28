@@ -88,6 +88,13 @@ public class CompatibilityTestHazelcastInstanceFactory {
         return VERSIONS.length;
     }
 
+    /**
+     * @return the oldest known version which should be compatible with current codebase version
+     */
+    public String getOldestKnownVersion() {
+        return VERSIONS[0];
+    }
+
     // return the version of the next instance to be created
     private String nextVersion() {
         if (instancesCreated.get() >= VERSIONS.length) {

@@ -1,6 +1,7 @@
 package com.hazelcast.client.map.impl.proxy;
 
 import com.hazelcast.client.proxy.ClientMapProxy;
+import com.hazelcast.client.spi.ClientContext;
 import com.hazelcast.core.IEnterpriseMap;
 
 /**
@@ -9,8 +10,7 @@ import com.hazelcast.core.IEnterpriseMap;
  */
 public class EnterpriseClientMapProxyImpl extends ClientMapProxy implements IEnterpriseMap {
 
-    EnterpriseClientMapProxyImpl(String serviceName, String name) {
-        super(serviceName, name);
+    EnterpriseClientMapProxyImpl(String serviceName, String name, ClientContext context) {
+        super(serviceName, name, context);
     }
-
 }

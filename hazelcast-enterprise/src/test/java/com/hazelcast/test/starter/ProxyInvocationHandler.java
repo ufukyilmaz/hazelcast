@@ -9,6 +9,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -50,7 +51,7 @@ class ProxyInvocationHandler implements InvocationHandler, Serializable {
                 if (parameterizedDelegateReturnType.getRawType().equals(parameterizedReturnType.getRawType())) {
                     result = delegateCollectionResult;
                 } else {
-                    result = (Collection) proxyReturnObject(targetClassLoader, method.getReturnType(), delegateResult);
+                    result = (Collection) proxyReturnObject(targetClassLoader, delegateResult);
                 }
 
                 // if the parameter type is not equal, need to proxy it
@@ -62,8 +63,7 @@ class ProxyInvocationHandler implements InvocationHandler, Serializable {
                 } else {
                     Collection temp = newCollectionFor((Class) parameterizedDelegateReturnType.getRawType());
                     for (Object o : delegateCollectionResult) {
-                        // assuming the return type argument is not parameterized itself and cast to class
-                        temp.add(proxyReturnObject(targetClassLoader, (Class) returnParameterType, o));
+                        temp.add(proxyReturnObject(targetClassLoader, o));
                     }
                     try {
                         result.clear();
@@ -74,24 +74,23 @@ class ProxyInvocationHandler implements InvocationHandler, Serializable {
                     }
                 }
             } else {
-                return proxyReturnObject(targetClassLoader, method.getReturnType(), delegateResult);
+                return proxyReturnObject(targetClassLoader, delegateResult);
             }
         } else {
             // at this point we know the delegate returned something loaded by
             // different classloader than the proxy -> we need to proxy the result
-            return proxyReturnObject(targetClassLoader, method.getReturnType(), delegateResult);
+            return proxyReturnObject(targetClassLoader, delegateResult);
         }
     }
 
     /**
      *
      * @param targetClassLoader the classloader on which the proxy will be created
-     * @param returnClass       the expected Class of the proxy to be created
      * @param delegate    the object to be delegated to by the proxy
      * @return                  a proxy to delegate
      */
-    private Object proxyReturnObject(ClassLoader targetClassLoader, Class<?> returnClass, Object delegate) {
-        Object resultingProxy = null;
+    private Object proxyReturnObject(ClassLoader targetClassLoader, Object delegate) {
+        Object resultingProxy;
         try {
             resultingProxy = HazelcastProxyFactory.proxyObjectForStarter(targetClassLoader, delegate);
         } catch (Exception e) {
@@ -163,6 +162,8 @@ class ProxyInvocationHandler implements InvocationHandler, Serializable {
             return new ArrayList();
         } else if (Queue.class.isAssignableFrom(type)) {
             return new ConcurrentLinkedQueue();
+        } else if (Collection.class.isAssignableFrom(type)) {
+            return new LinkedList();
         } else {
             throw new UnsupportedOperationException("Cannot locate collection type for " + type);
         }

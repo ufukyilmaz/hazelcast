@@ -35,9 +35,4 @@ public class SSLSocketChannelWrapperFactory implements SocketChannelWrapperFacto
         return new SSLSocketChannelWrapper(sslContextFactory.getSSLContext(), socketChannel,
                 client, mutualAuthentication);
     }
-
-    @Override
-    public boolean isSSlEnabled() {
-        return true;
-    }
 }

@@ -1,6 +1,6 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.nio.tcp.DefaultSocketChannelWrapper;
+import com.hazelcast.nio.tcp.PlainSocketChannelWrapper;
 import com.hazelcast.util.EmptyStatement;
 
 import javax.net.ssl.SSLContext;
@@ -20,7 +20,7 @@ import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_WRAP;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_OVERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 
-public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
+public class SSLSocketChannelWrapper extends PlainSocketChannelWrapper {
 
     static final int EXPAND_FACTOR = 2;
 

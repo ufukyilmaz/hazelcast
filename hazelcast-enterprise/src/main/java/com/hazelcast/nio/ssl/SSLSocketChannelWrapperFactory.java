@@ -31,7 +31,7 @@ public class SSLSocketChannelWrapperFactory implements SocketChannelWrapperFacto
     }
 
     @Override
-    public SocketChannelWrapper wrapSocketChannel(SocketChannel socketChannel, boolean client) throws Exception {
+    public SocketChannelWrapper wrapSocketChannel(SocketChannel socketChannel, boolean client, boolean directBuffer) throws Exception {
         return new SSLSocketChannelWrapper(sslContextFactory.getSSLContext(), socketChannel,
                 client, mutualAuthentication);
     }

@@ -22,9 +22,9 @@ import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.networking.ReadHandler;
+import com.hazelcast.internal.networking.ChannelInboundHandler;
+import com.hazelcast.internal.networking.ChannelOutboundHandler;
 import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
-import com.hazelcast.internal.networking.WriteHandler;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListener;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
@@ -48,8 +48,8 @@ import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.version.Version;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
-import com.hazelcast.nio.tcp.SymmetricCipherMemberReadHandler;
-import com.hazelcast.nio.tcp.SymmetricCipherMemberWriteHandler;
+import com.hazelcast.nio.tcp.SymmetricCipherMemberChannelInboundHandler;
+import com.hazelcast.nio.tcp.SymmetricCipherMemberChannelOutboundHandler;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
@@ -345,27 +345,27 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public ReadHandler createReadHandler(final TcpIpConnection connection, final IOService ioService) {
+    public ChannelInboundHandler createInboundHandler(final TcpIpConnection connection, final IOService ioService) {
         final NetworkConfig networkConfig = node.config.getNetworkConfig();
         final SymmetricEncryptionConfig symmetricEncryptionConfig = networkConfig.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Reader started with SymmetricEncryption");
-            return new SymmetricCipherMemberReadHandler(connection, ioService, node.nodeEngine.getPacketDispatcher());
+            return new SymmetricCipherMemberChannelInboundHandler(connection, ioService, node.nodeEngine.getPacketDispatcher());
         }
-        return super.createReadHandler(connection, ioService);
+        return super.createInboundHandler(connection, ioService);
     }
 
     @Override
-    public WriteHandler createWriteHandler(final TcpIpConnection connection, final IOService ioService) {
+    public ChannelOutboundHandler createOutboundHandler(final TcpIpConnection connection, final IOService ioService) {
         final NetworkConfig networkConfig = node.config.getNetworkConfig();
         final SymmetricEncryptionConfig symmetricEncryptionConfig = networkConfig.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Writer started with SymmetricEncryption");
-            return new SymmetricCipherMemberWriteHandler(connection, ioService);
+            return new SymmetricCipherMemberChannelOutboundHandler(connection, ioService);
         }
-        return super.createWriteHandler(connection, ioService);
+        return super.createOutboundHandler(connection, ioService);
     }
 
     @Override

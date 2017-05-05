@@ -8,12 +8,12 @@ import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
 
-import static com.hazelcast.nio.ssl.SSLSocketChannelWrapper.EXPAND_FACTOR;
+import static com.hazelcast.nio.ssl.SSLChannel.EXPAND_FACTOR;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class SSLSocketChannelWrapper_expandBufferTest {
+public class SSLChannel_expandBufferTest {
 
     @Test
     public void test() {
@@ -23,7 +23,7 @@ public class SSLSocketChannelWrapper_expandBufferTest {
 
         int originalPos = original.position();
 
-        ByteBuffer expanded = SSLSocketChannelWrapper.expandBuffer(original);
+        ByteBuffer expanded = SSLChannel.expandBuffer(original);
 
         // the position we write to must not have been changed
         assertEquals(originalPos, expanded.position());

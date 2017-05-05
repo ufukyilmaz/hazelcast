@@ -22,9 +22,9 @@ import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.networking.ChannelFactory;
 import com.hazelcast.internal.networking.ChannelInboundHandler;
 import com.hazelcast.internal.networking.ChannelOutboundHandler;
-import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListener;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
@@ -47,7 +47,7 @@ import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.version.Version;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
+import com.hazelcast.nio.ssl.SSLChannelFactory;
 import com.hazelcast.nio.tcp.SymmetricCipherMemberChannelInboundHandler;
 import com.hazelcast.nio.tcp.SymmetricCipherMemberChannelOutboundHandler;
 import com.hazelcast.nio.tcp.TcpIpConnection;
@@ -330,7 +330,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public SocketChannelWrapperFactory getSocketChannelWrapperFactory() {
+    public ChannelFactory getSocketChannelWrapperFactory() {
         final NetworkConfig networkConfig = node.config.getNetworkConfig();
         SSLConfig sslConfig = networkConfig.getSSLConfig();
         if (sslConfig != null && sslConfig.isEnabled()) {
@@ -339,7 +339,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                 throw new RuntimeException("SSL and SymmetricEncryption cannot be both enabled!");
             }
             logger.info("SSL is enabled");
-            return new SSLSocketChannelWrapperFactory(sslConfig);
+            return new SSLChannelFactory(sslConfig);
         }
         return super.getSocketChannelWrapperFactory();
     }

@@ -1,6 +1,6 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.nio.tcp.PlainSocketChannelWrapper;
+import com.hazelcast.nio.tcp.PlainChannel;
 import com.hazelcast.util.EmptyStatement;
 
 import javax.net.ssl.SSLContext;
@@ -20,7 +20,7 @@ import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_WRAP;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_OVERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 
-public class SSLSocketChannelWrapper extends PlainSocketChannelWrapper {
+public class SSLChannel extends PlainChannel {
 
     static final int EXPAND_FACTOR = 2;
 
@@ -35,8 +35,8 @@ public class SSLSocketChannelWrapper extends PlainSocketChannelWrapper {
     private volatile boolean handshakeCompleted;
     private SSLEngineResult sslEngineResult;
 
-    public SSLSocketChannelWrapper(SSLContext sslContext, SocketChannel sc, boolean client,
-                                   String mutualAuthentication) throws Exception {
+    public SSLChannel(SSLContext sslContext, SocketChannel sc, boolean client,
+                      String mutualAuthentication) throws Exception {
         super(sc);
         sslEngine = sslContext.createSSLEngine();
         sslEngine.setUseClientMode(client);
@@ -244,6 +244,6 @@ public class SSLSocketChannelWrapper extends PlainSocketChannelWrapper {
 
     @Override
     public String toString() {
-        return "SSLSocketChannelWrapper{" + "socketChannel=" + socketChannel + '}';
+        return "SSLChannel{" + "socketChannel=" + socketChannel + '}';
     }
 }

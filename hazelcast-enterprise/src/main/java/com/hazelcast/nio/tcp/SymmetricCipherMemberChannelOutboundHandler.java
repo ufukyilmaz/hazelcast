@@ -1,7 +1,7 @@
 package com.hazelcast.nio.tcp;
 
 import com.hazelcast.core.HazelcastException;
-import com.hazelcast.internal.networking.WriteHandler;
+import com.hazelcast.internal.networking.ChannelOutboundHandler;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.Packet;
@@ -11,14 +11,14 @@ import java.nio.ByteBuffer;
 
 import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
 
-public class SymmetricCipherMemberWriteHandler implements WriteHandler<Packet> {
+public class SymmetricCipherMemberChannelOutboundHandler implements ChannelOutboundHandler<Packet> {
 
     private final Cipher cipher;
 
     private ByteBuffer packetBuffer;
     private boolean packetWritten;
 
-    public SymmetricCipherMemberWriteHandler(TcpIpConnection connection, IOService ioService) {
+    public SymmetricCipherMemberChannelOutboundHandler(TcpIpConnection connection, IOService ioService) {
         packetBuffer = ByteBuffer.allocate(ioService.getSocketSendBufferSize() * IOService.KILO_BYTE);
         cipher = createSymmetricWriterCipher(ioService.getSymmetricEncryptionConfig(), connection);
     }

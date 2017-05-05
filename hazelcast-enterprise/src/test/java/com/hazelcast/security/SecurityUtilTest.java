@@ -4,6 +4,7 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.security.permission.AllPermissions;
 import com.hazelcast.security.permission.AtomicLongPermission;
+import com.hazelcast.security.permission.CachePermission;
 import com.hazelcast.security.permission.CardinalityEstimatorPermission;
 import com.hazelcast.security.permission.ClusterPermission;
 import com.hazelcast.security.permission.CountDownLatchPermission;
@@ -67,6 +68,7 @@ public class SecurityUtilTest extends HazelcastTestSupport {
         testCreatePermission(PermissionType.CARDINALITY_ESTIMATOR, CardinalityEstimatorPermission.class);
         testCreatePermission(PermissionType.SCHEDULED_EXECUTOR, ScheduledExecutorPermission.class);
         testCreatePermission(PermissionType.ALL, AllPermissions.class);
+        testCreatePermission(PermissionType.CACHE, CachePermission.class);
     }
 
     private void testCreatePermission(PermissionType type, Class<?> clazz) {

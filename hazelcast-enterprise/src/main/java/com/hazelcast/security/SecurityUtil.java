@@ -4,6 +4,7 @@ import com.hazelcast.concurrent.idgen.IdGeneratorService;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.security.permission.AllPermissions;
 import com.hazelcast.security.permission.AtomicLongPermission;
+import com.hazelcast.security.permission.CachePermission;
 import com.hazelcast.security.permission.CardinalityEstimatorPermission;
 import com.hazelcast.security.permission.ClusterPermission;
 import com.hazelcast.security.permission.CountDownLatchPermission;
@@ -70,6 +71,8 @@ public final class SecurityUtil {
                 return new ScheduledExecutorPermission(permissionConfig.getName(), actions);
             case ALL:
                 return new AllPermissions();
+            case CACHE:
+                return new CachePermission(permissionConfig.getName(), actions);
             default:
                 throw new IllegalArgumentException(permissionConfig.getType().toString());
         }

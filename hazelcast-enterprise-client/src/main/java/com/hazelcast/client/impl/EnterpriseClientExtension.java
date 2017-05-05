@@ -41,7 +41,7 @@ import com.hazelcast.util.ExceptionUtil;
 import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature;
 
 /**
- * Enterprise implementation of <tt>ClientExtension</tt>.
+ * Enterprise implementation of {@code ClientExtension}.
  */
 public class EnterpriseClientExtension extends DefaultClientExtension implements MetricsProvider {
 
@@ -168,7 +168,6 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
         if (MapService.class.isAssignableFrom(service)) {
             return new EnterpriseMapClientProxyFactory(client.getClientConfig(), client.getProperties());
         }
-
         throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);
     }
 
@@ -183,9 +182,10 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     }
 
     private static class EnterpriseClientVersionAware implements EnterpriseClusterVersionAware {
+
         private final Version version;
 
-        public EnterpriseClientVersionAware(String buildVersion) {
+        EnterpriseClientVersionAware(String buildVersion) {
             this.version = Version.of(buildVersion);
         }
 
@@ -194,5 +194,4 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
             return version;
         }
     }
-
 }

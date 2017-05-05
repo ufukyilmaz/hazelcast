@@ -4,7 +4,7 @@
     <!--comment out packages as they pass findbugs. e.g. examples now passes-->
 
     <Match>
-        <Class name="com.hazelcast.nio.ssl.SSLSocketChannelWrapper" />
+        <Class name="com.hazelcast.nio.ssl.SSLChannel" />
         <Bug pattern="SWL_SLEEP_WITH_LOCK_HELD" />
     </Match>
 

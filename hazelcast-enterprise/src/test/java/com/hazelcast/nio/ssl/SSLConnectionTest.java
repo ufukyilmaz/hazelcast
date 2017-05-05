@@ -10,7 +10,7 @@ import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.TestUtil;
-import com.hazelcast.internal.networking.SocketChannelWrapper;
+import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -93,7 +93,7 @@ public class SSLConnectionTest {
     @Test(timeout = 1000 * 60)
     public void testSocketChannels() throws Exception {
         ServerSocketChannel serverSocketChannel = null;
-        SocketChannelWrapper socketChannel = null;
+        SSLChannel socketChannel = null;
         final ExecutorService ex = Executors.newCachedThreadPool();
         try {
             serverSocketChannel = openAndBindServerSocketChannel();
@@ -103,7 +103,7 @@ public class SSLConnectionTest {
 
             final AtomicReference<Error> error = new AtomicReference<Error>();
             SSLContext clientContext = createClientSslContext();
-            socketChannel = new SSLSocketChannelWrapper(clientContext, SocketChannel.open(), true, null);
+            socketChannel = new SSLChannel(clientContext, SocketChannel.open(), true, null);
             socketChannel.connect(new InetSocketAddress(PORT));
             final CountDownLatch latch = new CountDownLatch(2);
 
@@ -147,10 +147,10 @@ public class SSLConnectionTest {
 
     private abstract class ChannelReader implements Runnable {
         final int count;
-        final SocketChannelWrapper socketChannel;
+        final Channel socketChannel;
         final CountDownLatch latch;
 
-        private ChannelReader(SocketChannelWrapper socketChannel, int count, CountDownLatch latch) {
+        private ChannelReader(Channel socketChannel, int count, CountDownLatch latch) {
             this.socketChannel = socketChannel;
             this.count = count;
             this.latch = latch;
@@ -180,10 +180,10 @@ public class SSLConnectionTest {
 
     private abstract class ChannelWriter implements Runnable {
         final int count;
-        final SocketChannelWrapper socketChannel;
+        final Channel socketChannel;
         final CountDownLatch latch;
 
-        private ChannelWriter(SocketChannelWrapper socketChannel, int count, CountDownLatch latch) {
+        private ChannelWriter(Channel socketChannel, int count, CountDownLatch latch) {
             this.socketChannel = socketChannel;
             this.count = count;
             this.latch = latch;
@@ -224,10 +224,10 @@ public class SSLConnectionTest {
         }
 
         public void run() {
-            SocketChannelWrapper socketChannel = null;
+            Channel socketChannel = null;
             try {
                 SSLContext context = createServerSslContext();
-                socketChannel = new SSLSocketChannelWrapper(context, ssc.accept(), false, null);
+                socketChannel = new SSLChannel(context, ssc.accept(), false, null);
                 final CountDownLatch latch = new CountDownLatch(2);
                 final BlockingQueue<Integer> queue = new ArrayBlockingQueue<Integer>(count);
 

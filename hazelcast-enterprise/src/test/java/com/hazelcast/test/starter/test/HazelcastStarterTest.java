@@ -39,7 +39,7 @@ public class HazelcastStarterTest {
         Config config = new Config();
         config.setInstanceName("test-name");
 
-        HazelcastInstance alwaysRunningMember = HazelcastStarter.newHazelcastInstance("3.7", config);
+        HazelcastInstance alwaysRunningMember = HazelcastStarter.newHazelcastInstance("3.8", config);
 
         assertEquals(alwaysRunningMember.getName(),"test-name");
         alwaysRunningMember.shutdown();

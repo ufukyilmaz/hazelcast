@@ -21,7 +21,8 @@ public class SymmetricCipherMemberChannelInboundHandler extends MemberChannelInb
     private ByteBuffer cipherBuffer;
     private int size = -1;
 
-    public SymmetricCipherMemberChannelInboundHandler(TcpIpConnection connection, IOService ioService, PacketDispatcher packetDispatcher) {
+    public SymmetricCipherMemberChannelInboundHandler(TcpIpConnection connection, IOService ioService,
+                                                      PacketDispatcher packetDispatcher) {
         super(connection, packetDispatcher);
         this.logger = ioService.getLoggingService().getLogger(getClass());
         this.cipher = createSymmetricReaderCipher(ioService.getSymmetricEncryptionConfig(), connection);

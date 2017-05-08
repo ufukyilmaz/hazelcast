@@ -19,6 +19,7 @@ package com.hazelcast.client.map.impl.nearcache;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.proxy.NearCachedClientMapProxy;
 import com.hazelcast.client.test.TestHazelcastFactory;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -48,7 +49,7 @@ import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Uses imap and near cache internals to stress near cache native memory.
+ * Uses IMap and Near Cache internals to stress Near Cache with native memory.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
@@ -59,15 +60,15 @@ public class ClientMapHDNearCacheStressTest extends HazelcastTestSupport {
     private static final int NEAR_CACHE_PUT_COUNT = 5000000;
     private static final long TEST_TIMEOUT_TEN_MINUTES = 10 * 60 * 1000;
 
-    private final TestHazelcastFactory factory = new TestHazelcastFactory();
-    private IMap clientMap;
+    private TestHazelcastFactory factory = new TestHazelcastFactory();
+    private IMap<Object, Object> clientMap;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         factory.newHazelcastInstance();
 
-        ClientConfig clientConfig = newClientConfig();
-        clientConfig.addNearCacheConfig(newNearCacheConfig());
+        ClientConfig clientConfig = newClientConfig()
+                .addNearCacheConfig(newNearCacheConfig());
 
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
 
@@ -75,22 +76,22 @@ public class ClientMapHDNearCacheStressTest extends HazelcastTestSupport {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         factory.shutdownAll();
     }
 
     @Test(timeout = TEST_TIMEOUT_TEN_MINUTES)
-    public void near_cache_does_not_throw_native_oome() throws Exception {
-        NearCachedClientMapProxy proxy = (NearCachedClientMapProxy) this.clientMap;
-        SerializationService ss = proxy.getClientContext().getSerializationService();
-        NearCache nearCache = proxy.getNearCache();
+    public void near_cache_does_not_throw_native_oome() {
+        NearCachedClientMapProxy<Object, Object> proxy = (NearCachedClientMapProxy<Object, Object>) this.clientMap;
+        SerializationService serializationService = proxy.getContext().getSerializationService();
+        NearCache<Object, Object> nearCache = proxy.getNearCache();
 
         for (int i = 0; i < NEAR_CACHE_PUT_COUNT; i++) {
-            Data key = ss.toData(i);
+            Data key = serializationService.toData(i);
             long reservationId = nearCache.tryReserveForUpdate(key);
             if (reservationId != NOT_RESERVED) {
                 try {
-                    nearCache.tryPublishReserved(key, ss.toData(i), reservationId, true);
+                    nearCache.tryPublishReserved(key, serializationService.toData(i), reservationId, true);
                 } catch (Throwable throwable) {
                     nearCache.remove(key);
                     throw rethrow(throwable);
@@ -102,14 +103,14 @@ public class ClientMapHDNearCacheStressTest extends HazelcastTestSupport {
     }
 
     private static NearCacheConfig newNearCacheConfig() {
-        NearCacheConfig nearCacheConfig = new NearCacheConfig(MAP_NAME);
-        nearCacheConfig.setInMemoryFormat(NATIVE);
-        nearCacheConfig.getEvictionConfig()
+        EvictionConfig evictionConfig = new EvictionConfig()
                 .setEvictionPolicy(LRU)
                 .setMaximumSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(90);
 
-        return nearCacheConfig;
+        return new NearCacheConfig(MAP_NAME)
+                .setInMemoryFormat(NATIVE)
+                .setEvictionConfig(evictionConfig);
     }
 
     private static ClientConfig newClientConfig() {
@@ -118,11 +119,8 @@ public class ClientMapHDNearCacheStressTest extends HazelcastTestSupport {
                 .setSize(new MemorySize(NEAR_CACHE_NATIVE_MEMORY_MEGABYTES, MEGABYTES))
                 .setAllocatorType(POOLED).setMetadataSpacePercentage(40);
 
-        ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE);
-        clientConfig.setNativeMemoryConfig(nativeMemoryConfig);
-
-        return clientConfig;
+        return new ClientConfig()
+                .setProperty(ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
+                .setNativeMemoryConfig(nativeMemoryConfig);
     }
-
 }

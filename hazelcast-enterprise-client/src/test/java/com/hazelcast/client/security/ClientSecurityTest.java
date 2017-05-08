@@ -1,5 +1,7 @@
 package com.hazelcast.client.security;
 
+import com.hazelcast.cache.HazelcastCachingProvider;
+import com.hazelcast.cache.ICache;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
@@ -14,10 +16,17 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import javax.cache.Cache;
+import javax.cache.CacheManager;
+import javax.cache.Caching;
+import javax.cache.configuration.MutableConfiguration;
+import javax.cache.spi.CachingProvider;
 import java.io.Serializable;
 import java.security.AccessControlException;
 import java.util.concurrent.Callable;
@@ -25,6 +34,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hazelcast.cache.CacheUtil.getDistributedObjectName;
+import static com.hazelcast.config.PermissionConfig.PermissionType.CACHE;
+import static com.hazelcast.test.HazelcastTestSupport.randomString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -33,7 +45,12 @@ import static org.junit.Assert.assertTrue;
 @Category(QuickTest.class)
 public class ClientSecurityTest {
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     TestHazelcastFactory factory = new TestHazelcastFactory();
+
+    private final String testObjectName = randomString();
 
     @After
     public void cleanup() {
@@ -260,23 +277,8 @@ public class ClientSecurityTest {
         }
     }
 
-    @Test(expected = ExecutionException.class)
-    public void testExecutorPermissionFail3() throws InterruptedException, ExecutionException {
-        final Config config = createConfig();
-        addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
-                .addAction(ActionConstants.ACTION_CREATE);
-
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = createHazelcastClient();
-        try {
-            client.getExecutorService("test").submit(new DummyCallable()).get();
-        } finally {
-            client.shutdown();
-        }
-    }
-
     @Test
-    public void testExecutorPermissionFail4() throws InterruptedException, ExecutionException {
+    public void testExecutorPermissionFail3() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
                 .addAction(ActionConstants.ACTION_CREATE);
@@ -288,6 +290,57 @@ public class ClientSecurityTest {
         } finally {
             client.shutdown();
         }
+    }
+
+    @Test
+    public void testCacheAllPermission() {
+        final Config config = createConfig();
+        PermissionConfig perm = addPermission(config, CACHE, getDistributedObjectName(testObjectName), "dev");
+        perm.addAction(ActionConstants.ACTION_ALL);
+
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = createHazelcastClient();
+        Cache<String, String> cache = createCache(client, testObjectName, true);
+        cache.put("1", "A");
+        cache.get("1");
+        cache.unwrap(ICache.class).size();
+        cache.unwrap(ICache.class).destroy();
+    }
+
+    @Test
+    public void testCache_someActionsPermitted() {
+        final Config config = createConfig();
+        addPermission(config, CACHE, getDistributedObjectName(testObjectName), "dev")
+                .addAction(ActionConstants.ACTION_CREATE)
+                .addAction(ActionConstants.ACTION_PUT)
+                .addAction(ActionConstants.ACTION_READ)
+                .addAction(ActionConstants.ACTION_REMOVE);
+
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = createHazelcastClient();
+        Cache<String, String> cache = createCache(client, testObjectName, true);
+        cache.put("1", "A");
+        cache.get("1");
+        cache.unwrap(ICache.class).size();
+        expectedException.expect(AccessControlException.class);
+        cache.unwrap(ICache.class).destroy();
+    }
+
+    @Test
+    public void testCache_accessAlreadyCreatedCache() {
+        final Config config = createConfig();
+        addPermission(config, CACHE, getDistributedObjectName(testObjectName), "dev")
+                .addAction(ActionConstants.ACTION_READ);
+
+        HazelcastInstance member = factory.newHazelcastInstance(config);
+        Cache<String, String> memberCache = createCache(member, testObjectName, false);
+        memberCache.put("1", "A");
+
+        HazelcastInstance client = createHazelcastClient();
+        Cache<String, String> cache = getCacheManager(client, true).getCache(testObjectName);
+        assertEquals("A", cache.get("1"));
+        expectedException.expect(AccessControlException.class);
+        cache.put("1", "B");
     }
 
     static class DummyCallable implements Callable<Integer>, Serializable, HazelcastInstanceAware {
@@ -393,6 +446,24 @@ public class ClientSecurityTest {
         addAllPermission(config, PermissionType.ATOMIC_LONG, "atomic_long");
         addAllPermission(config, PermissionType.COUNTDOWN_LATCH, "countdown_latch");
         addAllPermission(config, PermissionType.SEMAPHORE, "semaphore");
+    }
+
+    // create a Cache<String, String> on the default CacheManager backed by the given HazelcastInstance
+    private Cache<String, String> createCache(HazelcastInstance hazelcastInstance, String cacheName, boolean client) {
+        CacheManager defaultCacheManager = getCacheManager(hazelcastInstance, client);
+        return defaultCacheManager.createCache(cacheName, new MutableConfiguration<String, String>());
+    }
+
+    // get a CacheManager backed by the given HazelcastInstance
+    private CacheManager getCacheManager(HazelcastInstance hazelcastInstance, boolean client) {
+        CachingProvider cachingProvider;
+        if (client) {
+            cachingProvider = Caching.getCachingProvider("com.hazelcast.client.cache.impl.HazelcastClientCachingProvider");
+        } else {
+            cachingProvider = Caching.getCachingProvider("com.hazelcast.cache.impl.HazelcastServerCachingProvider");
+        }
+        return cachingProvider.getCacheManager(null, null,
+                HazelcastCachingProvider.propertiesByInstanceItself(hazelcastInstance));
     }
 
 }

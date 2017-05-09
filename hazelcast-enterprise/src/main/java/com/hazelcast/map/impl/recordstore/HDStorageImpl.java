@@ -136,6 +136,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         }
         map.clear();
         setEntryCount(0);
+        entryCostEstimator.reset();
     }
 
     private void setEntryCount(int value) {

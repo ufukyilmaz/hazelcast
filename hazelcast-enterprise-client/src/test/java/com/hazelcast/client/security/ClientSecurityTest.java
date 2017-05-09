@@ -5,6 +5,7 @@ import com.hazelcast.cache.ICache;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SecurityConfig;
@@ -22,13 +23,21 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+
 import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.configuration.MutableConfiguration;
 import javax.cache.spi.CachingProvider;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+
 import java.io.Serializable;
+import java.io.Writer;
 import java.security.AccessControlException;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -37,6 +46,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hazelcast.cache.CacheUtil.getDistributedObjectName;
 import static com.hazelcast.config.PermissionConfig.PermissionType.CACHE;
 import static com.hazelcast.test.HazelcastTestSupport.randomString;
+
+import static java.io.File.createTempFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -47,6 +58,9 @@ public class ClientSecurityTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+
+    static final String HAZELCAST_START_TAG = "<hazelcast xmlns=\"http://www.hazelcast.com/schema/config\">\n";
+    static final String HAZELCAST_END_TAG = "</hazelcast>\n";
 
     TestHazelcastFactory factory = new TestHazelcastFactory();
 
@@ -62,11 +76,7 @@ public class ClientSecurityTest {
         final Config config = createConfig();
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            client.getMap("test").size();
-        } finally {
-            client.shutdown();
-        }
+        client.getMap("test").size();
     }
 
     @Test
@@ -76,14 +86,10 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            client.getMap("test").size();
-            client.getMap("test").size();
-            client.getMap("test").put("a", "b");
-            client.getQueue("Q").poll();
-        } finally {
-            client.shutdown();
-        }
+        client.getMap("test").size();
+        client.getMap("test").size();
+        client.getMap("test").put("a", "b");
+        client.getQueue("Q").poll();
     }
 
     @Test(expected = RuntimeException.class)
@@ -94,11 +100,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            client.getMap("test").size();
-        } finally {
-            client.shutdown();
-        }
+        client.getMap("test").size();
     }
 
     @Test
@@ -109,16 +111,176 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            IMap map = client.getMap("test");
-            map.put("1", "A");
-            map.get("1");
-            map.lock("1");
-            map.unlock("1");
-            map.destroy();
-        } finally {
-            client.shutdown();
-        }
+        IMap map = client.getMap("test");
+        map.put("1", "A");
+        map.get("1");
+        map.lock("1");
+        map.unlock("1");
+        map.destroy();
+    }
+
+    @Test(expected = AccessControlException.class)
+    public void testMapAllPermission_unknownNotAllowedPrincipal() {
+        String loginUser = "UserA";
+        String principal = "UserB";
+
+        final Config config = createConfig(loginUser);
+
+        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", principal);
+        perm.addAction(ActionConstants.ACTION_ALL);
+
+        final ClientConfig cc = new ClientConfig();
+        cc.setCredentials(new ClientCustomAuthenticationTest.CustomCredentials(loginUser, "", ""));
+
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = factory.newHazelcastClient(cc);
+        IMap map = client.getMap("test");
+        map.put("1", "A");
+        map.get("1");
+        map.lock("1");
+        map.unlock("1");
+        map.destroy();
+    }
+
+    @Test
+    public void testMapAllPermission_multiplePrincipals_withAllowedOne() {
+        String loginUser = "UserA";
+        String principal = "UserA,UserB";
+
+        final Config config = createConfig(loginUser);
+
+        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", principal);
+        perm.addAction(ActionConstants.ACTION_ALL);
+
+        final ClientConfig cc = new ClientConfig();
+        cc.setCredentials(new ClientCustomAuthenticationTest.CustomCredentials(loginUser, "", ""));
+
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = factory.newHazelcastClient(cc);
+        IMap map = client.getMap("test");
+        map.put("1", "A");
+        map.get("1");
+        map.lock("1");
+        map.unlock("1");
+        map.destroy();
+    }
+
+    @Test
+    public void testMapAllPermission_multiplePrincipals_withAllowedOne_fromXML()
+            throws IOException {
+        String loginUser = "role1";
+
+        File file = createTempFile("foo", "bar");
+        file.deleteOnExit();
+
+        String xml = HAZELCAST_START_TAG
+                + "<security enabled=\"true\">"
+                    + "<client-permissions>"
+                        + "<map-permission name=\"mySecureMap\" principal=\"role1,role2\">"
+                            + "<endpoints>"
+                                + "<endpoint>10.10.*.*</endpoint>"
+                                + "<endpoint>127.0.0.1</endpoint>"
+                            + "</endpoints>"
+                            + "<actions>"
+                                + "<action>put</action>"
+                                + "<action>read</action>"
+                                + "<action>destroy</action>"
+                          + "</actions>"
+                        + "</map-permission>"
+                    + "</client-permissions>"
+                + "</security>"
+                + HAZELCAST_END_TAG;
+        Writer writer = new PrintWriter(file, "UTF-8");
+        writer.write(xml);
+        writer.close();
+
+        String path = file.getAbsolutePath();
+        Config config = new XmlConfigBuilder(path).build();
+        addCustomUserLoginModule(config, loginUser);
+
+        final ClientConfig cc = new ClientConfig();
+        cc.setCredentials(new ClientCustomAuthenticationTest.CustomCredentials(loginUser, "", ""));
+
+        // Create from member
+        HazelcastInstance member = factory.newHazelcastInstance(config);
+        member.getMap("mySecureMap");
+
+        // Check permissions
+        HazelcastInstance client = factory.newHazelcastClient(cc);
+        IMap map = client.getMap("mySecureMap");
+        map.put("1", "A");
+        map.get("1");
+        map.destroy();
+    }
+
+    @Test
+    public void testMapAllPermission_wildcardAllPrincipal() {
+        String loginUser = "UserA";
+        String principal = "*";
+
+        final Config config = createConfig(loginUser);
+
+        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", principal);
+        perm.addAction(ActionConstants.ACTION_ALL);
+
+        final ClientConfig cc = new ClientConfig();
+        cc.setCredentials(new ClientCustomAuthenticationTest.CustomCredentials(loginUser, "", ""));
+
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = factory.newHazelcastClient(cc);
+        IMap map = client.getMap("test");
+        map.put("1", "A");
+        map.get("1");
+        map.lock("1");
+        map.unlock("1");
+        map.destroy();
+    }
+
+    @Test
+    public void testMapAllPermission_nullPrincipal() {
+        String loginUser = "UserA";
+        String principal = null;
+
+        final Config config = createConfig(loginUser);
+
+        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", principal);
+        perm.addAction(ActionConstants.ACTION_ALL);
+
+        final ClientConfig cc = new ClientConfig();
+        cc.setCredentials(new ClientCustomAuthenticationTest.CustomCredentials(loginUser, "", ""));
+
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = factory.newHazelcastClient(cc);
+        IMap map = client.getMap("test");
+        map.put("1", "A");
+        map.get("1");
+        map.lock("1");
+        map.unlock("1");
+        map.destroy();
+    }
+
+    @Test(expected = AccessControlException.class)
+    public void testMapAllPermission_multiplePrincipalWithoutAllowedOne_andMalformedStringEndingWithSeparator() {
+        String loginUser = "UserA";
+        String principal = "UserB,UserC,";
+
+        final Config config = createConfig(loginUser);
+
+        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", principal);
+        perm.addAction(ActionConstants.ACTION_ALL);
+
+        final ClientConfig cc = new ClientConfig();
+        cc.setCredentials(new ClientCustomAuthenticationTest.CustomCredentials(loginUser, "", ""));
+
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = factory.newHazelcastClient(cc);
+
+        IMap map = client.getMap("test");
+        map.put("1", "A");
+        map.get("1");
+        map.lock("1");
+        map.unlock("1");
+        map.destroy();
     }
 
     @Test(expected = RuntimeException.class)
@@ -131,15 +293,11 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config).getMap("test"); // create map
         HazelcastInstance client = createHazelcastClient();
-        try {
-            IMap map = client.getMap("test");
-            assertNull(map.put("1", "A"));
-            assertEquals("A", map.get("1"));
-            assertEquals("A", map.remove("1"));
-            map.lock("1"); // throw exception
-        } finally {
-            client.shutdown();
-        }
+        IMap map = client.getMap("test");
+        assertNull(map.put("1", "A"));
+        assertEquals("A", map.get("1"));
+        assertEquals("A", map.remove("1"));
+        map.lock("1"); // throw exception
     }
 
     private HazelcastInstance createHazelcastClient() {
@@ -154,11 +312,7 @@ public class ClientSecurityTest {
                 .addAction(ActionConstants.ACTION_ADD).addAction(ActionConstants.ACTION_CREATE);
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            assertTrue(client.getQueue("test").offer("value"));
-        } finally {
-            client.shutdown();
-        }
+        assertTrue(client.getQueue("test").offer("value"));
     }
 
     @Test(expected = RuntimeException.class)
@@ -167,11 +321,7 @@ public class ClientSecurityTest {
         addPermission(config, PermissionType.QUEUE, "test", "dev");
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            client.getQueue("test").offer("value");
-        } finally {
-            client.shutdown();
-        }
+        client.getQueue("test").offer("value");
     }
 
     @Test
@@ -181,12 +331,8 @@ public class ClientSecurityTest {
                 .addAction(ActionConstants.ACTION_CREATE).addAction(ActionConstants.ACTION_LOCK);
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            assertTrue(client.getLock("test").tryLock());
-            client.getLock("test").unlock();
-        } finally {
-            client.shutdown();
-        }
+        assertTrue(client.getLock("test").tryLock());
+        client.getLock("test").unlock();
     }
 
     @Test
@@ -197,12 +343,8 @@ public class ClientSecurityTest {
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         instance.getMap("test").put("key", "value");
         HazelcastInstance client = createHazelcastClient();
-        try {
-            IMap<Object, Object> map = client.getMap("test");
-            assertEquals("value", map.get("key"));
-        } finally {
-            client.shutdown();
-        }
+        IMap<Object, Object> map = client.getMap("test");
+        assertEquals("value", map.get("key"));
     }
 
     @Test(expected = AccessControlException.class)
@@ -212,11 +354,7 @@ public class ClientSecurityTest {
                 .addAction(ActionConstants.ACTION_LOCK);
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            client.getLock("test").unlock();
-        } finally {
-            client.getLifecycleService().shutdown();
-        }
+        client.getLock("test").unlock();
     }
 
     @Test(expected = AccessControlException.class)
@@ -226,11 +364,7 @@ public class ClientSecurityTest {
                 .addAction(ActionConstants.ACTION_CREATE);
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            client.getLock("test").tryLock();
-        } finally {
-            client.getLifecycleService().shutdown();
-        }
+        client.getLock("test").tryLock();
     }
 
     @Test
@@ -243,11 +377,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            assertEquals(new Integer(11), client.getExecutorService("test").submit(new DummyCallable()).get());
-        } finally {
-            client.shutdown();
-        }
+        assertEquals(new Integer(11), client.getExecutorService("test").submit(new DummyCallable()).get());
     }
 
     @Test(expected = ExecutionException.class)
@@ -257,11 +387,7 @@ public class ClientSecurityTest {
                 .addAction(ActionConstants.ACTION_CREATE);
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            client.getExecutorService("test").submit(new DummyCallable()).get();
-        } finally {
-            client.shutdown();
-        }
+        client.getExecutorService("test").submit(new DummyCallable()).get();
     }
 
     @Test(expected = AccessControlException.class)
@@ -270,11 +396,7 @@ public class ClientSecurityTest {
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev");
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            client.getExecutorService("test").submit(new DummyCallable()).get();
-        } finally {
-            client.shutdown();
-        }
+        client.getExecutorService("test").submit(new DummyCallable()).get();
     }
 
     @Test
@@ -285,11 +407,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        try {
-            assertNull(client.getExecutorService("test").submit(new DummyCallableNewThread()).get());
-        } finally {
-            client.shutdown();
-        }
+        assertNull(client.getExecutorService("test").submit(new DummyCallableNewThread()).get());
     }
 
     @Test
@@ -424,6 +542,12 @@ public class ClientSecurityTest {
         return config;
     }
 
+    private Config createConfig(String allowedLoginUsername) {
+        final Config config = createConfig();
+        addCustomUserLoginModule(config, allowedLoginUsername);
+        return config;
+    }
+
     private PermissionConfig addPermission(Config config, PermissionType type, String name, String principal) {
         PermissionConfig perm = new PermissionConfig(type, name, principal);
         config.getSecurityConfig().addClientPermissionConfig(perm);
@@ -432,6 +556,23 @@ public class ClientSecurityTest {
 
     private PermissionConfig addAllPermission(Config config, PermissionType type, String name) {
         return addPermission(config, type, name, null).addAction(ActionConstants.ACTION_ALL);
+    }
+
+    private void addCustomUserLoginModule(Config config, String allowedLoginUsername) {
+        Properties prop = new Properties();
+        prop.setProperty("username", allowedLoginUsername);
+        prop.setProperty("key1", "");
+        prop.setProperty("key2", "");
+
+        SecurityConfig secCfg = config.getSecurityConfig();
+
+        secCfg.addClientLoginModuleConfig(
+                new LoginModuleConfig()
+                        .setUsage(LoginModuleConfig.LoginModuleUsage.REQUIRED)
+                        .setClassName(ClientCustomAuthenticationTest.CustomLoginModule.class.getName())
+                        .setProperties(prop));
+
+        System.err.println("config " + config);
     }
 
     private void addNonExecutorPermissions(Config config) {

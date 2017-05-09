@@ -205,7 +205,7 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
             System.err.println(errors);
         } else {
             assertClusterVersion(clusterMembers, CLUSTER_VERSION_2_2);
-            assertEquals(CLUSTER_MEMBERS_COUNT, getClusterService(clusterMembers[0]).getMembers().size());
+            assertClusterSize(CLUSTER_MEMBERS_COUNT, clusterMembers[0]);
         }
     }
 

@@ -79,7 +79,7 @@ public class SplitBrainUpgradeCase1Test extends AbstractSplitBrainUpgradeTest {
     protected void onAfterSplitBrainHealed(HazelcastInstance[] instances)
             throws Exception {
         assertClusterVersion(instances, CLUSTER_VERSION_2_2);
-        assertEquals(instances.length, instances[1].getCluster().getMembers().size());
+        assertClusterSize(instances.length, instances[1]);
         assertNodesVersion(instances, VERSION_2_3_0);
     }
 

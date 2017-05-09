@@ -19,11 +19,12 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.spi.properties.GroupProperty.MERGE_FIRST_RUN_DELAY_SECONDS;
 import static com.hazelcast.spi.properties.GroupProperty.MERGE_NEXT_RUN_DELAY_SECONDS;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.generateRandomString;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
 import static com.hazelcast.test.HazelcastTestSupport.suspectMember;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -76,11 +77,8 @@ public class NativeMemPartitionedCluster {
         splitCluster();
 
         assertTrue(splitLatch.await(30, TimeUnit.SECONDS));
-        assertEquals(3, h1.getCluster().getMembers().size());
-        assertEquals(3, h2.getCluster().getMembers().size());
-        assertEquals(3, h3.getCluster().getMembers().size());
-        assertEquals(2, h4.getCluster().getMembers().size());
-        assertEquals(2, h5.getCluster().getMembers().size());
+        assertClusterSizeEventually(3, h1, h2, h3);
+        assertClusterSizeEventually(2, h4, h5);
         assertTrueEventually(new AssertTask() {
             @Override
             public void run()
@@ -106,6 +104,9 @@ public class NativeMemPartitionedCluster {
         h3 = factory.newHazelcastInstance(config);
         h4 = factory.newHazelcastInstance(config);
         h5 = factory.newHazelcastInstance(config);
+
+        assertClusterSize(5, h1, h5);
+        assertClusterSizeEventually(5, h2, h3, h4);
     }
 
     private void splitCluster() {

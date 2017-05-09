@@ -15,6 +15,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.nio.tcp.SocketInterceptorTest.MySocketInterceptor;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -40,8 +41,7 @@ public class ClientSocketInterceptorTest {
         config.getNetworkConfig().setSocketInterceptorConfig(socketInterceptorConfig);
         HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
-        assertEquals(2, h2.getCluster().getMembers().size());
-        assertEquals(2, h1.getCluster().getMembers().size());
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         MySocketInterceptor myClientSocketInterceptor = new MySocketInterceptor(true);
@@ -49,7 +49,7 @@ public class ClientSocketInterceptorTest {
                 .setImplementation(myClientSocketInterceptor));
 
         HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
-        assertEquals(2, client.getCluster().getMembers().size());
+        assertClusterSize(2, client);
 
         assertBetween("Accept call count should be 2 or 3", 2, 3, mySocketInterceptor.getAcceptCallCount());
         assertEquals(1, mySocketInterceptor.getConnectCallCount());
@@ -78,8 +78,7 @@ public class ClientSocketInterceptorTest {
         config.getNetworkConfig().setSocketInterceptorConfig(socketInterceptorConfig);
         HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
-        assertEquals(2, h2.getCluster().getMembers().size());
-        assertEquals(2, h1.getCluster().getMembers().size());
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         MySocketInterceptor myClientSocketInterceptor = new MySocketInterceptor(false);

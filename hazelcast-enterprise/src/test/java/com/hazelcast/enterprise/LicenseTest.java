@@ -145,8 +145,7 @@ public class LicenseTest extends HazelcastTestSupport {
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
 
-        assertEquals(2, hz1.getCluster().getMembers().size());
-        assertEquals(2, hz2.getCluster().getMembers().size());
+        assertClusterSize(2, hz1, hz2);
 
         factory.newHazelcastInstance(config); //this node should not start!
     }

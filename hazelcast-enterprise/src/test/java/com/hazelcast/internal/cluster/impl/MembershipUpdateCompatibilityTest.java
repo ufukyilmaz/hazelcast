@@ -263,8 +263,7 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
 
         final HazelcastInstance instance1 = instances[instances.length - 1];
         final HazelcastInstance instance2 = instances[instances.length - 2];
-        assertClusterSizeEventually(2, instance1);
-        assertClusterSizeEventually(2, instance2);
+        assertClusterSizeEventually(2, instance1, instance2);
 
         final Version currentVersion = getNode(instance1).getVersion().asVersion();
         instance1.getCluster().changeClusterVersion(currentVersion);

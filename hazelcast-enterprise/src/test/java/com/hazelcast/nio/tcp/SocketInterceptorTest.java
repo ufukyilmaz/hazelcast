@@ -46,8 +46,7 @@ public class SocketInterceptorTest extends HazelcastTestSupport {
 
         warmUpPartitions(h1, h2);
 
-        assertEquals(2, h2.getCluster().getMembers().size());
-        assertEquals(2, h1.getCluster().getMembers().size());
+        assertClusterSize(2, h1, h2);
 
         assertEquals(1, mySocketInterceptor.getAcceptCallCount());
         assertEquals(1, mySocketInterceptor.getConnectCallCount());
@@ -67,8 +66,8 @@ public class SocketInterceptorTest extends HazelcastTestSupport {
         HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
 
-        assertEquals(1, h2.getCluster().getMembers().size());
-        assertEquals(1, h1.getCluster().getMembers().size());
+        assertClusterSize(1, h2);
+        assertClusterSize(1, h1);
     }
 
     public static class MySocketInterceptor implements MemberSocketInterceptor {

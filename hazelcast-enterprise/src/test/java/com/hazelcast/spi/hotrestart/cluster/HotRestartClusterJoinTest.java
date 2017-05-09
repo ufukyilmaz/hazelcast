@@ -210,12 +210,6 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         assertClusterSizeEventually(instances.length, instances);
     }
 
-    private void assertClusterSizeEventually(int size, HazelcastInstance... instances) {
-        for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(size, instance);
-        }
-    }
-
     private HazelcastInstance[] startInstances(Address[] addresses) {
         final List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<HazelcastInstance>());
         final CountDownLatch latch = new CountDownLatch(addresses.length);

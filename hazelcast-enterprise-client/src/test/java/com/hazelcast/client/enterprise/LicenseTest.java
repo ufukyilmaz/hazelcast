@@ -70,8 +70,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
@@ -85,8 +84,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setLicenseKey(UNLIMITED_LICENSE);
@@ -99,8 +97,7 @@ public class LicenseTest extends HazelcastTestSupport {
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
@@ -114,8 +111,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), "blah blah");
@@ -130,8 +126,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), EXPIRED_ENTERPRISE_LICENSE);
@@ -146,8 +141,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SECURITY_ONLY_LICENSE);
@@ -162,8 +156,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), LICENSE_WITH_DIFFERENT_VERSION);
@@ -178,8 +171,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), LICENSE_WITH_SMALLER_VERSION);
@@ -197,8 +189,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
@@ -212,8 +203,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setLicenseKey(UNLIMITED_LICENSE);
@@ -227,8 +217,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setLicenseKey(SECURITY_ONLY_LICENSE);
@@ -245,8 +234,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSizeEventually(2, h2);
-        assertClusterSizeEventually(2, h1);
+        assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
         NativeMemoryConfig nativeMemoryConfig = new NativeMemoryConfig();

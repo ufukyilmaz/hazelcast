@@ -35,7 +35,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
 
         factory.newHazelcastInstance(config); // master
         HazelcastInstance member = factory.newHazelcastInstance(config);
-        assertEquals(2, member.getCluster().getMembers().size());
+        assertClusterSize(2, member);
     }
 
     @Test(expected = IllegalStateException.class)

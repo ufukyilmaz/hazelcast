@@ -93,10 +93,10 @@ public class SplitBrainUpgradeCase4Test
                 instances[1], instances[2]
         };
         assertClusterVersion(instancesAtClusterVersion_2_3_0, CLUSTER_VERSION_2_3);
-        assertEquals(3, instances[3].getCluster().getMembers().size());
+        assertClusterSize(3, instances[3]);
 
         // so it attempted to merge, was reset and then failed to join
         assertClusterVersion(instancesAtClusterVersion_2_2_0, CLUSTER_VERSION_2_2);
-        assertEquals(2, instances[2].getCluster().getMembers().size());
+        assertClusterSize(2, instances[2]);
     }
 }

@@ -4,7 +4,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.version.MemberVersion;
 import org.junit.After;
@@ -40,13 +39,7 @@ public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTes
                 instances[i] = createHazelcastInstance(version, config);
                 waitAllForSafeState(instances);
                 // assert all members are in the cluster
-                assertTrueEventually(new AssertTask() {
-                    @Override
-                    public void run()
-                            throws Exception {
-                        assertEquals(instances.length, instances[0].getCluster().getMembers().size());
-                    }
-                }, 15);
+                assertClusterSizeEventually(instances.length, instances[0], 15);
             }
         }
         finally {

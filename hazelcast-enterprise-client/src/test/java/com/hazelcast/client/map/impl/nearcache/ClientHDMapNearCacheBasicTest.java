@@ -43,8 +43,8 @@ public class ClientHDMapNearCacheBasicTest extends ClientMapNearCacheBasicTest {
     }
 
     @Override
-    protected ClientConfig getClientConfig() {
-        return new ClientConfig()
+    protected ClientConfig createClientConfig() {
+        return super.createClientConfig()
                 .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
     }

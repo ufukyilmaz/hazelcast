@@ -17,15 +17,36 @@ import static com.hazelcast.cluster.ClusterState.ACTIVE;
 import static com.hazelcast.cluster.ClusterState.FROZEN;
 import static com.hazelcast.cluster.ClusterState.PASSIVE;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
+import static com.hazelcast.map.HDTestSupport.getHDConfig;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HDLocalMapStatsTest extends LocalMapStatsTest {
 
+    // All sizes below are as expected from the POOLED memory allocator
+
+    // 60bytes (hd record structure) + 1byte (memory manager header)
+    // next available buddy block that fits, is 64bytes
+    private static final int HD_RECORD_DEFAULT_COST = 64;
+
+    // 4 bytes NativeMemoryData + 17 bytes actual data + 1 (memory manager header)
+    // next available block that fits is 32 bytes;
+    private static final int KEY_COST = 32;
+
+    // 4 bytes NativeMemoryData + 12 bytes actual data + 1 (memory manager header)
+    // next available block that fits is 32 bytes;
+    private static final int VALUE_COST = 32;
+
+    // Key address & Value address
+    private static final int BEHM_SLOT_COST = 16;
+
+    static final int SINGLE_MAP_ENTRY_COST = HD_RECORD_DEFAULT_COST + KEY_COST + VALUE_COST + BEHM_SLOT_COST;
+
+
     @Override
     protected Config getConfig() {
-        return HDTestSupport.getHDConfig();
+        return getHDConfig();
     }
 
     @Test
@@ -53,7 +74,7 @@ public class HDLocalMapStatsTest extends LocalMapStatsTest {
 
     @Test
     public void hdOwnedEntryCost() {
-        HazelcastInstance instance = createHazelcastInstance(HDTestSupport.getHDConfig(POOLED));
+        HazelcastInstance instance = createHazelcastInstance(getHDConfig(POOLED));
         MemoryStats stats = ((EnterpriseSerializationServiceV1) getNodeEngineImpl(instance)
                 .getSerializationService()).getMemoryManager().getMemoryStats();
 
@@ -62,30 +83,20 @@ public class HDLocalMapStatsTest extends LocalMapStatsTest {
 
         map.put("Key_0", 0);
 
-        // Sizes as expected from the POOLED memory allocator
-        int hdRecordDefaultCost = 64; // 60bytes (hd record structure) + 1byte (memory manager header)
-                                       // next available buddy block that fits, is 64bytes
-        int keyCost = 32; // 4 bytes NativeMemoryData + 17 bytes actual data + 1 (memory manager header)
-                          // next available block that fits is 32 bytes;
-        int valueCost = 32; // 4 bytes NativeMemoryData + 12 bytes actual data + 1 (memory manager header)
-                            // next available block that fits is 32 bytes;
-        int behmSlotSize = 16; // Key address & Value address
-
-        int expectedSizeSingleEntryMemoryCost = hdRecordDefaultCost + keyCost + valueCost + behmSlotSize;
-
         assertEquals(1, map.getLocalMapStats().getOwnedEntryCount());
-        assertEquals(expectedSizeSingleEntryMemoryCost, map.getLocalMapStats().getOwnedEntryMemoryCost());
+        assertEquals(SINGLE_MAP_ENTRY_COST, map.getLocalMapStats().getOwnedEntryMemoryCost());
         assertEquals(0, map.getLocalMapStats().getHeapCost());
 
         for (int i = 1; i < numOfEntries; i++) {
             map.put("Key_" + i, i);
         }
 
-        assertEquals(numOfEntries * expectedSizeSingleEntryMemoryCost, map.getLocalMapStats().getOwnedEntryMemoryCost());
-        assertEquals(stats.getUsedNative() + (numOfEntries * behmSlotSize), map.getLocalMapStats().getOwnedEntryMemoryCost());
+        assertEquals(numOfEntries * SINGLE_MAP_ENTRY_COST, map.getLocalMapStats().getOwnedEntryMemoryCost());
+        assertEquals(stats.getUsedNative() + (numOfEntries * BEHM_SLOT_COST), map.getLocalMapStats().getOwnedEntryMemoryCost());
 
         map.clear();
 
         assertEquals(0, map.getLocalMapStats().getOwnedEntryMemoryCost());
     }
+
 }

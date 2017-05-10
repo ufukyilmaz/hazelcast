@@ -35,13 +35,17 @@ public final class HDTestSupport {
     }
 
     private static Config getHDConfig(Config config, NativeMemoryConfig.MemoryAllocatorType allocatorType) {
+        return getHDConfig(config, allocatorType, NATIVE_MEMORY_SIZE);
+    }
+
+    public static Config getHDConfig(Config config, NativeMemoryConfig.MemoryAllocatorType allocatorType, MemorySize size) {
         MapConfig mapConfig = new MapConfig()
                 .setName("default")
                 .setInMemoryFormat(InMemoryFormat.NATIVE);
 
         NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
-                .setSize(NATIVE_MEMORY_SIZE)
+                .setSize(size)
                 .setAllocatorType(allocatorType);
 
         return config

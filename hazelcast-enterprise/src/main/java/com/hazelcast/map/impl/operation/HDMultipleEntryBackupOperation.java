@@ -8,8 +8,9 @@ import com.hazelcast.spi.BackupOperation;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
+
+import static com.hazelcast.map.impl.operation.EntryOperator.operator;
 
 public class HDMultipleEntryBackupOperation extends AbstractHDMultipleEntryOperation implements BackupOperation {
 
@@ -25,29 +26,9 @@ public class HDMultipleEntryBackupOperation extends AbstractHDMultipleEntryOpera
 
     @Override
     protected void runInternal() {
-        final Set<Data> keys = this.keys;
-        for (Data dataKey : keys) {
-            if (isKeyProcessable(dataKey)) {
-                continue;
-            }
-            final Object oldValue = recordStore.get(dataKey, true);
-
-            final Map.Entry entry = createMapEntry(dataKey, oldValue);
-            if (!isEntryProcessable(entry)) {
-                continue;
-            }
-
-            processBackup(entry);
-
-            if (noOp(entry, oldValue)) {
-                continue;
-            }
-            if (entryRemovedBackup(entry, dataKey)) {
-                continue;
-            }
-            entryAddedOrUpdatedBackup(entry, dataKey);
-
-            evict(dataKey);
+        EntryOperator operator = operator(this, backupProcessor, getPredicate(), true);
+        for (Data key : keys) {
+            operator.operateOnKey(key).doPostOperateOps();
         }
     }
 

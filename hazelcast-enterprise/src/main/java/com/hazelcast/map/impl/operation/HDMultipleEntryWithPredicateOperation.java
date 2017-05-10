@@ -9,7 +9,6 @@ import com.hazelcast.query.Predicate;
 import com.hazelcast.spi.Operation;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
 
 import static com.hazelcast.util.Preconditions.checkNotNull;
@@ -28,8 +27,8 @@ public class HDMultipleEntryWithPredicateOperation extends HDMultipleEntryOperat
     }
 
     @Override
-    protected boolean isEntryProcessable(Map.Entry entry) {
-        return super.isEntryProcessable(entry) && predicate.apply(entry);
+    public Predicate getPredicate() {
+        return predicate;
     }
 
     @Override
@@ -37,7 +36,7 @@ public class HDMultipleEntryWithPredicateOperation extends HDMultipleEntryOperat
         EntryBackupProcessor backupProcessor = entryProcessor.getBackupProcessor();
         HDMultipleEntryWithPredicateBackupOperation backupOperation
                 = new HDMultipleEntryWithPredicateBackupOperation(name, keys, backupProcessor, predicate);
-        backupOperation.setWanEventList(wanEventList);
+        backupOperation.setWanEventList(operator.getWanEventList());
 
         return backupOperation;
     }

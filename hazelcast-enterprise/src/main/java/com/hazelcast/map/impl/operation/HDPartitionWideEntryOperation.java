@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
@@ -9,21 +10,25 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Predicate;
-import com.hazelcast.query.TruePredicate;
-import com.hazelcast.query.impl.FalsePredicate;
-import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.serialization.SerializationService;
+import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.Queue;
+
+import static com.hazelcast.internal.nearcache.impl.invalidation.ToHeapDataConverter.toHeapData;
+import static com.hazelcast.map.impl.operation.EntryOperator.operator;
 
 /**
  * GOTCHA : This operation does NOT load missing keys from map-store for now.
  */
 public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperation implements BackupAwareOperation {
+
+    protected transient EntryOperator operator;
 
     public HDPartitionWideEntryOperation(String name, EntryProcessor entryProcessor) {
         super(name, entryProcessor);
@@ -42,51 +47,49 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
 
     @Override
     protected void runInternal() {
-        final long now = getNow();
-        final int entryCount = recordStore.size();
+        int totalEntryCount = recordStore.size();
+        responses = new MapEntries(totalEntryCount);
+        Queue<Object> outComes = null;
+        operator = operator(this, entryProcessor, getPredicate(), true);
 
-        Container removedEntryRecordPairs = new Container(entryCount, newEntryRemoveHandler(now, false));
-        Container addedOrUpdatedEntryRecordPairs = new Container(entryCount, newEntryAddOrUpdateHandler(now, false));
-        responses = new MapEntries(entryCount);
-
-        Iterator<Record> iterator = recordStore.iterator(now, false);
+        Iterator<Record> iterator = recordStore.iterator(Clock.currentTimeMillis(), false);
         while (iterator.hasNext()) {
             Record record = iterator.next();
-            Data dataKey = record.getKey();
-            Object oldValue = record.getValue();
+            Data dataKey = toHeapData(record.getKey());
 
-            if (!applyPredicate(dataKey, oldValue)) {
-                continue;
-            }
-
-            Map.Entry entry = createMapEntry(dataKey, oldValue);
-            Data response = process(entry);
+            Data response = operator.operateOnKey(dataKey).getResult();
             if (response != null) {
-                // Copy key from Hi-Density memory to heap memory.
-                responses.add(toData(dataKey), response);
+                responses.add(dataKey, response);
             }
 
-            // First call noOp, other if checks below depends on it.
-            if (noOp(entry, oldValue)) {
-                continue;
-            }
+            EntryEventType eventType = operator.getEventType();
+            if (eventType != null) {
+                if (outComes == null) {
+                    outComes = new LinkedList<Object>();
+                }
 
-            if (isEntryRemoved(entry)) {
-                removedEntryRecordPairs.add(entry, record);
-                continue;
+                outComes.add(dataKey);
+                outComes.add(operator.getOldValue());
+                outComes.add(operator.getNewValue());
+                outComes.add(eventType);
             }
-
-            addedOrUpdatedEntryRecordPairs.add(entry, record);
         }
 
-        removedEntryRecordPairs.process();
-        addedOrUpdatedEntryRecordPairs.process();
-    }
+        if (outComes != null) {
+            // This iteration is needed to work around an issue related with binary elastic hash map(BEHM).
+            // Removal via map#remove while iterating on BEHM distortes it and we can see some entries are remained
+            // in map even we know that iteration is finished. Because in this case, iteration can miss some entries.
+            do {
+                Data dataKey = (Data) outComes.poll();
+                Object oldValue = outComes.poll();
+                Object newValue = outComes.poll();
+                EntryEventType eventType = (EntryEventType) outComes.poll();
 
-    @Override
-    public void afterRun() throws Exception {
-        evict(null);
-        super.afterRun();
+                operator.init(dataKey, oldValue, newValue, null, eventType)
+                        .doPostOperateOps();
+
+            } while (!outComes.isEmpty());
+        }
     }
 
     @Override
@@ -112,22 +115,12 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
     @Override
     public Operation getBackupOperation() {
         EntryBackupProcessor backupProcessor = entryProcessor.getBackupProcessor();
-        return backupProcessor != null ? new HDPartitionWideEntryBackupOperation(name, backupProcessor) : null;
-    }
-
-    private boolean applyPredicate(Data key, Object value) {
-        Predicate predicate = getPredicate();
-
-        if (predicate == null || TruePredicate.INSTANCE == predicate) {
-            return true;
+        if (backupProcessor == null) {
+            return null;
         }
-
-        if (FalsePredicate.INSTANCE == predicate) {
-            return false;
-        }
-
-        QueryableEntry queryEntry = mapContainer.newQueryEntry(key, value);
-        return getPredicate().apply(queryEntry);
+        HDPartitionWideEntryBackupOperation operation = new HDPartitionWideEntryBackupOperation(name, backupProcessor);
+        operation.setWanEventList(operator.getWanEventList());
+        return operation;
     }
 
     protected Predicate getPredicate() {

@@ -20,6 +20,7 @@ public class HDPartitionWideEntryWithPredicateBackupOperation extends HDPartitio
         this.predicate = predicate;
     }
 
+    @Override
     protected Predicate getPredicate() {
         return predicate;
     }

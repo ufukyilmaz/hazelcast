@@ -15,7 +15,6 @@ import static com.hazelcast.map.impl.operation.EntryOperator.operator;
 
 public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements BackupOperation, MutatingOperation {
 
-    protected transient Object oldValue;
     private EntryBackupProcessor entryProcessor;
 
     public HDEntryBackupOperation() {

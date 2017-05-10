@@ -43,6 +43,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     private static final ILogger LOGGER = Logger.getLogger(DefaultPermissionPolicy.class.getName());
     private static final PermissionCollection DENY_ALL = new DenyAllPermissionCollection();
     private static final PermissionCollection ALLOW_ALL = new AllPermissionsCollection(true);
+    private static final String PRINCIPAL_STRING_SEP = ",";
 
     // configured permissions
     final ConcurrentMap<PrincipalKey, PermissionCollection> configPermissions
@@ -64,7 +65,9 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
         for (PermissionConfig permCfg : permissionConfigs) {
             final ClusterPermission permission = createPermission(permCfg);
             // allow all principals
-            final String principal = permCfg.getPrincipal() != null ? permCfg.getPrincipal() : "*";
+            final String[] principals = permCfg.getPrincipal() != null
+                    ? permCfg.getPrincipal().split(PRINCIPAL_STRING_SEP)
+                    : new String[] { "*" };
 
             final Set<String> endpoints = permCfg.getEndpoints();
             if (endpoints.isEmpty()) {
@@ -74,13 +77,15 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
 
             PermissionCollection coll;
             for (final String endpoint : endpoints) {
-                final PrincipalKey key = new PrincipalKey(principal, endpoint);
-                coll = configPermissions.get(key);
-                if (coll == null) {
-                    coll = new ClusterPermissionCollection();
-                    configPermissions.put(key, coll);
+                for (final String principal : principals) {
+                    final PrincipalKey key = new PrincipalKey(principal, endpoint);
+                    coll = configPermissions.get(key);
+                    if (coll == null) {
+                        coll = new ClusterPermissionCollection();
+                        configPermissions.put(key, coll);
+                    }
+                    coll.add(permission);
                 }
-                coll.add(permission);
             }
         }
     }

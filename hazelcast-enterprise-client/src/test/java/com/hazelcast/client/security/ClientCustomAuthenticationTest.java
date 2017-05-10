@@ -148,7 +148,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
 
         @Override
         protected boolean onLogout() throws LoginException {
-            return false;
+            return true;
         }
     }
 }

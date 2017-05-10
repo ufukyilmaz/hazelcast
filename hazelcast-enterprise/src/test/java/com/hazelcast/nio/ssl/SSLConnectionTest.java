@@ -93,7 +93,7 @@ public class SSLConnectionTest {
     @Test(timeout = 1000 * 60)
     public void testSocketChannels() throws Exception {
         ServerSocketChannel serverSocketChannel = null;
-        SSLChannel socketChannel = null;
+        SSLChannel channel = null;
         final ExecutorService ex = Executors.newCachedThreadPool();
         try {
             serverSocketChannel = openAndBindServerSocketChannel();
@@ -103,17 +103,17 @@ public class SSLConnectionTest {
 
             final AtomicReference<Error> error = new AtomicReference<Error>();
             SSLContext clientContext = createClientSslContext();
-            socketChannel = new SSLChannel(clientContext, SocketChannel.open(), true, null);
-            socketChannel.connect(new InetSocketAddress(PORT));
+            channel = new SSLChannel(clientContext, SocketChannel.open(), true, null);
+            channel.socketChannel().connect(new InetSocketAddress(PORT));
             final CountDownLatch latch = new CountDownLatch(2);
 
-            ex.execute(new ChannelWriter(socketChannel, count, latch) {
+            ex.execute(new ChannelWriter(channel, count, latch) {
                 int prepareData(int i) throws Exception {
                     return i;
                 }
             });
 
-            ex.execute(new ChannelReader(socketChannel, count, latch) {
+            ex.execute(new ChannelReader(channel, count, latch) {
                 void processData(int i, int data) throws Exception {
                     try {
                         assertEquals(i * 2 + 1, data);
@@ -132,7 +132,7 @@ public class SSLConnectionTest {
             }
         } finally {
             ex.shutdownNow();
-            IOUtil.closeResource(socketChannel);
+            IOUtil.closeResource(channel);
             IOUtil.closeResource(serverSocketChannel);
         }
     }

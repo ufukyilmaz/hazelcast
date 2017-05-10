@@ -32,7 +32,11 @@ public class HDPartitionWideEntryWithPredicateOperation extends HDPartitionWideE
         if (backupProcessor == null) {
             return null;
         }
-        return new HDPartitionWideEntryWithPredicateBackupOperation(name, backupProcessor, predicate);
+
+        HDPartitionWideEntryWithPredicateBackupOperation operation
+                = new HDPartitionWideEntryWithPredicateBackupOperation(name, backupProcessor, predicate);
+        operation.setWanEventList(operator.getWanEventList());
+        return operation;
     }
 
     @Override

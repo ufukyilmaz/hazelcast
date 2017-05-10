@@ -13,12 +13,14 @@ import com.hazelcast.spi.serialization.SerializationService;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
+
+import static com.hazelcast.map.impl.operation.EntryOperator.operator;
 
 public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation implements BackupAwareOperation {
 
     protected Set<Data> keys;
+    protected transient EntryOperator operator;
 
     public HDMultipleEntryOperation() {
     }
@@ -38,37 +40,14 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
 
     @Override
     protected void runInternal() {
-        final long now = getNow();
-
         responses = new MapEntries(keys.size());
-        for (Data dataKey : keys) {
-            if (isKeyProcessable(dataKey)) {
-                continue;
-            }
-            final Object value = recordStore.get(dataKey, false);
 
-            final Map.Entry entry = createMapEntry(dataKey, value);
-            if (!isEntryProcessable(entry)) {
-                continue;
-            }
-
-            final Data response = process(entry);
+        operator = operator(this, entryProcessor, getPredicate(), true);
+        for (Data key : keys) {
+            Data response = operator.operateOnKey(key).doPostOperateOps().getResult();
             if (response != null) {
-                // copy key from Hi-Density memory to heap memory
-                responses.add(toData(dataKey), response);
+                responses.add(key, response);
             }
-
-            // first call noOp, other if checks below depends on it
-            if (noOp(entry, value)) {
-                continue;
-            }
-            if (entryRemoved(entry, dataKey, value, now)) {
-                continue;
-            }
-
-            entryAddedOrUpdated(entry, dataKey, value, now);
-
-            evict(dataKey);
         }
     }
 
@@ -95,7 +74,13 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
     @Override
     public Operation getBackupOperation() {
         EntryBackupProcessor backupProcessor = entryProcessor.getBackupProcessor();
-        return backupProcessor != null ? new HDMultipleEntryBackupOperation(name, keys, backupProcessor) : null;
+        if (backupProcessor == null) {
+            return null;
+        }
+
+        HDMultipleEntryBackupOperation operation = new HDMultipleEntryBackupOperation(name, keys, backupProcessor);
+        operation.setWanEventList(operator.getWanEventList());
+        return operation;
     }
 
     @Override

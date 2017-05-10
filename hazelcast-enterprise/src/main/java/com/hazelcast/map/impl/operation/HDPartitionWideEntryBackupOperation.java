@@ -1,18 +1,22 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.core.EntryEventType;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.query.Predicate;
-import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.BackupOperation;
+import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.Queue;
+
+import static com.hazelcast.internal.nearcache.impl.invalidation.ToHeapDataConverter.toHeapData;
+import static com.hazelcast.map.impl.operation.EntryOperator.operator;
 
 public class HDPartitionWideEntryBackupOperation extends AbstractHDMultipleEntryOperation implements BackupOperation {
 
@@ -25,65 +29,50 @@ public class HDPartitionWideEntryBackupOperation extends AbstractHDMultipleEntry
 
     @Override
     protected void runInternal() {
-        final long now = getNow();
-        final int entryCount = recordStore.size();
+        int totalEntryCount = recordStore.size();
+        responses = new MapEntries(totalEntryCount);
+        Queue<Object> outComes = null;
+        EntryOperator operator = operator(this, backupProcessor, getPredicate(), true);
 
-        Container removedEntryRecordPairs = new Container(entryCount, newEntryRemoveHandler(now, true));
-        Container addedOrUpdatedEntryRecordPairs = new Container(entryCount, newEntryAddOrUpdateHandler(now, true));
-        responses = new MapEntries(entryCount);
-
-        Iterator<Record> iterator = recordStore.iterator(now, false);
+        Iterator<Record> iterator = recordStore.iterator(Clock.currentTimeMillis(), true);
         while (iterator.hasNext()) {
             Record record = iterator.next();
-            Data dataKey = record.getKey();
-            Object oldValue = record.getValue();
+            Data dataKey = toHeapData(record.getKey());
+            operator.operateOnKey(dataKey);
 
-            if (!applyPredicate(dataKey, oldValue)) {
-                continue;
+            EntryEventType eventType = operator.getEventType();
+            if (eventType != null) {
+                if (outComes == null) {
+                    outComes = new LinkedList<Object>();
+                }
+
+                outComes.add(dataKey);
+                outComes.add(operator.getOldValue());
+                outComes.add(operator.getNewValue());
+                outComes.add(eventType);
             }
-
-            Map.Entry entry = createMapEntry(dataKey, oldValue);
-            processBackup(entry);
-
-            // First call noOp, other if checks below depends on it.
-            if (noOp(entry, oldValue)) {
-                continue;
-            }
-
-            if (isEntryRemoved(entry)) {
-                removedEntryRecordPairs.add(entry, record);
-                continue;
-            }
-
-            addedOrUpdatedEntryRecordPairs.add(entry, record);
         }
 
-        removedEntryRecordPairs.process();
-        addedOrUpdatedEntryRecordPairs.process();
-    }
+        if (outComes != null) {
+            // This iteration is needed to work around an issue related with binary elastic hash map(BEHM).
+            // Removal via map#remove while iterating on BEHM distortes it and we can see some entries are remained
+            // in map even we know that iteration is finished. Because in this case, iteration can miss some entries.
+            do {
+                Data dataKey = (Data) outComes.poll();
+                Object oldValue = outComes.poll();
+                Object newValue = outComes.poll();
+                EntryEventType eventType = (EntryEventType) outComes.poll();
 
-    @Override
-    public void afterRun() throws Exception {
-        evict(null);
-        super.afterRun();
-    }
+                operator.init(dataKey, oldValue, newValue, null, eventType)
+                        .doPostOperateOps();
 
-
-    protected Predicate getPredicate() {
-        return null;
+            } while (!outComes.isEmpty());
+        }
     }
 
     @Override
     public Object getResponse() {
         return true;
-    }
-
-    private boolean applyPredicate(Data key, Object value) {
-        if (getPredicate() == null) {
-            return true;
-        }
-        QueryableEntry queryEntry = mapContainer.newQueryEntry(key, value);
-        return getPredicate().apply(queryEntry);
     }
 
     @Override

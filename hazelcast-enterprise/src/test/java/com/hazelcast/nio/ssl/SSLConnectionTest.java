@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -284,9 +285,7 @@ public class SSLConnectionTest {
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h3 = Hazelcast.newHazelcastInstance(config);
 
-        assertEquals(3, h1.getCluster().getMembers().size());
-        assertEquals(3, h2.getCluster().getMembers().size());
-        assertEquals(3, h3.getCluster().getMembers().size());
+        assertClusterSize(3, h1, h2, h3);
 
         TestUtil.warmUpPartitions(h1, h2, h3);
         Member owner1 = h1.getPartitionService().getPartition(0).getOwner();
@@ -329,8 +328,7 @@ public class SSLConnectionTest {
         HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
 
-        assertEquals(2, h1.getCluster().getMembers().size());
-        assertEquals(2, h2.getCluster().getMembers().size());
+        assertClusterSize(2, h1, h2);
 
         TestUtil.warmUpPartitions(h1, h2);
         Member owner1 = h1.getPartitionService().getPartition(0).getOwner();

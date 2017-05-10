@@ -59,7 +59,7 @@ public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestT
         final String dir_hz2 = "hz_2";
         HazelcastInstance hz2 = factory.newHazelcastInstance(newConfig(dir_hz2));
 
-        assertClusterSizeEventually(2, hz1);
+        assertClusterSize(2, hz1, hz2);
         warmUpPartitions(hz2);
         shutdown(hz1, hz2);
 

@@ -22,7 +22,6 @@ import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.chang
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
-import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
@@ -105,7 +104,7 @@ public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClust
 
         for (HazelcastInstance instance : instances) {
             assertClusterSizeEventually(nodeCount, instance);
-            assertEquals(clusterState, instance.getCluster().getClusterState());
+            assertClusterState(clusterState, instance);
         }
     }
 }

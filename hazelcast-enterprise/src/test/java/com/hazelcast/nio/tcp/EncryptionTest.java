@@ -57,9 +57,8 @@ public class EncryptionTest extends HazelcastTestSupport {
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h3 = Hazelcast.newHazelcastInstance(config);
 
-        assertEquals(3, h1.getCluster().getMembers().size());
-        assertEquals(3, h2.getCluster().getMembers().size());
-        assertEquals(3, h3.getCluster().getMembers().size());
+        assertClusterSize(3, h1, h2, h3);
+
         assertEquals(h1.getCluster().getLocalMember(), h2.getCluster().getMembers().iterator().next());
         assertEquals(h1.getCluster().getLocalMember(), h3.getCluster().getMembers().iterator().next());
 

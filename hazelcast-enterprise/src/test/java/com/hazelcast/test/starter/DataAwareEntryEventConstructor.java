@@ -3,10 +3,8 @@ package com.hazelcast.test.starter;
 import java.lang.reflect.Constructor;
 
 import static com.hazelcast.test.starter.HazelcastProxyFactory.proxyArgumentsIfNeeded;
+import static com.hazelcast.test.starter.ReflectionUtils.getFieldValueReflectively;
 
-/**
- *
- */
 public class DataAwareEntryEventConstructor extends AbstractStarterObjectConstructor {
 
     public DataAwareEntryEventConstructor(Class<?> targetClass) {

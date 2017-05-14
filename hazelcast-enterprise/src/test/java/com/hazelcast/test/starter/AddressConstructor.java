@@ -2,9 +2,8 @@ package com.hazelcast.test.starter;
 
 import java.lang.reflect.Constructor;
 
-/**
- *
- */
+import static com.hazelcast.test.starter.ReflectionUtils.getFieldValueReflectively;
+
 public class AddressConstructor extends AbstractStarterObjectConstructor {
 
     public AddressConstructor(Class<?> targetClass) {

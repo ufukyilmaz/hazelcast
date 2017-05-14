@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Set;
 
 import static com.hazelcast.nio.ClassLoaderUtil.getAllInterfaces;
+import static com.hazelcast.test.starter.HazelcastAPIDelegatingClassloader.DELEGATION_WHITE_LIST;
+import static com.hazelcast.test.starter.HazelcastProxyFactory.ProxyPolicy.RETURN_SAME;
 import static com.hazelcast.util.ConcurrentReferenceHashMap.ReferenceType.STRONG;
 import static net.bytebuddy.jar.asm.Opcodes.ACC_PUBLIC;
 import static net.bytebuddy.matcher.ElementMatchers.is;
@@ -54,6 +56,7 @@ public class HazelcastProxyFactory {
     private static final String CLASS_NAME_CONFIG = "com.hazelcast.config.Config";
     private static final String CLASS_NAME_CLIENT_CONFIG = "com.hazelcast.client.config.ClientConfig";
     private static final String CLASS_NAME_ADDRESS = "com.hazelcast.nio.Address";
+    private static final String CLASS_NAME_VERSION = "com.hazelcast.version.Version";
 
     static {
         Set<String> notProxiedClasses = new HashSet<String>();
@@ -62,6 +65,7 @@ public class HazelcastProxyFactory {
         notProxiedClasses.add(CLASS_NAME_CONFIG);
         notProxiedClasses.add(CLASS_NAME_CLIENT_CONFIG);
         notProxiedClasses.add(CLASS_NAME_ADDRESS);
+        notProxiedClasses.add(CLASS_NAME_VERSION);
         NO_PROXYING_WHITELIST = notProxiedClasses;
 
         Set<String> subclassProxiedClasses = new HashSet<String>();
@@ -103,6 +107,9 @@ public class HazelcastProxyFactory {
                 break;
             case JDK_PROXY:
                 newArg = constructWithJdkProxy(targetClassLoader, arg, ifaces, delegateIfaces);
+                break;
+            case RETURN_SAME:
+                newArg = arg;
                 break;
             default:
                 throw new GuardianException("Unsupported proxy policy: " + proxyPolicy);
@@ -228,10 +235,14 @@ public class HazelcastProxyFactory {
      */
     private static ProxyPolicy shouldProxy(Class<?> delegateClass, Class<?>[] ifaces) {
         if (delegateClass.isPrimitive() || isJDKClass(delegateClass)) {
-            return ProxyPolicy.NO_PROXY;
+            return ProxyPolicy.RETURN_SAME;
         }
 
         String className = delegateClass.getName();
+        if (DELEGATION_WHITE_LIST.contains(className)) {
+            return RETURN_SAME;
+        }
+
         if (NO_PROXYING_WHITELIST.contains(className)) {
             return ProxyPolicy.NO_PROXY;
         }
@@ -263,6 +274,8 @@ public class HazelcastProxyFactory {
                         } else if (className.equals(CLASS_NAME_CONFIG) ||
                                 className.equals(CLASS_NAME_CLIENT_CONFIG)) {
                             return new ConfigConstructor(input);
+                        } else if (className.equals(CLASS_NAME_VERSION)) {
+                            return new VersionConstructor(input);
                         } else {
                             throw new UnsupportedOperationException("Cannot construct target object "
                                     + "for target class" + input + " on classloader " + input.getClassLoader());
@@ -352,6 +365,10 @@ public class HazelcastProxyFactory {
          * Do not proxy class, instead construct an instance of delegate's class on target class loader
          */
         NO_PROXY,
+        /**
+         * Do not proxy, neither attempt locating class at target classloader; instead return the object itself
+         */
+        RETURN_SAME,
     }
 
     public static class AllAsPublicConstructorStrategy implements ConstructorStrategy {

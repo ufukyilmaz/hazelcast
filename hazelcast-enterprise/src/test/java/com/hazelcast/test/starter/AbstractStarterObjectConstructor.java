@@ -36,34 +36,4 @@ public abstract class AbstractStarterObjectConstructor implements ConstructorFun
 
     abstract Object createNew0(Object delegate) throws Exception;
 
-    static Object getFieldValueReflectively(Object arg, String fieldName)
-            throws IllegalAccessException {
-        checkNotNull(arg, "Argument cannot be null");
-        checkHasText(fieldName, "Field name cannot be null");
-
-        Field field = getAllFieldsByName(arg.getClass()).get(fieldName);
-        if (field == null) {
-            throw new NoSuchFieldError("Field " + fieldName + " does not exist on object " + arg);
-        }
-
-        field.setAccessible(true);
-        return field.get(arg);
-    }
-
-    private static Map<String, Field> getAllFieldsByName(Class<?> clazz) {
-        ConcurrentMap<String, Field> fields = new ConcurrentHashMap<String, Field>();
-        Field[] ownFields = clazz.getDeclaredFields();
-        for (Field field : ownFields) {
-            fields.put(field.getName(), field);
-        }
-        Class<?> superClass = clazz.getSuperclass();
-        while (superClass != null) {
-            ownFields = superClass.getDeclaredFields();
-            for (Field field : ownFields) {
-                fields.putIfAbsent(field.getName(), field);
-            }
-            superClass = superClass.getSuperclass();
-        }
-        return fields;
-    }
 }

@@ -5,6 +5,10 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.NodeContext;
+import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.serialization.SerializationServiceBuilder;
+import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
+import com.hazelcast.util.ExceptionUtil;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
@@ -15,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.test.starter.HazelcastProxyFactory.proxyObjectForStarter;
+import static com.hazelcast.test.starter.Utils.rethrow;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 public class HazelcastStarter {
@@ -42,6 +47,38 @@ public class HazelcastStarter {
 
     public static HazelcastInstance newHazelcastInstance(String version, Config configTemplate,
                                                          NodeContext nodeContextTemplate) {
+        HazelcastAPIDelegatingClassloader versionClassLoader = getTargetVersionClassloader(version);
+
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(null);
+        try {
+            return newHazelcastMemberWithNetwork(configTemplate, versionClassLoader);
+        } catch (ClassNotFoundException e) {
+            throw rethrow(e);
+        } catch (NoSuchMethodException e) {
+            throw rethrow(e);
+        } catch (IllegalAccessException e) {
+            throw rethrow(e);
+        } catch (InvocationTargetException e) {
+            throw rethrow(e);
+        } catch (InstantiationException e) {
+            throw rethrow(e);
+        } finally {
+            if (contextClassLoader != null) {
+                Thread.currentThread().setContextClassLoader(contextClassLoader);
+            }
+        }
+    }
+
+    /**
+     * Obtain a {@link HazelcastAPIDelegatingClassloader} with the given version's binaries in its classpath.
+     * Classloaders are cached, so requesting the classloader for a given version multiple times will return the
+     * same instance.
+     *
+     * @param version   the target Hazelcast version e.g. "3.8.1", must be a published release version.
+     * @return          a classloader with given version's artifacts in its classpath
+     */
+    public static HazelcastAPIDelegatingClassloader getTargetVersionClassloader(String version) {
         HazelcastAPIDelegatingClassloader versionClassLoader = null;
         HazelcastVersionClassloaderFuture future = loadedVersions.get(version);
 
@@ -64,25 +101,29 @@ public class HazelcastStarter {
                 throw rethrow(t);
             }
         }
+        return versionClassLoader;
+    }
 
+    public static InternalSerializationService getTargetVersionSerializationService(String version) {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(null);
+
+        HazelcastAPIDelegatingClassloader targetClassloader = getTargetVersionClassloader(version);
+        Class klass = null;
         try {
-            return newHazelcastMemberWithNetwork(configTemplate, versionClassLoader);
-        } catch (ClassNotFoundException e) {
-            throw Utils.rethrow(e);
-        } catch (NoSuchMethodException e) {
-            throw Utils.rethrow(e);
-        } catch (IllegalAccessException e) {
-            throw Utils.rethrow(e);
-        } catch (InvocationTargetException e) {
-            throw Utils.rethrow(e);
-        } catch (InstantiationException e) {
-            throw Utils.rethrow(e);
+            klass = targetClassloader.loadClass("com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder");
+            SerializationServiceBuilder targetBuilder = (SerializationServiceBuilder)
+                    proxyObjectForStarter(DefaultSerializationServiceBuilder.class.getClassLoader(), klass.newInstance());
+
+            Thread.currentThread().setContextClassLoader(targetClassloader);
+            InternalSerializationService targetSerializationService = targetBuilder
+                    .setClassLoader(targetClassloader)
+                    .setVersion(InternalSerializationService.VERSION_1).build();
+
+            return targetSerializationService;
+        } catch (Exception e) {
+            throw ExceptionUtil.rethrow(e);
         } finally {
-            if (contextClassLoader != null) {
-                Thread.currentThread().setContextClassLoader(contextClassLoader);
-            }
+            Thread.currentThread().setContextClassLoader(contextClassLoader);
         }
     }
 
@@ -138,15 +179,15 @@ public class HazelcastStarter {
             return (HazelcastInstance) proxyObjectForStarter(HazelcastStarter.class.getClassLoader(), delegate);
 
         } catch (ClassNotFoundException e) {
-            throw Utils.rethrow(e);
+            throw rethrow(e);
         } catch (NoSuchMethodException e) {
-            throw Utils.rethrow(e);
+            throw rethrow(e);
         } catch (IllegalAccessException e) {
-            throw Utils.rethrow(e);
+            throw rethrow(e);
         } catch (InvocationTargetException e) {
-            throw Utils.rethrow(e);
+            throw rethrow(e);
         } catch (InstantiationException e) {
-            throw Utils.rethrow(e);
+            throw rethrow(e);
         } finally {
             if (contextClassLoader != null) {
                 Thread.currentThread().setContextClassLoader(contextClassLoader);
@@ -160,7 +201,7 @@ public class HazelcastStarter {
             try {
                 urls[i] = files[i].toURL();
             } catch (MalformedURLException e) {
-                throw Utils.rethrow(e);
+                throw rethrow(e);
             }
         }
         return urls;

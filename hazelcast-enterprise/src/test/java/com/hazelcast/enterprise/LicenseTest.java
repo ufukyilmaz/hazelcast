@@ -207,6 +207,15 @@ public class LicenseTest extends HazelcastTestSupport {
         factory.newHazelcastInstance(makeHotRestartConfigWithHotRestartDisabledLicense()); // Node should not start
     }
 
+    @Test(expected = InvalidLicenseException.class)
+    public void testHDMemoryStartupWithHDMemoryDisabledLicense() {
+        Config config = new Config();
+        config.getNativeMemoryConfig().setEnabled(true).setSize(MemorySize.parse("16M"));
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SECURITY_ONLY_LICENSE);
+        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        factory.newHazelcastInstance(config); // Node should not start
+    }
+
     Config makeHotRestartConfigWithHotRestartDisabledLicense() {
         Config config = new Config();
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.V4_LICENSE_WITH_HOT_RESTART_DISABLED);

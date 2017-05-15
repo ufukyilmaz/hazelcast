@@ -54,7 +54,12 @@ public class HazelcastProxyFactoryTest {
     public void testProxyHazelcastInstanceClasses_ofSameVersion_areSame() {
         HazelcastInstance hz1 = HazelcastStarter.newHazelcastInstance("3.8");
         HazelcastInstance hz2 = HazelcastStarter.newHazelcastInstance("3.8");
-        assertEquals(hz1.getClass(), hz2.getClass());
+        try {
+            assertEquals(hz1.getClass(), hz2.getClass());
+        } finally {
+            hz1.shutdown();
+            hz2.shutdown();
+        }
     }
 
     public interface ProxiedInterface {

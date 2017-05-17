@@ -43,7 +43,9 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
 
     @After
     public void tearDown() {
-        provider.close();
+        if (provider != null) {
+            provider.close();
+        }
     }
 
     @Test(expected = IllegalStateException.class)
@@ -60,9 +62,8 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
     public void test_hd_memory_is_compatible_with_v2_security_only_license() {
         GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(SECURITY_ONLY_LICENSE);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
-        configureCacheWithNativeMemory(factory);
         // this node should not start with HD memory
-        factory.newHazelcastInstance(config);
+        configureCacheWithNativeMemory(factory);
     }
 
     @Test
@@ -76,9 +77,8 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
     public void test_only_hd_memory_disabled_license() {
         GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V4_LICENSE_WITH_HD_MEMORY_DISABLED);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
-        configureCacheWithNativeMemory(factory);
         // this node should not start with HD memory
-        factory.newHazelcastInstance(config);
+        configureCacheWithNativeMemory(factory);
     }
 
     @Test

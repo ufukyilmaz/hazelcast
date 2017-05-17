@@ -172,6 +172,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                     Feature.HOT_RESTART);
             hotRestartService.prepare();
         }
+        if (node.getConfig().getNativeMemoryConfig().isEnabled()) {
+            LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(), Feature.HD_MEMORY);
+        }
     }
 
     @Override
@@ -498,8 +501,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                         + "Please contact sales@hazelcast.com");
             }
         }
-        license = LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
-                Feature.HD_MEMORY);
     }
 
     // validate that the joining member is at same major and >= minor version as the cluster version at which this cluster

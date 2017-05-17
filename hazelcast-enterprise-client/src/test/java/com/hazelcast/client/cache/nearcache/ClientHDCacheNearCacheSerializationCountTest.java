@@ -2,7 +2,6 @@ package com.hazelcast.client.cache.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.NearCacheConfig.LocalUpdatePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -20,6 +19,8 @@ import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDCon
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.config.NearCacheConfig.LocalUpdatePolicy.CACHE_ON_UPDATE;
+import static com.hazelcast.config.NearCacheConfig.LocalUpdatePolicy.INVALIDATE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static java.util.Arrays.asList;
 
@@ -31,32 +32,32 @@ import static java.util.Arrays.asList;
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientHDCacheNearCacheSerializationCountTest extends ClientCacheNearCacheSerializationCountTest {
 
-    @Parameters(name = "cacheFormat:{2} nearCacheFormat:{3} localUpdatePolicy:{4}")
+    @Parameters(name = "cacheFormat:{4} nearCacheFormat:{5} localUpdatePolicy:{6}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, null, null,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, NATIVE, LocalUpdatePolicy.INVALIDATE,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, NATIVE, LocalUpdatePolicy.CACHE_ON_UPDATE,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, BINARY, LocalUpdatePolicy.INVALIDATE,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, BINARY, LocalUpdatePolicy.CACHE_ON_UPDATE,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 0}, NATIVE, OBJECT, LocalUpdatePolicy.INVALIDATE,},
-                {new int[]{1, 0, 0}, new int[]{0, 0, 0}, NATIVE, OBJECT, LocalUpdatePolicy.CACHE_ON_UPDATE,},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, null, null},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, NATIVE, INVALIDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, NATIVE, CACHE_ON_UPDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, INVALIDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, CACHE_ON_UPDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 0), NATIVE, OBJECT, INVALIDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 0, 0), NATIVE, OBJECT, CACHE_ON_UPDATE},
 
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, null, null,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, NATIVE, LocalUpdatePolicy.INVALIDATE,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, NATIVE, LocalUpdatePolicy.CACHE_ON_UPDATE,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, BINARY, LocalUpdatePolicy.INVALIDATE,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, BINARY, LocalUpdatePolicy.CACHE_ON_UPDATE,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 0}, BINARY, OBJECT, LocalUpdatePolicy.INVALIDATE,},
-                {new int[]{1, 0, 0}, new int[]{0, 0, 0}, BINARY, OBJECT, LocalUpdatePolicy.CACHE_ON_UPDATE,},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), BINARY, null, null},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), BINARY, NATIVE, INVALIDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), BINARY, NATIVE, CACHE_ON_UPDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), BINARY, BINARY, INVALIDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), BINARY, BINARY, CACHE_ON_UPDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 0), BINARY, OBJECT, INVALIDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 0, 0), BINARY, OBJECT, CACHE_ON_UPDATE},
 
-                {new int[]{1, 1, 1}, new int[]{1, 1, 1}, OBJECT, null, null,},
-                {new int[]{1, 1, 0}, new int[]{1, 1, 1}, OBJECT, NATIVE, LocalUpdatePolicy.INVALIDATE,},
-                {new int[]{1, 0, 0}, new int[]{1, 1, 1}, OBJECT, NATIVE, LocalUpdatePolicy.CACHE_ON_UPDATE,},
-                {new int[]{1, 1, 0}, new int[]{1, 1, 1}, OBJECT, BINARY, LocalUpdatePolicy.INVALIDATE,},
-                {new int[]{1, 0, 0}, new int[]{1, 1, 1}, OBJECT, BINARY, LocalUpdatePolicy.CACHE_ON_UPDATE,},
-                {new int[]{1, 1, 0}, new int[]{1, 1, 0}, OBJECT, OBJECT, LocalUpdatePolicy.INVALIDATE,},
-                {new int[]{1, 0, 0}, new int[]{1, 0, 0}, OBJECT, OBJECT, LocalUpdatePolicy.CACHE_ON_UPDATE,},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 1, 1), newInt(1, 1, 1), OBJECT, null, null},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 1, 0), newInt(1, 1, 1), OBJECT, NATIVE, INVALIDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(1, 1, 1), OBJECT, NATIVE, CACHE_ON_UPDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 1, 0), newInt(1, 1, 1), OBJECT, BINARY, INVALIDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(1, 1, 1), OBJECT, BINARY, CACHE_ON_UPDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 1, 0), newInt(1, 1, 0), OBJECT, OBJECT, INVALIDATE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(1, 0, 0), OBJECT, OBJECT, CACHE_ON_UPDATE},
         });
     }
 

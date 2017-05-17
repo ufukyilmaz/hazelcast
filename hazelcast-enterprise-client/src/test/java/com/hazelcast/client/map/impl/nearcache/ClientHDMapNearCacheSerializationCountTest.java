@@ -30,23 +30,23 @@ import static java.util.Arrays.asList;
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientHDMapNearCacheSerializationCountTest extends ClientMapNearCacheSerializationCountTest {
 
-    @Parameters(name = "mapFormat:{2} nearCacheFormat:{3}")
+    @Parameters(name = "mapFormat:{4} nearCacheFormat:{5}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, null,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, NATIVE,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, NATIVE, BINARY,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 0}, NATIVE, OBJECT,},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, null},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, NATIVE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 0), NATIVE, OBJECT},
 
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, null,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, NATIVE,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 1}, BINARY, BINARY,},
-                {new int[]{1, 0, 0}, new int[]{0, 1, 0}, BINARY, OBJECT,},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), BINARY, null},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), BINARY, NATIVE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), BINARY, BINARY},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 0), BINARY, OBJECT},
 
-                {new int[]{1, 1, 1}, new int[]{1, 1, 1}, OBJECT, null,},
-                {new int[]{1, 1, 0}, new int[]{1, 1, 1}, OBJECT, NATIVE,},
-                {new int[]{1, 1, 0}, new int[]{1, 1, 1}, OBJECT, BINARY,},
-                {new int[]{1, 1, 0}, new int[]{1, 1, 0}, OBJECT, OBJECT,},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 1, 1), newInt(1, 1, 1), OBJECT, null},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 1, 0), newInt(1, 1, 1), OBJECT, NATIVE},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 1, 0), newInt(1, 1, 1), OBJECT, BINARY},
+                {newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 1, 0), newInt(1, 1, 0), OBJECT, OBJECT},
         });
     }
 

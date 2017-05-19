@@ -5,33 +5,48 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.networking.ChannelFactory;
 
+import javax.net.ssl.SSLEngine;
 import java.nio.channels.SocketChannel;
+
+import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.getProperty;
 
 public class SSLChannelFactory implements ChannelFactory {
 
-    private final SSLContextFactory sslContextFactory;
+    private final SSLEngineFactory sslEngineFactory;
     private final String mutualAuthentication;
 
     public SSLChannelFactory(SSLConfig sslConfig) {
-        SSLContextFactory sslContextFactoryObject = (SSLContextFactory) sslConfig.getFactoryImplementation();
+        this.sslEngineFactory = loadSSLEngineFactory(sslConfig);
+        this.mutualAuthentication = getProperty(sslConfig.getProperties(), "mutualAuthentication");
+    }
+
+    private static SSLEngineFactory loadSSLEngineFactory(SSLConfig sslConfig) {
+        Object implementation = sslConfig.getFactoryImplementation();
         try {
             String factoryClassName = sslConfig.getFactoryClassName();
-            if (sslContextFactoryObject == null && factoryClassName != null) {
-                sslContextFactoryObject = (SSLContextFactory) Class.forName(factoryClassName).newInstance();
+            if (implementation == null && factoryClassName != null) {
+                implementation = Class.forName(factoryClassName).newInstance();
             }
-            if (sslContextFactoryObject == null) {
-                sslContextFactoryObject = new BasicSSLContextFactory();
+
+            if (implementation == null) {
+                implementation = new BasicSSLContextFactory();
             }
-            sslContextFactoryObject.init(sslConfig.getProperties());
+
+            if (implementation instanceof SSLContextFactory) {
+                implementation = new SSLEngineFactoryAdaptor((SSLContextFactory) implementation);
+            }
+
+            SSLEngineFactory sslEngineFactory = (SSLEngineFactory) implementation;
+            sslEngineFactory.init(sslConfig.getProperties());
+            return sslEngineFactory;
         } catch (Exception e) {
             throw new HazelcastException(e);
         }
-        sslContextFactory = sslContextFactoryObject;
-        mutualAuthentication = BasicSSLContextFactory.getProperty(sslConfig.getProperties(), "mutualAuthentication");
     }
 
     @Override
-    public Channel create(SocketChannel channel, boolean client, boolean directBuffer) throws Exception {
-        return new SSLChannel(sslContextFactory.getSSLContext(), channel, client, mutualAuthentication);
+    public Channel create(SocketChannel channel, boolean clientMode, boolean directBuffer) throws Exception {
+        SSLEngine sslEngine = sslEngineFactory.create(clientMode);
+        return new SSLChannel(sslEngine, channel, mutualAuthentication, directBuffer);
     }
 }

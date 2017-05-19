@@ -5,6 +5,7 @@ import com.hazelcast.config.NearCachePreloaderConfig;
 import com.hazelcast.internal.adapter.DataStructureAdapter;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.NearCacheRecord;
 import com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector;
 import com.hazelcast.internal.nearcache.impl.preloader.NearCachePreloader;
 import com.hazelcast.memory.HazelcastMemoryManager;
@@ -128,6 +129,12 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     public V get(K key) {
         NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         return segment.get(key);
+    }
+
+    @Override
+    public NearCacheRecord getRecord(K key) {
+        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        return segment.getRecord(key);
     }
 
     @Override

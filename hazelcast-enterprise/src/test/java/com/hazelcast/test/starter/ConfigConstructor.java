@@ -10,6 +10,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.hazelcast.test.starter.HazelcastProxyFactory.isJDKClass;
+
 /**
  * Clone the configuration from {@code mainConfig} to a new configuration object loaded in the
  * target {@code classloader}. The returned configuration has its classloader set to the target classloader.
@@ -51,7 +53,7 @@ public class ConfigConstructor extends AbstractStarterObjectConstructor {
         }
 
         Class thisConfigClass = thisConfigObject.getClass();
-        if (isImmutableJavaType(thisConfigClass)) {
+        if (thisConfigClass.isPrimitive() || isJDKClass(thisConfigClass)) {
             return thisConfigObject;
         }
 
@@ -104,22 +106,6 @@ public class ConfigConstructor extends AbstractStarterObjectConstructor {
             }
         }
         return otherConfigObject;
-    }
-
-    private static boolean isImmutableJavaType(Class type) {
-        if (type.isPrimitive()) {
-            return true;
-        }
-        if (type == String.class) {
-            return true;
-        }
-        if (type == Boolean.class) {
-            return true;
-        }
-        if (Number.class.isAssignableFrom(type)) {
-            return true;
-        }
-        return false;
     }
 
     private static Class<?> getOtherReturnType(ClassLoader classloader, Class returnType)

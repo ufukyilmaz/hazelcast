@@ -6,7 +6,9 @@ import com.hazelcast.map.impl.PartitionContainer;
 import com.hazelcast.map.impl.record.RecordReplicationInfo;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.spi.ServiceNamespace;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,6 +26,11 @@ public class EnterpriseMapReplicationOperation extends MapReplicationOperation {
 
     public EnterpriseMapReplicationOperation(PartitionContainer container, int partitionId, int replicaIndex) {
         super(container, partitionId, replicaIndex);
+    }
+
+    public EnterpriseMapReplicationOperation(PartitionContainer container, Collection<ServiceNamespace> namespaces,
+                                             int partitionId, int replicaIndex) {
+        super(container, namespaces, partitionId, replicaIndex);
     }
 
     @Override

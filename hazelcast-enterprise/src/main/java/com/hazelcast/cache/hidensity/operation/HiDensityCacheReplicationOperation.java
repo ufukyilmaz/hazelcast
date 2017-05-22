@@ -3,10 +3,8 @@ package com.hazelcast.cache.hidensity.operation;
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
-import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.ICacheRecordStore;
-import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.config.CacheConfig;
+import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -16,7 +14,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.util.Clock;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -26,10 +23,8 @@ import java.util.Map;
 /**
  * @author mdogan 05/02/14
  */
-@SuppressFBWarnings(value = "NM_SAME_SIMPLE_NAME_AS_SUPERCLASS",
-        justification = "Class names shouldn't shadow simple name of superclass")
-public final class CacheReplicationOperation
-        extends com.hazelcast.cache.impl.operation.CacheReplicationOperation implements IdentifiedDataSerializable {
+public final class HiDensityCacheReplicationOperation
+        extends CacheReplicationOperation implements IdentifiedDataSerializable {
 
     private final Map<String, Map<Data, HiDensityCacheRecord>> offHeapSource
             = new HashMap<String, Map<Data, HiDensityCacheRecord>>();
@@ -38,25 +33,16 @@ public final class CacheReplicationOperation
 
     private transient NativeOutOfMemoryError oome;
 
-    public CacheReplicationOperation() {
+    public HiDensityCacheReplicationOperation() {
     }
 
-    public CacheReplicationOperation(CachePartitionSegment segment, int replicaIndex) {
-        Iterator<ICacheRecordStore> iter = segment.recordStoreIterator();
-        while (iter.hasNext()) {
-            ICacheRecordStore cacheRecordStore = iter.next();
-            CacheConfig cacheConfig = cacheRecordStore.getConfig();
-            if (cacheConfig.getAsyncBackupCount() + cacheConfig.getBackupCount() >= replicaIndex) {
-                Map<Data, CacheRecord> records = cacheRecordStore.getReadOnlyRecords();
-                String name = cacheRecordStore.getName();
-                if (cacheRecordStore instanceof HiDensityCacheRecordStore) {
-                    offHeapSource.put(name, (Map) records);
-                } else {
-                    data.put(name, records);
-                }
-            }
+    @Override
+    protected void storeRecordsToReplicate(ICacheRecordStore recordStore) {
+        if (recordStore instanceof HiDensityCacheRecordStore) {
+            offHeapSource.put(recordStore.getName(), (Map) recordStore.getReadOnlyRecords());
+        } else {
+            super.storeRecordsToReplicate(recordStore);
         }
-
     }
 
     private void dispose() {
@@ -203,7 +189,7 @@ public final class CacheReplicationOperation
 
     @Override
     public boolean isEmpty() {
-        return (offHeapSource == null || offHeapSource.isEmpty() && super.isEmpty());
+        return offHeapSource.isEmpty() && super.isEmpty();
     }
 
     @Override

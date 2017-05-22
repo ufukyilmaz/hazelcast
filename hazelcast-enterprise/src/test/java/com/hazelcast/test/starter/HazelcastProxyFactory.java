@@ -27,7 +27,6 @@ import java.util.Set;
 
 import static com.hazelcast.nio.ClassLoaderUtil.getAllInterfaces;
 import static com.hazelcast.util.ConcurrentReferenceHashMap.ReferenceType.STRONG;
-import static com.hazelcast.util.Preconditions.checkNotNull;
 import static net.bytebuddy.jar.asm.Opcodes.ACC_PUBLIC;
 import static net.bytebuddy.matcher.ElementMatchers.is;
 import static net.bytebuddy.matcher.ElementMatchers.isConstructor;
@@ -94,6 +93,7 @@ public class HazelcastProxyFactory {
         Class<?>[] delegateIfaces = new Class<?>[ifaces.length];
         Object newArg;
         ProxyPolicy proxyPolicy = shouldProxy(arg.getClass(), ifaces);
+        Utils.debug("Proxy policy for " + arg.getClass() + " is " + proxyPolicy);
         switch (proxyPolicy) {
             case NO_PROXY:
                 newArg = constructWithoutProxy(targetClassLoader, arg);
@@ -132,13 +132,17 @@ public class HazelcastProxyFactory {
         Object[] newArgs = new Object[args.length];
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
-            if (arg == null || arg.getClass().getClassLoader() == String.class.getClassLoader()) {
+            if (arg == null || isJDKClass(arg.getClass())) {
                 newArgs[i] = arg;
             } else {
                 newArgs[i] = proxyObjectForStarter(targetClassLoader, arg);
             }
         }
         return newArgs;
+    }
+
+    static boolean isJDKClass(Class clazz) {
+        return clazz.getClassLoader() == String.class.getClassLoader();
     }
 
     private static Object constructWithJdkProxy(ClassLoader targetClassLoader, Object arg, Class<?>[] ifaces,
@@ -163,6 +167,11 @@ public class HazelcastProxyFactory {
     private static Object constructWithoutProxy(ClassLoader targetClassLoader, Object arg)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException,
             NoSuchMethodException, InvocationTargetException {
+
+        if (isJDKClass(arg.getClass())) {
+            return arg;
+        }
+
         // obtain class in targetClassLoader
         Class<?> targetClass = targetClassLoader.loadClass(arg.getClass().getName());
         return construct(targetClass, arg);
@@ -218,6 +227,10 @@ public class HazelcastProxyFactory {
      * @return
      */
     private static ProxyPolicy shouldProxy(Class<?> delegateClass, Class<?>[] ifaces) {
+        if (delegateClass.isPrimitive() || isJDKClass(delegateClass)) {
+            return ProxyPolicy.NO_PROXY;
+        }
+
         String className = delegateClass.getName();
         if (NO_PROXYING_WHITELIST.contains(className)) {
             return ProxyPolicy.NO_PROXY;

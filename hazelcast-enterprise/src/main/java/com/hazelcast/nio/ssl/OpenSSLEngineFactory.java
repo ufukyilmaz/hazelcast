@@ -18,9 +18,9 @@ import static java.lang.String.format;
 /**
  * {@link SSLEngineFactory} for OpenSSL.
  */
-public class OpenSSLContextFactory extends SSLEngineFactorySupport implements SSLEngineFactory {
+public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSLEngineFactory {
 
-    private final ILogger logger = Logger.getLogger(OpenSSLContextFactory.class);
+    private final ILogger logger = Logger.getLogger(OpenSSLEngineFactory.class);
 
     private boolean openssl;
     private List<String> cipherSuites;

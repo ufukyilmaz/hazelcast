@@ -22,7 +22,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.Properties;
 
-import static com.hazelcast.nio.ssl.OpenSSLContextFactory.JAVA_NET_SSL_PREFIX;
+import static com.hazelcast.nio.ssl.OpenSSLEngineFactory.JAVA_NET_SSL_PREFIX;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -96,7 +96,7 @@ public class OpenSSLConnectionTest {
         sslProperties.setProperty(JAVA_NET_SSL_PREFIX + "openssl", "true");
         SSLConfig sslConfig = new SSLConfig()
                 .setEnabled(true)
-                .setFactoryImplementation(new OpenSSLContextFactory())
+                .setFactoryImplementation(new OpenSSLEngineFactory())
                 .setProperties(sslProperties);
         config.getNetworkConfig().setSSLConfig(sslConfig);
         return config;

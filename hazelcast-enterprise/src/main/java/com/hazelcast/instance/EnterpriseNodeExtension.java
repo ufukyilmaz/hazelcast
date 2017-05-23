@@ -13,6 +13,7 @@ import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.PartitioningStrategy;
+import com.hazelcast.enterprise.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
@@ -20,6 +21,7 @@ import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
+import com.hazelcast.internal.management.TimedMemberStateFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.networking.ChannelFactory;
@@ -45,7 +47,6 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
-import com.hazelcast.version.Version;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.ssl.SSLChannelFactory;
 import com.hazelcast.nio.tcp.SymmetricCipherMemberChannelInboundHandler;
@@ -53,6 +54,7 @@ import com.hazelcast.nio.tcp.SymmetricCipherMemberChannelOutboundHandler;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
+import com.hazelcast.security.impl.WeakSecretsConfigChecker;
 import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
@@ -62,6 +64,7 @@ import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.Preconditions;
+import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
@@ -82,6 +85,7 @@ import static com.hazelcast.util.StringUtil.isNullOrEmpty;
         "checkstyle:methodcount"
 })
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension, MetricsProvider {
+
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
     private static final NoopInternalHotRestartService NOOP_INTERNAL_HOT_RESTART_SERVICE = new NoopInternalHotRestartService();
     private static final NoOpHotRestartService NO_OP_HOT_RESTART_SERVICE = new NoOpHotRestartService();
@@ -193,6 +197,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                 }
             }
         }
+
+        WeakSecretsConfigChecker configChecker = new WeakSecretsConfigChecker(node.getConfig());
+        configChecker.evaluateAndReport(systemLogger);
 
         systemLogger.info("Hazelcast Enterprise " + buildInfo.getVersion()
                 + " (" + build + ") starting at " + node.getThisAddress());
@@ -627,5 +634,10 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                 ((MetricsProvider) memoryManager).provideMetrics(registry);
             }
         }
+    }
+
+    @Override
+    public TimedMemberStateFactory createTimedMemberStateFactory(HazelcastInstanceImpl instance) {
+        return new EnterpriseTimedMemberStateFactory(instance);
     }
 }

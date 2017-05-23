@@ -1,11 +1,14 @@
 package com.hazelcast.instance;
 
+import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.JoinRequest;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.nio.Address;
+import com.hazelcast.nio.CipherByteArrayProcessor;
+import com.hazelcast.nio.NodeIOService;
 import com.hazelcast.nio.Packet;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -24,6 +27,7 @@ import java.net.UnknownHostException;
 
 import static com.hazelcast.instance.BuildInfoProvider.BUILD_INFO;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -122,5 +126,25 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
                 new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, 0);
         expected.expect(VersionMismatchException.class);
         nodeExtension.validateJoinRequest(joinMessage);
+    }
+
+    @Test
+    public void test_returningNullByteArrayProcessor_whenNoSymmetricEnc() {
+        NodeIOService nodeIOService = new NodeIOService(node, node.nodeEngine);
+        assertNull(nodeExtension.createMulticastInputProcessor(nodeIOService));
+        assertNull(nodeExtension.createMulticastOutputProcessor(nodeIOService));
+    }
+
+    @Test
+    public void test_returningCipherByteArrayProcessor_whenSymmetricEnc() {
+        NodeIOService nodeIOService = new NodeIOService(node, node.nodeEngine);
+        SymmetricEncryptionConfig sec = new SymmetricEncryptionConfig()
+            .setEnabled(true)
+            .setPassword("foo")
+            .setSalt("foobar");
+        node.getConfig().getNetworkConfig().setSymmetricEncryptionConfig(sec);
+
+        assertTrue(nodeExtension.createMulticastInputProcessor(nodeIOService) instanceof CipherByteArrayProcessor);
+        assertTrue(nodeExtension.createMulticastOutputProcessor(nodeIOService) instanceof CipherByteArrayProcessor);
     }
 }

@@ -19,6 +19,7 @@ import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
+import com.hazelcast.nio.CipherByteArrayProcessor;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
@@ -62,6 +63,7 @@ import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.util.ByteArrayProcessor;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.Preconditions;
 import com.hazelcast.version.Version;
@@ -74,6 +76,8 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
+import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
+import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
 import static com.hazelcast.util.StringUtil.isNullOrEmpty;
 
 /**
@@ -356,8 +360,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public ChannelInboundHandler createInboundHandler(final TcpIpConnection connection, final IOService ioService) {
-        final NetworkConfig networkConfig = node.config.getNetworkConfig();
-        final SymmetricEncryptionConfig symmetricEncryptionConfig = networkConfig.getSymmetricEncryptionConfig();
+        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Reader started with SymmetricEncryption");
@@ -368,8 +371,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public ChannelOutboundHandler createOutboundHandler(final TcpIpConnection connection, final IOService ioService) {
-        final NetworkConfig networkConfig = node.config.getNetworkConfig();
-        final SymmetricEncryptionConfig symmetricEncryptionConfig = networkConfig.getSymmetricEncryptionConfig();
+        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Writer started with SymmetricEncryption");
@@ -640,4 +642,28 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     public TimedMemberStateFactory createTimedMemberStateFactory(HazelcastInstanceImpl instance) {
         return new EnterpriseTimedMemberStateFactory(instance);
     }
+
+    public ByteArrayProcessor createMulticastInputProcessor(IOService ioService) {
+        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
+
+        if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
+            logger.info("Mulitcast is starting with SymmetricEncryption on input processor");
+            return new CipherByteArrayProcessor(createSymmetricReaderCipher(symmetricEncryptionConfig));
+        }
+
+        return super.createMulticastInputProcessor(ioService);
+    }
+
+    @Override
+    public ByteArrayProcessor createMulticastOutputProcessor(IOService ioService) {
+        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
+
+        if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
+            logger.info("Mulitcast is starting with SymmetricEncryption on output processor");
+            return new CipherByteArrayProcessor(createSymmetricWriterCipher(symmetricEncryptionConfig));
+        }
+
+        return super.createMulticastOutputProcessor(ioService);
+    }
+
 }

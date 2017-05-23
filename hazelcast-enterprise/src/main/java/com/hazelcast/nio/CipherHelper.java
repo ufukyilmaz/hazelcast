@@ -42,8 +42,16 @@ public final class CipherHelper {
     private CipherHelper() {
     }
 
+    public static Cipher createSymmetricReaderCipher(SymmetricEncryptionConfig config) {
+        return createSymmetricReaderCipher(config, null);
+    }
+
     public static Cipher createSymmetricReaderCipher(SymmetricEncryptionConfig config, Connection connection) {
         return createCipher(config, connection, false, "Symmetric Cipher for ReadHandler cannot be initialized.");
+    }
+
+    public static Cipher createSymmetricWriterCipher(SymmetricEncryptionConfig config) {
+        return createSymmetricWriterCipher(config, null);
     }
 
     public static Cipher createSymmetricWriterCipher(SymmetricEncryptionConfig config, Connection connection) {
@@ -60,7 +68,9 @@ public final class CipherHelper {
             return symmetricCipherBuilder.create(createWriter);
         } catch (Exception e) {
             LOGGER.severe(exceptionMessage, e);
-            connection.close(null, e);
+            if (connection != null) {
+                connection.close(null, e);
+            }
             throw rethrow(e);
         }
     }

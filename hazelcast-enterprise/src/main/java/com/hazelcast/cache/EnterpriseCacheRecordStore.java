@@ -17,5 +17,4 @@ public interface EnterpriseCacheRecordStore
     boolean remove(Data key, String caller, int completionId, String origin);
 
     boolean remove(Data key, Object value, String caller, int completionId, String origin);
-
 }

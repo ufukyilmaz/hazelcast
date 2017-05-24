@@ -7,10 +7,8 @@ import com.hazelcast.config.QuorumConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MembershipAdapter;
 import com.hazelcast.core.MembershipEvent;
-import com.hazelcast.instance.Node;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.nio.tcp.FirewallingConnectionManager;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 
@@ -22,13 +20,14 @@ import static com.hazelcast.spi.properties.GroupProperty.MERGE_NEXT_RUN_DELAY_SE
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
+import static com.hazelcast.test.HazelcastTestSupport.closeConnectionBetween;
 import static com.hazelcast.test.HazelcastTestSupport.generateRandomString;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.suspectMember;
+import static com.hazelcast.test.SplitBrainTestSupport.blockCommunicationBetween;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class NativeMemPartitionedCluster {
+    public static final String QUORUM_ID = "threeNodeQuorumRule";
     private static final String SUCCESSFUL_SPLIT_TEST_QUORUM_NAME = "SUCCESSFULL_SPLIT_TEST_QUORUM";
     protected TestHazelcastInstanceFactory factory;
     public HazelcastInstance h1;
@@ -43,7 +42,7 @@ public class NativeMemPartitionedCluster {
 
     public NativeMemPartitionedCluster partitionFiveMembersThreeAndTwo(CacheSimpleConfig cacheSimpleConfig, QuorumConfig quorumConfig) throws InterruptedException {
         createFiveMemberCluster(cacheSimpleConfig, quorumConfig);
-        return splitFiveMembersThreeAndTwo();
+        return splitFiveMembersThreeAndTwo(quorumConfig.getName());
     }
 
     public NativeMemPartitionedCluster createFiveMemberCluster(CacheSimpleConfig cacheSimpleConfig, QuorumConfig quorumConfig) {
@@ -59,7 +58,7 @@ public class NativeMemPartitionedCluster {
         return this;
     }
 
-    public NativeMemPartitionedCluster splitFiveMembersThreeAndTwo() throws InterruptedException {
+    public NativeMemPartitionedCluster splitFiveMembersThreeAndTwo(String quorumId) throws InterruptedException {
         final CountDownLatch splitLatch = new CountDownLatch(6);
         h4.getCluster().addMembershipListener(new MembershipAdapter() {
             @Override
@@ -79,14 +78,8 @@ public class NativeMemPartitionedCluster {
         assertTrue(splitLatch.await(30, TimeUnit.SECONDS));
         assertClusterSizeEventually(3, h1, h2, h3);
         assertClusterSizeEventually(2, h4, h5);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run()
-                    throws Exception {
-                assertFalse(h4.getQuorumService().getQuorum(SUCCESSFUL_SPLIT_TEST_QUORUM_NAME).isPresent());
-                assertFalse(h5.getQuorumService().getQuorum(SUCCESSFUL_SPLIT_TEST_QUORUM_NAME).isPresent());
-            }
-        });
+        verifyQuorums(SUCCESSFUL_SPLIT_TEST_QUORUM_NAME);
+        verifyQuorums(quorumId);
         return this;
     }
 
@@ -110,52 +103,50 @@ public class NativeMemPartitionedCluster {
     }
 
     private void splitCluster() {
-        Node n1 = getNode(h1);
-        Node n2 = getNode(h2);
-        Node n3 = getNode(h3);
-        Node n4 = getNode(h4);
-        Node n5 = getNode(h5);
+        blockCommunicationBetween(h1, h4);
+        blockCommunicationBetween(h1, h5);
 
-        FirewallingConnectionManager cm1 = getConnectionManager(n1);
-        FirewallingConnectionManager cm2 = getConnectionManager(n2);
-        FirewallingConnectionManager cm3 = getConnectionManager(n3);
-        FirewallingConnectionManager cm4 = getConnectionManager(n4);
-        FirewallingConnectionManager cm5 = getConnectionManager(n5);
+        blockCommunicationBetween(h2, h4);
+        blockCommunicationBetween(h2, h5);
 
-        cm1.block(n4.address);
-        cm2.block(n4.address);
-        cm3.block(n4.address);
+        blockCommunicationBetween(h3, h4);
+        blockCommunicationBetween(h3, h5);
 
-        cm1.block(n5.address);
-        cm2.block(n5.address);
-        cm3.block(n5.address);
+        closeConnectionBetween(h4, h3);
+        closeConnectionBetween(h4, h2);
+        closeConnectionBetween(h4, h1);
 
-        cm4.block(n1.address);
-        cm4.block(n2.address);
-        cm4.block(n3.address);
-
-        cm5.block(n1.address);
-        cm5.block(n2.address);
-        cm5.block(n3.address);
-
-        suspectMember(n4, n1);
-        suspectMember(n4, n2);
-        suspectMember(n4, n3);
-
-        suspectMember(n5, n1);
-        suspectMember(n5, n2);
-        suspectMember(n5, n3);
-
-        suspectMember(n1, n4);
-        suspectMember(n2, n4);
-        suspectMember(n3, n4);
-
-        suspectMember(n1, n5);
-        suspectMember(n2, n5);
-        suspectMember(n3, n5);
+        closeConnectionBetween(h5, h3);
+        closeConnectionBetween(h5, h2);
+        closeConnectionBetween(h5, h1);
     }
 
-    private static FirewallingConnectionManager getConnectionManager(Node node) {
-        return (FirewallingConnectionManager) node.getConnectionManager();
+    private void verifyQuorums(String quorumId) {
+        assertQuorumIsPresentEventually(h1, quorumId);
+        assertQuorumIsPresentEventually(h2, quorumId);
+        assertQuorumIsPresentEventually(h3, quorumId);
+        assertQuorumIsAbsentEventually(h4, quorumId);
+        assertQuorumIsAbsentEventually(h5, quorumId);
     }
+
+    private void assertQuorumIsPresentEventually(final HazelcastInstance instance, final String quorumId) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run()
+                    throws Exception {
+                assertTrue(instance.getQuorumService().getQuorum(quorumId).isPresent());
+            }
+        });
+    }
+
+    private void assertQuorumIsAbsentEventually(final HazelcastInstance instance, final String quorumId) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run()
+                    throws Exception {
+                assertFalse(instance.getQuorumService().getQuorum(quorumId).isPresent());
+            }
+        });
+    }
+
 }

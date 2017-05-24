@@ -14,6 +14,8 @@ import org.junit.Before;
 
 import java.io.IOException;
 
+import static com.hazelcast.quorum.NativeMemPartitionedCluster.QUORUM_ID;
+
 public class HiDensityCacheQuorumTestSupport extends HazelcastTestSupport {
 
     private static String hazelcastElasticMemoryEnabledProperty;
@@ -22,7 +24,6 @@ public class HiDensityCacheQuorumTestSupport extends HazelcastTestSupport {
     static NativeMemPartitionedCluster cluster;
 
     protected static final String CACHE_NAME_PREFIX = "cacheQuorum";
-    protected static final String QUORUM_ID = "threeNodeQuorumRule";
 
     protected static HazelcastServerCachingProvider cachingProvider1;
     protected static HazelcastServerCachingProvider cachingProvider2;

@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class CompatibilityTestHazelcastInstanceFactory {
 
-    private static final String[] VERSIONS = new String[] {"3.8", "3.8.1"};
+    private static final String[] VERSIONS = new String[] {"3.8", "3.8.1", "3.8.2"};
     private static final String CURRENT_VERSION = "";
 
     // keep track of number of created instances

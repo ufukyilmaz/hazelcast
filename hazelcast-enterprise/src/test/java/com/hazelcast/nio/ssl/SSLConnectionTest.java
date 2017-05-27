@@ -108,7 +108,7 @@ public class SSLConnectionTest {
             SSLEngine sslEngine = clientContext.createSSLEngine();
             sslEngine.setUseClientMode(true);
             sslEngine.setEnableSessionCreation(true);
-            channel = new SSLChannel(sslEngine, SocketChannel.open(), null, false);
+            channel = new SSLChannel(sslEngine, SocketChannel.open(), null, false, true);
             channel.socketChannel().connect(new InetSocketAddress(PORT));
             final CountDownLatch latch = new CountDownLatch(2);
 
@@ -235,7 +235,7 @@ public class SSLConnectionTest {
                 SSLEngine sslEngine = context.createSSLEngine();
                 sslEngine.setUseClientMode(false);
                 sslEngine.setEnableSessionCreation(true);
-                channel = new SSLChannel(sslEngine, ssc.accept(), null, false);
+                channel = new SSLChannel(sslEngine, ssc.accept(), null, false, false);
                 final CountDownLatch latch = new CountDownLatch(2);
                 final BlockingQueue<Integer> queue = new ArrayBlockingQueue<Integer>(count);
 

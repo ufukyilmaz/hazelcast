@@ -1,8 +1,8 @@
 package com.hazelcast.nio.ssl;
 
+import com.hazelcast.internal.networking.nio.NioChannel;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.nio.tcp.PlainChannel;
 import com.hazelcast.util.EmptyStatement;
 
 import javax.net.ssl.SSLEngine;
@@ -22,7 +22,7 @@ import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_WRAP;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_OVERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 
-public class SSLChannel extends PlainChannel {
+public class SSLChannel extends NioChannel {
 
     static final int EXPAND_FACTOR = 2;
 
@@ -37,8 +37,9 @@ public class SSLChannel extends PlainChannel {
     private volatile boolean handshakeCompleted;
     private SSLEngineResult sslEngineResult;
 
-    public SSLChannel(SSLEngine sslEngine, SocketChannel sc, String mutualAuthentication, boolean directBuffer) throws Exception {
-        super(sc);
+    public SSLChannel(SSLEngine sslEngine, SocketChannel socketChannel, String mutualAuthentication, boolean directBuffer,
+                      boolean clientMode) throws Exception {
+        super(socketChannel, clientMode);
         this.sslEngine = sslEngine;
         if ("REQUIRED".equals(mutualAuthentication)) {
             sslEngine.setNeedClientAuth(true);

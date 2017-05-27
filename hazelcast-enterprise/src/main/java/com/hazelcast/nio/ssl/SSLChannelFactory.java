@@ -47,6 +47,6 @@ public class SSLChannelFactory implements ChannelFactory {
     @Override
     public Channel create(SocketChannel channel, boolean clientMode, boolean directBuffer) throws Exception {
         SSLEngine sslEngine = sslEngineFactory.create(clientMode);
-        return new SSLChannel(sslEngine, channel, mutualAuthentication, directBuffer);
+        return new SSLChannel(sslEngine, channel, mutualAuthentication, directBuffer, clientMode);
     }
 }

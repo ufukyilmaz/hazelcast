@@ -344,7 +344,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public ChannelFactory getSocketChannelWrapperFactory() {
+    public ChannelFactory getChannelFactory() {
         final NetworkConfig networkConfig = node.config.getNetworkConfig();
         SSLConfig sslConfig = networkConfig.getSSLConfig();
         if (sslConfig != null && sslConfig.isEnabled()) {
@@ -355,7 +355,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             logger.info("SSL is enabled");
             return new SSLChannelFactory(sslConfig);
         }
-        return super.getSocketChannelWrapperFactory();
+        return super.getChannelFactory();
     }
 
     @Override

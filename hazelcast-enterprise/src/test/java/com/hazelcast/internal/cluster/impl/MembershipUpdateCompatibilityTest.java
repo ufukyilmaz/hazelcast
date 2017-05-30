@@ -7,7 +7,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -25,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static com.hazelcast.internal.cluster.impl.MembershipUpdateTest.assertMemberViewsAreSame;
 import static com.hazelcast.internal.cluster.impl.MembershipUpdateTest.getMemberMap;
+import static com.hazelcast.spi.properties.GroupProperty.TCP_JOIN_PORT_TRY_COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -235,8 +235,8 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
         HazelcastInstance master = HazelcastInstanceFactory.newHazelcastInstance(createConfig(multicastEnabled));
         master.getCluster().changeClusterVersion(Version.of(factory.getOldestKnownVersion()));
 
-        HazelcastInstance[] instances =
-                factory.newInstances(createConfig(multicastEnabled), factory.getKnownPreviousVersionsCount());
+        Config config = createConfig(multicastEnabled);
+        HazelcastInstance[] instances = factory.newInstances(config, factory.getKnownPreviousVersionsCount());
 
         assertClusterSize(instances.length + 1, master);
 
@@ -280,7 +280,7 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
 
     private Config createConfig(boolean multicastEnabled) {
         Config config = new Config();
-        config.setProperty(GroupProperty.TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(factory.getKnownPreviousVersionsCount()));
+        config.setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(factory.getKnownPreviousVersionsCount()));
         if (!multicastEnabled) {
             JoinConfig join = config.getNetworkConfig().getJoin();
             join.getMulticastConfig().setEnabled(false);

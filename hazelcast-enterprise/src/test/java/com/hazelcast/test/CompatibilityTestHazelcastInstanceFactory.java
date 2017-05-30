@@ -3,7 +3,6 @@ package com.hazelcast.test;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.HazelcastInstanceFactory;
-import com.hazelcast.instance.NodeContext;
 import com.hazelcast.test.starter.HazelcastStarter;
 
 import java.util.ArrayList;
@@ -19,7 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class CompatibilityTestHazelcastInstanceFactory {
 
-    private static final String[] VERSIONS = new String[] {"3.8", "3.8.1", "3.8.2"};
+    // some tests expect to have 3 instances started, so we duplicate the 3.8.2 version
+    private static final String[] VERSIONS = new String[]{"3.8.2", "3.8.2"};
     private static final String CURRENT_VERSION = "";
 
     // keep track of number of created instances
@@ -46,12 +46,13 @@ public class CompatibilityTestHazelcastInstanceFactory {
     /**
      * Create a cluster consisting of members of all known previous Hazelcast versions and one member running
      * on current version.
-     * @see #getKnownPreviousVersionsCount()
+     *
      * @param config the configuration template to use for starting each Hazelcast instance. Can be {@code null}.
      * @return a {@code HazelcastInstance[]} where the last element is always the current-version Hazelcast member.
+     * @see #getKnownPreviousVersionsCount()
      */
     public HazelcastInstance[] newInstances(Config config) {
-        return newInstances(config,VERSIONS.length + 1);
+        return newInstances(config, VERSIONS.length + 1);
     }
 
     public HazelcastInstance[] newInstances(Config config, int nodeCount) {
@@ -113,14 +114,12 @@ public class CompatibilityTestHazelcastInstanceFactory {
 
     private HazelcastInstance nextInstance(Config config) {
         String nextVersion = nextVersion();
-        if (nextVersion == CURRENT_VERSION) {
+        if (CURRENT_VERSION.equals(nextVersion)) {
             HazelcastInstance hz = HazelcastInstanceFactory.newHazelcastInstance(config);
             instances.add(hz);
             return hz;
         } else {
-            HazelcastInstance hz;
-            NodeContext nodeContext = null;
-            hz = HazelcastStarter.newHazelcastInstance(nextVersion, config, nodeContext);
+            HazelcastInstance hz = HazelcastStarter.newHazelcastInstance(nextVersion, config, null);
             instances.add(hz);
             return hz;
         }

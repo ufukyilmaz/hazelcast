@@ -5,6 +5,7 @@ import com.hazelcast.cache.ICache;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MapConfig;
@@ -17,7 +18,6 @@ import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
@@ -28,15 +28,18 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
 
+import static com.hazelcast.spi.properties.GroupProperty.TCP_JOIN_PORT_TRY_COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(CompatibilityTest.class)
 public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport {
 
@@ -45,22 +48,21 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     @Parameterized.Parameters(name = "{0}")
     public static Collection parameters() {
         return Arrays.asList(
-            new Object[]{"Map", new DataStructureValidator[]{mapValidator(), mapHDValidator(),
-                                                                mapLockValidator(), mapHDLockValidator()}},
-            new Object[]{"Cache", new DataStructureValidator[]{cacheValidator(), cacheHDValidator()}},
-            new Object[]{"MultiMap", new DataStructureValidator[]{multiMapValidator(), multiMapLockValidator()}},
-            new Object[]{"Queue", new DataStructureValidator[]{queueValidator()}},
-            new Object[]{"Lock", new DataStructureValidator[]{lockValidator()}},
-            new Object[]{"All", new DataStructureValidator[]{mapValidator(), mapHDValidator(), mapLockValidator(),
-                                         cacheValidator(), cacheHDValidator(),
-                                         multiMapValidator(), queueValidator(), lockValidator()}}
+                new Object[]{"Map", new DataStructureValidator[]{mapValidator(), mapHDValidator(),
+                        mapLockValidator(), mapHDLockValidator()}},
+                new Object[]{"Cache", new DataStructureValidator[]{cacheValidator(), cacheHDValidator()}},
+                new Object[]{"MultiMap", new DataStructureValidator[]{multiMapValidator(), multiMapLockValidator()}},
+                new Object[]{"Queue", new DataStructureValidator[]{queueValidator()}},
+                new Object[]{"Lock", new DataStructureValidator[]{lockValidator()}},
+                new Object[]{"All", new DataStructureValidator[]{mapValidator(), mapHDValidator(), mapLockValidator(),
+                        cacheValidator(), cacheHDValidator(), multiMapValidator(), queueValidator(), lockValidator()}}
         );
     }
 
-    @Parameterized.Parameter
+    @Parameter
     public String testName;
 
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public DataStructureValidator[] validators;
 
     private CompatibilityTestHazelcastInstanceFactory factory;
@@ -363,8 +365,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
 
     private Config createConfig() {
         Config config = new Config();
-        config.setProperty(GroupProperty.TCP_JOIN_PORT_TRY_COUNT.getName(),
-                String.valueOf(factory.getKnownPreviousVersionsCount() + 2));
+        config.setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(factory.getKnownPreviousVersionsCount() + 2));
 
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
@@ -377,21 +378,27 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
 
         config.addCacheConfig(new CacheSimpleConfig().setName("cache"));
 
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(100);
+
         CacheSimpleConfig hdCacheConfig = new CacheSimpleConfig().setName(HD_PREFIX + "*")
                 .setInMemoryFormat(InMemoryFormat.NATIVE)
-                .setEvictionConfig(new EvictionConfig(100, EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE,
-                        EvictionConfig.DEFAULT_EVICTION_POLICY));
+                .setEvictionConfig(evictionConfig);
         config.addCacheConfig(hdCacheConfig);
 
         return config;
     }
 
     private interface DataStructureValidator {
+
         void init(HazelcastInstance instance);
+
         void validate(HazelcastInstance instance);
     }
 
     private static class MapValidator implements DataStructureValidator {
+
         final String name;
 
         MapValidator(String name) {
@@ -416,6 +423,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     }
 
     private static class MultiMapValidator implements DataStructureValidator {
+
         final String name;
 
         MultiMapValidator(String name) {
@@ -443,6 +451,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     }
 
     private static class CacheValidator implements DataStructureValidator {
+
         final String name;
 
         private CacheValidator(String name) {
@@ -474,6 +483,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     }
 
     private static class QueueValidator implements DataStructureValidator {
+
         final String name;
 
         private QueueValidator(String name) {
@@ -498,6 +508,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     }
 
     private static class LockValidator implements DataStructureValidator {
+
         final String[] keys;
 
         private LockValidator(String[] keys) {
@@ -523,6 +534,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     }
 
     private static class MapLockValidator implements DataStructureValidator {
+
         final String name;
         final String[] keys;
 
@@ -549,6 +561,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     }
 
     private static class MultiMapLockValidator implements DataStructureValidator {
+
         final String name;
         final String[] keys;
 

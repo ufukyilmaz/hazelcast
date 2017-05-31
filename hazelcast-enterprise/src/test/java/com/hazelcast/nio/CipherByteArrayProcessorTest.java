@@ -4,6 +4,7 @@ import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.ByteArrayProcessor;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -17,6 +18,7 @@ import static org.junit.Assert.assertFalse;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
+@Ignore
 public class CipherByteArrayProcessorTest {
 
     private final SymmetricEncryptionConfig symmetricEncryptionConfig =
@@ -41,5 +43,4 @@ public class CipherByteArrayProcessorTest {
         assertFalse(Arrays.equals(dec, enc));
         assertArrayEquals(dec, original);
     }
-
 }

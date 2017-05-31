@@ -398,7 +398,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
                 new EWRPutOperation(wanReplicationName, targetGroupName,
                         node.nodeEngine.toData(wanReplicationEvent),
                         replicationEventObject.getBackupCount());
-        invokeOnPartition(wanReplicationEvent.getServiceName(), replicationEventObject.getKey(), ewrPutOperation);
+        invokeOnPartition(null, replicationEventObject.getKey(), ewrPutOperation);
     }
 
     /**

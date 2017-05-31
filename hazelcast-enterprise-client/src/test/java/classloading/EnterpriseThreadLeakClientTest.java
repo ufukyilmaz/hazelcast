@@ -14,10 +14,9 @@ import static com.hazelcast.map.HDTestSupport.getHDConfig;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class EnterpriseThreadLeakClientTest extends ThreadLeakTest {
+public class EnterpriseThreadLeakClientTest extends AbstractThreadLeakTest {
 
     @Test
-    @Override
     public void testThreadLeak() {
         Config config = getHDConfig();
 
@@ -26,7 +25,5 @@ public class EnterpriseThreadLeakClientTest extends ThreadLeakTest {
 
         client.shutdown();
         member.shutdown();
-
-        assertHazelcastThreadShutdown(oldThreads);
     }
 }

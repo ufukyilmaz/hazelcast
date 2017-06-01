@@ -28,12 +28,14 @@ import static java.util.Arrays.asList;
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientHDMapNearCacheBasicTest extends ClientMapNearCacheBasicTest {
 
-    @Parameters(name = "format:{0}")
+    @Parameters(name = "format:{0} serializeKeys:{1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY},
-                {InMemoryFormat.OBJECT},
-                {InMemoryFormat.NATIVE},
+                {InMemoryFormat.NATIVE, true},
+                {InMemoryFormat.NATIVE, false},
+
+                {InMemoryFormat.BINARY, false},
+                {InMemoryFormat.OBJECT, false},
         });
     }
 

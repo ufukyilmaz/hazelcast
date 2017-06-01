@@ -29,15 +29,18 @@ import static java.util.Arrays.asList;
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientHDCacheNearCacheBasicTest extends ClientCacheNearCacheBasicTest {
 
-    @Parameters(name = "format:{0} {1}")
+    @Parameters(name = "format:{0} serializeKeys:{1} localUpdatePolicy:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY, LocalUpdatePolicy.INVALIDATE},
-                {InMemoryFormat.BINARY, LocalUpdatePolicy.CACHE_ON_UPDATE},
-                {InMemoryFormat.OBJECT, LocalUpdatePolicy.INVALIDATE},
-                {InMemoryFormat.OBJECT, LocalUpdatePolicy.CACHE_ON_UPDATE},
-                {InMemoryFormat.NATIVE, LocalUpdatePolicy.INVALIDATE},
-                {InMemoryFormat.NATIVE, LocalUpdatePolicy.CACHE_ON_UPDATE},
+                {InMemoryFormat.NATIVE, true, LocalUpdatePolicy.INVALIDATE},
+                {InMemoryFormat.NATIVE, true, LocalUpdatePolicy.CACHE_ON_UPDATE},
+                {InMemoryFormat.NATIVE, false, LocalUpdatePolicy.INVALIDATE},
+                {InMemoryFormat.NATIVE, false, LocalUpdatePolicy.CACHE_ON_UPDATE},
+
+                {InMemoryFormat.BINARY, false, LocalUpdatePolicy.INVALIDATE},
+                {InMemoryFormat.BINARY, false, LocalUpdatePolicy.CACHE_ON_UPDATE},
+                {InMemoryFormat.OBJECT, false, LocalUpdatePolicy.INVALIDATE},
+                {InMemoryFormat.OBJECT, false, LocalUpdatePolicy.CACHE_ON_UPDATE},
         });
     }
 

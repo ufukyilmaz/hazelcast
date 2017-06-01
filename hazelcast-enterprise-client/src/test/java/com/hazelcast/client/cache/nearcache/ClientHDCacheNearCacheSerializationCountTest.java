@@ -35,7 +35,6 @@ public class ClientHDCacheNearCacheSerializationCountTest extends ClientCacheNea
 
     @Parameters(name = "method:{0} cacheFormat:{5} nearCacheFormat:{6} invalidateOnChange:{7} serializeKeys:{8} localUpdatePolicy:{9}")
     public static Collection<Object[]> parameters() {
-        // FIXME: there shouldn't be more serializations needed when serializeKeys is false!!!
         return asList(new Object[][]{
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, null, null, null, null},
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, NATIVE, true, true, INVALIDATE},
@@ -48,16 +47,16 @@ public class ClientHDCacheNearCacheSerializationCountTest extends ClientCacheNea
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, NATIVE, false, false, CACHE_ON_UPDATE},
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, true, true, INVALIDATE},
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, true, true, CACHE_ON_UPDATE},
-                {GET, newInt(1, 2, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, true, false, INVALIDATE},
-                {GET, newInt(2, 0, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, true, false, CACHE_ON_UPDATE},
+                {GET, newInt(1, 1, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, true, false, INVALIDATE},
+                {GET, newInt(1, 0, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, true, false, CACHE_ON_UPDATE},
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, false, true, INVALIDATE},
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, false, true, CACHE_ON_UPDATE},
                 {GET, newInt(1, 1, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, false, false, INVALIDATE},
                 {GET, newInt(1, 0, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 1), NATIVE, BINARY, false, false, CACHE_ON_UPDATE},
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 0), NATIVE, OBJECT, true, true, INVALIDATE},
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 0, 0), NATIVE, OBJECT, true, true, CACHE_ON_UPDATE},
-                {GET, newInt(1, 2, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 0), NATIVE, OBJECT, true, false, INVALIDATE},
-                {GET, newInt(2, 0, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 0, 0), NATIVE, OBJECT, true, false, CACHE_ON_UPDATE},
+                {GET, newInt(1, 1, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 0), NATIVE, OBJECT, true, false, INVALIDATE},
+                {GET, newInt(1, 0, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 0, 0), NATIVE, OBJECT, true, false, CACHE_ON_UPDATE},
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 0), NATIVE, OBJECT, false, true, INVALIDATE},
                 {GET, newInt(1, 1, 1), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 0, 0), NATIVE, OBJECT, false, true, CACHE_ON_UPDATE},
                 {GET, newInt(1, 1, 0), newInt(0, 0, 0), newInt(1, 0, 0), newInt(0, 1, 0), NATIVE, OBJECT, false, false, INVALIDATE},

@@ -7,6 +7,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.TaskScheduler;
 import com.hazelcast.spi.serialization.SerializationService;
@@ -71,13 +72,13 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     }
 
     @Override
-    public void put(K key, V value) {
+    public void put(K key, Data keyData, V value) {
         assert key != null : "key cannot be null";
 
         boolean memoryCompacted = false;
         do {
             try {
-                super.put(key, value);
+                super.put(key, keyData, value);
                 break;
             } catch (NativeOutOfMemoryError error) {
                 ignore(error);
@@ -99,13 +100,13 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     }
 
     @Override
-    public long tryReserveForUpdate(K key) {
+    public long tryReserveForUpdate(K key, Data keyData) {
         assert key != null : "key cannot be null";
 
         boolean memoryCompacted = false;
         do {
             try {
-                return super.tryReserveForUpdate(key);
+                return super.tryReserveForUpdate(key, keyData);
             } catch (NativeOutOfMemoryError error) {
                 ignore(error);
             }

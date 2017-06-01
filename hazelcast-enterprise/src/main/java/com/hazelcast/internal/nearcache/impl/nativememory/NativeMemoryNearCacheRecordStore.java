@@ -257,7 +257,7 @@ public class NativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    protected NativeMemoryNearCacheRecord getOrCreateToReserve(K key) {
+    protected NativeMemoryNearCacheRecord getOrCreateToReserve(K key, Data keyData) {
         NativeMemoryNearCacheRecord recordToReserve = getRecord(key);
         if (recordToReserve != null) {
             return recordToReserve;
@@ -266,7 +266,7 @@ public class NativeMemoryNearCacheRecordStore<K, V>
         NativeMemoryNearCacheRecord record;
         NativeMemoryData nativeKey = null;
         try {
-            record = reserveForUpdate.apply(key);
+            record = new ReserveForUpdateFunction(keyData).apply(key);
             nativeKey = toNativeMemoryData(key);
             records.put(nativeKey, record);
         } catch (Throwable throwable) {

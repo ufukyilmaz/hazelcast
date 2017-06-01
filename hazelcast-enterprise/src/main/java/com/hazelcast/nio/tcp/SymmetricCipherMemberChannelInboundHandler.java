@@ -4,7 +4,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.Packet;
-import com.hazelcast.spi.impl.packetdispatcher.PacketDispatcher;
+import com.hazelcast.spi.impl.PacketHandler;
 
 import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
@@ -22,8 +22,8 @@ public class SymmetricCipherMemberChannelInboundHandler extends MemberChannelInb
     private int size = -1;
 
     public SymmetricCipherMemberChannelInboundHandler(TcpIpConnection connection, IOService ioService,
-                                                      PacketDispatcher packetDispatcher) {
-        super(connection, packetDispatcher);
+                                                      PacketHandler packetHandler) {
+        super(connection, packetHandler);
         this.logger = ioService.getLoggingService().getLogger(getClass());
         this.cipher = createSymmetricReaderCipher(ioService.getSymmetricEncryptionConfig(), connection);
         this.cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * KILO_BYTE);

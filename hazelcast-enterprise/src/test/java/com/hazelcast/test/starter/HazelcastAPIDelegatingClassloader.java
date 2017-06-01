@@ -4,9 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.hazelcast.nio.IOUtil.toByteArray;
+import static com.hazelcast.test.compatibility.SamplingSerializationService.isTestClass;
 
 /**
  * Classloader which delegates to its parent except when the fully qualified name of the class starts with
@@ -18,7 +22,17 @@ import static com.hazelcast.nio.IOUtil.toByteArray;
  *  - otherwise load the requested class from the URLs given to this classloader as constructor argument.
  */
 public class HazelcastAPIDelegatingClassloader extends URLClassLoader {
+
+    static final Set<String> DELEGATION_WHITE_LIST;
+
     private Object mutex = new Object();
+
+    static {
+        Set<String> alwaysDelegateWhiteList = new HashSet<String>();
+        alwaysDelegateWhiteList.add("com.hazelcast.test.starter.ProxyInvocationHandler");
+        alwaysDelegateWhiteList.add("com.hazelcast.test.starter.HazelcastAPIDelegatingClassloader");
+        DELEGATION_WHITE_LIST = Collections.unmodifiableSet(alwaysDelegateWhiteList);
+    }
 
     public HazelcastAPIDelegatingClassloader(URL[] urls, ClassLoader parent) {
         super(urls, parent);
@@ -97,9 +111,7 @@ public class HazelcastAPIDelegatingClassloader extends URLClassLoader {
             return true;
         }
 
-        // the ProxyInvocationHandler is serialized/deserialized as part of user objects serialization
-        // eg proxied EntryListeners, EntryProcessors etc
-        if (name.equals("com.hazelcast.test.starter.ProxyInvocationHandler")) {
+        if (DELEGATION_WHITE_LIST.contains(name)) {
             return true;
         }
 
@@ -111,7 +123,7 @@ public class HazelcastAPIDelegatingClassloader extends URLClassLoader {
             return false;
         }
 
-        if (name.contains("Test") || name.contains(".test")) {
+        if (isTestClass(name)) {
             return true;
         }
 

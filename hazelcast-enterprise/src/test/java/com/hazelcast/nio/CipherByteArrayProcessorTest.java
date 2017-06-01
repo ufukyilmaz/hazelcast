@@ -4,7 +4,7 @@ import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.ByteArrayProcessor;
-import org.junit.Ignore;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -18,29 +18,32 @@ import static org.junit.Assert.assertFalse;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
-@Ignore
 public class CipherByteArrayProcessorTest {
 
-    private final SymmetricEncryptionConfig symmetricEncryptionConfig =
-            new SymmetricEncryptionConfig()
-                    .setEnabled(true)
-                    .setPassword("foobar")
-                    .setSalt("SaltedFoobar");
+    private static final String PAYLOAD = "Lorem ipsum dolor sit amet, consectetur adipiscing elit,"
+            + " sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+
+    @After
+    public void tearDown() {
+        CipherHelper.reset();
+    }
 
     @Test
     public void testEncDec() {
-        ByteArrayProcessor encProcessor = new CipherByteArrayProcessor(createSymmetricWriterCipher(symmetricEncryptionConfig));
-        ByteArrayProcessor decProcessor = new CipherByteArrayProcessor(createSymmetricReaderCipher(symmetricEncryptionConfig));
+        SymmetricEncryptionConfig config = new SymmetricEncryptionConfig()
+                .setEnabled(true)
+                .setPassword("foobar")
+                .setSalt("SaltedFoobar");
 
-        String payload = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
-                + "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+        ByteArrayProcessor encProcessor = new CipherByteArrayProcessor(createSymmetricWriterCipher(config));
+        ByteArrayProcessor decProcessor = new CipherByteArrayProcessor(createSymmetricReaderCipher(config));
 
-        byte[] original = payload.getBytes();
+        byte[] original = PAYLOAD.getBytes();
         byte[] enc = encProcessor.process(original);
         byte[] dec = decProcessor.process(enc);
 
-        assertFalse(Arrays.equals(enc, original));
-        assertFalse(Arrays.equals(dec, enc));
-        assertArrayEquals(dec, original);
+        assertFalse("The encoded bytes should not be the same as the original bytes", Arrays.equals(enc, original));
+        assertFalse("The decoded bytes should not be the same as the encoded bytes", Arrays.equals(dec, enc));
+        assertArrayEquals("The decoded bytes should be the same as the original bytes", dec, original);
     }
 }

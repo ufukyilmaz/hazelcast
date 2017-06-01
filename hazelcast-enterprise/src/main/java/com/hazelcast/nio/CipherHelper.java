@@ -47,7 +47,7 @@ public final class CipherHelper {
     }
 
     public static Cipher createSymmetricReaderCipher(SymmetricEncryptionConfig config, Connection connection) {
-        return createCipher(config, connection, false, "Symmetric Cipher for ReadHandler cannot be initialized.");
+        return createCipher(config, connection, false, "Symmetric Cipher for ReadHandler cannot be initialized");
     }
 
     public static Cipher createSymmetricWriterCipher(SymmetricEncryptionConfig config) {
@@ -55,7 +55,7 @@ public final class CipherHelper {
     }
 
     public static Cipher createSymmetricWriterCipher(SymmetricEncryptionConfig config, Connection connection) {
-        return createCipher(config, connection, true, "Symmetric Cipher for WriteHandler cannot be initialized.");
+        return createCipher(config, connection, true, "Symmetric Cipher for WriteHandler cannot be initialized");
     }
 
     @SuppressWarnings("SynchronizedMethod")
@@ -84,6 +84,11 @@ public final class CipherHelper {
         } catch (Exception e) {
             LOGGER.warning(e);
         }
+    }
+
+    // used for testing to reset the cipher builder
+    static void reset() {
+        symmetricCipherBuilder = null;
     }
 
     static String findKeyAlgorithm(String algorithm) {

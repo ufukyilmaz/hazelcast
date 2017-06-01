@@ -5,6 +5,8 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.nio.CipherHelper.SymmetricCipherBuilder;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -12,6 +14,7 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
 import static com.hazelcast.nio.CipherHelper.initBouncySecurityProvider;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -21,6 +24,23 @@ import static org.mockito.Mockito.verify;
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class CipherHelperTest extends HazelcastTestSupport {
+
+    private SymmetricEncryptionConfig invalidConfiguration;
+    private Connection mockedConnection;
+
+    @Before
+    public void setUp() {
+        invalidConfiguration = new SymmetricEncryptionConfig()
+                .setEnabled(true)
+                .setAlgorithm("invalidAlgorithm");
+
+        mockedConnection = mock(Connection.class);
+    }
+
+    @After
+    public void tearDown() {
+        CipherHelper.reset();
+    }
 
     @Test
     public void testConstructor() {
@@ -40,40 +60,30 @@ public class CipherHelperTest extends HazelcastTestSupport {
 
     @Test(expected = RuntimeException.class)
     public void testCreateCipher_withInvalidConfiguration() {
-        SymmetricEncryptionConfig config = new SymmetricEncryptionConfig()
-                .setEnabled(true)
-                .setAlgorithm("invalidAlgorithm");
-
-        new SymmetricCipherBuilder(config).create(true);
+        new SymmetricCipherBuilder(invalidConfiguration).create(true);
     }
 
     @Test
     public void testCreateReaderCipher_withInvalidConfiguration_expectConnectionClose() {
-        SymmetricEncryptionConfig config = new SymmetricEncryptionConfig()
-                .setEnabled(true)
-                .setAlgorithm("invalidAlgorithm");
-
-        Connection connection = mock(Connection.class);
-
         try {
-            createSymmetricReaderCipher(config, connection);
+            createSymmetricReaderCipher(invalidConfiguration, mockedConnection);
+            fail("Expected an exception to be thrown!");
         } catch (RuntimeException ex) {
-            verify(connection, times(1)).close(isNull(String.class), any(Exception.class));
+            verifyConnectionIsClosed(mockedConnection);
         }
     }
 
     @Test
     public void testCreateWriterCipher_withInvalidConfiguration_expectConnectionClose() {
-        SymmetricEncryptionConfig config = new SymmetricEncryptionConfig()
-                .setEnabled(true)
-                .setAlgorithm("invalidAlgorithm");
-
-        Connection connection = mock(Connection.class);
-
         try {
-            createSymmetricWriterCipher(config, connection);
+            createSymmetricWriterCipher(invalidConfiguration, mockedConnection);
+            fail("Expected an exception to be thrown!");
         } catch (RuntimeException ex) {
-            verify(connection, times(1)).close(isNull(String.class), any(Exception.class));
+            verifyConnectionIsClosed(mockedConnection);
         }
+    }
+
+    private static void verifyConnectionIsClosed(Connection connection) {
+        verify(connection, times(1)).close(isNull(String.class), any(Exception.class));
     }
 }

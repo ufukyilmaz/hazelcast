@@ -399,7 +399,7 @@ public class NativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    public void loadKeys(DataStructureAdapter<Data, ?> adapter) {
+    public void loadKeys(DataStructureAdapter<Object, ?> adapter) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

@@ -72,7 +72,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         HiDensityStorageInfo storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
         this.segments = createSegments(nearCacheConfig, nearCacheStats, storageInfo, segmentSize);
 
-        this.nearCachePreloader = createPreloader(name, nearCacheConfig.getPreloaderConfig(), serializationService);
+        this.nearCachePreloader = createPreloader(name, nearCacheConfig, serializationService);
     }
 
     @Override
@@ -101,10 +101,12 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         return segments;
     }
 
-    private NearCachePreloader<Data> createPreloader(String name, NearCachePreloaderConfig preloaderConfig,
+    private NearCachePreloader<Data> createPreloader(String name, NearCacheConfig nearCacheConfig,
                                                      SerializationService serializationService) {
+        NearCachePreloaderConfig preloaderConfig = nearCacheConfig.getPreloaderConfig();
         if (preloaderConfig.isEnabled()) {
-            return new NearCachePreloader<Data>(name, preloaderConfig, nearCacheStats, serializationService);
+            boolean serializeKeys = nearCacheConfig.isSerializeKeys();
+            return new NearCachePreloader<Data>(name, preloaderConfig, nearCacheStats, serializationService, serializeKeys);
         }
         return null;
     }
@@ -265,7 +267,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    public void loadKeys(DataStructureAdapter<Data, ?> adapter) {
+    public void loadKeys(DataStructureAdapter<Object, ?> adapter) {
         nearCachePreloader.loadKeys(adapter);
     }
 

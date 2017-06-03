@@ -31,6 +31,7 @@ import java.util.Set;
 
 import static com.hazelcast.elastic.map.BehmSlotAccessor.rehash;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.MIN_CAPACITY;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.nextCapacity;
@@ -53,7 +54,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     /**
      * Header length when header stored off-heap for zero heap usage
      */
-    public static final int HEADER_LENGTH_IN_BYTES = 36;
+    @SuppressWarnings("checkstyle:magicnumber")
+    public static final int HEADER_LENGTH_IN_BYTES = 36 + NATIVE_MEMORY_DATA_OVERHEAD;
 
     protected final MemoryBlockProcessor<V> memoryBlockProcessor;
 
@@ -1055,7 +1057,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     public NativeMemoryData storeHeaderOffHeap(MemoryAllocator malloc, long addressGiven) {
         long address = addressGiven;
         if (addressGiven <= 0) {
-            address = malloc.allocate(HEADER_LENGTH_IN_BYTES + NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD);
+            address = malloc.allocate(HEADER_LENGTH_IN_BYTES);
         }
         long pointer = address;
 
@@ -1076,7 +1078,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         pointer += 8;
         unsafe.putLong(pointer, accessor.size);
 
-        return new NativeMemoryData().reset(address);
+        return new NativeMemoryData(address, HEADER_LENGTH_IN_BYTES);
     }
 
     @SuppressWarnings("checkstyle:magicnumber")
@@ -1085,7 +1087,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
         GlobalMemoryAccessor unsafe = GlobalMemoryAccessorRegistry.MEM;
 
-        long pointer = address + NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
+        long pointer = address + NATIVE_MEMORY_DATA_OVERHEAD;
         int allocatedSlotCount = unsafe.getInt(pointer);
         pointer += 4;
         int assignedSlotCount = unsafe.getInt(pointer);

@@ -442,8 +442,7 @@ public class HDIndexNestedTreeMapTest {
 
         // THEN
         map.dispose();
-        // TODO tkountis (should be 0 instead of 1000 * 4)
-        assertNativeMemoryUsage(1000 * 4);
+        assertNativeMemoryUsage(0);
     }
 
     @Test
@@ -465,8 +464,7 @@ public class HDIndexNestedTreeMapTest {
 
         // THEN
         map.dispose();
-        // TODO tkountis, shoudl be 0 :)
-        assertNativeMemoryUsage(260000);
+        assertNativeMemoryUsage(0);
     }
 
 

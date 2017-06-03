@@ -1,6 +1,7 @@
 package com.hazelcast.elastic.tree;
 
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 /**
@@ -17,9 +18,9 @@ public class ComparableComparator implements OffHeapComparator {
 
     @Override
     @SuppressWarnings("unchecked")
-    public int compare(long leftAddress, long leftSize, long rightAddress, long rightSize) {
-        NativeMemoryData leftData = new NativeMemoryData().reset(leftAddress);
-        NativeMemoryData rightData = new NativeMemoryData().reset(rightAddress);
+    public int compare(MemoryBlock lBlob, MemoryBlock rBlob) {
+        NativeMemoryData leftData = new NativeMemoryData(lBlob.address(), lBlob.size());
+        NativeMemoryData rightData = new NativeMemoryData(rBlob.address(), rBlob.size());
 
         if (leftData.equals(rightData)) {
             return 0;

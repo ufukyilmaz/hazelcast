@@ -27,7 +27,7 @@ public class MemoryBlock {
         this.memoryAccessor = memoryAccessor;
     }
 
-    protected MemoryBlock(long address, int size) {
+    public MemoryBlock(long address, int size) {
         this.memoryAccessor = MEM;
         this.address = address;
         this.size = size;

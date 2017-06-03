@@ -5,7 +5,6 @@ import com.hazelcast.core.ManagedContext;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.impl.MapEntries;
-import com.hazelcast.map.impl.query.QueryRunner;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -36,7 +35,6 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
 
 
     protected transient EntryOperator operator;
-    protected transient QueryRunner queryRunner;
     protected transient QueryOptimizer queryOptimizer;
     protected transient Set<Data> keysFromIndex;
 
@@ -54,7 +52,6 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
         final ManagedContext managedContext = serializationService.getManagedContext();
         managedContext.initialize(entryProcessor);
         keysFromIndex = null;
-        queryRunner = mapServiceContext.getMapQueryRunner(getName());
         queryOptimizer = mapServiceContext.getQueryOptimizer();
     }
 

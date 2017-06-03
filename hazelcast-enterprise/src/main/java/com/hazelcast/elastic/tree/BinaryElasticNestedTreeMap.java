@@ -3,12 +3,11 @@ package com.hazelcast.elastic.tree;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.elastic.map.NativeMemoryDataAccessor;
-import com.hazelcast.elastic.tree.iterator.OffHeapKeyIterator;
-import com.hazelcast.elastic.tree.iterator.value.OffHeapValueIterator;
-import com.hazelcast.elastic.tree.sorted.OffHeapKeyValueRedBlackTreeStorage;
+import com.hazelcast.elastic.tree.impl.RedBlackTreeStore;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
@@ -21,7 +20,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import static com.hazelcast.elastic.map.BinaryElasticHashMap.HEADER_LENGTH_IN_BYTES;
+import static com.hazelcast.elastic.map.BinaryElasticHashMap.loadFromOffHeapHeader;
 import static com.hazelcast.nio.serialization.DataType.HEAP;
 
 /**
@@ -34,7 +33,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
 
     private static final long NULL_ADDRESS = 0L;
 
-    private final OffHeapKeyValueRedBlackTreeStorage records;
+    private final OffHeapTreeStore records;
 
     private final EnterpriseSerializationService ess;
     private final MemoryAllocator malloc;
@@ -42,7 +41,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
 
     public BinaryElasticNestedTreeMap(EnterpriseSerializationService ess, MemoryAllocator malloc,
                                       OffHeapComparator keyComparator, MapEntryFactory<T> mapEntryFactory) {
-        this.records = new OffHeapKeyValueRedBlackTreeStorage(ess.getCurrentMemoryAllocator(), keyComparator);
+        this.records = new RedBlackTreeStore(ess.getCurrentMemoryAllocator(), keyComparator);
         this.ess = ess;
         this.malloc = malloc;
         this.mapEntryFactory = mapEntryFactory != null ? mapEntryFactory : new DefaultMapEntryFactory<T>();
@@ -59,39 +58,31 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         checkNotNullOrEmpty(key, "key can't be null or empty");
 
         NativeMemoryData nativeSegmentKey = ess.toNativeData(segmentKey, malloc);
-        long segmentKeyPointer = nativeSegmentKey.address();
-        long segmentKeyWrittenSize = nativeSegmentKey.totalSize();
-        long segmentKeyAllocatedSize = nativeSegmentKey.size();
         boolean deallocateNativeSegmentKey = true;
         try {
             BinaryElasticHashMap<NativeMemoryData> map;
-            long mapHeaderPointer;
-            long keyEntryAddress = records.getKeyEntry(segmentKeyPointer, segmentKeyWrittenSize, segmentKeyAllocatedSize, false);
-            if (keyEntryAddress == NULL_ADDRESS) {
+            MemoryBlock mapMemBlock;
+            OffHeapTreeEntry entry = records.getEntry(nativeSegmentKey);
+            if (entry == null) {
                 map = new BinaryElasticHashMap<NativeMemoryData>(ess, new NativeMemoryDataAccessor(ess), malloc);
-                mapHeaderPointer = map.storeHeaderOffHeap(malloc, NULL_ADDRESS).address();
+                mapMemBlock = map.storeHeaderOffHeap(malloc, NULL_ADDRESS);
+                entry = records.put(nativeSegmentKey, mapMemBlock);
+                assert entry != null;
 
-                keyEntryAddress = records.put(
-                        segmentKeyPointer, segmentKeyWrittenSize, segmentKeyAllocatedSize,
-                        mapHeaderPointer, HEADER_LENGTH_IN_BYTES, HEADER_LENGTH_IN_BYTES
-                );
-                assert keyEntryAddress != NULL_ADDRESS;
-
-                if (segmentKeyPointer == records.getKeyAddress(keyEntryAddress)) {
+                if (nativeSegmentKey.address() == entry.getKey().address()) {
                     // is allocated for the first time
                     deallocateNativeSegmentKey = false;
                 }
             } else {
-                long valueEntryAddress = records.getValueEntryAddress(keyEntryAddress);
-                mapHeaderPointer = records.getValueAddress(valueEntryAddress);
-                map = BinaryElasticHashMap.loadFromOffHeapHeader(ess, malloc, mapHeaderPointer);
+                mapMemBlock = entry.values().next();
+                map = loadFromOffHeapHeader(ess, malloc, mapMemBlock.address());
             }
 
             if (value == null) {
                 value = new NativeMemoryData();
             }
             NativeMemoryData oldValue = map.put(key, value);
-            map.storeHeaderOffHeap(malloc, mapHeaderPointer);
+            map.storeHeaderOffHeap(malloc, mapMemBlock.address());
             return oldValue;
         } finally {
             if (deallocateNativeSegmentKey) {
@@ -108,26 +99,17 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         NativeMemoryData nativeSegmentKey = null;
         try {
             nativeSegmentKey = ess.toNativeData(segmentKey, malloc);
-
-            long segmentKeyPointer = nativeSegmentKey.address();
-            long segmentKeyWrittenSize = nativeSegmentKey.totalSize();
-            long segmentKeyAllocatedSize = nativeSegmentKey.size();
-
-            long keyEntryAddress = records.getKeyEntry(segmentKeyPointer, segmentKeyWrittenSize, segmentKeyAllocatedSize, false);
-            if (keyEntryAddress == NULL_ADDRESS) {
-                return null;
-            }
-            long valueEntryAddress = records.getValueEntryAddress(keyEntryAddress);
-            if (valueEntryAddress == NULL_ADDRESS) {
+            OffHeapTreeEntry entry = records.getEntry(nativeSegmentKey);
+            if (entry == null) {
                 return null;
             }
 
-            long valuePointer = records.getValueAddress(valueEntryAddress);
-            if (valuePointer == NULL_ADDRESS) {
+            MemoryBlock value = entry.values().next();
+            if (value == null) {
                 return null;
             }
 
-            BinaryElasticHashMap<NativeMemoryData> map = BinaryElasticHashMap.loadFromOffHeapHeader(ess, malloc, valuePointer);
+            BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, value.address());
             return map.get(key);
         } finally {
             dispose(nativeSegmentKey);
@@ -143,36 +125,27 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         NativeMemoryData nativeSegmentKey = null;
         try {
             nativeSegmentKey = ess.toNativeData(segmentKey, malloc);
-
-            long segmentKeyPointer = nativeSegmentKey.address();
-            long segmentKeyWrittenSize = nativeSegmentKey.totalSize();
-            long segmentKeyAllocatedSize = nativeSegmentKey.size();
-            if (segmentKeyPointer == NULL_ADDRESS) {
-                return Collections.EMPTY_SET;
+            if (nativeSegmentKey.address() == NULL_ADDRESS) {
+                return Collections.emptySet();
             }
 
-            long keyEntryAddress = records.getKeyEntry(segmentKeyPointer, segmentKeyWrittenSize, segmentKeyAllocatedSize, false);
-            if (keyEntryAddress == NULL_ADDRESS) {
-                return Collections.EMPTY_SET;
-            }
-            long valueEntryAddress = records.getValueEntryAddress(keyEntryAddress);
-            // not strictly necessary (by convention)
-            if (valueEntryAddress == NULL_ADDRESS) {
-                return Collections.EMPTY_SET;
-            }
-            long valuePointer = records.getValueAddress(valueEntryAddress);
-            // not strictly necessary (by convention)
-            if (valuePointer == NULL_ADDRESS) {
-                return Collections.EMPTY_SET;
+            OffHeapTreeEntry entry = records.getEntry(nativeSegmentKey);
+            if (entry == null) {
+                return Collections.emptySet();
             }
 
-            BinaryElasticHashMap<NativeMemoryData> map = BinaryElasticHashMap.loadFromOffHeapHeader(ess, malloc, valuePointer);
+            MemoryBlock value = entry.values().next();
+            if (value == null) {
+                return Collections.emptySet();
+            }
+
+            BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, value.address());
             Set<T> result = new HashSet<T>(map.size());
 
-            for (Map.Entry<Data, NativeMemoryData> entry : map.entrySet()) {
+            for (Map.Entry<Data, NativeMemoryData> mapEntry : map.entrySet()) {
                 result.add(mapEntryFactory.create(
-                        toHeapData((NativeMemoryData) entry.getKey()),
-                        toHeapData(entry.getValue())));
+                        toHeapData((NativeMemoryData) mapEntry.getKey()),
+                        toHeapData(mapEntry.getValue())));
             }
 
             return result;
@@ -190,39 +163,32 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         NativeMemoryData nativeSegmentKey = null;
         try {
             nativeSegmentKey = ess.toNativeData(segmentKey, malloc);
-            long segmentKeyPointer = nativeSegmentKey.address();
-            long segmentKeyWrittenSize = nativeSegmentKey.totalSize();
-            long segmentKeyAllocatedSize = nativeSegmentKey.size();
-
-            long keyEntryAddress = records.getKeyEntry(segmentKeyPointer, segmentKeyWrittenSize, segmentKeyAllocatedSize, false);
-            if (keyEntryAddress == NULL_ADDRESS) {
-                return null;
-            }
-            long valueEntryAddress = records.getValueEntryAddress(keyEntryAddress);
-            if (valueEntryAddress == NULL_ADDRESS) {
+            OffHeapTreeEntry entry = records.getEntry(nativeSegmentKey);
+            if (entry == null) {
                 return null;
             }
 
-            long valuePointer = records.getValueAddress(valueEntryAddress);
-            BinaryElasticHashMap<NativeMemoryData> map = BinaryElasticHashMap.loadFromOffHeapHeader(ess, malloc, valuePointer);
+            MemoryBlock blob = entry.values().next();
+            if (blob == null) {
+                return null;
+            }
+
+            BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, blob.address());
             NativeMemoryData value = map.remove(key);
 
             if (map.isEmpty()) {
-                // TODO tkountis
-                // this is the desired version when the RBT remove() method is ready
-                //
-                // map.dispose(); // disposing the BEHM map
-                // records.remove(nativeSegmentKey.address()); // removing RBT entry
-                // ess.disposeData(new NativeMemoryData().reset(valuePointer)); // removing the RBT node "value"
+                // Dispose RBT entry values
+                ess.disposeData(new NativeMemoryData(blob.address(), blob.size()));
 
-                // TODO tkountis
-                // it should also deallocate the internal nativeSegmentKey (not the one allocated here)
-                // but the one that has been stored internally when the first segmentKey was used
+                // Dispose RBT entry
+                MemoryBlock keyBlob = entry.getKey();
+                ess.disposeData(new NativeMemoryData(keyBlob.address(), keyBlob.size()));
+                records.remove(entry);
 
-                // TODO remove this: this is the work-around version till the above is ready
-                map.storeHeaderOffHeap(malloc, valuePointer);
+                // Dispose the BEHM map
+                map.dispose();
             } else {
-                map.storeHeaderOffHeap(malloc, valuePointer);
+                map.storeHeaderOffHeap(malloc, blob.address());
             }
             return value;
         } finally {
@@ -239,17 +205,15 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         try {
             if (fromSegmentKey != null) {
                 nativeSegmentKey = ess.toNativeData(fromSegmentKey, malloc);
-                long segmentKeyPointer = nativeSegmentKey.address();
-                long segmentKeyWrittenSize = nativeSegmentKey.totalSize();
-                long segmentKeyAllocatedSize = nativeSegmentKey.size();
 
-                long keyEntryAddress = records.searchKeyEntry(segmentKeyPointer, segmentKeyWrittenSize, segmentKeyAllocatedSize);
-                if (keyEntryAddress == NULL_ADDRESS) {
-                    return Collections.EMPTY_SET;
+                OffHeapTreeEntry nearestMatch = records.searchEntry(nativeSegmentKey);
+                if (nearestMatch == null) {
+                    return Collections.emptySet();
                 }
-                iterator = new EntryIterator(keyEntryAddress);
+
+                iterator = new EntryIterator(nearestMatch);
                 if (!iterator.hasNext()) {
-                    return Collections.EMPTY_SET;
+                    return Collections.emptySet();
                 }
 
                 // this is the from-element search case. The search might have finished before the search element
@@ -262,7 +226,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
                     if (currentSegment.compareTo(fromSegment) >= 0) {
                         break;
                     } else if (!iterator.hasNext()) {
-                        return Collections.EMPTY_SET;
+                        return Collections.emptySet();
                     }
                 }
 
@@ -271,7 +235,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
                 iterator = new EntryIterator();
                 fromInclusive = true;
                 if (!iterator.hasNext()) {
-                    return Collections.EMPTY_SET;
+                    return Collections.emptySet();
                 }
                 iterator.next();
             }
@@ -346,7 +310,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
 
     public Set<T> tailMap(Data fromSegmentKey, boolean inclusive) {
         if (isNullOrEmptyData(fromSegmentKey)) {
-            return Collections.EMPTY_SET;
+            return Collections.emptySet();
         }
         return subMap(fromSegmentKey, inclusive, null, true);
     }
@@ -370,42 +334,39 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
 
     private class EntryIterator implements Iterator<BinaryElasticHashMap<NativeMemoryData>> {
 
-        private OffHeapKeyIterator keyIterator;
-        private OffHeapValueIterator valueIterator;
+        private Iterator<OffHeapTreeEntry> entryIterator;
+        private Iterator<MemoryBlock> valueIterator;
 
         private Data key;
         private BinaryElasticHashMap<NativeMemoryData> value;
 
-        EntryIterator(long keyEntryAddress) {
-            keyIterator = records.keyIterator(keyEntryAddress);
+        EntryIterator(OffHeapTreeEntry entry) {
+            entryIterator = records.entries(entry);
             advanceKeyIterator();
         }
 
         EntryIterator() {
-            keyIterator = records.keyIterator();
+            entryIterator = records.entries();
             advanceKeyIterator();
         }
 
         private void advanceKeyIterator() {
-            if (keyIterator.hasNext()) {
-                long keyEntryPointer = keyIterator.next();
-                if (keyEntryPointer == NULL_ADDRESS) {
-                    key = null;
-                    valueIterator = null;
-                } else {
-                    key = toHeapData(records.getKeyAddress(keyEntryPointer));
-                    valueIterator = records.valueIterator(keyEntryPointer);
-                }
+            if (entryIterator.hasNext()) {
+                OffHeapTreeEntry entry = entryIterator.next();
+                key = toHeapData(entry.getKey());
+                valueIterator = entry.values();
+            } else {
+                key = null;
+                value = null;
             }
         }
 
         private void advanceValueIterator() throws IOException {
-            long valueEntryPointer = valueIterator.next();
-            if (valueEntryPointer == NULL_ADDRESS) {
-                value = null;
+            if (valueIterator.hasNext()) {
+                MemoryBlock valueBlob = valueIterator.next();
+                value = loadFromOffHeapHeader(ess, malloc, valueBlob.address());
             } else {
-                long valueAddress = records.getValueAddress(valueEntryPointer);
-                value = BinaryElasticHashMap.loadFromOffHeapHeader(ess, malloc, valueAddress);
+                value = null;
             }
         }
 
@@ -454,22 +415,29 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
     }
 
     public void clear() {
-        // TODO tkountis (this is just a remporary solution)
-        EntryIterator iterator = new EntryIterator();
-        while (iterator.hasNext()) {
-            BinaryElasticHashMap<NativeMemoryData> map = iterator.next();
+        Iterator<OffHeapTreeEntry> treeEntryIterator = records.entries();
+        while (treeEntryIterator.hasNext()) {
+            OffHeapTreeEntry entry = treeEntryIterator.next();
+            MemoryBlock valueBlob = entry.values().next();
+
+            // Dispose BinaryElasticHashMap
+            BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, valueBlob.address());
             map.clear();
             map.dispose();
-        }
 
-        // TODO tkountis
-        // Here it should deallocate all segment keys along with all BEHM maps (like example above)
-        // It should also remove and deallocate all the keys and also all the internal RBT structures, leaving the
-        // tree with a root address and nothing else allocated.
+            // Dispose value header
+            ess.disposeData(new NativeMemoryData(valueBlob.address(), valueBlob.size()));
+
+            // Dispose entry
+            MemoryBlock keyBlob = entry.getKey();
+            ess.disposeData(new NativeMemoryData(keyBlob.address(), keyBlob.size()));
+            records.remove(entry);
+        }
     }
 
     public void dispose() {
-        records.dispose();
+        clear();
+        records.dispose(false);
     }
 
     public long size() {
@@ -482,8 +450,8 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         return size;
     }
 
-    private Data toHeapData(long address) {
-        NativeMemoryData nativeMemoryData = new NativeMemoryData().reset(address);
+    private Data toHeapData(MemoryBlock blob) {
+        NativeMemoryData nativeMemoryData = new NativeMemoryData(blob.address(), blob.size());
         return ess.toData(nativeMemoryData, HEAP);
     }
 

@@ -1,6 +1,7 @@
 package com.hazelcast.elastic.tree;
 
 import com.hazelcast.internal.memory.GlobalMemoryAccessor;
+import com.hazelcast.memory.MemoryBlock;
 
 /**
  * Comparator of the off-heap Data values given to the compare methods as native addresses and sizes.
@@ -16,12 +17,12 @@ public class DataComparator implements OffHeapComparator {
 
     @Override
     @SuppressWarnings({"checkstyle:npathcomplexity", "checkstyle:magicnumber"})
-    public int compare(long leftAddress, long leftSize, long rightAddress, long rightSize) {
-        long minLength = leftSize <= rightSize ? leftSize : (int) rightSize;
+    public int compare(MemoryBlock lBlob, MemoryBlock rBlob) {
+        long minLength = lBlob.size() <= rBlob.size() ? lBlob.size() : rBlob.size();
 
         for (long i = 0; i < minLength; i++) {
-            byte rightByte = this.unsafe.getByte(rightAddress + i);
-            byte leftByte = this.unsafe.getByte(leftAddress + i);
+            byte rightByte = this.unsafe.getByte(rBlob.address() + i);
+            byte leftByte = this.unsafe.getByte(lBlob.address() + i);
 
             byte leftBit = (byte) (leftByte & (byte) 0x80);
             byte rightBit = (byte) (rightByte & (byte) 0x80);
@@ -42,11 +43,11 @@ public class DataComparator implements OffHeapComparator {
             }
         }
 
-        if (rightSize == leftSize) {
+        if (rBlob.size() == lBlob.size()) {
             return 0;
         }
 
-        return (leftSize > rightSize) ? 1 : -1;
+        return (lBlob.size() > rBlob.size()) ? 1 : -1;
     }
 
 }

@@ -1,4 +1,4 @@
-package com.hazelcast.elastic.tree.sorted;
+package com.hazelcast.elastic.tree;
 
 
 /**

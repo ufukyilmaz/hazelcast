@@ -80,13 +80,12 @@ public class BinaryElasticNestedTreeMapTest {
             NativeMemoryData valueGot = map.get(segmentKey, key);
             assertEquals("iteration:" + i, value, valueGot);
 
-            // TODO tkountis (this should be uncommented, after map.clear is properly implemented)
-            // map.clear();
-            // assertEquals(0, map.size());
+            map.clear();
+            assertEquals(0, map.size());
         }
-        // TODO tkountis (this should hold - so that no data is allocated after dispose, since there's no elements in the map)
-        // map.dispose();
-        // assertEquals(0, malloc.getMemoryStats().getUsedNative());
+
+        map.dispose();
+        assertEquals(0, malloc.getMemoryStats().getUsedNative());
 
     }
 

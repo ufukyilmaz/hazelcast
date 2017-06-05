@@ -57,6 +57,7 @@ public final class CacheReplicationOperation
             }
         }
 
+        nearCacheStateHolder.prepare(segment);
     }
 
     private void dispose() {

@@ -3,6 +3,7 @@ package com.hazelcast.client.security;
 import com.hazelcast.cache.HazelcastCachingProvider;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.config.ClientUserCodeDeploymentConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.LoginModuleConfig;
@@ -16,12 +17,14 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.util.FilteringClassLoader;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import usercodedeployment.IncrementingEntryProcessor;
 
 import javax.cache.Cache;
 import javax.cache.CacheManager;
@@ -42,10 +45,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hazelcast.cache.CacheUtil.getDistributedObjectName;
+import static com.hazelcast.config.PermissionConfig.PermissionType.ALL;
 import static com.hazelcast.config.PermissionConfig.PermissionType.CACHE;
+import static com.hazelcast.config.PermissionConfig.PermissionType.MAP;
+import static com.hazelcast.config.PermissionConfig.PermissionType.USER_CODE_DEPLOYMENT;
+import static com.hazelcast.test.HazelcastTestSupport.randomName;
 import static com.hazelcast.test.HazelcastTestSupport.randomString;
 
 import static java.io.File.createTempFile;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -80,7 +88,7 @@ public class ClientSecurityTest {
     @Test
     public void testAllowAll() {
         final Config config = createConfig();
-        addPermission(config, PermissionType.ALL, "", null);
+        addPermission(config, ALL, "", null);
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
@@ -93,7 +101,7 @@ public class ClientSecurityTest {
     @Test(expected = RuntimeException.class)
     public void testDenyEndpoint() {
         final Config config = createConfig();
-        final PermissionConfig pc = addPermission(config, PermissionType.ALL, "", "dev");
+        final PermissionConfig pc = addPermission(config, ALL, "", "dev");
         pc.addEndpoint("10.10.10.*");
 
         factory.newHazelcastInstance(config);
@@ -457,6 +465,45 @@ public class ClientSecurityTest {
         assertEquals("A", cache.get("1"));
         expectedException.expect(AccessControlException.class);
         cache.put("1", "B");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testUserCodeDeploymentNotAllowed() {
+        testUserCodeDeployment(ActionConstants.ACTION_ADD);
+    }
+
+    @Test
+    public void testUserCodeDeploymentDeployAllowed() {
+        testUserCodeDeployment(ActionConstants.ACTION_USER_CODE_DEPLOY);
+    }
+
+    @Test
+    public void testUserCodeDeploymentDeployAllAllowed() {
+        testUserCodeDeployment(ActionConstants.ACTION_ALL);
+    }
+
+    public void testUserCodeDeployment(String actionType) {
+        Config config = createConfig();
+        addPermission(config, USER_CODE_DEPLOYMENT, null, "dev")
+                .addAction(actionType);
+        addPermission(config, MAP, "*", "dev")
+                .addAction(ActionConstants.ACTION_ALL);
+        FilteringClassLoader filteringCL = new FilteringClassLoader(singletonList("usercodedeployment"), null);
+        config.setClassLoader(filteringCL);
+        config.getUserCodeDeploymentConfig()
+                .setEnabled(true);
+        factory.newHazelcastInstance(config);
+
+        ClientConfig clientConfig = new ClientConfig();
+        ClientUserCodeDeploymentConfig clientUserCodeDeploymentConfig = new ClientUserCodeDeploymentConfig();
+        clientUserCodeDeploymentConfig.addClass("usercodedeployment.IncrementingEntryProcessor");
+        clientConfig.setUserCodeDeploymentConfig(clientUserCodeDeploymentConfig.setEnabled(true));
+        HazelcastInstance client = factory.newHazelcastClient(clientConfig);
+
+        IncrementingEntryProcessor incrementingEntryProcessor = new IncrementingEntryProcessor();
+        IMap<Integer, Integer> map = client.getMap(randomName());
+        map.put(1, 1);
+        map.executeOnEntries(incrementingEntryProcessor);
     }
 
     static class DummyCallable implements Callable<Integer>, Serializable, HazelcastInstanceAware {

@@ -15,7 +15,7 @@ public class HDPartitionScanRunner extends PartitionScanRunner {
 
     @Override
     // difference between OS and EE with HD: EE version always caches values
-    protected boolean isUseCachedDeserializedValuesEnabled(MapContainer mapContainer) {
+    protected boolean isUseCachedDeserializedValuesEnabled(MapContainer mapContainer, int partitionId) {
         return true;
     }
 

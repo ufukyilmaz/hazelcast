@@ -4,6 +4,7 @@ import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.VersionSettable;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
@@ -256,11 +257,11 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
     }
 
     private static void setOutputVersion(ObjectDataOutput out, Version version) {
-        ((VersionedObjectDataOutput) out).setVersion(version);
+        ((VersionSettable) out).setVersion(version);
     }
 
     private static void setInputVersion(ObjectDataInput in, Version version) {
-        ((VersionedObjectDataInput) in).setVersion(version);
+        ((VersionSettable) in).setVersion(version);
     }
 
     private static IOException rethrowIdsReadException(int factoryId, int classId, Exception e) throws IOException {

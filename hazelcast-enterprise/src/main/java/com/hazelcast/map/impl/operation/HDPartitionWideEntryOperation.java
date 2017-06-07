@@ -5,20 +5,26 @@ import com.hazelcast.core.ManagedContext;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.impl.MapEntries;
+import com.hazelcast.map.impl.query.QueryRunner;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Predicate;
+import com.hazelcast.query.impl.Indexes;
+import com.hazelcast.query.impl.QueryableEntry;
+import com.hazelcast.query.impl.predicates.QueryOptimizer;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 
 import static com.hazelcast.internal.nearcache.impl.invalidation.ToHeapDataConverter.toHeapData;
 import static com.hazelcast.map.impl.operation.EntryOperator.operator;
@@ -28,7 +34,11 @@ import static com.hazelcast.map.impl.operation.EntryOperator.operator;
  */
 public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperation implements BackupAwareOperation {
 
+
     protected transient EntryOperator operator;
+    protected transient QueryRunner queryRunner;
+    protected transient QueryOptimizer queryOptimizer;
+    protected transient Set<Data> keysFromIndex;
 
     public HDPartitionWideEntryOperation(String name, EntryProcessor entryProcessor) {
         super(name, entryProcessor);
@@ -43,10 +53,49 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
         final SerializationService serializationService = getNodeEngine().getSerializationService();
         final ManagedContext managedContext = serializationService.getManagedContext();
         managedContext.initialize(entryProcessor);
+        keysFromIndex = null;
+        queryRunner = mapServiceContext.getMapQueryRunner(getName());
+        queryOptimizer = mapServiceContext.getQueryOptimizer();
     }
 
     @Override
     protected void runInternal() {
+        if (runWithIndex()) {
+            return;
+        }
+        runWithPartitionScan();
+    }
+
+    /**
+     * @return true if index has been used and the EP has been executed on its keys
+     */
+    private boolean runWithIndex() {
+        // here we try to query the partitioned-index
+        if (getPredicate() != null) {
+            // we use the partitioned-index to operate on the selected keys only
+            Indexes indexes = mapContainer.getIndexes(getPartitionId());
+            Set<QueryableEntry> entries = indexes.query(queryOptimizer.optimize(getPredicate(), indexes));
+            if (entries != null) {
+                responses = new MapEntries(entries.size());
+
+                // we can pass null as predicate since it's all happening on partition thread so no data-changes may occur
+                operator = operator(this, entryProcessor, null, true);
+                keysFromIndex = new HashSet<Data>(entries.size());
+                for (QueryableEntry entry : entries) {
+                    keysFromIndex.add(entry.getKeyData());
+                    Data response = operator.operateOnKey(entry.getKeyData()).doPostOperateOps().getResult();
+                    if (response != null) {
+                        responses.add(entry.getKeyData(), response);
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void runWithPartitionScan() {
+        // if we reach here, it means we didn't manage to leverage index and we fall-back to full-partition scan
         int totalEntryCount = recordStore.size();
         responses = new MapEntries(totalEntryCount);
         Queue<Object> outComes = null;
@@ -118,9 +167,17 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
         if (backupProcessor == null) {
             return null;
         }
-        HDPartitionWideEntryBackupOperation operation = new HDPartitionWideEntryBackupOperation(name, backupProcessor);
-        operation.setWanEventList(operator.getWanEventList());
-        return operation;
+        if (keysFromIndex != null) {
+            // if we used index we leverage it for the backup too
+            HDMultipleEntryBackupOperation operation = new HDMultipleEntryBackupOperation(name, keysFromIndex, backupProcessor);
+            operation.setWanEventList(operator.getWanEventList());
+            return operation;
+        } else {
+            // if no index used we will do a full partition-scan on backup too
+            HDPartitionWideEntryBackupOperation operation = new HDPartitionWideEntryBackupOperation(name, backupProcessor);
+            operation.setWanEventList(operator.getWanEventList());
+            return operation;
+        }
     }
 
     @Override

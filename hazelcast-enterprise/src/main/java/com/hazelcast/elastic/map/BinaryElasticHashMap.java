@@ -3,6 +3,10 @@ package com.hazelcast.elastic.map;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlockProcessor;
+import com.hazelcast.internal.memory.GlobalMemoryAccessor;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
@@ -46,6 +50,11 @@ import static com.hazelcast.util.HashUtil.computePerturbationValue;
 @SuppressWarnings("checkstyle:methodcount")
 public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<Data, V> {
 
+    /**
+     * Header length when header stored off-heap for zero heap usage
+     */
+    public static final int HEADER_LENGTH_IN_BYTES = 36;
+
     protected final MemoryBlockProcessor<V> memoryBlockProcessor;
 
     protected BehmSlotAccessor accessor;
@@ -81,7 +90,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
     private final MemoryAllocator malloc;
 
-    private final Random random;
+    private Random random;
 
     /**
      * Creates a hash map with the default capacity of {@value CapacityUtil#DEFAULT_CAPACITY},
@@ -151,9 +160,35 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         this.loadFactor = loadFactor;
         this.memoryBlockProcessor = memoryBlockProcessor;
         this.malloc = memoryBlockProcessor.unwrapMemoryAllocator();
-        this.random = new Random();
 
         allocateBuffer(roundCapacity(initialCapacity));
+    }
+
+    private BinaryElasticHashMap(int allocatedSlotCount, int assignedSlotCount, float loadFactor, int resizeAt,
+                                 int perturbation, long baseAddress, long size, MemoryBlockAccessor<V> memoryBlockAccessor,
+                                 MemoryAllocator malloc, EnterpriseSerializationService ess) {
+        this.allocatedSlotCount = allocatedSlotCount;
+        this.assignedSlotCount = assignedSlotCount;
+        this.loadFactor = loadFactor;
+        this.resizeAt = resizeAt;
+        this.perturbation = perturbation;
+        this.malloc = malloc;
+        this.memoryBlockProcessor = new BehmMemoryBlockProcessor<V>(ess, memoryBlockAccessor, malloc);
+        this.accessor = new BehmSlotAccessor(malloc, baseAddress, size);
+    }
+
+    private BinaryElasticHashMap(int allocatedSlotCount, int assignedSlotCount, float loadFactor, int resizeAt,
+                                 int perturbation, long baseAddress, long size,
+                                 MemoryAllocator malloc, EnterpriseSerializationService ess) {
+        this(allocatedSlotCount, assignedSlotCount, loadFactor, resizeAt, perturbation, baseAddress, size,
+                (MemoryBlockAccessor<V>) new NativeMemoryDataAccessor(ess), malloc, ess);
+    }
+
+    private Random getRandom() {
+        if (random == null) {
+            random = new Random();
+        }
+        return this.random;
     }
 
     /**
@@ -616,7 +651,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             ensureMemory();
             int slot;
             do {
-                slot = random.nextInt(capacity());
+                slot = getRandom().nextInt(capacity());
             } while (!accessor.isAssigned(slot) || (slot == currentSlot));
             return slot;
         }
@@ -1016,6 +1051,59 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
     }
 
+    @SuppressWarnings("checkstyle:magicnumber")
+    public NativeMemoryData storeHeaderOffHeap(MemoryAllocator malloc, long addressGiven) {
+        long address = addressGiven;
+        if (addressGiven <= 0) {
+            address = malloc.allocate(HEADER_LENGTH_IN_BYTES + NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD);
+        }
+        long pointer = address;
+
+        GlobalMemoryAccessor unsafe = GlobalMemoryAccessorRegistry.MEM;
+        unsafe.putInt(pointer, HEADER_LENGTH_IN_BYTES);
+        pointer += 4;
+        unsafe.putInt(pointer, allocatedSlotCount);
+        pointer += 4;
+        unsafe.putInt(pointer, assignedSlotCount);
+        pointer += 4;
+        unsafe.putFloat(pointer, loadFactor);
+        pointer += 4;
+        unsafe.putInt(pointer, resizeAt);
+        pointer += 4;
+        unsafe.putInt(pointer, perturbation);
+        pointer += 4;
+        unsafe.putLong(pointer, accessor.baseAddr);
+        pointer += 8;
+        unsafe.putLong(pointer, accessor.size);
+
+        return new NativeMemoryData().reset(address);
+    }
+
+    @SuppressWarnings("checkstyle:magicnumber")
+    public static <V extends MemoryBlock> BinaryElasticHashMap<V> loadFromOffHeapHeader(EnterpriseSerializationService ss,
+                                                                                        MemoryAllocator malloc, long address) {
+
+        GlobalMemoryAccessor unsafe = GlobalMemoryAccessorRegistry.MEM;
+
+        long pointer = address + NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
+        int allocatedSlotCount = unsafe.getInt(pointer);
+        pointer += 4;
+        int assignedSlotCount = unsafe.getInt(pointer);
+        pointer += 4;
+        float loadFactor = unsafe.getFloat(pointer);
+        pointer += 4;
+        int resizeAt = unsafe.getInt(pointer);
+        pointer += 4;
+        int perturbation = unsafe.getInt(pointer);
+        pointer += 4;
+        long baseAddr = unsafe.getLong(pointer);
+        pointer += 8;
+        long size = unsafe.getLong(pointer);
+
+        return new BinaryElasticHashMap<V>(allocatedSlotCount, assignedSlotCount, loadFactor, resizeAt, perturbation,
+                baseAddr, size, malloc, ss);
+    }
+
     /**
      * Disposes internal backing array of this map. Does not dispose key/value pairs inside.
      * To dispose key/value pairs, {@link #clear()} must be called explicitly.
@@ -1054,4 +1142,5 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 + ", loadFactor=" + loadFactor
                 + ", resizeAt=" + resizeAt + '}';
     }
+
 }

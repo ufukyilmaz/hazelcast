@@ -19,9 +19,11 @@ import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
 import com.hazelcast.map.impl.operation.HDGetOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.operation.MapOperationProviders;
+import com.hazelcast.map.impl.query.HDIndexProvider;
 import com.hazelcast.map.impl.query.HDPartitionScanExecutor;
 import com.hazelcast.map.impl.query.HDPartitionScanRunner;
 import com.hazelcast.map.impl.query.HDQueryRunner;
+import com.hazelcast.map.impl.query.IndexProvider;
 import com.hazelcast.map.impl.query.PartitionScanExecutor;
 import com.hazelcast.map.impl.query.PartitionScanRunner;
 import com.hazelcast.map.impl.query.QueryRunner;
@@ -81,6 +83,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     private final QueryRunner hdMapQueryRunner;
     private final HDPartitionScanRunner hdPartitionScanRunner;
     private final MapFilterProvider mapFilterProvider;
+    private final HDIndexProvider hdIndexProvider;
 
     private HotRestartIntegrationService hotRestartService;
 
@@ -96,6 +99,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         this.hdPartitionScanRunner = new HDPartitionScanRunner(this);
         this.hdMapQueryRunner = createHDMapQueryRunner(hdPartitionScanRunner, getQueryOptimizer(),
                 getResultProcessorRegistry());
+        this.hdIndexProvider = new HDIndexProvider();
     }
 
     @Override
@@ -293,5 +297,13 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     private HotRestartConfig getHotRestartConfig(MapContainer mapContainer) {
         HotRestartConfig hotRestartConfig = mapContainer.getMapConfig().getHotRestartConfig();
         return hotRestartConfig != null ? hotRestartConfig : new HotRestartConfig().setEnabled(false);
+    }
+
+    @Override
+    public IndexProvider getIndexProvider(MapConfig mapConfig) {
+        if (mapConfig.getInMemoryFormat() != NATIVE) {
+            return super.getIndexProvider(mapConfig);
+        }
+        return hdIndexProvider;
     }
 }

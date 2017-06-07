@@ -1,6 +1,9 @@
 package com.hazelcast.internal.serialization.impl;
 
+import com.hazelcast.core.HazelcastException;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.HashUtil;
 
 import java.nio.ByteOrder;
@@ -132,5 +135,26 @@ public final class NativeMemoryDataUtil {
     public static long hash64(long address) {
         int bufferSize = readDataSize(address);
         return HashUtil.MurmurHash3_x64_64_direct(address, NativeMemoryData.DATA_OFFSET, bufferSize);
+    }
+
+    // Avoids having TCFTC anti-pattern.
+    public static void dispose(EnterpriseSerializationService ess, MemoryAllocator malloc, NativeMemoryData... nativeData) {
+        Exception caught = null;
+        try {
+            for (NativeMemoryData data : nativeData) {
+                try {
+                    if (data != null) {
+                        ess.disposeData(data, malloc);
+                    }
+                } catch (Exception ex) {
+                    // best effort, try to deallocate all native data, throw last exception;
+                    caught = ex;
+                }
+            }
+        } finally {
+            if (caught != null) {
+                throw new HazelcastException("Could not deallocate native data. There may be a native memory leak!", caught);
+            }
+        }
     }
 }

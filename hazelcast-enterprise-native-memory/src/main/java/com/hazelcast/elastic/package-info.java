@@ -1,4 +1,4 @@
 /**
- * Contains a few common support classes for off-heap implementations.
+ * RB Tree Key iterator
  */
 package com.hazelcast.elastic;

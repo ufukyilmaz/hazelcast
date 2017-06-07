@@ -3,6 +3,10 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.internal.serialization.impl.ArrayDataSerializableFactory;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
+import com.hazelcast.map.impl.query.HDQueryOperation;
+import com.hazelcast.map.impl.query.HDQueryPartitionOperation;
+import com.hazelcast.map.impl.query.HDQueryPartitionWithIndexOperation;
+import com.hazelcast.map.impl.query.HDQueryPartitionWithIndexOperationFactory;
 import com.hazelcast.map.impl.querycache.subscriber.operation.DestroyQueryCacheOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperationFactory;
@@ -98,8 +102,12 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int PUT_ALL_PARTITION_AWARE_FACTORY = 70;
     public static final int ENTRY_OFFLOADABLE_SET_UNLOCK = 71;
     public static final int FETCH_WITH_QUERY = 72;
+    public static final int QUERY_OP = 73;
+    public static final int QUERY_PARTITION_OP = 74;
+    public static final int QUERY_PARTITION_WITH_INDEX_OP = 75;
+    public static final int QUERY_PARTITION_WITH_INDEX_OP_FACTORY = 76;
 
-    private static final int LEN = FETCH_WITH_QUERY + 1;
+    private static final int LEN = QUERY_PARTITION_WITH_INDEX_OP_FACTORY + 1;
 
     @Override
     public int getFactoryId() {
@@ -529,6 +537,30 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new HDMapFetchWithQueryOperation();
+            }
+        };
+        constructors[QUERY_OP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDQueryOperation();
+            }
+        };
+        constructors[QUERY_PARTITION_OP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDQueryPartitionOperation();
+            }
+        };
+        constructors[QUERY_PARTITION_WITH_INDEX_OP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDQueryPartitionWithIndexOperation();
+            }
+        };
+        constructors[QUERY_PARTITION_WITH_INDEX_OP_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDQueryPartitionWithIndexOperationFactory();
             }
         };
 

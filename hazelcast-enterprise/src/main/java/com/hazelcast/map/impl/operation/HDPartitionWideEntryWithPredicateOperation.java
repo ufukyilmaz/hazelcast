@@ -32,11 +32,17 @@ public class HDPartitionWideEntryWithPredicateOperation extends HDPartitionWideE
         if (backupProcessor == null) {
             return null;
         }
-
-        HDPartitionWideEntryWithPredicateBackupOperation operation
-                = new HDPartitionWideEntryWithPredicateBackupOperation(name, backupProcessor, predicate);
-        operation.setWanEventList(operator.getWanEventList());
-        return operation;
+        if (keysFromIndex != null) {
+            // if we used index we leverage it for the backup too
+            HDMultipleEntryBackupOperation operation = new HDMultipleEntryBackupOperation(name, keysFromIndex, backupProcessor);
+            operation.setWanEventList(operator.getWanEventList());
+            return operation;
+        } else {
+            // if no index used we will do a full partition-scan on backup too
+            HDPartitionWideEntryBackupOperation operation = new HDPartitionWideEntryBackupOperation(name, backupProcessor);
+            operation.setWanEventList(operator.getWanEventList());
+            return operation;
+        }
     }
 
     @Override
@@ -55,7 +61,7 @@ public class HDPartitionWideEntryWithPredicateOperation extends HDPartitionWideE
     protected void toString(StringBuilder sb) {
         super.toString(sb);
 
-        sb .append(", entryProcessor='").append(entryProcessor.toString()).append('\'')
+        sb.append(", entryProcessor='").append(entryProcessor.toString()).append('\'')
                 .append(", predicate='").append(predicate.toString()).append('\'');
     }
 

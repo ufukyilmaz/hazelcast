@@ -17,12 +17,19 @@ public class BehmSlotAccessor {
     /** Location of the value pointer in a slot. */
     static final int VALUE_OFFSET = 8;
 
+    protected long baseAddr;
+    protected long size;
+
     private final MemoryAllocator malloc;
-    private long baseAddr;
-    private long size;
 
     BehmSlotAccessor(MemoryAllocator malloc) {
         this.malloc = malloc;
+    }
+
+    BehmSlotAccessor(MemoryAllocator malloc, long baseAddr, long size) {
+        this.malloc = malloc;
+        this.baseAddr = baseAddr;
+        this.size = size;
     }
 
     BehmSlotAccessor(BehmSlotAccessor that) {

@@ -95,14 +95,7 @@ public class EnterpriseMapContainer extends MapContainer {
 
     @Override
     public QueryableEntry newQueryEntry(Data key, Object value) {
-        // When NATIVE in memory format is used, we are copying key and value
-        // to heap before adding it to index.
-        key = mapServiceContext.toData(key);
-
-        if (value instanceof Data) {
-            value = mapServiceContext.toData(value);
-        }
-
+        // For native we do not copy to on-heap anymore
         return super.newQueryEntry(key, value);
     }
 

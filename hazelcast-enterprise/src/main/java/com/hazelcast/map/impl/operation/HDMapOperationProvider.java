@@ -3,6 +3,8 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.impl.MapEntries;
+import com.hazelcast.map.impl.query.HDQueryOperation;
+import com.hazelcast.map.impl.query.HDQueryPartitionOperation;
 import com.hazelcast.map.impl.query.Query;
 import com.hazelcast.map.impl.tx.HDTxnDeleteOperation;
 import com.hazelcast.map.impl.tx.HDTxnLockAndGetOperation;
@@ -213,6 +215,16 @@ public class HDMapOperationProvider implements MapOperationProvider {
     @Override
     public MapOperation createGetOperation(String name, Data dataKey) {
         return new HDGetOperation(name, dataKey);
+    }
+
+    @Override
+    public MapOperation createQueryOperation(Query query) {
+        return new HDQueryOperation(query);
+    }
+
+    @Override
+    public MapOperation createQueryPartitionOperation(Query query) {
+        return new HDQueryPartitionOperation(query);
     }
 
     @Override

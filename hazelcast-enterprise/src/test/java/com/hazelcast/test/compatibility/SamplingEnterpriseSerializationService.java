@@ -2,7 +2,6 @@ package com.hazelcast.test.compatibility;
 
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -13,7 +12,7 @@ public class SamplingEnterpriseSerializationService extends SamplingSerializatio
 
     private final EnterpriseSerializationService enterpriseSerializationService;
 
-    public SamplingEnterpriseSerializationService(EnterpriseSerializationService delegate) {
+    SamplingEnterpriseSerializationService(EnterpriseSerializationService delegate) {
         super(delegate);
         this.enterpriseSerializationService = delegate;
     }

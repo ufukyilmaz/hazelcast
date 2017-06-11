@@ -1,17 +1,17 @@
 package com.hazelcast.spi.hotrestart;
 
 /**
- * Caches are created programmatically over JCache API, but their data must
- * be preloaded on startup. This class keeps data about a named cache that
+ * Caches and IMaps config can be created programmatically, but their data must
+ * be preloaded on startup. This class keeps data about a named configs that
  * is needed on startup.
  */
-public class CacheDescriptor {
+public class ConfigDescriptor {
 
     private final String name;
     private final int id;
     private final String serviceName;
 
-    CacheDescriptor(String serviceName, String name, int id) {
+    ConfigDescriptor(String serviceName, String name, int id) {
         this.serviceName = serviceName;
         this.id = id;
         this.name = name;

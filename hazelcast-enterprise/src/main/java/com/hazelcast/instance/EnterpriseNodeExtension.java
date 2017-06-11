@@ -20,6 +20,8 @@ import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
+import com.hazelcast.internal.dynamicconfig.HotRestartConfigListener;
+import com.hazelcast.internal.dynamicconfig.DynamicConfigListener;
 import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.nio.CipherByteArrayProcessor;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
@@ -673,4 +675,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return super.createMulticastOutputProcessor(ioService);
     }
 
+    @Override
+    public DynamicConfigListener createDynamicConfigListener() {
+        if (hotRestartService == null) {
+            return super.createDynamicConfigListener();
+        }
+        return new HotRestartConfigListener(hotRestartService);
+    }
 }

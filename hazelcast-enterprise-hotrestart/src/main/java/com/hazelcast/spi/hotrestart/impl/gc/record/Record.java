@@ -105,8 +105,9 @@ public abstract class Record {
     /**
      * Retires this record (makes it dead).
      *
-     * @param mayIncrementGarbageCount whether it is appropriate to increment the record's garbage count property.
-     *                                 It is not appropriate to increment if the record is being retired due to a prefix tombstone.
+     * @param mayIncrementGarbageCount whether it is appropriate to increment the record's garbage count property
+     *                                 (it is not appropriate to increment if the record is being retired due to
+     *                                 a prefix tombstone)
      */
     public final void retire(boolean mayIncrementGarbageCount) {
         assert isAlive() : "Attempt to retire a dead record";

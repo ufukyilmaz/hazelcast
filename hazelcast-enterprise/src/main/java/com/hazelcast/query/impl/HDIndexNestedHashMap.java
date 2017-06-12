@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hazelcast.elastic.map.BinaryElasticHashMap.loadFromOffHeapHeader;
 import static com.hazelcast.nio.serialization.DataType.HEAP;
 
 /**
@@ -62,7 +63,7 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
                 throw new ConcurrentModificationException();
             }
         } else {
-            map = BinaryElasticHashMap.loadFromOffHeapHeader(ess, malloc, mapHeader.address());
+            map = loadFromOffHeapHeader(ess, malloc, mapHeader.address());
         }
 
         if (valueData == null) {
@@ -101,8 +102,7 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         }
 
         Set<T> result = new HashSet<T>();
-        BinaryElasticHashMap<NativeMemoryData> map = BinaryElasticHashMap.
-                loadFromOffHeapHeader(ess, malloc, mapHeader.address());
+        BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, mapHeader.address());
         for (Map.Entry<Data, NativeMemoryData> entry : map.entrySet()) {
             result.add(mapEntryFactory.create(
                     toHeapData((NativeMemoryData) entry.getKey()),
@@ -121,7 +121,7 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         if (isNullOrEmptyData(mapHeader)) {
             return null;
         }
-        BinaryElasticHashMap<NativeMemoryData> map = BinaryElasticHashMap.loadFromOffHeapHeader(ess, malloc, mapHeader.address());
+        BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, mapHeader.address());
         // we are not disposing value - governed by the user of the map
         NativeMemoryData value = map.remove(key);
         if (map.isEmpty()) {
@@ -139,10 +139,12 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
             if (isNullOrEmptyData(mapHeader)) {
                 continue;
             }
-            BinaryElasticHashMap map = BinaryElasticHashMap.loadFromOffHeapHeader(ess, malloc, mapHeader.address());
+
+            BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc, mapHeader.address());
             map.clear();
             map.dispose();
         }
+
         records.clear();
     }
 
@@ -154,7 +156,7 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         long size = 0;
         Iterator<NativeMemoryData> iterator = records.valueIter();
         while (iterator.hasNext()) {
-            BinaryElasticHashMap map = BinaryElasticHashMap.loadFromOffHeapHeader(ess, malloc, iterator.next().address());
+            BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc, iterator.next().address());
             size += map.size();
         }
         return size;

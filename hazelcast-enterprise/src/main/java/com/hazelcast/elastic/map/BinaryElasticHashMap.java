@@ -55,7 +55,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * Header length when header stored off-heap for zero heap usage
      */
     @SuppressWarnings("checkstyle:magicnumber")
-    public static final int HEADER_LENGTH_IN_BYTES = 36 + NATIVE_MEMORY_DATA_OVERHEAD;
+    public static final int HEADER_LENGTH_IN_BYTES = 36;
 
     protected final MemoryBlockProcessor<V> memoryBlockProcessor;
 
@@ -1056,8 +1056,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     @SuppressWarnings("checkstyle:magicnumber")
     public NativeMemoryData storeHeaderOffHeap(MemoryAllocator malloc, long addressGiven) {
         long address = addressGiven;
+        int size = HEADER_LENGTH_IN_BYTES + NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
+
         if (addressGiven <= 0) {
-            address = malloc.allocate(HEADER_LENGTH_IN_BYTES);
+            address = malloc.allocate(size);
         }
         long pointer = address;
 
@@ -1078,7 +1080,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         pointer += 8;
         unsafe.putLong(pointer, accessor.size);
 
-        return new NativeMemoryData(address, HEADER_LENGTH_IN_BYTES);
+        return new NativeMemoryData(address, size);
     }
 
     @SuppressWarnings("checkstyle:magicnumber")

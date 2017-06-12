@@ -431,6 +431,11 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
+        public SecurityService getSecurityService() {
+            return instance.getSecurityService();
+        }
+
+        @Override
         public QuorumService getQuorumService() {
             return instance.getQuorumService();
         }

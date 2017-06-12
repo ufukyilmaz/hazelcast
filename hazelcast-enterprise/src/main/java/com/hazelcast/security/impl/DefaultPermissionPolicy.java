@@ -54,14 +54,19 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
             = new ConcurrentHashMap<String, PrincipalPermissionsHolder>();
 
     volatile ConfigPatternMatcher configPatternMatcher;
+    volatile boolean configUpdateInProgress;
+    volatile SecurityConfig securityConfig;
+    Object configUpdateMutex = new Object();
 
     @Override
     public void configure(Config config, Properties properties) {
         LOGGER.log(Level.FINEST, "Configuring and initializing policy.");
+        this.securityConfig = config.getSecurityConfig();
         configPatternMatcher = config.getConfigPatternMatcher();
+        loadPermissionConfig(config.getSecurityConfig().getClientPermissionConfigs());
+    }
 
-        SecurityConfig securityConfig = config.getSecurityConfig();
-        final Set<PermissionConfig> permissionConfigs = securityConfig.getClientPermissionConfigs();
+    private void loadPermissionConfig(Set<PermissionConfig> permissionConfigs) {
         for (PermissionConfig permCfg : permissionConfigs) {
             final ClusterPermission permission = createPermission(permCfg);
             // allow all principals
@@ -97,8 +102,11 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
             return DENY_ALL;
         }
 
-        ensurePrincipalPermissions(principal);
-        final PrincipalPermissionsHolder permissionsHolder = principalPermissions.get(principal.getName());
+        PrincipalPermissionsHolder permissionsHolder;
+        do {
+            ensurePrincipalPermissions(principal);
+            permissionsHolder = principalPermissions.get(principal.getName());
+        } while (permissionsHolder != null);
         if (!permissionsHolder.prepared) {
             try {
                 synchronized (permissionsHolder) {
@@ -123,6 +131,30 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
         return coll;
     }
 
+    @Override
+    public boolean refreshClientPermissions(Set<PermissionConfig> permissionConfigs) {
+        if (configUpdateInProgress) {
+            LOGGER.warning("PermissionConfig update is failed, there is already a pending config change.");
+            return false;
+        } else {
+            synchronized (configUpdateMutex) {
+                if (!configUpdateInProgress) {
+                    configUpdateInProgress = true;
+                    configPermissions.clear();
+                    loadPermissionConfig(permissionConfigs);
+                    securityConfig.setClientPermissionConfigs(permissionConfigs);
+                    principalPermissions.clear();
+                    configUpdateInProgress = false;
+                    return true;
+                }
+                else {
+                    LOGGER.warning("PermissionConfig update is failed, there is already a pending config change.");
+                    return false;
+                }
+            }
+        }
+    }
+
     private ClusterPrincipal getPrincipal(Subject subject) {
         final Set<Principal> principals = subject.getPrincipals();
         for (Principal p : principals) {
@@ -138,6 +170,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
         if (principal == null) {
             return;
         }
+
         final String fullName = principal.getName();
         if (principalPermissions.containsKey(fullName)) {
             return;
@@ -152,10 +185,12 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
         try {
             LOGGER.log(Level.FINEST, "Preparing permissions for: " + fullName);
             final ClusterPermissionCollection allMatchingPermissionsCollection = new ClusterPermissionCollection();
-            for (Entry<PrincipalKey, PermissionCollection> e : configPermissions.entrySet()) {
-                final PrincipalKey key = e.getKey();
-                if (nameMatches(principalName, key.principal) && addressMatches(endpoint, key.endpoint)) {
-                    allMatchingPermissionsCollection.add(e.getValue());
+            synchronized (configUpdateMutex) {
+                for (Entry<PrincipalKey, PermissionCollection> e : configPermissions.entrySet()) {
+                    final PrincipalKey key = e.getKey();
+                    if (nameMatches(principalName, key.principal) && addressMatches(endpoint, key.endpoint)) {
+                        allMatchingPermissionsCollection.add(e.getValue());
+                    }
                 }
             }
             final Set<Permission> allMatchingPermissions = allMatchingPermissionsCollection.getPermissions();

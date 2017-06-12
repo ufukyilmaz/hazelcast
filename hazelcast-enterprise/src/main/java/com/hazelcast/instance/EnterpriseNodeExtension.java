@@ -60,6 +60,8 @@ import com.hazelcast.nio.tcp.SymmetricCipherMemberChannelOutboundHandler;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
+import com.hazelcast.security.SecurityService;
+import com.hazelcast.security.impl.SecurityServiceImpl;
 import com.hazelcast.security.impl.WeakSecretsConfigChecker;
 import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
@@ -76,6 +78,7 @@ import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
+import java.security.Security;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -102,6 +105,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     private final HotRestartIntegrationService hotRestartService;
     private final HotBackupService hotBackupService;
+    private final SecurityService securityService;
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
@@ -113,6 +117,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         super(node);
         hotRestartService = createHotRestartService(node);
         hotBackupService = createHotBackupService(node, hotRestartService);
+        securityService = createSecurityService(node);
+    }
+
+    private SecurityService createSecurityService(Node node) {
+        return new SecurityServiceImpl(node);
     }
 
     private HotBackupService createHotBackupService(
@@ -351,6 +360,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
+    public SecurityService getSecurityService() {
+        return securityService;
+    }
+
+    @Override
     public MemberSocketInterceptor getMemberSocketInterceptor() {
         return memberSocketInterceptor;
     }
@@ -497,6 +511,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
         services.put(HotBackupService.SERVICE_NAME, hotBackupService);
         services.put(HotRestartIntegrationService.SERVICE_NAME, hotRestartService);
+        services.put(SecurityServiceImpl.SERVICE_NAME, securityService);
 
         return services;
     }

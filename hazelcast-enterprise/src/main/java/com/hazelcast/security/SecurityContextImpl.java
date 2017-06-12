@@ -4,6 +4,7 @@ import com.hazelcast.config.CredentialsFactoryConfig;
 import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
+import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionPolicyConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SecurityInterceptorConfig;
@@ -21,6 +22,7 @@ import java.security.Permission;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 
@@ -163,6 +165,11 @@ public class SecurityContextImpl implements SecurityContext {
         logger.log(Level.INFO, "Destroying Hazelcast Enterprise security context.");
         policy.destroy();
         credentialsFactory.destroy();
+    }
+
+    @Override
+    public void refreshClientPermissions(Set<PermissionConfig> permissionConfigs) {
+        policy.refreshClientPermissions(permissionConfigs);
     }
 
     public ILogger getLogger(String name) {

@@ -3,16 +3,10 @@ package com.hazelcast.internal.hidensity;
 import com.hazelcast.memory.HazelcastMemoryManager;
 
 /**
- * <p>
  * {@link HiDensityRecordStore} is the contract for Hi-Density specific record store operations.
- * </p>
- * <p>
  *
  * @param <R> Type of the Hi-Density record to be stored.
- *
  * @see com.hazelcast.internal.hidensity.HiDensityRecord
- *
- * @author sozal 18/02/15
  */
 public interface HiDensityRecordStore<R extends HiDensityRecord> {
 
@@ -42,5 +36,4 @@ public interface HiDensityRecordStore<R extends HiDensityRecord> {
      * @return evicted entry count.
      */
     int forceEvict();
-
 }

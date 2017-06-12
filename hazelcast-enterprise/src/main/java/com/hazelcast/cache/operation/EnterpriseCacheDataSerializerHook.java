@@ -35,7 +35,7 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
                     case SEGMENT_DESTROY:
                         return new CacheSegmentDestroyOperation();
                 }
-                throw new IllegalArgumentException("Unknown type-id: " + typeId);
+                throw new IllegalArgumentException("Unknown type ID: " + typeId);
             }
         };
     }

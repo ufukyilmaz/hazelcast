@@ -22,9 +22,6 @@ import javax.cache.spi.CachingProvider;
 import static com.hazelcast.map.HDTestSupport.getICache;
 import static com.hazelcast.util.StringUtil.isNullOrEmpty;
 
-/**
- * @author mdogan 02/06/14
- */
 public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     protected static final String CACHE_NAME_PROPERTY = "cacheName";

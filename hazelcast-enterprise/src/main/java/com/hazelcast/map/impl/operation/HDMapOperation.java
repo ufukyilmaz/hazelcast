@@ -23,13 +23,13 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 /**
  * Includes retry logic when a map operation fails to put an entry into {@code IMap} due to a
  * {@link NativeOutOfMemoryError}.
- * <p/>
+ * <p>
  * If an {@code IMap} is evictable, naturally expected thing is, all put operations should be successful.
  * Because if there is no more space, operation can be able to evict some entries and can put the new ones.
- * <p/>
+ * <p>
  * This abstract class forces the evictable record-stores on this partition thread to be evicted in the event of
  * a {@link NativeOutOfMemoryError}.
- * <p/>
+ * <p>
  * Used when {@link com.hazelcast.config.InMemoryFormat InMemoryFormat} is
  * {@link com.hazelcast.config.InMemoryFormat#NATIVE NATIVE}.
  */

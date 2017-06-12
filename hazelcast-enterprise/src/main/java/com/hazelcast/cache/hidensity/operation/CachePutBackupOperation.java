@@ -16,7 +16,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
- * @author mdogan 05/02/14
+ * Creates a backup for a JCache entry.
  */
 public class CachePutBackupOperation
         extends AbstractKeyBasedHiDensityCacheOperation
@@ -91,5 +91,4 @@ public class CachePutBackupOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.PUT_BACKUP;
     }
-
 }

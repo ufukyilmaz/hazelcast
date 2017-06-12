@@ -1,8 +1,8 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -18,8 +18,7 @@ import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOA
 /**
  * @param <K> key type.
  * @param <V> value type.
- * @author mdogan 07/01/14
-*/
+ */
 public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.util.concurrent.ConcurrentMap<K, V> {
 
     /**
@@ -58,7 +57,7 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
     }
 
     public ConcurrentElasticHashMap(int initialCapacity, float loadFactor, int concurrencyLevel,
-            EnterpriseSerializationService ss, MemoryAllocator malloc) {
+                                    EnterpriseSerializationService ss, MemoryAllocator malloc) {
 
         // Find power-of-two sizes best matching arguments.
         int sshift = 0;
@@ -87,6 +86,7 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
 
     /**
      * Returns the segment that should be used for key with given hash.
+     *
      * @param key the key.
      * @return the segment.
      */
@@ -94,7 +94,9 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
         return segments[(key.hashCode() >>> segmentShift) & segmentMask];
     }
 
-    /** A segment of hash buckets for this map. */
+    /**
+     * A segment of hash buckets for this map.
+     */
     protected static final class Segment<V> {
 
         final ReentrantLock lock = new ReentrantLock();

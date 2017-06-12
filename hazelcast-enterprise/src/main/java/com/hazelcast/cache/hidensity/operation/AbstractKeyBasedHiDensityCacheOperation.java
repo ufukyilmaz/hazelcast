@@ -8,9 +8,6 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.io.IOException;
 
-/**
- * @author sozal 07/08/15
- */
 abstract class AbstractKeyBasedHiDensityCacheOperation
         extends AbstractHiDensityCacheOperation {
 

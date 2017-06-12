@@ -9,32 +9,28 @@ import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
- * @author sozal 14/10/14
+ * Structure:
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * | Creation Time      |   8 bytes (long) |
+ * +--------------------+------------------+
+ * | Access Time        |   8 bytes (long) |
+ * +--------------------+------------------+
+ * | Time-to-Live       |   8 bytes (long) |
+ * +--------------------+------------------+
+ * | Record Sequence    |   8 bytes (long) |
+ * +--------------------+------------------+
+ * | Value Address      |   8 bytes (long) |
+ * +--------------------+------------------+
+ * | Hit Count          |   4 bytes (int)  |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ * Total size = 44 bytes
+ * All fields are aligned.
+ *
+ * PS: In current buddy memory allocator design,
+ * this is going to use 64 bytes memory block.
  */
 public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord {
-
-    /*
-     * Structure:
-     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * | Creation Time      |   8 bytes (long) |
-     * +--------------------+------------------+
-     * | Access Time        |   8 bytes (long) |
-     * +--------------------+------------------+
-     * | Time-to-Live       |   8 bytes (long) |
-     * +--------------------+------------------+
-     * | Record Sequence    |   8 bytes (long) |
-     * +--------------------+------------------+
-     * | Value Address      |   8 bytes (long) |
-     * +--------------------+------------------+
-     * | Hit Count          |   4 bytes (int)  |
-     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *
-     * Total size = 44 bytes
-     * All fields are aligned.
-     *
-     * PS: In current buddy memory allocator design,
-     * this is going to use 64 bytes memory block.
-     */
 
     /**
      * Size of record in bytes.

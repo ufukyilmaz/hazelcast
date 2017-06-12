@@ -21,18 +21,22 @@ public class CacheDescriptor {
         return serviceName;
     }
 
-    /** Cache name. */
+    /**
+     * Cache name.
+     */
     public String getName() {
         return name;
     }
 
-    /** Cache id, as encoded in Hot Restart store's key prefix */
+    /**
+     * Cache ID, as encoded in Hot Restart store's key prefix.
+     */
     public int getId() {
         return id;
     }
 
     @Override
     public String toString() {
-        return "{serviceName '" + serviceName + "' name '" + name + "' id " + id + '}';
+        return "{serviceName '" + serviceName + "' name '" + name + "' ID " + id + '}';
     }
 }

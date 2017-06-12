@@ -16,7 +16,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
- * @author mdogan 05/02/14
+ * Associates the specified value with the specified key in this cache, returning an existing value if one existed.
  */
 public class CachePutOperation
         extends BackupAwareKeyBasedHiDensityCacheOperation
@@ -109,5 +109,4 @@ public class CachePutOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.PUT;
     }
-
 }

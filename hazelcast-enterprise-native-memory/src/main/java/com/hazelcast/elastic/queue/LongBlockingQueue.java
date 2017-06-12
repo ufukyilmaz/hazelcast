@@ -3,7 +3,7 @@ package com.hazelcast.elastic.queue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author mdogan 21/01/14
+ * Blocking queue for primitive {@code long}s.
  */
 public interface LongBlockingQueue extends LongQueue {
 
@@ -16,5 +16,4 @@ public interface LongBlockingQueue extends LongQueue {
     long take() throws InterruptedException;
 
     void consume(LongConsumer consumer);
-
 }

@@ -3,9 +3,6 @@ package com.hazelcast.cache.hidensity.operation;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 
-/**
- * @author mdogan 05/02/14
- */
 abstract class BackupAwareKeyBasedHiDensityCacheOperation
         extends AbstractKeyBasedHiDensityCacheOperation
         implements BackupAwareOperation {

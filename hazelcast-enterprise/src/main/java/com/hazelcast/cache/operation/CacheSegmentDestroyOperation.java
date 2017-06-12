@@ -14,7 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author mdogan 03/06/14
+ * Destroys the segments for specified cache name.
  */
 public final class CacheSegmentDestroyOperation
         extends Operation
@@ -81,4 +81,3 @@ public final class CacheSegmentDestroyOperation
         throw new UnsupportedOperationException();
     }
 }
-

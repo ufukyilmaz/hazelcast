@@ -4,7 +4,7 @@ import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.nio.Disposable;
 
 /**
- * @author mdogan 21/01/14
+ * Queue for primitive {@code long}s.
  */
 public interface LongQueue extends Disposable {
 
@@ -27,5 +27,4 @@ public interface LongQueue extends Disposable {
     long nullItem();
 
     LongIterator iterator();
-
 }

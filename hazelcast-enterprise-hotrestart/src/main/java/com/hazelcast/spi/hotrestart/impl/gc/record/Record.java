@@ -11,10 +11,14 @@ import static com.hazelcast.spi.hotrestart.impl.HotRestarter.LOG_OF_BUFFER_SIZE;
  * some metadata on any dead records within the same chunk associated with the same key.
  */
 public abstract class Record {
-    /** Size of the value record header in a chunk file: seq, prefix, key size, value size */
+    /**
+     * Size of the value record header in a chunk file: seq, prefix, key size, value size
+     */
     public static final int VAL_HEADER_SIZE =
             LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES + INT_SIZE_IN_BYTES + INT_SIZE_IN_BYTES;
-    /** Size of the tombstone record header in a chunk file: seq, prefix, key size */
+    /**
+     * Size of the tombstone record header in a chunk file: seq, prefix, key size
+     */
     public static final int TOMB_HEADER_SIZE =
             LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES + INT_SIZE_IN_BYTES;
 
@@ -27,26 +31,34 @@ public abstract class Record {
         return Math.abs(seq);
     }
 
-    /** Asserts that the record is alive and returns its sequence number. */
+    /**
+     * Asserts that the record is alive and returns its sequence number.
+     */
     public final long liveSeq() {
         final long seq = rawSeqValue();
         assert seq > 0 : "liveSeq() called on a dead record. Raw seq is " + seq;
         return seq;
     }
 
-    /** Asserts that the record is dead and returns its sequence number. */
+    /**
+     * Asserts that the record is dead and returns its sequence number.
+     */
     public final long deadSeq() {
         final long seq = rawSeqValue();
         assert seq < 0 : "deadSeq() called on a live record. Raw seq is " + seq;
         return -seq;
     }
 
-    /** @return size in bytes of this record */
+    /**
+     * @return size in bytes of this record
+     */
     public final int size() {
         return Math.abs(rawSizeValue());
     }
 
-    /** @return size in bytes of this record's payload (exluding the header) */
+    /**
+     * @return size in bytes of this record's payload (exluding the header)
+     */
     public final int payloadSize() {
         return size() - VAL_HEADER_SIZE;
     }
@@ -59,33 +71,42 @@ public abstract class Record {
         return rawSeqValue() > 0;
     }
 
-    /** @return the number of dead records with this record's key in this record's chunk. */
+    /**
+     * @return the number of dead records with this record's key in this record's chunk.
+     */
     public final int garbageCount() {
         return isTombstone() ? 0 : additionalInt();
     }
 
-    /** Asserts that this is a tombstone record and returns its offset in the underlying chunk file. */
+    /**
+     * Asserts that this is a tombstone record and returns its offset in the underlying chunk file.
+     */
     public final int filePosition() {
         assert isTombstone() : "Attempt to retrieve file position of a value record";
         return additionalInt();
     }
 
-    /** Asserts that this is a tombstone record and sets its offset in the underlying chunk file
-     * to the supplied value. */
+    /**
+     * Asserts that this is a tombstone record and sets its offset in the underlying chunk file
+     * to the supplied value.
+     */
     public final void setFilePosition(int filePosition) {
         assert isTombstone() : "Attempt to set file position on a value record";
         setAdditionalInt(filePosition);
     }
 
-    /** Updates the sequence number and size properties of this record to the supplied values. */
+    /**
+     * Updates the sequence number and size properties of this record to the supplied values.
+     */
     public final void update(long seq, int size) {
         setRawSeqSize(seq, toRawSizeValue(size, isTombstone()));
     }
 
     /**
      * Retires this record (makes it dead).
+     *
      * @param mayIncrementGarbageCount whether it is appropriate to increment the record's garbage count property.
-     *        It is not appropriate to increment if the record is being retired due to a prefix tombstone.
+     *                                 It is not appropriate to increment if the record is being retired due to a prefix tombstone.
      */
     public final void retire(boolean mayIncrementGarbageCount) {
         assert isAlive() : "Attempt to retire a dead record";
@@ -94,7 +115,6 @@ public abstract class Record {
             incrementGarbageCount();
         }
     }
-
 
     @Override
     public String toString() {
@@ -109,9 +129,10 @@ public abstract class Record {
 
     /**
      * Sets the raw "seq" and "size" values on this record.
+     *
      * @see #rawSeqValue()
      * @see #rawSizeValue()
-     * */
+     */
     public abstract void setRawSeqSize(long rawSeqValue, int rawSizeValue);
 
     /**
@@ -128,8 +149,11 @@ public abstract class Record {
      */
     public abstract int rawSizeValue();
 
-    /** Sets the raw "additional int" property on this record.
-     * @see #additionalInt() */
+    /**
+     * Sets the raw "additional int" property on this record.
+     *
+     * @see #additionalInt()
+     */
     public abstract void setAdditionalInt(int value);
 
     /**
@@ -138,16 +162,24 @@ public abstract class Record {
      */
     public abstract int additionalInt();
 
-    /** Negates the value of the {@code rawSeq} property. */
+    /**
+     * Negates the value of the {@code rawSeq} property.
+     */
     public abstract void negateSeq();
 
-    /** Decrements this record's garbage count. */
+    /**
+     * Decrements this record's garbage count.
+     */
     public abstract int decrementGarbageCount();
 
-    /** Increments this record's garbage count. */
+    /**
+     * Increments this record's garbage count.
+     */
     public abstract void incrementGarbageCount();
 
-    /** Sets this record's garbage count to the given value. */
+    /**
+     * Sets this record's garbage count to the given value.
+     */
     public final void setGarbageCount(int newCount) {
         assert newCount == 0 || !isTombstone() : "Attempt to set non-zero garbage count on a tombstone";
         setAdditionalInt(newCount);
@@ -156,8 +188,9 @@ public abstract class Record {
     /**
      * Calculates the size in bytes a record would have in a chunk file if it contained
      * the provided key and value blobs.
-     * @param key the key blob
-     * @param value the value blob. A {@code null} value signals a tombstone record.
+     *
+     * @param key   the key blob
+     * @param value the value blob (a {@code null} value signals a tombstone record)
      */
     public static int size(byte[] key, byte[] value) {
         return value != null ? VAL_HEADER_SIZE + key.length + value.length : TOMB_HEADER_SIZE + key.length;

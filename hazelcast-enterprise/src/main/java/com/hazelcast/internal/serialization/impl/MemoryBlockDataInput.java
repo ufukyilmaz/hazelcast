@@ -123,13 +123,11 @@ final class MemoryBlockDataInput extends VersionedObjectDataInput implements Ent
     }
 
     /**
-     * See the general contract of the <code>readByte</code> method of
-     * <code>DataInput</code>.
-     * <p/>
+     * See the general contract of the {@code readByte} method of {@code DataInput}.
+     * <p>
      * Bytes for this operation are read from the contained input stream.
      *
-     * @return the next byte of this input stream as a signed 8-bit
-     * <code>byte</code>.
+     * @return the next byte of this input stream as a signed 8-bit {@code byte}.
      * @throws java.io.EOFException if this input stream has reached the end.
      * @throws java.io.IOException  if an I/O error occurs.
      * @see java.io.FilterInputStream#in
@@ -511,15 +509,14 @@ final class MemoryBlockDataInput extends VersionedObjectDataInput implements Ent
     }
 
     /**
-     * See the general contract of the <code>readUnsignedByte</code> method of
-     * <code>DataInput</code>.
-     * <p/>
+     * See the general contract of the {@code readUnsignedByte} method of
+     * {@code DataInput}.
+     * <p>
      * Bytes for this operation are read from the contained input stream.
      *
-     * @return the next byte of this input stream, interpreted as an unsigned
-     * 8-bit number.
-     * @throws java.io.EOFException if this input stream has reached the end.
-     * @throws java.io.IOException  if an I/O error occurs.
+     * @return the next byte of this input stream, interpreted as an unsigned 8-bit number
+     * @throws java.io.EOFException if this input stream has reached the end
+     * @throws java.io.IOException  if an I/O error occurs
      * @see java.io.FilterInputStream#in
      */
     @Override
@@ -528,15 +525,13 @@ final class MemoryBlockDataInput extends VersionedObjectDataInput implements Ent
     }
 
     /**
-     * See the general contract of the <code>readUnsignedShort</code> method of
-     * <code>DataInput</code>.
-     * <p/>
+     * See the general contract of the {@code readUnsignedShort} method of
+     * {@code DataInput}.
+     * <p>
      * Bytes for this operation are read from the contained input stream.
      *
-     * @return the next two bytes of this input stream, interpreted as an
-     * unsigned 16-bit integer.
-     * @throws java.io.EOFException if this input stream reaches the end before reading two
-     *                              bytes.
+     * @return the next two bytes of this input stream, interpreted as an unsigned 16-bit integer
+     * @throws java.io.EOFException if this input stream reaches the end before reading two bytes
      * @throws java.io.IOException  if an I/O error occurs.
      * @see java.io.FilterInputStream#in
      */
@@ -552,17 +547,14 @@ final class MemoryBlockDataInput extends VersionedObjectDataInput implements Ent
     }
 
     /**
-     * See the general contract of the <code>readUTF</code> method of
-     * <code>DataInput</code>.
-     * <p/>
+     * See the general contract of the {@code readUTF} method of {@code DataInput}.
+     * <p>
      * Bytes for this operation are read from the contained input stream.
      *
-     * @return a Unicode string.
-     * @throws java.io.EOFException           if this input stream reaches the end before reading all
-     *                                        the bytes.
-     * @throws java.io.IOException            if an I/O error occurs.
-     * @throws java.io.UTFDataFormatException if the bytes do not represent a valid modified UTF-8
-     *                                        encoding of a string.
+     * @return a Unicode string
+     * @throws java.io.EOFException           if this input stream reaches the end before reading all the bytes
+     * @throws java.io.IOException            if an I/O error occurs
+     * @throws java.io.UTFDataFormatException if the bytes do not represent a valid modified UTF-8 encoding of a string
      * @see java.io.DataInputStream#readUTF(java.io.DataInput)
      */
     @Override
@@ -691,5 +683,4 @@ final class MemoryBlockDataInput extends VersionedObjectDataInput implements Ent
         return "MemoryBlockDataInput{size=" + size + ", pos=" + pos
                 + ", mark=" + mark + ", byteOrder=" + getByteOrder() + '}';
     }
-
 }

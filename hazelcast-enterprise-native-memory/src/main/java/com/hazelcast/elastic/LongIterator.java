@@ -1,7 +1,7 @@
 package com.hazelcast.elastic;
 
 /**
- * @author mdogan 09/01/14
+ * Interface for queue iterator implementations.
  */
 public interface LongIterator {
 

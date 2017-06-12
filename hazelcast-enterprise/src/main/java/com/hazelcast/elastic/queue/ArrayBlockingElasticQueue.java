@@ -5,7 +5,6 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 /**
  * @param <E> entry type
- * @author mdogan 22/01/14
  */
 public final class ArrayBlockingElasticQueue<E> extends AbstractBlockingElasticQueue<E>
         implements BlockingElasticQueue<E> {

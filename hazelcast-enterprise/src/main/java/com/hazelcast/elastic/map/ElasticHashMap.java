@@ -1,9 +1,9 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import java.util.Collection;
 import java.util.Map;
@@ -15,7 +15,6 @@ import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOA
 /**
  * @param <K> key type
  * @param <V> value type
- * @author mdogan 07/01/14
  */
 public final class ElasticHashMap<K, V> implements ElasticMap<K, V> {
 
@@ -27,7 +26,7 @@ public final class ElasticHashMap<K, V> implements ElasticMap<K, V> {
     }
 
     public ElasticHashMap(int initialCapacity, float loadFactor, EnterpriseSerializationService ss,
-            MemoryAllocator malloc) {
+                          MemoryAllocator malloc) {
         this.ss = ss;
         map = new BinaryElasticHashMap<NativeMemoryData>(initialCapacity, loadFactor,
                 ss, new NativeMemoryDataAccessor(ss), malloc);
@@ -174,18 +173,22 @@ public final class ElasticHashMap<K, V> implements ElasticMap<K, V> {
         }
     }
 
+    @Override
     public void clear() {
         map.clear();
     }
 
+    @Override
     public void dispose() {
         map.dispose();
     }
 
+    @Override
     public int size() {
         return map.size();
     }
 
+    @Override
     public boolean isEmpty() {
         return map.isEmpty();
     }

@@ -14,7 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author mdogan 20/03/14
+ * Shutdowns the cache service and destroy the caches with their segments.
  */
 public final class CacheSegmentShutdownOperation
         extends Operation

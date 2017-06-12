@@ -2,9 +2,6 @@ package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.spi.BackupAwareOperation;
 
-/**
- * @author sozal 07/08/15
- */
 abstract class BackupAwareHiDensityCacheOperation
         extends AbstractHiDensityCacheOperation
         implements BackupAwareOperation {
@@ -26,7 +23,7 @@ abstract class BackupAwareHiDensityCacheOperation
     }
 
     protected BackupAwareHiDensityCacheOperation(String name, int completionId,
-                                              boolean dontCreateCacheRecordStoreIfNotExist) {
+                                                 boolean dontCreateCacheRecordStoreIfNotExist) {
         super(name, completionId, dontCreateCacheRecordStoreIfNotExist);
     }
 
@@ -44,5 +41,4 @@ abstract class BackupAwareHiDensityCacheOperation
     public boolean shouldBackup() {
         return true;
     }
-
 }

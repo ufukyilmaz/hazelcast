@@ -2,10 +2,10 @@ package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import java.util.AbstractQueue;
 import java.util.ArrayDeque;
@@ -14,7 +14,6 @@ import java.util.Queue;
 
 /**
  * @param <E> entry type
- * @author mdogan 22/01/14
  */
 abstract class AbstractElasticQueue<E> extends AbstractQueue<E> implements ElasticQueue<E> {
 

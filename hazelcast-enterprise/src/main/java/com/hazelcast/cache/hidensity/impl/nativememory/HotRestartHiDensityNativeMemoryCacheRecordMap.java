@@ -18,10 +18,10 @@ import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 
 /**
  * Hot Restart variant of HiDensityNativeMemoryCacheRecordMap.
- * <p/>
+ * <p>
  * All mutator actions are synchronized to make them visible to
  * Hot Restart GC thread.
- * <p/>
+ * <p>
  * Eviction methods don't actually evict the record but only
  * clear and dispose the value contained in the record.
  */

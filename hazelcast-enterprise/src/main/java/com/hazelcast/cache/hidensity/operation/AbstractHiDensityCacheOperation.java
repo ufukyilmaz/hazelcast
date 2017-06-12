@@ -25,9 +25,6 @@ import com.hazelcast.util.ExceptionUtil;
 import java.io.IOException;
 import java.util.logging.Level;
 
-/**
- * @author sozal 07/08/15
- */
 abstract class AbstractHiDensityCacheOperation
         extends AbstractNamedOperation
         implements PartitionAwareOperation, ServiceNamespaceAware, IdentifiedDataSerializable {

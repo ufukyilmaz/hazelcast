@@ -1,13 +1,10 @@
 package com.hazelcast.elastic.map;
 
-import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
+import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
-/**
- * @author mdogan 11/02/14
- */
 class NativeMemoryDataAccessor
         implements MemoryBlockAccessor<NativeMemoryData> {
 

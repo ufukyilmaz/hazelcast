@@ -3,7 +3,7 @@ package com.hazelcast.cache.hidensity.operation;
 import com.hazelcast.spi.ReadonlyOperation;
 
 /**
- * @author mdogan 06/02/14
+ * Calculates the entry size of this store which reflects the partition size of the cache.
  */
 public class CacheSizeOperation
         extends AbstractHiDensityCacheOperation
@@ -25,5 +25,4 @@ public class CacheSizeOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.SIZE;
     }
-
 }

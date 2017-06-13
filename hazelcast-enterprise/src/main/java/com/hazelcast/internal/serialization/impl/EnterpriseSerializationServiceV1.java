@@ -16,6 +16,7 @@ import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.nio.serialization.PortableFactory;
+import com.hazelcast.util.function.Supplier;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -38,16 +39,18 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     private final ThreadLocal<MemoryAllocator> mallocThreadLocal = new ThreadLocal<MemoryAllocator>();
 
     @SuppressWarnings("checkstyle:parameternumber")
-    public EnterpriseSerializationServiceV1(
-            InputOutputFactory inputOutputFactory, byte version, int portableVersion, ClassLoader classLoader,
-            Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
-            Map<Integer, ? extends PortableFactory> portableFactories, ManagedContext managedContext,
-            PartitioningStrategy partitionStrategy, int initialOutputBufferSize, BufferPoolFactory bufferPoolFactory,
-            HazelcastMemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject,
-            EnterpriseClusterVersionAware clusterVersionAware, boolean versionedSerializationEnabled) {
+    EnterpriseSerializationServiceV1(InputOutputFactory inputOutputFactory, byte version, int portableVersion,
+                                     ClassLoader classLoader,
+                                     Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
+                                     Map<Integer, ? extends PortableFactory> portableFactories, ManagedContext managedContext,
+                                     PartitioningStrategy partitionStrategy, int initialOutputBufferSize,
+                                     BufferPoolFactory bufferPoolFactory, HazelcastMemoryManager memoryManager,
+                                     boolean enableCompression, boolean enableSharedObject,
+                                     EnterpriseClusterVersionAware clusterVersionAware, boolean versionedSerializationEnabled,
+                                     Supplier<RuntimeException> notActiveExceptionSupplier) {
         super(inputOutputFactory, version, portableVersion, classLoader, dataSerializableFactories, portableFactories,
                 managedContext, partitionStrategy, initialOutputBufferSize, bufferPoolFactory, enableCompression,
-                enableSharedObject);
+                enableSharedObject, notActiveExceptionSupplier);
 
         this.memoryManager = memoryManager;
         overrideConstantSerializers(classLoader, clusterVersionAware, dataSerializableFactories, versionedSerializationEnabled);
@@ -56,9 +59,9 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     private void overrideConstantSerializers(ClassLoader classLoader, EnterpriseClusterVersionAware clusterVersionAware,
                                              Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
                                              boolean versionedSerializationEnabled) {
-        // the EE client does not use the versioned serialization whereas the EE server does.
+        // the EE client does not use the versioned serialization whereas the EE server does
         if (versionedSerializationEnabled) {
-            checkNotNull(clusterVersionAware, "ClusterVersionAware can't be null");
+            clusterVersionAware = checkNotNull(clusterVersionAware, "ClusterVersionAware can't be null");
             this.dataSerializerAdapter = createSerializerAdapter(
                     new EnterpriseDataSerializableSerializer(dataSerializableFactories, classLoader, clusterVersionAware), this);
             registerConstant(DataSerializable.class, dataSerializerAdapter);
@@ -102,8 +105,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         throw new IllegalArgumentException("Unknown data type: " + type);
     }
 
-    private <B extends Data> B toNativeDataInternal(
-            Object obj, PartitioningStrategy strategy, MemoryAllocator malloc) {
+    private <B extends Data> B toNativeDataInternal(Object obj, PartitioningStrategy strategy, MemoryAllocator malloc) {
         if (obj == null) {
             return null;
         }
@@ -254,5 +256,4 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             throw new HazelcastSerializationException("Malformed serialization format");
         }
     }
-
 }

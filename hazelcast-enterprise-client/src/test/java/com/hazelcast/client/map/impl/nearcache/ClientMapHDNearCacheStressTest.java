@@ -87,13 +87,13 @@ public class ClientMapHDNearCacheStressTest extends HazelcastTestSupport {
         NearCache<Object, Object> nearCache = proxy.getNearCache();
 
         for (int i = 0; i < NEAR_CACHE_PUT_COUNT; i++) {
-            Data key = serializationService.toData(i);
-            long reservationId = nearCache.tryReserveForUpdate(key);
+            Data data = serializationService.toData(i);
+            long reservationId = nearCache.tryReserveForUpdate(data, data);
             if (reservationId != NOT_RESERVED) {
                 try {
-                    nearCache.tryPublishReserved(key, serializationService.toData(i), reservationId, true);
+                    nearCache.tryPublishReserved(data, data, reservationId, true);
                 } catch (Throwable throwable) {
-                    nearCache.remove(key);
+                    nearCache.remove(data);
                     throw rethrow(throwable);
                 }
             }

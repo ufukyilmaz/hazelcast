@@ -93,7 +93,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
         long finishTime = Clock.currentTimeMillis() + TIMEOUT;
         for (int i = 0; Clock.currentTimeMillis() < finishTime; i++) {
             String value = VALUE_PREFIX + i;
-            nearCache.put(i, value);
+            nearCache.put(i, ess.toData(i), value);
             assertEquals(value, nearCache.get(i));
         }
     }
@@ -114,7 +114,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
             byte[] value = new byte[(int) valueSize.bytes()];
             int iterationCount = (int) (2 * (memorySize.bytes() / valueSize.bytes()));
             for (int i = 0; i < iterationCount; i++) {
-                nearCache.put(i, value);
+                nearCache.put(i, ess.toData(i), value);
             }
         } finally {
             mm.dispose();
@@ -138,7 +138,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
         // Do initial load from main thread
         for (int i = 0; i < maxRecordCount / 10 && Clock.currentTimeMillis() < finishTime1; i++) {
             String value = valuePrefix + "value-" + i;
-            nearCache.put(i, value);
+            nearCache.put(i, ess.toData(i), value);
             assertEquals(value, nearCache.get(i));
         }
 
@@ -153,7 +153,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
                         while (Clock.currentTimeMillis() < finishTime2) {
                             int key = random.nextInt(maxRecordCount);
                             String value = valuePrefix + "value-" + key;
-                            nearCache.put(key, value);
+                            nearCache.put(key, ess.toData(key), value);
                             sleepMillis(10);
                         }
                     }

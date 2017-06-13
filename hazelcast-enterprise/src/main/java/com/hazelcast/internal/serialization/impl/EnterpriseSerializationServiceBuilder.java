@@ -13,6 +13,7 @@ import com.hazelcast.nio.serialization.ClassDefinition;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.PortableFactory;
+import com.hazelcast.util.function.Supplier;
 
 import java.nio.ByteOrder;
 
@@ -130,13 +131,14 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
     }
 
     @Override
-    protected EnterpriseSerializationServiceV1 createSerializationService(InputOutputFactory inputOutputFactory) {
+    protected EnterpriseSerializationServiceV1 createSerializationService(InputOutputFactory inputOutputFactory,
+                                                                          Supplier<RuntimeException> notActiveExceptionSupplier) {
         switch (version) {
             case 1:
                 EnterpriseSerializationServiceV1 serializationServiceV1 = new EnterpriseSerializationServiceV1(inputOutputFactory,
                         version, portableVersion, classLoader, dataSerializableFactories, portableFactories, managedContext,
                         partitioningStrategy, initialOutputBufferSize, bufferPoolFactory, memoryManager, enableCompression,
-                        enableSharedObject, clusterVersionAware, versionedSerializationEnabled);
+                        enableSharedObject, clusterVersionAware, versionedSerializationEnabled, notActiveExceptionSupplier);
                 serializationServiceV1.registerClassDefinitions(classDefinitions, checkClassDefErrors);
                 return serializationServiceV1;
 
@@ -147,6 +149,7 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
         }
     }
 
+    @Override
     protected InputOutputFactory createInputOutputFactory() {
         if (byteOrder == null) {
             byteOrder = ByteOrder.BIG_ENDIAN;

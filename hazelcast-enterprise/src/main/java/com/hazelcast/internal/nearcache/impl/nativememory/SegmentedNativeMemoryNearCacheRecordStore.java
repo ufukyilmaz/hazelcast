@@ -105,8 +105,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
                                                      SerializationService serializationService) {
         NearCachePreloaderConfig preloaderConfig = nearCacheConfig.getPreloaderConfig();
         if (preloaderConfig.isEnabled()) {
-            boolean serializeKeys = nearCacheConfig.isSerializeKeys();
-            return new NearCachePreloader<Data>(name, preloaderConfig, nearCacheStats, serializationService, serializeKeys);
+            return new NearCachePreloader<Data>(name, preloaderConfig, nearCacheStats, serializationService);
         }
         return null;
     }
@@ -140,9 +139,9 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    public void put(K key, V value) {
+    public void put(K key, Data keyData, V value) {
         NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
-        segment.put(key, value);
+        segment.put(key, keyData, value);
     }
 
     @Override
@@ -295,9 +294,9 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    public long tryReserveForUpdate(K key) {
+    public long tryReserveForUpdate(K key, Data keyData) {
         NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
-        return segment.tryReserveForUpdate(key);
+        return segment.tryReserveForUpdate(key, keyData);
     }
 
     @Override
@@ -347,10 +346,10 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
 
         @Override
-        public void put(K key, V value) {
+        public void put(K key, Data keyData, V value) {
             lock.lock();
             try {
-                super.put(key, value);
+                super.put(key, keyData, value);
             } finally {
                 lock.unlock();
             }
@@ -427,10 +426,10 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
 
         @Override
-        public long tryReserveForUpdate(K key) {
+        public long tryReserveForUpdate(K key, Data keyData) {
             lock.lock();
             try {
-                return super.tryReserveForUpdate(key);
+                return super.tryReserveForUpdate(key, keyData);
             } finally {
                 lock.unlock();
             }

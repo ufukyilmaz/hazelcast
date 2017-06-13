@@ -153,7 +153,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
             byte[] value = new byte[(int) (2 * memorySize.bytes())];
 
             // when - then (just don't fail)
-            nearCache.put(1, value);
+            nearCache.put(1, ess.toData(1), value);
         } finally {
             mm.dispose();
         }

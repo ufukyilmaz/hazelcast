@@ -3,8 +3,8 @@ package com.hazelcast.client.impl;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.map.impl.proxy.EnterpriseMapClientProxyFactory;
+import com.hazelcast.client.spi.ClientExecutionService;
 import com.hazelcast.client.spi.ClientProxyFactory;
-import com.hazelcast.client.spi.impl.ClientExecutionServiceImpl;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
@@ -31,12 +31,12 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.SocketInterceptor;
-import com.hazelcast.version.Version;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.ssl.SSLChannelFactory;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.version.Version;
 
 import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature;
 
@@ -157,7 +157,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     @Override
     public NearCacheManager createNearCacheManager() {
         SerializationService ss = client.getSerializationService();
-        ClientExecutionServiceImpl es = client.getExecutionService();
+        ClientExecutionService es = client.getClientExecutionService();
         ClassLoader classLoader = client.getClientConfig().getClassLoader();
 
         return new HiDensityNearCacheManager(((EnterpriseSerializationService) ss), es, classLoader);

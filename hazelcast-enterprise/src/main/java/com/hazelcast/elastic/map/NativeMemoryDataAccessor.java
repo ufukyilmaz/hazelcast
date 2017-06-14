@@ -5,7 +5,10 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
-class NativeMemoryDataAccessor
+/**
+ * Accessor for Native Memory Data (me loves checkstyle)
+ */
+public class NativeMemoryDataAccessor
         implements MemoryBlockAccessor<NativeMemoryData> {
 
     private final EnterpriseSerializationService serializationService;

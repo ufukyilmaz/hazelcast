@@ -24,8 +24,24 @@ import static com.hazelcast.elastic.map.BinaryElasticHashMap.loadFromOffHeapHead
 import static com.hazelcast.nio.serialization.DataType.HEAP;
 
 /**
- * Expectes Key(HeapData) and Value(HeapData)
- * Takes care of converting to NATIVE format;
+ * Nested map, so a map of maps, with two-tiers of keys.
+ * First tier maps keys to segments. Each segment maps keys to values.
+ * First tier is sorted by keys using the key comparator passed to the constructor.
+ * Second tier is unsorted.
+ *
+ * Uses OffHeapTreeStore Red-Black-Tree as the underlying store for the segments.
+ * Each segment is stored under a segmentKey passed as Data (may be on-heap of off-heap Data).
+ * OffHeapComparator is used to compare and sort the segments according to the comparison order returned by the comparator.
+ * There is one segment per segmentKey.
+ *
+ * Each segment uses BinaryElasticHashMap as the underlying segment storage.
+ *
+ * Contract of each segment:
+ * - Expects the key & value to be in the NativeMemoryData,
+ * - Returns NativeMemoryData,
+ * - Never disposes any NativeMemoryData passed to it,
+ *
+ * Each method that returns MapEntry instances uses MapEntryFactory to create them.
  *
  * @param <T> type of the Map.Entry returned by the tree.
  */
@@ -143,9 +159,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
             Set<T> result = new HashSet<T>(map.size());
 
             for (Map.Entry<Data, NativeMemoryData> mapEntry : map.entrySet()) {
-                result.add(mapEntryFactory.create(
-                        toHeapData((NativeMemoryData) mapEntry.getKey()),
-                        toHeapData(mapEntry.getValue())));
+                result.add(mapEntryFactory.create(mapEntry.getKey(), mapEntry.getValue()));
             }
 
             return result;
@@ -197,7 +211,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
     }
 
     @SuppressWarnings({"checkstyle:npathcomplexity", "checkstyle:cyclomaticcomplexity", "checkstyle:methodlength",
-            "checkstyle:nestedifdepth"})
+            "checkstyle:nestedifdepth", "checkstyle:returncount"})
     public Set<T> subMap(Data fromSegmentKey, boolean fromInclusive, Data toSegmentKey, boolean toInclusive) {
 
         EntryIterator iterator;
@@ -217,11 +231,11 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
                 }
 
                 // this is the from-element search case. The search might have finished before the search element
-                // let's say in case we're looking for 14, and the leaf was 13, so there was no greated element
+                // let's say in case we're looking for 14, and the leaf was 13, so there was no greater element
                 // to follow on the "greater" path
+                Comparable fromSegment = ess.toObject(fromSegmentKey);
                 while (true) {
                     iterator.next();
-                    Comparable fromSegment = ess.toObject(fromSegmentKey);
                     Comparable currentSegment = ess.toObject(iterator.getKey());
                     if (currentSegment.compareTo(fromSegment) >= 0) {
                         break;
@@ -262,7 +276,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
                 if (!fromInclusive) {
                     if (toKeyMatched && !toInclusive) {
                         // in this case, we skip the first element, and we do not include the last, so no element returned
-                        break;
+                        return result;
                     } else {
                         // in this case we just mark fromInclusive to true since we skipped one element not to evaluate
                         // this if again
@@ -272,7 +286,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
                                 iterator.next();
                                 continue;
                             } else {
-                                break;
+                                return result;
                             }
                         }
                     }
@@ -280,25 +294,22 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
 
                 if (toKeyMatched && !toInclusive) {
                     // here we skip the addition of the last element and finish the loop
-                    break;
+                    return result;
                 }
 
                 for (Map.Entry<Data, NativeMemoryData> entry : map.entrySet()) {
-                    result.add(mapEntryFactory.create(
-                            toHeapData((NativeMemoryData) entry.getKey()),
-                            toHeapData(entry.getValue())));
+                    result.add(mapEntryFactory.create(entry.getKey(), entry.getValue()));
                 }
                 if (toKeyMatched) {
                     // here we add the last element and finish the loop
-                    break;
+                    return result;
                 }
                 if (iterator.hasNext()) {
                     iterator.next();
                 } else {
-                    break;
+                    return result;
                 }
             }
-            return result;
         } finally {
             dispose(nativeSegmentKey);
         }
@@ -324,9 +335,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
                 continue;
             }
             for (Map.Entry<Data, NativeMemoryData> entry : map.entrySet()) {
-                result.add(mapEntryFactory.create(
-                        toHeapData((NativeMemoryData) entry.getKey()),
-                        toHeapData(entry.getValue())));
+                result.add(mapEntryFactory.create(entry.getKey(), entry.getValue()));
             }
         }
         return result;
@@ -414,6 +423,9 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         }
     }
 
+    /**
+     * Clears the map by removing and disposing all segments including key/value pairs stored.
+     */
     public void clear() {
         Iterator<OffHeapTreeEntry> treeEntryIterator = records.entries();
         while (treeEntryIterator.hasNext()) {
@@ -435,6 +447,12 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         }
     }
 
+    /**
+     * Disposes internal backing red-black-tree. Does not dispose segments nor key/value pairs inside.
+     * To dispose key/value pairs, {@link #clear()} must be called explicitly.
+     *
+     * @see #clear()
+     */
     public void dispose() {
         clear();
         records.dispose(false);
@@ -452,13 +470,6 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
 
     private Data toHeapData(MemoryBlock blob) {
         NativeMemoryData nativeMemoryData = new NativeMemoryData(blob.address(), blob.size());
-        return ess.toData(nativeMemoryData, HEAP);
-    }
-
-    private Data toHeapData(NativeMemoryData nativeMemoryData) {
-        if (nativeMemoryData != null && nativeMemoryData.totalSize() == 0) {
-            return null;
-        }
         return ess.toData(nativeMemoryData, HEAP);
     }
 

@@ -13,10 +13,16 @@ import java.util.Set;
 import static com.hazelcast.nio.serialization.DataType.HEAP;
 
 /**
- * Expects the entry.value to be in the NativeMemoryData format
- * Never disposes any NativeMemoryData passed to it.
+ * Wrapper around BinaryElasticNestedTreeMap for the usage in IndexStores
+ * Does validation and necessary transformations.
  *
- * @param <T>
+ * Contract:
+ * - Expects the key & value to be in the NativeMemoryData,
+ * - Returns NativeMemoryData,
+ * - Never disposes any NativeMemoryData passed to it,
+ * - Uses MapEntryFactory to create MapEntry instances in methods that return them.
+ *
+ * @param <T> type of the QueryableEntry entry passed to the map
  */
 class HDIndexNestedTreeMap<T extends QueryableEntry> {
 
@@ -68,10 +74,19 @@ class HDIndexNestedTreeMap<T extends QueryableEntry> {
         return recordMap.size();
     }
 
+    /**
+     * Clears the map by removing and disposing all segments including key/value pairs stored.
+     */
     public void clear() {
         recordMap.clear();
     }
 
+    /**
+     * Disposes internal backing BinaryElasticNestedTreeMap. Does not dispose segments nor key/value pairs inside.
+     * To dispose key/value pairs, {@link #clear()} must be called explicitly.
+     *
+     * @see #clear()
+     */
     public void dispose() {
         recordMap.dispose();
     }

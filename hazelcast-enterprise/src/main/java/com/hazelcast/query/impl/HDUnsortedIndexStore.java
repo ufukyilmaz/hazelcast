@@ -10,17 +10,27 @@ import com.hazelcast.query.impl.getters.Extractors;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.hazelcast.nio.serialization.DataType.HEAP;
+
 /**
- * We don't need read&write locking since it's accessed from a single partition-thread only
+ * Unsorted index store for HD memory.
+ *
+ * Contract:
+ * - Whenever QueryableEntry is passed to it, expects the key & value to be NativeMemoryData
+ * - Whenever Data is passed to it (removeIndexInternal), expects it to be NativeMemoryData
+ * - Never returns any native memory - all returning objects are on-heap (QueryableEntry and its fields).
+ * - There is no read & write locking since it's accessed from a single partition-thread only
  */
 class HDUnsortedIndexStore extends BaseIndexStore {
 
+    private final EnterpriseSerializationService ess;
     private final HDIndexHashMap<QueryableEntry> recordsWithNullValue;
     private final HDIndexNestedHashMap<QueryableEntry> records;
 
     HDUnsortedIndexStore(EnterpriseSerializationService ess, MemoryAllocator malloc) {
-        this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(ess, malloc, new CachedQueryEntryFactory(ess));
-        this.records = new HDIndexNestedHashMap<QueryableEntry>(ess, malloc, new CachedQueryEntryFactory(ess));
+        this.ess = ess;
+        this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(ess, malloc, new OnHeapCachedQueryEntryFactory(ess));
+        this.records = new HDIndexNestedHashMap<QueryableEntry>(ess, malloc, new OnHeapCachedQueryEntryFactory(ess));
     }
 
     @Override
@@ -73,7 +83,8 @@ class HDUnsortedIndexStore extends BaseIndexStore {
             paramFrom = to;
             paramTo = oldFrom;
         }
-        for (Comparable value : records.keySet()) {
+        for (Data valueData : records.keySet()) {
+            Comparable value = ess.toObject(valueData);
             if (value.compareTo(paramFrom) <= 0 && value.compareTo(paramTo) >= 0) {
                 results.addAll(records.get(value));
             }
@@ -84,7 +95,8 @@ class HDUnsortedIndexStore extends BaseIndexStore {
     @Override
     public Set<QueryableEntry> getSubRecords(ComparisonType comparisonType, Comparable searchedValue) {
         Set<QueryableEntry> results = new HashSet<QueryableEntry>();
-        for (Comparable value : records.keySet()) {
+        for (Data valueData : records.keySet()) {
+            Comparable value = ess.toObject(valueData);
             boolean valid;
             int result = searchedValue.compareTo(value);
             switch (comparisonType) {
@@ -126,11 +138,7 @@ class HDUnsortedIndexStore extends BaseIndexStore {
     public Set<QueryableEntry> getRecords(Set<Comparable> values) {
         Set<QueryableEntry> results = new HashSet<QueryableEntry>();
         for (Comparable value : values) {
-            if (value instanceof IndexImpl.NullObject) {
-                results.addAll(recordsWithNullValue.entrySet());
-            } else {
-                results.addAll(records.get(value));
-            }
+            results.addAll(getRecords(value));
         }
         return results;
     }
@@ -142,16 +150,29 @@ class HDUnsortedIndexStore extends BaseIndexStore {
                 + '}';
     }
 
-    private static class CachedQueryEntryFactory implements MapEntryFactory<QueryableEntry> {
+    private static class OnHeapCachedQueryEntryFactory implements MapEntryFactory<QueryableEntry> {
         private final EnterpriseSerializationService ess;
 
-        CachedQueryEntryFactory(EnterpriseSerializationService ess) {
+        OnHeapCachedQueryEntryFactory(EnterpriseSerializationService ess) {
             this.ess = ess;
         }
 
         @Override
         public CachedQueryEntry create(Data key, Data value) {
-            return new CachedQueryEntry(ess, key, value, Extractors.empty());
+            Data heapData = toHeapData(key);
+            Data heapValue = toHeapData(value);
+            return new CachedQueryEntry(ess, heapData, heapValue, Extractors.empty());
+        }
+
+        private Data toHeapData(Data data) {
+            if (data instanceof NativeMemoryData) {
+                NativeMemoryData nativeMemoryData = (NativeMemoryData) data;
+                if (nativeMemoryData.totalSize() == 0) {
+                    return null;
+                }
+                return ess.toData(nativeMemoryData, HEAP);
+            }
+            return data;
         }
     }
 

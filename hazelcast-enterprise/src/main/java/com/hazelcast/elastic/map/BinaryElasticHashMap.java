@@ -1,8 +1,6 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.elastic.SlottableIterator;
-import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.internal.memory.GlobalMemoryAccessor;
 import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
 import com.hazelcast.internal.memory.MemoryAllocator;

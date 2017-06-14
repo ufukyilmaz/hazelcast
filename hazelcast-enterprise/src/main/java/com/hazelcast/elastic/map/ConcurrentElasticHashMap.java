@@ -1,17 +1,13 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.query.impl.CachedQueryEntry;
-import com.hazelcast.query.impl.getters.Extractors;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;

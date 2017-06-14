@@ -10,8 +10,16 @@ import com.hazelcast.query.impl.getters.Extractors;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.hazelcast.nio.serialization.DataType.HEAP;
+
 /**
- * We don't need read&write locking since it's accessed from a single partition-thread only
+ * Sorted index store for HD memory.
+ *
+ * Contract:
+ * - Whenever QueryableEntry is passed to it, expects the key & value to be NativeMemoryData
+ * - Whenever Data is passed to it (removeIndexInternal), expects it to be NativeMemoryData
+ * - Never returns any native memory - all returning objects are on-heap (QueryableEntry and its fields).
+ * - There is no read & write locking since it's accessed from a single partition-thread only
  */
 class HDSortedIndexStore extends BaseIndexStore {
 
@@ -19,8 +27,8 @@ class HDSortedIndexStore extends BaseIndexStore {
     private final HDIndexNestedTreeMap<QueryableEntry> records;
 
     HDSortedIndexStore(EnterpriseSerializationService ess, MemoryAllocator malloc) {
-        this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(ess, malloc, new CachedQueryEntryFactory(ess));
-        this.records = new HDIndexNestedTreeMap<QueryableEntry>(ess, malloc, new CachedQueryEntryFactory(ess));
+        this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(ess, malloc, new OnHeapCachedQueryEntryFactory(ess));
+        this.records = new HDIndexNestedTreeMap<QueryableEntry>(ess, malloc, new OnHeapCachedQueryEntryFactory(ess));
     }
 
     @Override
@@ -118,17 +126,31 @@ class HDSortedIndexStore extends BaseIndexStore {
                 + '}';
     }
 
-    private static class CachedQueryEntryFactory implements MapEntryFactory<QueryableEntry> {
+    private static class OnHeapCachedQueryEntryFactory implements MapEntryFactory<QueryableEntry> {
         private final EnterpriseSerializationService ess;
 
-        CachedQueryEntryFactory(EnterpriseSerializationService ess) {
+        OnHeapCachedQueryEntryFactory(EnterpriseSerializationService ess) {
             this.ess = ess;
         }
 
         @Override
         public CachedQueryEntry create(Data key, Data value) {
-            return new CachedQueryEntry(ess, key, value, Extractors.empty());
+            Data heapData = toHeapData(key);
+            Data heapValue = toHeapData(value);
+            return new CachedQueryEntry(ess, heapData, heapValue, Extractors.empty());
         }
+
+        private Data toHeapData(Data data) {
+            if (data instanceof NativeMemoryData) {
+                NativeMemoryData nativeMemoryData = (NativeMemoryData) data;
+                if (nativeMemoryData.totalSize() == 0) {
+                    return null;
+                }
+                return ess.toData(nativeMemoryData, HEAP);
+            }
+            return data;
+        }
+
     }
 
 }

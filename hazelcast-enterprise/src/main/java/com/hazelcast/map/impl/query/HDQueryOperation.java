@@ -19,6 +19,15 @@ import java.util.List;
 
 import static com.hazelcast.spi.ExceptionAction.THROW_EXCEPTION;
 
+/**
+ * Query operation that runs a query for the HD memory.
+ * It is run on a generic thread, and then it spawns partition-query-operations for each local partition.
+ * This operation does not return any result until all the partition-query-operations have finished.
+ * Then it return a merged result.
+ * The main reason for this design is that we want the partition-query-operations to be local. In this way we skip
+ * the network overhead. So each member gets a single HDQueryOperation and then it queries all local partitions
+ * on partitions threads.
+ */
 public class HDQueryOperation extends HDMapOperation implements ReadonlyOperation {
 
     private Query query;

@@ -8,7 +8,6 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
-import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
@@ -20,10 +19,24 @@ import static com.hazelcast.elastic.map.BinaryElasticHashMap.loadFromOffHeapHead
 import static com.hazelcast.nio.serialization.DataType.HEAP;
 
 /**
- * Expects the entry.value to be in the NativeMemoryData format
- * Never disposes any NativeMemoryData passed to it.
+ * Nested map, so a map of maps, with two-tiers of keys.
+ * First tier maps keys to segments. Each segment maps keys to values.
+ * There is not sorting of keys in none of the tiers.
  *
- * @param <T> type of the QueryableEntry entry passed to the map
+ * Uses BinaryElasticHashMap as the underlying store for the segments.
+ * Each segment is stored under a segmentKey passed as Data (may be on-heap of off-heap Data).
+ * There is one segment per segmentKey.
+ *
+ * Each segment uses BinaryElasticHashMap as the underlying segment storage.
+ *
+ * Contract of each segment:
+ * - Expects the key & value to be in the NativeMemoryData,
+ * - Returns NativeMemoryData,
+ * - Never disposes any NativeMemoryData passed to it,
+ *
+ * Each method that returns MapEntry instances uses MapEntryFactory to create them.
+ *
+ * @param <T> type of the Map.Entry returned by the tree.
  */
 class HDIndexNestedHashMap<T extends QueryableEntry> {
 
@@ -39,11 +52,7 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         this.records = new BinaryElasticHashMap<NativeMemoryData>(ess, new NativeMemoryDataAccessor(ess), malloc);
         this.ess = ess;
         this.malloc = malloc;
-        this.mapEntryFactory = mapEntryFactory != null ? mapEntryFactory : new DefaultMapEntryFactory<T>();
-    }
-
-    HDIndexNestedHashMap(EnterpriseSerializationService ess, MemoryAllocator malloc) {
-        this(ess, malloc, null);
+        this.mapEntryFactory = mapEntryFactory;
     }
 
     public NativeMemoryData put(Comparable segment, NativeMemoryData keyData, NativeMemoryData valueData) {
@@ -76,15 +85,12 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
     }
 
     /**
-     * @return on-heap representation of the keys
+     * @return off-heap set of keys
      */
-    public Set<Comparable> keySet() {
-        Set<Comparable> result = new HashSet<Comparable>();
-        for (Data data : records.keySet()) {
-            Comparable value = ess.toObject(data, malloc);
-            result.add(value);
-        }
-        return result;
+    @SuppressWarnings("unchecked")
+    public Set<NativeMemoryData> keySet() {
+        Set keySet = records.keySet();
+        return ((Set<NativeMemoryData>) keySet);
     }
 
     /**
@@ -104,9 +110,7 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         Set<T> result = new HashSet<T>();
         BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, mapHeader.address());
         for (Map.Entry<Data, NativeMemoryData> entry : map.entrySet()) {
-            result.add(mapEntryFactory.create(
-                    toHeapData((NativeMemoryData) entry.getKey()),
-                    toHeapData(entry.getValue())));
+            result.add(mapEntryFactory.create(entry.getKey(), entry.getValue()));
         }
         return result;
     }
@@ -134,6 +138,9 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         return value;
     }
 
+    /**
+     * Clears the map by removing and disposing all segments including key/value pairs stored.
+     */
     public void clear() {
         for (NativeMemoryData mapHeader : records.values()) {
             if (isNullOrEmptyData(mapHeader)) {
@@ -148,6 +155,12 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         records.clear();
     }
 
+    /**
+     * Disposes internal backing top-level BEHM. Does not dispose segments nor key/value pairs inside.
+     * To dispose key/value pairs, {@link #clear()} must be called explicitly.
+     *
+     * @see #clear()
+     */
     public void dispose() {
         records.dispose();
     }
@@ -169,21 +182,6 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
     private void checkNotNullOrEmpty(Data data, String message) {
         if (isNullOrEmptyData(data)) {
             throw new IllegalArgumentException(message);
-        }
-    }
-
-    private Data toHeapData(NativeMemoryData nativeMemoryData) {
-        if (isNullOrEmptyData(nativeMemoryData)) {
-            return null;
-        }
-        return ess.toData(nativeMemoryData, HEAP);
-    }
-
-    private static class DefaultMapEntryFactory<T extends Map.Entry> implements MapEntryFactory<T> {
-        @Override
-        @SuppressWarnings("unchecked")
-        public T create(Data key, Data value) {
-            return (T) new AbstractMap.SimpleEntry(key, value);
         }
     }
 

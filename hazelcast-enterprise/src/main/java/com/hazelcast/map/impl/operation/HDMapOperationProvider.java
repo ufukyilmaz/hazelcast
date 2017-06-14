@@ -3,6 +3,7 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.impl.MapEntries;
+import com.hazelcast.map.impl.query.Query;
 import com.hazelcast.map.impl.tx.HDTxnDeleteOperation;
 import com.hazelcast.map.impl.tx.HDTxnLockAndGetOperation;
 import com.hazelcast.map.impl.tx.HDTxnSetOperation;
@@ -181,6 +182,11 @@ public class HDMapOperationProvider implements MapOperationProvider {
     @Override
     public MapOperation createFetchEntriesOperation(String name, int lastTableIndex, int fetchSize) {
         return new HDMapFetchEntriesOperation(name, lastTableIndex, fetchSize);
+    }
+
+    @Override
+    public MapOperation createFetchWithQueryOperation(String name, int lastTableIndex, int fetchSize, Query query) {
+        return new HDMapFetchWithQueryOperation(name, lastTableIndex, fetchSize, query);
     }
 
     @Override

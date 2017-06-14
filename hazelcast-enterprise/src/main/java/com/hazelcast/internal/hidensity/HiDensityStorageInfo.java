@@ -8,8 +8,6 @@ import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 
 /**
  * Holds information about Hi-Density storage such as entry count, used memory, etc.
- *
- * @author sozal 18/02/15
  */
 public class HiDensityStorageInfo {
 
@@ -92,12 +90,11 @@ public class HiDensityStorageInfo {
     @Override
     public String toString() {
         return "HiDensityStorageInfo{"
-                    + "storageName='" + storageName + '\''
-                    + ", usedMemory=" + usedMemory.get()
-                    + ", forceEvictionCount=" + forceEvictionCount.get()
-                    + ", forceEvictedEntryCount=" + forceEvictedEntryCount.get()
-                    + ", entryCount=" + entryCount.get()
-                    + '}';
+                + "storageName='" + storageName + '\''
+                + ", usedMemory=" + usedMemory.get()
+                + ", forceEvictionCount=" + forceEvictionCount.get()
+                + ", forceEvictedEntryCount=" + forceEvictedEntryCount.get()
+                + ", entryCount=" + entryCount.get()
+                + '}';
     }
-
 }

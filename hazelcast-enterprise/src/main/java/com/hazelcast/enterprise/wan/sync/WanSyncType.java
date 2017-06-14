@@ -1,17 +1,17 @@
 package com.hazelcast.enterprise.wan.sync;
 
 /**
- * WAN sync types
+ * WAN sync types.
  */
 public enum WanSyncType {
 
     /**
-     * Sync all maps
+     * Sync all maps.
      */
     ALL_MAPS(0),
 
     /**
-     * Sync only a specific map
+     * Sync only a specific map.
      */
     SINGLE_MAP(1);
 
@@ -22,7 +22,7 @@ public enum WanSyncType {
     }
 
     /**
-     * @return unique id of the event type.
+     * @return unique ID of the event type
      */
     public int getType() {
         return type;

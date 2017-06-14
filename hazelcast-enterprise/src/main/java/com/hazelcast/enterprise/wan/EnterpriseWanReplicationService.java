@@ -64,10 +64,14 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
     private volatile WanSyncManager syncManager;
     private final ILogger logger;
 
-    /** Publisher delegates grouped by WAN replication config name */
+    /**
+     * Publisher delegates grouped by WAN replication config name.
+     */
     private final ConcurrentHashMap<String, WanReplicationPublisherDelegate> wanReplications
             = new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
-    /** Consumer implementations grouped by WAN replication config name */
+    /**
+     * Consumer implementations grouped by WAN replication config name.
+     */
     private final Map<String, WanReplicationConsumer> wanConsumers
             = new ConcurrentHashMap<String, WanReplicationConsumer>(2);
 
@@ -207,7 +211,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         return getOrPutSynchronized(wanReplications, name, publisherMutex, publisherDelegateConstructor);
     }
 
-    /** Instantiate and initialize the {@link WanReplicationEndpoint}s and group by endpoint group name */
+    /**
+     * Instantiate and initialize the {@link WanReplicationEndpoint}s and group by endpoint group name.
+     */
     private Map<String, WanReplicationEndpoint> createPublishers(
             WanReplicationConfig wanReplicationConfig,
             List<WanPublisherConfig> publisherConfigs) {
@@ -435,7 +441,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         }
     }
 
-    /** Returns the partition ID for the first event or -1 if the event batch is empty */
+    /**
+     * Returns the partition ID for the first event or -1 if the event batch is empty.
+     */
     private int getPartitionId(BatchWanReplicationEvent batchWanReplicationEvent) {
         List<WanReplicationEvent> eventList = batchWanReplicationEvent.getEventList();
         if (eventList.isEmpty()) {

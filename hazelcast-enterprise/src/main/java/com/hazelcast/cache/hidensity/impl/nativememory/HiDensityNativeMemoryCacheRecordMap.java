@@ -12,13 +12,11 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.util.Clock;
+
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author sozal 11/02/14
- */
 public class HiDensityNativeMemoryCacheRecordMap
         extends SampleableEvictableHiDensityRecordMap<HiDensityNativeMemoryCacheRecord>
         implements SampleableHiDensityCacheRecordMap<HiDensityNativeMemoryCacheRecord> {
@@ -86,7 +84,6 @@ public class HiDensityNativeMemoryCacheRecordMap
             }
             keys.add(recordProcessor.convertData(key, DataType.HEAP));
         }
-
         return new CacheKeyIterationResult(keys, iter.getNextSlot());
     }
 
@@ -110,7 +107,6 @@ public class HiDensityNativeMemoryCacheRecordMap
         return new CacheEntryIterationResult(entries, iter.getNextSlot());
     }
 
-
     private final class CacheEvictableSamplingEntry
             extends EvictableSamplingEntry
             implements CacheEntryView {
@@ -130,5 +126,4 @@ public class HiDensityNativeMemoryCacheRecordMap
     protected EvictableSamplingEntry createSamplingEntry(final int slot) {
         return new CacheEvictableSamplingEntry(slot);
     }
-
 }

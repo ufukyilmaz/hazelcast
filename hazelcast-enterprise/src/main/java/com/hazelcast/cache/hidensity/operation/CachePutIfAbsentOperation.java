@@ -16,7 +16,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
- * @author mdogan 05/02/14
+ * Creates a JCache entry via {@code putIfAbsent()}.
  */
 public class CachePutIfAbsentOperation
         extends BackupAwareKeyBasedHiDensityCacheOperation
@@ -89,5 +89,4 @@ public class CachePutIfAbsentOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.PUT_IF_ABSENT;
     }
-
 }

@@ -1,14 +1,14 @@
 package com.hazelcast.elastic.map;
 
-import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
 import com.hazelcast.elastic.SlottableIterator;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
-import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
-import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -25,16 +25,16 @@ import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 
+import static com.hazelcast.elastic.map.BehmSlotAccessor.rehash;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.MIN_CAPACITY;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.nextCapacity;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.roundCapacity;
-import static com.hazelcast.elastic.map.BehmSlotAccessor.rehash;
-import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.util.HashUtil.computePerturbationValue;
 
 /**
- * A hash map of <code>Data</code> to <code>MemoryBlock</code>, implemented using open
+ * A hash map of {@code Data} to {@code MemoryBlock}, implemented using open
  * addressing with linear probing for collision resolution.
  * <p>
  * The internal buffer of this implementation is
@@ -50,10 +50,14 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
     protected BehmSlotAccessor accessor;
 
-    /** Number of allocated slots. */
+    /**
+     * Number of allocated slots.
+     */
     private int allocatedSlotCount;
 
-    /** Cached number of assigned slots in {@link #allocatedSlotCount}. */
+    /**
+     * Cached number of assigned slots in {@link #allocatedSlotCount}.
+     */
     private int assignedSlotCount;
 
     /**
@@ -62,7 +66,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      */
     private final float loadFactor;
 
-    /** Resize buffers when {@link #assignedSlotCount} hits this value. */
+    /**
+     * Resize buffers when {@link #assignedSlotCount} hits this value.
+     */
     private int resizeAt;
 
     /**
@@ -102,7 +108,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     /**
      * Creates a hash map with the given initial capacity,
      * load factor.
-     *  @param initialCapacity initial capacity (greater than zero and automatically
+     *
+     * @param initialCapacity initial capacity (greater than zero and automatically
      *                        rounded to the next power of two)
      * @param loadFactor      the load factor (greater than zero and smaller than 1)
      */
@@ -116,7 +123,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     /**
      * Creates a hash map with the given initial capacity,
      * load factor.
-     *  @param initialCapacity initial capacity (greater than zero and automatically
+     *
+     * @param initialCapacity initial capacity (greater than zero and automatically
      *                        rounded to the next power of two)
      */
     public BinaryElasticHashMap(int initialCapacity, MemoryBlockProcessor<V> memoryBlockProcessor) {
@@ -126,7 +134,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     /**
      * Creates a hash map with the given initial capacity,
      * load factor.
-     *  @param initialCapacity initial capacity (greater than zero and automatically
+     *
+     * @param initialCapacity initial capacity (greater than zero and automatically
      *                        rounded to the next power of two)
      * @param loadFactor      the load factor (greater than zero and smaller than 1)
      */
@@ -309,7 +318,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
         // rehash all stored keys into the new buffers
         final int mask = allocatedSlotCount - 1;
-        for (int slot = oldAllocated; --slot >= 0;) {
+        for (int slot = oldAllocated; --slot >= 0; ) {
             if (oldAccessor.isAssigned(slot)) {
                 long key = oldAccessor.getKey(slot);
                 long value = oldAccessor.getValue(slot);
@@ -339,8 +348,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 assignedSlotCount--;
                 long v = accessor.getValue(slot);
                 if (key instanceof HeapData
-                    || (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != slotKey)
-                ) {
+                        || (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != slotKey)
+                        ) {
                     memoryBlockProcessor.disposeData(accessor.keyData(slot));
                 }
                 shiftConflictingKeys(slot);
@@ -380,8 +389,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 if (memoryBlockProcessor.isEqual(current, value)) {
                     assignedSlotCount--;
                     if (key instanceof HeapData
-                        || (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != keyAddress)
-                    ) {
+                            || (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != keyAddress)
+                            ) {
                         memoryBlockProcessor.disposeData(accessor.keyData(slot));
                     }
                     if (value.address() != current) {
@@ -402,7 +411,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     /**
-     * Shifts all the slot-conflicting keys allocated to (and including) <code>slot</code>.
+     * Shifts all the slot-conflicting keys allocated to (and including) {@code slot}.
      */
     private void shiftConflictingKeys(int slotCurr) {
         final int mask = allocatedSlotCount - 1;
@@ -547,7 +556,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      *
      * It expects a caller will remove each visited entry - failing to do means one entry can be visited
      * more than once and some other entry won't be visited at all.
-     *
      */
     public SlottableIterator<Data> newRandomEvictionKeyIterator() {
         return new RandomKeyIter();
@@ -558,7 +566,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      *
      * It expects a caller will remove each visited entry - failing to do means one entry can be visited
      * multiple-times and some other entry won't be visited at all.
-     *
      */
     public SlottableIterator<V> newRandomEvictionValueIterator() {
         return new RandomValueIter();
@@ -782,18 +789,27 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     private class KeySet extends AbstractSet<Data> {
+        @Override
         public Iterator<Data> iterator() {
             return new KeyIter();
         }
+
+        @Override
         public int size() {
             return BinaryElasticHashMap.this.size();
         }
+
+        @Override
         public boolean contains(Object o) {
             return containsKey(o);
         }
+
+        @Override
         public boolean remove(Object o) {
             return BinaryElasticHashMap.this.remove(o) != null;
         }
+
+        @Override
         public void clear() {
             BinaryElasticHashMap.this.clear();
         }
@@ -803,7 +819,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         return new KeyIter(startSlot);
     }
 
-    /** Key iterator. */
+    /**
+     * Key iterator.
+     */
     protected class KeyIter extends SlotIter<Data> implements Iterator<Data> {
         KeyIter() {
         }
@@ -831,15 +849,22 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     private final class Values extends AbstractCollection<V> {
+        @Override
         public Iterator<V> iterator() {
             return new ValueIter();
         }
+
+        @Override
         public int size() {
             return BinaryElasticHashMap.this.size();
         }
+
+        @Override
         public boolean contains(Object o) {
             return containsValue(o);
         }
+
+        @Override
         public void clear() {
             BinaryElasticHashMap.this.clear();
         }
@@ -849,7 +874,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         return new ValueIter();
     }
 
-    /** Iterator over the map's values. */
+    /**
+     * Iterator over the map's values.
+     */
     protected class ValueIter extends SlotIter<V> implements Iterator<V> {
         @Override
         public V next() {
@@ -873,9 +900,12 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     private final class EntrySet extends AbstractSet<Map.Entry<Data, V>> {
+        @Override
         public Iterator<Map.Entry<Data, V>> iterator() {
             return new EntryIter();
         }
+
+        @Override
         public boolean contains(Object o) {
             if (!(o instanceof Map.Entry)) {
                 return false;
@@ -889,6 +919,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             }
             return false;
         }
+
+        @Override
         public boolean remove(Object o) {
             if (!(o instanceof Map.Entry)) {
                 return false;
@@ -902,9 +934,13 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 //            }
             return deleted;
         }
+
+        @Override
         public int size() {
             return BinaryElasticHashMap.this.size();
         }
+
+        @Override
         public void clear() {
             BinaryElasticHashMap.this.clear();
         }
@@ -915,7 +951,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     private class EntryIter extends SlotIter<Map.Entry<Data, V>> {
-        EntryIter() { }
+        EntryIter() {
+        }
 
         EntryIter(int slot) {
             if (slot < 0 || slot > allocatedSlotCount) {
@@ -932,7 +969,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
     }
 
-    /** {@code Map.Entry} implementation for this map. */
+    /**
+     * {@code Map.Entry} implementation for this map.
+     */
     protected class MapEntry implements Map.Entry {
 
         private final int slot;

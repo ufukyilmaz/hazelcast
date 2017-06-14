@@ -21,7 +21,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * @author mdogan 05/02/14
+ * Replicates records from one off-heap source to an off-heap destination.
  */
 public final class HiDensityCacheReplicationOperation
         extends CacheReplicationOperation implements IdentifiedDataSerializable {
@@ -214,5 +214,4 @@ public final class HiDensityCacheReplicationOperation
             this.value = value;
         }
     }
-
 }

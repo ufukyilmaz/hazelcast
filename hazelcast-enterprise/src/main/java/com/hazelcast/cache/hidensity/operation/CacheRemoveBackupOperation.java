@@ -12,7 +12,7 @@ import com.hazelcast.spi.impl.MutatingOperation;
 import java.io.IOException;
 
 /**
- * @author mdogan 05/02/14
+ * Removes the backup of a JCache entry.
  */
 public class CacheRemoveBackupOperation
         extends AbstractKeyBasedHiDensityCacheOperation
@@ -52,7 +52,6 @@ public class CacheRemoveBackupOperation
         super.afterRun();
         dispose();
     }
-
 
     @Override
     protected void disposeInternal(EnterpriseSerializationService serializationService) {

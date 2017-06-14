@@ -2,9 +2,9 @@ package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @param <E> entry type
- * @author mdogan 22/01/14
  */
 abstract class AbstractBlockingElasticQueue<E> extends AbstractQueue<E> implements BlockingElasticQueue<E> {
 
@@ -140,6 +139,7 @@ abstract class AbstractBlockingElasticQueue<E> extends AbstractQueue<E> implemen
             this.count = count;
         }
 
+        @Override
         public boolean consume(final long value) {
             if (count > 0) {
                 NativeMemoryData data = new NativeMemoryData().reset(value);
@@ -178,5 +178,4 @@ abstract class AbstractBlockingElasticQueue<E> extends AbstractQueue<E> implemen
             throw new UnsupportedOperationException();
         }
     }
-
 }

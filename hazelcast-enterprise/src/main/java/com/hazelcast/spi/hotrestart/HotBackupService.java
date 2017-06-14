@@ -129,7 +129,7 @@ public class HotBackupService implements HotRestartService, TransactionalService
      * created by {@link #backup()} or {@link #backup(long)}.
      *
      * @param initiator the member which initiated the transaction
-     * @param txnId     the transaction id
+     * @param txnId     the transaction ID
      * @param leaseTime number of ms after which this transaction will expire
      */
     public void prepareBackup(Address initiator, String txnId, long leaseTime) {

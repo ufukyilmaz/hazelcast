@@ -5,8 +5,6 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 
 /**
  * Holds information about Hi-Density cache storage such as entry count, used memory, etc.
- *
- * @author sozal 27/11/15
  */
 public class HiDensityCacheStorageInfo extends HiDensityStorageInfo {
 
@@ -17,22 +15,27 @@ public class HiDensityCacheStorageInfo extends HiDensityStorageInfo {
         this.cacheContext = cacheContext;
     }
 
+    @Override
     public long addEntryCount(long count) {
         return cacheContext.increaseEntryCount(count);
     }
 
+    @Override
     public long removeEntryCount(long count) {
         return cacheContext.decreaseEntryCount(count);
     }
 
+    @Override
     public long increaseEntryCount() {
         return cacheContext.increaseEntryCount();
     }
 
+    @Override
     public long decreaseEntryCount() {
         return cacheContext.decreaseEntryCount();
     }
 
+    @Override
     public long getEntryCount() {
         return cacheContext.getEntryCount();
     }
@@ -49,5 +52,4 @@ public class HiDensityCacheStorageInfo extends HiDensityStorageInfo {
         }
         return super.equals(obj);
     }
-
 }

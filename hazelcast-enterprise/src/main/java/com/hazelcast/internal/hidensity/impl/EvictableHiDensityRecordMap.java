@@ -1,23 +1,21 @@
 package com.hazelcast.internal.hidensity.impl;
 
 import com.hazelcast.elastic.SlottableIterator;
-import com.hazelcast.internal.hidensity.HiDensityRecord;
-import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.eviction.Evictable;
 import com.hazelcast.internal.eviction.EvictableStore;
 import com.hazelcast.internal.eviction.EvictionCandidate;
 import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.Expirable;
 import com.hazelcast.internal.eviction.ExpirationChecker;
+import com.hazelcast.internal.hidensity.HiDensityRecord;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 
 /**
- * @author sozal 18/02/15
- *
  * @param <R> type of the {@link HiDensityRecord} to be stored
  */
 public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable & Expirable>
@@ -37,11 +35,10 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
     }
 
     /**
-     * Forcefully evict records with the given <code>evictionPercentage</code>.
+     * Forcefully evict records with the given {@code evictionPercentage}.
      *
-     * @param evictionPercentage    percentage to determine how many records will be evicted
-     * @param evictionListener      {@link EvictionListener} to be notified
-     *                              about evicted key and value
+     * @param evictionPercentage percentage to determine how many records will be evicted
+     * @param evictionListener   {@link EvictionListener} to be notified about evicted key and value
      * @return evicted entry count
      */
     public <C extends EvictionCandidate<Data, R>> int forceEvict(int evictionPercentage,

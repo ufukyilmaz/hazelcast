@@ -16,7 +16,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
- * @author mdogan 05/02/14
+ * Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
  */
 public class CacheGetAndReplaceOperation
         extends BackupAwareKeyBasedHiDensityCacheOperation

@@ -32,9 +32,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author mdogan 02/06/14
- */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 @Ignore

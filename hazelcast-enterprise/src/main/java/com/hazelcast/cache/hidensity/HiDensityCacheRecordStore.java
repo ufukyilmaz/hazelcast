@@ -12,21 +12,15 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.util.Map;
 
 /**
- * <p>
  * {@link HiDensityCacheRecordStore} is the contract for Hi-Density specific cache record store operations.
  * This contract is sub-type of {@link ICacheRecordStore} and used by Hi-Density cache based operations.
- * </p>
  * <p>
  * This {@link HiDensityCacheRecordStore} mainly manages operations for
  * {@link HiDensityCacheRecord} like get, put, replace, remove, iterate, etc.
- * </p>
  *
  * @param <R> Type of the cache record to be stored.
- *
  * @see com.hazelcast.cache.hidensity.HiDensityCacheRecordStore
  * @see com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore
- *
- * @author sozal 18/10/14
  */
 public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
         extends HiDensityRecordStore<R>, EnterpriseCacheRecordStore {
@@ -41,8 +35,8 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
     /**
      * Gets the value of specified record.
      *
-     * @param record The record whose value is extracted.
-     * @return value of the record.
+     * @param record the record whose value is extracted
+     * @return value of the record
      */
     Object getRecordValue(R record);
 
@@ -50,108 +44,107 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * Gets the {@link HiDensityRecordProcessor}
      * which is used by this {@link HiDensityCacheRecordStore}.
      *
-     * @return the used Hi-Density cache record processor.
+     * @return the used Hi-Density cache record processor
      */
     HiDensityRecordProcessor<R> getRecordProcessor();
 
     /**
-     * Puts and saves (replaces if exist) the backup <code>value</code> with the specified <code>key</code>
+     * Puts and saves (replaces if exist) the backup {@code value} with the specified {@code key}
      * to this {@link HiDensityCacheRecordStore}.
      *
-     * @param key           the key of the <code>value</code> to be owned.
-     * @param value         the value to be owned.
-     * @param expiryPolicy  expiry policy of the owned value.
-     * @return <code>true</code> if the <code>value</code> has been added as new record,
-     * otherwise (in case of update) <code>false</code>.
+     * @param key          the key of the {@code value} to be owned
+     * @param value        the value to be owned
+     * @param expiryPolicy expiry policy of the owned value
+     * @return {@code true} if the {@code value} has been added as new record,
+     * otherwise (in case of update) {@code false}
      */
     boolean putBackup(Data key, Object value, ExpiryPolicy expiryPolicy);
 
     /**
-     * Puts and saves (replaces if exist) the replicated <code>value</code> with the specified <code>key</code>
+     * Puts and saves (replaces if exist) the replicated {@code value} with the specified {@code key}
      * to this {@link HiDensityCacheRecordStore}.
      *
-     * @param key       the key of the <code>value</code> to be owned
+     * @param key       the key of the {@code value} to be owned
      * @param value     the value to be owned
      * @param ttlMillis the TTL value in milliseconds for the owned value
-     * @return <code>true</code> if the <code>value</code> has been added as new record,
-     * otherwise (in case of update) <code>false</code>.
+     * @return {@code true} if the {@code value} has been added as new record,
+     * otherwise (in case of update) {@code false}
      */
     boolean putReplica(Data key, Object value, long ttlMillis);
 
     /**
-     * Puts the <code>value</code> with the specified <code>key</code>
+     * Puts the {@code value} with the specified {@code key}
      * to this {@link HiDensityCacheRecordStore} if there is no value with the same key.
      *
-     * @param key    the key of the <code>value</code> to be put.
-     * @param value  the value to be put.
-     * @param caller the id which represents the caller.
-     * @return <code>true</code> if the <code>value</code> has been put to the record store,
-     * otherwise <code>false</code>.
+     * @param key    the key of the {@code value} to be put
+     * @param value  the value to be put
+     * @param caller the ID which represents the caller
+     * @return {@code true} if the {@code value} has been put to the record store,
+     * otherwise {@code false}
      */
     boolean putIfAbsent(Data key, Object value, String caller, int completionId);
 
     /**
-     * Replaces the already stored value with the new <code>value</code>
-     * mapped by the specified <code>key</code> to this {@link HiDensityCacheRecordStore}
-     * if there is a value with the specified <code>key</code>.
+     * Replaces the already stored value with the new {@code value}
+     * mapped by the specified {@code key} to this {@link HiDensityCacheRecordStore}
+     * if there is a value with the specified {@code key}.
      *
-     * @param key    the key of the <code>value</code> to be put
+     * @param key    the key of the {@code value} to be put
      * @param value  the value to be put
-     * @param caller the id which represents the caller
-     * @return <code>true</code> if the <code>value</code> has been replaced with the specified <code>value</code>,
-     * otherwise <code>false</code>.
+     * @param caller the ID which represents the caller
+     * @return {@code true} if the {@code value} has been replaced with the specified {@code value},
+     * otherwise {@code false}
      */
     boolean replace(Data key, Object value, String caller, int completionId);
 
     /**
-     * Replaces the already stored value with the new <code>value</code>
-     * mapped by the specified <code>key</code> to this {@link HiDensityCacheRecordStore}
-     * if there is a value with the specified <code>key</code> and equals to specified <code>value</code>.
+     * Replaces the already stored value with the new {@code value}
+     * mapped by the specified {@code key} to this {@link HiDensityCacheRecordStore}
+     * if there is a value with the specified {@code key} and equals to specified {@code value}.
      *
-     * @param key      the key of the <code>value</code> to be put.
-     * @param oldValue the expected value of the record for the specified <code>key</code>.
-     * @param newValue the new value to be put.
-     * @param caller   the id which represents the caller.
-     * @return <code>true</code> if the <code>value</code> has been replaced with the specified <code>value</code>,
-     * otherwise <code>false</code>.
+     * @param key      the key of the {@code value} to be put
+     * @param oldValue the expected value of the record for the specified {@code key}
+     * @param newValue the new value to be put
+     * @param caller   the ID which represents the caller
+     * @return {@code true} if the {@code value} has been replaced with the specified {@code value},
+     * otherwise {@code false}
      */
     boolean replace(Data key, Object oldValue, Object newValue, String caller, int completionId);
 
     /**
-     * Replaces the already stored value with the new <code>value</code>
-     * mapped by the specified <code>key</code> to this {@link HiDensityCacheRecordStore}
-     * if there is a value with the specified <code>key</code> and
+     * Replaces the already stored value with the new {@code value}
+     * mapped by the specified {@code key} to this {@link HiDensityCacheRecordStore}
+     * if there is a value with the specified {@code key} and
      * returns the old value of the replaced record if exist.
      *
-     * @param key    the key of the <code>value</code> to be put.
-     * @param value  the value to be put.
-     * @param caller the id which represents the caller.
-     * @return the old value of the record with the specified <code>key</code> if exist, otherwise <code>null</code>.
+     * @param key    the key of the {@code value} to be put
+     * @param value  the value to be put
+     * @param caller the ID which represents the caller
+     * @return the old value of the record with the specified {@code key} if exist, otherwise {@code null}
      */
     Object getAndReplace(Data key, Object value, String caller, int completionId);
 
     /**
      * Returns a slottable iterator for this {@link HiDensityCacheRecordStore} to iterate over records.
      *
-     * @param slot the slot number (or index) to start the <code>iterator</code>.
-     * @return the slottable iterator for specified <code>slot</code>.
+     * @param slot the slot number (or index) to start the {@code iterator}
+     * @return the slottable iterator for specified {@code slot}
      */
     SlottableIterator<Map.Entry<Data, R>> iterator(int slot);
 
     /**
      * Converts the given object to data to be sent inside event.
      *
-     * @param obj the object to be converted to data to be sent inside event.
-     * @return the data to be sent.
+     * @param obj the object to be converted to data to be sent inside event
+     * @return the data to be sent
      */
     Data toEventData(Object obj);
 
     /**
      * Converts given {@link HiDensityCacheRecord} to heap based {@link CacheRecord}.
      *
-     * @param record the {@link HiDensityCacheRecord} to be converted to heap based {@link CacheRecord}.
-     * @return the heap based {@link CacheRecord} converted from the given {@link HiDensityCacheRecord}.
+     * @param record the {@link HiDensityCacheRecord} to be converted to heap based {@link CacheRecord}
+     * @return the heap based {@link CacheRecord} converted from the given {@link HiDensityCacheRecord}
      */
     CacheRecord toHeapCacheRecord(R record);
-
 }

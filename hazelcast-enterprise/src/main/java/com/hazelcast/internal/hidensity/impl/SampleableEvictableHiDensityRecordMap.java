@@ -10,8 +10,6 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.nio.serialization.Data;
 
 /**
- * @author sozal 18/02/15
- *
  * @param <R> type of the {@link HiDensityRecord} to be stored
  */
 public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable & Expirable>
@@ -67,7 +65,6 @@ public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & E
         public long getAccessHit() {
             return ((R) getEntryValue()).getAccessHit();
         }
-
     }
 
     @Override
@@ -79,5 +76,4 @@ public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & E
     public Iterable<EvictableSamplingEntry> sample(int sampleCount) {
         return super.getRandomSamples(sampleCount);
     }
-
 }

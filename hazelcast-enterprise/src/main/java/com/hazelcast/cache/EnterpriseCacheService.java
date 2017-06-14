@@ -68,9 +68,10 @@ import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitio
 
 /**
  * The {@link ICacheService} implementation specified for enterprise usage.
+ * <p>
  * This {@link EnterpriseCacheService} implementation mainly handles
  * <ul>
- * <li>{@link ICacheRecordStore} creation of caches with specified partition id</li>
+ * <li>{@link ICacheRecordStore} creation of caches with specified partition ID</li>
  * <li>Destroying segments and caches</li>
  * <li>Mediating for cache events and listeners</li>
  * </ul>
@@ -174,7 +175,7 @@ public class EnterpriseCacheService
      * Creates new {@link ICacheRecordStore} as specified {@link InMemoryFormat}.
      *
      * @param name        the name of the cache, including prefix
-     * @param partitionId the partition id which cache record store is created on
+     * @param partitionId the partition ID which cache record store is created on
      * @return the created {@link ICacheRecordStore}
      * @see com.hazelcast.cache.impl.CacheRecordStore
      * @see com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore
@@ -346,12 +347,12 @@ public class EnterpriseCacheService
      * Does forced eviction on one or more caches. Runs on the operation threads.
      *
      * @param name                the name of the cache to be evicted
-     * @param originalPartitionId the partition id of the record store stores the records of cache
+     * @param originalPartitionId the partition ID of the record store stores the records of cache
      * @return the number of evicted records
      */
     public int forceEvict(String name, int originalPartitionId) {
         if (logger.isFinestEnabled()) {
-            logger.finest("Forced eviction " + name + ", original partition id: " + originalPartitionId);
+            logger.finest("Forced eviction " + name + ", original partition ID: " + originalPartitionId);
         }
         int evicted = 0;
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
@@ -377,7 +378,7 @@ public class EnterpriseCacheService
      * Does forced eviction on other caches. Runs on the operation threads.
      *
      * @param name                the name of the cache not to be evicted.
-     * @param originalPartitionId the partition id of the record store that stores the records of cache
+     * @param originalPartitionId the partition ID of the record store that stores the records of cache
      * @return the number of evicted records
      */
     public int forceEvictOnOthers(String name, int originalPartitionId) {
@@ -404,7 +405,7 @@ public class EnterpriseCacheService
     /**
      * Does forced eviction on all caches. Runs on the operation threads.
      *
-     * @param originalPartitionId the partition id of the record store that stores the records of cache
+     * @param originalPartitionId the partition ID of the record store that stores the records of cache
      * @return the number of evicted records
      */
     public int forceEvictOnAll(int originalPartitionId) {
@@ -429,7 +430,7 @@ public class EnterpriseCacheService
     /**
      * Clears all record stores on the partitions owned by partition thread of original partition.
      *
-     * @param originalPartitionId the id of original partition
+     * @param originalPartitionId the ID of original partition
      */
     public void clearAll(int originalPartitionId) {
         NodeEngine nodeEngine = getNodeEngine();

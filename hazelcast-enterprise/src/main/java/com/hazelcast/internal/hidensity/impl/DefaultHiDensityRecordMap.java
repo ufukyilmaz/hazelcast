@@ -12,8 +12,6 @@ import com.hazelcast.nio.serialization.Data;
 import java.util.Map;
 
 /**
- * @author sozal 18/02/15
- *
  * @param <R> type of the {@link HiDensityRecord} to be stored
  */
 public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
@@ -114,8 +112,8 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     /**
      * Returns a slottable iterator for this {@link HiDensityRecordMap} to iterate over records.
      *
-     * @param slot the slot number (or index) to start the <code>iterator</code>
-     * @return the slottable iterator for specified <code>slot</code>
+     * @param slot the slot number (or index) to start the {@code iterator}
+     * @return the slottable iterator for specified {@code slot}
      */
     public SlottableIterator<Map.Entry<Data, R>> iterator(int slot) {
         return entryIter(slot);

@@ -11,8 +11,6 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
  * @see com.hazelcast.cache.impl.record.CacheRecord
  * @see NativeMemoryData
  * @see com.hazelcast.cache.hidensity.HiDensityCacheRecordStore
- *
- * @author sozal 26/10/14
  */
 public abstract class HiDensityCacheRecord
         extends HiDensityRecord
@@ -38,5 +36,4 @@ public abstract class HiDensityCacheRecord
      * @param ttl the TTL value for this {@link HiDensityCacheRecord} in milliseconds.
      */
     public abstract void setTtlMillis(long ttl);
-
 }

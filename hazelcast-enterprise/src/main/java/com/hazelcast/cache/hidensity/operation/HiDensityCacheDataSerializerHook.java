@@ -108,7 +108,7 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
                 case CACHE_SEGMENT_SHUTDOWN:
                     return new CacheSegmentShutdownOperation();
                 default:
-                    throw new IllegalArgumentException("Unknown type-id: " + typeId);
+                    throw new IllegalArgumentException("Unknown type ID: " + typeId);
             }
         }
     }

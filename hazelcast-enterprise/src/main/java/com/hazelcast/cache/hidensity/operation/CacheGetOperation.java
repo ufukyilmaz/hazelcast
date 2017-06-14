@@ -10,7 +10,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
- * @author mdogan 05/02/14
+ * Gets the value to which the specified key is mapped, or {@code null} if this cache contains no mapping for the key.
  */
 public class CacheGetOperation
         extends AbstractKeyBasedHiDensityCacheOperation
@@ -58,5 +58,4 @@ public class CacheGetOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.GET;
     }
-
 }

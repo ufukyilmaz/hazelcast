@@ -1,8 +1,5 @@
 package com.hazelcast.internal.memory.impl;
 
-/**
-* @author mdogan 12/04/14
-*/
 public interface LibMalloc {
 
     /**
@@ -15,5 +12,4 @@ public interface LibMalloc {
     long realloc(long address, long size);
 
     void free(long address);
-
 }

@@ -1,16 +1,15 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import java.util.AbstractQueue;
 import java.util.Iterator;
 
 /**
  * @param <E> entry type
- * @author mdogan 22/01/14
  */
 public final class ConcurrentLinkedElasticQueue<E> extends AbstractQueue<E> implements ElasticQueue<E> {
 
@@ -86,4 +85,3 @@ public final class ConcurrentLinkedElasticQueue<E> extends AbstractQueue<E> impl
         throw new UnsupportedOperationException();
     }
 }
-

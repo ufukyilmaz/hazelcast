@@ -9,7 +9,7 @@ import com.hazelcast.spi.OperationFactory;
 import java.io.IOException;
 
 /**
- * @author mdogan 06/02/14
+ * Creates {@link CacheSizeOperation}s.
  */
 public class CacheSizeOperationFactory
         implements OperationFactory, IdentifiedDataSerializable {
@@ -47,5 +47,4 @@ public class CacheSizeOperationFactory
     public int getId() {
         return HiDensityCacheDataSerializerHook.SIZE_FACTORY;
     }
-
 }

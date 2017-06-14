@@ -4,10 +4,10 @@ import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -17,7 +17,6 @@ import java.util.Queue;
 
 /**
  * @param <R> type of the {@link HiDensityRecord} to be processed
- * @author sozal 18/02/15
  */
 public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
         implements HiDensityRecordProcessor<R> {
@@ -160,7 +159,6 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
         memoryManager.free(address, size);
         storageInfo.removeUsedMemory(disposedSize);
     }
-
 
     @Override
     public void addDeferredDispose(MemoryBlock memoryBlock) {

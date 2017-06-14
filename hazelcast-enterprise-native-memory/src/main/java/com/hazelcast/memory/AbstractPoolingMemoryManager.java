@@ -1,8 +1,8 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
-import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
@@ -10,6 +10,7 @@ import static com.hazelcast.util.QuickMath.log2;
 
 /**
  * Common base class for pooling memory managers.
+ *
  * @see PoolingMemoryManager
  */
 @SuppressWarnings("checkstyle:methodcount")
@@ -159,8 +160,8 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
     public final long validateAndGetUsableSize(long address) {
         long allocatedSize = validateAndGetAllocatedSize(address);
         return allocatedSize == SIZE_INVALID ? SIZE_INVALID
-             : allocatedSize <= pageSize ? allocatedSize - headerSize()
-             : allocatedSize - EXTERNAL_BLOCK_HEADER_SIZE;
+                : allocatedSize <= pageSize ? allocatedSize - headerSize()
+                : allocatedSize - EXTERNAL_BLOCK_HEADER_SIZE;
     }
 
     @Override
@@ -244,17 +245,17 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
     /**
      * Allocates a memory block directly from the page allocator. Used for blocks larger than page size.
      *
-     * @param size requested size of the block. The block actually allocated will be large enough to also
-     *             accomodate the external block header.
-     * @return address of the block of the requested size. It is preceded by the external block header.
+     * @param size requested size of the block (the block actually allocated will be large enough to also
+     *             accommodate the external block header)
+     * @return address of the block of the requested size (it is preceded by the external block header)
      */
     protected abstract long allocateExternalBlock(long size);
 
     /**
      * Frees an external block, which was allocated directly from the page allocator.
      *
-     * @param address address of the block. It is directly preceded by the external block header,
-     *                which is an integral part of the block actually allocated.
+     * @param address address of the block (it is directly preceded by the external block header,
+     *                which is an integral part of the block actually allocated)
      * @param size    size of the block (excludes header size)
      */
     protected abstract void freeExternalBlock(long address, long size);

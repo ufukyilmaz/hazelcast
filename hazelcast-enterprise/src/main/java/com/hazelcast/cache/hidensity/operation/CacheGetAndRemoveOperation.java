@@ -8,7 +8,7 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
 /**
- * @author mdogan 05/02/14
+ * Atomically removes the entry for a key only if it is currently mapped to some value.
  */
 public class CacheGetAndRemoveOperation
         extends BackupAwareKeyBasedHiDensityCacheOperation
@@ -57,5 +57,4 @@ public class CacheGetAndRemoveOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.GET_AND_REMOVE;
     }
-
 }

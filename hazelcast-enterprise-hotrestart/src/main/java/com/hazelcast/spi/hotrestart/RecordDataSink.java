@@ -8,17 +8,21 @@ import java.nio.ByteBuffer;
  * during a GC cycle.
  */
 public interface RecordDataSink {
+
     /**
-     * Provides a <code>ByteBuffer</code> into which the key data should
-     * be put. The buffer will have sufficient <code>remaining()</code>
+     * Provides a {@code ByteBuffer} into which the key data should
+     * be put. The buffer will have sufficient {@code remaining()}
      * bytes to accommodate the requested key size.
+     *
      * @param keySize size of the record's key
      */
     ByteBuffer getKeyBuffer(int keySize);
+
     /**
-     * Provides a <code>ByteBuffer</code> into which the value data should
-     * be put. The buffer will have sufficient <code>remaining()</code>
+     * Provides a {@code ByteBuffer} into which the value data should
+     * be put. The buffer will have sufficient {@code remaining()}
      * bytes to accommodate the requested value size.
+     *
      * @param valueSize size of the record's value
      */
     ByteBuffer getValueBuffer(int valueSize);

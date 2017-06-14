@@ -31,7 +31,7 @@ import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRI
 public class EWRDataSerializerHook implements DataSerializerHook {
 
     /**
-     * Id of "Enterprise Wan Replication DataSerializer Factory"
+     * ID of "Enterprise Wan Replication DataSerializer Factory"
      */
     public static final int F_ID = FactoryIdHelper.getFactoryId(ENTERPRISE_WAN_REPLICATION_DS_FACTORY,
             ENTERPRISE_WAN_REPLICATION_DS_FACTORY_ID);
@@ -104,7 +104,7 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                     case WAN_SYNC_STARTER_OPERATION:
                         return new WanSyncStarterOperation();
                 }
-                throw new IllegalArgumentException("Unknown type-id: " + typeId);
+                throw new IllegalArgumentException("Unknown type ID: " + typeId);
             }
         };
     }

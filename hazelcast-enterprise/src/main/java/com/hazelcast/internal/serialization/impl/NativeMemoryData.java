@@ -15,12 +15,7 @@ import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
- * NativeMemoryData is in the form of
- * <pre>
- * |SIZE|PARTITION HASH CODE|TYPE-ID|SERIALIZER DATA|
- * </pre>
- *
- * @author mdogan 12/10/13
+ * NativeMemoryData is in the form of {@code |SIZE|PARTITION HASH CODE|TYPE-ID|SERIALIZER DATA|}.
  */
 public final class NativeMemoryData extends MemoryBlock implements Data {
 

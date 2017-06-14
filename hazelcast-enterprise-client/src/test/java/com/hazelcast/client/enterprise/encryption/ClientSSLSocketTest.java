@@ -27,10 +27,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author mdogan 8/23/13
- */
-
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class ClientSSLSocketTest {
@@ -97,7 +93,7 @@ public class ClientSSLSocketTest {
         cfg.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
         SSLConfig sslConfig = new SSLConfig().setEnabled(true).setProperties(serverSslProps);
 
-        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION,"REQUIRED");
+        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "REQUIRED");
 
         cfg.getNetworkConfig().setSSLConfig(sslConfig);
         HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(cfg);
@@ -124,7 +120,7 @@ public class ClientSSLSocketTest {
         cfg.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
         SSLConfig sslConfig = new SSLConfig().setEnabled(true).setProperties(serverSslProps);
 
-        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION,"REQUIRED");
+        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "REQUIRED");
 
         cfg.getNetworkConfig().setSSLConfig(sslConfig);
 
@@ -151,7 +147,7 @@ public class ClientSSLSocketTest {
         cfg.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
         SSLConfig sslConfig = new SSLConfig().setEnabled(true).setProperties(serverSslProps);
 
-        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION,"REQUIRED");
+        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "REQUIRED");
 
         cfg.getNetworkConfig().setSSLConfig(sslConfig);
         Hazelcast.newHazelcastInstance(cfg);
@@ -175,7 +171,7 @@ public class ClientSSLSocketTest {
         cfg.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
         SSLConfig sslConfig = new SSLConfig().setEnabled(true).setProperties(serverSslProps);
 
-        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION,"OPTIONAL");
+        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
 
         cfg.getNetworkConfig().setSSLConfig(sslConfig);
         HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(cfg);
@@ -202,7 +198,7 @@ public class ClientSSLSocketTest {
         cfg.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
         SSLConfig sslConfig = new SSLConfig().setEnabled(true).setProperties(serverSslProps);
 
-        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION,"OPTIONAL");
+        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
 
         cfg.getNetworkConfig().setSSLConfig(sslConfig);
         HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(cfg);
@@ -231,7 +227,7 @@ public class ClientSSLSocketTest {
         cfg.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
         SSLConfig sslConfig = new SSLConfig().setEnabled(true).setProperties(serverSslProps);
 
-        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION,"OPTIONAL");
+        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
 
         cfg.getNetworkConfig().setSSLConfig(sslConfig);
         HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(cfg);
@@ -261,7 +257,7 @@ public class ClientSSLSocketTest {
         cfg.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
         SSLConfig sslConfig = new SSLConfig().setEnabled(true).setProperties(serverSslProps);
 
-        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION,"OPTIONAL");
+        sslConfig.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
 
         cfg.getNetworkConfig().setSSLConfig(sslConfig);
         Hazelcast.newHazelcastInstance(cfg);
@@ -276,10 +272,9 @@ public class ClientSSLSocketTest {
 
         try {
             HazelcastClient.newHazelcastClient(config);
-        } catch (HazelcastException e){
+        } catch (HazelcastException e) {
             assertEquals(e.getCause().getClass(), IOException.class);
             assertTrue(e.getCause().getMessage().contains("Invalid keystore format"));
         }
     }
 }
-

@@ -5,7 +5,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.ReadonlyOperation;
 
 /**
- * @author mdogan 05/02/14
+ * Determines if this store contains an entry for the specified key.
  */
 public class CacheContainsKeyOperation
         extends AbstractKeyBasedHiDensityCacheOperation
@@ -38,5 +38,4 @@ public class CacheContainsKeyOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.CONTAINS_KEY;
     }
-
 }

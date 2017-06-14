@@ -12,7 +12,7 @@ import com.hazelcast.spi.impl.MutatingOperation;
 import java.io.IOException;
 
 /**
- * @author mdogan 05/02/14
+ * Removes the mapping for a key from this cache if it is present.
  */
 public class CacheRemoveOperation
         extends BackupAwareKeyBasedHiDensityCacheOperation
@@ -83,5 +83,4 @@ public class CacheRemoveOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.REMOVE;
     }
-
 }

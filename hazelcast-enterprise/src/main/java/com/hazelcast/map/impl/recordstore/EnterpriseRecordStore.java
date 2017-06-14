@@ -43,7 +43,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     /**
      * @see EnterpriseRecordStore#markRecordStoreExpirable(long)
      */
-    // public for testing purposes.
+    // public for testing purposes
     public static final long HD_RECORD_MAX_TTL_MILLIS = SECONDS.toMillis(Integer.MAX_VALUE);
 
     private final long prefix;
@@ -72,7 +72,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
      * The reason of overriding this method is an optimization which we did to fit a {@link HDRecord} size in a 64 bit
      * HD block. One of the changes for this was converting a long ttl to an int ttl. As a result of that change,
      * an infinite ttl is represented with an {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS} instead of Long.MAX_VALUE.
-     * <p/>
+     * <p>
      * When marking a record-store as expirable we should also take care of this new case and should not mark a record-store
      * as expirable if a ttl was set to {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}.
      *

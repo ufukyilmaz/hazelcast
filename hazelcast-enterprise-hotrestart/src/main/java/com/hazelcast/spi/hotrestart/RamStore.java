@@ -14,7 +14,7 @@ public interface RamStore {
      * size of the record matches the value of the {@code expectedSize} parameter.
      * If it doesn't match, the method returns {@code false}.
      * <p>
-     * If this method returns true, then the data stored from 0 to <code>position</code>
+     * If this method returns true, then the data stored from 0 to {@code position}
      * of the key and value buffers represents the key and value data of the record.
      * <p>
      * If this method returns false, the state of the byte buffers is unspecified.

@@ -19,10 +19,6 @@ import java.util.Random;
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author mdogan 02/06/14
- */
-
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MemoryBlockTest {

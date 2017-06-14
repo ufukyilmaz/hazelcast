@@ -16,7 +16,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
- * @author mdogan 05/02/14
+ * Replaces the value of a JCache entry.
  */
 public class CacheReplaceOperation
         extends BackupAwareKeyBasedHiDensityCacheOperation

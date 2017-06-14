@@ -75,10 +75,12 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
     /**
      * Internally used {@link EntryView} implementation for sampling based eviction specific purposes.
-     * <p/>
-     * Mainly :
-     * - Wraps a {@link Record} and reaches all {@link EntryView} specific info over it
-     * - Lazily de-serializes key and value.
+     * <p>
+     * Mainly:
+     * <ul>
+     * <li>Wraps a {@link Record} and reaches all {@link EntryView} specific info over it</li>
+     * <li>Lazily de-serializes key and value</li>
+     * </ul>
      *
      * @param <K> type of key
      * @param <V> type of value

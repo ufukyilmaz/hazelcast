@@ -39,7 +39,7 @@ public interface HazelcastMemoryManager extends MemoryAllocator {
      * freed using this method.
      *
      * @param address address of memory block
-     * @param size size of memory block
+     * @param size    size of memory block
      */
     void free(long address, long size);
 
@@ -49,14 +49,14 @@ public interface HazelcastMemoryManager extends MemoryAllocator {
     MemoryAllocator getSystemAllocator();
 
     /**
-     * Compacts the memory region
+     * Compacts the memory region.
      */
     void compact();
 
     /**
      * Gets the disposed state of this memory manager.
      *
-     * @return <tt>true</tt> if this memory manager is destroyed, <tt>false</tt> otherwise.
+     * @return {@code true} if this memory manager is destroyed, {@code false} otherwise
      */
     boolean isDisposed();
 
@@ -84,7 +84,7 @@ public interface HazelcastMemoryManager extends MemoryAllocator {
     /**
      * Returns allocated size of memory block as if it belongs to and is allocated by this memory manager.
      * If memory block is not known by this memory manager, {@link #SIZE_INVALID} is returned.
-     * <p/>
+     * <p>
      * Allocated size includes usable memory size plus any header
      * or metadata region size reserved by memory manager.
      *
@@ -98,7 +98,7 @@ public interface HazelcastMemoryManager extends MemoryAllocator {
      * Returns allocated size of memory block if and only if it belongs to and is allocated by this memory manager.
      * Otherwise, if memory block is not valid anymore or it is not known by this memory manager,
      * {@link #SIZE_INVALID} is returned.
-     * <p/>
+     * <p>
      * Allocated size includes usable memory size plus any header
      * or metadata region size reserved by memory manager.
      *
@@ -110,7 +110,7 @@ public interface HazelcastMemoryManager extends MemoryAllocator {
 
     /**
      * Creates a new sequence. This sequence is guaranteed to be atomically incremental.
-     * <p/>
+     * <p>
      * Use case for this sequence is to avoid ABA problem by using it with the address
      * to create a "safe pointer" {@code (address, sequence)} to a memory block.
      *

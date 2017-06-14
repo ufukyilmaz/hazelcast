@@ -2,14 +2,12 @@ package com.hazelcast.internal.hidensity.impl;
 
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
-import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 /**
- * @author sozal 18/02/15
- *
  * @param <R> Type of the {@link HiDensityRecord} to be accessed.
  */
 public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
@@ -25,6 +23,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
     }
 
     protected abstract R createRecord();
+
     public abstract boolean isEqual(long address1, long address2);
 
     @Override
@@ -109,7 +108,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
     @Override
     public long getSize(MemoryBlock memoryBlock) {
         if (memoryBlock == null || memoryBlock.address() == HazelcastMemoryManager.NULL_ADDRESS) {
-            return  0;
+            return 0;
         }
         long size = memoryManager.getAllocatedSize(memoryBlock.address());
         if (size == HazelcastMemoryManager.SIZE_INVALID) {

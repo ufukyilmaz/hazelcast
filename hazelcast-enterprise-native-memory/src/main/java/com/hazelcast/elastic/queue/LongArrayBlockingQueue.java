@@ -11,7 +11,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
 
-/** Implementation of {@link LongBlockingQueue} with an off-heap array. */
+/**
+ * Implementation of {@link LongBlockingQueue} with an off-heap array.
+ */
 public final class LongArrayBlockingQueue implements LongBlockingQueue {
 
     private static final long ENTRY_SIZE = 8L;
@@ -51,7 +53,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         AMEM.putLong(address + (index * ENTRY_SIZE), value);
     }
 
-    @Override public boolean offer(long value) {
+    @Override
+    public boolean offer(long value) {
         if (value == nullItem) {
             throw new IllegalArgumentException();
         }
@@ -65,7 +68,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public boolean offer(long value, long timeout, TimeUnit unit) throws InterruptedException {
+    @Override
+    public boolean offer(long value, long timeout, TimeUnit unit) throws InterruptedException {
         if (value == nullItem) {
             throw new IllegalArgumentException();
         }
@@ -74,7 +78,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
-            for (;;) {
+            for (; ; ) {
                 if (size < capacity) {
                     return insert(value);
                 }
@@ -93,7 +97,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public void put(long value) throws InterruptedException {
+    @Override
+    public void put(long value) throws InterruptedException {
         if (value == nullItem) {
             throw new IllegalArgumentException();
         }
@@ -127,7 +132,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         return true;
     }
 
-    @Override public long peek() {
+    @Override
+    public long peek() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -141,7 +147,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public long poll() {
+    @Override
+    public long poll() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -154,12 +161,13 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public long poll(long timeout, TimeUnit unit) throws InterruptedException {
+    @Override
+    public long poll(long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
-            for (;;) {
+            for (; ; ) {
                 if (size != 0) {
                     return extract();
                 }
@@ -178,7 +186,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public long take() throws InterruptedException {
+    @Override
+    public long take() throws InterruptedException {
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
@@ -215,7 +224,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public void consume(final LongConsumer consumer) {
+    @Override
+    public void consume(final LongConsumer consumer) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -236,7 +246,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -246,15 +257,18 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public boolean isEmpty() {
+    @Override
+    public boolean isEmpty() {
         return size() == 0;
     }
 
-    @Override public int capacity() {
+    @Override
+    public int capacity() {
         return capacity;
     }
 
-    @Override public int remainingCapacity() {
+    @Override
+    public int remainingCapacity() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -264,7 +278,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public void clear() {
+    @Override
+    public void clear() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -277,7 +292,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -292,11 +308,13 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public long nullItem() {
+    @Override
+    public long nullItem() {
         return nullItem;
     }
 
-    @Override public LongIterator iterator() {
+    @Override
+    public LongIterator iterator() {
         lock.lock();
         try {
             ensureMemory();
@@ -318,10 +336,12 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
             reset();
         }
 
+        @Override
         public boolean hasNext() {
             return remaining > 0;
         }
 
+        @Override
         public long next() {
             if (remaining <= 0) {
                 throw new NoSuchElementException();
@@ -350,11 +370,13 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
             return (next == capacity) ? 0 : next;
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }
 
-        @Override public void reset() {
+        @Override
+        public void reset() {
             remaining = size;
             if (remaining > 0) {
                 nextIndex = remove;
@@ -363,7 +385,8 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "LongArrayBlockingQueue{capacity=" + capacity + ", address=" + address + ", size=" + size() + '}';
     }
 }

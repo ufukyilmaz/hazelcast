@@ -12,7 +12,6 @@ import java.util.Map;
  *
  * @param <K> key type
  * @param <V> value type
- * @author mdogan 07/01/14
  */
 public interface ElasticMap<K, V> extends Map<K, V>, Disposable {
 
@@ -30,8 +29,7 @@ public interface ElasticMap<K, V> extends Map<K, V>, Disposable {
      */
     boolean delete(K key);
 
-
-    // Backport of Java 8 methods
+    // backport of Java 8 methods
 
     V putIfAbsent(K key, V value);
 

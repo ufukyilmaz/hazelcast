@@ -7,7 +7,9 @@ import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-//https://github.com/hazelcast/hazelcast/issues/2138
+/**
+ * Test for issue https://github.com/hazelcast/hazelcast/issues/2138
+ */
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(NightlyTest.class)
 public class HDMapMemoryUsageStressTest extends MapMemoryUsageStressTest {

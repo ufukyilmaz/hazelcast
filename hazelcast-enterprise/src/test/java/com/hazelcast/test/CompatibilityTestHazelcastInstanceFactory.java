@@ -36,8 +36,7 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
     // to override the versions to be used by any compatibility test, set this system property to a comma-separated
     // list of versions e.g. "-Dhazelcast.test.compatibility.versions=3.8,3.8.1"
     private static final String COMPATIBILITY_TEST_VERSIONS = "hazelcast.test.compatibility.versions";
-    // some tests expect to have 3 instances started, so we duplicate the 3.8.2 version
-    private static final String[] RELEASED_VERSIONS = new String[]{"3.8.2", "3.8.2"};
+    private static final String[] RELEASED_VERSIONS = new String[]{"3.8", "3.8.1", "3.8.2"};
     private static final String CURRENT_VERSION = "3.9";
 
     // actual member versions to be used in round-robin when creating new Hazelcast instances

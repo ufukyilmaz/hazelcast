@@ -68,6 +68,7 @@ public class HDClearOperation extends HDMapOperation implements BackupAwareOpera
         return numberOfClearedEntries;
     }
 
+    @Override
     public Operation getBackupOperation() {
         HDClearBackupOperation clearBackupOperation = new HDClearBackupOperation(name);
         clearBackupOperation.setServiceName(SERVICE_NAME);

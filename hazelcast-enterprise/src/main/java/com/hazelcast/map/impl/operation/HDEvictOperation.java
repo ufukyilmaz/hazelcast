@@ -54,6 +54,7 @@ public class HDEvictOperation extends HDLockAwareOperation implements MutatingOp
         sendResponse(false);
     }
 
+    @Override
     public Operation getBackupOperation() {
         return new HDEvictBackupOperation(name, dataKey);
     }

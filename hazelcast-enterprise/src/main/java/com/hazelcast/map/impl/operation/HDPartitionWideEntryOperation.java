@@ -123,6 +123,7 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
         return operation;
     }
 
+    @Override
     protected Predicate getPredicate() {
         return null;
     }

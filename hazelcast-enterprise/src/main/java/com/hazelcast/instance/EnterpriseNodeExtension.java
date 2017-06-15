@@ -13,12 +13,14 @@ import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.PartitioningStrategy;
+import com.hazelcast.enterprise.management.EnterpriseManagementCenterConnectionFactory;
 import com.hazelcast.enterprise.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
+import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.nio.CipherByteArrayProcessor;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
@@ -641,6 +643,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public TimedMemberStateFactory createTimedMemberStateFactory(HazelcastInstanceImpl instance) {
         return new EnterpriseTimedMemberStateFactory(instance);
+    }
+
+    @Override
+    public ManagementCenterConnectionFactory getManagementCenterConnectionFactory() {
+        return new EnterpriseManagementCenterConnectionFactory();
     }
 
     public ByteArrayProcessor createMulticastInputProcessor(IOService ioService) {

@@ -20,6 +20,7 @@ import com.hazelcast.security.permission.SemaphorePermission;
 import com.hazelcast.security.permission.SetPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
+import com.hazelcast.security.permission.UserCodeDeploymentPermission;
 import com.hazelcast.util.AddressUtil;
 
 import java.util.Set;
@@ -73,6 +74,8 @@ public final class SecurityUtil {
                 return new AllPermissions();
             case CACHE:
                 return new CachePermission(permissionConfig.getName(), actions);
+            case USER_CODE_DEPLOYMENT:
+                return new UserCodeDeploymentPermission(actions);
             default:
                 throw new IllegalArgumentException(permissionConfig.getType().toString());
         }

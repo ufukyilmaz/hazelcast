@@ -7,12 +7,15 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.test.mocknetwork.TestNodeRegistry;
 import com.hazelcast.test.starter.HazelcastStarter;
 import com.hazelcast.util.collection.ArrayUtils;
+import org.junit.Assume;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.hazelcast.test.TestEnvironment.isMockNetwork;
 
 /**
  * A factory used to create {@code HazelcastInstance}s in compatibility tests. When constructed with no arguments,
@@ -46,10 +49,12 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
     private final ArrayList<HazelcastInstance> instances = new ArrayList<HazelcastInstance>();
 
     public CompatibilityTestHazelcastInstanceFactory() {
+        Assume.assumeFalse("Compatibility tests require real network", isMockNetwork());
         this.versions = resolveVersions(null);
     }
 
     public CompatibilityTestHazelcastInstanceFactory(String[] versions) {
+        Assume.assumeFalse("Compatibility tests require real network", isMockNetwork());
         this.versions = resolveVersions(versions);
     }
 

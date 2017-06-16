@@ -3,10 +3,12 @@ package com.hazelcast.concurrent.lock;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.CompatibilityTest;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
+import static com.hazelcast.test.starter.Utils.assertInstanceOfByClassName;
+import static org.junit.Assert.fail;
 
 /**
  * Compatibility test for Lock
@@ -20,4 +22,15 @@ public class LockCompatibilityTest extends LockBasicTest {
         return createHazelcastInstanceFactory().newInstances();
     }
 
+    @Override
+    @Test(timeout = 60000)
+    public void testDestroyLockWhenOtherWaitingOnLock()
+            throws InterruptedException {
+        try {
+            super.testDestroyLockWhenOtherWaitingOnLock();
+            fail("Expected DistributedObjectDestroyedException but no exeption was thrown.");
+        } catch (Throwable t) {
+            assertInstanceOfByClassName("com.hazelcast.spi.exception.DistributedObjectDestroyedException", t);
+        }
+    }
 }

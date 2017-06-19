@@ -225,7 +225,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                 } catch (Throwable t) {
                     logger.warning(t);
                     if (connectionWrapper != null) {
-                        connectionManager.removeTargetEndpoint(connectionWrapper.getTargetAddress(), null, t);
+                        final Address address = connectionWrapper.getTargetAddress();
+                        connectionManager.removeTargetEndpoint(address,
+                                "Error occurred when sending WAN events to " + address, t);
                     }
                 }
             } while (!transmitSucceed && running);

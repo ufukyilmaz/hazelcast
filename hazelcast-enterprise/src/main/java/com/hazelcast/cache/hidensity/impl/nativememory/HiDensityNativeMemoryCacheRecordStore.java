@@ -384,7 +384,10 @@ public class HiDensityNativeMemoryCacheRecordStore
              * But if it is already `NativeMemoryData`, it is disposed inside operation itself.
              * So no need to explicitly disposing at here in case of error.
              */
-            records.remove(key);
+            final HiDensityNativeMemoryCacheRecord removed = records.remove(key);
+            if (removed != null) {
+                cacheService.getEventJournal().writeRemoveEvent(objectNamespace, partitionId, key, recordToValue(record));
+            }
             if (value instanceof NativeMemoryData) {
                 // if value is allocated outside of record store, disposing value is its responsibility
                 // so just dispose record which is allocated here
@@ -407,6 +410,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     protected void onUpdateRecord(Data key, HiDensityNativeMemoryCacheRecord record,
                                   Object value, Data oldDataValue) {
+        super.onUpdateRecord(key, record, value, oldDataValue);
         // if there is valid old value, dispose it
         if (oldDataValue != null && oldDataValue instanceof NativeMemoryData) {
             NativeMemoryData nativeMemoryData = (NativeMemoryData) oldDataValue;
@@ -515,6 +519,10 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (isMemoryBlockValid(removedRecord)) {
             recordToReturn = toHeapCacheRecord(removedRecord);
             cacheRecordProcessor.dispose(removedRecord);
+        }
+        if (removedRecord != null) {
+            cacheService.getEventJournal().writeRemoveEvent(objectNamespace, partitionId, key,
+                    recordToReturn != null ? recordToReturn.getValue() : null);
         }
         return recordToReturn;
     }
@@ -631,7 +639,10 @@ public class HiDensityNativeMemoryCacheRecordStore
              * But if it is already `NativeMemoryData`, it is disposed inside operation itself.
              * So no need to explicitly disposing at here in case of error.
              */
-            records.remove(key);
+            final HiDensityNativeMemoryCacheRecord removed = records.remove(key);
+            if (removed != null) {
+                cacheService.getEventJournal().writeRemoveEvent(objectNamespace, partitionId, key, recordToValue(removed));
+            }
             if (value instanceof NativeMemoryData) {
                 record.setValue(null);
                 // if value is allocated outside of record store, disposing value is its responsibility
@@ -690,10 +701,13 @@ public class HiDensityNativeMemoryCacheRecordStore
                 record = createRecord(value, now, Long.MAX_VALUE);
                 creationTime = now;
                 records.put(key, record);
+                cacheService.getEventJournal().writeCreatedEvent(objectNamespace, partitionId, key, recordToValue(record));
             } else {
                 oldValueData = record.getValue();
                 creationTime = record.getCreationTime();
                 updateRecordValue(record, toNativeMemoryData(value));
+                cacheService.getEventJournal().writeUpdateEvent(objectNamespace, partitionId, key,
+                        toHeapData(oldValueData), recordToValue(record));
             }
 
             onAccess(now, record, creationTime);
@@ -875,6 +889,8 @@ public class HiDensityNativeMemoryCacheRecordStore
     public void close(boolean onShutdown) {
         if (shouldExplicitlyClear(onShutdown)) {
             clear();
+        } else {
+            cacheService.getEventJournal().destroy(objectNamespace, partitionId);
         }
         records.dispose();
         closeListeners();

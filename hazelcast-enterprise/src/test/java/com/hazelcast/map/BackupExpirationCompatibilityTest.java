@@ -1,10 +1,11 @@
 package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.monitor.LocalMapStats;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -14,13 +15,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Collection;
 
 import static com.hazelcast.config.InMemoryFormat.BINARY;
-import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(CompatibilityTest.class)
 public class BackupExpirationCompatibilityTest extends HazelcastTestSupport {
 
@@ -32,6 +39,16 @@ public class BackupExpirationCompatibilityTest extends HazelcastTestSupport {
 
     private TestHazelcastInstanceFactory factory;
     private HazelcastInstance[] instances;
+
+    @Parameterized.Parameter
+    public InMemoryFormat inMemoryFormat;
+
+    @Parameterized.Parameters(name = "inMemoryFormat:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {BINARY}, {OBJECT}, {NATIVE}
+        });
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -77,11 +94,15 @@ public class BackupExpirationCompatibilityTest extends HazelcastTestSupport {
 
     protected Config newConfig() {
         Config config = getConfig();
-        config.setLicenseKey(UNLIMITED_LICENSE);
+        if (inMemoryFormat == NATIVE) {
+            config = HDTestSupport.getHDConfig();
+        }
+
         MapConfig mapConfig = config.getMapConfig(MAP_NAME);
         mapConfig.setBackupCount(BACKUP_COUNT);
         mapConfig.setMaxIdleSeconds(3);
-        mapConfig.setInMemoryFormat(BINARY);
+        mapConfig.setInMemoryFormat(inMemoryFormat);
+
         return config;
     }
 }

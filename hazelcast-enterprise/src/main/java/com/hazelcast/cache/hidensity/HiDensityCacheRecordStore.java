@@ -55,10 +55,9 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @param key          the key of the {@code value} to be owned
      * @param value        the value to be owned
      * @param expiryPolicy expiry policy of the owned value
-     * @return {@code true} if the {@code value} has been added as new record,
-     * otherwise (in case of update) {@code false}
+     * @return the updated (or added) record
      */
-    boolean putBackup(Data key, Object value, ExpiryPolicy expiryPolicy);
+    CacheRecord putBackup(Data key, Object value, ExpiryPolicy expiryPolicy);
 
     /**
      * Puts and saves (replaces if exist) the replicated {@code value} with the specified {@code key}
@@ -67,10 +66,9 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @param key       the key of the {@code value} to be owned
      * @param value     the value to be owned
      * @param ttlMillis the TTL value in milliseconds for the owned value
-     * @return {@code true} if the {@code value} has been added as new record,
-     * otherwise (in case of update) {@code false}
+     * @return the updated (or added) record
      */
-    boolean putReplica(Data key, Object value, long ttlMillis);
+    CacheRecord putReplica(Data key, Object value, long ttlMillis);
 
     /**
      * Puts the {@code value} with the specified {@code key}

@@ -1,9 +1,16 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.impl.CacheEntryViews;
+import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
@@ -41,12 +48,30 @@ public class CachePutAllBackupOperation
         if (cacheBackupRecordStore != null) {
             List<CacheBackupRecordStore.CacheBackupRecord> cacheBackupRecords = cacheBackupRecordStore.backupRecords;
             Iterator<CacheBackupRecordStore.CacheBackupRecord> iter = cacheBackupRecords.iterator();
+
             while (iter.hasNext()) {
                 CacheBackupRecordStore.CacheBackupRecord cacheBackupRecord = iter.next();
-                cache.putBackup(cacheBackupRecord.key, cacheBackupRecord.value, expiryPolicy);
+                final CacheRecord record = cache.putBackup(cacheBackupRecord.key, cacheBackupRecord.value, expiryPolicy);
+
+                publishWanEvent(cacheBackupRecord.key, cacheBackupRecord.value, record);
                 iter.remove();
             }
         }
+    }
+
+    private void publishWanEvent(Data key, Data value, CacheRecord record) {
+        if (cache.isWanReplicationEnabled()) {
+            final CacheService service = getService();
+            final CacheWanEventPublisher publisher = service.getCacheWanEventPublisher();
+            final CacheEntryView<Data, Data> view = CacheEntryViews.createDefaultEntryView(
+                    toOnHeapData(key), toOnHeapData(value), record);
+            publisher.publishWanReplicationUpdate(name, view);
+        }
+    }
+
+    private Data toOnHeapData(Object o) {
+        final InternalSerializationService ss = (InternalSerializationService) getNodeEngine().getSerializationService();
+        return ss.toData(o, DataType.HEAP);
     }
 
     @Override

@@ -1,41 +1,39 @@
-package com.hazelcast.client.cache.nearcache;
+package com.hazelcast.client.map.impl.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.NearCacheConfig.LocalUpdatePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
 import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDConfig;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
+import static java.util.Arrays.asList;
 
 /**
- * Basic HiDensity Near Cache tests for {@link com.hazelcast.cache.ICache} on Hazelcast clients.
+ * Basic HiDensity Near Cache tests for {@link com.hazelcast.core.IMap} on Hazelcast clients.
  */
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
-@Category(QuickTest.class)
-public class BasicClientHDCacheNearCacheTest extends BasicClientCacheNearCacheTest {
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@Category({QuickTest.class, ParallelTest.class})
+public class ClientHDMapNearCacheBasicTest extends ClientMapNearCacheBasicTest {
 
-    @Parameters(name = "format:{0} {1}")
+    @Parameters(name = "format:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
-                {InMemoryFormat.BINARY, LocalUpdatePolicy.INVALIDATE},
-                {InMemoryFormat.BINARY, LocalUpdatePolicy.CACHE_ON_UPDATE},
-                {InMemoryFormat.OBJECT, LocalUpdatePolicy.INVALIDATE},
-                {InMemoryFormat.OBJECT, LocalUpdatePolicy.CACHE_ON_UPDATE},
-                {InMemoryFormat.NATIVE, LocalUpdatePolicy.INVALIDATE},
-                {InMemoryFormat.NATIVE, LocalUpdatePolicy.CACHE_ON_UPDATE},
+        return asList(new Object[][]{
+                {InMemoryFormat.NATIVE},
+                {InMemoryFormat.BINARY},
+                {InMemoryFormat.OBJECT},
         });
     }
 
@@ -45,8 +43,8 @@ public class BasicClientHDCacheNearCacheTest extends BasicClientCacheNearCacheTe
     }
 
     @Override
-    protected ClientConfig getClientConfig() {
-        return new ClientConfig()
+    protected ClientConfig createClientConfig() {
+        return super.createClientConfig()
                 .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
     }

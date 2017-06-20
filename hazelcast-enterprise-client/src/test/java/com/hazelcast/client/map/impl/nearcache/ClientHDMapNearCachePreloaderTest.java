@@ -4,38 +4,38 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.test.annotation.SlowTest;
-import org.junit.Test;
+import com.hazelcast.test.HazelcastParametersRunnerFactory;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
 import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDConfig;
+import static java.util.Arrays.asList;
 
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class ClientHDMapNearCachePreloaderTest extends ClientMapNearCachePreloaderTest {
 
-    @Parameters(name = "invalidationOnChange:{0}")
+    @Parameters(name = "format:{0} invalidationOnChange:{1}")
     public static Collection<Object[]> parameters() {
-        // FIXME: the Near Cache pre-loader doesn't work with enabled invalidations due to a known getAll() issue!
-        return Arrays.asList(new Object[][]{
-                {false},
-                //{true},
+        return asList(new Object[][]{
+                {InMemoryFormat.NATIVE, false},
+                {InMemoryFormat.NATIVE, true},
+
+                {InMemoryFormat.BINARY, false},
+                {InMemoryFormat.BINARY, true},
+
+                {InMemoryFormat.OBJECT, false},
+                {InMemoryFormat.OBJECT, true},
         });
-    }
-
-    @Test(timeout = TEST_TIMEOUT)
-    @Category(SlowTest.class)
-    public void testStoreAndLoad_withIntegerKeys_withInMemoryFormatNative() {
-        storeAndLoad(2342, false, InMemoryFormat.NATIVE);
-    }
-
-    @Test(timeout = TEST_TIMEOUT)
-    @Category(SlowTest.class)
-    public void testStoreAndLoad_withStringKeys_withInMemoryFormatNative() {
-        storeAndLoad(4223, true, InMemoryFormat.NATIVE);
     }
 
     @Override

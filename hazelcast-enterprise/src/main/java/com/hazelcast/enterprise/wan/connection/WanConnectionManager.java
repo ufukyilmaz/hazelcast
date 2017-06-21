@@ -12,6 +12,7 @@ import com.hazelcast.spi.InvocationBuilder;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.discovery.DiscoveryNode;
+import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
 import com.hazelcast.spi.discovery.integration.DiscoveryService;
 import com.hazelcast.util.ConstructorFunction;
 
@@ -81,8 +82,13 @@ public class WanConnectionManager {
 
         addToTargetEndpoints(discoverPublicAddresses());
         if (targetEndpoints.size() == 0) {
-            throw new InvalidConfigurationException("There were no discovered nodes for WanPublisherConfig,"
-                    + "please define endpoints statically or check the AWS and discovery config");
+            final String msg = "There were no discovered nodes for WanPublisherConfig,"
+                    + "please define endpoints statically or check the AWS and discovery config";
+            if (discoveryService instanceof PredefinedDiscoveryService) {
+                throw new InvalidConfigurationException(msg);
+            } else {
+                logger.warning(msg);
+            }
         }
 
         node.nodeEngine.getExecutionService().scheduleWithRepetition(new TargetEndpointDiscoveryTask(),
@@ -123,10 +129,12 @@ public class WanConnectionManager {
             targetEndpoints.remove(targetAddress);
         }
         final WanConnectionWrapper wrapper = connectionPool.remove(targetAddress);
-        try {
-            wrapper.getConnection().close(reason, cause);
-        } catch (Exception e) {
-            logger.warning("Error closing connection", e);
+        if (wrapper != null) {
+            try {
+                wrapper.getConnection().close(reason, cause);
+            } catch (Exception e) {
+                logger.warning("Error closing connection", e);
+            }
         }
     }
 
@@ -182,10 +190,12 @@ public class WanConnectionManager {
             if (wrapper.getConnection().isAlive()) {
                 return wrapper;
             } else {
-                removeTargetEndpoint(targetAddress, "Connection is dead", null);
+                removeTargetEndpoint(targetAddress, "Connection to WAN endpoint " + targetAddress + " is dead", null);
             }
         } catch (Throwable e) {
-            logger.warning("Failed to connect to wan replication endpoint : " + targetAddress, e);
+            final String msg = "Failed to connect to WAN endpoint : " + targetAddress;
+            logger.warning(msg, e);
+            removeTargetEndpoint(targetAddress, msg, e);
         }
         return null;
     }
@@ -274,8 +284,18 @@ public class WanConnectionManager {
             try {
                 final List<Address> discoveredNodes = discoverPublicAddresses();
                 synchronized (targetEndpoints) {
+                    // the following steps could be simplified to
+                    // targetEndpoints.clear(); targetEndpoints.addAll(discoveredNodes);
+                    // but we additionally try to satisfy two properties :
+                    // - avoid clearing the endpoint list and leaving it empty (even temporarily)
+                    // - respect the maxEndpoints property
+
+                    // retain all discovered, removing others
+                    targetEndpoints.retainAll(discoveredNodes);
+                    // remove known live and discovered endpoints
                     discoveredNodes.removeAll(targetEndpoints);
 
+                    // add any newly discovered nodes
                     if (discoveredNodes.size() > 0) {
                         addToTargetEndpoints(discoveredNodes);
                         targetEndpoints.notify();

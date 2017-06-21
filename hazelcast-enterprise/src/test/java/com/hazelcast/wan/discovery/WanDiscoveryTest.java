@@ -69,6 +69,58 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     }
 
     @Test
+    public void noDiscoveredNodesDoesNotThrowException() {
+        final ArrayList<DiscoveryNode> discoveryStrategyList = discoveryStrategyFactory.strategy.nodes;
+        final ArrayList<DiscoveryNode> discoveryStrategyListCopy = new ArrayList<DiscoveryNode>(discoveryStrategyList);
+
+        discoveryStrategyList.clear();
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 1000);
+
+        discoveryStrategyList.add(discoveryStrategyListCopy.get(0));
+
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                assertAllEndpointsDiscovered(1);
+            }
+        });
+
+        createDataIn(clusterA, "map2", 0, 1000);
+        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFrom(clusterB, "map2", 0, 1000, clusterA);
+    }
+
+    @Test
+    public void removeUnreachableEndpoint() throws UnknownHostException {
+        final ArrayList<DiscoveryNode> discoveryStrategyList = discoveryStrategyFactory.strategy.nodes;
+        final SimpleDiscoveryNode unreachableEndpoint = new SimpleDiscoveryNode(new Address("1.2.3.4", 1234));
+        discoveryStrategyList.clear();
+        discoveryStrategyList.add(unreachableEndpoint);
+
+        startClusterA();
+
+        createDataIn(clusterA, "map", 0, 1000);
+
+
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                assertAllEndpointsDiscovered(1);
+            }
+        });
+        discoveryStrategyList.clear();
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                assertEquals(0, getTargetEndpoints().size());
+            }
+        });
+    }
+
+    @Test
     public void newNodeDiscoveredTest() {
         final DiscoveryNode removed = discoveryStrategyFactory.strategy.nodes.remove(0);
         startClusterA();
@@ -92,7 +144,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     }
 
     @Test
-    public void previouslyDiscoveredNodeDisappearsButIsAvailable() throws Exception {
+    public void previouslyDiscoveredNodeDisappearsAndIsRemoved() throws Exception {
         startClusterA();
         startClusterB();
 
@@ -104,8 +156,12 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         discoveryStrategyFactory.strategy.nodes.remove(0);
         assertEquals(1, discoveryStrategyFactory.strategy.nodes.size());
 
-        sleepSeconds(2);
-        assertEquals(2, getTargetEndpoints().size());
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                assertAllEndpointsDiscovered(1);
+            }
+        });
 
         createDataIn(clusterA, "map2", 0, 1000);
         assertDataInFrom(clusterB, "map2", 0, 1000, clusterA);

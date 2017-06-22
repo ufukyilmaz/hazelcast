@@ -11,9 +11,11 @@
 
     <name>Hazelcast Enterprise(All)</name>
     <artifactId>hazelcast-enterprise-all</artifactId>
+
     <properties>
         <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -155,7 +157,7 @@
                     <dependency>
                         <groupId>com.hazelcast</groupId>
                         <artifactId>hazelcast-build-utils</artifactId>
-                        <version>[3.7,)</version>
+                        <version>[3.8,4.0)</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -175,7 +177,6 @@
             </plugin>
         </plugins>
     </build>
-
 
     <dependencies>
         <dependency>

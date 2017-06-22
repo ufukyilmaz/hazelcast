@@ -21,12 +21,11 @@ import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
-import com.hazelcast.internal.dynamicconfig.HotRestartConfigListener;
-import com.hazelcast.internal.dynamicconfig.DynamicConfigListener;
-import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
-import com.hazelcast.nio.CipherByteArrayProcessor;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
+import com.hazelcast.internal.dynamicconfig.DynamicConfigListener;
+import com.hazelcast.internal.dynamicconfig.HotRestartConfigListener;
+import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
@@ -50,6 +49,7 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Address;
+import com.hazelcast.nio.CipherByteArrayProcessor;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
@@ -78,7 +78,6 @@ import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
-import java.security.Security;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -679,7 +678,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
-            logger.info("Mulitcast is starting with SymmetricEncryption on input processor");
+            logger.info("Multicast is starting with SymmetricEncryption on input processor");
             return new CipherByteArrayProcessor(createSymmetricReaderCipher(symmetricEncryptionConfig));
         }
 
@@ -691,7 +690,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
-            logger.info("Mulitcast is starting with SymmetricEncryption on output processor");
+            logger.info("Multicast is starting with SymmetricEncryption on output processor");
             return new CipherByteArrayProcessor(createSymmetricWriterCipher(symmetricEncryptionConfig));
         }
 

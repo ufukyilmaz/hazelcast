@@ -58,7 +58,7 @@ public class SecurityUpdateTest extends HazelcastTestSupport {
         instance1.getMap("test").put("1", "1");
 
 
-        Set<PermissionConfig> permissionConfigs = instance1.getConfig().getSecurityConfig().getClientPermissionConfigs();
+        Set<PermissionConfig> permissionConfigs = new HashSet<PermissionConfig>();
         PermissionConfig permissionConfig = new PermissionConfig();
         permissionConfig.setType(PermissionConfig.PermissionType.MAP);
         permissionConfig.setName("test");
@@ -71,11 +71,7 @@ public class SecurityUpdateTest extends HazelcastTestSupport {
         permissionConfig.setPrincipal("*");
         permissionConfigs.add(permissionConfig);
 
-        UpdatePermissionConfigRequest request = new UpdatePermissionConfigRequest(permissionConfigs);
-        request.toJson();
-
-        instance1.getSecurityService().refreshClientPermissions(request.getPermissionConfigs());
-
+        instance1.getConfig().getSecurityConfig().setClientPermissionConfigs(permissionConfigs);
         instance1.getMap("test").put("1", "1");
 
 

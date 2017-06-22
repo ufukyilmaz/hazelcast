@@ -106,7 +106,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
         do {
             ensurePrincipalPermissions(principal);
             permissionsHolder = principalPermissions.get(principal.getName());
-        } while (permissionsHolder != null);
+        } while (permissionsHolder == null);
         if (!permissionsHolder.prepared) {
             try {
                 synchronized (permissionsHolder) {

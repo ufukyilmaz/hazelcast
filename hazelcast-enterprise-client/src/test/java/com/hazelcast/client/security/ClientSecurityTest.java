@@ -38,7 +38,11 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.Writer;
 import java.security.AccessControlException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -123,6 +127,49 @@ public class ClientSecurityTest {
         map.lock("1");
         map.unlock("1");
         map.destroy();
+    }
+
+    @Test (expected = AccessControlException.class)
+    public void testNewPermissionAtRuntime() {
+        final Config config = createConfig();
+        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", "dev");
+        perm.addAction(ActionConstants.ACTION_ALL);
+        HazelcastInstance instance = factory.newHazelcastInstance(config);
+        HazelcastInstance client = createHazelcastClient();
+        assertEquals(0, client.getMap("test").size());
+
+        Set<PermissionConfig> newPermissions = new HashSet<PermissionConfig>();
+        PermissionConfig newPerm = addPermission(config, PermissionType.MAP, "test", "dev");
+        perm.addAction(ActionConstants.ACTION_READ);
+        newPermissions.add(newPerm);
+        instance.getConfig().getSecurityConfig().setClientPermissionConfigs(newPermissions);
+        //read-only
+        client.getMap("test").put("test", "test");
+    }
+
+    @Test
+    public void testModifyPermissionAtRuntime() {
+        final Config config = createConfig();
+        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", "dev");
+        perm.addAction(ActionConstants.ACTION_READ);
+        HazelcastInstance instance = factory.newHazelcastInstance(config);
+        HazelcastInstance client = createHazelcastClient();
+
+        Exception ex = null;
+        try {
+            client.getMap("test").put("1", "1");
+        } catch (Exception e) {
+            ex = e;
+        } finally {
+            assertTrue(ex instanceof AccessControlException);
+        }
+
+        Set<PermissionConfig> perms = config.getSecurityConfig().getClientPermissionConfigs();
+        PermissionConfig existingConfig = perms.iterator().next();
+        existingConfig.addAction(ActionConstants.ACTION_ALL);
+        instance.getConfig().getSecurityConfig().setClientPermissionConfigs(perms);
+        client.getMap("test").put("test", "test");
+        assertEquals(1, client.getMap("test").size());
     }
 
     @Test(expected = AccessControlException.class)

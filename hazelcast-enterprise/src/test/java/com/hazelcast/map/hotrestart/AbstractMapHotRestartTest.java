@@ -186,12 +186,14 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
                     .setMetadataSpacePercentage(20);
         }
 
-        MapConfig mapConfig = new MapConfig(mapName);
-        mapConfig.getHotRestartConfig().setEnabled(true);
-        mapConfig.setInMemoryFormat(memoryFormat);
-        mapConfig.setBackupCount(backupCount);
-        setEvictionConfig(mapConfig);
-        config.addMapConfig(mapConfig);
+        if (memoryFormat != null) {
+            MapConfig mapConfig = new MapConfig(mapName);
+            mapConfig.getHotRestartConfig().setEnabled(true);
+            mapConfig.setInMemoryFormat(memoryFormat);
+            mapConfig.setBackupCount(backupCount);
+            setEvictionConfig(mapConfig);
+            config.addMapConfig(mapConfig);
+        }
 
         return config;
     }

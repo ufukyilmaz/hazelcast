@@ -64,7 +64,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.cache.impl.AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE;
-import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
+import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartitionId;
 
 /**
  * The {@link ICacheService} implementation specified for enterprise usage.

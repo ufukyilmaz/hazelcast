@@ -56,7 +56,7 @@ import static com.hazelcast.hotrestart.BackupTaskState.NO_TASK;
 import static com.hazelcast.hotrestart.BackupTaskState.SUCCESS;
 import static com.hazelcast.hotrestart.HotRestartService.BACKUP_DIR_PREFIX;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
-import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
+import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOnHeapHotRestartStore;
@@ -92,7 +92,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
     private final File hotRestartBackupDir;
     private final Node node;
     private final ILogger logger;
-    private final PersistentCacheDescriptors persistentCacheDescriptors;
+    private final PersistentConfigDescriptors persistentConfigDescriptors;
     private final ClusterMetadataManager clusterMetadataManager;
     private final long dataLoadTimeoutMillis;
     private final int storeCount;
@@ -112,7 +112,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
         this.hotRestartBackupDir = hrCfg.getBackupDir();
         this.storeCount = hrCfg.getParallelism();
         this.clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hrCfg);
-        this.persistentCacheDescriptors = new PersistentCacheDescriptors(hotRestartHome);
+        this.persistentConfigDescriptors = new PersistentConfigDescriptors(hotRestartHome);
         this.dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(hrCfg.getDataLoadTimeoutSeconds());
         this.loadedConfigurationListeners = new ArrayList<LoadedConfigurationListener>();
         this.directoryLock = new DirectoryLock();
@@ -157,7 +157,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
      * @return the key (prefix) under which the registry is registered in the hot restart service
      */
     public long registerRamStore(RamStoreRegistry ramStoreRegistry, String serviceName, String name, int partitionId) {
-        long prefix = persistentCacheDescriptors.getPrefix(serviceName, name, partitionId);
+        long prefix = persistentConfigDescriptors.getPrefix(serviceName, name, partitionId);
         ramStoreDescriptors.put(prefix, new RamStoreDescriptor(ramStoreRegistry, name, partitionId));
         return prefix;
     }
@@ -174,7 +174,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
      * @param config      the configuration
      */
     public void ensureHasConfiguration(String serviceName, String name, Object config) {
-        persistentCacheDescriptors.ensureHas(node.getSerializationService(), serviceName, name, config);
+        persistentConfigDescriptors.ensureHas(node.getSerializationService(), serviceName, name, config);
     }
 
     /**
@@ -185,7 +185,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
      * @throws IllegalArgumentException if there is no descriptor found for this prefix
      */
     public String getCacheName(long prefix) {
-        final CacheDescriptor descriptor = persistentCacheDescriptors.getDescriptor(prefix);
+        final ConfigDescriptor descriptor = persistentConfigDescriptors.getDescriptor(prefix);
         if (descriptor == null) {
             throw new IllegalArgumentException("No descriptor found for prefix: " + prefix);
         }
@@ -248,7 +248,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
             }
             clusterMetadataManager.writePartitionThreadCount(partitionThreadCount);
         }
-        persistentCacheDescriptors.restore(node.getSerializationService(), loadedConfigurationListeners);
+        persistentConfigDescriptors.restore(node.getSerializationService(), loadedConfigurationListeners);
         clusterMetadataManager.prepare();
         createHotRestartStores();
     }
@@ -329,7 +329,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
         logger.info("Starting new hot backup with sequence " + sequence);
         final File backupDir = new File(hotRestartBackupDir, BACKUP_DIR_PREFIX + sequence);
         ensureDir(backupDir);
-        persistentCacheDescriptors.backup(backupDir);
+        persistentConfigDescriptors.backup(backupDir);
         clusterMetadataManager.backup(backupDir);
         backup(backupDir, onHeapStores, true);
         backup(backupDir, offHeapStores, false);
@@ -485,12 +485,12 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
     }
 
     private RamStoreDescriptor cacheDescriptorToRamStoreDescriptor(long prefix) {
-        final CacheDescriptor cacheDescriptor = persistentCacheDescriptors.getDescriptor(prefix);
-        if (cacheDescriptor != null) {
-            final String serviceName = cacheDescriptor.getServiceName();
+        final ConfigDescriptor configDescriptor = persistentConfigDescriptors.getDescriptor(prefix);
+        if (configDescriptor != null) {
+            final String serviceName = configDescriptor.getServiceName();
             final RamStoreRegistry registry = ramStoreRegistryMap.get(serviceName);
             if (registry != null) {
-                final String name = cacheDescriptor.getName();
+                final String name = configDescriptor.getName();
                 final int partitionId = toPartitionId(prefix);
                 final RamStoreDescriptor descriptor = new RamStoreDescriptor(registry, name, partitionId);
                 ramStoreDescriptors.put(prefix, descriptor);
@@ -707,7 +707,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
         logger.info("Resetting hot restart cluster metadata service...");
         clusterMetadataManager.reset();
         clusterMetadataManager.writePartitionThreadCount(getOperationExecutor().getPartitionThreadCount());
-        persistentCacheDescriptors.reset();
+        persistentConfigDescriptors.reset();
 
         if (!isAfterJoin) {
             clusterMetadataManager.prepare();

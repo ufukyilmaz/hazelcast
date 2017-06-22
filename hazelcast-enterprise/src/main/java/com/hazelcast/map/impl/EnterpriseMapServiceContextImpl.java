@@ -41,7 +41,7 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
-import com.hazelcast.spi.hotrestart.PersistentCacheDescriptors;
+import com.hazelcast.spi.hotrestart.PersistentConfigDescriptors;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
@@ -117,7 +117,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     public RamStore ramStoreForPrefix(long prefix) {
-        int partitionId = PersistentCacheDescriptors.toPartitionId(prefix);
+        int partitionId = PersistentConfigDescriptors.toPartitionId(prefix);
         String name = hotRestartService.getCacheName(prefix);
         EnterpriseRecordStore recordStore = (EnterpriseRecordStore) getExistingRecordStore(partitionId, name);
         return recordStore == null ? null : recordStore.getRamStore();
@@ -125,7 +125,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     public RamStore restartingRamStoreForPrefix(long prefix) {
-        int partitionId = PersistentCacheDescriptors.toPartitionId(prefix);
+        int partitionId = PersistentConfigDescriptors.toPartitionId(prefix);
         String name = hotRestartService.getCacheName(prefix);
         PartitionContainer partitionContainer = getPartitionContainer(partitionId);
         EnterpriseRecordStore recordStore = (EnterpriseRecordStore) partitionContainer.getRecordStoreForHotRestart(name);

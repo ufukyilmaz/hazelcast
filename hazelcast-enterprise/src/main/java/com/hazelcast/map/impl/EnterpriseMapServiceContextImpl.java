@@ -22,7 +22,6 @@ import com.hazelcast.map.impl.operation.MapOperationProviders;
 import com.hazelcast.map.impl.query.HDIndexProvider;
 import com.hazelcast.map.impl.query.HDPartitionScanExecutor;
 import com.hazelcast.map.impl.query.HDPartitionScanRunner;
-import com.hazelcast.map.impl.query.HDQueryRunner;
 import com.hazelcast.map.impl.query.IndexProvider;
 import com.hazelcast.map.impl.query.PartitionScanExecutor;
 import com.hazelcast.map.impl.query.PartitionScanRunner;
@@ -168,7 +167,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     private QueryRunner createHDMapQueryRunner(HDPartitionScanRunner runner, QueryOptimizer queryOptimizer,
                                                ResultProcessorRegistry resultProcessorRegistry) {
         PartitionScanExecutor partitionScanExecutor = new HDPartitionScanExecutor(runner);
-        return new HDQueryRunner(this, queryOptimizer, partitionScanExecutor, resultProcessorRegistry);
+        return new QueryRunner(this, queryOptimizer, partitionScanExecutor, resultProcessorRegistry);
     }
 
     @Override

@@ -9,10 +9,13 @@ import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.annotation.SlowTest;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import static org.junit.Assert.assertTrue;
 
+@Category(SlowTest.class)
 public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
 
     @Override

@@ -18,12 +18,22 @@ import java.util.Collection;
 @Category({QuickTest.class, ParallelTest.class})
 public class HDAggregatorsSpecTest extends AggregatorsSpecTest {
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters(name = "{0} parallelAccumulation={1}, postfix={2}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                {InMemoryFormat.BINARY},
-                {InMemoryFormat.OBJECT},
-                {InMemoryFormat.NATIVE},
+                {InMemoryFormat.BINARY, false, ""},
+                {InMemoryFormat.OBJECT, false, ""},
+                {InMemoryFormat.NATIVE, false, ""},
+                {InMemoryFormat.BINARY, true, ""},
+                {InMemoryFormat.OBJECT, true, ""},
+                {InMemoryFormat.NATIVE, true, ""},
+
+                {InMemoryFormat.BINARY, false, "[any]"},
+                {InMemoryFormat.OBJECT, false, "[any]"},
+                {InMemoryFormat.NATIVE, false, "[any]"},
+                {InMemoryFormat.BINARY, true, "[any]"},
+                {InMemoryFormat.OBJECT, true, "[any]"},
+                {InMemoryFormat.NATIVE, true, "[any]"},
         });
     }
 

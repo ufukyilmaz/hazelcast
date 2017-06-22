@@ -12,6 +12,7 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
+import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.management.EnterpriseManagementCenterConnectionFactory;
 import com.hazelcast.enterprise.management.EnterpriseTimedMemberStateFactory;
@@ -68,6 +69,7 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.ByteArrayProcessor;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.Preconditions;
+import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
@@ -302,6 +304,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                     .setHazelcastInstance(hazelcastInstance)
                     // EE version uses the versioned serialization by default
                     .setVersionedSerializationEnabled(true)
+                    .setNotActiveExceptionSupplier(new Supplier<RuntimeException>() {
+                        @Override
+                        public RuntimeException get() {
+                            return new HazelcastInstanceNotActiveException();
+                        }
+                    })
                     .build();
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);

@@ -1,5 +1,6 @@
 package com.hazelcast.client.impl;
 
+import com.hazelcast.client.HazelcastClientNotActiveException;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.map.impl.proxy.EnterpriseMapClientProxyFactory;
@@ -36,6 +37,7 @@ import com.hazelcast.nio.ssl.SSLChannelFactory;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.Version;
 
 import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature;
@@ -88,6 +90,12 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
                     .setClusterVersionAware(versionAware)
                     // the client doesn't use the versioned serialization
                     .setVersionedSerializationEnabled(false)
+                    .setNotActiveExceptionSupplier(new Supplier<RuntimeException>() {
+                        @Override
+                        public RuntimeException get() {
+                            return new HazelcastClientNotActiveException("Client is shutdown");
+                        }
+                    })
                     .build();
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);

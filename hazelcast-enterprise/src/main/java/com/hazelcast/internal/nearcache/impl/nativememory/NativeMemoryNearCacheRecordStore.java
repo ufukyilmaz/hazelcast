@@ -242,7 +242,6 @@ public class NativeMemoryNearCacheRecordStore<K, V>
     @SuppressWarnings("unchecked")
     protected V recordToValue(NativeMemoryNearCacheRecord record) {
         if (record.getValue() == null) {
-            nearCacheStats.incrementMisses();
             return (V) CACHED_AS_NULL;
         }
         if (!isMemoryBlockValid(record)) {

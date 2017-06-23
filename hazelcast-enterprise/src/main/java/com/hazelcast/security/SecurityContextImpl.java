@@ -168,8 +168,8 @@ public class SecurityContextImpl implements SecurityContext {
     }
 
     @Override
-    public void refreshClientPermissions(Set<PermissionConfig> permissionConfigs) {
-        policy.refreshClientPermissions(permissionConfigs);
+    public void refreshPermissions(Set<PermissionConfig> permissionConfigs) {
+        policy.refreshPermissions(permissionConfigs);
     }
 
     public ILogger getLogger(String name) {

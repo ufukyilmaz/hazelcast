@@ -56,7 +56,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     volatile ConfigPatternMatcher configPatternMatcher;
     volatile boolean configUpdateInProgress;
     volatile SecurityConfig securityConfig;
-    Object configUpdateMutex = new Object();
+    final Object configUpdateMutex = new Object();
 
     @Override
     public void configure(Config config, Properties properties) {
@@ -132,7 +132,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     }
 
     @Override
-    public boolean refreshClientPermissions(Set<PermissionConfig> permissionConfigs) {
+    public boolean refreshPermissions(Set<PermissionConfig> permissionConfigs) {
         if (configUpdateInProgress) {
             LOGGER.warning("PermissionConfig update is failed, there is already a pending config change.");
             return false;

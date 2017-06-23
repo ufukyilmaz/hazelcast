@@ -10,8 +10,11 @@ import com.hazelcast.core.PartitionService;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.management.operation.UpdateMapConfigOperation;
 import com.hazelcast.internal.management.operation.UpdatePermissionConfigOperation;
+import com.hazelcast.internal.util.InvocationUtil;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.Address;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.security.IPermissionPolicy;
 import com.hazelcast.security.SecurityService;
 import com.hazelcast.spi.CoreService;
@@ -25,6 +28,7 @@ import com.hazelcast.spi.PartitionMigrationEvent;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.util.FutureUtil;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -43,7 +47,6 @@ public class SecurityServiceImpl implements SecurityService, CoreService, Migrat
 
     public static final String SERVICE_NAME = "hz:ee:securityServiceImpl";
 
-    private static final int WARMUP_SLEEPING_TIME_MILLIS = 10;
     private static final int RETRY_COUNT = 3;
 
     private Node node;
@@ -54,46 +57,8 @@ public class SecurityServiceImpl implements SecurityService, CoreService, Migrat
 
     @Override
     public void refreshClientPermissions(Set<PermissionConfig> permissionConfigs) {
-        //Slightly modified version InvocationUtil#invokeOnCluster
-        NodeEngine nodeEngine = node.nodeEngine;
-        OperationService operationService = nodeEngine.getOperationService();
-        Cluster cluster = nodeEngine.getClusterService();
-        warmUpPartitions(nodeEngine);
-        Collection<Member> originalMembers;
-        int iterationCounter = 0;
-        do {
-            originalMembers = cluster.getMembers();
-            Set<Member> members = node.getClusterService().getMembers();
-            Set<Future> futures = new HashSet<Future>(members.size());
-            for (Member member : members) {
-                Future future = operationService.invokeOnTarget(SERVICE_NAME,
-                        new UpdatePermissionConfigOperation(permissionConfigs), member.getAddress());
-                futures.add(future);
-            }
-            FutureUtil.waitWithDeadline(futures, 1, TimeUnit.MINUTES, RETHROW_ALL_EXCEPT_MEMBER_LEFT);
-            Collection<Member> currentMembers = cluster.getMembers();
-            if (currentMembers.equals(originalMembers)) {
-                break;
-            }
-            if (iterationCounter++ == RETRY_COUNT) {
-                throw new HazelcastException(format("Cluster topology was not stable for %d retries,"
-                        + " invoke on stable cluster failed", RETRY_COUNT));
-            }
-        } while (!originalMembers.equals(cluster.getMembers()));
-    }
-
-    private static void warmUpPartitions(NodeEngine nodeEngine) {
-        final PartitionService ps = nodeEngine.getHazelcastInstance().getPartitionService();
-        for (Partition partition : ps.getPartitions()) {
-            while (partition.getOwner() == null) {
-                try {
-                    Thread.sleep(WARMUP_SLEEPING_TIME_MILLIS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new HazelcastException("Thread interrupted while initializing a partition table", e);
-                }
-            }
-        }
+        InvocationUtil.invokeOnStableClusterSerial(node.nodeEngine,
+                new UpdatePermissionConfigOperationFactory(permissionConfigs), RETRY_COUNT);
     }
 
     @Override
@@ -114,5 +79,39 @@ public class SecurityServiceImpl implements SecurityService, CoreService, Migrat
     @Override
     public void rollbackMigration(PartitionMigrationEvent event) {
         //no-op
+    }
+
+    private class UpdatePermissionConfigOperationFactory implements OperationFactory {
+
+        private Set<PermissionConfig> permissionConfigs;
+
+        public UpdatePermissionConfigOperationFactory(Set<PermissionConfig> permissionConfigs) {
+            this.permissionConfigs = permissionConfigs;
+        }
+
+        @Override
+        public Operation createOperation() {
+            return new UpdatePermissionConfigOperation(permissionConfigs);
+        }
+
+        @Override
+        public int getFactoryId() {
+            throw new UnsupportedOperationException("AddDynamicConfigOperationFactory must not be serialized");
+        }
+
+        @Override
+        public int getId() {
+            throw new UnsupportedOperationException("AddDynamicConfigOperationFactory must not be serialized");
+        }
+
+        @Override
+        public void writeData(ObjectDataOutput out) throws IOException {
+            throw new UnsupportedOperationException("AddDynamicConfigOperationFactory must not be serialized");
+        }
+
+        @Override
+        public void readData(ObjectDataInput in) throws IOException {
+            throw new UnsupportedOperationException("AddDynamicConfigOperationFactory must not be serialized");
+        }
     }
 }

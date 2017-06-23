@@ -44,6 +44,9 @@
 
         <log4j2.version>2.3</log4j2.version>
         <mockito.all.version>1.10.19</mockito.all.version>
+
+        <netty.version>4.1.8.Final</netty.version>
+        <netty-tcnative.version>1.1.33.Fork26</netty-tcnative.version>
     </properties>
 
     <licenses>

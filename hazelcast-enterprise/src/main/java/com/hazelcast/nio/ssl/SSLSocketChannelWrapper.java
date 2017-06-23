@@ -1,9 +1,10 @@
 package com.hazelcast.nio.ssl;
 
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.tcp.DefaultSocketChannelWrapper;
 import com.hazelcast.util.EmptyStatement;
 
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
@@ -23,6 +24,7 @@ import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
 
     static final int EXPAND_FACTOR = 2;
+    private final ILogger logger = Logger.getLogger(SSLSocketChannelWrapper.class);
 
     private ByteBuffer applicationBuffer;
     private final Object lock = new Object();
@@ -35,12 +37,10 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     private volatile boolean handshakeCompleted;
     private SSLEngineResult sslEngineResult;
 
-    public SSLSocketChannelWrapper(SSLContext sslContext, SocketChannel sc, boolean client,
+    public SSLSocketChannelWrapper(SSLEngine sslEngine, SocketChannel sc, boolean clientMode,
                                    String mutualAuthentication) throws Exception {
         super(sc);
-        sslEngine = sslContext.createSSLEngine();
-        sslEngine.setUseClientMode(client);
-        sslEngine.setEnableSessionCreation(true);
+        this.sslEngine = sslEngine;
         if ("REQUIRED".equals(mutualAuthentication)) {
             sslEngine.setNeedClientAuth(true);
         } else if ("OPTIONAL".equals(mutualAuthentication)) {
@@ -52,6 +52,7 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
         int netBufferMax = session.getPacketBufferSize();
         netOutBuffer = ByteBuffer.allocate(netBufferMax);
         netInBuffer = ByteBuffer.allocate(netBufferMax);
+        sslEngine.beginHandshake();
     }
 
     @SuppressWarnings({
@@ -66,7 +67,6 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                 return;
             }
             int counter = 0;
-            sslEngine.beginHandshake();
             writeInternal(emptyBuffer);
             while (counter++ < 250 && sslEngineResult.getHandshakeStatus() != FINISHED) {
                 if (sslEngineResult.getHandshakeStatus() == NEED_UNWRAP) {
@@ -99,6 +99,13 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                 throw new SSLHandshakeException("SSL handshake failed after " + counter
                         + " trials! -> " + sslEngineResult.getHandshakeStatus());
             }
+
+            if (logger.isFineEnabled()) {
+                SSLSession sslSession = sslEngine.getSession();
+                logger.fine("handshake finished, channel=" + this + " protocol=" + sslSession.getProtocol() + ", cipherSuite="
+                        + sslSession.getCipherSuite());
+            }
+
             applicationBuffer.clear();
             applicationBuffer.flip();
             handshakeCompleted = true;

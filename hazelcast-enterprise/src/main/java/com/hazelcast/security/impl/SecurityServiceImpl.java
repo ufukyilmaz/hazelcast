@@ -50,6 +50,7 @@ public class SecurityServiceImpl implements SecurityService, CoreService, Migrat
     private static final int RETRY_COUNT = 3;
 
     private Node node;
+    private volatile Set<PermissionConfig> permissionConfigs;
 
     public SecurityServiceImpl(Node node) {
         this.node = node;
@@ -59,6 +60,12 @@ public class SecurityServiceImpl implements SecurityService, CoreService, Migrat
     public void refreshClientPermissions(Set<PermissionConfig> permissionConfigs) {
         InvocationUtil.invokeOnStableClusterSerial(node.nodeEngine,
                 new UpdatePermissionConfigOperationFactory(permissionConfigs), RETRY_COUNT);
+        this.permissionConfigs = permissionConfigs;
+    }
+
+    @Override
+    public Set<PermissionConfig> getClientPermissionConfigs() {
+        return permissionConfigs;
     }
 
     @Override

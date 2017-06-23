@@ -55,13 +55,11 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
 
     volatile ConfigPatternMatcher configPatternMatcher;
     volatile boolean configUpdateInProgress;
-    volatile SecurityConfig securityConfig;
     final Object configUpdateMutex = new Object();
 
     @Override
     public void configure(Config config, Properties properties) {
         LOGGER.log(Level.FINEST, "Configuring and initializing policy.");
-        this.securityConfig = config.getSecurityConfig();
         configPatternMatcher = config.getConfigPatternMatcher();
         loadPermissionConfig(config.getSecurityConfig().getClientPermissionConfigs());
     }
@@ -132,7 +130,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     }
 
     @Override
-    public boolean refreshPermissions(Set<PermissionConfig> permissionConfigs) {
+    public boolean refreshPermissions(Set<PermissionConfig> updatedPermissionConfigs) {
         if (configUpdateInProgress) {
             LOGGER.warning("PermissionConfig update is failed, there is already a pending config change.");
             return false;
@@ -141,8 +139,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
                 if (!configUpdateInProgress) {
                     configUpdateInProgress = true;
                     configPermissions.clear();
-                    loadPermissionConfig(permissionConfigs);
-                    securityConfig.setClientPermissionConfigs(permissionConfigs);
+                    loadPermissionConfig(updatedPermissionConfigs);
                     principalPermissions.clear();
                     configUpdateInProgress = false;
                     return true;

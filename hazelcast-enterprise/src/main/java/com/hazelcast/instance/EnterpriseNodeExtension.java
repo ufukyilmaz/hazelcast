@@ -148,7 +148,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
         logger.log(Level.INFO, license.toString());
 
-        createSecurityContext(node);
+            createSecurityContext(node);
         createMemoryManager(node);
         createSocketInterceptor(node.config.getNetworkConfig());
     }

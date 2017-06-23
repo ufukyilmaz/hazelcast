@@ -240,7 +240,6 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected V recordToValue(HiDensityNativeMemoryNearCacheRecord record) {
         if (record.getValue() == null) {
-            nearCacheStats.incrementMisses();
             return (V) CACHED_AS_NULL;
         }
         if (!isMemoryBlockValid(record)) {

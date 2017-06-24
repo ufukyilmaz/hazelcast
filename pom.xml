@@ -456,7 +456,7 @@
                                     <!-- the argLine variable is needed for JaCoco -->
                                     <argLine>
                                         ${extraVmArgs}
-                                        -Xms1g -Xmx1g -XX:MaxPermSize=1024M
+                                        -Xms1g -Xmx1g -XX:MaxPermSize=1024M -ea
                                         -Dhazelcast.operation.thread.count=16
                                         -Dhazelcast.hidensity.check.freememory=false
                                         -Dhazelcast.phone.home.enabled=false

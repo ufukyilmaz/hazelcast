@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.hazelcast.internal.nearcache.impl.invalidation.ToHeapDataConverter.toHeapData;
 import static com.hazelcast.map.impl.EntryViews.createSimpleEntryView;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.recordstore.RecordStore.DEFAULT_TTL;
@@ -147,6 +148,7 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
             return;
         }
 
+        key = toHeapData(key);
         Object newValue = entry.getValue();
         invalidateNearCache(key);
         mapServiceContext.interceptAfterPut(name, newValue);

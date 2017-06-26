@@ -21,12 +21,11 @@ import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
-import com.hazelcast.internal.dynamicconfig.HotRestartConfigListener;
-import com.hazelcast.internal.dynamicconfig.DynamicConfigListener;
-import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
-import com.hazelcast.nio.CipherByteArrayProcessor;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
+import com.hazelcast.internal.dynamicconfig.DynamicConfigListener;
+import com.hazelcast.internal.dynamicconfig.HotRestartConfigListener;
+import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
@@ -50,6 +49,7 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Address;
+import com.hazelcast.nio.CipherByteArrayProcessor;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
@@ -60,6 +60,8 @@ import com.hazelcast.nio.tcp.SymmetricCipherMemberChannelOutboundHandler;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
+import com.hazelcast.security.SecurityService;
+import com.hazelcast.security.impl.SecurityServiceImpl;
 import com.hazelcast.security.impl.WeakSecretsConfigChecker;
 import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
@@ -102,6 +104,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     private final HotRestartIntegrationService hotRestartService;
     private final HotBackupService hotBackupService;
+    private final SecurityService securityService;
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
@@ -113,6 +116,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         super(node);
         hotRestartService = createHotRestartService(node);
         hotBackupService = createHotBackupService(node, hotRestartService);
+        securityService = createSecurityService(node);
+    }
+
+    private SecurityService createSecurityService(Node node) {
+        return new SecurityServiceImpl(node);
     }
 
     private HotBackupService createHotBackupService(
@@ -140,7 +148,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
         logger.log(Level.INFO, license.toString());
 
-        createSecurityContext(node);
+            createSecurityContext(node);
         createMemoryManager(node);
         createSocketInterceptor(node.config.getNetworkConfig());
     }
@@ -351,6 +359,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
+    public SecurityService getSecurityService() {
+        return securityService;
+    }
+
+    @Override
     public MemberSocketInterceptor getMemberSocketInterceptor() {
         return memberSocketInterceptor;
     }
@@ -497,6 +510,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
         services.put(HotBackupService.SERVICE_NAME, hotBackupService);
         services.put(HotRestartIntegrationService.SERVICE_NAME, hotRestartService);
+        services.put(SecurityServiceImpl.SERVICE_NAME, securityService);
 
         return services;
     }
@@ -664,7 +678,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
-            logger.info("Mulitcast is starting with SymmetricEncryption on input processor");
+            logger.info("Multicast is starting with SymmetricEncryption on input processor");
             return new CipherByteArrayProcessor(createSymmetricReaderCipher(symmetricEncryptionConfig));
         }
 
@@ -676,7 +690,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
-            logger.info("Mulitcast is starting with SymmetricEncryption on output processor");
+            logger.info("Multicast is starting with SymmetricEncryption on output processor");
             return new CipherByteArrayProcessor(createSymmetricWriterCipher(symmetricEncryptionConfig));
         }
 

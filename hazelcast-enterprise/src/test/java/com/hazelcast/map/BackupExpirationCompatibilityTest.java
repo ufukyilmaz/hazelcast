@@ -1,6 +1,5 @@
 package com.hazelcast.map;
 
-import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
@@ -20,6 +19,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
@@ -96,7 +96,7 @@ public class BackupExpirationCompatibilityTest extends HazelcastTestSupport {
     protected Config newConfig() {
         Config config = getConfig();
         if (inMemoryFormat == NATIVE) {
-            config = HDTestSupport.getHDConfig();
+            config = getHDConfig();
         }
 
         MapConfig mapConfig = config.getMapConfig(MAP_NAME);

@@ -1,7 +1,6 @@
 package com.hazelcast.map;
 
 
-import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -17,6 +16,7 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static org.junit.Assert.assertEquals;
 
@@ -33,7 +33,7 @@ public class HDReadBackupTest extends HazelcastTestSupport {
     @Before
     public void setup() {
         String name = randomString();
-        Config config = HDTestSupport.getHDConfig();
+        Config config = getHDConfig();
         config.getMapConfig("default").setReadBackupData(true);
         config.getNativeMemoryConfig().setAllocatorType(POOLED);
         HazelcastInstance instance = createHazelcastInstance(config);

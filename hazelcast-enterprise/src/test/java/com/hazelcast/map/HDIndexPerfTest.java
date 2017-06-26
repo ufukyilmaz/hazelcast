@@ -1,6 +1,5 @@
 package com.hazelcast.map;
 
-import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapIndexConfig;
@@ -24,6 +23,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
@@ -36,7 +36,7 @@ public class HDIndexPerfTest extends HazelcastTestSupport {
 
     @Override
     protected Config getConfig() {
-        return HDTestSupport.getHDConfig();
+        return getHDConfig();
     }
 
     @Ignore
@@ -116,13 +116,15 @@ public class HDIndexPerfTest extends HazelcastTestSupport {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
             Person person = (Person) o;
-
             return age == person.age;
-
         }
 
         @Override

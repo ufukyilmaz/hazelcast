@@ -7,14 +7,15 @@ import com.hazelcast.config.EventJournalConfig;
 import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.HDTestSupport;
 import org.junit.runner.RunWith;
+
+import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 public class BasicHDCacheJournalTest extends BasicCacheJournalTest {
     @Override
     protected Config getConfig() {
-        final Config config = HDTestSupport.getHDConfig();
+        final Config config = getHDConfig();
         config.addEventJournalConfig(new EventJournalConfig().setCacheName("default").setEnabled(true));
         final CacheSimpleConfig nonEvictingCache = new CacheSimpleConfig().setName("cache")
                                                                           .setInMemoryFormat(InMemoryFormat.NATIVE);

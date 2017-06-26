@@ -1,6 +1,5 @@
 package com.hazelcast.map;
 
-import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
@@ -12,12 +11,15 @@ import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
+
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class HDEntryProcessorOffloadableBouncingNodeTest extends EntryProcessorOffloadableBouncingNodesTest {
 
+    @Override
     public Config getBouncingTestConfig() {
-        Config config = HDTestSupport.getHDConfig();
+        Config config = getHDConfig();
         MapConfig mapConfig = new MapConfig(MAP_NAME);
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         mapConfig.setAsyncBackupCount(1);
@@ -35,5 +37,4 @@ public class HDEntryProcessorOffloadableBouncingNodeTest extends EntryProcessorO
     public static void tearDownClass() {
         System.setProperty(StandardMemoryManager.PROPERTY_DEBUG_ENABLED, "false");
     }
-
 }

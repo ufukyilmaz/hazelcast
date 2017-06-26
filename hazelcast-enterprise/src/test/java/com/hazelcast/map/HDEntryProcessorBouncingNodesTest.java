@@ -1,12 +1,13 @@
 package com.hazelcast.map;
 
-import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+
+import static com.hazelcast.HDTestSupport.getHDConfig;
 
 /**
  * Creates a map that is used to test data consistency while nodes are joining and leaving the cluster.
@@ -20,6 +21,6 @@ public class HDEntryProcessorBouncingNodesTest extends EntryProcessorBouncingNod
 
     @Override
     protected Config getConfig() {
-        return HDTestSupport.getHDConfig();
+        return getHDConfig();
     }
 }

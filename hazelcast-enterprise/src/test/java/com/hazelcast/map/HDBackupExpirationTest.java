@@ -16,7 +16,6 @@
 
 package com.hazelcast.map;
 
-import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -27,6 +26,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static java.util.Arrays.asList;
 
@@ -42,6 +42,6 @@ public class HDBackupExpirationTest extends BackupExpirationTest {
 
     @Override
     protected Config getConfig() {
-        return HDTestSupport.getHDConfig();
+        return getHDConfig();
     }
 }

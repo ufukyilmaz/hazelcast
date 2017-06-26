@@ -1,6 +1,5 @@
 package com.hazelcast.map;
 
-import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
@@ -15,6 +14,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
@@ -36,7 +36,7 @@ public class HDEntryProcessorOffloadableTest extends EntryProcessorOffloadableTe
 
     @Override
     public Config getConfig() {
-        Config config = HDTestSupport.getHDConfig();
+        Config config = getHDConfig();
         MapConfig mapConfig = new MapConfig(MAP_NAME);
         mapConfig.setInMemoryFormat(inMemoryFormat);
         mapConfig.setAsyncBackupCount(asyncBackupCount);
@@ -54,5 +54,4 @@ public class HDEntryProcessorOffloadableTest extends EntryProcessorOffloadableTe
     public static void tearDownClass() {
         System.setProperty(StandardMemoryManager.PROPERTY_DEBUG_ENABLED, "false");
     }
-
 }

@@ -4,14 +4,16 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EventJournalConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.HDTestSupport;
 import org.junit.runner.RunWith;
+
+import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 public class BasicHDMapJournalTest extends BasicMapJournalTest {
+
     @Override
     protected Config getConfig() {
-        final Config config = HDTestSupport.getHDConfig();
+        final Config config = getHDConfig();
         config.addEventJournalConfig(new EventJournalConfig().setMapName("default").setEnabled(true));
         final MapConfig mapConfig = new MapConfig("mappy");
         final MapConfig expiringMap = new MapConfig("expiring").setTimeToLiveSeconds(1);

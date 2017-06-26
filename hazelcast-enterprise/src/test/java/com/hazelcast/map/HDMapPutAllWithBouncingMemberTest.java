@@ -1,6 +1,5 @@
 package com.hazelcast.map;
 
-import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -9,6 +8,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+
+import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
@@ -26,6 +27,6 @@ public class HDMapPutAllWithBouncingMemberTest extends MapPutAllWithBouncingMemb
 
     @Override
     protected Config getConfig() {
-        return HDTestSupport.getHDConfig();
+        return getHDConfig();
     }
 }

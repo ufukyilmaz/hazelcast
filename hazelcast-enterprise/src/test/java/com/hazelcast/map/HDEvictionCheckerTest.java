@@ -1,6 +1,5 @@
 package com.hazelcast.map;
 
-import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.HotRestartPersistenceConfig;
@@ -23,6 +22,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.Random;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_NODE;
@@ -135,7 +135,7 @@ public class HDEvictionCheckerTest extends HazelcastTestSupport {
     }
 
     private Config newConfig(MaxSizeConfig.MaxSizePolicy maxSizePolicy, int maxSize) throws IOException {
-        Config config = HDTestSupport.getHDConfig();
+        Config config = getHDConfig();
 
         MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
         maxSizeConfig.setMaxSizePolicy(maxSizePolicy).setSize(maxSize);
@@ -146,7 +146,6 @@ public class HDEvictionCheckerTest extends HazelcastTestSupport {
 
         return config;
     }
-
 
     private static byte[] newValueInMegaBytes(int megabytes) {
         Random random = new Random();

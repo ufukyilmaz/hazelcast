@@ -1,6 +1,5 @@
 package com.hazelcast.map;
 
-import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -14,6 +13,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
 import static org.junit.Assert.assertTrue;
@@ -24,9 +24,8 @@ public class HDEvictionTest extends EvictionTest {
 
     @Override
     protected Config getConfig() {
-        return HDTestSupport.getHDConfig();
+        return getHDConfig();
     }
-
 
     @Test
     public void testForceEviction() {
@@ -56,5 +55,4 @@ public class HDEvictionTest extends EvictionTest {
         //this is an extra step. the main goal is to not fail with NativeOutOfMemoryError
         assertTrue(map.size()> 0);
     }
-
 }

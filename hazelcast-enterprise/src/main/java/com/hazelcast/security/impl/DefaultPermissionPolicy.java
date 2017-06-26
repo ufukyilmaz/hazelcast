@@ -53,7 +53,6 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
             = new ConcurrentHashMap<String, PrincipalPermissionsHolder>();
 
     volatile ConfigPatternMatcher configPatternMatcher;
-    volatile boolean configUpdateInProgress;
     final Object configUpdateMutex = new Object();
 
     @Override
@@ -130,24 +129,11 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     }
 
     @Override
-    public boolean refreshPermissions(Set<PermissionConfig> updatedPermissionConfigs) {
-        if (configUpdateInProgress) {
-            LOGGER.warning("PermissionConfig update is failed, there is already a pending config change.");
-            return false;
-        } else {
-            synchronized (configUpdateMutex) {
-                if (!configUpdateInProgress) {
-                    configUpdateInProgress = true;
-                    configPermissions.clear();
-                    loadPermissionConfig(updatedPermissionConfigs);
-                    principalPermissions.clear();
-                    configUpdateInProgress = false;
-                    return true;
-                } else {
-                    LOGGER.warning("PermissionConfig update is failed, there is already a pending config change.");
-                    return false;
-                }
-            }
+    public void refreshPermissions(Set<PermissionConfig> updatedPermissionConfigs) {
+        synchronized (configUpdateMutex) {
+            configPermissions.clear();
+            loadPermissionConfig(updatedPermissionConfigs);
+            principalPermissions.clear();
         }
     }
 

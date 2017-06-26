@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 public class SecurityContextImpl implements SecurityContext {
@@ -38,6 +39,7 @@ public class SecurityContextImpl implements SecurityContext {
     private final Configuration clientConfiguration;
     private final List<SecurityInterceptor> interceptors;
     private final Parameters emptyParameters = new EmptyParametersImpl();
+    private final AtomicBoolean refreshPermissionsInProgress = new AtomicBoolean();
 
     @SuppressWarnings("checkstyle:executablestatementcount")
     public SecurityContextImpl(Node node) {
@@ -169,7 +171,12 @@ public class SecurityContextImpl implements SecurityContext {
 
     @Override
     public void refreshPermissions(Set<PermissionConfig> permissionConfigs) {
-        policy.refreshPermissions(permissionConfigs);
+        if (refreshPermissionsInProgress.compareAndSet(false, true)) {
+            policy.refreshPermissions(permissionConfigs);
+            refreshPermissionsInProgress.set(false);
+        } else {
+            throw new IllegalStateException("Permissions could not be refreshed, another update is in progress.");
+        }
     }
 
     public ILogger getLogger(String name) {

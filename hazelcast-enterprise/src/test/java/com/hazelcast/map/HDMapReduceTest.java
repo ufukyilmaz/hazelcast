@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Map;
 
-import static com.hazelcast.map.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})

@@ -10,7 +10,7 @@ import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.map.HDTestSupport.NATIVE_MEMORY_SIZE;
+import static com.hazelcast.HDTestSupport.NATIVE_MEMORY_SIZE;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})

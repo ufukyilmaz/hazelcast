@@ -1,5 +1,6 @@
 package com.hazelcast.map;
 
+import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;

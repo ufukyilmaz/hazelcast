@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EventJournalConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.map.HDTestSupport;
+import com.hazelcast.HDTestSupport;
 import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)

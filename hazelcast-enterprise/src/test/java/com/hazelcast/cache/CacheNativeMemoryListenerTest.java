@@ -27,7 +27,7 @@ import javax.cache.event.CacheEntryRemovedListener;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hazelcast.map.HDTestSupport.getICache;
+import static com.hazelcast.HDTestSupport.getICache;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)

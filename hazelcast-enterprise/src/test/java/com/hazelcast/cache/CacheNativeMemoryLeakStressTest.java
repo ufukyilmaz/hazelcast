@@ -75,7 +75,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hazelcast.instance.TestUtil.terminateInstance;
-import static com.hazelcast.map.HDTestSupport.getICache;
+import static com.hazelcast.HDTestSupport.getICache;
 import static com.hazelcast.memory.MemorySize.toPrettyString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

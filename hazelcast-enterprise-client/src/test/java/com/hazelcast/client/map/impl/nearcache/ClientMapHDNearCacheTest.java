@@ -20,7 +20,7 @@ import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
-import static com.hazelcast.map.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)

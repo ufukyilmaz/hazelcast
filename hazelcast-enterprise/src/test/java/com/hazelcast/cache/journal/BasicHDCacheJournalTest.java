@@ -7,7 +7,7 @@ import com.hazelcast.config.EventJournalConfig;
 import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.map.HDTestSupport;
+import com.hazelcast.HDTestSupport;
 import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)

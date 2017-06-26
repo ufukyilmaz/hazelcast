@@ -36,7 +36,7 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
-import static com.hazelcast.map.HDTestSupport.getICache;
+import static com.hazelcast.HDTestSupport.getICache;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertNotNull;

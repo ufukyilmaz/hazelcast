@@ -19,7 +19,7 @@ import org.junit.Before;
 import javax.cache.CacheManager;
 import javax.cache.spi.CachingProvider;
 
-import static com.hazelcast.map.HDTestSupport.getICache;
+import static com.hazelcast.HDTestSupport.getICache;
 import static com.hazelcast.util.StringUtil.isNullOrEmpty;
 
 public abstract class AbstractCacheTest extends HazelcastTestSupport {

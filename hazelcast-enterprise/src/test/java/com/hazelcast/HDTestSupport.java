@@ -1,4 +1,4 @@
-package com.hazelcast.map;
+package com.hazelcast;
 
 import com.hazelcast.cache.ICache;
 import com.hazelcast.config.CacheConfiguration;

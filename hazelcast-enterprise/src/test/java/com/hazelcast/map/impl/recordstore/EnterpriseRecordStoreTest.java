@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.map.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.map.impl.recordstore.EnterpriseRecordStore.HD_RECORD_MAX_TTL_MILLIS;
 import static com.hazelcast.util.RandomPicker.getInt;
 import static org.junit.Assert.assertFalse;

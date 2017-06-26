@@ -1,6 +1,7 @@
 package com.hazelcast.map;
 
 
+import com.hazelcast.HDTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;

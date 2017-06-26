@@ -17,7 +17,7 @@ import static com.hazelcast.cluster.ClusterState.ACTIVE;
 import static com.hazelcast.cluster.ClusterState.FROZEN;
 import static com.hazelcast.cluster.ClusterState.PASSIVE;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
-import static com.hazelcast.map.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)

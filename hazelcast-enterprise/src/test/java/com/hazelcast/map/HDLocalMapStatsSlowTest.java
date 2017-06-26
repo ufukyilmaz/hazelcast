@@ -15,7 +15,7 @@ import org.junit.runner.RunWith;
 
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static com.hazelcast.map.HDLocalMapStatsTest.SINGLE_MAP_ENTRY_COST;
-import static com.hazelcast.map.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static org.junit.Assert.assertEquals;
 

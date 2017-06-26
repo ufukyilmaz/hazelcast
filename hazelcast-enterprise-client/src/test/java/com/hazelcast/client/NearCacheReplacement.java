@@ -17,7 +17,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.Map;
 
-import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
+import static com.hazelcast.HDTestSupport.getEnterpriseMap;
 
 // TODO: print stacktrace predicate to see where the event listener is triggered
 

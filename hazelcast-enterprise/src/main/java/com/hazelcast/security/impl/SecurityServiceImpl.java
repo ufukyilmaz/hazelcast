@@ -1,48 +1,26 @@
 package com.hazelcast.security.impl;
 
 import com.hazelcast.config.PermissionConfig;
-import com.hazelcast.core.Cluster;
-import com.hazelcast.core.HazelcastException;
-import com.hazelcast.core.Member;
-import com.hazelcast.core.MemberSelector;
-import com.hazelcast.core.Partition;
-import com.hazelcast.core.PartitionService;
 import com.hazelcast.instance.Node;
-import com.hazelcast.internal.management.operation.UpdateMapConfigOperation;
 import com.hazelcast.internal.management.operation.UpdatePermissionConfigOperation;
 import com.hazelcast.internal.util.InvocationUtil;
-import com.hazelcast.map.impl.MapService;
-import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.security.IPermissionPolicy;
 import com.hazelcast.security.SecurityService;
 import com.hazelcast.spi.CoreService;
-import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.MigrationAwareService;
-import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationFactory;
-import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.PartitionMigrationEvent;
 import com.hazelcast.spi.PartitionReplicationEvent;
-import com.hazelcast.util.FutureUtil;
+import com.hazelcast.version.Version;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.util.FutureUtil.RETHROW_ALL_EXCEPT_MEMBER_LEFT;
-import static java.lang.String.format;
+import static com.hazelcast.internal.cluster.Versions.V3_9;
 
-/**
- * Created by emrah on 01/06/2017.
- */
 public class SecurityServiceImpl implements SecurityService, CoreService, MigrationAwareService {
 
     public static final String SERVICE_NAME = "hz:ee:securityServiceImpl";
@@ -54,13 +32,24 @@ public class SecurityServiceImpl implements SecurityService, CoreService, Migrat
 
     public SecurityServiceImpl(Node node) {
         this.node = node;
+        this.permissionConfigs = new HashSet<PermissionConfig>();
     }
 
     @Override
     public void refreshClientPermissions(Set<PermissionConfig> permissionConfigs) {
+        Version clusterVersion = node.getClusterService().getClusterVersion();
+        if (clusterVersion.isLessThan(V3_9)) {
+            throw new UnsupportedOperationException("Permissions can be only refreshed when cluster version is at least 3.9");
+        }
+
+        Set<PermissionConfig> clonedConfigs = new HashSet<PermissionConfig>();
+        for (PermissionConfig permissionConfig : permissionConfigs) {
+            clonedConfigs.add(new PermissionConfig(permissionConfig));
+        }
+
         InvocationUtil.invokeOnStableClusterSerial(node.nodeEngine,
-                new UpdatePermissionConfigOperationFactory(permissionConfigs), RETRY_COUNT);
-        this.permissionConfigs = permissionConfigs;
+                new UpdatePermissionConfigOperationFactory(clonedConfigs), RETRY_COUNT);
+        this.permissionConfigs = clonedConfigs;
     }
 
     @Override
@@ -70,6 +59,11 @@ public class SecurityServiceImpl implements SecurityService, CoreService, Migrat
 
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
+        Version clusterVersion = node.getClusterService().getClusterVersion();
+        if (clusterVersion.isLessThan(V3_9)) {
+            return null;
+        }
+
         return new UpdatePermissionConfigOperation(node.getConfig().getSecurityConfig().getClientPermissionConfigs());
     }
 
@@ -88,9 +82,12 @@ public class SecurityServiceImpl implements SecurityService, CoreService, Migrat
         //no-op
     }
 
-    private class UpdatePermissionConfigOperationFactory implements OperationFactory {
+    public static class UpdatePermissionConfigOperationFactory implements OperationFactory {
 
         private Set<PermissionConfig> permissionConfigs;
+
+        public UpdatePermissionConfigOperationFactory() {
+        }
 
         public UpdatePermissionConfigOperationFactory(Set<PermissionConfig> permissionConfigs) {
             this.permissionConfigs = permissionConfigs;
@@ -103,22 +100,22 @@ public class SecurityServiceImpl implements SecurityService, CoreService, Migrat
 
         @Override
         public int getFactoryId() {
-            throw new UnsupportedOperationException("AddDynamicConfigOperationFactory must not be serialized");
+            throw new UnsupportedOperationException("UpdatePermissionConfigOperationFactory must not be serialized");
         }
 
         @Override
         public int getId() {
-            throw new UnsupportedOperationException("AddDynamicConfigOperationFactory must not be serialized");
+            throw new UnsupportedOperationException("UpdatePermissionConfigOperationFactory must not be serialized");
         }
 
         @Override
         public void writeData(ObjectDataOutput out) throws IOException {
-            throw new UnsupportedOperationException("AddDynamicConfigOperationFactory must not be serialized");
+            throw new UnsupportedOperationException("UpdatePermissionConfigOperationFactory must not be serialized");
         }
 
         @Override
         public void readData(ObjectDataInput in) throws IOException {
-            throw new UnsupportedOperationException("AddDynamicConfigOperationFactory must not be serialized");
+            throw new UnsupportedOperationException("UpdatePermissionConfigOperationFactory must not be serialized");
         }
     }
 }

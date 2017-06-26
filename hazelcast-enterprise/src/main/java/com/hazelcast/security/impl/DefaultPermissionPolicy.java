@@ -3,7 +3,6 @@ package com.hazelcast.security.impl;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigPatternMatcher;
 import com.hazelcast.config.PermissionConfig;
-import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
@@ -94,6 +93,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     }
 
     @Override
+    @SuppressWarnings("checkstyle:npathcomplexity")
     public PermissionCollection getPermissions(Subject subject, Class<? extends Permission> type) {
         final ClusterPrincipal principal = getPrincipal(subject);
         if (principal == null) {
@@ -143,8 +143,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
                     principalPermissions.clear();
                     configUpdateInProgress = false;
                     return true;
-                }
-                else {
+                } else {
                     LOGGER.warning("PermissionConfig update is failed, there is already a pending config change.");
                     return false;
                 }

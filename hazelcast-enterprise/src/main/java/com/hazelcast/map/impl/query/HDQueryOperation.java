@@ -55,7 +55,7 @@ public class HDQueryOperation extends HDMapOperation implements ReadonlyOperatio
     void runPartitionScanOnPartitionThreadsAsync(final Query query, final QueryRunner queryRunner) {
         final List<Integer> initialPartitions = new ArrayList<Integer>(mapServiceContext.getOwnedPartitions());
         PartitionIteratingOperation opf = new PartitionIteratingOperation(
-                new HDQueryPartitionWithIndexOperationFactory(query, initialPartitions), initialPartitions);
+                new HDQueryPartitionWithIndexOperationFactory(query), initialPartitions);
 
         final OperationServiceImpl ops = (OperationServiceImpl) getNodeEngine().getOperationService();
         ops.invokeOnTarget(MapService.SERVICE_NAME, opf, getNodeEngine().getThisAddress()).andThen(

@@ -25,7 +25,7 @@ public class HDQueryPartitionOperation extends HDMapOperation implements Partiti
     @Override
     public void runInternal() {
         QueryRunner queryRunner = mapServiceContext.getMapQueryRunner(getName());
-        result = queryRunner.runPartitionScanQueryOnGivenOwnedPartition(query, getPartitionId());
+        result = queryRunner.runPartitionIndexOrPartitionScanQueryOnGivenOwnedPartition(query, getPartitionId());
     }
 
     @Override

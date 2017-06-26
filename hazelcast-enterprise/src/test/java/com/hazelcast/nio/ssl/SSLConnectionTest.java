@@ -22,6 +22,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -103,7 +104,10 @@ public class SSLConnectionTest {
 
             final AtomicReference<Error> error = new AtomicReference<Error>();
             SSLContext clientContext = createClientSslContext();
-            socketChannel = new SSLSocketChannelWrapper(clientContext, SocketChannel.open(), true, null);
+            SSLEngine sslEngine = clientContext.createSSLEngine();
+            sslEngine.setUseClientMode(true);
+            sslEngine.setEnableSessionCreation(true);
+            socketChannel = new SSLSocketChannelWrapper(sslEngine, SocketChannel.open(), true, null);
             socketChannel.connect(new InetSocketAddress(PORT));
             final CountDownLatch latch = new CountDownLatch(2);
 
@@ -227,7 +231,10 @@ public class SSLConnectionTest {
             SocketChannelWrapper socketChannel = null;
             try {
                 SSLContext context = createServerSslContext();
-                socketChannel = new SSLSocketChannelWrapper(context, ssc.accept(), false, null);
+                SSLEngine sslEngine = context.createSSLEngine();
+                sslEngine.setUseClientMode(false);
+                sslEngine.setEnableSessionCreation(true);
+                socketChannel = new SSLSocketChannelWrapper(sslEngine, ssc.accept(), false, null);
                 final CountDownLatch latch = new CountDownLatch(2);
                 final BlockingQueue<Integer> queue = new ArrayBlockingQueue<Integer>(count);
 

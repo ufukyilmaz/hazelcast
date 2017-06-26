@@ -1,4 +1,4 @@
-package com.hazelcast.cache.nearcache;
+package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
@@ -19,7 +19,7 @@ public final class HiDensityNearCacheTestUtils {
     private HiDensityNearCacheTestUtils() {
     }
 
-    public static Config getHDConfig() {
+    public static Config getNearCacheHDConfig() {
         MapConfig mapConfig = new MapConfig()
                 .setName("default")
                 .setEvictionPolicy(EvictionPolicy.LRU)

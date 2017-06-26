@@ -13,7 +13,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
-import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDConfig;
+import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
 import static java.util.Arrays.asList;
 
 /**
@@ -37,6 +37,6 @@ public class HDMapNearCacheBasicTest extends MapNearCacheBasicTest {
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        return getNearCacheHDConfig();
     }
 }

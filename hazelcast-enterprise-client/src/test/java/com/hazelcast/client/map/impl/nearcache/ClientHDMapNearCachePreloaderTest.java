@@ -15,8 +15,8 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
-import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
-import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDConfig;
+import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
+import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
@@ -46,7 +46,7 @@ public class ClientHDMapNearCachePreloaderTest extends ClientMapNearCachePreload
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        return getNearCacheHDConfig();
     }
 
     @Override

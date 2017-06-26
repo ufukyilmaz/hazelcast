@@ -14,8 +14,8 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
-import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
-import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDConfig;
+import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
+import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
@@ -94,7 +94,7 @@ public class ClientHDCacheNearCacheSerializationCountTest extends ClientCacheNea
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        return getNearCacheHDConfig();
     }
 
     @Override

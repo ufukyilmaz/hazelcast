@@ -165,8 +165,8 @@ abstract class AbstractHDOperationTest {
     MapEntries createMapEntries(int itemCount) {
         MapEntries mapEntries = new MapEntries(itemCount);
         for (int i = 0; i < itemCount; i++) {
-            Data key = mock(Data.class);
-            Data value = mock(Data.class);
+            Data key = new HeapData(new byte[]{});
+            Data value = new HeapData(new byte[]{});
             mapEntries.add(key, value);
         }
         return mapEntries;

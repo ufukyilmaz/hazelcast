@@ -7,9 +7,6 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.operationservice.impl.operations.PartitionAwareOperationFactory;
 
 import java.io.IOException;
-import java.util.Collection;
-
-import static com.hazelcast.util.CollectionUtil.toIntArray;
 
 public class HDQueryPartitionWithIndexOperationFactory extends PartitionAwareOperationFactory {
 
@@ -18,8 +15,7 @@ public class HDQueryPartitionWithIndexOperationFactory extends PartitionAwareOpe
     public HDQueryPartitionWithIndexOperationFactory() {
     }
 
-    public HDQueryPartitionWithIndexOperationFactory(Query query, Collection<Integer> partitions) {
-        this.partitions = toIntArray(partitions);
+    public HDQueryPartitionWithIndexOperationFactory(Query query) {
         this.query = query;
     }
 
@@ -42,13 +38,11 @@ public class HDQueryPartitionWithIndexOperationFactory extends PartitionAwareOpe
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeIntArray(partitions);
         out.writeObject(query);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        this.partitions = in.readIntArray();
         this.query = in.readObject();
     }
 }

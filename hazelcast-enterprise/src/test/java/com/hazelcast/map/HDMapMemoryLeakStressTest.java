@@ -1,6 +1,7 @@
 package com.hazelcast.map;
 
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
+import com.hazelcast.config.CacheDeserializedValues;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
@@ -76,7 +77,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
 
     @Test
     @Category(QuickTest.class)
-    public void test_shutdown() throws InterruptedException {
+    public void test_shutdown() {
         final Config config = createConfig();
         config.getNativeMemoryConfig().setAllocatorType(MemoryAllocatorType.POOLED);
 
@@ -91,27 +92,27 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         MemoryStats memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
         hz.shutdown();
 
-        assertEquals(0, memoryStats.getUsedNative());
-        assertEquals(0, memoryStats.getCommittedNative());
+        assertEquals("memoryStats.getUsedNative() should be 0", 0, memoryStats.getUsedNative());
+        assertEquals("memoryStats.getCommittedNative() should be 0", 0, memoryStats.getCommittedNative());
         if (memoryStats instanceof PooledNativeMemoryStats) {
-            assertEquals(0, memoryStats.getUsedMetadata());
+            assertEquals("memoryStats.getUsedMetadata() should be 0", 0, memoryStats.getUsedMetadata());
         }
     }
 
     @Test
-    public void test_MapOperations() throws InterruptedException {
+    public void test_MapOperations() {
         final Config config = createConfig();
 
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
-        HazelcastInstance hz = factory.newHazelcastInstance(config);
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
 
-        IMap<Integer, byte[]> map = hz.getMap(MAP_NAME);
+        IMap<Integer, byte[]> map = hz1.getMap(MAP_NAME);
         map.addIndex("__key", true);
 
         final AtomicBoolean done = new AtomicBoolean(false);
-
         Thread bouncingThread = new Thread() {
+            @Override
             public void run() {
                 while (!done.get()) {
                     HazelcastInstance hz = factory.newHazelcastInstance(config);
@@ -125,49 +126,76 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
 
         int threads = 8;
         CountDownLatch latch = new CountDownLatch(threads);
-
         for (int i = 0; i < threads; i++) {
             new WorkerThread(map, latch, done).start();
         }
 
-        assertOpenEventually(latch, TIMEOUT * 2);
         done.set(true);
-        bouncingThread.join();
+        assertOpenEventually("WorkerThreads didn't finish in time", latch, TIMEOUT * 2);
+        assertJoinable(bouncingThread);
 
         map.clear();
         map.destroy();
 
         try {
-            assertTrueEventually(new AssertFreeMemoryTask(hz, hz2));
+            assertTrueEventually(new AssertFreeMemoryTask(hz1, hz2));
         } catch (AssertionError e) {
-            dumpNativeMemory(hz);
+            dumpNativeMemory(hz1);
             dumpNativeMemory(hz2);
             throw e;
         }
     }
 
     protected Config createConfig() {
-        Config config = new Config();
+        MaxSizeConfig maxSizeConfig = new MaxSizeConfig()
+                .setSize(99)
+                .setMaxSizePolicy(MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
 
-        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT));
+        MapConfig mapConfig = new MapConfig(MAP_NAME)
+                .setBackupCount(1)
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setStatisticsEnabled(true)
+                .setEvictionPolicy(EvictionPolicy.LRU)
+                .setCacheDeserializedValues(CacheDeserializedValues.ALWAYS)
+                .setMaxSizeConfig(maxSizeConfig);
 
-        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
-        memoryConfig.setEnabled(true).setAllocatorType(ALLOCATOR_TYPE).setSize(MEMORY_SIZE);
+        NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
+                .setEnabled(true)
+                .setAllocatorType(ALLOCATOR_TYPE)
+                .setSize(MEMORY_SIZE);
 
-        MapConfig mapConfig = new MapConfig(MAP_NAME);
-        mapConfig.setBackupCount(1);
-        mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        mapConfig.setStatisticsEnabled(true);
-        mapConfig.setEvictionPolicy(EvictionPolicy.LRU);
-        mapConfig.setOptimizeQueries(true);
+        return new Config()
+                .setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
+                .addMapConfig(mapConfig)
+                .setNativeMemoryConfig(memoryConfig);
+    }
 
-        MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
-        maxSizeConfig.setSize(99);
-        maxSizeConfig.setMaxSizePolicy(MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        mapConfig.setMaxSizeConfig(maxSizeConfig);
+    private static void dumpNativeMemory(HazelcastInstance hz) {
+        Node node = getNode(hz);
+        EnterpriseSerializationService ss = (EnterpriseSerializationService) node.getSerializationService();
+        HazelcastMemoryManager memoryManager = ss.getMemoryManager();
+        if (!(memoryManager instanceof StandardMemoryManager)) {
+            System.err.println("Cannot dump memory for " + memoryManager);
+            return;
+        }
 
-        config.addMapConfig(mapConfig);
-        return config;
+        StandardMemoryManager standardMemoryManager = (StandardMemoryManager) memoryManager;
+        standardMemoryManager.forEachAllocatedBlock(new LongLongConsumer() {
+
+            private int k;
+
+            @Override
+            public void accept(long key, long value) {
+                if (value == HiDensityNativeMemoryCacheRecord.SIZE) {
+                    HiDensityNativeMemoryCacheRecord record = new HiDensityNativeMemoryCacheRecord(null, key);
+                    System.err.println((++k) + ". Record Address: " + key + " (Value Address: " + record.getValueAddress() + ")");
+                } else if (value == 13) {
+                    System.err.println((++k) + ". Key Address: " + key);
+                } else {
+                    System.err.println((++k) + ". Value Address: " + key + ", size: " + value);
+                }
+            }
+        });
     }
 
     private static class WorkerThread extends Thread {
@@ -183,6 +211,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
             this.running = running;
         }
 
+        @Override
         public void run() {
             while (running.get()) {
                 try {
@@ -193,7 +222,6 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                     EmptyStatement.ignore(e);
                 }
             }
-
             latch.countDown();
         }
 
@@ -283,7 +311,6 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                     for (int k = key, i = 0; i < 32 && k < KEY_RANGE; k++, i++) {
                         map.lock(key, 5, TimeUnit.SECONDS);
                     }
-
                     break;
 
                 case 14:
@@ -305,12 +332,10 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
 
                         verifyValue(((Integer) newKey), newValue);
                     }
-
                     for (int k = key, i = 0; i < 32 && k < KEY_RANGE; k++, i++) {
                         byte[] v = map.get(k);
                         verifyValue(k, v);
                     }
-
                     break;
 
                 case 17:
@@ -379,50 +404,21 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
 
     private static class AssertFreeMemoryTask extends AssertTask {
 
-        final MemoryStats memoryStats;
-        final MemoryStats memoryStats2;
+        private final MemoryStats memoryStats1;
+        private final MemoryStats memoryStats2;
 
-        AssertFreeMemoryTask(HazelcastInstance hz, HazelcastInstance hz2) {
-            memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
+        AssertFreeMemoryTask(HazelcastInstance hz1, HazelcastInstance hz2) {
+            memoryStats1 = getNode(hz1).hazelcastInstance.getMemoryStats();
             memoryStats2 = getNode(hz2).hazelcastInstance.getMemoryStats();
         }
 
         @Override
         public void run() throws Exception {
-            String message = "Node1: " + toPrettyString(memoryStats.getUsedNative())
-                    + ", Node2: " + toPrettyString(memoryStats2.getUsedNative());
+            String memoryStats = "(Node 1: " + toPrettyString(memoryStats1.getUsedNative())
+                    + ", Node 2: " + toPrettyString(memoryStats2.getUsedNative()) + ")";
 
-            assertEquals(message, 0, memoryStats.getUsedNative());
-            assertEquals(message, 0, memoryStats2.getUsedNative());
+            assertEquals("Node 1 is leaking memory! " + memoryStats, 0, memoryStats1.getUsedNative());
+            assertEquals("Node 2 is leaking memory! " + memoryStats, 0, memoryStats2.getUsedNative());
         }
-    }
-
-    private static void dumpNativeMemory(HazelcastInstance hz) {
-        Node node = getNode(hz);
-        EnterpriseSerializationService ss = (EnterpriseSerializationService) node.getSerializationService();
-        HazelcastMemoryManager memoryManager = ss.getMemoryManager();
-
-        if (!(memoryManager instanceof StandardMemoryManager)) {
-            System.err.println("Cannot dump memory for " + memoryManager);
-            return;
-        }
-
-        StandardMemoryManager standardMemoryManager = (StandardMemoryManager) memoryManager;
-        standardMemoryManager.forEachAllocatedBlock(new LongLongConsumer() {
-
-            private int k;
-
-            @Override
-            public void accept(long key, long value) {
-                if (value == HiDensityNativeMemoryCacheRecord.SIZE) {
-                    HiDensityNativeMemoryCacheRecord record = new HiDensityNativeMemoryCacheRecord(null, key);
-                    System.err.println((++k) + ". Record Address: " + key + " (Value Address: " + record.getValueAddress() + ")");
-                } else if (value == 13) {
-                    System.err.println((++k) + ". Key Address: " + key);
-                } else {
-                    System.err.println((++k) + ". Value Address: " + key + ", size: " + value);
-                }
-            }
-        });
     }
 }

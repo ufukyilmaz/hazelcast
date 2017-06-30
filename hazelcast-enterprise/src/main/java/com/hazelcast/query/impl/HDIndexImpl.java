@@ -10,6 +10,7 @@ public class HDIndexImpl extends IndexImpl {
         super(attributeName, ordered, ss, extractors);
     }
 
+    @Override
     public IndexStore createIndexStore(boolean ordered) {
         EnterpriseSerializationService ess = (EnterpriseSerializationService) ss;
         MemoryAllocator malloc = ess.getCurrentMemoryAllocator();

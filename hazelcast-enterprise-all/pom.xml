@@ -45,6 +45,8 @@
                                     <mainClass>com.hazelcast.console.ConsoleApp</mainClass>
                                     <overrideInstructions>
                                         <Import-Package>
+                                            com.lmax.disruptor.*;resolution:=optional,
+                                            org.eclipse.jetty.*;resolution:=optional,
                                             org.hibernate.*;resolution:=optional,
                                             org.springframework.*;resolution:=optional,
                                             javax.servlet.*;resolution:=optional,
@@ -54,6 +56,7 @@
                                             org.apache.logging.log4j;resolution:=optional,
                                             org.apache.logging.log4j.*;resolution:=optional,
                                             org.apache.commons.logging;resolution:=optional,
+                                            org.apache.commons.lang3;resolution:=optional,
                                             javax.script.*;resolution:=optional,
                                             org.jclouds.*;resolution:=optional,
                                             com.google.*;resolution:=optional,
@@ -81,6 +84,9 @@
                                             groovy.util;resolution:=optional,
                                             org.codehaus.groovy.runtime.metaclass;resolution:=optional,
                                             net.spy.memcached;resolution:=optional,
+                                            com.fasterxml.jackson.dataformat.xml.*;resolution:=optional,
+                                            com.fasterxml.jackson.dataformat.yaml.*;resolution:=optional,
+                                            net.bytebuddy.*;resolution:=optional,
                                             !org.powermock.api.mockito,
                                             !org.powermock.core.classloader.annotations,
                                             !org.mockito.asm.signature,

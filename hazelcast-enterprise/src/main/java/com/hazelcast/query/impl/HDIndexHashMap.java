@@ -28,10 +28,17 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  */
 class HDIndexHashMap<T extends QueryableEntry> {
 
-    private final BinaryElasticHashMap<NativeMemoryData> records;
     private final MapEntryFactory<T> entryFactory;
 
+    private final EnterpriseSerializationService ess;
+    private final MemoryAllocator malloc;
+
+    private BinaryElasticHashMap<NativeMemoryData> records;
+
     HDIndexHashMap(EnterpriseSerializationService ess, MemoryAllocator malloc, MapEntryFactory<T> entryFactory) {
+        this.ess = ess;
+        this.malloc = malloc;
+
         this.records = new BinaryElasticHashMap<NativeMemoryData>(ess, new NativeMemoryDataAccessor(ess), malloc);
         this.entryFactory = entryFactory;
     }
@@ -81,7 +88,8 @@ class HDIndexHashMap<T extends QueryableEntry> {
      * Does not dispose the backing BEHM.
      */
     public void clear() {
-        records.clear();
+        records.dispose();
+        records = new BinaryElasticHashMap<NativeMemoryData>(ess, new NativeMemoryDataAccessor(ess), malloc);
     }
 
     /**

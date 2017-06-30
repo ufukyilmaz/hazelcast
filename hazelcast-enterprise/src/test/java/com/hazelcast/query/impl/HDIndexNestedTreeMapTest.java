@@ -21,8 +21,10 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -431,17 +433,23 @@ public class HDIndexNestedTreeMapTest {
 
     @Test
     public void putClear_dispose_allDeallocated() throws IOException {
+        List<QueryableEntry> localAllocations = new ArrayList<QueryableEntry>();
+
         // GIVEN
         for (int i = 0; i < 1000; i++) {
             QueryableEntry e = entry(i, "value:" + i);
+            localAllocations.add(e);
             map.put(i, (NativeMemoryData) e.getKeyData(), (NativeMemoryData) e.getValueData());
         }
 
         // WHEN
         map.clear();
+        map.dispose();
+        for (QueryableEntry entry : localAllocations) {
+            dispose(entry);
+        }
 
         // THEN
-        map.dispose();
         assertNativeMemoryUsage(0);
     }
 

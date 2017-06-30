@@ -155,14 +155,19 @@ public class HDIndexHashMapTest {
     @Test
     public void clear() throws IOException {
         // GIVEN
+        HashSet<QueryableEntry> entries = new LinkedHashSet<QueryableEntry>();
         for (int i = 0; i < 1000; i++) {
             QueryableEntry entry = entry(i, "value:" + i);
+            entries.add(entry);
             map.put((NativeMemoryData) entry.getKeyData(), (NativeMemoryData) entry.getValueData());
         }
         assertEquals(1000, map.size());
 
         // WHEN
         map.clear();
+        for (QueryableEntry entry : entries) {
+            dispose(entry);
+        }
 
         // THEN freeed
         assertEquals(0, map.size());
@@ -180,13 +185,18 @@ public class HDIndexHashMapTest {
     @Test
     public void putClear_dispose_allDeallocated() throws IOException {
         // GIVEN
+        HashSet<QueryableEntry> entries = new LinkedHashSet<QueryableEntry>();
         for (int i = 0; i < 1000; i++) {
             QueryableEntry entry = entry(i, "value:" + i);
+            entries.add(entry);
             map.put((NativeMemoryData) entry.getKeyData(), (NativeMemoryData) entry.getValueData());
         }
 
         // WHEN
         map.clear();
+        for (QueryableEntry entry : entries) {
+            dispose(entry);
+        }
 
         // THEN
         map.dispose();

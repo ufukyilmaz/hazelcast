@@ -148,7 +148,6 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
             }
 
             BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc, mapHeader.address());
-            map.clear();
             map.dispose();
         }
 

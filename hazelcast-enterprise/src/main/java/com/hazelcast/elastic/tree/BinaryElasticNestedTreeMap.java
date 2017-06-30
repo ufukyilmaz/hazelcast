@@ -434,7 +434,6 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
 
             // Dispose BinaryElasticHashMap
             BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, valueBlob.address());
-            map.clear();
             map.dispose();
 
             // Dispose value header
@@ -447,12 +446,6 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         }
     }
 
-    /**
-     * Disposes internal backing red-black-tree. Does not dispose segments nor key/value pairs inside.
-     * To dispose key/value pairs, {@link #clear()} must be called explicitly.
-     *
-     * @see #clear()
-     */
     public void dispose() {
         clear();
         records.dispose(false);

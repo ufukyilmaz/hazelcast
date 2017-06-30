@@ -67,6 +67,17 @@ class HDSortedIndexStore extends BaseIndexStore {
         records.clear();
     }
 
+    private void dispose() {
+        recordsWithNullValue.dispose();
+        records.dispose();
+    }
+
+    @Override
+    public void destroy() {
+        clear();
+        dispose();
+    }
+
     @Override
     public Set<QueryableEntry> getSubRecordsBetween(Comparable from, Comparable to) {
         return records.subMap(from, true, to, true);

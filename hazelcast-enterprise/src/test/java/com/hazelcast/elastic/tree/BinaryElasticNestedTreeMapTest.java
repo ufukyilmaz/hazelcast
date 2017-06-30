@@ -19,7 +19,9 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -71,10 +73,15 @@ public class BinaryElasticNestedTreeMapTest {
     @Test
     public void put_get_clear_multipleTimes() throws IOException {
         Data segmentKey = heapData(1);
+        List<NativeMemoryData> localAllocs = new ArrayList<NativeMemoryData>();
 
         for (int i = 1; i <= 10000; i++) {
             NativeMemoryData key = nativeData(100);
             NativeMemoryData value = nativeData(200);
+
+            localAllocs.add(key);
+            localAllocs.add(value);
+
             map.put(segmentKey, key, value);
 
             NativeMemoryData valueGot = map.get(segmentKey, key);
@@ -85,8 +92,11 @@ public class BinaryElasticNestedTreeMapTest {
         }
 
         map.dispose();
-        assertEquals(0, malloc.getMemoryStats().getUsedNative());
+        for (NativeMemoryData data : localAllocs) {
+            ess.disposeData(data, malloc);
+        }
 
+        assertEquals(0, malloc.getMemoryStats().getUsedNative());
     }
 
     @Test

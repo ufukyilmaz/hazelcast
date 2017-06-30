@@ -16,4 +16,8 @@ public class HDIndexImpl extends IndexImpl {
         return ordered ? new HDSortedIndexStore(ess, malloc) : new HDUnsortedIndexStore(ess, malloc);
     }
 
+    @Override
+    public void destroy() {
+        indexStore.destroy();
+    }
 }

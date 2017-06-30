@@ -79,6 +79,7 @@
                                     javax.cache;resolution:=optional,
                                     javax.cache.*;resolution:=optional,
                                     org.apache.log4j;resolution:=optional,
+                                    org.apache.log4j.spi;resolution:=optional,
                                     org.apache.logging.log4j;resolution:=optional,
                                     org.apache.logging.log4j.*;resolution:=optional,
                                     org.slf4j;resolution:=optional,

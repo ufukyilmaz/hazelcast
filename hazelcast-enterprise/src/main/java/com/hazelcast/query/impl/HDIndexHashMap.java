@@ -84,8 +84,7 @@ class HDIndexHashMap<T extends QueryableEntry> {
     }
 
     /**
-     * Clears the map by removing and disposing all key/value pairs stored in the backing BEHM.
-     * Does not dispose the backing BEHM.
+     * Clears the map by disposing and re-initting it. Key / Value pairs aren't touched, owned externally.
      */
     public void clear() {
         records.dispose();

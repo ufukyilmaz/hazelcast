@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static com.hazelcast.nio.serialization.DataType.HEAP;
+import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
 
 /**
  * Unsorted index store for HD memory.
@@ -28,6 +29,7 @@ class HDUnsortedIndexStore extends BaseIndexStore {
     private final HDIndexNestedHashMap<QueryableEntry> records;
 
     HDUnsortedIndexStore(EnterpriseSerializationService ess, MemoryAllocator malloc) {
+        assertRunningOnPartitionThread();
         this.ess = ess;
         this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(ess, malloc, new OnHeapCachedQueryEntryFactory(ess));
         this.records = new HDIndexNestedHashMap<QueryableEntry>(ess, malloc, new OnHeapCachedQueryEntryFactory(ess));
@@ -35,6 +37,7 @@ class HDUnsortedIndexStore extends BaseIndexStore {
 
     @Override
     void newIndexInternal(Comparable newValue, QueryableEntry entry) {
+        assertRunningOnPartitionThread();
         if (newValue instanceof IndexImpl.NullObject) {
             NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
             NativeMemoryData value = (NativeMemoryData) entry.getValueData();
@@ -52,6 +55,7 @@ class HDUnsortedIndexStore extends BaseIndexStore {
 
     @Override
     void removeIndexInternal(Comparable oldValue, Data indexKey) {
+        assertRunningOnPartitionThread();
         if (oldValue instanceof IndexImpl.NullObject) {
             recordsWithNullValue.remove(indexKey);
         } else {
@@ -65,23 +69,27 @@ class HDUnsortedIndexStore extends BaseIndexStore {
 
     @Override
     public void clear() {
+        assertRunningOnPartitionThread();
         recordsWithNullValue.clear();
         records.clear();
     }
 
     private void dispose() {
+        assertRunningOnPartitionThread();
         records.dispose();
         recordsWithNullValue.dispose();
     }
 
     @Override
     public void destroy() {
+        assertRunningOnPartitionThread();
         clear();
         dispose();
     }
 
     @Override
     public Set<QueryableEntry> getSubRecordsBetween(Comparable from, Comparable to) {
+        assertRunningOnPartitionThread();
         Set<QueryableEntry> results = new HashSet<QueryableEntry>();
         Comparable paramFrom = from;
         Comparable paramTo = to;
@@ -105,6 +113,7 @@ class HDUnsortedIndexStore extends BaseIndexStore {
 
     @Override
     public Set<QueryableEntry> getSubRecords(ComparisonType comparisonType, Comparable searchedValue) {
+        assertRunningOnPartitionThread();
         Set<QueryableEntry> results = new HashSet<QueryableEntry>();
         for (Data valueData : records.keySet()) {
             Comparable value = ess.toObject(valueData);
@@ -138,6 +147,7 @@ class HDUnsortedIndexStore extends BaseIndexStore {
 
     @Override
     public Set<QueryableEntry> getRecords(Comparable value) {
+        assertRunningOnPartitionThread();
         if (value instanceof IndexImpl.NullObject) {
             return recordsWithNullValue.entrySet();
         } else {
@@ -147,6 +157,7 @@ class HDUnsortedIndexStore extends BaseIndexStore {
 
     @Override
     public Set<QueryableEntry> getRecords(Set<Comparable> values) {
+        assertRunningOnPartitionThread();
         Set<QueryableEntry> results = new HashSet<QueryableEntry>();
         for (Comparable value : values) {
             results.addAll(getRecords(value));

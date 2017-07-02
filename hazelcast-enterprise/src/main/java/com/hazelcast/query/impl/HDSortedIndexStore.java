@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static com.hazelcast.nio.serialization.DataType.HEAP;
+import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
 
 /**
  * Sorted index store for HD memory.
@@ -27,12 +28,14 @@ class HDSortedIndexStore extends BaseIndexStore {
     private final HDIndexNestedTreeMap<QueryableEntry> records;
 
     HDSortedIndexStore(EnterpriseSerializationService ess, MemoryAllocator malloc) {
+        assertRunningOnPartitionThread();
         this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(ess, malloc, new OnHeapCachedQueryEntryFactory(ess));
         this.records = new HDIndexNestedTreeMap<QueryableEntry>(ess, malloc, new OnHeapCachedQueryEntryFactory(ess));
     }
 
     @Override
     void newIndexInternal(Comparable newValue, QueryableEntry entry) {
+        assertRunningOnPartitionThread();
         if (newValue instanceof IndexImpl.NullObject) {
             NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
             NativeMemoryData value = (NativeMemoryData) entry.getValueData();
@@ -50,6 +53,7 @@ class HDSortedIndexStore extends BaseIndexStore {
 
     @Override
     void removeIndexInternal(Comparable oldValue, Data indexKey) {
+        assertRunningOnPartitionThread();
         if (oldValue instanceof IndexImpl.NullObject) {
             recordsWithNullValue.remove(indexKey);
         } else {
@@ -63,28 +67,33 @@ class HDSortedIndexStore extends BaseIndexStore {
 
     @Override
     public void clear() {
+        assertRunningOnPartitionThread();
         recordsWithNullValue.clear();
         records.clear();
     }
 
     private void dispose() {
+        assertRunningOnPartitionThread();
         recordsWithNullValue.dispose();
         records.dispose();
     }
 
     @Override
     public void destroy() {
+        assertRunningOnPartitionThread();
         clear();
         dispose();
     }
 
     @Override
     public Set<QueryableEntry> getSubRecordsBetween(Comparable from, Comparable to) {
+        assertRunningOnPartitionThread();
         return records.subMap(from, true, to, true);
     }
 
     @Override
     public Set<QueryableEntry> getSubRecords(ComparisonType comparisonType, Comparable searchedValue) {
+        assertRunningOnPartitionThread();
         Set<QueryableEntry> results;
         switch (comparisonType) {
             case LESSER:
@@ -123,6 +132,7 @@ class HDSortedIndexStore extends BaseIndexStore {
     }
 
     private Set<QueryableEntry> doGetRecords(Comparable value) {
+        assertRunningOnPartitionThread();
         if (value instanceof IndexImpl.NullObject) {
             return recordsWithNullValue.entrySet();
         } else {

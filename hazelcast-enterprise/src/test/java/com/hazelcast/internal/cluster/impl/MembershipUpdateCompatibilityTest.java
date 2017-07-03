@@ -11,6 +11,8 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
+import com.hazelcast.util.Clock;
+import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.version.Version;
 import org.junit.After;
 import org.junit.Before;
@@ -20,6 +22,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static com.hazelcast.internal.cluster.impl.MembershipUpdateTest.assertMemberViewsAreSame;
@@ -266,7 +269,7 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
         assertClusterSizeEventually(2, instance1, instance2);
 
         final Version currentVersion = getNode(instance1).getVersion().asVersion();
-        instance1.getCluster().changeClusterVersion(currentVersion);
+        changeClusterVersionEventually(instance1, currentVersion);
 
         assertTrueEventually(new AssertTask() {
             @Override
@@ -276,6 +279,25 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
         });
 
         assertMemberViewsAreSame(getMemberMap(instance1), getMemberMap(instance2));
+    }
+
+    private static void changeClusterVersionEventually(HazelcastInstance hz, Version version) {
+        final Cluster cluster = hz.getCluster();
+        long timeout = TimeUnit.SECONDS.toMillis(ASSERT_TRUE_EVENTUALLY_TIMEOUT);
+        Throwable t = null;
+        while (timeout > 0) {
+            long start = Clock.currentTimeMillis();
+            try {
+                cluster.changeClusterVersion(version);
+                return;
+            } catch (Throwable e) {
+                t = e;
+            }
+            sleepMillis(500);
+            long end = Clock.currentTimeMillis();
+            timeout -= (end - start);
+        }
+        throw ExceptionUtil.rethrow(t);
     }
 
     private Config createConfig(boolean multicastEnabled) {

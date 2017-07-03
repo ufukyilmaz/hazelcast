@@ -55,6 +55,9 @@ public class MapConfigurationHotRestartTest extends AbstractMapHotRestartTest {
         Config config = i1.getConfig();
         config.addMapConfig(mapConfig);
 
+        // DynamicConfigurationAwareConfig initializes the partition table
+        waitAllForSafeState(instances);
+
         instances = restartInstances(clusterSize);
         for (HazelcastInstance instance : instances) {
             MapConfig dynamicMapConfig = instance.getConfig().findMapConfig(mapName);

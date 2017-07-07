@@ -22,6 +22,7 @@ import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.monitor.LocalInstanceStats;
 import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.OperationFactory;
@@ -229,10 +230,10 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
             assertTrueEventually(new AssertTask() {
                 @Override
                 public void run() throws Exception {
-                    Map<String, LocalInstanceStats> stats
+                    Map<String, LocalWanStats> stats
                             = getNode(instance).nodeEngine.getWanReplicationService().getStats();
                     LocalWanPublisherStats publisherStats =
-                            ((LocalWanStatsImpl) stats.get("multiBackup")).getLocalWanPublisherStats().get("B");
+                            stats.get("multiBackup").getLocalWanPublisherStats().get("B");
                     assert 0 == publisherStats.getOutboundQueueSize();
                 }
             });

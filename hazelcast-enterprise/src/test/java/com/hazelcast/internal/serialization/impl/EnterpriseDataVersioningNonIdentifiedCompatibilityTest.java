@@ -1,5 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.ObjectDataInput;
@@ -21,7 +22,6 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
-import static com.hazelcast.instance.BuildInfoProvider.BUILD_INFO;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static org.junit.Assert.assertEquals;
 
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
     private static final Version V3_8 = Version.of(3, 8);
-    private static final Version CURRENT_VERSION = Version.of(BUILD_INFO.getVersion());
+    private static final Version CURRENT_VERSION = Version.of(BuildInfoProvider.getBuildInfo().getVersion());
 
     @Rule
     public ExpectedException expected = ExpectedException.none();

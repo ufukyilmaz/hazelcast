@@ -7,6 +7,7 @@ import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.executor.impl.operations.CancellationOperation;
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.SimpleMemberImpl;
 import com.hazelcast.internal.serialization.InternalSerializationService;
@@ -45,7 +46,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Random;
 
-import static com.hazelcast.instance.BuildInfoProvider.BUILD_INFO;
 import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -60,7 +60,7 @@ import static org.junit.Assert.assertTrue;
 public class EnterpriseSerializationTest extends HazelcastTestSupport {
 
     private static Version V3_8 = Version.of("3.8");
-    private static Version CURRENT_VERSION = Version.of(BUILD_INFO.getVersion());
+    private static Version CURRENT_VERSION = Version.of(BuildInfoProvider.getBuildInfo().getVersion());
 
     private boolean versionedSerializationEnabled;
 

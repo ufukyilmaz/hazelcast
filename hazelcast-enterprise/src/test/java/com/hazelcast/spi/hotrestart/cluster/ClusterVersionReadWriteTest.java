@@ -33,7 +33,7 @@ public class ClusterVersionReadWriteTest extends MetadataReaderWriterTestBase {
 
     @Override
     void setupInternal() {
-        version = Version.of(BuildInfoProvider.BUILD_INFO.getVersion());
+        version = Version.of(BuildInfoProvider.getBuildInfo().getVersion());
     }
 
     @Test

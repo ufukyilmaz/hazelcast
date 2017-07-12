@@ -2,6 +2,7 @@ package com.hazelcast.internal.cluster.impl;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.cluster.ClusterVersionListener;
 import com.hazelcast.version.Version;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -16,7 +17,6 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 
-import static com.hazelcast.instance.BuildInfoProvider.BUILD_INFO;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -42,7 +42,7 @@ public class EnterpriseClusterVersionTest extends HazelcastTestSupport {
     @Test
     public void test_clusterVersionUpgradeFails_whenNodeMajorVersionPlusOne() {
         Version version = cluster.getClusterVersion();
-        assertEquals(Version.of(BUILD_INFO.getVersion()), version);
+        assertEquals(Version.of(BuildInfoProvider.getBuildInfo().getVersion()), version);
         Version newVersion = Version.of(version.getMajor()+1, version.getMinor());
 
         expectedException.expect(VersionMismatchException.class);

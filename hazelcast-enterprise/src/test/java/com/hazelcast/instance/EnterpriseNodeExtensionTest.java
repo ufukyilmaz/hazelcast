@@ -25,7 +25,6 @@ import org.junit.runner.RunWith;
 
 import java.net.UnknownHostException;
 
-import static com.hazelcast.instance.BuildInfoProvider.BUILD_INFO;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -81,7 +80,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
     @Test
     public void test_nodeJoinRequestAllowed_whenClusterSameVersion()
             throws UnknownHostException {
-        JoinRequest joinRequest = new JoinRequest(Packet.VERSION, BUILD_INFO.getBuildNumber(), node.getVersion(),
+        JoinRequest joinRequest = new JoinRequest(Packet.VERSION, BuildInfoProvider.getBuildInfo().getBuildNumber(), node.getVersion(),
                 new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, null, null);
         nodeExtension.validateJoinRequest(joinRequest);
     }
@@ -91,7 +90,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
             throws UnknownHostException {
         MemberVersion otherPatchVersion = MemberVersion
                 .of(node.getVersion().getMajor(), node.getVersion().getMinor(), node.getVersion().getPatch() + 1);
-        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BUILD_INFO.getBuildNumber(), otherPatchVersion,
+        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BuildInfoProvider.getBuildInfo().getBuildNumber(), otherPatchVersion,
                 new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, 0);
         nodeExtension.validateJoinRequest(joinMessage);
     }
@@ -101,7 +100,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
             throws UnknownHostException {
         MemberVersion nextMinorVersion = MemberVersion
                 .of(node.getVersion().getMajor(), node.getVersion().getMinor() + 1, node.getVersion().getPatch());
-        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BUILD_INFO.getBuildNumber(), nextMinorVersion,
+        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BuildInfoProvider.getBuildInfo().getBuildNumber(), nextMinorVersion,
                 new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, 0);
         nodeExtension.validateJoinRequest(joinMessage);
     }
@@ -111,7 +110,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
             throws UnknownHostException {
         MemberVersion previousMinorVersion = MemberVersion
                 .of(node.getVersion().getMajor(), node.getVersion().getMinor() - 1, node.getVersion().getPatch());
-        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BUILD_INFO.getBuildNumber(), previousMinorVersion,
+        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BuildInfoProvider.getBuildInfo().getBuildNumber(), previousMinorVersion,
                 new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, 0);
         expected.expect(VersionMismatchException.class);
         nodeExtension.validateJoinRequest(joinMessage);
@@ -122,7 +121,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
             throws UnknownHostException {
         MemberVersion nextMajorVersion = MemberVersion
                 .of(node.getVersion().getMajor() + 1, node.getVersion().getMinor(), node.getVersion().getPatch());
-        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BUILD_INFO.getBuildNumber(), nextMajorVersion,
+        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BuildInfoProvider.getBuildInfo().getBuildNumber(), nextMajorVersion,
                 new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, 0);
         expected.expect(VersionMismatchException.class);
         nodeExtension.validateJoinRequest(joinMessage);

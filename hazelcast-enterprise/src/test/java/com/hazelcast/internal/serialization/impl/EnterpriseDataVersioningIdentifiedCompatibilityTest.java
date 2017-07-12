@@ -1,5 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.SerializationServiceBuilder;
 import com.hazelcast.nio.ObjectDataInput;
@@ -23,7 +24,6 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
-import static com.hazelcast.instance.BuildInfoProvider.BUILD_INFO;
 import static com.hazelcast.internal.cluster.Versions.V3_8;
 import static org.junit.Assert.assertEquals;
 
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
 
-    private static final Version CURRENT_VERSION = Version.of(BUILD_INFO.getVersion());
+    private static final Version CURRENT_VERSION = Version.of(BuildInfoProvider.getBuildInfo().getVersion());
 
     private static final DataSerializableFactory UNVERSIONED_FACTORY = new TestDataSerializableFactory();
     private static final DataSerializableFactory VERSIONED_FACTORY = new TestVersionedDataSerializableFactory();

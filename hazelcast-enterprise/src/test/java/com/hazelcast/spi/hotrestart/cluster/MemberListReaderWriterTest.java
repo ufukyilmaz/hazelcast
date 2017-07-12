@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.nio.Address;
@@ -17,7 +18,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 
-import static com.hazelcast.instance.BuildInfoProvider.BUILD_INFO;
 import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -35,7 +35,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
     @Override
     void setupInternal() {
         Address address = new Address("127.0.0.1", localAddress, 5701);
-        MemberImpl localMember = new MemberImpl(address, MemberVersion.of(BUILD_INFO.getVersion()), true,
+        MemberImpl localMember = new MemberImpl(address, MemberVersion.of(BuildInfoProvider.getBuildInfo().getVersion()), true,
                 newUnsecureUuidString());
         when(node.getLocalMember()).thenReturn(localMember);
     }
@@ -98,7 +98,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
         Address[] addresses = initializeAddresses(memberCount - 1);
         Collection<Member> members = new HashSet<Member>(memberCount);
         for (Address address : addresses) {
-            members.add(new MemberImpl(address, MemberVersion.of(BUILD_INFO.getVersion()), false, newUnsecureUuidString()));
+            members.add(new MemberImpl(address, MemberVersion.of(BuildInfoProvider.getBuildInfo().getVersion()), false, newUnsecureUuidString()));
         }
         members.add(new MemberImpl(node.getLocalMember()));
         return members;

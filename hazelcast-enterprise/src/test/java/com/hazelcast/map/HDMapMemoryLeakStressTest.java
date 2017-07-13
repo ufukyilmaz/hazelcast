@@ -110,11 +110,11 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         IMap<Integer, byte[]> map = hz1.getMap(MAP_NAME);
         map.addIndex("__key", true);
 
-        final AtomicBoolean done = new AtomicBoolean(false);
+        final AtomicBoolean stopBouncingThread = new AtomicBoolean(false);
         Thread bouncingThread = new Thread() {
             @Override
             public void run() {
-                while (!done.get()) {
+                while (!stopBouncingThread.get()) {
                     HazelcastInstance hz = factory.newHazelcastInstance(config);
                     sleepSeconds(10);
                     factory.terminate(hz);
@@ -125,13 +125,13 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         bouncingThread.start();
 
         int threads = 8;
-        CountDownLatch latch = new CountDownLatch(threads);
+        CountDownLatch workerDoneLatch = new CountDownLatch(threads);
         for (int i = 0; i < threads; i++) {
-            new WorkerThread(map, latch, done).start();
+            new WorkerThread(map, workerDoneLatch, stopBouncingThread).start();
         }
 
-        done.set(true);
-        assertOpenEventually("WorkerThreads didn't finish in time", latch, TIMEOUT * 2);
+        assertOpenEventually("WorkerThreads didn't finish in time", workerDoneLatch, TIMEOUT * 2);
+        stopBouncingThread.set(true);
         assertJoinable(bouncingThread);
 
         map.clear();

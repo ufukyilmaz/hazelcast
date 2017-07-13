@@ -121,6 +121,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (licenseKey == null || licenseKey.isEmpty()) {
             licenseKey = node.getConfig().getLicenseKey();
         }
+        node.config.setLicenseKey(licenseKey);
         license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
         logger.log(Level.INFO, license.toString());
 

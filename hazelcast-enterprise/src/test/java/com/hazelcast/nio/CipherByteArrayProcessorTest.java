@@ -4,7 +4,6 @@ import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.ByteArrayProcessor;
-import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -22,11 +21,6 @@ public class CipherByteArrayProcessorTest {
 
     private static final String PAYLOAD = "Lorem ipsum dolor sit amet, consectetur adipiscing elit,"
             + " sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
-
-    @After
-    public void tearDown() {
-        CipherHelper.reset();
-    }
 
     @Test
     public void testEncDec() {

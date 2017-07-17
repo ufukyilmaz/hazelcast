@@ -33,8 +33,6 @@ public final class CipherHelper {
 
     private static final ILogger LOGGER = Logger.getLogger(CipherHelper.class);
 
-    private static SymmetricCipherBuilder symmetricCipherBuilder;
-
     static {
         initBouncySecurityProvider();
     }
@@ -62,9 +60,7 @@ public final class CipherHelper {
     private static synchronized Cipher createCipher(SymmetricEncryptionConfig config, Connection connection,
                                                     boolean createWriter, String exceptionMessage) {
         try {
-            if (symmetricCipherBuilder == null) {
-                symmetricCipherBuilder = new SymmetricCipherBuilder(config);
-            }
+            SymmetricCipherBuilder symmetricCipherBuilder = new SymmetricCipherBuilder(config);
             return symmetricCipherBuilder.create(createWriter);
         } catch (Exception e) {
             LOGGER.severe(exceptionMessage, e);
@@ -84,11 +80,6 @@ public final class CipherHelper {
         } catch (Exception e) {
             LOGGER.warning(e);
         }
-    }
-
-    // used for testing to reset the cipher builder
-    static void reset() {
-        symmetricCipherBuilder = null;
     }
 
     static String findKeyAlgorithm(String algorithm) {

@@ -3,9 +3,9 @@ package com.hazelcast.map.impl.record;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.map.impl.record.HDRecord.VALUE_OFFSET;
 
@@ -16,16 +16,13 @@ import static com.hazelcast.map.impl.record.HDRecord.VALUE_OFFSET;
 public class HDRecordAccessor
         extends AbstractHiDensityRecordAccessor<HDRecord> {
 
-    private final boolean optimizeQuery;
-
-    public HDRecordAccessor(EnterpriseSerializationService serializationService, boolean optimizeQuery) {
+    public HDRecordAccessor(EnterpriseSerializationService serializationService) {
         super(serializationService, serializationService.getMemoryManager());
-        this.optimizeQuery = optimizeQuery;
     }
 
     @Override
     protected HDRecord createRecord() {
-        return optimizeQuery ? new HDRecordWithCachedValue(this) : new HDRecord(this);
+        return new HDRecord(this);
     }
 
     @Override

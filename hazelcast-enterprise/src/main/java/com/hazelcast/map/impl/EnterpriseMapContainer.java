@@ -78,12 +78,11 @@ public class EnterpriseMapContainer extends MapContainer {
 
 
     private HiDensityRecordProcessor<HDRecord> createHiDensityRecordProcessor() {
-        boolean optimizeQueries = mapConfig.isOptimizeQueries();
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
         EnterpriseSerializationService serializationService
                 = (EnterpriseSerializationService) nodeEngine.getSerializationService();
         HiDensityRecordAccessor<HDRecord> recordAccessor
-                = new HDRecordAccessor(serializationService, optimizeQueries);
+                = new HDRecordAccessor(serializationService);
         HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
         return new DefaultHiDensityRecordProcessor<HDRecord>(serializationService, recordAccessor,
                 memoryManager, storageInfo);

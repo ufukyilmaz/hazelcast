@@ -33,7 +33,7 @@ public class HDRecordAccessorTest {
         memoryManager = new PoolingMemoryManager(memorySize);
         memoryManager.registerThread(Thread.currentThread());
         serializationService = new EnterpriseSerializationServiceBuilder().setMemoryManager(memoryManager).build();
-        accessor = new HDRecordAccessor(serializationService, false);
+        accessor = new HDRecordAccessor(serializationService);
     }
 
     @After

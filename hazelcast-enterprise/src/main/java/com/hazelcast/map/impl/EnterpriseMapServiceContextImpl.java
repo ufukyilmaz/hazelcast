@@ -46,7 +46,6 @@ import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
-import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
 
@@ -253,17 +252,17 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         }
 
         if (operation instanceof HDBasePutOperation) {
-            localMapStats.incrementPuts(Clock.currentTimeMillis() - startTime);
+            localMapStats.incrementPutLatencyNanos(System.nanoTime() - startTime);
             return;
         }
 
         if (operation instanceof HDBaseRemoveOperation) {
-            localMapStats.incrementRemoves(Clock.currentTimeMillis() - startTime);
+            localMapStats.incrementRemoveLatencyNanos(System.nanoTime() - startTime);
             return;
         }
 
         if (operation instanceof HDGetOperation) {
-            localMapStats.incrementGets(Clock.currentTimeMillis() - startTime);
+            localMapStats.incrementGetLatencyNanos(System.nanoTime() - startTime);
         }
     }
 

@@ -93,6 +93,11 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     private Random random;
 
     /**
+     * Used to provide fail fast behaviour in case of concurrent modification during iteration
+     */
+    private int modCount;
+
+    /**
      * Creates a hash map with the default capacity of {@value CapacityUtil#DEFAULT_CAPACITY},
      * load factor of {@value CapacityUtil#DEFAULT_LOAD_FACTOR}.
      */
@@ -251,6 +256,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             accessor.setKey(slot, memKey.address());
             accessor.setValue(slot, value.address());
         }
+
+        modCount++;
         return null;
     }
 
@@ -388,6 +395,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                     memoryBlockProcessor.disposeData(accessor.keyData(slot));
                 }
                 shiftConflictingKeys(slot);
+                ++modCount;
                 return readV(v);
             }
             slot = (slot + 1) & mask;
@@ -631,8 +639,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         private int initialSize = assignedSlotCount;
         private int nextSlot = -1;
         private NativeMemoryData keyHolder = new NativeMemoryData();
+        private int lastKnownModCount;
 
         RandomSlotIter() {
+            lastKnownModCount = modCount;
             nextSlot = advanceAndIncrementIterations();
         }
 
@@ -649,6 +659,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
         final int advance() {
             ensureMemory();
+            failIfModified(lastKnownModCount);
+
             int slot;
             do {
                 slot = getRandom().nextInt(capacity());
@@ -667,6 +679,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (nextSlot < 0) {
                 throw new NoSuchElementException();
             }
+
+            failIfModified(lastKnownModCount);
+
             currentSlot = nextSlot;
             if (!accessor.isAssigned(currentSlot)) {
                 currentSlot = advance();
@@ -690,6 +705,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 throw new NoSuchElementException();
             }
 
+            failIfModified(lastKnownModCount);
+
             long key = accessor.getKey(currentSlot);
             long value = accessor.getValue(currentSlot);
 
@@ -712,6 +729,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (accessor.isAssigned(currentSlot)) {
                 nextSlot = currentSlot;
             }
+
+            lastKnownModCount = modCount;
         }
 
         @Override
@@ -726,21 +745,31 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
     }
 
+    private void failIfModified(int lastKnownModCount) {
+        if (lastKnownModCount != modCount) {
+            throw new ConcurrentModificationException();
+        }
+    }
+
     private abstract class SlotIter<E> implements SlottableIterator<E> {
         int nextSlot = -1;
         int currentSlot = -1;
         private NativeMemoryData keyHolder;
+        private int lastKnownModCount;
 
         SlotIter() {
-            nextSlot = advance(0);
+            this(0);
         }
 
         SlotIter(int startSlot) {
+            lastKnownModCount = modCount;
             nextSlot = advance(startSlot);
         }
 
         final int advance(int start) {
             ensureMemory();
+            failIfModified(lastKnownModCount);
+
             for (int slot = start; slot < allocatedSlotCount; slot++) {
                 if (accessor.isAssigned(slot)) {
                     return slot;
@@ -759,6 +788,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (nextSlot < 0) {
                 throw new NoSuchElementException();
             }
+            failIfModified(lastKnownModCount);
+
             currentSlot = nextSlot;
             nextSlot = advance(nextSlot + 1);
             return currentSlot;
@@ -774,6 +805,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (currentSlot < 0) {
                 throw new NoSuchElementException();
             }
+            failIfModified(lastKnownModCount);
 
             long key = accessor.getKey(currentSlot);
             long value = accessor.getValue(currentSlot);
@@ -796,6 +828,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (accessor.isAssigned(currentSlot)) {
                 nextSlot = currentSlot;
             }
+
+            lastKnownModCount = modCount;
         }
 
         private NativeMemoryData readIntoKeyHolder(long key) {
@@ -1040,6 +1074,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     @Override
     public void clear() {
         ensureMemory();
+        modCount++;
         if (accessor != null) {
             KeyIter iter = new KeyIter();
             while (iter.hasNext()) {

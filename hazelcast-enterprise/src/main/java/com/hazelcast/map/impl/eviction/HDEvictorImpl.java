@@ -15,6 +15,8 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.partition.IPartitionService;
 
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Queue;
 
 /**
  * An {@link Evictor} for maps which have the {@link com.hazelcast.config.InMemoryFormat#NATIVE NATIVE} in-memory-format.
@@ -49,10 +51,10 @@ public class HDEvictorImpl extends EvictorImpl {
         boolean backup = isBackup(recordStore);
 
         int removalSize = calculateRemovalSize(recordStore);
-        int removedEntryCount = 0;
         Storage<Data, Record> storage = recordStore.getStorage();
         Iterator<Record> recordIterator = ((ForcedEvictable<Record>) storage).newForcedEvictionValuesIterator();
 
+        Queue<Data> keysToRemove = new LinkedList<Data>();
         while (recordIterator.hasNext()) {
             Record record = recordIterator.next();
             Data key = record.getKey();
@@ -60,21 +62,34 @@ public class HDEvictorImpl extends EvictorImpl {
                 if (!backup) {
                     recordStore.doPostEvictionOperations(record, backup);
                 }
-                recordStore.evict(record.getKey(), backup);
-                removedEntryCount++;
+                keysToRemove.add(key);
             }
 
-            if (removedEntryCount >= removalSize) {
+            if (keysToRemove.size() >= removalSize) {
                 break;
             }
         }
+
+        int removedKeyCount = removeKeys(keysToRemove, recordStore, backup);
 
         recordStore.disposeDeferredBlocks();
 
         if (storageInfo.increaseForceEvictionCount() == 1) {
             logger.warning("Forced eviction invoked for the first time for IMap[name=" + recordStore.getName() + "]");
         }
-        storageInfo.increaseForceEvictedEntryCount(removedEntryCount);
+        storageInfo.increaseForceEvictedEntryCount(removedKeyCount);
+    }
+
+    private static int removeKeys(Queue<Data> keysToRemove, RecordStore recordStore, boolean backup) {
+        int removedEntryCount = 0;
+
+        while (!keysToRemove.isEmpty()) {
+            Data keyToEvict = keysToRemove.poll();
+            recordStore.evict(keyToEvict, backup);
+            removedEntryCount++;
+        }
+
+        return removedEntryCount;
     }
 
     @Override

@@ -1,9 +1,9 @@
 package com.hazelcast.elastic.map;
 
-import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
@@ -22,6 +22,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -334,6 +335,20 @@ public class BinaryElasticHashMapTest {
         assertTrue(map.isEmpty());
     }
 
+    @Test(expected = ConcurrentModificationException.class)
+    public void testKeySet_iterator_throws_CME() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            Data key = serializationService.toData(i);
+            map.set(key, newValue());
+        }
+
+        Iterator<Data> iter = map.keySet().iterator();
+        while (iter.hasNext()) {
+            Data key = iter.next();
+            map.remove(key);
+        }
+    }
+
     @Test
     public void testValues() throws Exception {
         Collection<NativeMemoryData> values = map.values();
@@ -380,6 +395,21 @@ public class BinaryElasticHashMapTest {
         assertTrue(map.isEmpty());
     }
 
+    @Test(expected = ConcurrentModificationException.class)
+    public void testValues_iterator_throws_CME() throws Exception {
+        Data key1 = serializationService.toData(1);
+        map.put(key1, newValue());
+
+        Data key2 = serializationService.toData(2);
+        map.put(key2, newValue());
+
+        Iterator<NativeMemoryData> iterator = map.values().iterator();
+        while (iterator.hasNext()) {
+            iterator.next();
+            map.remove(key1);
+        }
+    }
+
     @Test
     public void testEntrySet() throws Exception {
         Set<Map.Entry<Data, NativeMemoryData>> entries = map.entrySet();
@@ -397,6 +427,35 @@ public class BinaryElasticHashMapTest {
         assertEquals(expected.size(), entries.size());
         assertEquals(expected.entrySet(), entries);
     }
+
+    @Test(expected = ConcurrentModificationException.class)
+    public void testEntrySet_iterator_throws_CME() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            Data key = serializationService.toData(i);
+            map.set(key, newValue());
+        }
+
+        Iterator<Entry<Data, NativeMemoryData>> iter = map.entrySet().iterator();
+        while (iter.hasNext()) {
+            Entry<Data, NativeMemoryData> next = iter.next();
+            map.remove(next.getKey());
+        }
+    }
+
+    @Test(expected = ConcurrentModificationException.class)
+    public void testEntrySet_iterator_throws_CME_onClear() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            Data key = serializationService.toData(i);
+            map.set(key, newValue());
+        }
+
+        Iterator<Entry<Data, NativeMemoryData>> iter = map.entrySet().iterator();
+        while (iter.hasNext()) {
+            iter.next();
+            map.clear();
+        }
+    }
+
 
     @Test
     public void testEntrySet_iterator() throws Exception {

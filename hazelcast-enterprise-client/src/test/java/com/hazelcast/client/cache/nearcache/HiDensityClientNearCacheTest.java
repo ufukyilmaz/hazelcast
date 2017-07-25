@@ -6,6 +6,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
@@ -24,46 +25,42 @@ public class HiDensityClientNearCacheTest extends ClientNearCacheTestSupport {
 
     @Override
     protected Config createConfig() {
-        Config config = super.createConfig();
+        NativeMemoryConfig nativeMemoryConfig = new NativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(SERVER_NATIVE_MEMORY_SIZE);
 
-        config.getNativeMemoryConfig()
-                .setSize(SERVER_NATIVE_MEMORY_SIZE)
-                .setEnabled(true);
-
-        return config;
+        return super.createConfig()
+                .setNativeMemoryConfig(nativeMemoryConfig);
     }
 
     @Override
     protected ClientConfig createClientConfig() {
-        ClientConfig clientConfig = super.createClientConfig();
+        NativeMemoryConfig nativeMemoryConfig = new NativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(CLIENT_NATIVE_MEMORY_SIZE);
 
-        clientConfig.getNativeMemoryConfig()
-                .setSize(CLIENT_NATIVE_MEMORY_SIZE)
-                .setEnabled(true);
-
-        return clientConfig;
+        return super.createClientConfig()
+                .setNativeMemoryConfig(nativeMemoryConfig);
     }
 
     @Override
     protected CacheConfig createCacheConfig(InMemoryFormat inMemoryFormat) {
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        evictionConfig.setSize(99);
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(99);
 
-        CacheConfig cacheConfig = super.createCacheConfig(inMemoryFormat);
-        cacheConfig.setEvictionConfig(evictionConfig);
-        return cacheConfig;
+        return super.createCacheConfig(inMemoryFormat)
+                .setEvictionConfig(evictionConfig);
     }
 
     @Override
     protected NearCacheConfig createNearCacheConfig(InMemoryFormat inMemoryFormat) {
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        evictionConfig.setSize(99);
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(99);
 
-        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(inMemoryFormat);
-        nearCacheConfig.setEvictionConfig(evictionConfig);
-        return nearCacheConfig;
+        return super.createNearCacheConfig(inMemoryFormat)
+                .setEvictionConfig(evictionConfig);
     }
 
     @Test

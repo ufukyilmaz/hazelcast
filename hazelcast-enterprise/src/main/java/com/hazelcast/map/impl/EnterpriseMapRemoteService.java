@@ -7,6 +7,8 @@ import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 import com.hazelcast.map.impl.proxy.EnterpriseMapProxyImpl;
 import com.hazelcast.map.impl.proxy.EnterpriseNearCachedMapProxyImpl;
 
+import static com.hazelcast.internal.config.ConfigValidator.checkNearCacheConfig;
+
 /**
  * Defines enterprise only remote service behavior for {@link MapService}.
  *
@@ -29,7 +31,7 @@ class EnterpriseMapRemoteService extends MapRemoteService {
         hdMapConfigValidator.checkHDConfig(mapConfig, config.getNativeMemoryConfig());
 
         if (mapConfig.isNearCacheEnabled()) {
-            hdMapConfigValidator.checkHDConfig(mapConfig.getNearCacheConfig(), config.getNativeMemoryConfig(), false);
+            checkNearCacheConfig(name, mapConfig.getNearCacheConfig(), config.getNativeMemoryConfig(), false);
 
             return new EnterpriseNearCachedMapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);
         } else {

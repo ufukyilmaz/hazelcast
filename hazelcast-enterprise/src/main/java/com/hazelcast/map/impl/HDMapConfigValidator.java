@@ -1,12 +1,9 @@
 package com.hazelcast.map.impl;
 
-import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.HotRestartConfig;
-import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
@@ -34,41 +31,11 @@ public final class HDMapConfigValidator {
     private static final EnumSet<MaxSizeConfig.MaxSizePolicy> UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES
             = EnumSet.of(FREE_HEAP_PERCENTAGE, FREE_HEAP_SIZE, USED_HEAP_PERCENTAGE, USED_HEAP_SIZE);
 
-    private static final EnumSet<EvictionConfig.MaxSizePolicy> SUPPORTED_ON_HEAP_NEAR_CACHE_MAXSIZE_POLICIES
-            = EnumSet.of(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
-
     private static final ILogger LOGGER = Logger.getLogger(MapConfig.class);
     private final int hotRestartMinFreeNativeMemoryPercentage;
 
     public HDMapConfigValidator(HotRestartEvictionHelper hotRestartEvictionHelper) {
         this.hotRestartMinFreeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
-    }
-
-    /**
-     * Checks preconditions to create a map proxy with Near Cache.
-     *
-     * @param nearCacheConfig the nearCacheConfig
-     * @param nativeMemoryConfig native memory configuration
-     * @param client {@code true} when invoked from a client side context, otherwise {@code false}
-     */
-    public void checkHDConfig(NearCacheConfig nearCacheConfig, NativeMemoryConfig nativeMemoryConfig, boolean client) {
-        final InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
-        if (NATIVE != inMemoryFormat) {
-            EvictionConfig.MaxSizePolicy maximumSizePolicy = nearCacheConfig.getEvictionConfig().getMaximumSizePolicy();
-            if (!SUPPORTED_ON_HEAP_NEAR_CACHE_MAXSIZE_POLICIES.contains(maximumSizePolicy)) {
-                throw new IllegalArgumentException(format("Near cache maximum size policy %s cannot be used with %s storage."
-                        + " Supported maximum size policies are: %s",
-                        maximumSizePolicy, inMemoryFormat, SUPPORTED_ON_HEAP_NEAR_CACHE_MAXSIZE_POLICIES));
-            }
-            return;
-        }
-
-        checkTrue(nativeMemoryConfig.isEnabled(), "Enable native memory config to use NATIVE in-memory-format for Near Cache");
-
-        if (client && nearCacheConfig.isCacheLocalEntries()) {
-            throw new IllegalArgumentException("The Near Cache option `cache-local-entries` is not supported in"
-                    + " client configurations. ");
-        }
     }
 
     /**

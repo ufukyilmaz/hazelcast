@@ -17,4 +17,5 @@ public class HDQueryBasicTest extends QueryBasicTest {
     protected Config getConfig() {
         return getHDConfig();
     }
+
 }

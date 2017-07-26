@@ -174,7 +174,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     @Override
     public <T> ClientProxyFactory createServiceProxyFactory(Class<T> service) {
         if (MapService.class.isAssignableFrom(service)) {
-            return new EnterpriseMapClientProxyFactory(client.getClientConfig(), client.getProperties());
+            return new EnterpriseMapClientProxyFactory(client.getClientConfig());
         }
         throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);
     }

@@ -268,11 +268,15 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         int partitionId = getPartitionId(batchWanReplicationEvent);
         BatchWanEventRunnable wanEventStripedRunnable = new BatchWanEventRunnable(batchWanReplicationEvent, op, partitionId);
         try {
-            ex.execute(wanEventStripedRunnable);
             liveOperations.add(op);
+            ex.execute(wanEventStripedRunnable);
         } catch (RejectedExecutionException ree) {
             logger.warning("Can not handle incoming wan replication event. Retrying.", ree);
-            op.sendResponse(false);
+            try {
+                op.sendResponse(false);
+            } finally {
+                liveOperations.remove(op);
+            }
         }
     }
 
@@ -282,11 +286,15 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         int partitionId = getPartitionId(eventObject.getKey());
         WanEventRunnable wanEventStripedRunnable = new WanEventRunnable(replicationEvent, op, partitionId);
         try {
-            ex.execute(wanEventStripedRunnable);
             liveOperations.add(op);
+            ex.execute(wanEventStripedRunnable);
         } catch (RejectedExecutionException ree) {
             logger.warning("Can not handle incoming wan replication event.", ree);
-            op.sendResponse(false);
+            try {
+                op.sendResponse(false);
+            } finally {
+                liveOperations.remove(op);
+            }
         }
     }
 
@@ -363,7 +371,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
                 operation.sendResponse(false);
                 logger.severe(e);
             } finally {
-                liveOperations.remove(operation);
+                if (!liveOperations.remove(operation)) {
+                    logger.warning("Did not remove WanOperation from live operation list. Possible memory leak!");
+                }
             }
         }
     }
@@ -395,7 +405,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
                 operation.sendResponse(false);
                 logger.severe(e);
             } finally {
-                liveOperations.remove(operation);
+                if (!liveOperations.remove(operation)) {
+                    logger.warning("Did not remove WanOperation from live operation list. Possible memory leak!");
+                }
             }
         }
     }

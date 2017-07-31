@@ -105,6 +105,10 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         return factory.newHazelcastInstance(address, makeConfig(address, backupCount));
     }
 
+    HazelcastInstance newHazelcastInstance(Address address, Config config) {
+        return factory.newHazelcastInstance(address, config);
+    }
+
     HazelcastInstance[] newInstances(int clusterSize) {
         return newInstances(clusterSize, 1);
     }
@@ -161,8 +165,7 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         return instances.toArray(new HazelcastInstance[0]);
     }
 
-    HazelcastInstance restartHazelcastInstance(HazelcastInstance hz) {
-        Config config = hz.getConfig();
+    HazelcastInstance restartHazelcastInstance(HazelcastInstance hz, Config config) {
         Address address = getNode(hz).getThisAddress();
         hz.shutdown();
         return factory.newHazelcastInstance(address, config);

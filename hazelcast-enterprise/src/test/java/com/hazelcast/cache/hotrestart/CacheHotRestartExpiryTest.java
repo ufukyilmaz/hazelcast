@@ -2,6 +2,7 @@ package com.hazelcast.cache.hotrestart;
 
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.ICache;
+import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.AssertTask;
@@ -40,7 +41,8 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
     public void test() throws Exception {
         final int expireAfter = 10;
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(expireAfter, expireAfter, expireAfter, MILLISECONDS);
-        HazelcastInstance hz = newHazelcastInstance();
+        Config hzConfig = makeConfig(factory.nextAddress());
+        HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, String> cache = createCache(hz);
 
         for (int key = 0; key < OPERATION_COUNT; key++) {
@@ -59,7 +61,7 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
         });
         assertEquals(0, cache.size());
 
-        hz = restartHazelcastInstance(hz);
+        hz = restartHazelcastInstance(hz, hzConfig);
 
         cache = createCache(hz);
 

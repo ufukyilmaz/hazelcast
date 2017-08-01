@@ -783,12 +783,6 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    protected void onRemove(Data key, Object value, String caller, boolean getValue,
-                            HiDensityNativeMemoryCacheRecord record, boolean removed) {
-        onEntryInvalidated(key, caller);
-    }
-
-    @Override
     protected void onRemoveError(Data key, Object value, String caller, boolean getValue,
                                  HiDensityNativeMemoryCacheRecord record, boolean removed, Throwable error) {
         // if record has been somehow removed and if it is still valid, dispose it and its data
@@ -856,10 +850,6 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     protected void onMergeError(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
                                 String caller, boolean disableWriteThrough, CacheRecord record, Throwable error) {
-    }
-
-    protected void onEntryInvalidated(Data key, String source) {
-        invalidateEntry(key, source);
     }
 
     @Override

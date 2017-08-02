@@ -7,6 +7,8 @@ import com.hazelcast.util.EmptyStatement;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLEngineResult.HandshakeStatus;
+import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
@@ -41,6 +43,9 @@ public class SSLChannel extends NioChannel {
                       boolean clientMode) throws Exception {
         super(socketChannel, clientMode);
         this.sslEngine = sslEngine;
+
+        // In case of the OpenSSL based SSLEngine implementation, the below calls are ignored.
+        // For configuration see the OpenSSLEngineFactory
         if ("REQUIRED".equals(mutualAuthentication)) {
             sslEngine.setNeedClientAuth(true);
         } else if ("OPTIONAL".equals(mutualAuthentication)) {
@@ -129,15 +134,19 @@ public class SSLChannel extends NioChannel {
         while (b.hasRemaining()) {
             sslEngineResult = sslEngine.unwrap(b, applicationBuffer);
 
-            if (sslEngineResult.getStatus() == BUFFER_OVERFLOW) {
+            HandshakeStatus handshakeStatus = sslEngineResult.getHandshakeStatus();
+            Status status = sslEngineResult.getStatus();
+            if (status == BUFFER_OVERFLOW) {
                 // the appBuffer wasn't big enough, so lets expand it.
                 applicationBuffer = expandBuffer(applicationBuffer);
             }
 
-            if (sslEngineResult.getHandshakeStatus() == NEED_TASK) {
+            if (handshakeStatus == NEED_TASK) {
                 handleTasks();
-            } else if (sslEngineResult.getHandshakeStatus() == FINISHED || sslEngineResult.getStatus() == BUFFER_UNDERFLOW) {
-                return applicationBuffer;
+            } else if (handshakeStatus == FINISHED
+                    || handshakeStatus == NEED_WRAP
+                    || status == BUFFER_UNDERFLOW) {
+                break;
             }
         }
         return applicationBuffer;
@@ -263,4 +272,16 @@ public class SSLChannel extends NioChannel {
     public String toString() {
         return "SSLChannel{" + getLocalSocketAddress() + "->" + getRemoteSocketAddress() + '}';
     }
+
+// Useful toString implemention for debugging the handshake logic. It automatically indents so you can easily see the
+// server/client
+//    @Override
+//    public String toString() {
+//        if (isClientMode()) {
+//            return "SSLChannel{" + getLocalSocketAddress() + "->" + getRemoteSocketAddress() + '}';
+//
+//        } else {
+//            return "       SSLChannel{" + getLocalSocketAddress() + "->" + getRemoteSocketAddress() + '}';
+//        }
+//    }
 }

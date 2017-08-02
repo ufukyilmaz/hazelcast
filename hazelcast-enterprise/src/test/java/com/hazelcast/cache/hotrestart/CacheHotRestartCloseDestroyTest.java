@@ -1,6 +1,7 @@
 package com.hazelcast.cache.hotrestart;
 
 import com.hazelcast.cache.ICache;
+import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
@@ -66,7 +67,8 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
     }
 
     private void test(CacheAction action) throws Exception {
-        HazelcastInstance hz = newHazelcastInstance();
+        Config hzConfig = makeConfig(factory.nextAddress());
+        HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, String> cache = createCache(hz);
 
         for (int key = 0; key < OPERATION_COUNT; key++) {
@@ -75,7 +77,7 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
 
         int expectedSize = action.run(cache);
 
-        hz = restartHazelcastInstance(hz);
+        hz = restartHazelcastInstance(hz, hzConfig);
 
         cache = createCache(hz);
 

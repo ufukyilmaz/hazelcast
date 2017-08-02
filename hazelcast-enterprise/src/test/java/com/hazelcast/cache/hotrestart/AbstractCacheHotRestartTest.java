@@ -45,17 +45,8 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
     private static InetAddress localAddress;
 
-    @BeforeClass
-    public static void setupClass() throws UnknownHostException {
-        localAddress = InetAddress.getLocalHost();
-    }
-
     @Rule
     public TestName testName = new TestName();
-
-    private File baseDir;
-    private TestHazelcastInstanceFactory factory;
-    String cacheName;
 
     @Parameterized.Parameter(0)
     public InMemoryFormat memoryFormat;
@@ -65,6 +56,16 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
     @Parameterized.Parameter(2)
     public boolean evictionEnabled;
+
+    TestHazelcastInstanceFactory factory;
+    String cacheName;
+    private File baseDir;
+
+
+    @BeforeClass
+    public static void setupClass() throws UnknownHostException {
+        localAddress = InetAddress.getLocalHost();
+    }
 
     @Before
     public final void setup() throws UnknownHostException {
@@ -163,9 +164,8 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         return instances.toArray(new HazelcastInstance[0]);
     }
 
-    HazelcastInstance restartHazelcastInstance(HazelcastInstance hz) {
+    HazelcastInstance restartHazelcastInstance(HazelcastInstance hz, Config config) {
         Address address = getNode(hz).getThisAddress();
-        Config config = hz.getConfig();
         hz.shutdown();
         hz = factory.newHazelcastInstance(address, config);
         return hz;

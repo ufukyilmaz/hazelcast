@@ -29,11 +29,12 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
 
     @Test
     public void givenDynamicallyCreatedCacheExist_whenClusterRestarted_thenCacheStillExists() {
-        HazelcastInstance hz = newHazelcastInstance();
+        Config hzConfig = makeConfig(factory.nextAddress());
+        HazelcastInstance hz = factory.newHazelcastInstance(hzConfig);
         ICache<Integer, Object> cache = createCache(hz);
         CacheConfig<Integer, Object> originalConfig = cache.getConfiguration(CacheConfig.class);
 
-        hz = restartHazelcastInstance(hz);
+        hz = restartHazelcastInstance(hz, hzConfig);
 
         CacheConfig config = getSingleCacheConfig(hz);
         assertEquals(cacheName, config.getName());
@@ -47,7 +48,7 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
         ICache<Integer, Object> cache = hz.getCacheManager().getCache(cacheName);
         CacheConfig<Integer, Object> originalConfig = cache.getConfiguration(CacheConfig.class);
 
-        hz = restartHazelcastInstance(hz);
+        hz = restartHazelcastInstance(hz, hzConfig);
 
         CacheConfig config = getSingleCacheConfig(hz);
         assertEquals(cacheName, config.getName());
@@ -64,7 +65,7 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
         CacheConfig<Integer, Object> originalConfig = cache.getConfiguration(CacheConfig.class);
         String cacheNameWithPrefix = originalConfig.getNameWithPrefix();
 
-        hz = restartHazelcastInstance(hz);
+        hz = restartHazelcastInstance(hz, hzConfig);
 
         assertCacheHasWANReplicationEnabled(hz, cacheNameWithPrefix);
     }

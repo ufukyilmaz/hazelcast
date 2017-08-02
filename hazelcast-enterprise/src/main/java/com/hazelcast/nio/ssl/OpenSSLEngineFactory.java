@@ -3,6 +3,7 @@ package com.hazelcast.nio.ssl;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContextBuilder;
 
 import javax.net.ssl.SSLEngine;
@@ -24,6 +25,7 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
 
     private boolean openssl;
     private List<String> cipherSuites;
+    private ClientAuth clientAuth;
 
     @Override
     public void init(Properties properties) throws Exception {
@@ -31,14 +33,17 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
         this.cipherSuites = loadCipherSuites(properties);
         this.openssl = loadOpenSslLEnabled(properties);
         this.protocol = loadProtocol(properties);
+        this.clientAuth = loadClientAuth(properties);
 
         if (logger.isFineEnabled()) {
             logger.fine("ciphersuites: " + (cipherSuites.isEmpty() ? "default" : cipherSuites));
             logger.fine("useOpenSSL: " + openssl);
+            logger.fine("clientAuth: " + clientAuth);
         }
 
         sanityCheck();
     }
+
 
     private String loadProtocol(Properties properties) {
         // TLSv1.2 is the default in Java 8.
@@ -98,14 +103,34 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
         return cipherSuites;
     }
 
+    private ClientAuth loadClientAuth(Properties properties) {
+        String mutualAuthentication = getProperty(properties, "mutualAuthentication");
+        if (mutualAuthentication == null) {
+            return ClientAuth.NONE;
+        } else if ("REQUIRED".equals(mutualAuthentication)) {
+            return ClientAuth.REQUIRE;
+        } else if ("OPTIONAL".equals(mutualAuthentication)) {
+            return ClientAuth.OPTIONAL;
+        } else {
+            throw new IllegalArgumentException(
+                    format("Unrecognized value [%s] for [%s]",
+                            mutualAuthentication, JAVA_NET_SSL_PREFIX + "mutualAuthentication"));
+        }
+    }
+
     @Override
     public SSLEngine create(boolean clientMode) {
         try {
             SslContextBuilder builder;
             if (clientMode) {
-                builder = SslContextBuilder.forClient().trustManager(tmf);
+                builder = SslContextBuilder.forClient()
+                        .keyManager(kmf)
+                        .trustManager(tmf);
             } else {
-                builder = SslContextBuilder.forServer(kmf);
+                builder = SslContextBuilder.forServer(kmf)
+                        .trustManager(tmf);
+                // client authentication is a server-side setting. Doesn't need to be set on the client-side.
+                builder.clientAuth(clientAuth);
             }
 
             if (!cipherSuites.isEmpty()) {

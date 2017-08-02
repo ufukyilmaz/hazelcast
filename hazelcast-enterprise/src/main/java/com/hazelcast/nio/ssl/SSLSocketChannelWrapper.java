@@ -76,11 +76,21 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
             while (counter++ < 250 && sslEngineResult.getHandshakeStatus() != FINISHED) {
                 if (sslEngineResult.getHandshakeStatus() == NEED_UNWRAP) {
                     netInBuffer.clear();
-                    while (socketChannel.read(netInBuffer) == 0) {
-                        try {
-                            Thread.sleep(50);
-                        } catch (InterruptedException e) {
-                            throw new IOException(e);
+                    for (; ; ) {
+                        int read = socketChannel.read(netInBuffer);
+                        if (read == -1) {
+                            throw new SSLException("Remote socket closed during SSL/TLS handshake. This is probably caused by a "
+                                    + "SSL/TLS authentication problem resulting in the remote side closing the socket.");
+                        } else if (read == 0) {
+                            // no data; lets wait a bit and retry
+                            try {
+                                Thread.sleep(50);
+                            } catch (InterruptedException e) {
+                                throw new IOException(e);
+                            }
+                        } else {
+                            // there is data; lets end the loop
+                            break;
                         }
                     }
                     netInBuffer.flip();

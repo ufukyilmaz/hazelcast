@@ -25,7 +25,7 @@ public class SSLEngineFactoryAdaptor implements SSLEngineFactory {
     }
 
     @Override
-    public void init(Properties properties) throws Exception {
+    public void init(Properties properties, boolean forClient) throws Exception {
         sslContextFactory.init(properties);
     }
 }

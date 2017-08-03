@@ -379,7 +379,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                 throw new RuntimeException("SSL and SymmetricEncryption cannot be both enabled!");
             }
             logger.info("SSL is enabled");
-            return new SSLChannelFactory(sslConfig);
+            return new SSLChannelFactory(sslConfig, false);
         }
         return super.getChannelFactory();
     }

@@ -15,12 +15,12 @@ public class SSLSocketChannelWrapperFactory implements SocketChannelWrapperFacto
     private final SSLEngineFactory sslEngineFactory;
     private final String mutualAuthentication;
 
-    public SSLSocketChannelWrapperFactory(SSLConfig sslConfig) {
-        this.sslEngineFactory = loadSSLEngineFactory(sslConfig);
+    public SSLSocketChannelWrapperFactory(SSLConfig sslConfig, boolean forClient) {
+        this.sslEngineFactory = loadSSLEngineFactory(sslConfig, forClient);
         this.mutualAuthentication = getProperty(sslConfig.getProperties(), "mutualAuthentication");
     }
 
-    private static SSLEngineFactory loadSSLEngineFactory(SSLConfig sslConfig) {
+    private static SSLEngineFactory loadSSLEngineFactory(SSLConfig sslConfig, boolean forClient) {
         Object implementation = sslConfig.getFactoryImplementation();
         try {
             String factoryClassName = sslConfig.getFactoryClassName();
@@ -37,7 +37,7 @@ public class SSLSocketChannelWrapperFactory implements SocketChannelWrapperFacto
             }
 
             SSLEngineFactory sslEngineFactory = (SSLEngineFactory) implementation;
-            sslEngineFactory.init(sslConfig.getProperties());
+            sslEngineFactory.init(sslConfig.getProperties(), forClient);
             return sslEngineFactory;
         } catch (Exception e) {
             throw new HazelcastException(e);

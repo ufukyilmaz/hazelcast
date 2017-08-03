@@ -27,8 +27,18 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
     private List<String> cipherSuites;
     private ClientAuth clientAuth;
 
+    // for testing only
+    boolean isOpenssl() {
+        return openssl;
+    }
+
+    // for testing only
+    List<String> getCipherSuites() {
+        return cipherSuites;
+    }
+
     @Override
-    public void init(Properties properties) throws Exception {
+    public void init(Properties properties, boolean forClient) throws Exception {
         load(properties);
         this.cipherSuites = loadCipherSuites(properties);
         this.openssl = loadOpenSslLEnabled(properties);
@@ -37,7 +47,7 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
 
         logInit();
 
-        sanityCheck();
+        sanityCheck(forClient);
     }
 
     private void logInit() {
@@ -50,7 +60,7 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
             logger.fine("useOpenSSL: " + openssl);
             logger.fine("clientAuth: " + clientAuth);
             // todo: this log statement will be enabled as soon as client/authentication is backported to this branch
-            //logger.fine("clientAuth: " + clientAuth);
+            logger.fine("clientAuth: " + clientAuth);
         }
     }
 
@@ -79,14 +89,19 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
      * Checks if the configuration is correct to create an SSLEngine. We want to do this as early as possible (so when the
      * HZ instance is made) and not wait till the connections are made.
      */
-    private void sanityCheck() throws SSLException {
-        SSLEngine serverEngine = create(false);
+    private void sanityCheck(boolean forClient) throws SSLException {
+        if (forClient) {
+            sanityCheck0(true);
+        } else {
+            sanityCheck0(false);
+            sanityCheck0(true);
+        }
+    }
+
+    private void sanityCheck0(boolean clientMode) throws SSLException {
+        SSLEngine serverEngine = create(clientMode);
         serverEngine.closeInbound();
         serverEngine.closeOutbound();
-
-        SSLEngine clientEngine = create(true);
-        clientEngine.closeInbound();
-        clientEngine.closeOutbound();
     }
 
     private boolean loadOpenSslLEnabled(Properties properties) {

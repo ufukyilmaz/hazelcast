@@ -299,8 +299,11 @@ public class EnterpriseCacheService
      */
     @Override
     public void destroyDistributedObject(String objectName) {
-        destroySegments(objectName);
-        sendInvalidationEvent(objectName, null, SOURCE_NOT_AVAILABLE);
+        try {
+            cacheEventHandler.destroy(objectName, SOURCE_NOT_AVAILABLE);
+        } finally {
+            destroySegments(objectName);
+        }
     }
 
     /**

@@ -78,7 +78,6 @@ import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -120,7 +119,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     private SecurityService createSecurityService(Node node) {
-        return new SecurityServiceImpl(node);
+        return node.getConfig().getSecurityConfig().isEnabled() ? new SecurityServiceImpl(node) : null;
     }
 
     private HotBackupService createHotBackupService(
@@ -497,21 +496,17 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public Map<String, Object> createExtensionServices() {
-        Map<String, Object> services = super.createExtensionServices();
-        if (hotRestartService == null) {
-            return services;
-        }
-        if (hotBackupService == null) {
-            return Collections.<String, Object>singletonMap(HotRestartIntegrationService.SERVICE_NAME,
-                    hotRestartService);
-        }
+        Map<String, Object> services = new HashMap<String, Object>(super.createExtensionServices());
 
-        if (services.isEmpty()) {
-            services = new HashMap<String, Object>(2);
+        if (hotRestartService != null) {
+            services.put(HotRestartIntegrationService.SERVICE_NAME, hotRestartService);
         }
-        services.put(HotBackupService.SERVICE_NAME, hotBackupService);
-        services.put(HotRestartIntegrationService.SERVICE_NAME, hotRestartService);
-        services.put(SecurityServiceImpl.SERVICE_NAME, securityService);
+        if (hotBackupService != null) {
+            services.put(HotBackupService.SERVICE_NAME, hotBackupService);
+        }
+        if (securityService != null) {
+            services.put(SecurityServiceImpl.SERVICE_NAME, securityService);
+        }
 
         return services;
     }

@@ -31,15 +31,12 @@ import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.configuration.MutableConfiguration;
 import javax.cache.spi.CachingProvider;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.Writer;
 import java.security.AccessControlException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -55,7 +52,6 @@ import static com.hazelcast.config.PermissionConfig.PermissionType.MAP;
 import static com.hazelcast.config.PermissionConfig.PermissionType.USER_CODE_DEPLOYMENT;
 import static com.hazelcast.test.HazelcastTestSupport.randomName;
 import static com.hazelcast.test.HazelcastTestSupport.randomString;
-
 import static java.io.File.createTempFile;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -145,54 +141,6 @@ public class ClientSecurityTest {
         instance.getConfig().getSecurityConfig().setClientPermissionConfigs(newPermissions);
         //read-only
         client.getMap("test").put("test", "test");
-    }
-
-    @Test
-    public void testModifyPermissionAtRuntime() {
-        final Config config = createConfig();
-        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", "dev");
-        perm.addAction(ActionConstants.ACTION_READ);
-        HazelcastInstance instance = factory.newHazelcastInstance(config);
-        HazelcastInstance client = createHazelcastClient();
-
-        Exception ex = null;
-        try {
-            client.getMap("test").put("1", "1");
-        } catch (Exception e) {
-            ex = e;
-        } finally {
-            assertTrue(ex instanceof AccessControlException);
-        }
-
-        Set<PermissionConfig> perms = config.getSecurityConfig().getClientPermissionConfigs();
-        PermissionConfig existingConfig = perms.iterator().next();
-        existingConfig.addAction(ActionConstants.ACTION_ALL);
-        instance.getConfig().getSecurityConfig().setClientPermissionConfigs(perms);
-        client.getMap("test").put("test", "test");
-        assertEquals(1, client.getMap("test").size());
-    }
-
-    @Test(expected = AccessControlException.class)
-    public void testMapAllPermission_unknownNotAllowedPrincipal() {
-        String loginUser = "UserA";
-        String principal = "UserB";
-
-        final Config config = createConfig(loginUser);
-
-        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", principal);
-        perm.addAction(ActionConstants.ACTION_ALL);
-
-        final ClientConfig cc = new ClientConfig();
-        cc.setCredentials(new ClientCustomAuthenticationTest.CustomCredentials(loginUser, "", ""));
-
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient(cc);
-        IMap map = client.getMap("test");
-        map.put("1", "A");
-        map.get("1");
-        map.lock("1");
-        map.unlock("1");
-        map.destroy();
     }
 
     @Test

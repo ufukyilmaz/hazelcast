@@ -14,7 +14,7 @@ public class EntryValuesIterator
     private RedBlackTreeNode.EntryValueNode next;
 
     EntryValuesIterator(RedBlackTreeNode.Entry entry) {
-        this.next = entry.rootValue();
+        this.next = entry.getValuesHead();
     }
 
     @Override

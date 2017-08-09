@@ -73,7 +73,6 @@ class HDSortedIndexStore extends BaseIndexStore {
     }
 
     private void dispose() {
-        assertRunningOnPartitionThread();
         recordsWithNullValue.dispose();
         records.dispose();
     }

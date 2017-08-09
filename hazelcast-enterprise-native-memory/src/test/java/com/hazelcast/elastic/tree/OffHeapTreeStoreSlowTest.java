@@ -25,7 +25,7 @@ public class OffHeapTreeStoreSlowTest extends OffHeapTreeTestSupport {
     public void brute_force_add_remove() {
         MemoryAllocator malloc = new PoolingMemoryManager(MemorySize.parse("2G"));
         RedBlackTreeStore storage = new RedBlackTreeStore(
-                malloc, new OffHeapTreeStoreTest.DataComparator(GlobalMemoryAccessorRegistry.MEM));
+                malloc, new OffHeapTreeStoreTest.DataComparator(GlobalMemoryAccessorRegistry.MEM), true);
 
         int cnt = 4000000; // 4M
         HashMap<Integer, MemoryBlock> entries = new HashMap<Integer, MemoryBlock>();

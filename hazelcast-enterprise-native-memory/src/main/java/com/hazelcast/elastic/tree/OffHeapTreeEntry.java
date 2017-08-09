@@ -13,6 +13,8 @@ public interface OffHeapTreeEntry {
     // regardless of the stored blob. Same for value!
     MemoryBlock getKey();
 
+    boolean hasValues();
+
     Iterator<MemoryBlock> values();
 
 }

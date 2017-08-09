@@ -6,15 +6,20 @@ import com.hazelcast.elastic.tree.OffHeapTreeStore;
 import com.hazelcast.elastic.tree.OrderingDirection;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 import static com.hazelcast.elastic.tree.OrderingDirection.ASC;
 import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.BLACK;
 import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.LEFT;
 import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.RED;
 import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.RIGHT;
+import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.newNode;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /***
  * This is a classic Red Black tree implementation using off-heap memory.
@@ -29,6 +34,8 @@ public class RedBlackTreeStore
 
     private static final RedBlackTreeNode NIL = new RedBlackTreeNode();
 
+    private boolean assertOn;
+
     private final MemoryAllocator malloc;
     private final OffHeapComparator offHeapKeyComparator;
 
@@ -37,8 +44,17 @@ public class RedBlackTreeStore
     public RedBlackTreeStore(
             MemoryAllocator malloc,
             OffHeapComparator offHeapKeyComparator) {
+        this(malloc, offHeapKeyComparator, false);
+    }
+
+    @SuppressWarnings("checkstyle:simplifybooleanexpression")
+    @SuppressFBWarnings({"UCF_USELESS_CONTROL_FLOW_NEXT_LINE"})
+    public RedBlackTreeStore(
+            MemoryAllocator malloc,
+            OffHeapComparator offHeapKeyComparator, boolean disableConcistencyAssertions) {
         this.malloc = malloc;
         this.offHeapKeyComparator = offHeapKeyComparator;
+        assert (assertOn = !disableConcistencyAssertions) || true;
     }
 
     public OffHeapTreeEntry put(MemoryBlock key, MemoryBlock value) {
@@ -49,9 +65,24 @@ public class RedBlackTreeStore
         checkNotNull(key);
         checkNotNull(value);
 
-        RedBlackTreeNode.Entry entry = (RedBlackTreeNode.Entry) lookupEntry(key, comparator, true, false);
-        entry.appendValue(value);
-        return entry;
+        try {
+            if (root == null) {
+                setRoot(createNewNode(key, value));
+                return root.entry();
+            }
+
+            LookupResult result = lookup(key, comparator);
+            if (result.isExactMatch) {
+                RedBlackTreeNode.Entry entry = (RedBlackTreeNode.Entry) result.node.entry();
+                entry.addValue(value);
+                return entry;
+            }
+
+            RedBlackTreeNode node = createNewLeaf(key, value, result.node, result.side);
+            return node.entry();
+        } finally {
+            assertNoInconsistencies();
+        }
     }
 
     public OffHeapTreeEntry getEntry(MemoryBlock key) {
@@ -59,13 +90,13 @@ public class RedBlackTreeStore
     }
 
     public OffHeapTreeEntry getEntry(MemoryBlock key, OffHeapComparator comparator) {
-        return lookupEntry(key, comparator == null ? offHeapKeyComparator : comparator,
-                false, false
-        );
+        LookupResult result = lookup(key, comparator == null ? offHeapKeyComparator : comparator);
+        return result.isExactMatch && result.node != null ? result.node.entry() : null;
     }
 
     public OffHeapTreeEntry searchEntry(MemoryBlock key) {
-        return lookupEntry(key, offHeapKeyComparator, false, true);
+        LookupResult result = lookup(key, offHeapKeyComparator);
+        return result.node != null ? result.node.entry() : null;
     }
 
     public void dispose(boolean releasePayload) {
@@ -122,6 +153,7 @@ public class RedBlackTreeStore
 
         // Release memory
         node.dispose();
+        assertNoInconsistencies();
     }
 
     @Override
@@ -161,40 +193,23 @@ public class RedBlackTreeStore
         }
     }
 
-    private OffHeapTreeEntry lookupEntry(MemoryBlock key, OffHeapComparator comparator,
-                                         boolean createIfNotExists, boolean matchNearestMode) {
+    private LookupResult lookup(MemoryBlock key, OffHeapComparator comparator) {
         checkNotNull(key);
 
         if (root == null) {
-            if (createIfNotExists) {
-                root = new RedBlackTreeNode(this, malloc);
-            } else {
-                return null;
-            }
-
-            RedBlackTreeNode.Entry entry =
-                    (RedBlackTreeNode.Entry) root.entry();
-            entry.setKey(key);
-            return entry;
+            return new LookupResult(null, true);
         }
 
         RedBlackTreeNode node = root;
 
         while (true) {
             int compareResult = compareKeys(comparator, key, node);
-
             if (compareResult > 0) {
                 //Our key is greater
                 RedBlackTreeNode right = node.right();
 
                 if (right.isNil()) {
-                    if (createIfNotExists) {
-                        return createNewLeaf(key, node, RED, RIGHT).entry();
-                    } else if (matchNearestMode) {
-                        return node.entry();
-                    } else {
-                        return null;
-                    }
+                    return new LookupResult(node, false, RIGHT);
                 } else {
                     node = right;
                 }
@@ -203,31 +218,41 @@ public class RedBlackTreeStore
                 RedBlackTreeNode left = node.left();
 
                 if (left.isNil()) {
-                    if (createIfNotExists) {
-                        return createNewLeaf(key, node, RED, LEFT).entry();
-                    } else if (matchNearestMode) {
-                        return node.entry();
-                    } else {
-                        return null;
-                    }
+                    return new LookupResult(node, false, LEFT);
                 } else {
                     node = left;
                 }
             } else {
                 //Our key is the same
-                return node.entry();
+                return new LookupResult(node, true);
             }
         }
     }
 
-    private RedBlackTreeNode createNewLeaf(MemoryBlock key, RedBlackTreeNode parent, byte color, byte side) {
-        RedBlackTreeNode node = new RedBlackTreeNode(this, malloc);
-        RedBlackTreeNode.Entry entry = ((RedBlackTreeNode.Entry) node.entry());
+    private RedBlackTreeNode createNewNode(MemoryBlock key, MemoryBlock value) {
+        RedBlackTreeNode node = null;
+        try {
+            node = newNode(this, malloc);
+            RedBlackTreeNode.Entry entry = ((RedBlackTreeNode.Entry) node.entry());
+            entry.setKey(key);
+            entry.addValue(value);
 
-        node.color(color);
-        entry.setKey(key);
+            return node;
+        } catch (Exception ex) {
+            if (node != null) {
+                node.dispose();
+            }
 
+            throw rethrow(ex);
+        }
+    }
+
+    private RedBlackTreeNode createNewLeaf(MemoryBlock key, MemoryBlock value, RedBlackTreeNode parent, byte side) {
+        RedBlackTreeNode node = createNewNode(key, value);
+
+        node.color(RED);
         node.parent(parent);
+
         if (side == LEFT) {
             parent.left(node);
         } else {
@@ -420,26 +445,29 @@ public class RedBlackTreeStore
         return minEntry;
     }
 
-    private void transplant(RedBlackTreeNode src, RedBlackTreeNode dst) {
-        if (root.equals(src)) {
-            setRoot(dst);
+    private void transplant(RedBlackTreeNode which, RedBlackTreeNode with) {
+        assert !which.equals(with);
+
+        if (root.equals(which)) {
+            setRoot(with);
             return;
         }
 
-        RedBlackTreeNode parent = src.parent();
+        RedBlackTreeNode parent = which.parent();
 
         assert parent != null : "Parent can't be NIL since src isn't ROOT. "
-                + "root: " + root + ", src: " + src + ", root_parent: " + root.parent();
+                + "root: " + root + ", src: " + which + ", root_parent: " + root.parent();
 
         RedBlackTreeNode entryParentLeftChildAddress = parent.left();
-        if (src.equals(entryParentLeftChildAddress)) {
-            parent.left(dst);
+        if (which.equals(entryParentLeftChildAddress)) {
+            assert !which.equals(parent.right());
+            parent.left(with);
         } else {
-            parent.right(dst);
+            parent.right(with);
         }
 
-        if (!dst.isNil()) {
-            dst.parent(parent);
+        if (!with.isNil()) {
+            with.parent(parent);
         }
     }
 
@@ -605,4 +633,42 @@ public class RedBlackTreeStore
         node.color(BLACK);
     }
 
+    private void assertNoInconsistencies() {
+        if (!assertOn) {
+            return;
+        }
+
+        Set<OffHeapTreeEntry> entries = new HashSet<OffHeapTreeEntry>();
+        Set<MemoryBlock> keys = new HashSet<MemoryBlock>();
+
+        for (OffHeapTreeEntry entry : this) {
+            assert !entries.contains(entry) : "Tree in illegal state, entry: " + entry + " exists more than once.";
+
+            entries.add(entry);
+
+            assert !keys.contains(entry.getKey()) : "Tree in illegal state, entry key: " + entry.getKey()
+                    + " is referenced more than once.";
+
+            keys.add(entry.getKey());
+
+            assert entry.hasValues() : "Tree in illegal state, entry: " + entry + " has no values.";
+        }
+    }
+
+    private static final class LookupResult {
+
+        private final RedBlackTreeNode node;
+        private final boolean isExactMatch;
+        private final byte side;
+
+        private LookupResult(RedBlackTreeNode node, boolean isExactMatch) {
+            this(node, isExactMatch, (byte) 0xff);
+        }
+
+        private LookupResult(RedBlackTreeNode node, boolean isExactMatch, byte side) {
+            this.node = node;
+            this.isExactMatch = isExactMatch;
+            this.side = side;
+        }
+    }
 }

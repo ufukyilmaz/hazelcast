@@ -2,6 +2,7 @@ package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.HashUtil;
@@ -135,6 +136,16 @@ public final class NativeMemoryDataUtil {
     public static long hash64(long address) {
         int bufferSize = readDataSize(address);
         return HashUtil.MurmurHash3_x64_64_direct(address, NativeMemoryData.DATA_OFFSET, bufferSize);
+    }
+
+    public static void dispose(EnterpriseSerializationService ess, MemoryAllocator malloc, MemoryBlock... blocks) {
+        NativeMemoryData[] nativeMemoryData = new NativeMemoryData[blocks.length];
+        for (int i = 0; i < blocks.length; i++) {
+            MemoryBlock block = blocks[i];
+            nativeMemoryData[i] = new NativeMemoryData(block.address(), block.size());
+        }
+
+        dispose(ess, malloc, nativeMemoryData);
     }
 
     // Avoids having TCFTC anti-pattern.

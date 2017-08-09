@@ -17,7 +17,6 @@ import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.PooledNativeMemoryStats;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Bits;
@@ -30,7 +29,6 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.SlowTest;
-import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.function.LongLongConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -63,6 +61,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     private static final int[] OP_SET = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
     private static final int KEY_RANGE = 10000000;
     private static final int PARTITION_COUNT = 271;
+    private static final int REPS = 1000;
     private static final String MAP_NAME = randomMapName("HD");
 
     @BeforeClass
@@ -125,12 +124,14 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         bouncingThread.start();
 
         int threads = 8;
+        final AtomicBoolean running = new AtomicBoolean(true);
         CountDownLatch workerDoneLatch = new CountDownLatch(threads);
         for (int i = 0; i < threads; i++) {
-            new WorkerThread(map, workerDoneLatch, stopBouncingThread).start();
+            new WorkerThread(map, workerDoneLatch, running).start();
         }
 
         assertOpenEventually("WorkerThreads didn't finish in time", workerDoneLatch, TIMEOUT * 2);
+
         stopBouncingThread.set(true);
         assertJoinable(bouncingThread);
 
@@ -213,15 +214,18 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
 
         @Override
         public void run() {
-            while (running.get()) {
+            int repetitions = 0;
+            while (running.get() && repetitions++ <= REPS) {
                 try {
                     int key = rand.nextInt(KEY_RANGE);
                     int op = rand.nextInt(OP_SET.length);
                     doOp(OP_SET[op], key);
-                } catch (NativeOutOfMemoryError e) {
-                    EmptyStatement.ignore(e);
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                    running.set(false);
                 }
             }
+
             latch.countDown();
         }
 

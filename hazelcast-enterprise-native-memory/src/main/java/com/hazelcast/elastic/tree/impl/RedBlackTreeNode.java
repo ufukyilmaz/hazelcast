@@ -7,6 +7,7 @@ import com.hazelcast.memory.MemoryBlock;
 import java.util.Iterator;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 @SuppressWarnings({"checkstyle:innerassignment"})
 class RedBlackTreeNode
@@ -56,13 +57,11 @@ class RedBlackTreeNode
         this.malloc = null;
     }
 
-    RedBlackTreeNode(RedBlackTreeStore tree, MemoryAllocator malloc) {
-        this(tree, malloc, NULL_ADDRESS);
-        setAddress(malloc.allocate(NODE_SIZE));
-        zero();
-    }
-
     public OffHeapTreeEntry entry() {
+        if (address == NULL_ADDRESS) {
+            throw new IllegalStateException("NULL address; ie. Sentinel node");
+        }
+
         return new Entry();
     }
 
@@ -218,7 +217,7 @@ class RedBlackTreeNode
 
     private void disposeValue(boolean releasePayLoad) {
         Entry entry = (Entry) entry();
-        EntryValueNode value = entry.rootValue();
+        EntryValueNode value = entry.getValuesHead();
 
         while (value != null) {
             if (releasePayLoad) {
@@ -249,8 +248,25 @@ class RedBlackTreeNode
         return super.hashCode();
     }
 
+    @Override
+    public String toString() {
+        return "RedBlackTreeNode{"
+                + "address: " + address
+                + ", parent: " + readLong(PARENT_OFFSET)
+                + ", left: " + readLong(LEFT_LEAF_OFFSET)
+                + ", right: " + readLong(RIGHT_LEAF_OFFSET)
+                + ", color: " + readByte(COLOR_OFFSET)
+                + ", side: " + readByte(SIDE_OFFSET)
+                + "}";
+    }
+
     public static RedBlackTreeNode of(RedBlackTreeStore tree, MemoryAllocator malloc, long base) {
         return new RedBlackTreeNode(tree, malloc, base);
+    }
+
+    public static RedBlackTreeNode newNode(RedBlackTreeStore tree, MemoryAllocator malloc) {
+        long addr = malloc.allocate(NODE_SIZE);
+        return of(tree, malloc, addr);
     }
 
     /**
@@ -268,8 +284,17 @@ class RedBlackTreeNode
         public MemoryBlock getKey() {
             assert address != NULL_ADDRESS;
 
-            long addr = readLong(ENTRY_KEY_OFFSET);
-            return addr == NULL_ADDRESS ? null : new MemoryBlock(addr, readInt(ENTRY_KEY_SZ_OFFSET));
+            long address = readLong(ENTRY_KEY_OFFSET);
+            int size = readInt(ENTRY_KEY_SZ_OFFSET);
+
+            return address == NULL_ADDRESS
+                    ? null
+                    : new MemoryBlock(address, size);
+        }
+
+        @Override
+        public boolean hasValues() {
+            return getValuesHead() != null;
         }
 
         @Override
@@ -284,35 +309,63 @@ class RedBlackTreeNode
             writeInt(ENTRY_KEY_SZ_OFFSET, key.size());
         }
 
-        EntryValueNode rootValue() {
+        EntryValueNode getValuesHead() {
             assert address != NULL_ADDRESS;
 
-            long addr = readLong(ENTRY_VALUE_OFFSET);
-            return addr == NULL_ADDRESS ? null : new EntryValueNode(addr);
+            long address = readLong(ENTRY_VALUE_OFFSET);
+            return address == NULL_ADDRESS ? null : new EntryValueNode(address);
         }
 
-        void appendValue(MemoryBlock payload) {
-            EntryValueNode valueRef = rootValue();
-            EntryValueNode newValueRef = new EntryValueNode(malloc.allocate(EntryValueNode.VALUE_NODE_SZ));
-            newValueRef.zero();
+        void setValuesHead(EntryValueNode valueNode) {
+            writeLong(ENTRY_VALUE_OFFSET, valueNode.address());
+        }
 
-            newValueRef.value(payload);
+        void addValue(MemoryBlock payload) {
+            EntryValueNode head = getValuesHead();
+            EntryValueNode newVal = null;
 
-            // If it is first element - setting link on him
-            if (valueRef == null || valueRef.isEmpty()) {
-                writeLong(ENTRY_VALUE_OFFSET, newValueRef.address());
-                newValueRef.last(newValueRef);
-            } else {
-                EntryValueNode lastValueRef = valueRef.last();
+            try {
+                newVal = newValueNode(payload);
 
-                if (lastValueRef != null) {
-                    lastValueRef.next(newValueRef);
+                // If it is first element - setting link on him
+                if (head == null || head.isEmpty()) {
+                    setValuesHead(newVal);
+                    newVal.last(newVal);
+                } else {
+                    EntryValueNode last = head.last();
+
+                    if (last != null) {
+                        last.next(newVal);
+                    }
+
+                    head.last(newVal);
+                }
+            } catch (Exception ex) {
+                if (newVal != null) {
+                    malloc.free(newVal.address(), newVal.size());
                 }
 
-                valueRef.last(newValueRef);
+                rethrow(ex);
             }
         }
 
+        EntryValueNode newValueNode(MemoryBlock payload) {
+            long address = malloc.allocate(EntryValueNode.VALUE_NODE_SZ);
+            EntryValueNode node = new EntryValueNode(address);
+            node.zero();
+            node.value(payload);
+
+            return node;
+        }
+
+        @Override
+        public String toString() {
+            return "Entry{"
+                    + "node: " + node()
+                    + ", key: " + readLong(ENTRY_KEY_OFFSET)
+                    + ", values: " + readLong(ENTRY_VALUE_OFFSET)
+                    + "}";
+        }
     }
 
     /**

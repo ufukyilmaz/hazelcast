@@ -8,6 +8,7 @@ import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.nio.Disposable;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
@@ -74,21 +75,18 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         checkNotNullOrEmpty(key, "key can't be null or empty");
 
         NativeMemoryData nativeSegmentKey = ess.toNativeData(segmentKey, malloc);
+        BinaryElasticHashMap<NativeMemoryData> map = null;
+        MemoryBlock mapMemBlock = null;
+
         boolean deallocateNativeSegmentKey = true;
+        boolean deallocateMapAndBlock = true;
         try {
-            BinaryElasticHashMap<NativeMemoryData> map;
-            MemoryBlock mapMemBlock;
             OffHeapTreeEntry entry = records.getEntry(nativeSegmentKey);
             if (entry == null) {
                 map = new BinaryElasticHashMap<NativeMemoryData>(ess, new NativeMemoryDataAccessor(ess), malloc);
                 mapMemBlock = map.storeHeaderOffHeap(malloc, NULL_ADDRESS);
-                entry = records.put(nativeSegmentKey, mapMemBlock);
-                assert entry != null;
-
-                if (nativeSegmentKey.address() == entry.getKey().address()) {
-                    // is allocated for the first time
-                    deallocateNativeSegmentKey = false;
-                }
+                records.put(nativeSegmentKey, mapMemBlock);
+                deallocateNativeSegmentKey = false;
             } else {
                 mapMemBlock = entry.values().next();
                 map = loadFromOffHeapHeader(ess, malloc, mapMemBlock.address());
@@ -99,10 +97,15 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
             }
             NativeMemoryData oldValue = map.put(key, value);
             map.storeHeaderOffHeap(malloc, mapMemBlock.address());
+            deallocateMapAndBlock = false;
             return oldValue;
         } finally {
             if (deallocateNativeSegmentKey) {
                 dispose(nativeSegmentKey);
+            }
+
+            if (deallocateMapAndBlock) {
+                dispose(map, mapMemBlock);
             }
         }
     }
@@ -175,9 +178,11 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         checkNotNullOrEmpty(key, "key can't be null or empty");
 
         NativeMemoryData nativeSegmentKey = null;
+        OffHeapTreeEntry entry = null;
         try {
             nativeSegmentKey = ess.toNativeData(segmentKey, malloc);
-            OffHeapTreeEntry entry = records.getEntry(nativeSegmentKey);
+
+            entry = records.getEntry(nativeSegmentKey);
             if (entry == null) {
                 return null;
             }
@@ -191,16 +196,13 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
             NativeMemoryData value = map.remove(key);
 
             if (map.isEmpty()) {
-                // Dispose RBT entry values
-                ess.disposeData(new NativeMemoryData(blob.address(), blob.size()));
-
-                // Dispose RBT entry
                 MemoryBlock keyBlob = entry.getKey();
-                ess.disposeData(new NativeMemoryData(keyBlob.address(), keyBlob.size()));
-                records.remove(entry);
 
-                // Dispose the BEHM map
-                map.dispose();
+                try {
+                    records.remove(entry);
+                } finally {
+                    dispose(keyBlob, blob, map);
+                }
             } else {
                 map.storeHeaderOffHeap(malloc, blob.address());
             }
@@ -430,19 +432,16 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         Iterator<OffHeapTreeEntry> treeEntryIterator = records.entries();
         while (treeEntryIterator.hasNext()) {
             OffHeapTreeEntry entry = treeEntryIterator.next();
+            MemoryBlock keyBlob = entry.getKey();
             MemoryBlock valueBlob = entry.values().next();
 
-            // Dispose BinaryElasticHashMap
             BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, valueBlob.address());
-            map.dispose();
 
-            // Dispose value header
-            ess.disposeData(new NativeMemoryData(valueBlob.address(), valueBlob.size()));
-
-            // Dispose entry
-            MemoryBlock keyBlob = entry.getKey();
-            ess.disposeData(new NativeMemoryData(keyBlob.address(), keyBlob.size()));
-            records.remove(entry);
+            try {
+                records.remove(entry);
+            } finally {
+                dispose(map, valueBlob, keyBlob);
+            }
         }
     }
 
@@ -476,8 +475,31 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         }
     }
 
-    private void dispose(NativeMemoryData... nativeData) {
-        NativeMemoryDataUtil.dispose(ess, malloc, nativeData);
+    private void dispose(Object... objects) {
+        Exception caught = null;
+        for (Object object : objects) {
+            if (object == null) {
+                continue;
+            }
+
+            try {
+                if (object instanceof Disposable) {
+                    ((Disposable) object).dispose();
+                } else if (object instanceof NativeMemoryData) {
+                    NativeMemoryDataUtil.dispose(ess, malloc, (NativeMemoryData) object);
+                } else if (object instanceof MemoryBlock) {
+                    NativeMemoryDataUtil.dispose(ess, malloc, (MemoryBlock) object);
+                } else {
+                    throw new IllegalStateException("Unidentifiable object, don't know how to dispose. May cause leaks.");
+                }
+            } catch (Exception exception) {
+                caught = exception;
+            }
+        }
+
+        if (caught != null) {
+            throw new HazelcastException("Could not deallocate memory. There may be a native memory leak!", caught);
+        }
     }
 
     private static class DefaultMapEntryFactory<T extends Map.Entry> implements MapEntryFactory<T> {

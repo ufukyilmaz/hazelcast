@@ -5,7 +5,6 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.nio.CipherHelper.SymmetricCipherBuilder;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -35,11 +34,6 @@ public class CipherHelperTest extends HazelcastTestSupport {
                 .setAlgorithm("invalidAlgorithm");
 
         mockedConnection = mock(Connection.class);
-    }
-
-    @After
-    public void tearDown() {
-        CipherHelper.reset();
     }
 
     @Test

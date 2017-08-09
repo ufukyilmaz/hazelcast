@@ -9,6 +9,7 @@ import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.nio.serialization.StreamSerializer;
+import com.hazelcast.nio.serialization.TypedDataSerializable;
 import com.hazelcast.nio.serialization.TypedStreamDeserializer;
 import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.nio.serialization.impl.VersionedDataSerializableFactory;
@@ -240,7 +241,12 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
         boolean versioned = version != Version.UNKNOWN;
         out.writeByte(createHeader(false, versioned));
 
-        out.writeUTF(obj.getClass().getName());
+        if (obj instanceof TypedDataSerializable) {
+            out.writeUTF(((TypedDataSerializable) obj).getClassType().getName());
+        } else {
+            out.writeUTF(obj.getClass().getName());
+        }
+
         if (versioned) {
             out.writeByte(version.getMajor());
             out.writeByte(version.getMinor());

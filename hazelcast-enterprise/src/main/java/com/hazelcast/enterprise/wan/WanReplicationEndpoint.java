@@ -5,8 +5,13 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.instance.Node;
 import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.spi.PartitionReplicationEvent;
+import com.hazelcast.spi.ServiceNamespace;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
+
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * Implementations of this interface represent a replication endpoint, normally another
@@ -83,4 +88,25 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
     void publishSyncEvent(WanSyncEvent syncRequest);
 
     void clearQueues();
+
+    /**
+     * Collect all replication data for the specific replication event and collection of namespaces being replicated.
+     *
+     * @param wanReplicationName     the WAN replication name in the hazelcast configuration for this endpoint
+     * @param event                  the replication event
+     * @param namespaces             the object namespaces which are being replicated
+     * @param migrationDataContainer the container for the migration data
+     */
+    void collectReplicationData(String wanReplicationName,
+                                PartitionReplicationEvent event,
+                                Collection<ServiceNamespace> namespaces,
+                                EWRMigrationContainer migrationDataContainer);
+
+    /**
+     * Collect the namespaces of all queues that should be replicated by the replication event.
+     *
+     * @param event      the replication event
+     * @param namespaces the set in which namespaces should be added
+     */
+    void collectAllServiceNamespaces(PartitionReplicationEvent event, Set<ServiceNamespace> namespaces);
 }

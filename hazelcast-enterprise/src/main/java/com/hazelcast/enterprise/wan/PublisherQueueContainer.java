@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Queue container for WAN replication publishers.
- * Provides methods to push/pull WAN events to/from queues.
+ * WAN event queue container for WAN replication publishers. Each WAN queue container is
+ * responsible for a specific partition. Provides methods to push/pull WAN events to/from queues.
  */
 public class PublisherQueueContainer {
 
@@ -85,8 +85,19 @@ public class PublisherQueueContainer {
         return wanEventContainer.pollRandomWanEvent();
     }
 
+    /** Returns the map of partition ID to {@link PartitionWanEventContainer} for the specific partition */
     public Map<Integer, PartitionWanEventContainer> getPublisherEventQueueMap() {
         return publisherEventQueueMap;
+    }
+
+    /**
+     * Return the {@link PartitionWanEventContainer} for the specified {@code partitionId}
+     *
+     * @param partitionId the partition ID for the WAN event container
+     * @return the WAN event container
+     */
+    public PartitionWanEventContainer getPublisherEventQueue(int partitionId) {
+        return publisherEventQueueMap.get(partitionId);
     }
 
     public void clearQueues() {

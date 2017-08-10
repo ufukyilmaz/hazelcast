@@ -149,6 +149,11 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     }
 
     @Override
+    public Iterator<HDRecord> mutationTolerantIterator() {
+        return map.valueIter(false);
+    }
+
+    @Override
     public Iterator<HDRecord> newForcedEvictionValuesIterator() {
         return map.newRandomEvictionValueIterator();
     }

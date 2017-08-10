@@ -14,6 +14,7 @@ import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Hot Restart storage implementation for maps
@@ -114,8 +115,13 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     }
 
     @Override
-    public final Collection<R> values() {
+    public Collection<R> values() {
         return storage.values();
+    }
+
+    @Override
+    public final Iterator<R> mutationTolerantIterator() {
+        return storage.mutationTolerantIterator();
     }
 
     @Override

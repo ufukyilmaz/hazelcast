@@ -659,7 +659,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
         final int advance() {
             ensureMemory();
-            failIfModified(lastKnownModCount);
+            failIfModified(true, lastKnownModCount);
 
             int slot;
             do {
@@ -680,7 +680,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 throw new NoSuchElementException();
             }
 
-            failIfModified(lastKnownModCount);
+            failIfModified(true, lastKnownModCount);
 
             currentSlot = nextSlot;
             if (!accessor.isAssigned(currentSlot)) {
@@ -705,7 +705,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 throw new NoSuchElementException();
             }
 
-            failIfModified(lastKnownModCount);
+            failIfModified(true, lastKnownModCount);
 
             long key = accessor.getKey(currentSlot);
             long value = accessor.getValue(currentSlot);
@@ -745,8 +745,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
     }
 
-    private void failIfModified(int lastKnownModCount) {
-        if (lastKnownModCount != modCount) {
+    private void failIfModified(boolean enable, int lastKnownModCount) {
+        if (enable && lastKnownModCount != modCount) {
             throw new ConcurrentModificationException();
         }
     }
@@ -755,20 +755,26 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         int nextSlot = -1;
         int currentSlot = -1;
         private NativeMemoryData keyHolder;
+        private boolean failFast;
         private int lastKnownModCount;
 
         SlotIter() {
-            this(0);
+            this(0, true);
         }
 
-        SlotIter(int startSlot) {
-            lastKnownModCount = modCount;
-            nextSlot = advance(startSlot);
+        SlotIter(boolean failFast) {
+            this(0, failFast);
+        }
+
+        SlotIter(int startSlot, boolean failFast) {
+            this.failFast = failFast;
+            this.lastKnownModCount = modCount;
+            this.nextSlot = advance(startSlot);
         }
 
         final int advance(int start) {
             ensureMemory();
-            failIfModified(lastKnownModCount);
+            failIfModified(failFast, lastKnownModCount);
 
             for (int slot = start; slot < allocatedSlotCount; slot++) {
                 if (accessor.isAssigned(slot)) {
@@ -788,7 +794,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (nextSlot < 0) {
                 throw new NoSuchElementException();
             }
-            failIfModified(lastKnownModCount);
+            failIfModified(failFast, lastKnownModCount);
 
             currentSlot = nextSlot;
             nextSlot = advance(nextSlot + 1);
@@ -805,7 +811,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (currentSlot < 0) {
                 throw new NoSuchElementException();
             }
-            failIfModified(lastKnownModCount);
+            failIfModified(failFast, lastKnownModCount);
 
             long key = accessor.getKey(currentSlot);
             long value = accessor.getValue(currentSlot);
@@ -896,7 +902,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
 
         KeyIter(int startSlot) {
-            super(startSlot);
+            super(startSlot, true);
         }
 
         @Override
@@ -944,9 +950,26 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     /**
+     * @param failFast {@code true} to enable fail fast behaviour, otherwise set {@code false}
+     * @return a new iterator instance
+     * @see #modCount
+     */
+    public final Iterator<V> valueIter(boolean failFast) {
+        return new ValueIter(failFast);
+    }
+
+    /**
      * Iterator over the map's values.
      */
     protected class ValueIter extends SlotIter<V> implements Iterator<V> {
+
+        public ValueIter() {
+        }
+
+        public ValueIter(boolean failFast) {
+            super(failFast);
+        }
+
         @Override
         public V next() {
             nextSlot();

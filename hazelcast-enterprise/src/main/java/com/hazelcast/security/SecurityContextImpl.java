@@ -11,6 +11,7 @@ import com.hazelcast.config.SecurityInterceptorConfig;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.ClassLoaderUtil;
+import com.hazelcast.security.impl.SecurityServiceImpl;
 import com.hazelcast.util.ExceptionUtil;
 
 import javax.security.auth.Subject;
@@ -26,6 +27,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+
+import static com.hazelcast.security.impl.SecurityServiceImpl.clonePermissionConfigs;
 
 public class SecurityContextImpl implements SecurityContext {
 
@@ -172,7 +175,10 @@ public class SecurityContextImpl implements SecurityContext {
     @Override
     public void refreshPermissions(Set<PermissionConfig> permissionConfigs) {
         if (refreshPermissionsInProgress.compareAndSet(false, true)) {
-            policy.refreshPermissions(permissionConfigs);
+            policy.refreshPermissions(clonePermissionConfigs(permissionConfigs));
+
+            SecurityServiceImpl securityService = (SecurityServiceImpl) node.getSecurityService();
+            securityService.setPermissionConfigs(permissionConfigs);
             refreshPermissionsInProgress.set(false);
         } else {
             throw new IllegalStateException("Permissions could not be refreshed, another update is in progress.");

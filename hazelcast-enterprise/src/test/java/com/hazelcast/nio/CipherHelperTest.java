@@ -5,10 +5,15 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.nio.CipherHelper.SymmetricCipherBuilder;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.util.RootCauseMatcher;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+
+import java.security.NoSuchAlgorithmException;
 
 import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
@@ -23,6 +28,9 @@ import static org.mockito.Mockito.verify;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class CipherHelperTest extends HazelcastTestSupport {
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     private SymmetricEncryptionConfig invalidConfiguration;
     private Connection mockedConnection;
@@ -52,9 +60,12 @@ public class CipherHelperTest extends HazelcastTestSupport {
         }
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testCreateCipher_withInvalidConfiguration() {
-        new SymmetricCipherBuilder(invalidConfiguration).create(true);
+        SymmetricCipherBuilder builder = new SymmetricCipherBuilder(invalidConfiguration);
+
+        expectedException.expect(new RootCauseMatcher(NoSuchAlgorithmException.class));
+        builder.create(true);
     }
 
     @Test
@@ -62,7 +73,7 @@ public class CipherHelperTest extends HazelcastTestSupport {
         try {
             createSymmetricReaderCipher(invalidConfiguration, mockedConnection);
             fail("Expected an exception to be thrown!");
-        } catch (RuntimeException ex) {
+        } catch (Exception e) {
             verifyConnectionIsClosed(mockedConnection);
         }
     }
@@ -72,7 +83,7 @@ public class CipherHelperTest extends HazelcastTestSupport {
         try {
             createSymmetricWriterCipher(invalidConfiguration, mockedConnection);
             fail("Expected an exception to be thrown!");
-        } catch (RuntimeException ex) {
+        } catch (Exception e) {
             verifyConnectionIsClosed(mockedConnection);
         }
     }

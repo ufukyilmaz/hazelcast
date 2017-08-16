@@ -17,6 +17,22 @@ import static org.junit.Assert.assertEquals;
 public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicationTestSupport {
 
     @Test
+    public void cache_linkTopo_ActivePassiveReplication_2clusters_putAll() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB,
+                clusterB.length, "atob", HigherHitsCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+
+        startClusterA();
+        startClusterB();
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false, null, true);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+
+        removeCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50);
+        checkCacheDataSize(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0);
+    }
+
+    @Test
     public void cache_linkTopo_ActivePassiveReplication_2clusters() {
         initConfigA();
         initConfigB();

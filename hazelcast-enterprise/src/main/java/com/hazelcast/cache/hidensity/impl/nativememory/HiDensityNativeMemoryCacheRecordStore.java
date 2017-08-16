@@ -656,7 +656,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public boolean putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
+    public CacheRecord putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
         long ttl = expiryPolicyToTTL(expiryPolicy);
         return own(key, value, ttl, false);
     }
@@ -679,11 +679,11 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public boolean putReplica(Data key, Object value, long ttlMillis) {
+    public CacheRecord putReplica(Data key, Object value, long ttlMillis) {
         return own(key, value, ttlMillis, true);
     }
 
-    private boolean own(Data key, Object value, long ttlMillis, boolean disableDeferredDispose) {
+    private CacheRecord own(Data key, Object value, long ttlMillis, boolean disableDeferredDispose) {
         if (!records.containsKey(key)) {
             evictIfRequired();
         }
@@ -715,7 +715,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
             onOwn(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose);
 
-            return isNewPut;
+            return record;
         } catch (Throwable error) {
             onOwnError(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose, error);
 

@@ -40,6 +40,7 @@ public class WANAwareCacheOperationProvider extends EnterpriseCacheOperationProv
 
     @Override
     public Operation createPutAllOperation(List<Map.Entry<Data, Data>> entries, ExpiryPolicy policy, int completionId) {
+        checkWANReplicationQueues();
         return delegate.createPutAllOperation(entries, policy, completionId);
     }
 

@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.HashMap;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
@@ -80,21 +81,40 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
     protected int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
                                     String cacheManager, String cacheName, InMemoryFormat format,
                                     int start, int end, boolean removeBeforePut) {
-        return createCacheDataIn(cluster, classLoader, cacheManager, cacheName, format, start, end, removeBeforePut, null);
+        return createCacheDataIn(cluster, classLoader, cacheManager, cacheName, format, start, end, removeBeforePut, null, false);
     }
 
     protected int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
                                     String cacheManager, String cacheName, InMemoryFormat format,
                                     int start, int end, boolean removeBeforePut, ExpiryPolicy expiryPolicy) {
+        return createCacheDataIn(cluster, classLoader, cacheManager, cacheName, format, start, end, removeBeforePut, expiryPolicy, false);
+    }
+
+    protected int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
+                                    String cacheManager, String cacheName, InMemoryFormat format,
+                                    int start, int end, boolean removeBeforePut, ExpiryPolicy expiryPolicy,
+                                    boolean usePutAll) {
         ICache<Integer, String> myCache = getOrCreateCache(cluster, cacheManager, cacheName, format, classLoader);
+        HashMap<Integer, String> putAllMap = usePutAll ? new HashMap<Integer, String>() : null;
+
         for (; start < end; start++) {
             if (removeBeforePut) {
                 myCache.remove(start);
             }
-            if (expiryPolicy == null) {
-                myCache.put(start, getNode(cluster).getConfig().getGroupConfig().getName() + start);
+            final String value = getNode(cluster).getConfig().getGroupConfig().getName() + start;
+            if (usePutAll) {
+                putAllMap.put(start, value);
+            } else if (expiryPolicy == null) {
+                myCache.put(start, value);
             } else {
-                myCache.put(start, getNode(cluster).getConfig().getGroupConfig().getName() + start, expiryPolicy);
+                myCache.put(start, value, expiryPolicy);
+            }
+        }
+        if (usePutAll) {
+            if (expiryPolicy == null) {
+                myCache.putAll(putAllMap);
+            } else {
+                myCache.putAll(putAllMap, expiryPolicy);
             }
         }
         return myCache.size();

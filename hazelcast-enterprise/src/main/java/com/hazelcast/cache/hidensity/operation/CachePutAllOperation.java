@@ -1,6 +1,11 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.impl.CacheEntryViews;
+import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -41,6 +46,7 @@ public class CachePutAllOperation
 
     @Override
     protected void runInternal() throws Exception {
+        final CacheService service = getService();
         String callerUuid = getCallerUuid();
 
         int backups = getSyncBackupCount() + getAsyncBackupCount();
@@ -53,19 +59,32 @@ public class CachePutAllOperation
             Map.Entry<Data, Data> entry = iter.next();
             Data key = entry.getKey();
             Data value = entry.getValue();
-            cache.put(key, value, expiryPolicy, callerUuid, completionId);
+            final CacheRecord record = cache.put(key, value, expiryPolicy, callerUuid, completionId);
+
+            /*
+             * We should be sure that backup and WAN event records are heap based.
+             * Because keys/values, have been already put to record store,
+             * might be evicted inside the loop while trying to put others.
+             * So in this case, internal backupRecords map or WAN event contains
+             * invalid (disposed) keys and records and this is passed to
+             * CachePutAllBackupOperation. Then possibly there will be JVM crash or
+             * serialization exception.
+             */
+            Data onHeapKey = null;
+            Data onHeapValue = null;
+            if (cacheBackupRecordStore != null || cache.isWanReplicationEnabled()) {
+                onHeapKey = serializationService.convertData(key, DataType.HEAP);
+                onHeapValue = serializationService.convertData(value, DataType.HEAP);
+            }
 
             if (cacheBackupRecordStore != null) {
-                /*
-                 * We should be sure that backup records are heap based.
-                 * Because keys/values, have been already put to record store,
-                 * might be evicted inside the loop while trying to put others.
-                 * So in this case, internal backupRecords map contains invalid (disposed) keys and records and
-                 * this is passed to CachePutAllBackupOperation.
-                 * Then possibly there will be JVM crash or serialization exception.
-                 */
-                cacheBackupRecordStore.addBackupRecord(serializationService.convertData(key, DataType.HEAP),
-                                                       serializationService.convertData(value, DataType.HEAP));
+                cacheBackupRecordStore.addBackupRecord(onHeapKey, onHeapValue);
+            }
+
+            if (cache.isWanReplicationEnabled()) {
+                final CacheWanEventPublisher publisher = service.getCacheWanEventPublisher();
+                final CacheEntryView<Data, Data> view = CacheEntryViews.createDefaultEntryView(onHeapKey, onHeapValue, record);
+                publisher.publishWanReplicationUpdate(name, view);
             }
 
             iter.remove();

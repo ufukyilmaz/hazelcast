@@ -45,13 +45,21 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
         this.protocol = loadProtocol(properties);
         this.clientAuth = loadClientAuth(properties);
 
+        logInit();
+
+        sanityCheck(forClient);
+    }
+
+    private void logInit() {
+        if (openssl) {
+            logger.info("Using OpenSSL for SSL encryption.");
+        }
+
         if (logger.isFineEnabled()) {
             logger.fine("ciphersuites: " + (cipherSuites.isEmpty() ? "default" : cipherSuites));
             logger.fine("useOpenSSL: " + openssl);
             logger.fine("clientAuth: " + clientAuth);
         }
-
-        sanityCheck(forClient);
     }
 
 

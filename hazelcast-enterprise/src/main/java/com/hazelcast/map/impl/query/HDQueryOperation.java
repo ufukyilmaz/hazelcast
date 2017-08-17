@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hazelcast.spi.ExceptionAction.THROW_EXCEPTION;
+import static com.hazelcast.util.CollectionUtil.toIntArray;
 
 /**
  * Query operation that runs a query for the HD memory.
@@ -55,7 +56,7 @@ public class HDQueryOperation extends HDMapOperation implements ReadonlyOperatio
     void runPartitionScanOnPartitionThreadsAsync(final Query query, final QueryRunner queryRunner) {
         final List<Integer> initialPartitions = new ArrayList<Integer>(mapServiceContext.getOwnedPartitions());
         PartitionIteratingOperation opf = new PartitionIteratingOperation(
-                new HDQueryPartitionWithIndexOperationFactory(query), initialPartitions);
+                new HDQueryPartitionWithIndexOperationFactory(query), toIntArray(initialPartitions));
 
         final OperationServiceImpl ops = (OperationServiceImpl) getNodeEngine().getOperationService();
         ops.invokeOnTarget(MapService.SERVICE_NAME, opf, getNodeEngine().getThisAddress()).andThen(

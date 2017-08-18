@@ -1,5 +1,6 @@
 package com.hazelcast.nio.ssl;
 
+import com.hazelcast.IbmUtil;
 import io.netty.handler.ssl.OpenSsl;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -9,6 +10,7 @@ import java.util.Properties;
 
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 public class OpenSSLEngineFactory_initTest {
@@ -16,6 +18,7 @@ public class OpenSSLEngineFactory_initTest {
     @BeforeClass
     public static void checkOpenSsl() {
         assumeTrue(OpenSsl.isAvailable());
+        assumeFalse(IbmUtil.ibmJvm());
     }
 
     @Test

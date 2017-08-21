@@ -66,6 +66,10 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
         this.versions = resolveVersions(versions);
     }
 
+    public static String getCurrentVersion() {
+        return CURRENT_VERSION;
+    }
+
     /**
      * @return number of known previous Hazelcast versions (in order to test compatibility, a cluster consisting
      * of at least that many + 1 members should be started, so that all previous members and one current version

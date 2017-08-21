@@ -65,6 +65,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.cache.impl.AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE;
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
 
 /**
@@ -296,15 +297,29 @@ public class EnterpriseCacheService
         ((NodeEngineImpl) nodeEngine).getMetricsRegistry().deregister(cacheInfo);
     }
 
-    /**
-     * Destroys the distributed object for specified <code>object name/cache name</code>.
-     *
-     * @param objectName the name of object/cache to be destroyed.
-     */
     @Override
-    public void destroyDistributedObject(String objectName) {
-        destroySegments(objectName);
-        sendInvalidationEvent(objectName, null, SOURCE_NOT_AVAILABLE);
+    public void deleteCache(String name, String callerUuid, boolean destroy) {
+        CacheConfig config = deleteCacheConfig(name);
+        if (destroy) {
+            try {
+                cacheEventHandler.destroy(name, SOURCE_NOT_AVAILABLE);
+            } finally {
+                if (NATIVE == config.getInMemoryFormat()) {
+                    destroySegments(name);
+                } else {
+                    super.destroySegments(name);
+                }
+            }
+        } else {
+            closeSegments(name);
+        }
+        cacheContexts.remove(name);
+        operationProviderCache.remove(name);
+        deregisterAllListener(name);
+        setStatisticsEnabled(config, name, false);
+        setManagementEnabled(config, name, false);
+        deleteCacheStat(name);
+        deleteCacheResources(name);
     }
 
     /**
@@ -483,7 +498,7 @@ public class EnterpriseCacheService
     protected CacheOperationProvider createOperationProvider(String cacheNameWithPrefix,
                                                              InMemoryFormat inMemoryFormat) {
         EnterpriseCacheOperationProvider operationProvider;
-        if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
+        if (NATIVE.equals(inMemoryFormat)) {
             operationProvider = new HiDensityCacheOperationProvider(cacheNameWithPrefix);
         } else {
             operationProvider = new EnterpriseCacheOperationProvider(cacheNameWithPrefix);

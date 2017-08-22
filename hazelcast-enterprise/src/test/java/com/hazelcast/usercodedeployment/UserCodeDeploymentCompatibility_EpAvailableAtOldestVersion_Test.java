@@ -21,11 +21,14 @@ import com.hazelcast.config.UserCodeDeploymentConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.usercodedeployment.impl.filter.UserCodeDeploymentAbstractTest;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.CompatibilityTest;
+import org.junit.Assume;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -59,6 +62,12 @@ public class UserCodeDeploymentCompatibility_EpAvailableAtOldestVersion_Test ext
     @Override
     protected TestHazelcastInstanceFactory newFactory() {
         return new CompatibilityTestHazelcastInstanceFactory();
+    }
+
+    @Test
+    public void givenSomeMemberCanAccessTheEP_whenTheEPIsFilteredLocally_thenItWillBeLoadedOverNetwork_anonymousInnerClasses() {
+        Assume.assumeTrue(Versions.PREVIOUS_CLUSTER_VERSION.isGreaterThan(Versions.V3_8));
+        super.givenSomeMemberCanAccessTheEP_whenTheEPIsFilteredLocally_thenItWillBeLoadedOverNetwork_anonymousInnerClasses();
     }
 
     protected void executeSimpleTestScenario(Config config, Config epFilteredConfig, EntryProcessor<Integer, Integer> ep) {

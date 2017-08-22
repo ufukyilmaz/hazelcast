@@ -159,10 +159,10 @@ public class ClientAuthenticationTest {
     public void test(TestSettings settings) throws Exception {
         Properties serverProps = new Properties();
         if (settings.serverKeystore != null) {
-            serverProps.setProperty("javax.net.ssl.keyStore", loadFile(settings.serverKeystore));
+            serverProps.setProperty("javax.net.ssl.keyStore", makeFile(settings.serverKeystore));
         }
         if (settings.serverTruststore != null) {
-            serverProps.setProperty("javax.net.ssl.trustStore", loadFile(settings.serverTruststore));
+            serverProps.setProperty("javax.net.ssl.trustStore", makeFile(settings.serverTruststore));
         }
         serverProps.setProperty("javax.net.ssl.keyStorePassword", "password");
         serverProps.setProperty("javax.net.ssl.trustStorePassword", "password");
@@ -189,10 +189,10 @@ public class ClientAuthenticationTest {
 
         Properties clientProps = new Properties();
         if (settings.clientKeystore != null) {
-            clientProps.setProperty("javax.net.ssl.keyStore", loadFile(settings.clientKeystore));
+            clientProps.setProperty("javax.net.ssl.keyStore", makeFile(settings.clientKeystore));
         }
         if (settings.clientTruststore != null) {
-            clientProps.setProperty("javax.net.ssl.trustStore", loadFile(settings.clientTruststore));
+            clientProps.setProperty("javax.net.ssl.trustStore", makeFile(settings.clientTruststore));
         }
         clientProps.setProperty("javax.net.ssl.keyStorePassword", "password");
         clientProps.setProperty("javax.net.ssl.trustStorePassword", "password");
@@ -219,8 +219,8 @@ public class ClientAuthenticationTest {
         String mutualAuthentication;
     }
 
-    public static String loadFile(String path) throws IOException {
-        String resourcePath = "com/hazelcast/nio/ssl-mutual-auth/" + path;
+    public static String makeFile(String relativePath) throws IOException {
+        String resourcePath = "com/hazelcast/nio/ssl-mutual-auth/" + relativePath;
         //String resourcePath = "com/hazelcast/nio/ssl-mutual-auth/readme.txt";
         ClassLoader cl = TestKeyStoreUtil.class.getClassLoader();
         InputStream resourceAsStream = cl.getResourceAsStream(resourcePath);

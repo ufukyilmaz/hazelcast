@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan;
 
+import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.config.WanPublisherConfig;
@@ -7,24 +8,26 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
-import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.FragmentedMigrationAwareService;
 import com.hazelcast.spi.LiveOperations;
 import com.hazelcast.spi.LiveOperationsTracker;
-import com.hazelcast.spi.MigrationAwareService;
+import com.hazelcast.spi.ObjectNamespace;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionMigrationEvent;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.spi.ServiceNamespace;
 import com.hazelcast.spi.partition.MigrationEndpoint;
 import com.hazelcast.util.ConstructorFunction;
 import com.hazelcast.util.MapUtil;
@@ -35,8 +38,10 @@ import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,8 +58,8 @@ import static com.hazelcast.util.ThreadUtil.createThreadName;
  * Enterprise implementation for WAN replication.
  */
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
-public class EnterpriseWanReplicationService implements WanReplicationService, MigrationAwareService, PostJoinAwareService,
-        LiveOperationsTracker {
+public class EnterpriseWanReplicationService implements WanReplicationService, FragmentedMigrationAwareService,
+        PostJoinAwareService, LiveOperationsTracker {
 
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
     private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 1000;
@@ -126,49 +131,6 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
     }
 
     @Override
-    public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
-        if (wanReplications.isEmpty()) {
-            return null;
-        }
-
-        int partitionId = event.getPartitionId();
-        EWRMigrationContainer migrationData = new EWRMigrationContainer();
-        Set<Map.Entry<String, WanReplicationPublisherDelegate>> entrySet = wanReplications.entrySet();
-        for (Map.Entry<String, WanReplicationPublisherDelegate> entry : entrySet) {
-            String wanReplicationName = entry.getKey();
-            WanReplicationPublisherDelegate publisherDelegate = entry.getValue();
-            for (WanReplicationEndpoint endpoint : publisherDelegate.getEndpoints().values()) {
-                AbstractWanPublisher wanReplication = (AbstractWanPublisher) endpoint;
-                PublisherQueueContainer publisherQueueContainer = endpoint.getPublisherQueueContainer();
-                Map<Integer, PartitionWanEventContainer> eventQueueMap
-                        = publisherQueueContainer.getPublisherEventQueueMap();
-                if (eventQueueMap.get(partitionId) != null) {
-                    PartitionWanEventContainer partitionWanEventContainer
-                            = eventQueueMap.get(partitionId);
-                    PartitionWanEventQueueMap eligibleMapEventQueues
-                            = partitionWanEventContainer.getMapEventQueueMapByBackupCount(event.getReplicaIndex());
-                    PartitionWanEventQueueMap eligibleCacheEventQueues
-                            = partitionWanEventContainer.getCacheEventQueueMapByBackupCount(event.getReplicaIndex());
-                    if (!eligibleMapEventQueues.isEmpty()) {
-                        migrationData.addMapEventQueueMap(wanReplicationName,
-                                wanReplication.getTargetGroupName(), eligibleMapEventQueues);
-                    }
-                    if (!eligibleCacheEventQueues.isEmpty()) {
-                        migrationData.addCacheEventQueueMap(wanReplicationName,
-                                wanReplication.getTargetGroupName(), eligibleCacheEventQueues);
-                    }
-                }
-            }
-        }
-
-        if (migrationData.isEmpty()) {
-            return null;
-        } else {
-            return new EWRQueueReplicationOperation(migrationData, event.getPartitionId(), event.getReplicaIndex());
-        }
-    }
-
-    @Override
     public void beforeMigration(PartitionMigrationEvent event) {
     }
 
@@ -188,16 +150,13 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
 
     private void clearMigrationData(int partitionId) {
         for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
-            Map<String, WanReplicationEndpoint> wanReplicationEndpoints = wanReplication.getEndpoints();
-            if (wanReplicationEndpoints != null) {
-                for (WanReplicationEndpoint wanReplicationEndpoint : wanReplicationEndpoints.values()) {
-                    if (wanReplicationEndpoint != null) {
-                        PublisherQueueContainer publisherQueueContainer
-                                = wanReplicationEndpoint.getPublisherQueueContainer();
-                        PartitionWanEventContainer eventQueueContainer
-                                = publisherQueueContainer.getPublisherEventQueueMap().get(partitionId);
-                        eventQueueContainer.clear();
-                    }
+            for (WanReplicationEndpoint endpoint : wanReplication.getEndpoints()) {
+                if (endpoint != null) {
+                    final PublisherQueueContainer publisherQueueContainer
+                            = endpoint.getPublisherQueueContainer();
+                    final PartitionWanEventContainer eventQueueContainer
+                            = publisherQueueContainer.getPublisherEventQueueMap().get(partitionId);
+                    eventQueueContainer.clear();
                 }
             }
         }
@@ -253,8 +212,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
             throw new InvalidConfigurationException("WAN Replication Config doesn't exist with WAN configuration name "
                     + wanReplicationName + " and publisher target group name " + groupName);
         }
-        final Map<String, WanReplicationEndpoint> endpoints = publisherDelegate.getEndpoints();
-        return endpoints.get(groupName);
+        return publisherDelegate.getEndpoint(groupName);
     }
 
     /**
@@ -341,7 +299,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
     public void populate(LiveOperations liveOperations) {
         // populate for all WanSyncOperation
         for (WanReplicationPublisherDelegate delegate : wanReplications.values()) {
-            for (WanReplicationEndpoint endpoint : delegate.getEndpoints().values()) {
+            for (WanReplicationEndpoint endpoint : delegate.getEndpoints()) {
                 if (endpoint instanceof LiveOperationsTracker) {
                     ((LiveOperationsTracker) endpoint).populate(liveOperations);
                 }
@@ -351,6 +309,46 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
         for (Operation op : this.liveOperations) {
             liveOperations.add(op.getCallerAddress(), op.getCallId());
         }
+    }
+
+    @Override
+    public Collection<ServiceNamespace> getAllServiceNamespaces(PartitionReplicationEvent event) {
+        if (wanReplications.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        final Set<ServiceNamespace> namespaces = new HashSet<ServiceNamespace>();
+        for (WanReplicationPublisherDelegate publisher : wanReplications.values()) {
+            publisher.collectAllServiceNamespaces(event, namespaces);
+        }
+        return namespaces;
+    }
+
+    @Override
+    public boolean isKnownServiceNamespace(ServiceNamespace namespace) {
+        final String serviceName = namespace.getServiceName();
+        return namespace instanceof ObjectNamespace
+                && (MapService.SERVICE_NAME.equals(serviceName) || CacheService.SERVICE_NAME.equals(serviceName));
+    }
+
+
+    @Override
+    public Operation prepareReplicationOperation(PartitionReplicationEvent event, Collection<ServiceNamespace> namespaces) {
+        if (wanReplications.isEmpty() || namespaces.isEmpty()) {
+            return null;
+        }
+        final EWRMigrationContainer migrationData = new EWRMigrationContainer();
+        for (WanReplicationPublisherDelegate delegate : wanReplications.values()) {
+            delegate.collectReplicationData(event, namespaces, migrationData);
+        }
+
+        return migrationData.isEmpty() ? null
+                : new EWRQueueReplicationOperation(migrationData, event.getPartitionId(), event.getReplicaIndex());
+    }
+
+    @Override
+    public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
+        return prepareReplicationOperation(event, getAllServiceNamespaces(event));
     }
 
     /**
@@ -475,12 +473,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, M
     @Override
     public void shutdown() {
         for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
-            Map<String, WanReplicationEndpoint> wanReplicationEndpoints = wanReplication.getEndpoints();
-            if (wanReplicationEndpoints != null) {
-                for (WanReplicationEndpoint wanReplicationEndpoint : wanReplicationEndpoints.values()) {
-                    if (wanReplicationEndpoint != null) {
-                        wanReplicationEndpoint.shutdown();
-                    }
+            for (WanReplicationEndpoint endpoint : wanReplication.getEndpoints()) {
+                if (endpoint != null) {
+                    endpoint.shutdown();
                 }
             }
         }

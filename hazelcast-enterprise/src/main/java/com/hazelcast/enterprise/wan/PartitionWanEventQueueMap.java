@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.hazelcast.nio.serialization.SerializableByConvention.Reason.PUBLIC_API;
 
 /**
- * WAN event queue map of a partition.
+ * WAN event queue map of a partition and a specific service (map/cache).
  * Contains all map/cache event queues of a partition.
  */
 @SerializableByConvention(PUBLIC_API)
@@ -37,7 +37,7 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanRepl
     }
 
     private WanReplicationEventQueue getOrCreateEventQueue(String dataStructureName, int backupCount) {
-        WanReplicationEventQueue eventQueue =  get(dataStructureName);
+        WanReplicationEventQueue eventQueue = get(dataStructureName);
         if (eventQueue == null) {
             synchronized (mutex) {
                 eventQueue = get(dataStructureName);
@@ -47,7 +47,7 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanRepl
                 }
             }
         }
-        return  eventQueue;
+        return eventQueue;
     }
 
     @Override

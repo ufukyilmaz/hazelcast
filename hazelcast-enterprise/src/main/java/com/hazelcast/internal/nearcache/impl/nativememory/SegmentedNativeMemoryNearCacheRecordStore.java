@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector.ALWAYS_FRESH;
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static java.lang.Runtime.getRuntime;
@@ -44,6 +45,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     private final HazelcastMemoryManager memoryManager;
     private final NativeMemoryNearCacheRecordStore<K, V>[] segments;
     private final NearCachePreloader<Data> nearCachePreloader;
+    private final boolean evictionDisabled;
 
     private volatile StaleReadDetector staleReadDetector = ALWAYS_FRESH;
 
@@ -56,7 +58,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         this.classLoader = classLoader;
         this.nearCacheStats = new NearCacheStatsImpl();
         this.memoryManager = getMemoryManager(serializationService);
-
+        this.evictionDisabled = nearCacheConfig.getEvictionConfig().getEvictionPolicy() == NONE;
         int concurrencyLevel = Math.max(16, 8 * getRuntime().availableProcessors());
         // find power-of-two sizes best matching arguments
         int segmentShift = 0;
@@ -243,6 +245,11 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void doEvictionIfRequired() {
+        if (evictionDisabled) {
+            // if eviction disabled, we are going to short-circuit the currently extremely expensive eviction
+            return;
+        }
+
         Thread currentThread = Thread.currentThread();
         for (int i = 0; i < segments.length; i++) {
             if (currentThread.isInterrupted()) {
@@ -255,6 +262,11 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void doEviction() {
+        if (evictionDisabled) {
+            // if eviction disabled, we are going to short-circuit the currently extremely expensive eviction
+            return;
+        }
+
         Thread currentThread = Thread.currentThread();
         for (int i = 0; i < segments.length; i++) {
             if (currentThread.isInterrupted()) {

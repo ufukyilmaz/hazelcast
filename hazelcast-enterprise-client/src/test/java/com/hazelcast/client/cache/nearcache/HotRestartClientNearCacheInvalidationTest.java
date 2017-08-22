@@ -27,8 +27,6 @@ import java.util.Collection;
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.getBaseDir;
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
-import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
-import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.nio.IOUtil.deleteQuietly;
 
 /**
@@ -76,7 +74,6 @@ public class HotRestartClientNearCacheInvalidationTest extends ClientNearCacheIn
     @Override
     protected Config getConfig() {
         Config config = super.getConfig();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE);
         config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         config.getNativeMemoryConfig()
@@ -93,7 +90,6 @@ public class HotRestartClientNearCacheInvalidationTest extends ClientNearCacheIn
     @Override
     protected ClientConfig createClientConfig() {
         ClientConfig clientConfig = super.createClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
 
         clientConfig.getNativeMemoryConfig()
                 .setEnabled(true)

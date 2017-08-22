@@ -8,10 +8,10 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
@@ -28,6 +28,7 @@ import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.getBaseDir;
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.nio.IOUtil.deleteQuietly;
 
 /**
@@ -35,7 +36,7 @@ import static com.hazelcast.nio.IOUtil.deleteQuietly;
  * with hot restart enabled.
  */
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({SlowTest.class})
 public class HotRestartClientNearCacheInvalidationTest extends ClientNearCacheInvalidationTest {
 
@@ -75,7 +76,7 @@ public class HotRestartClientNearCacheInvalidationTest extends ClientNearCacheIn
     @Override
     protected Config getConfig() {
         Config config = super.getConfig();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE);
         config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         config.getNativeMemoryConfig()

@@ -3,6 +3,7 @@ package com.hazelcast.map.impl;
 import com.hazelcast.map.impl.event.MapEventPublishingService;
 import com.hazelcast.spi.ClientAwareService;
 import com.hazelcast.spi.EventPublishingService;
+import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.RemoteService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.SplitBrainHandlerService;
@@ -16,8 +17,8 @@ import com.hazelcast.spi.impl.CountingMigrationAwareService;
  */
 class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
 
-    EnterpriseMapServiceFactory(EnterpriseMapServiceContext mapServiceContext) {
-        super(mapServiceContext);
+    EnterpriseMapServiceFactory(NodeEngine nodeEngine, EnterpriseMapServiceContext mapServiceContext) {
+        super(nodeEngine, mapServiceContext);
     }
 
     @Override

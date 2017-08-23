@@ -14,7 +14,7 @@ public final class EnterpriseMapServiceConstructor {
         public MapService createNew(NodeEngine nodeEngine) {
             EnterpriseMapServiceContext enterpriseMapServiceContext = new EnterpriseMapServiceContextImpl(nodeEngine);
             MapServiceFactory factory
-                    = new EnterpriseMapServiceFactory(enterpriseMapServiceContext);
+                    = new EnterpriseMapServiceFactory(nodeEngine, enterpriseMapServiceContext);
             return factory.createMapService();
         }
     };

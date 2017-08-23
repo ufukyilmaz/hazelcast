@@ -78,8 +78,6 @@ public class UserCodeDeploymentCompatibility_EpAvailableAtLatestVersion_Test ext
         HazelcastInstance instanceWithNewEp = factory.newHazelcastInstance(config);
 
         try {
-            factory.newHazelcastInstance(epFilteredConfig);
-
             IMap<Integer, Integer> map = instanceWithNewEp.getMap(randomName());
 
             for (int i = 0; i < keyCount; i++) {

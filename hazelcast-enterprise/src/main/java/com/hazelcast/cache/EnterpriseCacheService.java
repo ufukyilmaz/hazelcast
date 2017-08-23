@@ -10,7 +10,6 @@ import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperatio
 import com.hazelcast.cache.hotrestart.HotRestartEnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.CacheContext;
 import com.hazelcast.cache.impl.CacheEventContext;
-import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.CacheService;

@@ -13,6 +13,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import javax.crypto.Cipher;
 import java.security.NoSuchAlgorithmException;
 
 import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
@@ -71,8 +72,8 @@ public class CipherHelperTest extends HazelcastTestSupport {
     @Test
     public void testCreateReaderCipher_withInvalidConfiguration_expectConnectionClose() {
         try {
-            createSymmetricReaderCipher(invalidConfiguration, mockedConnection);
-            fail("Expected an exception to be thrown!");
+            Cipher cipher = createSymmetricReaderCipher(invalidConfiguration, mockedConnection);
+            fail("Cipher creation should have failed! -> Algorithm: " + (cipher != null ? cipher.getAlgorithm() : "<none>"));
         } catch (Exception e) {
             verifyConnectionIsClosed(mockedConnection);
         }
@@ -81,8 +82,8 @@ public class CipherHelperTest extends HazelcastTestSupport {
     @Test
     public void testCreateWriterCipher_withInvalidConfiguration_expectConnectionClose() {
         try {
-            createSymmetricWriterCipher(invalidConfiguration, mockedConnection);
-            fail("Expected an exception to be thrown!");
+            Cipher cipher = createSymmetricWriterCipher(invalidConfiguration, mockedConnection);
+            fail("Cipher creation should have failed! -> Algorithm: " + (cipher != null ? cipher.getAlgorithm() : "<none>"));
         } catch (Exception e) {
             verifyConnectionIsClosed(mockedConnection);
         }

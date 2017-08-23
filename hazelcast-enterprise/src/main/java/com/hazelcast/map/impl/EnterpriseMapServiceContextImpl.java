@@ -27,6 +27,7 @@ import com.hazelcast.map.impl.query.PartitionScanExecutor;
 import com.hazelcast.map.impl.query.PartitionScanRunner;
 import com.hazelcast.map.impl.query.QueryRunner;
 import com.hazelcast.map.impl.query.ResultProcessorRegistry;
+import com.hazelcast.map.impl.record.HDRecordComparator;
 import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStore;
@@ -64,8 +65,7 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
  * @see MapServiceContext
  */
 @SuppressWarnings("checkstyle:classfanoutcomplexity")
-class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
-        implements EnterpriseMapServiceContext, RamStoreRegistry {
+class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements EnterpriseMapServiceContext, RamStoreRegistry {
 
     private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS = 10;
 
@@ -105,10 +105,18 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         return new EnterpriseMapOperationProviders(this);
     }
 
+    @Override
+    void initRecordComparators() {
+        super.initRecordComparators();
+        recordComparatorMap.put(InMemoryFormat.NATIVE, new HDRecordComparator(serializationService));
+    }
+
+    @Override
     public HotRestartStore getOnHeapHotRestartStoreForPartition(int partitionId) {
         return hotRestartService.getOnHeapHotRestartStoreForPartition(partitionId);
     }
 
+    @Override
     public HotRestartStore getOffHeapHotRestartStoreForPartition(int partitionId) {
         return hotRestartService.getOffHeapHotRestartStoreForPartition(partitionId);
     }

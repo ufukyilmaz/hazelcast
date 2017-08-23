@@ -2,7 +2,6 @@ package com.hazelcast.map.impl.record;
 
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
@@ -61,29 +60,6 @@ public class HDRecordFactory implements RecordFactory<Data> {
     public void setValue(Record<Data> record, Object value) {
         Data data = serializationService.toNativeData(value, memoryManager);
         record.setValue(data);
-    }
-
-    @Override
-    public boolean isEquals(Object incomingValue, Object existingValue) {
-        if (incomingValue == existingValue) {
-            return true;
-        }
-        if (incomingValue == null || existingValue == null) {
-            return false;
-        }
-
-        if (!(incomingValue instanceof Data)) {
-            incomingValue = serializationService.toData(incomingValue);
-        }
-        if (!(existingValue instanceof Data)) {
-            existingValue = serializationService.toData(existingValue);
-        }
-
-        if (existingValue instanceof NativeMemoryData) {
-            return NativeMemoryDataUtil.equals(((NativeMemoryData) existingValue).address(), ((Data) incomingValue));
-        } else {
-            return existingValue.equals(incomingValue);
-        }
     }
 
     public HiDensityRecordProcessor<HDRecord> getRecordProcessor() {

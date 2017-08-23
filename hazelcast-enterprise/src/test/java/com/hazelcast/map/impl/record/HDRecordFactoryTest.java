@@ -56,31 +56,6 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
     }
 
     @Test
-    @Override
-    public void testIsEquals() {
-        EnterpriseSerializationService ess = ((EnterpriseSerializationService) serializationService);
-        NativeMemoryData nativeMemoryData1 = ess.toNativeData(object1, memoryManager);
-        NativeMemoryData nativeMemoryData2 = ess.toNativeData(object2, memoryManager);
-
-        super.testIsEquals();
-        assertTrue(factory.isEquals(object1, nativeMemoryData1));
-        assertTrue(factory.isEquals(data1, nativeMemoryData1));
-        assertTrue(factory.isEquals(nativeMemoryData1, object1));
-        assertTrue(factory.isEquals(nativeMemoryData1, data1));
-        assertTrue(factory.isEquals(nativeMemoryData1, nativeMemoryData1));
-
-        assertFalse(factory.isEquals(null, nativeMemoryData1));
-        assertFalse(factory.isEquals(object1, nativeMemoryData2));
-        assertFalse(factory.isEquals(data1, nativeMemoryData2));
-        assertFalse(factory.isEquals(nullData, nativeMemoryData2));
-        assertFalse(factory.isEquals(nativeMemoryData1, null));
-        assertFalse(factory.isEquals(nativeMemoryData1, nullData));
-        assertFalse(factory.isEquals(nativeMemoryData1, nativeMemoryData2));
-        assertFalse(factory.isEquals(nativeMemoryData1, data2));
-        assertFalse(factory.isEquals(nativeMemoryData1, object2));
-    }
-
-    @Test
     public void testGetRecordProcessor() {
         newRecordFactory(false, CacheDeserializedValues.ALWAYS);
 

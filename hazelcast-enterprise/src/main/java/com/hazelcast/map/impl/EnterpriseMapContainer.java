@@ -34,7 +34,7 @@ public class EnterpriseMapContainer extends MapContainer {
 
     private HiDensityStorageInfo storageInfo;
 
-    public EnterpriseMapContainer(final String name, final Config config, MapServiceContext mapServiceContext) {
+    EnterpriseMapContainer(final String name, final Config config, MapServiceContext mapServiceContext) {
         super(name, config, mapServiceContext);
     }
 
@@ -76,7 +76,6 @@ public class EnterpriseMapContainer extends MapContainer {
         }
     }
 
-
     private HiDensityRecordProcessor<HDRecord> createHiDensityRecordProcessor() {
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
         EnterpriseSerializationService serializationService
@@ -113,6 +112,4 @@ public class EnterpriseMapContainer extends MapContainer {
         ((NodeEngineImpl) mapServiceContext.getNodeEngine()).getMetricsRegistry()
                 .deregister(storageInfo);
     }
-
 }
-

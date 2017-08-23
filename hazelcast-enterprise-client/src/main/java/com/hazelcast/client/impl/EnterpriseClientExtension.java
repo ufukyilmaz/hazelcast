@@ -120,7 +120,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         SSLConfig sslConfig = networkConfig.getSSLConfig();
         if (sslConfig != null && sslConfig.isEnabled()) {
             LOGGER.info("SSL is enabled");
-            return new SSLSocketChannelWrapperFactory(sslConfig);
+            return new SSLSocketChannelWrapperFactory(sslConfig, true);
         }
         return super.createSocketChannelWrapperFactory();
     }

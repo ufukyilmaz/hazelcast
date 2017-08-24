@@ -28,6 +28,11 @@ public class OpenSSLEngineFactory_initTest {
 
     @Test
     public void openssl_whenDisabled() throws Exception {
+        // When OpenSSL is disabled and Java 6 is used, Java 6 will complain about TLSv1.2 since it isn't supported.
+        // Normally a customer will never disable openssl while using the OpenSSLEngineFactory; the flag was added
+        // mostly for testing purposes.
+        // Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1622
+        assumeFalse(System.getProperty("java.version").startsWith("1.6."));
         openssl(false);
     }
 

@@ -18,6 +18,7 @@ import java.util.Random;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMallocTest.fillBlock;
 import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMallocTest.verifyBlock;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -32,26 +33,25 @@ public class MmapSlabTest {
     @Rule
     public final TestName testName = new TestName();
 
-    private File baseDir;
+    private File testingHome;
     private MmapSlab mm;
 
     @Before
     public void setUp() {
-        baseDir = isolatedFolder(getClass(), testName);
-        delete(baseDir);
-        baseDir.mkdirs();
-        mm = new MmapSlab(baseDir, BLOCK_SIZE);
+        testingHome = isolatedFolder(getClass(), testName);
+        createFolder(testingHome);
+        mm = new MmapSlab(testingHome, BLOCK_SIZE);
     }
 
     @After
     public void tearDown() {
         mm.dispose();
-        delete(baseDir);
+        delete(testingHome);
     }
 
     @Test(expected = HotRestartException.class)
     public void when_basedirDoesntExist_then_instantiationFails() {
-        mm = new MmapSlab(new File(baseDir, "bogusDirectory"), BLOCK_SIZE);
+        mm = new MmapSlab(new File(testingHome, "bogusDirectory"), BLOCK_SIZE);
     }
 
     @Test

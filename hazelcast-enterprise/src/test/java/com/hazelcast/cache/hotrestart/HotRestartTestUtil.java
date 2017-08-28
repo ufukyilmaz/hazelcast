@@ -13,7 +13,7 @@ public class HotRestartTestUtil {
     private static final AtomicInteger INSTANCE_INDEX = new AtomicInteger();
 
     public static File isolatedFolder(Class<?> testClass, TestName testName) {
-        return new File(toFileName(testClass.getSimpleName() + '_' + testName.getMethodName()));
+        return new File(toFileName(testClass.getSimpleName() + '_' + testName.getMethodName())).getAbsoluteFile();
     }
 
     public static void createFolder(File folder) {

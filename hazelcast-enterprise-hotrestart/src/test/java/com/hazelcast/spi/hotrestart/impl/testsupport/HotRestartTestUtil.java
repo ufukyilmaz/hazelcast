@@ -51,6 +51,7 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.nio.IOUtil.deleteQuietly;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_FNAME_SUFFIX;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
@@ -82,9 +83,13 @@ public class HotRestartTestUtil {
         }
     }
 
-    public static void exercise(MockStoreRegistry reg, HotRestartStoreConfig cfg, TestProfile profile) throws Exception {
+    public static void exercise(MockStoreRegistry reg, HotRestartStoreConfig cfg, TestProfile profile) {
         final Histogram hist = new Histogram(3);
+        FileOutputStream out = null;
         try {
+            File file = new File(cfg.homeDir(), "../latency-histogram.txt");
+            out = new FileOutputStream(file);
+
             logger.info("Updating db");
             final long testStart = System.nanoTime();
             final long outlierThresholdNanos = MILLISECONDS.toNanos(15);
@@ -117,10 +122,11 @@ public class HotRestartTestUtil {
             reg.closeHotRestartStore();
             reg.disposeRecordStores();
             logger.severe("Error while exercising Hot Restart store", e);
-            throw e;
+            throw new RuntimeException("Error while exercising Hot Restart store", e);
         } finally {
-            hist.outputPercentileDistribution(
-                    new PrintStream(new FileOutputStream(new File(cfg.homeDir(), "../latency-histogram.txt"))), 1e3);
+            if (out != null) {
+                hist.outputPercentileDistribution(new PrintStream(out), 1e3);
+            }
         }
     }
 
@@ -222,6 +228,13 @@ public class HotRestartTestUtil {
         return new File(toFileName(testClass.getSimpleName()) + '_' + toFileName(testName.getMethodName()));
     }
 
+    public static void createFolder(File folder) {
+        deleteQuietly(folder);
+        if (!folder.mkdir() && !folder.exists()) {
+            throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
+        }
+    }
+
     public static HotRestartStoreConfig hrStoreConfig(File testingHome) {
         final LoggingService loggingService = createLoggingService();
         logger = loggingService.getLogger(LOGGER_NAME);
@@ -232,7 +245,7 @@ public class HotRestartTestUtil {
                 .setMetricsRegistry(metricsRegistry(loggingService));
     }
 
-    public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) throws Exception {
+    public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) {
         logger.info("Creating mock store registry");
         final long start = System.nanoTime();
         final MemoryManagerBean memMgr = malloc != null ? new MemoryManagerBean(malloc, AMEM) : null;

@@ -45,6 +45,7 @@ public class ChunkExceptionOnCloseTest {
     }
 
     private static class CloseFailingActiveChunk extends ActiveValChunk {
+
         CloseFailingActiveChunk() {
             super(0, null, null, null);
         }

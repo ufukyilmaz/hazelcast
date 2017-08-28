@@ -15,13 +15,13 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createGcHelper;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.generateRandomRecords;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
@@ -46,14 +46,15 @@ public class ChunkFileCursorIntegrationTest {
 
     private final AtomicInteger counter = new AtomicInteger();
 
+    private File testingHome;
     private GcHelper gcHelper;
-    private File homeDir;
     private ChunkFileCursor cursor;
 
     @Before
     public void before() {
-        homeDir = isolatedFolder(getClass(), testName);
-        gcHelper = createGcHelper(homeDir);
+        testingHome = isolatedFolder(getClass(), testName);
+        createFolder(testingHome);
+        gcHelper = createGcHelper(testingHome);
     }
 
     @After
@@ -61,7 +62,7 @@ public class ChunkFileCursorIntegrationTest {
         if (cursor != null) {
             cursor.close();
         }
-        delete(homeDir);
+        delete(testingHome);
     }
 
     @Test
@@ -125,7 +126,7 @@ public class ChunkFileCursorIntegrationTest {
         cursor.advance();
     }
 
-    private void removeLastByte(File chunkFile) throws IOException {
+    private void removeLastByte(File chunkFile) throws Exception {
         final RandomAccessFile raf = new RandomAccessFile(chunkFile, "rw");
         raf.setLength(raf.length() - 1);
         raf.close();

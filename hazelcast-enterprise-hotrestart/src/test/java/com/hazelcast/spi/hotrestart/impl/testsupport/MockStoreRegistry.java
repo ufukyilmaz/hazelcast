@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOnHeapHotRestartStore;
+import static com.hazelcast.test.HazelcastTestSupport.assertJoinable;
 
 public class MockStoreRegistry implements RamStoreRegistry {
 
@@ -25,7 +26,7 @@ public class MockStoreRegistry implements RamStoreRegistry {
     private final MemoryManager memMgr;
     private final File backupDir;
 
-    public MockStoreRegistry(HotRestartStoreConfig cfg, MemoryManager memMgr, boolean fsyncEnabled) throws InterruptedException {
+    public MockStoreRegistry(HotRestartStoreConfig cfg, MemoryManager memMgr, boolean fsyncEnabled) {
         this.memMgr = memMgr;
         this.fsyncEnabled = fsyncEnabled;
         cfg.setRamStoreRegistry(this);
@@ -50,7 +51,7 @@ public class MockStoreRegistry implements RamStoreRegistry {
         } catch (Throwable t) {
             throw new HotRestartException("ramStoreRestartLoop failed", t);
         }
-        restartIoThread.join();
+        assertJoinable(restartIoThread);
         if (failure[0] != null) {
             throw new HotRestartException("hotRestart IO thread failed", failure[0]);
         }

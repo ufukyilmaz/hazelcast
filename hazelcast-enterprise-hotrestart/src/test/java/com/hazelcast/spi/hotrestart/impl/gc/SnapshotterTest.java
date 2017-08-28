@@ -31,6 +31,7 @@ import static com.hazelcast.spi.hotrestart.impl.gc.Snapshotter.CHUNK_SNAPSHOT_FN
 import static com.hazelcast.spi.hotrestart.impl.gc.Snapshotter.SOURCE_CHUNK_FLAG_MASK;
 import static com.hazelcast.spi.hotrestart.impl.gc.Snapshotter.SURVIVOR_FLAG_MASK;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createBaseDiContainer;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -44,7 +45,7 @@ public class SnapshotterTest {
     public final TestName testName = new TestName();
 
     private Snapshotter snapshotter;
-    private File homeDir;
+    private File testingHome;
     private ChunkManager chunkMgr;
     private GcHelper gcHelper;
 
@@ -56,11 +57,11 @@ public class SnapshotterTest {
 
     @Before
     public void before() throws Exception {
-        homeDir = isolatedFolder(getClass(), testName);
-        homeDir.mkdirs();
+        testingHome = isolatedFolder(getClass(), testName);
+        createFolder(testingHome);
         final DiContainer di = createBaseDiContainer();
         snapshotter = di.dep(di)
-                .dep("homeDir", homeDir)
+                .dep("homeDir", testingHome)
                 .dep("storeName", "test-hrstore")
                 .dep(GcHelper.class, OnHeap.class)
                 .dep(BackupExecutor.class, mock(BackupExecutor.class))
@@ -74,7 +75,7 @@ public class SnapshotterTest {
 
     @After
     public void after() {
-        delete(homeDir);
+        delete(testingHome);
     }
 
     @Test
@@ -87,7 +88,7 @@ public class SnapshotterTest {
         chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
         chunkMgr.survivors.put(chunkSeq++, setupTombChunk());
         snapshotter.takeChunkSnapshotAsNeeded();
-        final DataInputStream in = new DataInputStream(new FileInputStream(new File(homeDir, CHUNK_SNAPSHOT_FNAME)));
+        final DataInputStream in = new DataInputStream(new FileInputStream(new File(testingHome, CHUNK_SNAPSHOT_FNAME)));
         try {
             assertTrue(in.readLong() > 0);
             assertEquals(4, in.readInt());

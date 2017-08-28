@@ -30,6 +30,7 @@ import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.HotRestarter.BUFFER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.assertRecordEquals;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createGcHelper;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.mockito.Mockito.mock;
@@ -46,20 +47,21 @@ public class ChunkFileOutIntegrationTest {
 
     private final AtomicInteger counter = new AtomicInteger(1);
 
+    private File testingHome;
     private GcHelper gcHelper;
-    private File homeDir;
     private DataInputStream input;
 
     @Before
     public void before() {
-        homeDir = isolatedFolder(getClass(), testName);
-        gcHelper = createGcHelper(homeDir);
+        testingHome = isolatedFolder(getClass(), testName);
+        createFolder(testingHome);
+        gcHelper = createGcHelper(testingHome);
     }
 
     @After
     public void after() {
         closeResource(input);
-        delete(homeDir);
+        delete(testingHome);
     }
 
     @Test

@@ -33,8 +33,10 @@ public class SetOfKeyHandleTest extends AbstractOnHeapOffHeapTest {
     }
 
     @After
+    @Override
     public void destroy() {
         set.dispose();
+        super.destroy();
     }
 
     @Test

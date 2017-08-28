@@ -38,8 +38,10 @@ public class TrackerMapTest extends AbstractOnHeapOffHeapTest {
     }
 
     @After
+    @Override
     public void destroy() {
         m.dispose();
+        super.destroy();
     }
 
     @Test

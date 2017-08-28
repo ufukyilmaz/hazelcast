@@ -12,7 +12,7 @@ import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PER
 
 public abstract class TestProfile {
 
-    protected static final long[] EMPTY_PREFIXES = {};
+    static final long[] EMPTY_PREFIXES = {};
 
     public long exerciseTimeSeconds = 20;
     public int testCycleCount = 2;
@@ -124,6 +124,7 @@ public abstract class TestProfile {
     }
 
     public static class Default extends TestProfile {
+
         private final List<Long> prefixes = new ArrayList<Long>();
 
         @Override

@@ -54,8 +54,12 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
             // here object conversion is for interceptors.
             Object value = hasInterceptor ? mapServiceContext.toObject(dataValue) : dataValue;
             Object previousValue = recordStore.putFromLoad(key, value);
+            // the following check is for the case when the putFromLoad does not put the data due to various reasons
+            // one of the reasons may be size eviction threshold has been reached
+            if (value != null && !recordStore.existInMemory(key)) {
+                continue;
+            }
 
-            callAfterPutInterceptors(value);
             // do not run interceptors in case the put was skipped due to null value
             if (value != null) {
                 callAfterPutInterceptors(value);

@@ -40,6 +40,13 @@ public class HDPutFromLoadAllBackupOperation extends HDMapOperation implements B
             final Data value = keyValueSequence.get(i + 1);
             final Object object = mapServiceContext.toObject(value);
             recordStore.putFromLoadBackup(key, object);
+
+            // added here for the sake of completness - if someone wants to add sth to the loop in the future
+            // the following check is for the case when the putFromLoad does not put the data due to various reasons
+            // one of the reasons may be size eviction threshold has been reached
+            if (!recordStore.existInMemory(key)) {
+                continue;
+            }
         }
     }
 

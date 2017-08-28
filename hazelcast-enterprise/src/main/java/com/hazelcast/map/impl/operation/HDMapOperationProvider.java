@@ -82,8 +82,8 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createDeleteOperation(String name, Data key) {
-        return new HDDeleteOperation(name, key);
+    public MapOperation createDeleteOperation(String name, Data key, boolean disableWanReplicationEvent) {
+        return new HDDeleteOperation(name, key, disableWanReplicationEvent);
     }
 
     @Override

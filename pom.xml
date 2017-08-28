@@ -44,7 +44,7 @@
 
         <log4j2.version>2.3</log4j2.version>
         <mockito.all.version>1.10.19</mockito.all.version>
-
+        <bytebuddy.version>1.6.12</bytebuddy.version>
         <netty.version>4.1.8.Final</netty.version>
         <netty-tcnative.version>1.1.33.Fork26</netty-tcnative.version>
     </properties>
@@ -672,6 +672,19 @@
             <artifactId>annotations</artifactId>
             <version>3.0.0</version>
             <scope>provided</scope>
+        </dependency>
+        <!-- Required for compatibility testing -->
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>${bytebuddy.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy-agent</artifactId>
+            <version>${bytebuddy.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

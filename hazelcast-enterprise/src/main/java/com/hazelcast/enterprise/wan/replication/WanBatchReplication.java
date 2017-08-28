@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.BATCH_SIZE;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.SNAPSHOT_ENABLED;
@@ -43,6 +44,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
 
     private final List<String> targets = new ArrayList<String>();
     private final Object mutex = new Object();
+    private final AtomicLong failureCount = new AtomicLong();
 
     private volatile StripedExecutor executor;
     private volatile long lastBatchSendTime = System.currentTimeMillis();
@@ -201,6 +203,8 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                             for (WanReplicationEvent event : batchReplicationEvent.getEventList()) {
                                 removeReplicationEvent(event);
                             }
+                        } else {
+                            failureCount.incrementAndGet();
                         }
                         transmitSucceed = isTargetInvocationSuccessful;
                     }
@@ -227,5 +231,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         public TimeUnit getTimeUnit() {
             return TimeUnit.SECONDS;
         }
+    }
+
+    public long getFailureCount() {
+        return failureCount.get();
     }
 }

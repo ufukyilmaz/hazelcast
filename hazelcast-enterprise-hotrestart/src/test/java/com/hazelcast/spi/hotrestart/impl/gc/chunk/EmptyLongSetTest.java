@@ -25,7 +25,8 @@ public class EmptyLongSetTest {
         try {
             assertFalse(es.add(1));
             fail();
-        } catch (UnsupportedOperationException ignored) { }
+        } catch (UnsupportedOperationException ignored) {
+        }
         assertFalse(es.remove(1));
         assertFalse(es.contains(1));
         assertEquals(0, es.size());
@@ -38,6 +39,7 @@ public class EmptyLongSetTest {
         try {
             es.value();
             fail();
-        } catch (AssertionError ignored) { }
+        } catch (AssertionError ignored) {
+        }
     }
 }

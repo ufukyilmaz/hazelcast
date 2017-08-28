@@ -7,7 +7,6 @@ import com.hazelcast.spi.hotrestart.impl.testsupport.TestProfile;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,38 +17,43 @@ import org.junit.runner.RunWith;
 import java.io.File;
 
 import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hrStoreConfig;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartStoreQuickTest {
 
-    @Rule public final TestName testName = new TestName();
+    @Rule
+    public final TestName testName = new TestName();
 
     private File testingHome;
     private TestProfile profile;
 
-    @Before public void setup() {
+    @Before
+    public void setup() {
         testingHome = isolatedFolder(getClass(), testName);
         delete(testingHome);
         profile = new TestProfile.Default();
     }
 
-    @Test public void onHeapExercise() throws Exception {
+    @Test
+    public void onHeapExercise() throws Exception {
         setupGeneralProfile();
         profile.offHeapMb = 0;
         generalExercise();
     }
 
-    @Test public void offHeapExercise() throws Exception {
+    @Test
+    public void offHeapExercise() throws Exception {
         setupGeneralProfile();
         profile.offHeapMb = 1024;
         generalExercise();
     }
 
-    @Test public void testRemoveAllKeys() throws Exception {
+    @Test
+    public void testRemoveAllKeys() throws Exception {
         profile.keysetSize = 100;
         final HotRestartStoreConfig cfg = hrStoreConfig(testingHome);
         MockStoreRegistry reg = new MockStoreRegistry(cfg, null, false);

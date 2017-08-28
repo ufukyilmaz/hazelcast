@@ -129,7 +129,7 @@ public class DiContainerTest {
     public void when_injectIntoCxor_then_getDep() {
         // Given
         di.dep(new T1())
-          .dep(new T2());
+                .dep(new T2());
 
         // When
         di.dep(T5.class);
@@ -145,7 +145,7 @@ public class DiContainerTest {
     public void when_injectIntoCxorByName_then_getDep() {
         // Given
         di.dep("t1", new T1())
-          .dep("t2", new T2());
+                .dep("t2", new T2());
 
         // When
         di.dep(T4.class);
@@ -161,7 +161,7 @@ public class DiContainerTest {
     public void when_injectIntoField_then_getDep() {
         // Given
         di.dep(new T1())
-          .dep(new T2());
+                .dep(new T2());
 
         // When
         di.wireAndInitializeAll();
@@ -188,7 +188,7 @@ public class DiContainerTest {
     public void when_injectIntoFieldByName_then_getDep() {
         // Given
         di.dep("t2", new T2())
-          .dep(new T3());
+                .dep(new T3());
 
         // When
         di.wireAndInitializeAll();
@@ -203,7 +203,7 @@ public class DiContainerTest {
     public void when_injectIntoFieldByName_butNameMissing_then_Exception() {
         // Given
         di.dep("brokent2", new T2())
-          .dep(new T3());
+                .dep(new T3());
 
         // Then
         exceptionRule.expect(DiException.class);
@@ -216,8 +216,8 @@ public class DiContainerTest {
     public void when_injectIntoMethod_then_getDep() {
         // Given
         di.dep(new T1())
-          .dep(new T2())
-          .dep(new T6());
+                .dep(new T2())
+                .dep(new T6());
 
         // When
         di.wireAndInitializeAll();
@@ -233,7 +233,7 @@ public class DiContainerTest {
     public void when_injectIntoMethod_butMethodFails_then_exception() {
         // Given
         di.dep(new WithDefectiveMethods(0))
-          .dep(new T2());
+                .dep(new T2());
 
         // Then
         exceptionRule.expect(DiException.class);
@@ -248,8 +248,8 @@ public class DiContainerTest {
         final T2 t2a = new T2();
         final T2 t2b = new T2();
         di.dep("t2a", t2a)
-          .dep("t2b", t2b)
-          .dep(new T7());
+                .dep("t2b", t2b)
+                .dep(new T7());
 
         // When
         di.wireAndInitializeAll();
@@ -367,26 +367,34 @@ public class DiContainerTest {
 }
 
 class T1 {
-    @Inject T2 t2;
+    @Inject
+    T2 t2;
 }
 
 class T2 {
-    @Inject T2() { }
+    @Inject
+    T2() {
+    }
 }
 
 class T2Sub extends T2 {
-    @Inject T2Sub() { }
+    @Inject
+    T2Sub() {
+    }
 }
 
 class T3 {
-    @Inject @Name("t2") T2 t2;
+    @Inject
+    @Name("t2")
+    T2 t2;
 }
 
 class T4 {
     final T1 t1;
     final T2 t2;
 
-    @Inject T4(@Name("t1") T1 t1, @Name("t2") T2 t2) {
+    @Inject
+    T4(@Name("t1") T1 t1, @Name("t2") T2 t2) {
         this.t1 = t1;
         this.t2 = t2;
     }
@@ -428,7 +436,8 @@ class T7 {
 class T8 {
     int initOrder;
 
-    @Inject Cntr cntr;
+    @Inject
+    Cntr cntr;
 
     @Initialize
     private void init() {
@@ -439,7 +448,8 @@ class T8 {
 class DisposableThing implements Disposable {
     boolean disposed;
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         disposed = true;
     }
 }
@@ -462,7 +472,8 @@ class WithDefectiveMethods {
         throw new UnsupportedOperationException("I am a defective constructor");
     }
 
-    WithDefectiveMethods(int ignored) { }
+    WithDefectiveMethods(int ignored) {
+    }
 
     @Inject
     void defectiveMethod(T2 t2) {
@@ -471,5 +482,7 @@ class WithDefectiveMethods {
 }
 
 abstract class AbstractClass {
-    @Inject AbstractClass() { }
+    @Inject
+    AbstractClass() {
+    }
 }

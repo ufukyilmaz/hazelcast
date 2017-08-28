@@ -61,13 +61,13 @@ public class SnapshotterTest {
         homeDir.mkdirs();
         final DiContainer di = createBaseDiContainer();
         snapshotter = di.dep(di)
-                        .dep("homeDir", homeDir)
-                        .dep("storeName", "test-hrstore")
-                        .dep(GcHelper.class, OnHeap.class)
-                        .dep(BackupExecutor.class, mock(BackupExecutor.class))
-                        .dep(MetricsRegistry.class, mock(MetricsRegistry.class))
-                        .dep(ChunkManager.class)
-                        .instantiate(Snapshotter.class);
+                .dep("homeDir", homeDir)
+                .dep("storeName", "test-hrstore")
+                .dep(GcHelper.class, OnHeap.class)
+                .dep(BackupExecutor.class, mock(BackupExecutor.class))
+                .dep(MetricsRegistry.class, mock(MetricsRegistry.class))
+                .dep(ChunkManager.class)
+                .instantiate(Snapshotter.class);
         chunkMgr = di.get(ChunkManager.class);
         gcHelper = di.get(GcHelper.class);
         forceEnableSnapshotter();
@@ -128,7 +128,7 @@ public class SnapshotterTest {
     private static void validateRec(Chunk chunk, boolean isSrcChunk, boolean isSurvivor, SnapshotRecord rec) {
         assertEquals(chunk.seq, rec.seq);
         assertEquals(chunk.size() & ~0xFF, rec.size);
-        assertEquals(chunk.garbage  & ~0xFF, rec.garbage);
+        assertEquals(chunk.garbage & ~0xFF, rec.garbage);
         assertEquals(isSrcChunk, rec.isSrcChunk);
         assertEquals(isSurvivor, rec.isSurvivor);
     }

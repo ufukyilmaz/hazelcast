@@ -83,7 +83,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
 
     @Override
     public void clear() {
-        for (HashSlotCursor8byteKey cursor = hsa.cursor(); cursor.advance();) {
+        for (HashSlotCursor8byteKey cursor = hsa.cursor(); cursor.advance(); ) {
             vblockAccessor.reset(cursor.valueAddress());
             vblockAccessor.delete();
         }

@@ -7,7 +7,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOnHeap;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,7 +34,7 @@ public class StableTombChunkTest {
     public void before() {
         final RecordMapOnHeap records = new RecordMapOnHeap();
         final long keyPrefix = 13;
-        keyHandle = new KeyOnHeap(keyPrefix, new byte[] { 1 });
+        keyHandle = new KeyOnHeap(keyPrefix, new byte[]{1});
         // long keyPrefix, KeyHandle kh, long seq, int size, boolean isTombstone, int filePosition
         records.putIfAbsent(keyPrefix, keyHandle, 1L, 10, true, 10);
         record = records.get(keyHandle);

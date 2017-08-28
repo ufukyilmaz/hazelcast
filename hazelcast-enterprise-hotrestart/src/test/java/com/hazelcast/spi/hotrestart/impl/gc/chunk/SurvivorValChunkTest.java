@@ -22,18 +22,16 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class SurvivorValChunkTest {
-    @Rule public final TestName testName = new TestName();
-    @Rule public final ExpectedException exceptionRule = ExpectedException.none();
+    @Rule
+    public final TestName testName = new TestName();
+    @Rule
+    public final ExpectedException exceptionRule = ExpectedException.none();
 
     private final int recordSeq = 11;
     private final long keyPrefix = 1;

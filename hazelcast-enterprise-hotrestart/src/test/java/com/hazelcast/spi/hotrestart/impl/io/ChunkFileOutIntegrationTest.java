@@ -124,7 +124,7 @@ public class ChunkFileOutIntegrationTest {
         ChunkFileOut out = new ChunkFileOut(file, mock(MutatorCatchup.class));
 
         // WHEN
-        for (int fileSize = 0; fileSize < valChunkSizeLimit() - 1000;) {
+        for (int fileSize = 0; fileSize < valChunkSizeLimit() - 1000; ) {
             TestRecord rec = new TestRecord(counter);
             recs.add(rec);
             out.writeValueRecord(rec.recordSeq, rec.keyPrefix, rec.keyBytes, rec.valueBytes);

@@ -13,7 +13,8 @@ class StableChunkBuilder {
     private boolean needsDismissing;
     private boolean compressed;
 
-    private StableChunkBuilder() { }
+    private StableChunkBuilder() {
+    }
 
     static StableChunkBuilder chunkBuilder() {
         return new StableChunkBuilder();

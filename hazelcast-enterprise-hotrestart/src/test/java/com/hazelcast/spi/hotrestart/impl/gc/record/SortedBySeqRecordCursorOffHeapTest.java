@@ -41,7 +41,8 @@ import static org.mockito.Mockito.verify;
 @Category({QuickTest.class, ParallelTest.class})
 public class SortedBySeqRecordCursorOffHeapTest {
 
-    @Rule public final AssertEnabledFilterRule assertEnabledRule = new AssertEnabledFilterRule();
+    @Rule
+    public final AssertEnabledFilterRule assertEnabledRule = new AssertEnabledFilterRule();
 
     private final MemoryManager memMgr =
             new MemoryManagerBean(new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES)), AMEM);

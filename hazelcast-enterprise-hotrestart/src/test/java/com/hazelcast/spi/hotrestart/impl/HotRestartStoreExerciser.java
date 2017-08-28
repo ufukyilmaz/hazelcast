@@ -79,7 +79,7 @@ public class HotRestartStoreExerciser {
         if (reg.isEmpty()) {
             logger.info("Store empty, filling");
             Thread.sleep(200);
-            fillStore(reg, profile) ;
+            fillStore(reg, profile);
         }
         for (int i = 0; i < profile.testCycleCount; i++) {
             exercise(reg, cfg, profile);

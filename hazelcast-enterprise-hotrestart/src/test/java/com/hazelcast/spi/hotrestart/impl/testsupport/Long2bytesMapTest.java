@@ -37,10 +37,11 @@ public class Long2bytesMapTest {
 
     @Parameters(name = "offHeap == {0}")
     public static Collection<Object[]> params() {
-        return asList(new Object[][] { {false}, {true} });
+        return asList(new Object[][]{{false}, {true}});
     }
 
-    @Parameter public boolean offHeap;
+    @Parameter
+    public boolean offHeap;
 
     private final long key1 = 11;
     private final long key2 = 12;
@@ -51,18 +52,21 @@ public class Long2bytesMapTest {
     private Long2bytesMap map;
 
 
-    @Before public void setup() {
+    @Before
+    public void setup() {
         map = offHeap
                 ? new Long2bytesMapOffHeap(new MemoryManagerBean(new StandardMemoryManager(new MemorySize(1, MEGABYTES)),
-                                                                 AMEM))
+                AMEM))
                 : new Long2bytesMapOnHeap();
     }
 
-    @After public void destroy() {
+    @After
+    public void destroy() {
         map.dispose();
     }
 
-    @Test public void whenPutNew_thenGetIt() {
+    @Test
+    public void whenPutNew_thenGetIt() {
         map.put(key1, value1);
         assertTrue(map.copyEntry(key1, KEY_SIZE + value1.length, holder));
         holder.flip();
@@ -70,7 +74,8 @@ public class Long2bytesMapTest {
         assertContentsEqual(value1, holder.valueBuffer);
     }
 
-    @Test public void sizeShouldBehave() {
+    @Test
+    public void sizeShouldBehave() {
         assertEquals(0, map.size());
         map.put(key1, value1);
         assertEquals(1, map.size());
@@ -84,12 +89,14 @@ public class Long2bytesMapTest {
         assertEquals(0, map.size());
     }
 
-    @Test public void whenRequestNonexisting_thenGetNothing() {
+    @Test
+    public void whenRequestNonexisting_thenGetNothing() {
         map.put(key1, value1);
         assertFalse(map.copyEntry(key2, KEY_SIZE, holder));
     }
 
-    @Test public void whenReplace_thenGetNew() {
+    @Test
+    public void whenReplace_thenGetNew() {
         map.put(key1, value1);
         map.put(key1, value2);
         assertTrue(map.copyEntry(key1, KEY_SIZE + value2.length, holder));
@@ -98,7 +105,8 @@ public class Long2bytesMapTest {
         assertContentsEqual(value2, holder.valueBuffer);
     }
 
-    @Test public void keysetShouldBehave() {
+    @Test
+    public void keysetShouldBehave() {
         map.put(key1, value1);
         map.put(key1, value2);
         map.put(key2, value1);
@@ -109,7 +117,8 @@ public class Long2bytesMapTest {
         assertTrue(keyset.contains(key2));
     }
 
-    @Test public void cursorShouldBehave() {
+    @Test
+    public void cursorShouldBehave() {
         map.put(key1, value1);
         map.put(key1, value2);
         map.put(key2, value1);
@@ -121,7 +130,8 @@ public class Long2bytesMapTest {
         assertFalse(cursor.advance());
     }
 
-    @Test public void clearShouldBehave() {
+    @Test
+    public void clearShouldBehave() {
         map.put(key1, value2);
         map.put(key2, value2);
         assertTrue(map.cursor().advance());

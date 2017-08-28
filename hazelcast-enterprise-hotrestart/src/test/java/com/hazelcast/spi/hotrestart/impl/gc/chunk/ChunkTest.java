@@ -112,7 +112,7 @@ public class ChunkTest {
     @Test(expected = AssertionError.class)
     @RequireAssertEnabled
     public void retire_withInconsistentKeyAndRecord_fails() {
-        chunk.retire(keyHandle, new RecordOnHeap(recordSeq +1, 20, false, 0));
+        chunk.retire(keyHandle, new RecordOnHeap(recordSeq + 1, 20, false, 0));
     }
 
     @Test

@@ -22,7 +22,7 @@ public class OnHeapOffHeapTestBase {
 
     @Parameters(name = "offHeap == {0}")
     public static Collection<Object[]> params() {
-        return asList(new Object[][] { {false}, {true} });
+        return asList(new Object[][]{{false}, {true}});
     }
 
     @Parameter

@@ -55,7 +55,7 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
 
     @Override
     public void removeNullEntries(SetOfKeyHandle keyHandles) {
-        for (KhCursor cursor = keyHandles.cursor(); cursor.advance();) {
+        for (KhCursor cursor = keyHandles.cursor(); cursor.advance(); ) {
             final long key = unwrapKey(cursor.asKeyHandle());
             assert ramStore.valueSize(key) < 0;
             ramStore.remove(key);

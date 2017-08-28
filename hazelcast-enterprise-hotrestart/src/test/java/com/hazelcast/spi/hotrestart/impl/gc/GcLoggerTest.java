@@ -85,6 +85,7 @@ public class GcLoggerTest {
         logger.finest("0%s%s%s%s%s%s", "1", "2", "3", "4", "5", "6");
         Mockito.verify(iLoggerMock).finest("0123456");
     }
+
     @Test
     public void fine0() {
         logger.fine("0");

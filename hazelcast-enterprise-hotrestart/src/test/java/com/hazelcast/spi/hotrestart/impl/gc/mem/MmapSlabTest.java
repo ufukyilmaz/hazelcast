@@ -28,7 +28,8 @@ import static org.junit.Assert.assertTrue;
 public class MmapSlabTest {
     private static final int BLOCK_SIZE = 24;
 
-    @Rule public final TestName testName = new TestName();
+    @Rule
+    public final TestName testName = new TestName();
 
     private File baseDir;
     private MmapSlab mm;

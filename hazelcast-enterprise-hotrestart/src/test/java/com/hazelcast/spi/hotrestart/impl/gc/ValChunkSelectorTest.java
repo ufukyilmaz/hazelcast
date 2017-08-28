@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
@@ -8,7 +9,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -36,7 +36,8 @@ public class ValChunkSelectorTest {
     private DiContainer di;
     private GcLogger loggerWithFinestEnabled;
 
-    @Before public void setup() {
+    @Before
+    public void setup() {
         di = createBaseDiContainer()
                 .dep("gcConveyor", concurrentConveyorSingleQueue(null, new OneToOneConcurrentArrayQueue<Runnable>(1)))
                 .dep("homeDir", new File(""))
@@ -47,7 +48,8 @@ public class ValChunkSelectorTest {
         loggerWithFinestEnabled = di.instantiate(GcLoggerFinestVerboseEnabled.class);
     }
 
-    @Test public void when_goalsAreHigh_then_selectAllChunks() {
+    @Test
+    public void when_goalsAreHigh_then_selectAllChunks() {
         final int chunkCount = INITIAL_TOP_CHUNKS + 1;
         final GcParams gcp = gcp()
                 .currChunkSeq(10)
@@ -70,7 +72,8 @@ public class ValChunkSelectorTest {
         assertEquals(chunkCount, selectChunks(allChunks, gcp).size());
     }
 
-    @Test public void when_tooManyRecords_thenLimitChunks() {
+    @Test
+    public void when_tooManyRecords_thenLimitChunks() {
         final int chunkCount = INITIAL_TOP_CHUNKS + 1;
         final GcParams gcp = gcp()
                 .currChunkSeq(10)
@@ -93,7 +96,8 @@ public class ValChunkSelectorTest {
         assertEquals(10, selectChunks(allChunks, gcp).size());
     }
 
-    @Test public void when_tooManyEmptyChunks_thenLimitChunks() {
+    @Test
+    public void when_tooManyEmptyChunks_thenLimitChunks() {
         final int chunkCount = INITIAL_TOP_CHUNKS + 1;
         final GcParams gcp = gcp()
                 .currChunkSeq(10)
@@ -116,14 +120,15 @@ public class ValChunkSelectorTest {
         assertEquals(INITIAL_TOP_CHUNKS, selectChunks(allChunks, gcp).size());
     }
 
-    @Test public void when_logFinestEnabled_thenDontFailInDiagnoseChunks() {
+    @Test
+    public void when_logFinestEnabled_thenDontFailInDiagnoseChunks() {
         final Collection<StableChunk> allChunks = new ArrayList<StableChunk>();
         final int chunkCount = 20;
         for (int i = 0; i < chunkCount; i++) {
             allChunks.add(chunkBuilder()
                     .seq(i + 1)
                     .liveRecordCount(10)
-                    .size(8*1000*1000)
+                    .size(8 * 1000 * 1000)
                     .garbage((chunkCount - i) * 100 * 1000)
                     .build());
         }

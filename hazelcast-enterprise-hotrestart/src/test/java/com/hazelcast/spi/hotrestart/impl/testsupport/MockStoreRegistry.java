@@ -33,7 +33,7 @@ public class MockStoreRegistry implements RamStoreRegistry {
         final HazelcastProperties emptyProperties = new HazelcastProperties(new Properties());
         this.hrStore = memMgr != null ? newOffHeapHotRestartStore(cfg, emptyProperties) : newOnHeapHotRestartStore(cfg, emptyProperties);
         final RamStoreRestartLoop loop = new RamStoreRestartLoop(1, 1, this, cfg.logger());
-        final Throwable[] failure = { null };
+        final Throwable[] failure = {null};
         final Thread restartIoThread = new Thread() {
             @Override
             public void run() {
@@ -109,8 +109,9 @@ public class MockStoreRegistry implements RamStoreRegistry {
     MockRecordStore getOrCreateRecordStoreForPrefix(long prefix) {
         MockRecordStore ret = recordStores.get(prefix);
         if (ret == null) {
-            ret = memMgr != null ? new MockRecordStoreOffHeap(prefix, memMgr, hrStore, fsyncEnabled)
-                                 : new MockRecordStoreOnHeap(prefix, hrStore, fsyncEnabled);
+            ret = memMgr != null
+                    ? new MockRecordStoreOffHeap(prefix, memMgr, hrStore, fsyncEnabled)
+                    : new MockRecordStoreOnHeap(prefix, hrStore, fsyncEnabled);
             final MockRecordStore existing = recordStores.putIfAbsent(prefix, ret);
             if (existing != null) {
                 ret = existing;

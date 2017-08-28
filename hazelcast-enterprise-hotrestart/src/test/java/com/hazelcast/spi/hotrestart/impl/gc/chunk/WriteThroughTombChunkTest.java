@@ -38,8 +38,10 @@ import static org.mockito.Mockito.times;
 public class WriteThroughTombChunkTest {
     public static final String FNAME_SUFFIX = ".testchunk";
 
-    @Rule public final TestName testName = new TestName();
-    @Rule public final ExpectedException exceptionRule = ExpectedException.none();
+    @Rule
+    public final TestName testName = new TestName();
+    @Rule
+    public final ExpectedException exceptionRule = ExpectedException.none();
 
     private WriteThroughTombChunk tombChunk;
     private ChunkFileOut out;
@@ -154,6 +156,7 @@ public class WriteThroughTombChunkTest {
         assertTrue(record.isTombstone());
         assertEquals(recordSize, record.size());
     }
+
     @Test
     public void insertOrUpdateExisting_updatesValue() {
         final int recordSize = 13;

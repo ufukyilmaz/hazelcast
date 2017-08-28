@@ -18,17 +18,20 @@ import static org.junit.Assert.assertSame;
 public class ChunkPriorityQueueTest {
     private ChunkPriorityQueue q;
 
-    @Before public void setup() {
+    @Before
+    public void setup() {
         q = new ChunkPriorityQueue(2);
     }
 
-    @Test public void whenOfferOneChunk_thenPopOneChunk() {
+    @Test
+    public void whenOfferOneChunk_thenPopOneChunk() {
         q.offer(mockChunk(1, 10, 9));
         Assert.assertNotNull(q.pop());
         assertNull(q.pop());
     }
 
-    @Test public void whenOfferWorseBetter_thenPopWorseBetter() {
+    @Test
+    public void whenOfferWorseBetter_thenPopWorseBetter() {
         final StableValChunk worse = mockChunk(2, 10, 9);
         final StableValChunk better = mockChunk(1, 10, 9);
         q.offer(worse);
@@ -38,7 +41,8 @@ public class ChunkPriorityQueueTest {
         assertNull(q.pop());
     }
 
-    @Test public void whenOfferBetterWorse_thenPopWorseBetter() {
+    @Test
+    public void whenOfferBetterWorse_thenPopWorseBetter() {
         final StableValChunk worse = mockChunk(2, 10, 9);
         final StableValChunk better = mockChunk(1, 10, 9);
         q.offer(better);
@@ -48,7 +52,8 @@ public class ChunkPriorityQueueTest {
         assertNull(q.pop());
     }
 
-    @Test public void whenOfferWorstMiddleBest_thenPopMiddleBest() {
+    @Test
+    public void whenOfferWorstMiddleBest_thenPopMiddleBest() {
         final StableValChunk worst = mockChunk(3, 10, 9);
         final StableValChunk middle = mockChunk(2, 10, 9);
         final StableValChunk best = mockChunk(1, 10, 9);
@@ -60,7 +65,8 @@ public class ChunkPriorityQueueTest {
         assertNull(q.pop());
     }
 
-    @Test public void whenOfferBestMiddleWorst_thenPopMiddleBest() {
+    @Test
+    public void whenOfferBestMiddleWorst_thenPopMiddleBest() {
         final StableValChunk worst = mockChunk(3, 10, 9);
         final StableValChunk middle = mockChunk(2, 10, 9);
         final StableValChunk best = mockChunk(1, 10, 9);

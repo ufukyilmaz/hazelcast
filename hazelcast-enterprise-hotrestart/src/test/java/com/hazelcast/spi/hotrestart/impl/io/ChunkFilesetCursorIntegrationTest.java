@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.nio.IOUtil;
-import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;

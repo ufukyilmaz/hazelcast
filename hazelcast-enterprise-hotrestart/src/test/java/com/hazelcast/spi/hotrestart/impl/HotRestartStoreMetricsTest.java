@@ -37,7 +37,8 @@ import static org.junit.Assert.assertNotNull;
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
 
-    @Rule public final TestName testName = new TestName();
+    @Rule
+    public final TestName testName = new TestName();
 
     private final String storeName = "hr-store";
     private final long prefix = 1;
@@ -49,7 +50,8 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
     private MockStoreRegistry store;
     private MetricsRegistry metrics;
 
-    @Before public void setup() throws InterruptedException {
+    @Before
+    public void setup() throws InterruptedException {
         System.setProperty(SYSPROP_TOMB_CHUNK_SIZE_LIMIT, String.valueOf(8));
         System.setProperty(SYSPROP_VAL_CHUNK_SIZE_LIMIT, String.valueOf(8));
         value = new byte[valChunkSizeLimit()];
@@ -57,20 +59,23 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         delete(testingHome);
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
         cfg.setStoreName(storeName).setHomeDir(new File(testingHome, storeName))
-           .setLoggingService(createLoggingService())
-           .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), MANDATORY));
+                .setLoggingService(createLoggingService())
+                .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), MANDATORY));
         metrics = cfg.metricsRegistry();
         store = new MockStoreRegistry(cfg, null, true);
     }
 
-    @After public void tearDown() {
+    @After
+    public void tearDown() {
         store.closeHotRestartStore();
         delete(testingHome);
     }
 
-    @Test public void liveValuesMetric() {
+    @Test
+    public void liveValuesMetric() {
         runWithPausedGC(store, new CatchupRunnable() {
-            @Override public void run(MutatorCatchup mc) {
+            @Override
+            public void run(MutatorCatchup mc) {
                 final LongGauge liveValues = gauge(".liveValues");
                 store.put(prefix, key, value);
                 mc.catchupNow();
@@ -79,9 +84,11 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         });
     }
 
-    @Test public void liveTombstonesMetric() {
+    @Test
+    public void liveTombstonesMetric() {
         runWithPausedGC(store, new CatchupRunnable() {
-            @Override public void run(MutatorCatchup mc) {
+            @Override
+            public void run(MutatorCatchup mc) {
                 final LongGauge liveTombstones = gauge(".liveTombstones");
                 store.put(prefix, key, value);
                 store.remove(prefix, key);
@@ -91,9 +98,11 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         });
     }
 
-    @Test public void valOccupancyMetric() {
+    @Test
+    public void valOccupancyMetric() {
         runWithPausedGC(store, new CatchupRunnable() {
-            @Override public void run(MutatorCatchup mc) {
+            @Override
+            public void run(MutatorCatchup mc) {
                 final LongGauge valOccupancy = gauge(".valOccupancy");
                 store.put(prefix, key, value);
                 mc.catchupNow();
@@ -102,9 +111,11 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         });
     }
 
-    @Test public void valGarbageMetric() {
+    @Test
+    public void valGarbageMetric() {
         runWithPausedGC(store, new CatchupRunnable() {
-            @Override public void run(MutatorCatchup mc) {
+            @Override
+            public void run(MutatorCatchup mc) {
                 final LongGauge valGarbage = gauge(".valGarbage");
                 store.put(prefix, key, value);
                 store.remove(prefix, key);
@@ -114,9 +125,11 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         });
     }
 
-    @Test public void tombOccupancyMetric() {
+    @Test
+    public void tombOccupancyMetric() {
         runWithPausedGC(store, new CatchupRunnable() {
-            @Override public void run(MutatorCatchup mc) {
+            @Override
+            public void run(MutatorCatchup mc) {
                 final LongGauge tombOccupancy = gauge(".tombOccupancy");
                 store.put(prefix, key, value);
                 store.remove(prefix, key);
@@ -126,9 +139,11 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         });
     }
 
-    @Test public void tombGarbageMetric() {
+    @Test
+    public void tombGarbageMetric() {
         runWithPausedGC(store, new CatchupRunnable() {
-            @Override public void run(MutatorCatchup mc) {
+            @Override
+            public void run(MutatorCatchup mc) {
                 final LongGauge tombGarbage = gauge(".tombGarbage");
                 store.put(prefix, key, value);
                 store.remove(prefix, key);

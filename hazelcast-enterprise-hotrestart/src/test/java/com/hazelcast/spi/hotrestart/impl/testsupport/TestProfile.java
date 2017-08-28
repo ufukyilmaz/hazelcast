@@ -111,7 +111,7 @@ public abstract class TestProfile {
 
     private void diagnoseSizeDistribution() {
         final Map<Integer, Integer> freqs = new HashMap<Integer, Integer>();
-        for (int i = 0; i < 100*1000; i++) {
+        for (int i = 0; i < 100 * 1000; i++) {
             final int size = randomValue().length;
             final Integer cur = freqs.get(size);
             freqs.put(size, cur == null ? 1 : cur + 1);

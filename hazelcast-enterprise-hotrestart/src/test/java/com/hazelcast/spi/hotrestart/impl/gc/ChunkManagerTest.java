@@ -60,11 +60,11 @@ public class ChunkManagerTest {
         homeDir = isolatedFolder(getClass(), testName);
         final DiContainer di = createBaseDiContainer();
         di.dep(di)
-          .dep("homeDir", homeDir)
-          .dep("storeName", "test-hrstore")
-          .dep(GcHelper.class, GcHelper.OnHeap.class)
-          .dep(BackupExecutor.class, mock(BackupExecutor.class))
-          .dep(MetricsRegistry.class, mock(MetricsRegistry.class));
+                .dep("homeDir", homeDir)
+                .dep("storeName", "test-hrstore")
+                .dep(GcHelper.class, GcHelper.OnHeap.class)
+                .dep(BackupExecutor.class, mock(BackupExecutor.class))
+                .dep(MetricsRegistry.class, mock(MetricsRegistry.class));
         gcHelper = di.get(GcHelper.class);
         chunkMgr = di.instantiate(ChunkManager.class);
     }

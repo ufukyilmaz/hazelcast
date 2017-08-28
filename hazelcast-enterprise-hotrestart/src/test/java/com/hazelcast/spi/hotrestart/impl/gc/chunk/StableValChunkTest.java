@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.gc.chunk;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
-import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOnHeap;
 import com.hazelcast.test.HazelcastParallelClassRunner;

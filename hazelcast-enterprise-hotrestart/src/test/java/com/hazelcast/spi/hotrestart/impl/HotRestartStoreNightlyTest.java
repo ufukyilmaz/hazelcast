@@ -19,13 +19,16 @@ import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.i
 @Category({NightlyTest.class, ParallelTest.class})
 public class HotRestartStoreNightlyTest {
 
-    @Rule public final TestName testName = new TestName();
+    @Rule
+    public final TestName testName = new TestName();
 
-    @Test(timeout = 15 * 60 * 1000) public void onHeapTest() throws Exception {
+    @Test(timeout = 15 * 60 * 1000)
+    public void onHeapTest() throws Exception {
         exercise(false);
     }
 
-    @Test(timeout = 15 * 60 * 1000) public void offHeapTest() throws Exception {
+    @Test(timeout = 15 * 60 * 1000)
+    public void offHeapTest() throws Exception {
         exercise(true);
     }
 

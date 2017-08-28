@@ -26,19 +26,30 @@ import com.hazelcast.wan.WanReplicationPublisher;
  */
 
 class EnterpriseMapReplicationSupportingService implements ReplicationSupportingService {
-
+    /**
+     * Uses map delete instead of map remove when processing remove events. This has the benefit
+     * that the old value will not be sent from the partition owner (since this member does not use it)
+     * and that we avoid {@link ClassNotFoundException}s when the in-memory type of this map is
+     * {@link com.hazelcast.config.InMemoryFormat#BINARY} and the member does not have the class in it's
+     * classloader.
+     * The downside to this is that map listeners will not receive the old value (since we are performing
+     * delete instead of remove).
+     */
+    public static final String USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS = "hazelcast.wan.map.useDeleteWhenProcessingRemoveEvents";
     private static final String DEFAULT_MERGE_POLICY = PassThroughMergePolicy.class.getName();
 
     private final MapServiceContext mapServiceContext;
     private final NodeEngine nodeEngine;
     private final MapMergePolicy defaultSyncMergePolicy;
     private final ProxyService proxyService;
+    private final boolean useDeleteWhenProcessingRemoveEvents;
 
     EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
         this.mapServiceContext = mapServiceContext;
         this.nodeEngine = mapServiceContext.getNodeEngine();
         this.defaultSyncMergePolicy = mapServiceContext.getMergePolicyProvider().getMergePolicy(DEFAULT_MERGE_POLICY);
         this.proxyService = nodeEngine.getProxyService();
+        this.useDeleteWhenProcessingRemoveEvents = Boolean.getBoolean(USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS);
     }
 
     @Override
@@ -82,8 +93,12 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
                 completableFuture = invokeOnPartition(entryView.getKey(), operation);
             } else if (eventObject instanceof EnterpriseMapReplicationRemove) {
                 EnterpriseMapReplicationRemove replicationRemove = (EnterpriseMapReplicationRemove) eventObject;
-                MapOperation operation = operationProvider.createRemoveOperation(replicationRemove.getMapName(),
-                        replicationRemove.getKey(), true);
+
+                MapOperation operation = useDeleteWhenProcessingRemoveEvents
+                        ? operationProvider.createDeleteOperation(
+                                replicationRemove.getMapName(), replicationRemove.getKey(), true)
+                        : operationProvider.createRemoveOperation(
+                                replicationRemove.getMapName(), replicationRemove.getKey(), true);
                 completableFuture = invokeOnPartition(replicationRemove.getKey(), operation);
             }
 

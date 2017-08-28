@@ -18,7 +18,7 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
 import static java.util.Arrays.asList;
 
-public class OnHeapOffHeapTestBase {
+public abstract class AbstractOnHeapOffHeapTest {
 
     @Parameters(name = "offHeap == {0}")
     public static Collection<Object[]> params() {

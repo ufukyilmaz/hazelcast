@@ -5,7 +5,7 @@ import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
-import com.hazelcast.spi.hotrestart.impl.gc.OnHeapOffHeapTestBase;
+import com.hazelcast.spi.hotrestart.impl.gc.AbstractOnHeapOffHeapTest;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class SetOfKeyHandleTest extends OnHeapOffHeapTestBase {
+public class SetOfKeyHandleTest extends AbstractOnHeapOffHeapTest {
 
     private SetOfKeyHandle set;
 

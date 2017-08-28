@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.tracker;
 
-import com.hazelcast.spi.hotrestart.impl.gc.OnHeapOffHeapTestBase;
+import com.hazelcast.spi.hotrestart.impl.gc.AbstractOnHeapOffHeapTest;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap.Cursor;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.RequireAssertEnabled;
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class TrackerMapTest extends OnHeapOffHeapTestBase {
+public class TrackerMapTest extends AbstractOnHeapOffHeapTest {
     @Rule
     public final ExpectedException exceptionRule = ExpectedException.none();
 

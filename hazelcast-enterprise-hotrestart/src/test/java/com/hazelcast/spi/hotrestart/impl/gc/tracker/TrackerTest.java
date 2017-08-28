@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.tracker;
 
-import com.hazelcast.spi.hotrestart.impl.gc.OnHeapOffHeapTestBase;
+import com.hazelcast.spi.hotrestart.impl.gc.AbstractOnHeapOffHeapTest;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -18,7 +18,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class TrackerTest extends OnHeapOffHeapTestBase {
+public class TrackerTest extends AbstractOnHeapOffHeapTest {
 
     private final int chunkSeq = 3;
     private final int tombstoneChunkSeq = 13;

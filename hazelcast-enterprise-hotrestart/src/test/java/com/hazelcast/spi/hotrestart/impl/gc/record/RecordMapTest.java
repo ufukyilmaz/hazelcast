@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
-import com.hazelcast.spi.hotrestart.impl.gc.OnHeapOffHeapTestBase;
+import com.hazelcast.spi.hotrestart.impl.gc.AbstractOnHeapOffHeapTest;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class RecordMapTest extends OnHeapOffHeapTestBase {
+public class RecordMapTest extends AbstractOnHeapOffHeapTest {
 
     private RecordMap m;
 

@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
@@ -31,6 +30,7 @@ import org.mockito.Mockito;
 
 import java.io.File;
 
+import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createBaseDiContainer;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.junit.Assert.assertEquals;
@@ -45,12 +45,14 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ChunkManagerTest {
+
     private static final String ACTIVE_SUFFIX = "chunk.active";
 
     @Rule
     public final TestName testName = new TestName();
 
     private final int chunkSeq = 1;
+
     private File homeDir;
     private GcHelper gcHelper;
     private ChunkManager chunkMgr;
@@ -71,7 +73,7 @@ public class ChunkManagerTest {
 
     @After
     public void after() {
-        IOUtil.delete(homeDir);
+        delete(homeDir);
     }
 
     @Test

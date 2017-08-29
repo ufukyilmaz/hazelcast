@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MmapSlabTest {
+
     private static final int BLOCK_SIZE = 24;
 
     @Rule

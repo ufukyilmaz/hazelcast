@@ -9,7 +9,6 @@ import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.logging.LoggingServiceImpl;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.impl.ConcurrentHotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
@@ -26,7 +25,6 @@ import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
 import com.hazelcast.spi.properties.HazelcastProperties;
-import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
 import org.HdrHistogram.Histogram;
@@ -35,7 +33,6 @@ import org.junit.rules.TestName;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -53,8 +50,10 @@ import java.util.concurrent.locks.LockSupport;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
+import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_FNAME_SUFFIX;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -65,6 +64,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 public class HotRestartTestUtil {
+
     public static final String LOGGER_NAME = "com.hazelcast.spi.hotrestart";
     public static ILogger logger;
 
@@ -82,8 +82,7 @@ public class HotRestartTestUtil {
         }
     }
 
-    public static void exercise(MockStoreRegistry reg, HotRestartStoreConfig cfg, TestProfile profile)
-            throws Exception {
+    public static void exercise(MockStoreRegistry reg, HotRestartStoreConfig cfg, TestProfile profile) throws Exception {
         final Histogram hist = new Histogram(3);
         try {
             logger.info("Updating db");
@@ -205,7 +204,7 @@ public class HotRestartTestUtil {
             for (long key : reloadedKeys) {
                 final int valueSize = ramStore.valueSize(key);
                 if (valueSize != -1) {
-//                    problems.format("%s -> %s ", key, valueSize);
+                    //problems.format("%s -> %s ", key, valueSize);
                     extraRecords++;
                     hadIssues = true;
                 }
@@ -233,7 +232,7 @@ public class HotRestartTestUtil {
                 .setMetricsRegistry(metricsRegistry(loggingService));
     }
 
-    public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) throws InterruptedException {
+    public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) throws Exception {
         logger.info("Creating mock store registry");
         final long start = System.nanoTime();
         final MemoryManagerBean memMgr = malloc != null ? new MemoryManagerBean(malloc, AMEM) : null;
@@ -282,11 +281,12 @@ public class HotRestartTestUtil {
         ((ConcurrentHotRestartStore) reg.hrStore).getDi().get(GcExecutor.class).runWhileGcPaused(task);
     }
 
-    public static void assertRecordEquals(TestRecord expected, DataInputStream actual, boolean valueChunk) throws IOException {
+    public static void assertRecordEquals(TestRecord expected, DataInputStream actual, boolean valueChunk) throws Exception {
         assertRecordEquals("", expected, actual, valueChunk);
     }
 
-    public static void assertRecordEquals(String msg, TestRecord expected, DataInputStream actual, boolean valueChunk) throws IOException {
+    public static void assertRecordEquals(String msg, TestRecord expected, DataInputStream actual, boolean valueChunk)
+            throws Exception {
         assertEquals(msg, expected.recordSeq, actual.readLong());
         assertEquals(msg, expected.keyPrefix, actual.readLong());
         assertEquals(msg, expected.keyBytes.length, actual.readInt());
@@ -330,8 +330,8 @@ public class HotRestartTestUtil {
             out.close();
             return file;
         } catch (Exception e) {
-            IOUtil.closeResource(out);
-            throw ExceptionUtil.rethrow(e);
+            closeResource(out);
+            throw rethrow(e);
         }
     }
 
@@ -348,8 +348,10 @@ public class HotRestartTestUtil {
     }
 
     public static class TestRecord {
+
         public final long recordSeq;
         public final long keyPrefix;
+
         public byte[] keyBytes;
         public byte[] valueBytes;
 
@@ -364,5 +366,4 @@ public class HotRestartTestUtil {
             }
         }
     }
-
 }

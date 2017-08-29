@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.core.HazelcastException;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -15,12 +14,12 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.removeActiveSuffix;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.assertRecordEquals;
@@ -36,6 +35,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ChunkFilesetCursorIntegrationTest {
+
     @Rule
     public final TestName testName = new TestName();
 
@@ -52,7 +52,7 @@ public class ChunkFilesetCursorIntegrationTest {
 
     @After
     public void after() {
-        IOUtil.delete(homeDir);
+        delete(homeDir);
     }
 
     @Test
@@ -68,7 +68,7 @@ public class ChunkFilesetCursorIntegrationTest {
     }
 
     @Test
-    public void skipsOverEmptyFile_andDeletesIt() throws IOException, InterruptedException {
+    public void skipsOverEmptyFile_andDeletesIt() throws Exception {
         // Given
         final File emptyFile = generateFileWithGivenRecords(1, Collections.<TestRecord>emptyList(), true);
         assertTrue(emptyFile.exists());
@@ -112,7 +112,8 @@ public class ChunkFilesetCursorIntegrationTest {
         try {
             while (cursor.advance()) {
                 if (recordsAllInOrder == null) {
-                    recordsAllInOrder = buildListWillAllRecordsInIterationOrder(cursor.currentRecord(), recordsFirst, recordsSecond);
+                    recordsAllInOrder = buildListWillAllRecordsInIterationOrder(cursor.currentRecord(), recordsFirst,
+                            recordsSecond);
                 }
                 assertRecordEquals(recordsAllInOrder.get(count), cursor.currentRecord(), createValueChunks);
                 count++;
@@ -123,11 +124,12 @@ public class ChunkFilesetCursorIntegrationTest {
         assertEquals(recordSizeFirst + recordSizeSecond, count);
     }
 
-    private File generateFileWithGivenRecords(int chunkSeq, List<TestRecord> records, boolean valueRecords) throws IOException {
+    private File generateFileWithGivenRecords(int chunkSeq, List<TestRecord> records, boolean valueRecords) {
         return populateChunkFile(gcHelper.chunkFile("testing", chunkSeq, ".chunk", true), records, valueRecords);
     }
 
-    private static List<TestRecord> buildListWillAllRecordsInIterationOrder(ChunkFileRecord firstReadRecord, List<TestRecord> recordsFirst,
+    private static List<TestRecord> buildListWillAllRecordsInIterationOrder(ChunkFileRecord firstReadRecord,
+                                                                            List<TestRecord> recordsFirst,
                                                                             List<TestRecord> recordsSecond) {
         List<TestRecord> recordsAllInOrder = new ArrayList<TestRecord>();
         if (firstReadRecord.recordSeq() == recordsFirst.get(0).recordSeq) {
@@ -139,5 +141,4 @@ public class ChunkFilesetCursorIntegrationTest {
         }
         return recordsAllInOrder;
     }
-
 }

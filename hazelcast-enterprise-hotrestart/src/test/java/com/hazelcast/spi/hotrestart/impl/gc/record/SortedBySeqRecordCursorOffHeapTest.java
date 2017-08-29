@@ -41,11 +41,12 @@ import static org.mockito.Mockito.verify;
 @Category({QuickTest.class, ParallelTest.class})
 public class SortedBySeqRecordCursorOffHeapTest {
 
+    private static final MemorySize MEMORY_SIZE = new MemorySize(32, MemoryUnit.MEGABYTES);
+
     @Rule
     public final AssertEnabledFilterRule assertEnabledRule = new AssertEnabledFilterRule();
 
-    private final MemoryManager memMgr =
-            new MemoryManagerBean(new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES)), AMEM);
+    private final MemoryManager memMgr = new MemoryManagerBean(new StandardMemoryManager(MEMORY_SIZE), AMEM);
 
     private MutatorCatchup mc;
 
@@ -152,5 +153,4 @@ public class SortedBySeqRecordCursorOffHeapTest {
         }
         return seqsAndSlotBases;
     }
-
 }

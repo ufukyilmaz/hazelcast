@@ -106,5 +106,4 @@ public class TombChunkSelectorTest {
     StableTombChunk c(long size, long garbage) {
         return new StableTombChunk(counter.incrementAndGet(), null, counter.incrementAndGet(), size, garbage);
     }
-
 }

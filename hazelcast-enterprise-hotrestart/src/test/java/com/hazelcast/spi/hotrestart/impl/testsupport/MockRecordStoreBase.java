@@ -10,6 +10,7 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
 import java.nio.ByteBuffer;
 
 public abstract class MockRecordStoreBase implements MockRecordStore {
+
     final Long2bytesMap ramStore;
     final HotRestartStore hrStore;
     final long prefix;

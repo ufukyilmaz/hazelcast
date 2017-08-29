@@ -92,9 +92,9 @@ public abstract class TestProfile {
     private byte[] generateValueData(int maxSize) {
         final byte[] valueData = new byte[maxSize << 1];
         rnd.nextBytes(valueData);
-//        for (int i = 0; i < valueData.length; i++) {
-//            valueData[i] = (byte) ('A' + (i % 64));
-//        }
+        //for (int i = 0; i < valueData.length; i++) {
+        //    valueData[i] = (byte) ('A' + (i % 64));
+        //}
         return valueData;
     }
 

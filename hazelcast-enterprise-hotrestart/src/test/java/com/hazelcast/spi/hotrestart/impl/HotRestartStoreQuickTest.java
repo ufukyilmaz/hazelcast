@@ -1,6 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl;
 
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.testsupport.TestProfile;
@@ -78,7 +77,7 @@ public class HotRestartStoreQuickTest {
         assertEquals(3, helper.recordSeq());
         closeAndDispose(reg);
 
-        IOUtil.delete(new File(testingHome, "value"));
+        delete(new File(testingHome, "value"));
         reg = new MockStoreRegistry(cfg, null, true);
         helper = ((ConcurrentHotRestartStore) reg.hrStore).getDi().get(GcHelper.class);
         assertEquals(3, helper.recordSeq());

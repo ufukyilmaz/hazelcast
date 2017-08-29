@@ -13,6 +13,7 @@ import static org.junit.Assert.assertNotNull;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class SimpleHandleOffHeapTest {
+
     private final long address = 1;
     private final long sequenceId = 2;
 

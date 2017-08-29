@@ -28,8 +28,10 @@ import static org.mockito.Mockito.times;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class SurvivorValChunkTest {
+
     @Rule
     public final TestName testName = new TestName();
+
     @Rule
     public final ExpectedException exceptionRule = ExpectedException.none();
 
@@ -45,12 +47,11 @@ public class SurvivorValChunkTest {
 
     private SurvivorValChunk survivorValChunk;
     private ChunkFileOut out;
-    private GcHelper gcHelper;
 
     @Before
     public void before() {
+        GcHelper gcHelper = mock(GcHelper.class);
         out = mock(ChunkFileOut.class);
-        gcHelper = mock(GcHelper.class);
         survivorValChunk = new SurvivorValChunk(7L, records, out, gcHelper);
         holder.getKeyBuffer(keyBytes.length).put(keyBytes);
         holder.getValueBuffer(valueBytes.length).put(valueBytes);

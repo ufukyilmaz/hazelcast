@@ -1,6 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
@@ -21,13 +20,13 @@ import org.junit.runner.RunWith;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.HotRestarter.BUFFER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.assertRecordEquals;
@@ -58,15 +57,13 @@ public class ChunkFileOutIntegrationTest {
     }
 
     @After
-    public void after() throws IOException {
-        if (input != null) {
-            input.close();
-        }
-        IOUtil.delete(homeDir);
+    public void after() {
+        closeResource(input);
+        delete(homeDir);
     }
 
     @Test
-    public void writeValueRecord() throws IOException {
+    public void writeValueRecord() throws Exception {
         // GIVEN
         TestRecord rec = new TestRecord(counter);
         File file = testFile();
@@ -82,7 +79,7 @@ public class ChunkFileOutIntegrationTest {
     }
 
     @Test
-    public void writeLargeValueRecord() throws IOException {
+    public void writeLargeValueRecord() throws Exception {
         // GIVEN
         TestRecord rec = new TestRecord(counter);
         rec.valueBytes = new byte[BUFFER_SIZE + 1];
@@ -99,7 +96,7 @@ public class ChunkFileOutIntegrationTest {
     }
 
     @Test
-    public void writeValueRecord_withBuffers() throws IOException {
+    public void writeValueRecord_withBuffers() throws Exception {
         // GIVEN
         TestRecord rec = new TestRecord(counter);
         RecordOnHeap hrRec = new RecordOnHeap(rec.recordSeq, rec.keyBytes.length + rec.valueBytes.length + 24, false, 10);
@@ -117,7 +114,7 @@ public class ChunkFileOutIntegrationTest {
     }
 
     @Test
-    public void writeManyValueRecords() throws IOException {
+    public void writeManyValueRecords() throws Exception {
         // GIVEN
         List<TestRecord> recs = new ArrayList<TestRecord>();
         File file = testFile();
@@ -140,7 +137,7 @@ public class ChunkFileOutIntegrationTest {
     }
 
     @Test
-    public void writeTombstone() throws IOException {
+    public void writeTombstone() throws Exception {
         // GIVEN
         TestRecord rec = new TestRecord(counter);
         File file = testFile();
@@ -155,7 +152,7 @@ public class ChunkFileOutIntegrationTest {
     }
 
     @Test
-    public void writeLargeTombstones() throws IOException {
+    public void writeLargeTombstones() throws Exception {
         // GIVEN
         TestRecord rec1 = new TestRecord(counter);
         rec1.keyBytes = new byte[BUFFER_SIZE - Record.TOMB_HEADER_SIZE - 1];
@@ -175,7 +172,7 @@ public class ChunkFileOutIntegrationTest {
     }
 
     @Test
-    public void writeTombstone_withBuffers() throws IOException {
+    public void writeTombstone_withBuffers() throws Exception {
         // GIVEN
         TestRecord rec = new TestRecord(counter);
         File file = testFile();
@@ -190,7 +187,7 @@ public class ChunkFileOutIntegrationTest {
     }
 
     @Test
-    public void writeLargeTombstones_withBuffers() throws IOException {
+    public void writeLargeTombstones_withBuffers() throws Exception {
         final TestRecord rec1 = new TestRecord(counter);
         rec1.keyBytes = new byte[2 * BUFFER_SIZE - 1];
         final TestRecord rec2 = new TestRecord(counter);
@@ -213,7 +210,7 @@ public class ChunkFileOutIntegrationTest {
         return gcHelper.chunkFile("testing", 1, ".chunk", true);
     }
 
-    private DataInputStream input(File file) throws FileNotFoundException {
+    private DataInputStream input(File file) throws Exception {
         return input = new DataInputStream(new FileInputStream(file));
     }
 }

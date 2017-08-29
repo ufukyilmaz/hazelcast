@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper.OnHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
@@ -25,9 +24,9 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.lang.reflect.Field;
 
+import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.Snapshotter.CHUNK_SNAPSHOT_FNAME;
 import static com.hazelcast.spi.hotrestart.impl.gc.Snapshotter.SOURCE_CHUNK_FLAG_MASK;
 import static com.hazelcast.spi.hotrestart.impl.gc.Snapshotter.SURVIVOR_FLAG_MASK;
@@ -75,7 +74,7 @@ public class SnapshotterTest {
 
     @After
     public void after() {
-        IOUtil.delete(homeDir);
+        delete(homeDir);
     }
 
     @Test
@@ -121,7 +120,7 @@ public class SnapshotterTest {
         return tombChunk;
     }
 
-    private static SnapshotRecord readRec(DataInput in) throws IOException {
+    private static SnapshotRecord readRec(DataInput in) throws Exception {
         return new SnapshotRecord(in);
     }
 
@@ -134,13 +133,14 @@ public class SnapshotterTest {
     }
 
     private static class SnapshotRecord {
+
         final long seq;
         final int size;
         final int garbage;
         final boolean isSrcChunk;
         final boolean isSurvivor;
 
-        private SnapshotRecord(DataInput in) throws IOException {
+        private SnapshotRecord(DataInput in) throws Exception {
             this.seq = in.readLong();
             this.size = in.readChar() << 8;
             this.garbage = in.readChar() << 8;

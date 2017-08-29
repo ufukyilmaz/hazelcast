@@ -47,8 +47,8 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
 
     private byte[] value;
     private File testingHome;
-    private MockStoreRegistry store;
     private MetricsRegistry metrics;
+    private MockStoreRegistry store;
 
     @Before
     public void setup() throws InterruptedException {

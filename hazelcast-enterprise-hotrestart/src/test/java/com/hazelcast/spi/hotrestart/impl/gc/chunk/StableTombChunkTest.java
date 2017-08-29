@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class StableTombChunkTest {
+
     @Rule
     public final ExpectedException exceptionRule = ExpectedException.none();
 
@@ -110,6 +111,4 @@ public class StableTombChunkTest {
     public void benefitToCost_forChunkWithSomeGarbage_isFinite() {
         assertTrue(StableTombChunk.benefitToCost(1, 2) > 0);
     }
-
-
 }

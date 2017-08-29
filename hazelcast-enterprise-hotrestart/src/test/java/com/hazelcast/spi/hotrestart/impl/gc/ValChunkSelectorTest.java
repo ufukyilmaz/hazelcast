@@ -140,6 +140,7 @@ public class ValChunkSelectorTest {
     }
 
     private static class GcLoggerFinestVerboseEnabled extends GcLogger {
+
         @Inject
         private GcLoggerFinestVerboseEnabled(ILogger logger) {
             super(logger);

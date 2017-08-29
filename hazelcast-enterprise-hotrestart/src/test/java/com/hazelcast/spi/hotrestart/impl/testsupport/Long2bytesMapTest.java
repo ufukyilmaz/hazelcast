@@ -16,6 +16,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -31,7 +32,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class Long2bytesMapTest {
 
@@ -51,12 +52,10 @@ public class Long2bytesMapTest {
     private final RecordDataHolder holder = new RecordDataHolder();
     private Long2bytesMap map;
 
-
     @Before
     public void setup() {
         map = offHeap
-                ? new Long2bytesMapOffHeap(new MemoryManagerBean(new StandardMemoryManager(new MemorySize(1, MEGABYTES)),
-                AMEM))
+                ? new Long2bytesMapOffHeap(new MemoryManagerBean(new StandardMemoryManager(new MemorySize(1, MEGABYTES)), AMEM))
                 : new Long2bytesMapOnHeap();
     }
 
@@ -139,7 +138,6 @@ public class Long2bytesMapTest {
         assertFalse(map.cursor().advance());
     }
 
-
     private static void assertContentsEqual(byte[] expected, ByteBuffer actual) {
         assertEquals(expected.length, actual.remaining());
         for (int i = 0; i < expected.length; i++) {
@@ -148,6 +146,7 @@ public class Long2bytesMapTest {
     }
 
     private static final class RecordDataHolder implements RecordDataSink {
+
         final ByteBuffer keyBuffer = ByteBuffer.allocate(16);
         final ByteBuffer valueBuffer = ByteBuffer.allocate(16);
 

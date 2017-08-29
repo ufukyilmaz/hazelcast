@@ -36,10 +36,12 @@ import static org.mockito.Mockito.times;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class WriteThroughTombChunkTest {
+
     public static final String FNAME_SUFFIX = ".testchunk";
 
     @Rule
     public final TestName testName = new TestName();
+
     @Rule
     public final ExpectedException exceptionRule = ExpectedException.none();
 
@@ -91,7 +93,7 @@ public class WriteThroughTombChunkTest {
     }
 
     @Test
-    public void when_addStep1FromTfa_then_sizeIncreases() throws IOException {
+    public void when_addStep1FromTfa_then_sizeIncreases() throws Exception {
         // Given
         final TombFileAccessor tfa = mock(TombFileAccessor.class);
         final int recordSize = 13;
@@ -105,7 +107,7 @@ public class WriteThroughTombChunkTest {
     }
 
     @Test
-    public void when_tfaFails_then_addStep1WrapsException() throws IOException {
+    public void when_tfaFails_then_addStep1WrapsException() throws Exception {
         // Given
         final TombFileAccessor tfa = mock(TombFileAccessor.class);
         Mockito.when(tfa.loadAndCopyTombstone(0, out)).thenThrow(new IOException());

@@ -5,7 +5,9 @@ import java.lang.reflect.Field;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.gcParams;
 
 class GcParamsBuilder {
+
     private final GcParams gcp = gcParams(1, 1, 1, 1);
+
     private long costGoal;
     private long maxCost;
     private long currChunkSeq;

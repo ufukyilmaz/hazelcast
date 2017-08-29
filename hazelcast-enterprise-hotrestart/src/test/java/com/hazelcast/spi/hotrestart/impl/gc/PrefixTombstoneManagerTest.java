@@ -17,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 public class PrefixTombstoneManagerTest {
 
     @Test
-    public void testGetMaxChunkSeq() throws Exception {
+    public void testGetMaxChunkSeq() {
         final Long2LongHashMap map = new Long2LongHashMap(0);
         map.put(1, 5);
         map.put(2, 10);

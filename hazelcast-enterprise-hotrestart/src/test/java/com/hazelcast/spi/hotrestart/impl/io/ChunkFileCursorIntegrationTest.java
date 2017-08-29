@@ -1,6 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.test.HazelcastParallelClassRunner;
@@ -21,6 +20,7 @@ import java.io.RandomAccessFile;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createGcHelper;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.generateRandomRecords;
@@ -37,6 +37,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ChunkFileCursorIntegrationTest {
+
     @Rule
     public final TestName testName = new TestName();
 
@@ -60,11 +61,11 @@ public class ChunkFileCursorIntegrationTest {
         if (cursor != null) {
             cursor.close();
         }
-        IOUtil.delete(homeDir);
+        delete(homeDir);
     }
 
     @Test
-    public void valueOnTombCursorReturnsNull() throws IOException {
+    public void valueOnTombCursorReturnsNull() {
         // GIVEN
         File file = populateTombRecordFile(gcHelper.chunkFile("testing", 1, ".chunk", true),
                 singletonList(new TestRecord(counter)));
@@ -76,12 +77,12 @@ public class ChunkFileCursorIntegrationTest {
     }
 
     @Test
-    public void valueChunkCursor() throws IOException {
+    public void valueChunkCursor() {
         assertChunkCursorReturnsCorrectResults(true);
     }
 
     @Test
-    public void tombChunkCursor() throws IOException {
+    public void tombChunkCursor() {
         assertChunkCursorReturnsCorrectResults(false);
     }
 
@@ -91,7 +92,7 @@ public class ChunkFileCursorIntegrationTest {
     }
 
     @Test
-    public void whenBrokenActiveChunk_thenSilentlyTruncate() throws IOException {
+    public void whenBrokenActiveChunk_thenSilentlyTruncate() throws Exception {
         // Given
         final int recordCount = 2;
         final File chunkFile = populateChunkFile(gcHelper.chunkFile("testing", 1, ".chunk.active", true),
@@ -108,7 +109,7 @@ public class ChunkFileCursorIntegrationTest {
     }
 
     @Test
-    public void whenBrokenStableChunk_thenException() throws IOException {
+    public void whenBrokenStableChunk_thenException() throws Exception {
         // Given
         final int recordCount = 2;
         final File chunkFile = populateChunkFile(gcHelper.chunkFile("testing", 1, ".chunk", true),
@@ -131,7 +132,7 @@ public class ChunkFileCursorIntegrationTest {
 
     }
 
-    private void assertChunkCursorReturnsCorrectResults(boolean wantValueChunk) throws IOException {
+    private void assertChunkCursorReturnsCorrectResults(boolean wantValueChunk) {
         // GIVEN
         List<TestRecord> recs = generateRandomRecords(counter, 128);
         final int chunkSeq = 1;
@@ -151,5 +152,4 @@ public class ChunkFileCursorIntegrationTest {
         }
         assertFalse(cursor.advance());
     }
-
 }

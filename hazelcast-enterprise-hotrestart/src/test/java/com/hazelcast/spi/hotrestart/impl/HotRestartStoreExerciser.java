@@ -65,7 +65,7 @@ public class HotRestartStoreExerciser {
         }
     }
 
-    private void testRestart(int restartCount) throws InterruptedException {
+    private void testRestart(int restartCount) throws Exception {
         for (int i = 0; i < restartCount; i++) {
             final MockStoreRegistry reg = newStoreRegistry();
             SECONDS.sleep(5);
@@ -94,11 +94,7 @@ public class HotRestartStoreExerciser {
         reg.disposeRecordStores();
     }
 
-    private MockStoreRegistry newStoreRegistry() throws InterruptedException {
+    private MockStoreRegistry newStoreRegistry() throws Exception {
         return createStoreRegistry(cfg, malloc);
     }
 }
-
-
-
-

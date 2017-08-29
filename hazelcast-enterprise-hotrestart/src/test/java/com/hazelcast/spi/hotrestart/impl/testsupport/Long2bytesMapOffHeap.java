@@ -11,6 +11,7 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
 
 public class Long2bytesMapOffHeap extends Long2bytesMapBase {
+
     // key: long; value: pointer to value block
     private final HashSlotArray8byteKey hsa;
     private final ValueBlockAccessor vblockAccessor;

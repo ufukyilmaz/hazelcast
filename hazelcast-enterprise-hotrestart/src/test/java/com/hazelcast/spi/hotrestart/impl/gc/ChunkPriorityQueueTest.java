@@ -4,18 +4,19 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ChunkPriorityQueueTest {
+
     private ChunkPriorityQueue q;
 
     @Before
@@ -26,7 +27,7 @@ public class ChunkPriorityQueueTest {
     @Test
     public void whenOfferOneChunk_thenPopOneChunk() {
         q.offer(mockChunk(1, 10, 9));
-        Assert.assertNotNull(q.pop());
+        assertNotNull(q.pop());
         assertNull(q.pop());
     }
 

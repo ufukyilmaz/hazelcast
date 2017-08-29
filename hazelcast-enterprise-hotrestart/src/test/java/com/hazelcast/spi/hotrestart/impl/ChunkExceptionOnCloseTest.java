@@ -11,21 +11,21 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.EmptyStatement;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.util.EmptyStatement.ignore;
 import static junit.framework.TestCase.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 @RunWith(HazelcastSerialClassRunner.class)
-@Category({QuickTest.class})
+@Category(QuickTest.class)
 public class ChunkExceptionOnCloseTest {
 
     @Test
-    public void checkExceptionHandlingForChunkClose() throws Exception {
+    public void checkExceptionHandlingForChunkClose() {
         final GcHelper helper = mock(GcHelper.class);
         final WriteThroughTombChunk tombChunk = mock(WriteThroughTombChunk.class);
 
@@ -39,7 +39,7 @@ public class ChunkExceptionOnCloseTest {
             engine.put(new KeyOnHeap(0, new byte[0]), new byte[0], true);
             fail();
         } catch (HazelcastException e) {
-            EmptyStatement.ignore(e);
+            ignore(e);
         }
         engine.close();
     }
@@ -56,7 +56,6 @@ public class ChunkExceptionOnCloseTest {
 
         @Override
         public void flagForFsyncOnClose(boolean fsyncOnClose) {
-
         }
 
         @Override

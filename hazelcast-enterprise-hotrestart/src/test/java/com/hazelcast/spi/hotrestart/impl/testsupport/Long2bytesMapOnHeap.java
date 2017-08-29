@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class Long2bytesMapOnHeap extends Long2bytesMapBase {
+
     private final Map<Long, byte[]> map = new HashMap<Long, byte[]>();
 
     @Override

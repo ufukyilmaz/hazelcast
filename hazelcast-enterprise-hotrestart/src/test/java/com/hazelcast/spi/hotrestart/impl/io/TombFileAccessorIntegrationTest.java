@@ -1,6 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.HazelcastParallelClassRunner;
@@ -20,12 +19,12 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createGcHelper;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
@@ -45,6 +44,7 @@ import static org.mockito.Mockito.verify;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class TombFileAccessorIntegrationTest {
+
     @Rule
     public final TestName testName = new TestName();
 
@@ -65,7 +65,7 @@ public class TombFileAccessorIntegrationTest {
 
     @After
     public void after() {
-        IOUtil.delete(homeDir);
+        delete(homeDir);
     }
 
     @Test(expected = NullPointerException.class)
@@ -77,7 +77,7 @@ public class TombFileAccessorIntegrationTest {
 
     @Test
     @RequireAssertEnabled
-    public void channelClosedCannotBeReused() throws IOException {
+    public void channelClosedCannotBeReused() throws Exception {
         // GIVEN
         File file = gcHelper.chunkFile("testing", 1, ".chunk", true);
         List<TestRecord> records = asList(new TestRecord(counter), new TestRecord(counter), new TestRecord(counter));
@@ -95,7 +95,7 @@ public class TombFileAccessorIntegrationTest {
 
     @Test
     @RequireAssertEnabled
-    public void canCloseAccessorOfEmptyFile() throws IOException {
+    public void canCloseAccessorOfEmptyFile() {
         // GIVEN
         File file = gcHelper.chunkFile("testing", 1, ".chunk", true);
         List<TestRecord> records = new ArrayList<TestRecord>();
@@ -106,7 +106,7 @@ public class TombFileAccessorIntegrationTest {
     }
 
     @Test
-    public void correctRecordsRead() throws IOException {
+    public void correctRecordsRead() throws Exception {
         File file = gcHelper.chunkFile("testing", 1, ".chunk", true);
         List<TestRecord> records = asList(new TestRecord(counter), new TestRecord(counter), new TestRecord(counter));
         TombFileAccessor accessor = new TombFileAccessor(populateTombRecordFile(file, records));
@@ -143,10 +143,9 @@ public class TombFileAccessorIntegrationTest {
         };
     }
 
-    static void assertRecordEqualToAccessorRecord(String msg, TestRecord expected, TombFileAccessor actual) throws IOException {
+    private static void assertRecordEqualToAccessorRecord(String msg, TestRecord expected, TombFileAccessor actual) {
         assertEquals(msg, expected.recordSeq, actual.recordSeq());
         assertEquals(msg, expected.keyPrefix, actual.keyPrefix());
         assertEquals(msg, expected.keyBytes.length + 20, actual.recordSize());
     }
-
 }

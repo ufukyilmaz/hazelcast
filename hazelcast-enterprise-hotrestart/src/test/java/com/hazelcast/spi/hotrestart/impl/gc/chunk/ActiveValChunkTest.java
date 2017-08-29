@@ -33,6 +33,7 @@ import static org.mockito.Mockito.times;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ActiveValChunkTest {
+
     @Rule
     public final ExpectedException exceptionRule = ExpectedException.none();
 

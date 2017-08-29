@@ -646,4 +646,36 @@ public class CacheTest extends AbstractCacheTest {
 
         assertEquals(0, memoryStats.getUsedNative());
     }
+
+    @Test
+    public void test_whenCacheDestroyedConcurrently_thenNoNPEThrown() throws ExecutionException, InterruptedException {
+        CacheConfig<Integer, Integer> cacheConfig = createCacheConfig(CACHE_NAME, InMemoryFormat.NATIVE);
+        final Cache<Integer, Integer> cache = getICache(cacheManager, cacheConfig, CACHE_NAME);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        int concurrency = Runtime.getRuntime().availableProcessors();
+        Future[] destroyFutures = new Future[concurrency];
+
+        Runnable destroyCacheTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    latch.await(30, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    // ignore
+                }
+                cacheManager.destroyCache(CACHE_NAME);
+                assertTrue(cache.isClosed());
+            }
+        };
+
+        for (int i = 0; i < concurrency; i++) {
+            destroyFutures[i] = spawn(destroyCacheTask);
+        }
+
+        latch.countDown();
+        for (int i = 0; i < concurrency; i++) {
+            destroyFutures[i].get();
+        }
+    }
 }

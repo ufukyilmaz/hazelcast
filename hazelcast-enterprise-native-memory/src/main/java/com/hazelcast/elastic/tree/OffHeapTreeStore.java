@@ -1,5 +1,6 @@
 package com.hazelcast.elastic.tree;
 
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.memory.MemoryBlock;
 
 import java.util.Iterator;
@@ -45,8 +46,14 @@ public interface OffHeapTreeStore
 
     /***
      * Looking for key equal to blob;
-     * In case if not-found - if createIfNotExists==true - create new key entry;
-     * if createIfNotExists==false - don't create new key entry - return null;
+     *
+     * @param key           - The key blob;
+     * @return The Entry associated with the key or <code>null</code> if not found
+     */
+    OffHeapTreeEntry getEntry(HeapData key);
+
+    /***
+     * Looking for key equal to blob;
      *
      * @param key           - The key blob;
      * @return The Entry associated with the key or <code>null</code> if not found

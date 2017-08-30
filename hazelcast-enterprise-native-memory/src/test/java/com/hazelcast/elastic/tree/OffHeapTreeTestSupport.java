@@ -70,25 +70,12 @@ public abstract class OffHeapTreeTestSupport {
             long minLength = lBlob.size() <= rBlob.size() ? lBlob.size() : rBlob.size();
 
             for (long i = 0; i < minLength; i++) {
-                byte rightByte = this.unsafe.getByte(rBlob.address() + i);
-                byte leftByte = this.unsafe.getByte(lBlob.address() + i);
+                int result = compareByte(
+                        this.unsafe.getByte(lBlob.address() + i),
+                        this.unsafe.getByte(rBlob.address() + i));
 
-                byte leftBit = (byte) (leftByte & (byte) 0x80);
-                byte rightBit = (byte) (rightByte & (byte) 0x80);
-
-                if ((leftBit != 0) && (rightBit == 0)) {
-                    return 1;
-                } else if ((leftBit == 0) && (rightBit != 0)) {
-                    return -1;
-                }
-
-                byte unsignedLeftBit = (byte) (leftByte & (byte) 0x7F);
-                byte unsignedRightBit = (byte) (rightByte & (byte) 0x7F);
-
-                if (unsignedLeftBit > unsignedRightBit) {
-                    return 1;
-                } else if (leftByte < rightByte) {
-                    return -1;
+                if (result != 0) {
+                    return result;
                 }
             }
 
@@ -99,6 +86,46 @@ public abstract class OffHeapTreeTestSupport {
             return (lBlob.size() > rBlob.size()) ? 1 : -1;
         }
 
+        @Override
+        public int compare(byte[] lBlob, byte[] rBlob) {
+            long minLength = lBlob.length <= rBlob.length ? lBlob.length : rBlob.length;
+
+            for (int i = 0; i < minLength; i++) {
+                int result = compareByte(lBlob[i], rBlob[i]);
+
+                if (result != 0) {
+                    return result;
+                }
+            }
+
+            if (rBlob.length == lBlob.length) {
+                return 0;
+            }
+
+            return (lBlob.length > rBlob.length) ? 1 : -1;
+        }
+
+        private int compareByte(byte left, byte right) {
+            byte leftBit = (byte) (left & (byte) 0x80);
+            byte rightBit = (byte) (right & (byte) 0x80);
+
+            if ((leftBit != 0) && (rightBit == 0)) {
+                return 1;
+            } else if ((leftBit == 0) && (rightBit != 0)) {
+                return -1;
+            }
+
+            byte unsignedLeftBit = (byte) (left & (byte) 0x7F);
+            byte unsignedRightBit = (byte) (right & (byte) 0x7F);
+
+            if (unsignedLeftBit > unsignedRightBit) {
+                return 1;
+            } else if (left < right) {
+                return -1;
+            }
+
+            return 0;
+        }
     }
 
 }

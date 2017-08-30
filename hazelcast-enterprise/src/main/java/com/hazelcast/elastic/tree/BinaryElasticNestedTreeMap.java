@@ -5,6 +5,7 @@ import com.hazelcast.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.elastic.map.NativeMemoryDataAccessor;
 import com.hazelcast.elastic.tree.impl.RedBlackTreeStore;
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.MemoryBlock;
@@ -177,39 +178,30 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         checkNotNullOrEmpty(segmentKey, "segmentKey can't be null or empty");
         checkNotNullOrEmpty(key, "key can't be null or empty");
 
-        NativeMemoryData nativeSegmentKey = null;
-        OffHeapTreeEntry entry = null;
-        try {
-            nativeSegmentKey = ess.toNativeData(segmentKey, malloc);
-
-            entry = records.getEntry(nativeSegmentKey);
-            if (entry == null) {
-                return null;
-            }
-
-            MemoryBlock blob = entry.values().next();
-            if (blob == null) {
-                return null;
-            }
-
-            BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, blob.address());
-            NativeMemoryData value = map.remove(key);
-
-            if (map.isEmpty()) {
-                MemoryBlock keyBlob = entry.getKey();
-
-                try {
-                    records.remove(entry);
-                } finally {
-                    dispose(keyBlob, blob, map);
-                }
-            } else {
-                map.storeHeaderOffHeap(malloc, blob.address());
-            }
-            return value;
-        } finally {
-            dispose(nativeSegmentKey);
+        OffHeapTreeEntry entry = records.getEntry((HeapData) segmentKey);
+        if (entry == null) {
+            return null;
         }
+
+        MemoryBlock blob = entry.values().next();
+        if (blob == null) {
+            return null;
+        }
+
+        BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, blob.address());
+        NativeMemoryData value = map.remove(key);
+        MemoryBlock keyBlob = entry.getKey();
+
+        if (map.isEmpty()) {
+            try {
+                records.remove(entry);
+            } finally {
+                dispose(keyBlob, blob, map);
+            }
+        } else {
+            map.storeHeaderOffHeap(malloc, blob.address());
+        }
+        return value;
     }
 
     @SuppressWarnings({"checkstyle:npathcomplexity", "checkstyle:cyclomaticcomplexity", "checkstyle:methodlength",

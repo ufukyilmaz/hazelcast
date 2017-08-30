@@ -5,7 +5,9 @@ import com.hazelcast.elastic.tree.OffHeapTreeEntry;
 import com.hazelcast.elastic.tree.OffHeapTreeStore;
 import com.hazelcast.elastic.tree.OrderingDirection;
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.nio.serialization.Data;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.HashSet;
@@ -18,7 +20,9 @@ import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.LEFT;
 import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.RED;
 import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.RIGHT;
 import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.newNode;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /***
@@ -35,6 +39,14 @@ public class RedBlackTreeStore
     private static final RedBlackTreeNode NIL = new RedBlackTreeNode();
 
     private boolean assertOn;
+
+    /**
+     * One can access a record using an on-heap key type, see. {@link #getEntry(HeapData)}
+     * or using an off-heap key type, see. {@link #getEntry(MemoryBlock)}.
+     */
+    private enum KeyType {
+        ON_HEAP, OFF_HEAP
+    }
 
     private final MemoryAllocator malloc;
     private final OffHeapComparator offHeapKeyComparator;
@@ -62,8 +74,8 @@ public class RedBlackTreeStore
     }
 
     public OffHeapTreeEntry put(MemoryBlock key, MemoryBlock value, OffHeapComparator comparator) {
-        checkNotNull(key);
-        checkNotNull(value);
+        checkNotNull(key, KeyType.OFF_HEAP);
+        checkNotNull(value, KeyType.OFF_HEAP);
 
         try {
             if (root == null) {
@@ -71,7 +83,7 @@ public class RedBlackTreeStore
                 return root.entry();
             }
 
-            LookupResult result = lookup(key, comparator);
+            LookupResult result = lookup(key, KeyType.OFF_HEAP, comparator);
             if (result.isExactMatch) {
                 RedBlackTreeNode.Entry entry = (RedBlackTreeNode.Entry) result.node.entry();
                 entry.addValue(value);
@@ -85,17 +97,28 @@ public class RedBlackTreeStore
         }
     }
 
+    @Override
     public OffHeapTreeEntry getEntry(MemoryBlock key) {
-        return this.getEntry(key, offHeapKeyComparator);
+        return getEntry(key, KeyType.OFF_HEAP, offHeapKeyComparator);
     }
 
+    @Override
+    public OffHeapTreeEntry getEntry(HeapData key) {
+        return getEntry(key, KeyType.ON_HEAP, offHeapKeyComparator);
+    }
+
+    @Override
     public OffHeapTreeEntry getEntry(MemoryBlock key, OffHeapComparator comparator) {
-        LookupResult result = lookup(key, comparator == null ? offHeapKeyComparator : comparator);
+        return getEntry(key, KeyType.OFF_HEAP, comparator == null ? offHeapKeyComparator : comparator);
+    }
+
+    private OffHeapTreeEntry getEntry(Object key, KeyType keyType, OffHeapComparator comparator) {
+        final LookupResult result = lookup(key, keyType, comparator);
         return result.isExactMatch && result.node != null ? result.node.entry() : null;
     }
 
     public OffHeapTreeEntry searchEntry(MemoryBlock key) {
-        LookupResult result = lookup(key, offHeapKeyComparator);
+        LookupResult result = lookup(key, KeyType.OFF_HEAP, offHeapKeyComparator);
         return result.node != null ? result.node.entry() : null;
     }
 
@@ -181,8 +204,8 @@ public class RedBlackTreeStore
         return new EntryIterator(((RedBlackTreeNode.Entry) entry).node(), direction);
     }
 
-    private void checkNotNull(MemoryBlock blob) {
-        if (blob == null || blob.address() == NULL_ADDRESS) {
+    private void checkNotNull(Object blob, KeyType type) {
+        if (blob == null || (type.equals(KeyType.OFF_HEAP) && ((MemoryBlock) blob).address() == NULL_ADDRESS)) {
             throw new IllegalArgumentException("Null blobs or null-address based, not allowed.");
         }
     }
@@ -193,8 +216,8 @@ public class RedBlackTreeStore
         }
     }
 
-    private LookupResult lookup(MemoryBlock key, OffHeapComparator comparator) {
-        checkNotNull(key);
+    private LookupResult lookup(Object key, KeyType type, OffHeapComparator comparator) {
+        checkNotNull(key, type);
 
         if (root == null) {
             return new LookupResult(null, true);
@@ -203,7 +226,7 @@ public class RedBlackTreeStore
         RedBlackTreeNode node = root;
 
         while (true) {
-            int compareResult = compareKeys(comparator, key, node);
+            int compareResult = compareKeys(comparator, key, type, node);
             if (compareResult > 0) {
                 //Our key is greater
                 RedBlackTreeNode right = node.right();
@@ -429,9 +452,15 @@ public class RedBlackTreeStore
         return false;
     }
 
-    private int compareKeys(OffHeapComparator comparator, MemoryBlock key, RedBlackTreeNode node) {
+    private int compareKeys(OffHeapComparator comparator, Object key, KeyType type, RedBlackTreeNode node) {
         MemoryBlock against = node.entry().getKey();
-        return comparator.compare(key, against);
+        if (type.equals(KeyType.OFF_HEAP)) {
+            return comparator.compare((MemoryBlock) key, against);
+        } else {
+            byte[] againstBlob = new byte[against.size() - INT_SIZE_IN_BYTES];
+            against.copyTo(INT_SIZE_IN_BYTES, againstBlob, ARRAY_BYTE_BASE_OFFSET, againstBlob.length);
+            return comparator.compare(((Data) key).toByteArray(), againstBlob);
+        }
     }
 
     private RedBlackTreeNode treeMin(RedBlackTreeNode entry) {

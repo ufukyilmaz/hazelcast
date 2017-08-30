@@ -14,22 +14,17 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.Node;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -38,7 +33,6 @@ import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.util.EmptyStatement;
-import com.hazelcast.util.function.LongLongConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -74,9 +68,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hazelcast.instance.TestUtil.terminateInstance;
 import static com.hazelcast.HDTestSupport.getICache;
-import static com.hazelcast.memory.MemorySize.toPrettyString;
+import static com.hazelcast.NativeMemoryTestUtil.assertFreeNativeMemory;
+import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsNotZero;
+import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsZero;
+import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
+import static com.hazelcast.NativeMemoryTestUtil.dumpNativeMemory;
+import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
+import static com.hazelcast.instance.TestUtil.terminateInstance;
+import static com.hazelcast.spi.properties.GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -98,22 +98,24 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
     @BeforeClass
     public static void setupClass() {
-        System.setProperty(StandardMemoryManager.PROPERTY_DEBUG_ENABLED, "true");
+        enableNativeMemoryDebugging();
     }
 
     @AfterClass
     public static void tearDownClass() {
-        System.setProperty(StandardMemoryManager.PROPERTY_DEBUG_ENABLED, "false");
+        disableNativeMemoryDebugging();
     }
 
     @Test
     @Category(QuickTest.class)
-    public void test_shutdown() throws InterruptedException {
-        final Config config = new Config();
-        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
-        memoryConfig.setEnabled(true)
+    public void test_shutdown() {
+        NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
+                .setEnabled(true)
                 .setAllocatorType(MemoryAllocatorType.POOLED)
                 .setSize(MEMORY_SIZE);
+
+        final Config config = new Config()
+                .setNativeMemoryConfig(memoryConfig);
 
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);
@@ -131,36 +133,36 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         }
 
         MemoryStats memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
-        hz.shutdown();
+        assertMemoryStatsNotZero("member", memoryStats);
 
-        assertEquals(0, memoryStats.getUsedNative());
-        assertEquals(0, memoryStats.getCommittedNative());
-        assertEquals(0, memoryStats.getUsedMetadata());
+        hz.shutdown();
+        assertMemoryStatsZero("member", memoryStats);
     }
 
     @Test
     @RequireAssertEnabled
-    public void testNativeMemoryLeakWithoutExpiryPolicy() throws InterruptedException {
+    public void testNativeMemoryLeakWithoutExpiryPolicy() {
         testNativeMemoryLeakInternal(null);
     }
 
     @Test
     @RequireAssertEnabled
-    public void testNativeMemoryLeakWithExpiryPolicy() throws InterruptedException {
+    public void testNativeMemoryLeakWithExpiryPolicy() {
         testNativeMemoryLeakInternal(new CacheExpiryPolicyFactory());
     }
 
-    private void testNativeMemoryLeakInternal(CacheExpiryPolicyFactory expiryPolicyFactory) throws InterruptedException {
-        final Config config = new Config();
-        // Set Max Parallel Replications to max value, so that the initial partitions can sync as soon possible.
-        // Due to a race condition in object destruction, it can happen that the sync operation takes place
-        // while a cache is being destroyed which can result in a memory leak.
-        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), String.valueOf(Integer.MAX_VALUE));
-        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
-        memoryConfig
+    private void testNativeMemoryLeakInternal(CacheExpiryPolicyFactory expiryPolicyFactory) {
+        NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
                 .setAllocatorType(ALLOCATOR_TYPE)
                 .setSize(MEMORY_SIZE);
+
+        final Config config = new Config()
+                .setNativeMemoryConfig(memoryConfig)
+                // Set Max Parallel Replications to max value, so that the initial partitions can sync as soon possible.
+                // Due to a race condition in object destruction, it can happen that the sync operation takes place
+                // while a cache is being destroyed which can result in a memory leak.
+                .setProperty(PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), String.valueOf(Integer.MAX_VALUE));
 
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);
@@ -200,7 +202,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
         assertOpenEventually(latch, TIMEOUT * 2);
         done.set(true);
-        bouncingThread.join();
+        assertJoinable(bouncingThread);
 
         // even though we wait after node is terminated in `bouncingThread`, be sure that there is no migration ongoing
         waitAllForSafeState(hz, hz2);
@@ -215,7 +217,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         cache.destroy();
 
         try {
-            assertTrueEventually(new AssertFreeMemoryTask(hz, hz2), 30);
+            assertFreeNativeMemory(30, hz, hz2);
             if (assertionErrorOnVerifyUsedMemorySizes != null) {
                 throw assertionErrorOnVerifyUsedMemorySizes;
             }
@@ -637,55 +639,5 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         public int getPartitionId() {
             return partitionId;
         }
-    }
-
-    private static class AssertFreeMemoryTask extends AssertTask {
-
-        private final MemoryStats memoryStats;
-        private final MemoryStats memoryStats2;
-
-        private AssertFreeMemoryTask(HazelcastInstance hz, HazelcastInstance hz2) {
-            memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
-            memoryStats2 = getNode(hz2).hazelcastInstance.getMemoryStats();
-        }
-
-        @Override
-        public void run() throws Exception {
-            String message = "Node1: " + toPrettyString(memoryStats.getUsedNative())
-                    + ", Node2: " + toPrettyString(memoryStats2.getUsedNative());
-
-            assertEquals(message, 0, memoryStats.getUsedNative());
-            assertEquals(message, 0, memoryStats2.getUsedNative());
-        }
-    }
-
-    private static void dumpNativeMemory(HazelcastInstance hz) {
-        Node node = getNode(hz);
-        EnterpriseSerializationService ss = (EnterpriseSerializationService) node.getSerializationService();
-        HazelcastMemoryManager memoryManager = ss.getMemoryManager();
-
-        if (!(memoryManager instanceof StandardMemoryManager)) {
-            System.err.println("Cannot dump memory for " + memoryManager);
-            return;
-        }
-
-        StandardMemoryManager standardMemoryManager = (StandardMemoryManager) memoryManager;
-        standardMemoryManager.forEachAllocatedBlock(new LongLongConsumer() {
-
-            private int k;
-
-            @Override
-            public void accept(long key, long value) {
-                if (value == HiDensityNativeMemoryCacheRecord.SIZE) {
-                    HiDensityNativeMemoryCacheRecord record = new HiDensityNativeMemoryCacheRecord(null, key);
-                    System.err.println((++k) + ". Record Address: " + key
-                            + " (Value Address: " + record.getValueAddress() + ")");
-                } else if (value == 13) {
-                    System.err.println((++k) + ". Key Address: " + key);
-                } else {
-                    System.err.println((++k) + ". Value Address: " + key + ", size: " + value);
-                }
-            }
-        });
     }
 }

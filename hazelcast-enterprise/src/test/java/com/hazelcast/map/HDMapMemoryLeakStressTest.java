@@ -1,6 +1,5 @@
 package com.hazelcast.map;
 
-import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.config.CacheDeserializedValues;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
@@ -12,24 +11,17 @@ import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.Node;
-import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.PooledNativeMemoryStats;
-import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.EntryObject;
 import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.SlowTest;
-import com.hazelcast.util.function.LongLongConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,7 +37,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.hazelcast.memory.MemorySize.toPrettyString;
+import static com.hazelcast.NativeMemoryTestUtil.assertFreeNativeMemory;
+import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsNotZero;
+import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsZero;
+import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
+import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -66,12 +62,12 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
 
     @BeforeClass
     public static void setupClass() {
-        System.setProperty(StandardMemoryManager.PROPERTY_DEBUG_ENABLED, "true");
+        enableNativeMemoryDebugging();
     }
 
     @AfterClass
     public static void tearDownClass() {
-        System.setProperty(StandardMemoryManager.PROPERTY_DEBUG_ENABLED, "false");
+        disableNativeMemoryDebugging();
     }
 
     @Test
@@ -89,13 +85,10 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         }
 
         MemoryStats memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
-        hz.shutdown();
+        assertMemoryStatsNotZero("member", memoryStats);
 
-        assertEquals("memoryStats.getUsedNative() should be 0", 0, memoryStats.getUsedNative());
-        assertEquals("memoryStats.getCommittedNative() should be 0", 0, memoryStats.getCommittedNative());
-        if (memoryStats instanceof PooledNativeMemoryStats) {
-            assertEquals("memoryStats.getUsedMetadata() should be 0", 0, memoryStats.getUsedMetadata());
-        }
+        hz.shutdown();
+        assertMemoryStatsZero("member", memoryStats);
     }
 
     @Test
@@ -138,13 +131,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         map.clear();
         map.destroy();
 
-        try {
-            assertTrueEventually(new AssertFreeMemoryTask(hz1, hz2));
-        } catch (AssertionError e) {
-            dumpNativeMemory(hz1);
-            dumpNativeMemory(hz2);
-            throw e;
-        }
+        assertFreeNativeMemory(hz1, hz2);
     }
 
     protected Config createConfig() {
@@ -169,34 +156,6 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                 .setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
                 .addMapConfig(mapConfig)
                 .setNativeMemoryConfig(memoryConfig);
-    }
-
-    private static void dumpNativeMemory(HazelcastInstance hz) {
-        Node node = getNode(hz);
-        EnterpriseSerializationService ss = (EnterpriseSerializationService) node.getSerializationService();
-        HazelcastMemoryManager memoryManager = ss.getMemoryManager();
-        if (!(memoryManager instanceof StandardMemoryManager)) {
-            System.err.println("Cannot dump memory for " + memoryManager);
-            return;
-        }
-
-        StandardMemoryManager standardMemoryManager = (StandardMemoryManager) memoryManager;
-        standardMemoryManager.forEachAllocatedBlock(new LongLongConsumer() {
-
-            private int k;
-
-            @Override
-            public void accept(long key, long value) {
-                if (value == HiDensityNativeMemoryCacheRecord.SIZE) {
-                    HiDensityNativeMemoryCacheRecord record = new HiDensityNativeMemoryCacheRecord(null, key);
-                    System.err.println((++k) + ". Record Address: " + key + " (Value Address: " + record.getValueAddress() + ")");
-                } else if (value == 13) {
-                    System.err.println((++k) + ". Key Address: " + key);
-                } else {
-                    System.err.println((++k) + ". Value Address: " + key + ", size: " + value);
-                }
-            }
-        });
     }
 
     private static class WorkerThread extends Thread {
@@ -403,26 +362,6 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         public Object process(Map.Entry<Integer, byte[]> entry) {
             entry.setValue(null);
             return Boolean.TRUE;
-        }
-    }
-
-    private static class AssertFreeMemoryTask extends AssertTask {
-
-        private final MemoryStats memoryStats1;
-        private final MemoryStats memoryStats2;
-
-        AssertFreeMemoryTask(HazelcastInstance hz1, HazelcastInstance hz2) {
-            memoryStats1 = getNode(hz1).hazelcastInstance.getMemoryStats();
-            memoryStats2 = getNode(hz2).hazelcastInstance.getMemoryStats();
-        }
-
-        @Override
-        public void run() throws Exception {
-            String memoryStats = "(Node 1: " + toPrettyString(memoryStats1.getUsedNative())
-                    + ", Node 2: " + toPrettyString(memoryStats2.getUsedNative()) + ")";
-
-            assertEquals("Node 1 is leaking memory! " + memoryStats, 0, memoryStats1.getUsedNative());
-            assertEquals("Node 2 is leaking memory! " + memoryStats, 0, memoryStats2.getUsedNative());
         }
     }
 }

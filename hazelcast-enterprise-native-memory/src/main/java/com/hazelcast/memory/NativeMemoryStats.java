@@ -80,8 +80,7 @@ class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
     @Override
     public final String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("NativeMemoryStats {");
-
+        sb.append("NativeMemoryStats{");
         sb.append("Total Physical: ").append(MemorySize.toPrettyString(getTotalPhysical()));
         sb.append(", Free Physical: ").append(MemorySize.toPrettyString(getFreePhysical()));
         sb.append(", Max Heap: ").append(MemorySize.toPrettyString(getMaxHeap()));
@@ -96,7 +95,7 @@ class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
         if (ASSERTS_ENABLED) {
             sb.append(", Internal Fragmentation: ").append(MemorySize.toPrettyString(internalFragmentation.get()));
         }
-        sb.append(", ");
+        sb.append(", GC Stats: ");
         sb.append(getGCStats());
         sb.append('}');
         return sb.toString();

@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import static com.hazelcast.HDTestSupport.getICache;
+import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -102,7 +103,8 @@ public class CacheTest extends AbstractCacheTest {
             HazelcastServerCachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(hz);
 
             CacheConfig<String, String> cacheConfig = new CacheConfig<String, String>()
-                    .setInMemoryFormat(InMemoryFormat.NATIVE);
+                    .setInMemoryFormat(InMemoryFormat.NATIVE)
+                    .setEvictionConfig(new EvictionConfig(99, USED_NATIVE_MEMORY_PERCENTAGE, EvictionPolicy.LRU));
 
             // create cache should fail here with an informative exception
             Cache<String, String> cache = getICache(provider.getCacheManager(), cacheConfig, "test");
@@ -536,7 +538,7 @@ public class CacheTest extends AbstractCacheTest {
 
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setEvictionPolicy(EvictionPolicy.LRU)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(100);
 
         CacheConfiguration<String, Integer> configuration = new CacheConfig<String, Integer>()

@@ -141,11 +141,6 @@ public class EnterpriseCacheService
     }
 
     @Override
-    protected boolean isNativeInMemoryFormatSupported() {
-        return true;
-    }
-
-    @Override
     public RamStore ramStoreForPrefix(long prefix) {
         String name = hotRestartService.getCacheName(prefix);
         return (RamStore) getRecordStore(name, toPartitionId(prefix));

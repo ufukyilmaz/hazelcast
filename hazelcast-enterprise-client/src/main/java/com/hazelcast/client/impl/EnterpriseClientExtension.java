@@ -29,6 +29,7 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.FreeMemoryChecker;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.SocketInterceptor;
@@ -50,10 +51,10 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
     private final EnterpriseClientVersionAware versionAware = new EnterpriseClientVersionAware(buildInfo.getVersion());
 
+    private HazelcastMemoryManager memoryManager;
+
     private volatile SocketInterceptor socketInterceptor;
     private volatile License license;
-
-    private HazelcastMemoryManager memoryManager;
 
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
@@ -187,6 +188,12 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
                 ((MetricsProvider) memoryManager).provideMetrics(registry);
             }
         }
+    }
+
+    @Override
+    public MemoryStats getMemoryStats() {
+        HazelcastMemoryManager mm = memoryManager;
+        return mm != null ? mm.getMemoryStats() : super.getMemoryStats();
     }
 
     private static class EnterpriseClientVersionAware implements EnterpriseClusterVersionAware {

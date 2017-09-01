@@ -7,11 +7,13 @@ import com.hazelcast.config.EventJournalConfig;
 import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Ignore(value = "https://github.com/hazelcast/hazelcast-enterprise/issues/1678")
 public class BasicHDCacheJournalTest extends BasicCacheJournalTest {
     @Override
     protected Config getConfig() {

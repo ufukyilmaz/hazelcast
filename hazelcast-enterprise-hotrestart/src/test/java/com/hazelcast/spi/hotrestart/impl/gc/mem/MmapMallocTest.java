@@ -19,6 +19,7 @@ import java.util.Random;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -34,22 +35,21 @@ public class MmapMallocTest {
     @Rule
     public final TestName testName = new TestName();
 
-    private File baseDir;
+    private File testingHome;
 
     private MmapMalloc malloc;
 
     @Before
     public void setUp() {
-        baseDir = isolatedFolder(getClass(), testName);
-        delete(baseDir);
-        baseDir.mkdirs();
-        malloc = new MmapMalloc(baseDir, true);
+        testingHome = isolatedFolder(getClass(), testName);
+        createFolder(testingHome);
+        malloc = new MmapMalloc(testingHome, true);
     }
 
     @After
     public void tearDown() {
         malloc.dispose();
-        delete(baseDir);
+        delete(testingHome);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class MmapMallocTest {
     @Test
     public void when_allocateAndFree_thenSlabDeleted() {
         // Given
-        final File slabFile = new File(baseDir, 30 + ".mmap");
+        final File slabFile = new File(testingHome, 30 + ".mmap");
         final long address = malloc.allocate(30);
         assertTrue(slabFile.exists());
 

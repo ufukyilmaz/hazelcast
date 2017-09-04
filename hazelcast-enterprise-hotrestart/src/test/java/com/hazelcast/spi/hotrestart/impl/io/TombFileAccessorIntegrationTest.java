@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createGcHelper;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.populateTombRecordFile;
@@ -54,18 +55,19 @@ public class TombFileAccessorIntegrationTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
+    private File testingHome;
     private GcHelper gcHelper;
-    private File homeDir;
 
     @Before
     public void before() {
-        homeDir = isolatedFolder(getClass(), testName);
-        gcHelper = createGcHelper(homeDir);
+        testingHome = isolatedFolder(getClass(), testName);
+        createFolder(testingHome);
+        gcHelper = createGcHelper(testingHome);
     }
 
     @After
     public void after() {
-        delete(homeDir);
+        delete(testingHome);
     }
 
     @Test(expected = NullPointerException.class)

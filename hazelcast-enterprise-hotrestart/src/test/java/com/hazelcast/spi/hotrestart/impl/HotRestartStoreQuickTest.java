@@ -6,6 +6,7 @@ import com.hazelcast.spi.hotrestart.impl.testsupport.TestProfile;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,9 +17,11 @@ import org.junit.runner.RunWith;
 import java.io.File;
 
 import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hrStoreConfig;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -33,26 +36,31 @@ public class HotRestartStoreQuickTest {
     @Before
     public void setup() {
         testingHome = isolatedFolder(getClass(), testName);
-        delete(testingHome);
+        createFolder(testingHome);
         profile = new TestProfile.Default();
     }
 
+    @After
+    public void tearDown() {
+        delete(testingHome);
+    }
+
     @Test
-    public void onHeapExercise() throws Exception {
+    public void onHeapExercise() {
         setupGeneralProfile();
         profile.offHeapMb = 0;
-        generalExercise();
+        new HotRestartStoreExerciser(testingHome, profile).proceed();
     }
 
     @Test
-    public void offHeapExercise() throws Exception {
+    public void offHeapExercise() {
         setupGeneralProfile();
         profile.offHeapMb = 1024;
-        generalExercise();
+        new HotRestartStoreExerciser(testingHome, profile).proceed();
     }
 
     @Test
-    public void testRemoveAllKeys() throws Exception {
+    public void testRemoveAllKeys() {
         profile.keysetSize = 100;
         final HotRestartStoreConfig cfg = hrStoreConfig(testingHome);
         MockStoreRegistry reg = new MockStoreRegistry(cfg, null, false);
@@ -66,10 +74,12 @@ public class HotRestartStoreQuickTest {
     }
 
     @Test
-    public void checkMaxChunkSeqOnRestart() throws Exception {
+    public void checkMaxChunkSeqOnRestart() {
         final HotRestartStoreConfig cfg = hrStoreConfig(testingHome);
         MockStoreRegistry reg = new MockStoreRegistry(cfg, null, true);
         GcHelper helper = ((ConcurrentHotRestartStore) reg.hrStore).getDi().get(GcHelper.class);
+        assertNotNull(helper);
+
         reg.put(1, 1, new byte[1]);
         reg.put(1, 2, new byte[1]);
         reg.put(1, 3, new byte[1]);
@@ -80,6 +90,7 @@ public class HotRestartStoreQuickTest {
         delete(new File(testingHome, "value"));
         reg = new MockStoreRegistry(cfg, null, true);
         helper = ((ConcurrentHotRestartStore) reg.hrStore).getDi().get(GcHelper.class);
+        assertNotNull(helper);
         assertEquals(3, helper.recordSeq());
         closeAndDispose(reg);
     }
@@ -121,13 +132,5 @@ public class HotRestartStoreQuickTest {
         profile.sizeIncreaseSteps = 15;
         profile.logStepSize = 1;
         profile.offHeapMetadataPercentage = 12f;
-    }
-
-    private void generalExercise() throws Exception {
-        try {
-            new HotRestartStoreExerciser(testingHome, profile).proceed();
-        } finally {
-            delete(testingHome);
-        }
     }
 }

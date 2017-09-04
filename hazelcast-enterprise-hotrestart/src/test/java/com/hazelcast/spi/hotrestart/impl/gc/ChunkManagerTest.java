@@ -32,6 +32,7 @@ import java.io.File;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createBaseDiContainer;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,16 +54,17 @@ public class ChunkManagerTest {
 
     private final int chunkSeq = 1;
 
-    private File homeDir;
+    private File testingHome;
     private GcHelper gcHelper;
     private ChunkManager chunkMgr;
 
     @Before
     public void before() {
-        homeDir = isolatedFolder(getClass(), testName);
+        testingHome = isolatedFolder(getClass(), testName);
+        createFolder(testingHome);
         final DiContainer di = createBaseDiContainer();
         di.dep(di)
-                .dep("homeDir", homeDir)
+                .dep("homeDir", testingHome)
                 .dep("storeName", "test-hrstore")
                 .dep(GcHelper.class, GcHelper.OnHeap.class)
                 .dep(BackupExecutor.class, mock(BackupExecutor.class))
@@ -73,7 +75,7 @@ public class ChunkManagerTest {
 
     @After
     public void after() {
-        delete(homeDir);
+        delete(testingHome);
     }
 
     @Test

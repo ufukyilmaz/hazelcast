@@ -23,10 +23,11 @@ import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.l
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.metricsRegistry;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.summarize;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.verifyRestartedStore;
+import static com.hazelcast.test.HazelcastTestSupport.sleepMillis;
+import static com.hazelcast.test.HazelcastTestSupport.sleepSeconds;
 import static java.lang.Thread.currentThread;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class HotRestartStoreExerciser {
+class HotRestartStoreExerciser {
 
     private final HotRestartStoreConfig cfg;
     private final MemoryAllocator malloc;
@@ -55,7 +56,7 @@ public class HotRestartStoreExerciser {
         this.cfg = cfg;
     }
 
-    void proceed() throws Exception {
+    void proceed() {
         profile.build();
         final int restartCount = profile.restartCount;
         if (restartCount > 0) {
@@ -65,20 +66,20 @@ public class HotRestartStoreExerciser {
         }
     }
 
-    private void testRestart(int restartCount) throws Exception {
+    private void testRestart(int restartCount) {
         for (int i = 0; i < restartCount; i++) {
             final MockStoreRegistry reg = newStoreRegistry();
-            SECONDS.sleep(5);
+            sleepSeconds(5);
             reg.closeHotRestartStore();
         }
     }
 
-    private void testFullOperation() throws Exception {
+    private void testFullOperation() {
         delete(cfg.homeDir());
         MockStoreRegistry reg = newStoreRegistry();
         if (reg.isEmpty()) {
             logger.info("Store empty, filling");
-            Thread.sleep(200);
+            sleepMillis(200);
             fillStore(reg, profile);
         }
         for (int i = 0; i < profile.testCycleCount; i++) {
@@ -94,7 +95,7 @@ public class HotRestartStoreExerciser {
         reg.disposeRecordStores();
     }
 
-    private MockStoreRegistry newStoreRegistry() throws Exception {
+    private MockStoreRegistry newStoreRegistry() {
         return createStoreRegistry(cfg, malloc);
     }
 }

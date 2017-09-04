@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
-import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.AbstractOnHeapOffHeapTest;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -39,8 +39,10 @@ public class RecordMapTest extends AbstractOnHeapOffHeapTest {
     }
 
     @After
+    @Override
     public void destroy() {
         m.dispose();
+        super.destroy();
     }
 
     @Test

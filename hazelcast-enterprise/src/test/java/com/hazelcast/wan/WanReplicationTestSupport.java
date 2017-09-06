@@ -55,6 +55,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         return false;
     }
 
+    @Override
     protected Config getConfig() {
         Config config = new Config();
         JoinConfig joinConfig = config.getNetworkConfig().getJoin();

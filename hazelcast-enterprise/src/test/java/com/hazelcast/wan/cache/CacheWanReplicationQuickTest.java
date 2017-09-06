@@ -1,5 +1,6 @@
 package com.hazelcast.wan.cache;
 
+import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WANQueueFullBehavior;
@@ -9,24 +10,28 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WANReplicationQueueFullException;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelTest.class})
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Category(QuickTest.class)
 public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport {
 
     private static final String BATCH_IMPL = WanBatchReplication.class.getName();
@@ -34,19 +39,29 @@ public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport
     private HazelcastInstance[] basicCluster = new HazelcastInstance[2];
     private TestHazelcastInstanceFactory factory;
 
-    @Parameterized.Parameters(name = "replicationImpl:{0},memoryFormat:{1}")
+    @Parameters(name = "replicationImpl:{0},memoryFormat:{1}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {BATCH_IMPL, NATIVE},
                 {BATCH_IMPL, BINARY}
         });
     }
 
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public String replicationImpl;
 
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public InMemoryFormat memoryFormat;
+
+    @BeforeClass
+    public static void initJCache() {
+        JsrTestUtil.setup();
+    }
+
+    @AfterClass
+    public static void cleanupJCache() {
+        JsrTestUtil.cleanup();
+    }
 
     @Before
     public void setup() {

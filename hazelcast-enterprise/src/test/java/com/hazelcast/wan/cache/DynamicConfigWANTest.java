@@ -2,6 +2,7 @@ package com.hazelcast.wan.cache;
 
 
 import com.hazelcast.cache.ICache;
+import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.InMemoryFormat;
@@ -10,6 +11,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.SlowTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -17,6 +20,16 @@ import static org.junit.Assert.assertTrue;
 
 @Category(SlowTest.class)
 public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
+
+    @BeforeClass
+    public static void initJCache() {
+        JsrTestUtil.setup();
+    }
+
+    @AfterClass
+    public static void cleanupJCache() {
+        JsrTestUtil.cleanup();
+    }
 
     @Override
     public String getReplicationImpl() {
@@ -27,7 +40,6 @@ public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
     public InMemoryFormat getMemoryFormat() {
         return InMemoryFormat.BINARY;
     }
-
 
     @Test
     public void testDynamicMapConfigWithWAN_smoke() {

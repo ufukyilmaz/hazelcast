@@ -2,7 +2,6 @@ package com.hazelcast.map.impl.record;
 
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
@@ -27,20 +26,10 @@ public class HDRecordFactory implements RecordFactory<Data> {
     private final EnterpriseSerializationService serializationService;
     private final HazelcastMemoryManager memoryManager;
 
-    public HDRecordFactory(HiDensityRecordProcessor<HDRecord> recordProcessor,
-                           SerializationService serializationService) {
+    public HDRecordFactory(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
         this.serializationService = ((EnterpriseSerializationService) serializationService);
         this.memoryManager = this.serializationService.getMemoryManager();
-    }
-
-    private static boolean isNull(Object object) {
-        if (object == null) {
-            return false;
-        }
-
-        NativeMemoryData memoryBlock = (NativeMemoryData) object;
-        return memoryBlock.address() == NULL_PTR;
     }
 
     @Override
@@ -56,16 +45,13 @@ public class HDRecordFactory implements RecordFactory<Data> {
             record.setValue(dataValue);
 
             return record;
-
         } catch (NativeOutOfMemoryError error) {
             if (!isNull(dataValue)) {
                 recordProcessor.disposeData(dataValue);
             }
-
             if (address != NULL_PTR) {
                 recordProcessor.dispose(address);
             }
-
             throw error;
         }
     }
@@ -76,32 +62,16 @@ public class HDRecordFactory implements RecordFactory<Data> {
         record.setValue(data);
     }
 
-    @Override
-    public boolean isEquals(Object incomingValue, Object existingValue) {
-        if (incomingValue == null && existingValue == null) {
-            return true;
-        }
-        if (incomingValue == null || existingValue == null) {
+    public HiDensityRecordProcessor<HDRecord> getRecordProcessor() {
+        return recordProcessor;
+    }
+
+    static boolean isNull(Object object) {
+        if (object == null) {
             return false;
         }
 
-        if (!(incomingValue instanceof Data)) {
-            incomingValue = serializationService.toData(incomingValue);
-        }
-
-        if (!(existingValue instanceof Data)) {
-            existingValue = serializationService.toData(existingValue);
-        }
-
-        if (existingValue instanceof NativeMemoryData) {
-            return NativeMemoryDataUtil.equals(((NativeMemoryData) existingValue).address(), ((Data) incomingValue));
-        } else {
-            return existingValue.equals(incomingValue);
-        }
-
-    }
-
-    public HiDensityRecordProcessor<HDRecord> getRecordProcessor() {
-        return recordProcessor;
+        NativeMemoryData memoryBlock = (NativeMemoryData) object;
+        return memoryBlock.address() == NULL_PTR;
     }
 }

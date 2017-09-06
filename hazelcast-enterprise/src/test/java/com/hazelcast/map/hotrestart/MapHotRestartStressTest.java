@@ -79,8 +79,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
     @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                // FIXME: https://github.com/hazelcast/hazelcast-enterprise/issues/1689
-                //{InMemoryFormat.NATIVE, 1000},
+                {InMemoryFormat.NATIVE, 1000},
                 {InMemoryFormat.BINARY, 1000},
         });
     }

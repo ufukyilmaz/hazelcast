@@ -48,9 +48,8 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     @Parameterized.Parameters(name = "memoryFormat:{0},clusterSize:{3}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                // FIXME: https://github.com/hazelcast/hazelcast-enterprise/issues/1689
-                //{InMemoryFormat.NATIVE, KEY_COUNT, false, 1},
-                //{InMemoryFormat.NATIVE, KEY_COUNT, false, 3},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, 1},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, 3},
                 {InMemoryFormat.BINARY, KEY_COUNT, false, 1},
                 {InMemoryFormat.BINARY, KEY_COUNT, false, 3},
         });

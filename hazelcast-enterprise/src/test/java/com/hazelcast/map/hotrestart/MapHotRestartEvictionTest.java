@@ -43,8 +43,7 @@ public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
     @Parameterized.Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                // FIXME: https://github.com/hazelcast/hazelcast-enterprise/issues/1689
-                //{InMemoryFormat.NATIVE, 25000, true},
+                {InMemoryFormat.NATIVE, 25000, true},
                 {InMemoryFormat.BINARY, 25000, true},
         });
     }

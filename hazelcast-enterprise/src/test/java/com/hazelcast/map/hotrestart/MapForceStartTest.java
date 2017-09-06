@@ -34,8 +34,7 @@ public class MapForceStartTest extends AbstractMapHotRestartTest {
     @Parameterized.Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                // FIXME: https://github.com/hazelcast/hazelcast-enterprise/issues/1689
-                //{InMemoryFormat.NATIVE, KEY_COUNT, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false},
                 {InMemoryFormat.BINARY, KEY_COUNT, false},
         });
     }
@@ -76,6 +75,7 @@ public class MapForceStartTest extends AbstractMapHotRestartTest {
 
         private Node node;
 
+        @Override
         public void afterExpectedMembersJoin(Collection<? extends Member> members) {
             node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
         }

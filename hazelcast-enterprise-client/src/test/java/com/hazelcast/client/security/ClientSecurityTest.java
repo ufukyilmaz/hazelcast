@@ -2,6 +2,7 @@ package com.hazelcast.client.security;
 
 import com.hazelcast.cache.HazelcastCachingProvider;
 import com.hazelcast.cache.ICache;
+import com.hazelcast.client.cache.jsr.JsrClientTestUtil;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
@@ -17,23 +18,22 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-
 import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.configuration.MutableConfiguration;
 import javax.cache.spi.CachingProvider;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import java.io.Serializable;
 import java.io.Writer;
 import java.security.AccessControlException;
@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hazelcast.cache.CacheUtil.getDistributedObjectName;
 import static com.hazelcast.config.PermissionConfig.PermissionType.CACHE;
 import static com.hazelcast.test.HazelcastTestSupport.randomString;
-
 import static java.io.File.createTempFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -59,12 +58,21 @@ public class ClientSecurityTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    static final String HAZELCAST_START_TAG = "<hazelcast xmlns=\"http://www.hazelcast.com/schema/config\">\n";
-    static final String HAZELCAST_END_TAG = "</hazelcast>\n";
+    private static final String HAZELCAST_START_TAG = "<hazelcast xmlns=\"http://www.hazelcast.com/schema/config\">\n";
+    private static final String HAZELCAST_END_TAG = "</hazelcast>\n";
 
-    TestHazelcastFactory factory = new TestHazelcastFactory();
-
+    private final TestHazelcastFactory factory = new TestHazelcastFactory();
     private final String testObjectName = randomString();
+
+    @BeforeClass
+    public static void initJCache() {
+        JsrClientTestUtil.setup();
+    }
+
+    @AfterClass
+    public static void cleanupJCache() {
+        JsrClientTestUtil.cleanup();
+    }
 
     @After
     public void cleanup() {
@@ -111,7 +119,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        IMap map = client.getMap("test");
+        IMap<String, String> map = client.getMap("test");
         map.put("1", "A");
         map.get("1");
         map.lock("1");
@@ -134,7 +142,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = factory.newHazelcastClient(cc);
-        IMap map = client.getMap("test");
+        IMap<String, String> map = client.getMap("test");
         map.put("1", "A");
         map.get("1");
         map.lock("1");
@@ -157,7 +165,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = factory.newHazelcastClient(cc);
-        IMap map = client.getMap("test");
+        IMap<String, String> map = client.getMap("test");
         map.put("1", "A");
         map.get("1");
         map.lock("1");
@@ -207,7 +215,7 @@ public class ClientSecurityTest {
 
         // Check permissions
         HazelcastInstance client = factory.newHazelcastClient(cc);
-        IMap map = client.getMap("mySecureMap");
+        IMap<String, String> map = client.getMap("mySecureMap");
         map.put("1", "A");
         map.get("1");
         map.destroy();
@@ -228,7 +236,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = factory.newHazelcastClient(cc);
-        IMap map = client.getMap("test");
+        IMap<String, String> map = client.getMap("test");
         map.put("1", "A");
         map.get("1");
         map.lock("1");
@@ -239,11 +247,9 @@ public class ClientSecurityTest {
     @Test
     public void testMapAllPermission_nullPrincipal() {
         String loginUser = "UserA";
-        String principal = null;
-
         final Config config = createConfig(loginUser);
 
-        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", principal);
+        PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", null);
         perm.addAction(ActionConstants.ACTION_ALL);
 
         final ClientConfig cc = new ClientConfig();
@@ -251,7 +257,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = factory.newHazelcastClient(cc);
-        IMap map = client.getMap("test");
+        IMap<String, String> map = client.getMap("test");
         map.put("1", "A");
         map.get("1");
         map.lock("1");
@@ -275,7 +281,7 @@ public class ClientSecurityTest {
         factory.newHazelcastInstance(config);
         HazelcastInstance client = factory.newHazelcastClient(cc);
 
-        IMap map = client.getMap("test");
+        IMap<String, String> map = client.getMap("test");
         map.put("1", "A");
         map.get("1");
         map.lock("1");
@@ -293,7 +299,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config).getMap("test"); // create map
         HazelcastInstance client = createHazelcastClient();
-        IMap map = client.getMap("test");
+        IMap<String, String> map = client.getMap("test");
         assertNull(map.put("1", "A"));
         assertEquals("A", map.get("1"));
         assertEquals("A", map.remove("1"));
@@ -464,6 +470,7 @@ public class ClientSecurityTest {
     static class DummyCallable implements Callable<Integer>, Serializable, HazelcastInstanceAware {
         transient HazelcastInstance hz;
 
+        @Override
         public Integer call() throws Exception {
             int result = 0;
 
@@ -505,6 +512,7 @@ public class ClientSecurityTest {
             return result;
         }
 
+        @Override
         public void setHazelcastInstance(HazelcastInstance hazelcastInstance) {
             hz = hazelcastInstance;
         }
@@ -513,10 +521,12 @@ public class ClientSecurityTest {
     static class DummyCallableNewThread implements Callable<Integer>, Serializable, HazelcastInstanceAware {
         transient HazelcastInstance hz;
 
+        @Override
         public Integer call() throws Exception {
             final CountDownLatch latch = new CountDownLatch(1);
             final AtomicReference<Integer> value = new AtomicReference<Integer>();
             new Thread() {
+                @Override
                 public void run() {
                     try {
                         hz.getList("list").add("value");
@@ -530,6 +540,7 @@ public class ClientSecurityTest {
             return value.get();
         }
 
+        @Override
         public void setHazelcastInstance(HazelcastInstance hazelcastInstance) {
             hz = hazelcastInstance;
         }
@@ -554,8 +565,8 @@ public class ClientSecurityTest {
         return perm;
     }
 
-    private PermissionConfig addAllPermission(Config config, PermissionType type, String name) {
-        return addPermission(config, type, name, null).addAction(ActionConstants.ACTION_ALL);
+    private void addAllPermission(Config config, PermissionType type, String name) {
+        addPermission(config, type, name, null).addAction(ActionConstants.ACTION_ALL);
     }
 
     private void addCustomUserLoginModule(Config config, String allowedLoginUsername) {

@@ -4,7 +4,6 @@ import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.merge.HigherHitsCacheMergePolicy;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.core.DistributedObject;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
 import org.junit.Ignore;
 import org.junit.Test;

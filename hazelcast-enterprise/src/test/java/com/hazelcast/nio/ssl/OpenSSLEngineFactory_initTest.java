@@ -1,5 +1,6 @@
 package com.hazelcast.nio.ssl;
 
+import com.hazelcast.IbmUtil;
 import io.netty.handler.ssl.OpenSsl;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -9,6 +10,7 @@ import java.util.Properties;
 
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 public class OpenSSLEngineFactory_initTest {
@@ -16,6 +18,7 @@ public class OpenSSLEngineFactory_initTest {
     @BeforeClass
     public static void checkOpenSsl() {
         assumeTrue(OpenSsl.isAvailable());
+        assumeFalse(IbmUtil.ibmJvm());
     }
 
     @Test
@@ -25,6 +28,11 @@ public class OpenSSLEngineFactory_initTest {
 
     @Test
     public void openssl_whenDisabled() throws Exception {
+        // When OpenSSL is disabled and Java 6 is used, Java 6 will complain about TLSv1.2 since it isn't supported.
+        // Normally a customer will never disable openssl while using the OpenSSLEngineFactory; the flag was added
+        // mostly for testing purposes.
+        // Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1622
+        assumeFalse(System.getProperty("java.version").startsWith("1.6."));
         openssl(false);
     }
 

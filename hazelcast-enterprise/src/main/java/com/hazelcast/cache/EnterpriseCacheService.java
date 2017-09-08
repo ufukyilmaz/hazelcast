@@ -304,7 +304,7 @@ public class EnterpriseCacheService
             try {
                 cacheEventHandler.destroy(name, SOURCE_NOT_AVAILABLE);
             } finally {
-                if (NATIVE == config.getInMemoryFormat()) {
+                if (config == null || NATIVE == config.getInMemoryFormat()) {
                     destroySegments(name);
                 } else {
                     super.destroySegments(name);

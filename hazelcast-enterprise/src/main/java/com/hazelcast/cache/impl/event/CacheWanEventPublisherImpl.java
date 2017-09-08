@@ -19,38 +19,38 @@ public class CacheWanEventPublisherImpl implements CacheWanEventPublisher {
     }
 
     @Override
-    public void publishWanReplicationUpdate(String cacheName, CacheEntryView<Data, Data> entryView) {
+    public void publishWanReplicationUpdate(String cacheNameWithPrefix, CacheEntryView<Data, Data> entryView) {
         CacheEventContext cacheEventContext =
                 CacheEventContextUtil.createCacheUpdatedEvent(
                         entryView.getKey(), entryView.getValue(), null,
                         entryView.getCreationTime(), entryView.getExpirationTime(),
                         entryView.getLastAccessTime(), entryView.getAccessHit());
-        cacheEventContext.setCacheName(cacheName);
+        cacheEventContext.setCacheName(cacheNameWithPrefix);
         cacheService.publishWanEvent(cacheEventContext);
     }
 
     @Override
-    public void publishWanReplicationUpdateBackup(String cacheName, CacheEntryView<Data, Data> entryView) {
+    public void publishWanReplicationUpdateBackup(String cacheNameWithPrefix, CacheEntryView<Data, Data> entryView) {
         CacheEventContext cacheEventContext =
                 CacheEventContextUtil.createCacheUpdatedEvent(
                         entryView.getKey(), entryView.getValue(), null,
                         entryView.getCreationTime(), entryView.getExpirationTime(),
                         entryView.getLastAccessTime(), entryView.getAccessHit());
-        cacheEventContext.setCacheName(cacheName);
+        cacheEventContext.setCacheName(cacheNameWithPrefix);
         cacheService.publishWanEventBackup(cacheEventContext);
     }
 
     @Override
-    public void publishWanReplicationRemove(String cacheName, Data key) {
+    public void publishWanReplicationRemove(String cacheNameWithPrefix, Data key) {
         CacheEventContext cacheEventContext = CacheEventContextUtil.createCacheRemovedEvent(key);
-        cacheEventContext.setCacheName(cacheName);
+        cacheEventContext.setCacheName(cacheNameWithPrefix);
         cacheService.publishWanEvent(cacheEventContext);
     }
 
     @Override
-    public void publishWanReplicationRemoveBackup(String cacheName, Data key) {
+    public void publishWanReplicationRemoveBackup(String cacheNameWithPrefix, Data key) {
         CacheEventContext cacheEventContext = CacheEventContextUtil.createCacheRemovedEvent(key);
-        cacheEventContext.setCacheName(cacheName);
+        cacheEventContext.setCacheName(cacheNameWithPrefix);
         cacheService.publishWanEventBackup(cacheEventContext);
     }
 }

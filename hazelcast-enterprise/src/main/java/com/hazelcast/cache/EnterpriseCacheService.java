@@ -168,15 +168,15 @@ public class EnterpriseCacheService
     /**
      * Creates new {@link ICacheRecordStore} as specified {@link InMemoryFormat}.
      *
-     * @param name        the name of the cache, including prefix
-     * @param partitionId the partition ID which cache record store is created on
+     * @param cacheNameWithPrefix the full name of the cache, including the manager scope prefix
+     * @param partitionId         the partition ID which cache record store is created on
      * @return the created {@link ICacheRecordStore}
      * @see com.hazelcast.cache.impl.CacheRecordStore
      * @see com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore
      */
     @Override
-    protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
-        CacheConfig cacheConfig = getCacheConfig(name);
+    protected ICacheRecordStore createNewRecordStore(String cacheNameWithPrefix, int partitionId) {
+        CacheConfig cacheConfig = getCacheConfig(cacheNameWithPrefix);
         if (cacheConfig == null) {
             throw new CacheNotExistsException("Cache is already destroyed or not created yet, on "
                     + nodeEngine.getLocalMember());
@@ -204,13 +204,13 @@ public class EnterpriseCacheService
                         + " but Hot Restart persistence is not enabled!");
             }
 
-            hotRestartService.ensureHasConfiguration(SERVICE_NAME, name, cacheConfig);
-            prefix = hotRestartService.registerRamStore(this, SERVICE_NAME, name, partitionId);
-            nodeEngine.getProxyService().initializeDistributedObject(SERVICE_NAME, name);
+            hotRestartService.ensureHasConfiguration(SERVICE_NAME, cacheNameWithPrefix, cacheConfig);
+            prefix = hotRestartService.registerRamStore(this, SERVICE_NAME, cacheNameWithPrefix, partitionId);
+            nodeEngine.getProxyService().initializeDistributedObject(SERVICE_NAME, cacheNameWithPrefix);
         }
         return isNative
-                ? newNativeRecordStore(name, partitionId, hotRestartConfig, prefix)
-                : newHeapRecordStore(name, partitionId, hotRestartConfig, prefix);
+                ? newNativeRecordStore(cacheNameWithPrefix, partitionId, hotRestartConfig, prefix)
+                : newHeapRecordStore(cacheNameWithPrefix, partitionId, hotRestartConfig, prefix);
     }
 
     private static HotRestartConfig getHotRestartConfig(CacheConfig cacheConfig) {
@@ -231,12 +231,13 @@ public class EnterpriseCacheService
                 : new DefaultEnterpriseCacheRecordStore(name, partitionId, nodeEngine, this);
     }
 
-    private ICacheRecordStore newNativeRecordStore(String name, int partitionId, HotRestartConfig hotRestart, long prefix) {
+    private ICacheRecordStore newNativeRecordStore(String cacheNameWithPrefix, int partitionId,
+                                                   HotRestartConfig hotRestart, long prefix) {
         try {
             return hotRestart.isEnabled()
-                    ? new HotRestartHiDensityNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine,
+                    ? new HotRestartHiDensityNativeMemoryCacheRecordStore(partitionId, cacheNameWithPrefix, this, nodeEngine,
                     hotRestart.isFsync(), prefix)
-                    : new HiDensityNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine);
+                    : new HiDensityNativeMemoryCacheRecordStore(partitionId, cacheNameWithPrefix, this, nodeEngine);
         } catch (NativeOutOfMemoryError e) {
             throw new NativeOutOfMemoryError("Cannot create internal cache map, "
                     + "not enough contiguous memory available! -> " + e.getMessage(), e);
@@ -246,15 +247,15 @@ public class EnterpriseCacheService
     /**
      * Destroys the segments for specified cache name.
      *
-     * @param cacheName the name of cache whose segments will be destroyed
+     * @param cacheNameWithPrefix the name of cache whose segments will be destroyed
      */
     @Override
-    protected void destroySegments(String cacheName) {
+    protected void destroySegments(String cacheNameWithPrefix) {
         InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
         List<CacheSegmentDestroyOperation> ops = new ArrayList<CacheSegmentDestroyOperation>();
         for (CachePartitionSegment segment : segments) {
-            if (segment.hasRecordStore(cacheName)) {
-                CacheSegmentDestroyOperation op = new CacheSegmentDestroyOperation(cacheName);
+            if (segment.hasRecordStore(cacheNameWithPrefix)) {
+                CacheSegmentDestroyOperation op = new CacheSegmentDestroyOperation(cacheNameWithPrefix);
                 op.setPartitionId(segment.getPartitionId());
                 op.setNodeEngine(nodeEngine).setService(this);
                 if (operationService.isRunAllowed(op)) {
@@ -272,7 +273,7 @@ public class EnterpriseCacheService
                 nodeEngine.getLogger(getClass()).warning(e);
             }
         }
-        HiDensityStorageInfo storageInfo = hiDensityCacheInfoMap.remove(cacheName);
+        HiDensityStorageInfo storageInfo = hiDensityCacheInfoMap.remove(cacheNameWithPrefix);
         if (storageInfo != null) {
             deregisterCacheProbes(storageInfo);
         }
@@ -460,13 +461,12 @@ public class EnterpriseCacheService
      * Creates a {@link CacheOperationProvider} as specified {@link InMemoryFormat}
      * for specified {@code cacheNameWithPrefix}.
      *
-     * @param cacheNameWithPrefix the name of the cache (including prefix) that operation works on
+     * @param cacheNameWithPrefix the name of the cache (including manager prefix) that operation works on
      * @param inMemoryFormat      the format of memory such as {@code BINARY}, {@code OBJECT}
      *                            or {@code NATIVE}
      */
     @Override
-    protected CacheOperationProvider createOperationProvider(String cacheNameWithPrefix,
-                                                             InMemoryFormat inMemoryFormat) {
+    protected CacheOperationProvider createOperationProvider(String cacheNameWithPrefix, InMemoryFormat inMemoryFormat) {
         EnterpriseCacheOperationProvider operationProvider;
         if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
             operationProvider = new HiDensityCacheOperationProvider(cacheNameWithPrefix);
@@ -483,13 +483,13 @@ public class EnterpriseCacheService
     }
 
     @Override
-    public CacheOperationProvider getCacheOperationProvider(String nameWithPrefix, InMemoryFormat inMemoryFormat) {
-        CacheOperationProvider cacheOperationProvider = operationProviderCache.get(nameWithPrefix);
+    public CacheOperationProvider getCacheOperationProvider(String cacheNameWithPrefix, InMemoryFormat inMemoryFormat) {
+        CacheOperationProvider cacheOperationProvider = operationProviderCache.get(cacheNameWithPrefix);
         if (cacheOperationProvider != null) {
             return cacheOperationProvider;
         }
-        cacheOperationProvider = createOperationProvider(nameWithPrefix, inMemoryFormat);
-        CacheOperationProvider current = operationProviderCache.putIfAbsent(nameWithPrefix, cacheOperationProvider);
+        cacheOperationProvider = createOperationProvider(cacheNameWithPrefix, inMemoryFormat);
+        CacheOperationProvider current = operationProviderCache.putIfAbsent(cacheNameWithPrefix, cacheOperationProvider);
         return current == null ? cacheOperationProvider : current;
     }
 
@@ -538,9 +538,9 @@ public class EnterpriseCacheService
     }
 
     @Override
-    public CacheConfig deleteCacheConfig(String name) {
-        wanReplicationPublishers.remove(name);
-        return super.deleteCacheConfig(name);
+    public CacheConfig deleteCacheConfig(String cacheNameWithPrefix) {
+        wanReplicationPublishers.remove(cacheNameWithPrefix);
+        return super.deleteCacheConfig(cacheNameWithPrefix);
     }
 
     public CacheMergePolicyProvider getCacheMergePolicyProvider() {
@@ -634,17 +634,30 @@ public class EnterpriseCacheService
         return WanFilterEventType.UPDATED;
     }
 
-    public void publishWanEvent(String cacheName, WanReplicationEvent wanReplicationEvent) {
-        WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheName);
+    /**
+     * Publishes a WAN event for the provided {@code cacheNameWithPrefix} if there
+     * is a publisher initialized for the cache. It is possible that the publisher has
+     * not been initialised yet for this cache which means that the event may not be published
+     * at this point but may be published at a later point.
+     *
+     * @param cacheNameWithPrefix the full name of the cache, including the manager scope prefix
+     * @param wanReplicationEvent the WAN event to be published
+     */
+    public void publishWanEvent(String cacheNameWithPrefix, WanReplicationEvent wanReplicationEvent) {
+        final WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheNameWithPrefix);
         if (wanReplicationPublisher != null) {
             wanReplicationPublisher.publishReplicationEvent(wanReplicationEvent);
         }
     }
 
     @Override
-    public boolean isWanReplicationEnabled(String cacheName) {
-        WanReplicationPublisher publisher = wanReplicationPublishers.get(cacheName);
-        return publisher != null;
+    public boolean isWanReplicationEnabled(String cacheNameWithPrefix) {
+        final CacheConfig config = getCacheConfig(cacheNameWithPrefix);
+        final WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
+        final WanReplicationService wanService = nodeEngine.getWanReplicationService();
+
+        return wanReplicationRef != null
+                && wanService.getWanReplicationPublisher(wanReplicationRef.getName()) != null;
     }
 
     @Override

@@ -53,10 +53,10 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     private final Object recordMapMutex;
 
     public HotRestartHiDensityNativeMemoryCacheRecordStore(
-            int partitionId, String name, EnterpriseCacheService cacheService,
+            int partitionId, String cacheNameWithPrefix, EnterpriseCacheService cacheService,
             NodeEngine nodeEngine, boolean fsync, long keyPrefix
     ) {
-        super(partitionId, name, cacheService, nodeEngine);
+        super(partitionId, cacheNameWithPrefix, cacheService, nodeEngine);
         this.fsync = fsync;
         this.prefix = keyPrefix;
         this.hotRestartStore = cacheService.offHeapHotRestartStoreForPartition(partitionId);

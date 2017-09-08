@@ -54,9 +54,9 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected HazelcastMemoryManager memoryManager;
     private final ILogger logger;
 
-    public HiDensityNativeMemoryCacheRecordStore(int partitionId, String name, EnterpriseCacheService cacheService,
+    public HiDensityNativeMemoryCacheRecordStore(int partitionId, String cacheNameWithPrefix, EnterpriseCacheService cacheService,
                                                  NodeEngine nodeEngine) {
-        super(name, partitionId, nodeEngine, cacheService);
+        super(cacheNameWithPrefix, partitionId, nodeEngine, cacheService);
         this.logger = nodeEngine.getLogger(getClass());
         ensureInitialized();
     }

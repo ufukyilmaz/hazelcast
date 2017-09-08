@@ -39,8 +39,9 @@ public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
 
         setupReplicateFrom(configA, configB, clusterB.length, wanSetupName, PassThroughCacheMergePolicy.class.getName(),
                 "default");
-        //disable WAN replication for the default map config. it's auto-enabled by the setupReplicateFrom()
-        configA.getMapConfig("default").setWanReplicationRef(null);
+        //disable WAN replication for the default cache config. it's auto-enabled by the setupReplicateFrom()
+        configA.getCacheConfig("default")
+               .setWanReplicationRef(null);
 
         startClusterA();
         startClusterB();
@@ -55,8 +56,7 @@ public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
         cacheConfig.setWanReplicationRef(wanRef);
         clusterA[0].getConfig().addCacheConfig(cacheConfig);
 
-        cacheConfig = new CacheSimpleConfig();
-        cacheConfig.setName(cacheName);
+        cacheConfig = new CacheSimpleConfig().setName(cacheName);
         clusterB[0].getConfig().addCacheConfig(cacheConfig);
 
         ICache<Integer, Integer> cache = clusterA[0].getCacheManager().getCache(cacheName);

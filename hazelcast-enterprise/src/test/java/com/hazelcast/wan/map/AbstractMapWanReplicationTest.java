@@ -8,6 +8,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
+import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
@@ -20,10 +22,8 @@ import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
-import com.hazelcast.monitor.LocalInstanceStats;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.LocalWanStats;
-import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.OperationFactory;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
@@ -494,6 +494,33 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
+    public void putFromLoadAllAddsWanEventsOnAllReplicas() {
+        final String setupName = "atob";
+        setupReplicateFrom(configA, configB, clusterB.length, setupName, PassThroughMergePolicy.class.getName());
+        final int startKey = 0;
+        final int endKey = 10;
+
+        final ConcurrentHashMap<Integer, String> initialStoreData = new ConcurrentHashMap<Integer, String>();
+        for (int i = startKey; i < endKey; i++) {
+            initialStoreData.put(i, "dummy");
+        }
+
+        MapStoreConfig mapStoreConfig = new MapStoreConfig()
+                .setImplementation(new SimpleStore<Integer, String>(initialStoreData))
+                .setWriteDelaySeconds(0)
+                .setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
+        configA.getMapConfig("stored-map").setMapStoreConfig(mapStoreConfig);
+
+        startClusterA();
+        getMap(clusterA, "stored-map").loadAll(true);
+        assertWanQueueSizesOnAllInstances(clusterA, setupName, configB.getGroupConfig().getName(), 10);
+
+        startClusterB();
+        assertKeysIn(clusterB, "stored-map", startKey, endKey);
+        assertWanQueueSizesOnAllInstances(clusterA, setupName, configB.getGroupConfig().getName(), 0);
+    }
+
+    @Test
     public void testStats() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", HigherHitsMapMergePolicy.class.getName());
@@ -547,6 +574,31 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         }
     }
 
+    private static void assertWanQueueSizesOnAllInstances(final HazelcastInstance[] cluster,
+                                                   final String wanReplicationConfigName,
+                                                   final String endpointGroupName,
+                                                   final int eventCount) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                int totalBackupEvents = 0;
+                int totalEvents = 0;
+                for (HazelcastInstance instance : cluster) {
+                    final EnterpriseWanReplicationService s = getNode(instance).nodeEngine
+                            .getService(EnterpriseWanReplicationService.SERVICE_NAME);
+                    final WanReplicationPublisherDelegate delegate = (WanReplicationPublisherDelegate)
+                            s.getWanReplicationPublisher(wanReplicationConfigName);
+                    final AbstractWanPublisher endpoint = (AbstractWanPublisher) delegate.getEndpoint(endpointGroupName);
+                    totalEvents += endpoint.getCurrentElementCount();
+                    totalBackupEvents += endpoint.getCurrentBackupElementCount();
+
+                }
+                assertEquals(eventCount, totalEvents);
+                assertEquals(eventCount, totalBackupEvents);
+            }
+        });
+    }
+
     private static class DeletingEntryProcessor implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {
 
         @Override
@@ -566,24 +618,32 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         }
     }
 
-    private static class SimpleStore implements MapStore<Object, Object> {
+    private static class SimpleStore<K, V> implements MapStore<K, V> {
 
-        private ConcurrentMap<Object, Object> store = new ConcurrentHashMap<Object, Object>();
+        private final ConcurrentMap<K, V> store;
+
+        public SimpleStore() {
+            this(new ConcurrentHashMap<K, V>());
+        }
+
+        public SimpleStore(ConcurrentMap<K, V> store) {
+            this.store = store;
+        }
 
         @Override
-        public void store(Object key, Object value) {
+        public void store(K key, V value) {
             store.put(key, value);
         }
 
         @Override
-        public void storeAll(Map<Object, Object> map) {
-            for (Map.Entry<Object, Object> entry : map.entrySet()) {
+        public void storeAll(Map<K, V> map) {
+            for (Map.Entry<K, V> entry : map.entrySet()) {
                 store(entry.getKey(), entry.getValue());
             }
         }
 
         @Override
-        public void delete(Object key) {
+        public void delete(K key) {
         }
 
         @Override
@@ -591,22 +651,22 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         }
 
         @Override
-        public Object load(Object key) {
+        public V load(K key) {
             return store.get(key);
         }
 
         @Override
-        public Map<Object, Object> loadAll(Collection<Object> keys) {
-            Map<Object, Object> map = new HashMap<Object, Object>();
-            for (Object key : keys) {
-                Object value = load(key);
+        public Map<K, V> loadAll(Collection<K> keys) {
+            Map<K, V> map = new HashMap<K, V>();
+            for (K key : keys) {
+                V value = load(key);
                 map.put(key, value);
             }
             return map;
         }
 
         @Override
-        public Set<Object> loadAllKeys() {
+        public Set<K> loadAllKeys() {
             return store.keySet();
         }
     }

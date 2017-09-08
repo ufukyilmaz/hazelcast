@@ -706,4 +706,12 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         }
         return filteredQueues;
     }
+
+    public int getCurrentElementCount() {
+        return currentElementCount.get();
+    }
+
+    public int getCurrentBackupElementCount() {
+        return currentBackupElementCount.get();
+    }
 }

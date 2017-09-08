@@ -1,5 +1,8 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.core.EntryView;
+import com.hazelcast.map.impl.EntryViews;
+import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -41,13 +44,23 @@ public class HDPutFromLoadAllBackupOperation extends HDMapOperation implements B
             final Object object = mapServiceContext.toObject(value);
             recordStore.putFromLoadBackup(key, object);
 
-            // added here for the sake of completness - if someone wants to add sth to the loop in the future
             // the following check is for the case when the putFromLoad does not put the data due to various reasons
             // one of the reasons may be size eviction threshold has been reached
             if (!recordStore.existInMemory(key)) {
                 continue;
             }
+
+            publishWanReplicationEvent(key, value, recordStore.getRecord(key));
         }
+    }
+
+    private void publishWanReplicationEvent(Data key, Data value, Record record) {
+        if (record == null || !mapContainer.isWanReplicationEnabled()) {
+            return;
+        }
+
+        EntryView entryView = EntryViews.createSimpleEntryView(key, value, record);
+        mapEventPublisher.publishWanReplicationUpdateBackup(name, entryView);
     }
 
     @Override

@@ -34,8 +34,9 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
     void shutdown();
 
     /**
-     * Remove the oldest replication event for the same cache/map name and partition ID as {@code wanReplicationEvent} from
-     * the replication queue and decreases the backup event count.
+     * Remove the oldest replication event from the replication queue and decrease the
+     * backup event count. The replication queue chosen has the same map/cache name
+     * and partition ID as the provided {@code wanReplicationEvent}.
      *
      * @param wanReplicationEvent the completed wan event
      */

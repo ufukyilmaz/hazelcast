@@ -26,6 +26,7 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.FreeMemoryChecker;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.SocketInterceptor;
@@ -45,6 +46,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
 
     private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
     private final EnterpriseClientVersionAware versionAware = new EnterpriseClientVersionAware(buildInfo.getVersion());
+
+    private HazelcastMemoryManager memoryManager;
 
     private volatile SocketInterceptor socketInterceptor;
     private volatile License license;
@@ -74,7 +77,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
             EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();
             SerializationConfig serializationConfig = config.getSerializationConfig() != null ? config
                     .getSerializationConfig() : new SerializationConfig();
-            ss = builder.setMemoryManager(getMemoryManager(client))
+            memoryManager = getMemoryManager(client);
+            ss = builder.setMemoryManager(memoryManager)
                     .setClassLoader(configClassLoader)
                     .setConfig(serializationConfig)
                     .setManagedContext(new HazelcastClientManagedContext(client, config.getManagedContext()))
@@ -165,6 +169,12 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         }
 
         throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);
+    }
+
+    @Override
+    public MemoryStats getMemoryStats() {
+        HazelcastMemoryManager mm = memoryManager;
+        return mm != null ? mm.getMemoryStats() : super.getMemoryStats();
     }
 
     private static class EnterpriseClientVersionAware implements EnterpriseClusterVersionAware {

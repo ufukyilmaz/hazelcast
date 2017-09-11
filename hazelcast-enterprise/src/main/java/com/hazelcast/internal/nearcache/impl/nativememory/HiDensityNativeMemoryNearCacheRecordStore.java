@@ -419,6 +419,15 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         return memoryManager;
     }
 
+    @Override
+    public void destroy() {
+        try {
+            super.destroy();
+        } finally {
+            records.dispose();
+        }
+    }
+
     /**
      * {@link EvictionListener} implementation for listening record eviction.
      */

@@ -220,6 +220,15 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
             readBytesCount += readFromApplicationBuffer(output);
         }
 
+        if (applicationBuffer.hasRemaining()) {
+            // there is still something left in the applicationBuffer
+            // -> the only explanation is the output buffer is full
+            assert !output.hasRemaining();
+
+            // we cannot do anything sensible when the output buffer is full.
+            return readBytesCount;
+        }
+
         if (netInBuffer.hasRemaining()) {
             netInBuffer.compact();
         } else {

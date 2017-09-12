@@ -28,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
+@SuppressWarnings("WeakerAccess")
 public abstract class CacheWanReplicationTestSupport extends WanReplicationTestSupport {
 
     protected static final String DEFAULT_CACHE_MANAGER = "my-cache-manager";
@@ -226,15 +227,13 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         HazelcastInstance node = getNode(targetCluster);
         CachingProvider provider = Caching.getCachingProvider();
         Properties properties = HazelcastCachingProvider.propertiesByInstanceName(node.getConfig().getInstanceName());
-        URI cacheManagerName;
         try {
-            cacheManagerName = new URI(cacheManager);
+            URI cacheManagerName = new URI(cacheManager);
+            return provider.getCacheManager(cacheManagerName, classLoader, properties);
         } catch (URISyntaxException e) {
             e.printStackTrace();
             throw new RuntimeException();
         }
-
-        return provider.getCacheManager(cacheManagerName, classLoader, properties);
     }
 
     private ICache<Integer, String> getOrCreateCache(HazelcastInstance[] cluster, String cacheManager, String cacheName,
@@ -242,24 +241,16 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         HazelcastInstance node = getNode(cluster);
         CachingProvider provider = Caching.getCachingProvider();
         Properties properties = HazelcastCachingProvider.propertiesByInstanceName(node.getConfig().getInstanceName());
-        URI cacheManagerName;
         try {
-            cacheManagerName = new URI(cacheManager);
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-            throw new RuntimeException();
-        }
-        AbstractHazelcastCacheManager manager = (AbstractHazelcastCacheManager) provider.getCacheManager(cacheManagerName,
-                classLoader, properties);
-        CacheConfig<Integer, String> cacheConfig;
+            URI cacheManagerName = new URI(cacheManager);
+            AbstractHazelcastCacheManager manager = (AbstractHazelcastCacheManager) provider.getCacheManager(cacheManagerName,
+                    classLoader, properties);
 
-        try {
-            cacheConfig = createCacheConfig(cacheName, node, format);
+            CacheConfig<Integer, String> cacheConfig = createCacheConfig(cacheName, node, format);
+            return manager.getOrCreateCache(cacheName, cacheConfig);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        return manager.getOrCreateCache(cacheName, cacheConfig);
     }
 
     private CacheManagerClassLoader createCacheManagerClassLoader() {

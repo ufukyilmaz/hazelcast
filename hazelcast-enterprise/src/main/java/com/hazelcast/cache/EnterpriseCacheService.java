@@ -63,6 +63,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.cache.impl.AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE;
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartitionId;
 
 /**
@@ -245,12 +246,18 @@ public class EnterpriseCacheService
     }
 
     /**
-     * Destroys the segments for specified cache name.
+     * Destroys the segments for specified cache.
      *
-     * @param cacheNameWithPrefix the name of cache whose segments will be destroyed
+     * @param cacheConfig the configuration of the cache whose segments will be destroyed
      */
     @Override
-    protected void destroySegments(String cacheNameWithPrefix) {
+    protected void destroySegments(CacheConfig cacheConfig) {
+        if (cacheConfig.getInMemoryFormat() != NATIVE) {
+            super.destroySegments(cacheConfig);
+            return;
+        }
+
+        String cacheNameWithPrefix = cacheConfig.getNameWithPrefix();
         InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
         List<CacheSegmentDestroyOperation> ops = new ArrayList<CacheSegmentDestroyOperation>();
         for (CachePartitionSegment segment : segments) {
@@ -285,20 +292,6 @@ public class EnterpriseCacheService
 
     private void deregisterCacheProbes(HiDensityStorageInfo cacheInfo) {
         ((NodeEngineImpl) nodeEngine).getMetricsRegistry().deregister(cacheInfo);
-    }
-
-    /**
-     * Destroys the distributed object for specified {@code objectName}.
-     *
-     * @param objectName the name of object/cache to be destroyed
-     */
-    @Override
-    public void destroyDistributedObject(String objectName) {
-        try {
-            cacheEventHandler.destroy(objectName, SOURCE_NOT_AVAILABLE);
-        } finally {
-            destroySegments(objectName);
-        }
     }
 
     /**
@@ -468,7 +461,7 @@ public class EnterpriseCacheService
     @Override
     protected CacheOperationProvider createOperationProvider(String cacheNameWithPrefix, InMemoryFormat inMemoryFormat) {
         EnterpriseCacheOperationProvider operationProvider;
-        if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
+        if (NATIVE.equals(inMemoryFormat)) {
             operationProvider = new HiDensityCacheOperationProvider(cacheNameWithPrefix);
         } else {
             operationProvider = new EnterpriseCacheOperationProvider(cacheNameWithPrefix);

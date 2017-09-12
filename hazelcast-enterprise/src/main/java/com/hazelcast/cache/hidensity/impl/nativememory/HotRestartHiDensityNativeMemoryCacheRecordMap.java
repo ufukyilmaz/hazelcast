@@ -129,14 +129,14 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
     }
 
     @Override
-    public <C extends EvictionCandidate<Data, HiDensityNativeMemoryCacheRecord>> int evict(
-            Iterable<C> evictionCandidates, EvictionListener<Data, HiDensityNativeMemoryCacheRecord> evictionListener) {
-        int evictedCount;
+    public <C extends EvictionCandidate<Data, HiDensityNativeMemoryCacheRecord>> boolean tryEvict(C evictionCandidate,
+                                            EvictionListener<Data, HiDensityNativeMemoryCacheRecord> evictionListener) {
+        boolean evicted;
         synchronized (mutex) {
-            evictedCount = super.evict(evictionCandidates, evictionListener);
+            evicted = super.tryEvict(evictionCandidate, evictionListener);
         }
         evictKeysFromHotRestartStore();
-        return evictedCount;
+        return evicted;
     }
 
     private void evictKeysFromHotRestartStore() {

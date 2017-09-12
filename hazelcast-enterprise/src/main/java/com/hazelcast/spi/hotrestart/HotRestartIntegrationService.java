@@ -16,9 +16,6 @@ import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.ManagedService;
-import com.hazelcast.spi.MemberAttributeServiceEvent;
-import com.hazelcast.spi.MembershipAwareService;
-import com.hazelcast.spi.MembershipServiceEvent;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartStatusDTOUtil;
 import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
@@ -73,7 +70,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * membership and cluster state events.
  */
 @SuppressWarnings({"checkstyle:classfanoutcomplexity", "checkstyle:methodcount", "checkstyle:classdataabstractioncoupling"})
-public class HotRestartIntegrationService implements RamStoreRegistry, MembershipAwareService, InternalHotRestartService {
+public class HotRestartIntegrationService implements RamStoreRegistry, InternalHotRestartService {
 
     /**
      * Name of the Hot Restart service.
@@ -190,20 +187,6 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
             throw new IllegalArgumentException("No descriptor found for prefix: " + prefix);
         }
         return descriptor.getName();
-    }
-
-    @Override
-    public void memberAdded(MembershipServiceEvent event) {
-        clusterMetadataManager.onMembershipChange();
-    }
-
-    @Override
-    public void memberRemoved(MembershipServiceEvent event) {
-        clusterMetadataManager.onMembershipChange();
-    }
-
-    @Override
-    public void memberAttributeChanged(MemberAttributeServiceEvent event) {
     }
 
     public void addClusterHotRestartEventListener(ClusterHotRestartEventListener listener) {

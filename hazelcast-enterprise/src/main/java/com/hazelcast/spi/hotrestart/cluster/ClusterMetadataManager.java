@@ -18,6 +18,7 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.ForceStartException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus;
+import com.hazelcast.spi.impl.executionservice.InternalExecutionService;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.Clock;
@@ -48,6 +49,7 @@ import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_R
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.addMembersRemovedInNotActiveState;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterVersion;
+import static com.hazelcast.spi.ExecutionService.SYSTEM_EXECUTOR;
 import static com.hazelcast.spi.hotrestart.cluster.ClusterStateReader.readClusterState;
 import static com.hazelcast.spi.hotrestart.cluster.ClusterVersionReader.readClusterVersion;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_FAILED;
@@ -76,7 +78,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class ClusterMetadataManager {
 
     private static final String DIR_NAME = "cluster";
-
     private static final long EXCLUDED_MEMBERS_LEAVE_WAIT_IN_MILLIS = TimeUnit.MINUTES.toMillis(2);
 
     private final Node node;
@@ -439,29 +440,12 @@ public class ClusterMetadataManager {
     }
 
     public void onMembershipChange() {
-        ClusterService clusterService = node.getClusterService();
+        final ClusterService clusterService = node.getClusterService();
         if (isStartCompleted() && clusterService.isJoined()) {
             persistMembers();
         } else if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
-            hotRestartStatusLock.lock();
-            try {
-                if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
-                    Collection<MemberImpl> restoredMembers = restoredMembersRef.get();
-                    if (restoredMembers == null) {
-                        return;
-                    }
-
-                    for (Member member : restoredMembers) {
-                        Address address = member.getAddress();
-                        if (clusterService.getMember(address) == null
-                                && memberClusterStartInfos.remove(address) != null) {
-                            logger.warning("Member cluster start info of " + address + " is removed as it has left the cluster");
-                        }
-                    }
-                }
-            } finally {
-                hotRestartStatusLock.unlock();
-            }
+            InternalExecutionService executionService = node.getNodeEngine().getExecutionService();
+            executionService.execute(SYSTEM_EXECUTOR, new ClearMemberClusterStartInfoTask());
         }
     }
 
@@ -520,12 +504,10 @@ public class ClusterMetadataManager {
                 logger.warning("cannot trigger force start since cluster start status is " + hotRestartStatus);
                 return false;
             }
-
             Set<String> excludedMemberUuids = new HashSet<String>();
             for (Member member : restoredMembersRef.get()) {
                 excludedMemberUuids.add(member.getUuid());
             }
-
             this.excludedMemberUuids = unmodifiableSet(excludedMemberUuids);
             node.getClusterService().shrinkMembersRemovedInNotJoinableState(this.excludedMemberUuids);
             this.clusterState = ClusterState.ACTIVE;
@@ -544,13 +526,11 @@ public class ClusterMetadataManager {
             logger.warning("Partial data recovery request received but this node is not master!");
             return false;
         }
-
         if (!isPartialStartPolicy()) {
             logger.warning("Cannot trigger partial data recovery because cluster start policy is "
                     + clusterDataRecoveryPolicy);
             return false;
         }
-
         hotRestartStatusLock.lock();
         try {
             if (hotRestartStatus != CLUSTER_START_IN_PROGRESS) {
@@ -1075,7 +1055,11 @@ public class ClusterMetadataManager {
      * @param members
      */
     private void failOrSetExpectedMembersIfValidationTimedOut(Collection<MemberImpl> members) {
-        if (getRemainingValidationTimeMillis() == 0) {
+        if (hotRestartStatus == CLUSTER_START_SUCCEEDED && excludedMemberUuids.contains(node.getThisUuid())) {
+            throw new ForceStartException();
+        } else if (hotRestartStatus == CLUSTER_START_FAILED) {
+            throw new HotRestartException("Cluster-wide start failed!");
+        } else if (getRemainingValidationTimeMillis() == 0) {
             if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
                 throw new HotRestartException(
                         "Expected members didn't join, validation phase timed-out!" + " Expected member-count: "
@@ -1088,10 +1072,6 @@ public class ClusterMetadataManager {
                     broadcast(new SendExpectedMembersOperation(expectedMembersRef.get()));
                 }
             }
-        } else if (hotRestartStatus == CLUSTER_START_SUCCEEDED && excludedMemberUuids.contains(node.getThisUuid())) {
-            throw new ForceStartException();
-        } else if (hotRestartStatus == CLUSTER_START_FAILED) {
-            throw new HotRestartException("Cluster-wide start failed!");
         }
     }
 
@@ -1486,5 +1466,32 @@ public class ClusterMetadataManager {
         }
         long remaining = dataLoadStartTime + dataLoadTimeout - Clock.currentTimeMillis();
         return Math.max(0, remaining);
+    }
+
+    private class ClearMemberClusterStartInfoTask implements Runnable {
+        @Override
+        public void run() {
+            hotRestartStatusLock.lock();
+            try {
+                if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
+                    Collection<MemberImpl> restoredMembers = restoredMembersRef.get();
+                    if (restoredMembers == null) {
+                        return;
+                    }
+
+                    ClusterServiceImpl clusterService = node.clusterService;
+                    for (Member member : restoredMembers) {
+                        Address address = member.getAddress();
+                        if (clusterService.getMember(address) == null
+                                && memberClusterStartInfos.remove(address) != null) {
+                            logger.warning("Member cluster start info of " + address
+                                    + " is removed as it has left the cluster");
+                        }
+                    }
+                }
+            } finally {
+                hotRestartStatusLock.unlock();
+            }
+        }
     }
 }

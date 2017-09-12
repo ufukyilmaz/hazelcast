@@ -607,6 +607,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
+    public void onMemberListChange() {
+        super.onMemberListChange();
+
+        if (hotRestartService != null) {
+            hotRestartService.getClusterMetadataManager().onMembershipChange();
+        }
+    }
+
+    @Override
     public void onClusterVersionChange(Version newVersion) {
         super.onClusterVersionChange(newVersion);
         if (hotRestartService != null) {

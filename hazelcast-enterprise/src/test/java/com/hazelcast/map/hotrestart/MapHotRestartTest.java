@@ -15,7 +15,6 @@ import com.hazelcast.spi.impl.proxyservice.InternalProxyService;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -36,7 +35,6 @@ import static org.junit.Assert.assertThat;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore(value = "https://github.com/hazelcast/hazelcast-enterprise/issues/640")
 public class MapHotRestartTest extends AbstractMapHotRestartTest {
 
     private static final int KEY_COUNT = 1000;

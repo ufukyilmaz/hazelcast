@@ -7,6 +7,7 @@ import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -54,5 +55,25 @@ public class ClientHDCacheNearCachePreloaderTest extends ClientCacheNearCachePre
         return super.getClientConfig()
                 .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
+    }
+
+    @Test
+    @Override
+    public void testCreateAndDestroyDataStructure_withSameName() {
+        if (inMemoryFormat == InMemoryFormat.NATIVE) {
+            // FIXME: https://github.com/hazelcast/hazelcast-enterprise/issues/1660
+            return;
+        }
+        super.testCreateAndDestroyDataStructure_withSameName();
+    }
+
+    @Test
+    @Override
+    public void testCreateAndDestroyDataStructure_withDifferentNames() {
+        if (inMemoryFormat == InMemoryFormat.NATIVE) {
+            // FIXME: https://github.com/hazelcast/hazelcast-enterprise/issues/1660
+            return;
+        }
+        super.testCreateAndDestroyDataStructure_withDifferentNames();
     }
 }

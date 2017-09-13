@@ -19,12 +19,10 @@ public class EnterpriseMapNearCacheManager extends MapNearCacheManager {
 
     @Override
     protected <K, V> NearCache<K, V> createNearCache(String name, NearCacheConfig nearCacheConfig) {
-        if (NATIVE == nearCacheConfig.getInMemoryFormat()) {
-            return new HiDensityNearCache<K, V>(name, nearCacheConfig, this,
-                    (EnterpriseSerializationService) serializationService, scheduler, classLoader);
+        if (nearCacheConfig.getInMemoryFormat() == NATIVE) {
+            EnterpriseSerializationService ess = (EnterpriseSerializationService) serializationService;
+            return new HiDensityNearCache<K, V>(name, nearCacheConfig, this, ess, scheduler, classLoader);
         }
-
         return super.createNearCache(name, nearCacheConfig);
     }
-
 }

@@ -3,7 +3,6 @@ package com.hazelcast.nio.ssl;
 import com.hazelcast.internal.networking.nio.NioChannel;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.util.EmptyStatement;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -17,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 import static com.hazelcast.nio.IOUtil.newByteBuffer;
+import static com.hazelcast.util.EmptyStatement.ignore;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
@@ -30,7 +30,7 @@ public class SSLChannel extends NioChannel {
 
     private final ILogger logger = Logger.getLogger(SSLChannel.class);
 
-    private ByteBuffer applicationBuffer;
+    private ByteBuffer appBuffer;
     private final Object lock = new Object();
     private final ByteBuffer emptyBuffer;
     private final ByteBuffer netOutBuffer;
@@ -54,11 +54,11 @@ public class SSLChannel extends NioChannel {
             sslEngine.setWantClientAuth(true);
         }
         SSLSession session = sslEngine.getSession();
-        applicationBuffer = newByteBuffer(session.getApplicationBufferSize(), directBuffer);
-        emptyBuffer = ByteBuffer.allocate(0);
+        this.appBuffer = newByteBuffer(session.getApplicationBufferSize(), directBuffer);
+        this.emptyBuffer = ByteBuffer.allocate(0);
         int netBufferMax = session.getPacketBufferSize();
-        netOutBuffer = newByteBuffer(netBufferMax, directBuffer);
-        netInBuffer = newByteBuffer(netBufferMax, directBuffer);
+        this.netOutBuffer = newByteBuffer(netBufferMax, directBuffer);
+        this.netInBuffer = newByteBuffer(netBufferMax, directBuffer);
         sslEngine.beginHandshake();
     }
 
@@ -74,7 +74,7 @@ public class SSLChannel extends NioChannel {
                 return;
             }
             int counter = 0;
-            writeInternal(emptyBuffer);
+            write0(emptyBuffer);
             while (counter++ < 250 && handshakeResult.getHandshakeStatus() != FINISHED) {
                 if (handshakeResult.getHandshakeStatus() == NEED_UNWRAP) {
                     netInBuffer.clear();
@@ -96,14 +96,14 @@ public class SSLChannel extends NioChannel {
                         }
                     }
                     netInBuffer.flip();
-                    unwrap(netInBuffer);
+                    unwrap();
                     if (handshakeResult.getHandshakeStatus() != FINISHED) {
                         emptyBuffer.clear();
-                        writeInternal(emptyBuffer);
+                        write0(emptyBuffer);
                     }
                 } else if (handshakeResult.getHandshakeStatus() == NEED_WRAP) {
                     emptyBuffer.clear();
-                    writeInternal(emptyBuffer);
+                    write0(emptyBuffer);
                 } else {
                     try {
                         Thread.sleep(500);
@@ -123,37 +123,10 @@ public class SSLChannel extends NioChannel {
                         + sslSession.getCipherSuite());
             }
 
-            applicationBuffer.clear();
-            applicationBuffer.flip();
+            appBuffer.clear();
+            appBuffer.flip();
             handshakeCompleted = true;
         }
-    }
-
-    @SuppressWarnings({"checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity"})
-    private ByteBuffer unwrap(ByteBuffer b) throws SSLException {
-        applicationBuffer.clear();
-
-        SSLEngineResult unwrapStatus;
-        while (b.hasRemaining()) {
-            unwrapStatus = sslEngine.unwrap(b, applicationBuffer);
-            this.handshakeResult = unwrapStatus;
-
-            HandshakeStatus handshakeStatus = unwrapStatus.getHandshakeStatus();
-            Status status = unwrapStatus.getStatus();
-            if (status == BUFFER_OVERFLOW) {
-                // the appBuffer wasn't big enough, so lets expand it.
-                applicationBuffer = expandBuffer(applicationBuffer);
-            }
-
-            if (handshakeStatus == NEED_TASK) {
-                handleTasks();
-            } else if (handshakeStatus == FINISHED
-                    || handshakeStatus == NEED_WRAP
-                    || status == BUFFER_UNDERFLOW) {
-                break;
-            }
-        }
-        return applicationBuffer;
     }
 
     private void handleTasks() {
@@ -182,18 +155,20 @@ public class SSLChannel extends NioChannel {
     }
 
     @Override
-    public int write(ByteBuffer input) throws IOException {
+    public int write(ByteBuffer src) throws IOException {
         if (!handshakeCompleted) {
             handshake();
         }
-        return writeInternal(input);
+        return write0(src);
     }
 
-    private int writeInternal(ByteBuffer input) throws IOException {
-        SSLEngineResult wrapStatus = sslEngine.wrap(input, netOutBuffer);
-        this.handshakeResult = wrapStatus;
+    private int write0(ByteBuffer src) throws IOException {
+        wrap(src);
+
         netOutBuffer.flip();
+
         int written = socketChannel.write(netOutBuffer);
+
         if (netOutBuffer.hasRemaining()) {
             netOutBuffer.compact();
         } else {
@@ -208,27 +183,27 @@ public class SSLChannel extends NioChannel {
             "checkstyle:npathcomplexity",
             "checkstyle:methodlength"
     })
-    public int read(ByteBuffer output) throws IOException {
+    public int read(ByteBuffer dst) throws IOException {
         if (!handshakeCompleted) {
             handshake();
         }
 
         int readBytesCount = 0;
-        if (applicationBuffer.hasRemaining()) {
-            readBytesCount += readFromApplicationBuffer(output);
+        if (appBuffer.hasRemaining()) {
+            readBytesCount += readFromAppBuffer(dst);
             return readBytesCount;
         }
 
         if (netInBuffer.hasRemaining()) {
-            unwrap(netInBuffer);
-            applicationBuffer.flip();
-            readBytesCount += readFromApplicationBuffer(output);
+            unwrap();
+            appBuffer.flip();
+            readBytesCount += readFromAppBuffer(dst);
         }
 
-        if (applicationBuffer.hasRemaining()) {
-            // there is still something left in the applicationBuffer
+        if (appBuffer.hasRemaining()) {
+            // there is still something left in the appBuffer
             // -> the only explanation is the output buffer is full
-            assert !output.hasRemaining();
+            assert !dst.hasRemaining();
 
             // we cannot do anything sensible when the output buffer is full.
             return readBytesCount;
@@ -247,26 +222,58 @@ public class SSLChannel extends NioChannel {
         }
 
         netInBuffer.flip();
-        unwrap(netInBuffer);
-        applicationBuffer.flip();
-        readBytesCount += readFromApplicationBuffer(output);
+        unwrap();
+        appBuffer.flip();
+        readBytesCount += readFromAppBuffer(dst);
         return readBytesCount;
     }
 
-    private int readFromApplicationBuffer(ByteBuffer output) {
-        int appBufferRemaining = applicationBuffer.remaining();
-        int outputRemaining = output.remaining();
+    private int readFromAppBuffer(ByteBuffer dst) {
+
+        int appBufferRemaining = appBuffer.remaining();
+        int outputRemaining = dst.remaining();
 
         if (outputRemaining < appBufferRemaining) {
             // there is not enough space to all data, so lets copy what we can copy.
             for (int i = 0; i < outputRemaining; i++) {
-                output.put(applicationBuffer.get());
+                dst.put(appBuffer.get());
             }
             return outputRemaining;
         } else {
             // there is enough space to copy all data
-            output.put(applicationBuffer);
+            dst.put(appBuffer);
             return appBufferRemaining;
+        }
+    }
+
+    private void wrap(ByteBuffer src) throws SSLException {
+        SSLEngineResult wrapStatus = sslEngine.wrap(src, netOutBuffer);
+        this.handshakeResult = wrapStatus;
+    }
+
+    @SuppressWarnings({"checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity"})
+    private void unwrap() throws SSLException {
+        appBuffer.clear();
+
+        SSLEngineResult unwrapStatus;
+        while (netInBuffer.hasRemaining()) {
+            unwrapStatus = sslEngine.unwrap(netInBuffer, appBuffer);
+            this.handshakeResult = unwrapStatus;
+
+            HandshakeStatus handshakeStatus = unwrapStatus.getHandshakeStatus();
+            Status status = unwrapStatus.getStatus();
+            if (status == BUFFER_OVERFLOW) {
+                // the appBuffer wasn't big enough, so lets expand it.
+                appBuffer = expandBuffer(appBuffer);
+            }
+
+            if (handshakeStatus == NEED_TASK) {
+                handleTasks();
+            } else if (handshakeStatus == FINISHED
+                    || handshakeStatus == NEED_WRAP
+                    || status == BUFFER_UNDERFLOW) {
+                break;
+            }
         }
     }
 
@@ -276,9 +283,9 @@ public class SSLChannel extends NioChannel {
 
         sslEngine.closeOutbound();
         try {
-            writeInternal(emptyBuffer);
+            write0(emptyBuffer);
         } catch (Exception ignored) {
-            EmptyStatement.ignore(ignored);
+            ignore(ignored);
         }
     }
 

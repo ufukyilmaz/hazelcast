@@ -37,7 +37,9 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     // "reliable" read transport
     private final SSLEngine sslEngine;
     private volatile boolean handshakeCompleted;
-    private SSLEngineResult sslEngineResult;
+
+    // doesn't need to be volatile since only used in synchronized handshake
+    private SSLEngineResult handshakeResult;
 
     public SSLSocketChannelWrapper(SSLEngine sslEngine, SocketChannel sc, boolean clientMode,
                                    String mutualAuthentication) throws Exception {
@@ -73,8 +75,8 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
             }
             int counter = 0;
             writeInternal(emptyBuffer);
-            while (counter++ < 250 && sslEngineResult.getHandshakeStatus() != FINISHED) {
-                if (sslEngineResult.getHandshakeStatus() == NEED_UNWRAP) {
+            while (counter++ < 250 && handshakeResult.getHandshakeStatus() != FINISHED) {
+                if (handshakeResult.getHandshakeStatus() == NEED_UNWRAP) {
                     netInBuffer.clear();
                     for (; ; ) {
                         int read = socketChannel.read(netInBuffer);
@@ -95,11 +97,11 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                     }
                     netInBuffer.flip();
                     unwrap(netInBuffer);
-                    if (sslEngineResult.getHandshakeStatus() != FINISHED) {
+                    if (handshakeResult.getHandshakeStatus() != FINISHED) {
                         emptyBuffer.clear();
                         writeInternal(emptyBuffer);
                     }
-                } else if (sslEngineResult.getHandshakeStatus() == NEED_WRAP) {
+                } else if (handshakeResult.getHandshakeStatus() == NEED_WRAP) {
                     emptyBuffer.clear();
                     writeInternal(emptyBuffer);
                 } else {
@@ -110,9 +112,9 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                     }
                 }
             }
-            if (sslEngineResult.getHandshakeStatus() != FINISHED) {
+            if (handshakeResult.getHandshakeStatus() != FINISHED) {
                 throw new SSLHandshakeException("SSL handshake failed after " + counter
-                        + " trials! -> " + sslEngineResult.getHandshakeStatus());
+                        + " trials! -> " + handshakeResult.getHandshakeStatus());
             }
 
             if (logger.isFineEnabled()) {
@@ -131,11 +133,13 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     private ByteBuffer unwrap(ByteBuffer b) throws SSLException {
         applicationBuffer.clear();
 
+        SSLEngineResult unwrapStatus;
         while (b.hasRemaining()) {
-            sslEngineResult = sslEngine.unwrap(b, applicationBuffer);
+            unwrapStatus = sslEngine.unwrap(b, applicationBuffer);
+            this.handshakeResult = unwrapStatus;
 
-            HandshakeStatus handshakeStatus = sslEngineResult.getHandshakeStatus();
-            Status status = sslEngineResult.getStatus();
+            HandshakeStatus handshakeStatus = unwrapStatus.getHandshakeStatus();
+            Status status = unwrapStatus.getStatus();
             if (status == BUFFER_OVERFLOW) {
                 // the appBuffer wasn't big enough, so lets expand it.
                 applicationBuffer = expandBuffer(applicationBuffer);
@@ -186,7 +190,8 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     }
 
     private int writeInternal(ByteBuffer input) throws IOException {
-        sslEngineResult = sslEngine.wrap(input, netOutBuffer);
+        SSLEngineResult wrapStatus = sslEngine.wrap(input, netOutBuffer);
+        this.handshakeResult = wrapStatus;
         netOutBuffer.flip();
         int written = socketChannel.write(netOutBuffer);
         if (netOutBuffer.hasRemaining()) {

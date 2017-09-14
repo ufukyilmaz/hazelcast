@@ -148,27 +148,24 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
     //CHECKSTYLE:ON
 
     @Override
-    public <C extends EvictionCandidate<Data, R>> int evict(
-            Iterable<C> evictionCandidates,
+    public <C extends EvictionCandidate<Data, R>> boolean tryEvict(C evictionCandidate,
             EvictionListener<Data, R> evictionListener) {
-        if (evictionCandidates == null) {
-            return 0;
+        if (evictionCandidate == null) {
+            return false;
         }
-        int actualEvictedCount = 0;
-        for (EvictionCandidate<Data, R> evictionCandidate : evictionCandidates) {
-            Data key = evictionCandidate.getAccessor();
-            R removedRecord = remove(key);
-            if (removedRecord != null) {
-                actualEvictedCount++;
-                onEvict(key, removedRecord, false);
-                if (evictionListener != null) {
-                    evictionListener.onEvict(key, removedRecord, false);
-                }
-                recordProcessor.dispose(removedRecord);
+        boolean evicted = false;
+        Data key = evictionCandidate.getAccessor();
+        R removedRecord = remove(key);
+        if (removedRecord != null) {
+            evicted = true;
+            onEvict(key, removedRecord, false);
+            if (evictionListener != null) {
+                evictionListener.onEvict(key, removedRecord, false);
             }
-            recordProcessor.disposeData(key);
+            recordProcessor.dispose(removedRecord);
         }
-        return actualEvictedCount;
+        recordProcessor.disposeData(key);
+        return evicted;
     }
 
     @Override

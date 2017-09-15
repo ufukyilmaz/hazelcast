@@ -5,10 +5,10 @@ import io.netty.handler.ssl.OpenSsl;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Properties;
 
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -48,29 +48,13 @@ public class OpenSSLEngineFactory_initTest {
     }
 
     @Test
-    public void ciphersuites() throws Exception {
-        ciphersuites("TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA","TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA","TLS_RSA_WITH_AES_256_CBC_SHA");
+    public void cipherSuites() throws Exception {
+        cipherSuites("TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA", "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA");
     }
 
     @Test(expected = RuntimeException.class)
-    public void ciphersuites_invalid() throws Exception {
-        ciphersuites("unknown_cipher");
-    }
-
-    private void ciphersuites(String... cipherSuites) throws Exception {
-        Properties sslProperties = TestKeyStoreUtil.createSslProperties();
-
-        StringBuffer sb = new StringBuffer();
-        for (String ciphersuite : cipherSuites) {
-            sb.append(ciphersuite).append(",");
-        }
-
-        sslProperties.setProperty(JAVA_NET_SSL_PREFIX + "ciphersuites", sb.toString());
-
-        OpenSSLEngineFactory factory = new OpenSSLEngineFactory();
-        factory.init(sslProperties, false);
-
-        assertEquals(Arrays.asList(cipherSuites), factory.getCipherSuites());
+    public void cipherSuites_invalid() throws Exception {
+        cipherSuites("unknown_cipher");
     }
 
     @Test(expected = NullPointerException.class)
@@ -89,5 +73,20 @@ public class OpenSSLEngineFactory_initTest {
 
         OpenSSLEngineFactory factory = new OpenSSLEngineFactory();
         factory.init(sslProperties, true);
+    }
+
+    private static void cipherSuites(String... cipherSuites) throws Exception {
+        StringBuilder sb = new StringBuilder();
+        for (String cipherSuite : cipherSuites) {
+            sb.append(cipherSuite).append(",");
+        }
+
+        Properties sslProperties = TestKeyStoreUtil.createSslProperties();
+        sslProperties.setProperty(JAVA_NET_SSL_PREFIX + "ciphersuites", sb.toString());
+
+        OpenSSLEngineFactory factory = new OpenSSLEngineFactory();
+        factory.init(sslProperties, false);
+
+        assertEquals(asList(cipherSuites), factory.getCipherSuites());
     }
 }

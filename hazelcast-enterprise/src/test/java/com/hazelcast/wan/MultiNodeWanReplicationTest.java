@@ -13,7 +13,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -25,7 +24,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.config.InMemoryFormat.BINARY;
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertFalse;
 
@@ -47,17 +47,20 @@ import static org.junit.Assert.assertFalse;
 @Category(SlowTest.class)
 public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
 
-    public static final String MAP_NAME = "ZD1995";
+    private static final String MAP_NAME = "ZD1995";
 
     // let's assume we have clusters "dev" & "staging"
     // map operations are executed on cluster "dev"
-    public static final String GROUP_DEV = "dev";
-    public static final String GROUP_STAGING = "staging";
+    private static final String GROUP_DEV = "dev";
+    private static final String GROUP_STAGING = "staging";
 
-    public static final String WAN_REPLICATION_DEV_TO_STAGING = "DEV-STAGING";
-    public static final String WAN_REPLICATION_STAGING_TO_DEV = "STAGING-DEV";
+    private static final String WAN_REPLICATION_DEV_TO_STAGING = "DEV-STAGING";
+    private static final String WAN_REPLICATION_STAGING_TO_DEV = "STAGING-DEV";
 
-    HazelcastInstance dev1, dev2, staging1, staging2;
+    private HazelcastInstance dev1;
+    private HazelcastInstance dev2;
+    private HazelcastInstance staging1;
+    private HazelcastInstance staging2;
 
     @Before
     public void setup() {
@@ -81,8 +84,7 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testTwoClustersTwoNodesReplication()
-            throws InterruptedException {
+    public void testTwoClustersTwoNodesReplication() {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
 
         final AtomicBoolean testFailed = new AtomicBoolean();
@@ -93,7 +95,6 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
             @Override
             public void run() {
                 if (!testFailed.get()) {
-                    ILogger logger = getNode(dev1).getLogger(MultiNodeWanReplicationTest.class);
                     LocalWanPublisherStats staging1Stats = getWanPublisherStats(staging1, WAN_REPLICATION_STAGING_TO_DEV,
                             GROUP_DEV);
                     LocalWanPublisherStats staging2Stats = getWanPublisherStats(staging2, WAN_REPLICATION_STAGING_TO_DEV,
@@ -102,11 +103,13 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
                             || staging2Stats.getTotalPublishedEventCount() > 0 || staging2Stats.getOutboundQueueSize() > 0) {
                         // fail the test
                         failureMessageBuilder.append(
-                                String.format("No replication events should have been created on staging cluster nodes, " +
-                                        "however there were %d published & %d queued events on staging1 and %d published " +
-                                        "& %d queued events on staging2", staging1Stats.getTotalPublishedEventCount(),
-                                staging1Stats.getOutboundQueueSize(), staging2Stats.getTotalPublishedEventCount(),
-                                staging2Stats.getOutboundQueueSize()));
+                                format("No replication events should have been created on staging cluster nodes, however"
+                                                + " there were %d published & %d queued events on staging1 and %d published"
+                                                + " & %d queued events on staging2",
+                                        staging1Stats.getTotalPublishedEventCount(),
+                                        staging1Stats.getOutboundQueueSize(),
+                                        staging2Stats.getTotalPublishedEventCount(),
+                                        staging2Stats.getOutboundQueueSize()));
                         testFailed.set(true);
                     }
                 }
@@ -114,14 +117,15 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
         }, 0, 100, MILLISECONDS);
 
         // add a new entry per second from each node on DEV cluster
-        final IMap mapOnDev1 = dev1.getMap(MAP_NAME);
-        final IMap mapOnDev2 = dev2.getMap(MAP_NAME);
+        final IMap<String, String> mapOnDev1 = dev1.getMap(MAP_NAME);
+        final IMap<String, String> mapOnDev2 = dev2.getMap(MAP_NAME);
         scheduler.scheduleAtFixedRate(new Runnable() {
             int counter = 0;
+
             @Override
             public void run() {
-                mapOnDev1.put(""+counter, "" + counter++);
-                mapOnDev2.put(""+counter, "" + counter++);
+                mapOnDev1.put("" + counter, "" + counter++);
+                mapOnDev2.put("" + counter, "" + counter++);
             }
         }, 0, 1, TimeUnit.SECONDS);
 
@@ -143,26 +147,35 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
 
     private Config devClusterConfig(int port) {
         return clusterConfig(port, GROUP_DEV, GROUP_STAGING, WAN_REPLICATION_DEV_TO_STAGING,
-                Arrays.asList(new String[] {"127.0.0.1:9701", "127.0.0.1:9702"}),
-                Arrays.asList(new String[] {"127.0.0.1:10701", "127.0.0.1:10702"}));
+                asList("127.0.0.1:9701", "127.0.0.1:9702"),
+                asList("127.0.0.1:10701", "127.0.0.1:10702"));
     }
 
     private Config stagingClusterConfig(int port) {
         return clusterConfig(port, GROUP_STAGING, GROUP_DEV, WAN_REPLICATION_STAGING_TO_DEV,
-                Arrays.asList(new String[] {"127.0.0.1:10701", "127.0.0.1:10702"}),
-                Arrays.asList(new String[] {"127.0.0.1:9701", "127.0.0.1:9702"}));
+                asList("127.0.0.1:10701", "127.0.0.1:10702"),
+                asList("127.0.0.1:9701", "127.0.0.1:9702"));
     }
 
     private Config clusterConfig(int port, String groupName, String wanTargetClusterName, String wanReplicationName,
                                  List<String> groupClusterMembers, List<String> targetClusterMembers) {
         Config cfg = new Config();
-        cfg.setGroupConfig(new GroupConfig().setName(groupName).setPassword(groupName));
-        cfg.getNetworkConfig().setPort(port).setPortAutoIncrement(false).setPortCount(1);
+        cfg.setGroupConfig(new GroupConfig()
+                .setName(groupName)
+                .setPassword(groupName));
+        cfg.getNetworkConfig()
+                .setPort(port)
+                .setPortAutoIncrement(false)
+                .setPortCount(1);
         // disable multicast
-        cfg.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        cfg.getNetworkConfig().getJoin().getMulticastConfig()
+                .setEnabled(false);
         // TCP joiner config
-        cfg.getNetworkConfig().getInterfaces().addInterface("127.0.0.1");
-        cfg.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true).setMembers(groupClusterMembers);
+        cfg.getNetworkConfig().getInterfaces()
+                .addInterface("127.0.0.1");
+        cfg.getNetworkConfig().getJoin().getTcpIpConfig()
+                .setEnabled(true)
+                .setMembers(groupClusterMembers);
 
         Map<String, Comparable> replicationProperties = new HashMap<String, Comparable>();
         replicationProperties.put("batch.size", 10);
@@ -170,37 +183,35 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
         replicationProperties.put("endpoints", listToString(targetClusterMembers));
         replicationProperties.put("group.password", wanTargetClusterName);
 
-        cfg.addWanReplicationConfig(new WanReplicationConfig().setName(wanReplicationName).addWanPublisherConfig(
-                new WanPublisherConfig().setGroupName(wanTargetClusterName).setQueueCapacity(100).setQueueFullBehavior(
-                        WANQueueFullBehavior.THROW_EXCEPTION).setProperties(replicationProperties).
-                                                setClassName("com.hazelcast.enterprise.wan.replication.WanBatchReplication")));
+        cfg.addWanReplicationConfig(new WanReplicationConfig()
+                .setName(wanReplicationName)
+                .addWanPublisherConfig(new WanPublisherConfig()
+                        .setGroupName(wanTargetClusterName)
+                        .setQueueCapacity(100).setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION)
+                        .setProperties(replicationProperties)
+                        .setClassName("com.hazelcast.enterprise.wan.replication.WanBatchReplication")));
 
-        cfg.addMapConfig(
-                new MapConfig(MAP_NAME)
-                        .setBackupCount(1)
-                        .setInMemoryFormat(BINARY)
-                        .setTimeToLiveSeconds(900)
-                        .setMaxIdleSeconds(900)
-                        .setEvictionPolicy(EvictionPolicy.LRU)
-                        .setWanReplicationRef(new WanReplicationRef(
-                                wanReplicationName,
-                                "com.hazelcast.map.merge.PassThroughMergePolicy",
-                                new ArrayList<String>(),
-                                true)));
+        cfg.addMapConfig(new MapConfig(MAP_NAME)
+                .setBackupCount(1)
+                .setInMemoryFormat(BINARY)
+                .setTimeToLiveSeconds(900)
+                .setMaxIdleSeconds(900)
+                .setEvictionPolicy(EvictionPolicy.LRU)
+                .setWanReplicationRef(new WanReplicationRef(
+                        wanReplicationName,
+                        "com.hazelcast.map.merge.PassThroughMergePolicy",
+                        new ArrayList<String>(),
+                        true)));
 
         return cfg;
     }
 
     private String listToString(List<String> strings) {
-        StringBuffer sb = new StringBuffer();
-        boolean firstEntry = true;
+        StringBuilder sb = new StringBuilder();
+        String delimiter = "";
         for (String s : strings) {
-            if (firstEntry) {
-                firstEntry = false;
-            } else {
-                sb.append(",");
-            }
-            sb.append(s);
+            sb.append(delimiter).append(s);
+            delimiter = ",";
         }
         return sb.toString();
     }

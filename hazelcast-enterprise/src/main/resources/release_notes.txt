@@ -1,18 +1,18 @@
 
-In this Release Notes document, you will find the new features, enhancements and fixes of the Hazelcast 3.9-EA release.
+In this Release Notes document, you will find the new features, enhancements and fixes of the Hazelcast 3.9 release.
 The numbers in the square brackets refer to the issue number in Hazelcast’s GitHub repository. You can reach
 to the full descriptions of the issues at https://github.com/hazelcast/hazelcast/issues/<issue number>.
 
 1. New Features
 
-The following are the new features introduced with 3.9-EA release.
+The following are the new features introduced with 3.9 release.
 
 - WAN Replication on Amazon EC2: With this new feature, you can run multiple clusters within EC2 environment without manually configuring IP addresses and use Hazelcast's WAN replication to keep them in sync.
 - Dynamic Creation of Distributed Objects Configuration: You can perform on the fly configuration of your distributed objects.
 
 2. Enhancements
 
-The following are the enhancements introduced with 3.9-EA release.
+The following are the enhancements introduced with 3.9 release.
 
 - Dynamic Role Update: You can update security permissions in a running cluster without the performing a rolling restart.
 - Search Indexes in High-Density Memory Store: Now, sorted and unsorted indexes for High-Density Memory Store are supported.
@@ -70,3 +70,25 @@ The following are the issues solved for Hazelcast 3.9-EA release.
 - Rolling Upgrade: 3.9 member cannot join to 3.8 cluster. [#1492]
 - `ObjectNamespace` cannot be serialized compatibly. [#1471]
 - When serializing a `Versioned` `DataSerializable`, `Input/Output.getVersion()` returns `UNKNOWN` when a non-versioned field is serialized inside outer `Versioned`. [#1369]
+
+4. Behavioral Changes
+
+- Maximum timeout of heartbeat for a member to assume it is dead was 300 seconds. Starting with Hazelcast 3.9, it is reduced to 60 seconds. Also, starting with Hazelcast 3.9, maximum timeout of master confirmation from other members is reduced to 150 seconds from 450 seconds.
+
+- Starting with Hazelcast 3.9, the format of member list shown in the logs is changed. Before Hazelcast 3.9, it was like the following:
+
+Members [3] {
+    Member [127.0.0.1]:5701 - c1ccc8d4-a549-4bff-bf46-9213e14a9fd2 this
+    Member [127.0.0.1]:5702 - 33a82dbf-85d6-4780-b9cf-e47d42fb89d4
+    Member [127.0.0.1]:5703 - 813ec82f-9d9e-4712-bae1-6c95b32d6d7d
+}
+Starting with Hazelcast 3.9, it is shown as follows:
+
+Members {size:3, ver:3} [
+  Member [127.0.0.1]:5701 - e40081de-056a-4ae5-8ffe-632caf8a6cf1 this
+  Member [127.0.0.1]:5702 - 93e82109-16bf-4b16-9c87-f4a6d0873080
+  Member [127.0.0.1]:5703 - 06fb4e61-9757-443b-a19f-7af1f3966f30
+]
+Here, you can see the size of your cluster (size) and member list version (ver). The member list version will be incremented when changes happen to the cluster, e.g., a member leaving from or joining to the cluster.
+
+You can set the system property hazelcast.legacy.memberlist.format.enabled to true if you want to see the member list in its old format.

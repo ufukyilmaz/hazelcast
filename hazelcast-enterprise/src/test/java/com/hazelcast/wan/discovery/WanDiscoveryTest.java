@@ -39,7 +39,6 @@ import static org.junit.Assert.assertTrue;
 
 @Category(SlowTest.class)
 public class WanDiscoveryTest extends MapWanReplicationTestSupport {
-    private ArrayListDiscoveryStrategyFactory discoveryStrategyFactory;
     private String wanReplicationName;
 
     @Override
@@ -58,33 +57,54 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     }
 
     @Before
-    public void init() throws UnknownHostException {
+    public void init() {
         this.wanReplicationName = "atob";
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationName, PassThroughMergePolicy.class.getName());
-        this.discoveryStrategyFactory = new ArrayListDiscoveryStrategyFactory();
-        final DiscoveryStrategyConfig discoveryConfig = new DiscoveryStrategyConfig(discoveryStrategyFactory);
-        discoveryConfig.addProperty(WanReplicationProperties.DISCOVERY_PERIOD.key(), 1);
-        addDiscoveryConfig(configA, wanReplicationName, discoveryConfig);
-        discoveryStrategyFactory.strategy.nodes.addAll(clusterDiscoveryNodes(configB, clusterB.length));
     }
 
     @Test
-    public void noDiscoveredNodesDoesNotThrowException() {
-        final ArrayList<DiscoveryNode> discoveryStrategyList = discoveryStrategyFactory.strategy.nodes;
-        final ArrayList<DiscoveryNode> discoveryStrategyListCopy = new ArrayList<DiscoveryNode>(discoveryStrategyList);
+    public void recoversFromExceptionThrowingStrategy() {
+        final ExceptionThrowingDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(new ExceptionThrowingDiscoveryStrategyFactory());
+        final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
+        discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length));
+        factory.strategy.throwException = true;
 
-        discoveryStrategyList.clear();
         startClusterA();
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
 
-        discoveryStrategyList.add(discoveryStrategyListCopy.get(0));
+        factory.strategy.throwException = false;
 
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                assertAllEndpointsDiscovered(1);
+                assertAllEndpointsDiscovered(discoveryEndpoints, clusterB.length);
+            }
+        });
+
+        createDataIn(clusterA, "map2", 0, 1000);
+        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFrom(clusterB, "map2", 0, 1000, clusterA);
+    }
+
+    @Test
+    public void noDiscoveredNodesDoesNotThrowException() {
+        final ArrayListDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(new ArrayListDiscoveryStrategyFactory());
+        final ArrayList<DiscoveryNode> endpoints = clusterDiscoveryNodes(configB, clusterB.length);
+        final ArrayList<DiscoveryNode> strategyEndpoints = factory.strategy.nodes;
+
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 1000);
+
+        strategyEndpoints.add(endpoints.get(0));
+
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                assertAllEndpointsDiscovered(strategyEndpoints, 1);
             }
         });
 
@@ -95,10 +115,11 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     @Test
     public void removeUnreachableEndpoint() throws UnknownHostException {
-        final ArrayList<DiscoveryNode> discoveryStrategyList = discoveryStrategyFactory.strategy.nodes;
+        final ArrayListDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(new ArrayListDiscoveryStrategyFactory());
+        final ArrayList<DiscoveryNode> strategyEndpoints = factory.strategy.nodes;
+
         final SimpleDiscoveryNode unreachableEndpoint = new SimpleDiscoveryNode(new Address("1.2.3.4", 1234));
-        discoveryStrategyList.clear();
-        discoveryStrategyList.add(unreachableEndpoint);
+        strategyEndpoints.add(unreachableEndpoint);
 
         startClusterA();
 
@@ -108,10 +129,10 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                assertAllEndpointsDiscovered(1);
+                assertAllEndpointsDiscovered(strategyEndpoints, 1);
             }
         });
-        discoveryStrategyList.clear();
+        strategyEndpoints.clear();
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
@@ -122,20 +143,24 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     @Test
     public void newNodeDiscoveredTest() {
-        final DiscoveryNode removed = discoveryStrategyFactory.strategy.nodes.remove(0);
+        final ArrayListDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(new ArrayListDiscoveryStrategyFactory());
+        final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
+        discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length));
+        final DiscoveryNode removed = discoveryEndpoints.remove(0);
+
         startClusterA();
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
         assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
 
-        assertAllEndpointsDiscovered(1);
+        assertAllEndpointsDiscovered(discoveryEndpoints, 1);
 
-        discoveryStrategyFactory.strategy.nodes.add(removed);
+        discoveryEndpoints.add(removed);
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                assertAllEndpointsDiscovered(2);
+                assertAllEndpointsDiscovered(discoveryEndpoints, 2);
             }
         });
 
@@ -144,22 +169,26 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     }
 
     @Test
-    public void previouslyDiscoveredNodeDisappearsAndIsRemoved() throws Exception {
+    public void previouslyDiscoveredNodeDisappearsAndIsRemoved() {
+        final ArrayListDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(new ArrayListDiscoveryStrategyFactory());
+        final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
+        discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length));
+
         startClusterA();
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
         assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
 
-        assertAllEndpointsDiscovered(2);
+        assertAllEndpointsDiscovered(discoveryEndpoints, 2);
 
-        discoveryStrategyFactory.strategy.nodes.remove(0);
-        assertEquals(1, discoveryStrategyFactory.strategy.nodes.size());
+        discoveryEndpoints.remove(0);
+        assertEquals(1, discoveryEndpoints.size());
 
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                assertAllEndpointsDiscovered(1);
+                assertAllEndpointsDiscovered(discoveryEndpoints, 1);
             }
         });
 
@@ -168,14 +197,18 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     }
 
     @Test
-    public void shutdownAndRestartNode() throws Exception {
+    public void shutdownAndRestartNode() {
+        final ArrayListDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(new ArrayListDiscoveryStrategyFactory());
+        final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
+        discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length));
+
         startClusterA();
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
         assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
 
-        assertAllEndpointsDiscovered(2);
+        assertAllEndpointsDiscovered(discoveryEndpoints, 2);
 
         clusterB[1].shutdown();
 
@@ -194,7 +227,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() throws Exception {
-                assertAllEndpointsDiscovered(2);
+                assertAllEndpointsDiscovered(discoveryEndpoints, 2);
             }
         });
 
@@ -204,6 +237,10 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     @Test
     public void testMaxConnected() {
+        final ArrayListDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(new ArrayListDiscoveryStrategyFactory());
+        final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
+        discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length));
+
         final WanReplicationConfig c = configA.getWanReplicationConfig(wanReplicationName);
         final WanPublisherConfig publisherConfig = c.getWanPublisherConfigs().iterator().next();
         publisherConfig.getProperties().put(WanReplicationProperties.MAX_ENDPOINTS.key(), 1);
@@ -214,16 +251,22 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         createDataIn(clusterA, "map", 0, 1000);
         assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
 
-        final ArrayList<DiscoveryNode> nodes = discoveryStrategyFactory.strategy.nodes;
         assertTargetEndpointSize(1);
-        assertEquals(2, nodes.size());
+        assertEquals(2, discoveryEndpoints.size());
 
         final Address connectedEndpoint = getTargetEndpoints().get(0);
         boolean connectedEndpointIsDiscovered = false;
-        for (DiscoveryNode node : nodes) {
+        for (DiscoveryNode node : discoveryEndpoints) {
             connectedEndpointIsDiscovered |= node.getPublicAddress().equals(connectedEndpoint);
         }
         assertTrue(connectedEndpointIsDiscovered);
+    }
+
+    private <T extends DiscoveryStrategyFactory> T setupDiscoveryStrategyFactory(T discoveryStrategyFactory) {
+        final DiscoveryStrategyConfig discoveryConfig = new DiscoveryStrategyConfig(discoveryStrategyFactory);
+        discoveryConfig.addProperty(WanReplicationProperties.DISCOVERY_PERIOD.key(), 1);
+        addDiscoveryConfig(configA, wanReplicationName, discoveryConfig);
+        return discoveryStrategyFactory;
     }
 
     private void assertTargetEndpointSize(int expectedSize) {
@@ -238,24 +281,27 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     }
 
 
-    private void assertAllEndpointsDiscovered(int expectedSize) {
-        final ArrayList<DiscoveryNode> nodes = discoveryStrategyFactory.strategy.nodes;
+    private void assertAllEndpointsDiscovered(Collection<DiscoveryNode> strategyEndpoints, int expectedSize) {
         final List<Address> targetEndpoints = getTargetEndpoints();
         assertEquals(expectedSize, targetEndpoints.size());
-        assertEquals(nodes.size(), targetEndpoints.size());
-        for (DiscoveryNode node : nodes) {
+        assertEquals(strategyEndpoints.size(), targetEndpoints.size());
+        for (DiscoveryNode node : strategyEndpoints) {
             targetEndpoints.contains(node.getPublicAddress());
         }
     }
 
-    private static ArrayList<DiscoveryNode> clusterDiscoveryNodes(Config config, int count) throws UnknownHostException {
-        final ArrayList<DiscoveryNode> nodes = new ArrayList<DiscoveryNode>();
-        int port = config.getNetworkConfig().getPort();
-        for (int i = 0; i < count; i++) {
-            final Address addr = new Address("127.0.0.1", port++);
-            nodes.add(new SimpleDiscoveryNode(addr, addr));
+    private static ArrayList<DiscoveryNode> clusterDiscoveryNodes(Config config, int count) {
+        try {
+            final ArrayList<DiscoveryNode> nodes = new ArrayList<DiscoveryNode>();
+            int port = config.getNetworkConfig().getPort();
+            for (int i = 0; i < count; i++) {
+                final Address addr = new Address("127.0.0.1", port++);
+                nodes.add(new SimpleDiscoveryNode(addr, addr));
+            }
+            return nodes;
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
         }
-        return nodes;
     }
 
     private void addDiscoveryConfig(Config config, String setupName, DiscoveryStrategyConfig discoveryStrategyConfig) {
@@ -264,6 +310,44 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         final DiscoveryConfig discoveryConfig = new DiscoveryConfig();
         discoveryConfig.addDiscoveryStrategyConfig(discoveryStrategyConfig);
         publisherConfig.setDiscoveryConfig(discoveryConfig);
+    }
+
+    public static class ExceptionThrowingDiscoveryStrategyFactory implements DiscoveryStrategyFactory {
+        private ExceptionThrowingDiscoveryStrategy strategy =
+                new ExceptionThrowingDiscoveryStrategy(null, Collections.<String, Comparable>emptyMap());
+
+        @Override
+        public Class<? extends DiscoveryStrategy> getDiscoveryStrategyType() {
+            return ExceptionThrowingDiscoveryStrategy.class;
+        }
+
+        @Override
+        public DiscoveryStrategy newDiscoveryStrategy(DiscoveryNode discoveryNode, ILogger logger, Map<String, Comparable> properties) {
+            return strategy;
+        }
+
+        @Override
+        public Collection<PropertyDefinition> getConfigurationProperties() {
+            return null;
+        }
+    }
+
+    public static class ExceptionThrowingDiscoveryStrategy extends AbstractDiscoveryStrategy {
+
+        private final ArrayList<DiscoveryNode> nodes = new ArrayList<DiscoveryNode>();
+        private boolean throwException;
+
+        ExceptionThrowingDiscoveryStrategy(ILogger logger, Map<String, Comparable> properties) {
+            super(logger, properties);
+        }
+
+        @Override
+        public Iterable<DiscoveryNode> discoverNodes() {
+            if (throwException) {
+                throw new RuntimeException("BOOM");
+            }
+            return nodes;
+        }
     }
 
     public static class ArrayListDiscoveryStrategyFactory implements DiscoveryStrategyFactory {

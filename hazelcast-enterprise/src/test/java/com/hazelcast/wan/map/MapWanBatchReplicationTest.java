@@ -1,6 +1,8 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.InvalidConfigurationException;
+import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.SlowTest;
@@ -9,8 +11,28 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.util.Map;
+
+import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
+
 @Category(SlowTest.class)
 public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
+
+    @Test(expected = InvalidConfigurationException.class)
+    public void failStartupWhenEndpointsAreMisconfigured() {
+        final String publisherSetup = "atob";
+        setupReplicateFrom(configA, configB, clusterB.length, publisherSetup, PassThroughMergePolicy.class.getName());
+
+        for (WanPublisherConfig publisherConfig : configA.getWanReplicationConfig(publisherSetup).getWanPublisherConfigs()) {
+            final Map<String, Comparable> properties = publisherConfig.getProperties();
+            final String endpoints = (String) properties.get(ENDPOINTS.key());
+            final String endpointsWithError = endpoints.substring(0, endpoints.indexOf(":")) + "\n" + endpoints.substring(endpoints.indexOf(":"));
+            properties.put(ENDPOINTS.key(), endpointsWithError);
+        }
+
+        startClusterA();
+        createDataIn(clusterA, "map", 1, 10);
+    }
 
     @Test
     @Ignore

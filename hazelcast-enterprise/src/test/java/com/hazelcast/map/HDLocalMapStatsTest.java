@@ -7,6 +7,7 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceV1;
 import com.hazelcast.memory.MemoryStats;
+import com.hazelcast.monitor.LocalMapStats;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -24,25 +25,24 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class HDLocalMapStatsTest extends LocalMapStatsTest {
 
-    // All sizes below are as expected from the POOLED memory allocator
+    // NOTE: all sizes below are as expected from the POOLED memory allocator
 
-    // 60bytes (hd record structure) + 1byte (memory manager header)
-    // next available buddy block that fits, is 64bytes
+    // 60 bytes (HD record structure) + 1 byte (memory manager header)
+    // next available buddy block that fits, is 64 bytes
     private static final int HD_RECORD_DEFAULT_COST = 64;
 
-    // 4 bytes NativeMemoryData + 17 bytes actual data + 1 (memory manager header)
-    // next available block that fits is 32 bytes;
+    // 4 bytes NativeMemoryData + 17 bytes actual data + 1 byte (memory manager header)
+    // next available block that fits is 32 bytes
     private static final int KEY_COST = 32;
 
-    // 4 bytes NativeMemoryData + 12 bytes actual data + 1 (memory manager header)
-    // next available block that fits is 32 bytes;
+    // 4 bytes NativeMemoryData + 12 bytes actual data + 1 byte (memory manager header)
+    // next available block that fits is 32 bytes
     private static final int VALUE_COST = 32;
 
-    // Key address & Value address
+    // key address & value address
     private static final int BEHM_SLOT_COST = 16;
 
     static final int SINGLE_MAP_ENTRY_COST = HD_RECORD_DEFAULT_COST + KEY_COST + VALUE_COST + BEHM_SLOT_COST;
-
 
     @Override
     protected Config getConfig() {
@@ -50,21 +50,21 @@ public class HDLocalMapStatsTest extends LocalMapStatsTest {
     }
 
     @Test
-    public void hdStatsCollectionAllowed_whenClusterStateIsActive() throws Exception {
+    public void hdStatsCollectionAllowed_whenClusterStateIsActive() {
         hdStatsCollectionAllowedWhenClusterState(ACTIVE);
     }
 
     @Test
-    public void hdStatsCollectionAllowed_whenClusterStateIsPassive() throws Exception {
+    public void hdStatsCollectionAllowed_whenClusterStateIsPassive() {
         hdStatsCollectionAllowedWhenClusterState(PASSIVE);
     }
 
     @Test
-    public void hdStatsCollectionAllowed_whenClusterStateIsFrozen() throws Exception {
+    public void hdStatsCollectionAllowed_whenClusterStateIsFrozen() {
         hdStatsCollectionAllowedWhenClusterState(FROZEN);
     }
 
-    protected void hdStatsCollectionAllowedWhenClusterState(ClusterState state) {
+    private void hdStatsCollectionAllowedWhenClusterState(ClusterState state) {
         HazelcastInstance member = createHazelcastInstance(getConfig());
         IMap map = member.getMap("test");
 
@@ -75,28 +75,41 @@ public class HDLocalMapStatsTest extends LocalMapStatsTest {
     @Test
     public void hdOwnedEntryCost() {
         HazelcastInstance instance = createHazelcastInstance(getHDConfig(POOLED));
-        MemoryStats stats = ((EnterpriseSerializationServiceV1) getNodeEngineImpl(instance)
-                .getSerializationService()).getMemoryManager().getMemoryStats();
+        MemoryStats stats = ((EnterpriseSerializationServiceV1) getNodeEngineImpl(instance).getSerializationService())
+                .getMemoryManager().getMemoryStats();
 
-        IMap<String, Integer> map = instance.getMap("FooBar");
+        IMap<String, Integer> map = instance.getMap("ownedEntryCostMap");
+
+        // single entry
+
+        map.put("key-0", 0);
+
+        LocalMapStats localMapStats = map.getLocalMapStats();
+        assertEquals(1, localMapStats.getOwnedEntryCount());
+        assertEquals(SINGLE_MAP_ENTRY_COST, localMapStats.getOwnedEntryMemoryCost());
+        assertEquals(BEHM_SLOT_COST + stats.getUsedNative(), localMapStats.getOwnedEntryMemoryCost());
+        assertEquals(0, localMapStats.getHeapCost());
+
+        // multiple entries
+
         int numOfEntries = 5;
-
-        map.put("Key_0", 0);
-
-        assertEquals(1, map.getLocalMapStats().getOwnedEntryCount());
-        assertEquals(SINGLE_MAP_ENTRY_COST, map.getLocalMapStats().getOwnedEntryMemoryCost());
-        assertEquals(0, map.getLocalMapStats().getHeapCost());
-
         for (int i = 1; i < numOfEntries; i++) {
-            map.put("Key_" + i, i);
+            map.put("key-" + i, i);
         }
 
-        assertEquals(numOfEntries * SINGLE_MAP_ENTRY_COST, map.getLocalMapStats().getOwnedEntryMemoryCost());
-        assertEquals(stats.getUsedNative() + (numOfEntries * BEHM_SLOT_COST), map.getLocalMapStats().getOwnedEntryMemoryCost());
+        localMapStats = map.getLocalMapStats();
+        assertEquals(numOfEntries, localMapStats.getOwnedEntryCount());
+        assertEquals(numOfEntries * SINGLE_MAP_ENTRY_COST, localMapStats.getOwnedEntryMemoryCost());
+        assertEquals(numOfEntries * BEHM_SLOT_COST + stats.getUsedNative(), localMapStats.getOwnedEntryMemoryCost());
+        assertEquals(0, localMapStats.getHeapCost());
+
+        // empty map
 
         map.clear();
 
-        assertEquals(0, map.getLocalMapStats().getOwnedEntryMemoryCost());
+        localMapStats = map.getLocalMapStats();
+        assertEquals(0, localMapStats.getOwnedEntryCount());
+        assertEquals(0, localMapStats.getOwnedEntryMemoryCost());
+        assertEquals(0, localMapStats.getHeapCost());
     }
-
 }

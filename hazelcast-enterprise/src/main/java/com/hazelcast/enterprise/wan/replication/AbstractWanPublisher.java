@@ -30,7 +30,6 @@ import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
-import com.hazelcast.spi.DistributedObjectNamespace;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.LiveOperations;
 import com.hazelcast.spi.LiveOperationsTracker;
@@ -404,11 +403,11 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         EnterpriseReplicationEventObject replicationEventObject
                 = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
-        EWRPutOperation ewrPutOperation =
+        EWRPutOperation wanPutOperation =
                 new EWRPutOperation(wanReplicationName, targetGroupName,
-                        node.nodeEngine.toData(wanReplicationEvent),
+                        wanReplicationEvent,
                         replicationEventObject.getBackupCount());
-        invokeOnPartition(wanReplicationEvent.getServiceName(), replicationEventObject.getKey(), ewrPutOperation);
+        invokeOnPartition(wanReplicationEvent.getServiceName(), replicationEventObject.getKey(), wanPutOperation);
     }
 
     /**
@@ -645,10 +644,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         final PartitionWanEventQueueMap mapQueues = partitionContainer.getMapEventQueueMapByBackupCount(replicaIndex);
         final PartitionWanEventQueueMap cacheQueues = partitionContainer.getCacheEventQueueMapByBackupCount(replicaIndex);
         for (String mapName : mapQueues.keySet()) {
-            namespaces.add(new DistributedObjectNamespace(MapService.SERVICE_NAME, mapName));
+            namespaces.add(MapService.getObjectNamespace(mapName));
         }
         for (String cacheName : cacheQueues.keySet()) {
-            namespaces.add(new DistributedObjectNamespace(CacheService.SERVICE_NAME, cacheName));
+            namespaces.add(CacheService.getObjectNamespace(cacheName));
         }
     }
 

@@ -19,6 +19,8 @@ public abstract class EWRBaseOperation extends Operation implements PartitionAwa
 
     String wanReplicationName;
     String targetName;
+    // service name is always null but it can't be easily removed
+    // because of backwards compatibility (rolling upgrade)
     String serviceName;
 
     protected EWRBaseOperation() {
@@ -39,12 +41,7 @@ public abstract class EWRBaseOperation extends Operation implements PartitionAwa
         return response;
     }
 
-    @Override
-    public String getServiceName() {
-        return EnterpriseWanReplicationService.SERVICE_NAME;
-    }
-
-    protected EnterpriseWanReplicationService getEWRService() {
+    EnterpriseWanReplicationService getEWRService() {
         return (EnterpriseWanReplicationService) getNodeEngine().getWanReplicationService();
     }
 

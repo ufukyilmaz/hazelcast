@@ -6,13 +6,12 @@ import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static com.hazelcast.test.starter.Utils.assertInstanceOfByClassName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 /**
- * AtomicLong compatibility test
+ * Compatibility test for IAtomicLong.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)

@@ -6,10 +6,8 @@ import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
-
 /**
- * CountdownLatch compatibility test
+ * Compatibility test for CountdownLatch.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)

@@ -29,12 +29,15 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.spi.properties.GroupProperty.TCP_JOIN_PORT_TRY_COUNT;
+import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
+import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getOldestKnownVersion;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -45,11 +48,11 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
 
     private static final String HD_PREFIX = "hd-";
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameters(name = "{0}")
     public static Collection parameters() {
-        return Arrays.asList(
-                new Object[]{"Map", new DataStructureValidator[]{mapValidator(), mapHDValidator(),
-                        mapLockValidator(), mapHDLockValidator()}},
+        return asList(
+                new Object[]{"Map", new DataStructureValidator[]{mapValidator(), mapHDValidator(), mapLockValidator(),
+                        mapHDLockValidator()}},
                 new Object[]{"Cache", new DataStructureValidator[]{cacheValidator(), cacheHDValidator()}},
                 new Object[]{"MultiMap", new DataStructureValidator[]{multiMapValidator(), multiMapLockValidator()}},
                 new Object[]{"Queue", new DataStructureValidator[]{queueValidator()}},
@@ -83,13 +86,13 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
         HazelcastInstance master = factory.newHazelcastInstance(createConfig());
         initValidators(master);
 
-        HazelcastInstance[] instances = factory.newInstances(createConfig(), factory.getKnownPreviousVersionsCount());
+        HazelcastInstance[] instances = factory.newInstances(createConfig(), getKnownPreviousVersionsCount());
 
         for (HazelcastInstance hz : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, hz);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, hz);
         }
 
-        assertClusterSize(factory.getKnownPreviousVersionsCount() + 1, master);
+        assertClusterSize(getKnownPreviousVersionsCount() + 1, master);
         waitClusterForSafeState(master);
 
         validate(master);
@@ -98,17 +101,17 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     @Test
     public void testMigrations_whenLatestVersion_isMaster() {
         HazelcastInstance master = HazelcastInstanceFactory.newHazelcastInstance(createConfig());
-        master.getCluster().changeClusterVersion(Version.of(factory.getOldestKnownVersion()));
+        master.getCluster().changeClusterVersion(Version.of(getOldestKnownVersion()));
         initValidators(master);
 
-        HazelcastInstance[] instances = factory.newInstances(createConfig(), factory.getKnownPreviousVersionsCount());
+        HazelcastInstance[] instances = factory.newInstances(createConfig(), getKnownPreviousVersionsCount());
 
         for (HazelcastInstance hz : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, hz);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, hz);
 
         }
 
-        assertClusterSize(factory.getKnownPreviousVersionsCount() + 1, master);
+        assertClusterSize(getKnownPreviousVersionsCount() + 1, master);
         waitClusterForSafeState(master);
 
         validate(master);
@@ -119,7 +122,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
         HazelcastInstance[] instances = factory.newInstances(createConfig());
 
         for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, instance);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, instance);
         }
 
         HazelcastInstance master = instances[0];
@@ -137,12 +140,12 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     @Test
     public void testShutdown_whenLatestVersion_isMaster() {
         HazelcastInstance master = HazelcastInstanceFactory.newHazelcastInstance(createConfig());
-        master.getCluster().changeClusterVersion(Version.of(factory.getOldestKnownVersion()));
+        master.getCluster().changeClusterVersion(Version.of(getOldestKnownVersion()));
 
-        HazelcastInstance[] instances = factory.newInstances(createConfig(), factory.getKnownPreviousVersionsCount());
+        HazelcastInstance[] instances = factory.newInstances(createConfig(), getKnownPreviousVersionsCount());
 
         for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, instance);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, instance);
         }
 
         initValidators(master);
@@ -161,7 +164,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
         HazelcastInstance[] instances = factory.newInstances(createConfig());
 
         for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, instance);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, instance);
         }
 
         HazelcastInstance instance = instances[instances.length - 1];
@@ -177,12 +180,12 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     @Test
     public void testShutdown_whenLatestVersionMaster_shutdowns() {
         HazelcastInstance master = HazelcastInstanceFactory.newHazelcastInstance(createConfig());
-        master.getCluster().changeClusterVersion(Version.of(factory.getOldestKnownVersion()));
+        master.getCluster().changeClusterVersion(Version.of(getOldestKnownVersion()));
 
-        HazelcastInstance[] instances = factory.newInstances(createConfig(), factory.getKnownPreviousVersionsCount());
+        HazelcastInstance[] instances = factory.newInstances(createConfig(), getKnownPreviousVersionsCount());
 
         for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, instance);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, instance);
         }
 
         initValidators(instances[0]);
@@ -199,7 +202,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
         HazelcastInstance[] instances = factory.newInstances(createConfig());
 
         for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, instance);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, instance);
         }
 
         HazelcastInstance master = instances[0];
@@ -218,12 +221,12 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     @Test
     public void testTerminate_whenLatestVersion_isMaster() {
         HazelcastInstance master = HazelcastInstanceFactory.newHazelcastInstance(createConfig());
-        master.getCluster().changeClusterVersion(Version.of(factory.getOldestKnownVersion()));
+        master.getCluster().changeClusterVersion(Version.of(getOldestKnownVersion()));
 
-        HazelcastInstance[] instances = factory.newInstances(createConfig(), factory.getKnownPreviousVersionsCount());
+        HazelcastInstance[] instances = factory.newInstances(createConfig(), getKnownPreviousVersionsCount());
 
         for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, instance);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, instance);
         }
 
         initValidators(master);
@@ -244,7 +247,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
         HazelcastInstance[] instances = factory.newInstances(createConfig());
 
         for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, instance);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, instance);
         }
 
         HazelcastInstance instance = instances[instances.length - 1];
@@ -260,12 +263,12 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     @Test
     public void testTerminate_whenLatestVersionMaster_terminates() {
         HazelcastInstance master = HazelcastInstanceFactory.newHazelcastInstance(createConfig());
-        master.getCluster().changeClusterVersion(Version.of(factory.getOldestKnownVersion()));
+        master.getCluster().changeClusterVersion(Version.of(getOldestKnownVersion()));
 
-        HazelcastInstance[] instances = factory.newInstances(createConfig(), factory.getKnownPreviousVersionsCount());
+        HazelcastInstance[] instances = factory.newInstances(createConfig(), getKnownPreviousVersionsCount());
 
         for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, instance);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, instance);
         }
 
         initValidators(instances[0]);
@@ -279,11 +282,11 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
 
     @Test
     public void testVersionUpgrade() {
-        HazelcastInstance[] instances = factory.newInstances(createConfig(), factory.getKnownPreviousVersionsCount());
+        HazelcastInstance[] instances = factory.newInstances(createConfig(), getKnownPreviousVersionsCount());
         final HazelcastInstance latest = HazelcastInstanceFactory.newHazelcastInstance(createConfig());
 
         for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(factory.getKnownPreviousVersionsCount() + 1, instance);
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, instance);
         }
 
         initValidators(latest);
@@ -365,7 +368,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
 
     private Config createConfig() {
         Config config = new Config();
-        config.setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(factory.getKnownPreviousVersionsCount() + 2));
+        config.setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(getKnownPreviousVersionsCount() + 2));
 
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);

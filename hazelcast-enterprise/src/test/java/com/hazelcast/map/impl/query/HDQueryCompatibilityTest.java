@@ -23,7 +23,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({CompatibilityTest.class})
+@Category(CompatibilityTest.class)
 public class HDQueryCompatibilityTest extends HazelcastTestSupport {
 
     @Test
@@ -85,12 +85,11 @@ public class HDQueryCompatibilityTest extends HazelcastTestSupport {
         }
         config.addMapConfig(mapConfig);
 
-
         HazelcastInstance[] instances = factory.newInstances(getConfig());
         assertClusterSizeEventually(versions.length, instances[0]);
 
         // GIVEN VALUES
-        IMap map = instances[0].getMap("default");
+        IMap<Integer, Car> map = instances[0].getMap("default");
         for (int i = 0; i < 100; i++) {
             map.put(i, new Car(i));
         }
@@ -110,9 +109,10 @@ public class HDQueryCompatibilityTest extends HazelcastTestSupport {
     }
 
     public static class Car implements ICar, Serializable {
+
         private final long power;
 
-        public Car(long power) {
+        Car(long power) {
             this.power = power;
         }
 
@@ -122,8 +122,9 @@ public class HDQueryCompatibilityTest extends HazelcastTestSupport {
         }
     }
 
+    @SuppressWarnings("unused")
     public interface ICar {
+
         long getPower();
     }
-
 }

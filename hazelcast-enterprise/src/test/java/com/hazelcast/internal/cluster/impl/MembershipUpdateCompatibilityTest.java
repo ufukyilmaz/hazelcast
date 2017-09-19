@@ -12,7 +12,6 @@ import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import com.hazelcast.util.Clock;
-import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.version.Version;
 import org.junit.After;
 import org.junit.Before;
@@ -28,6 +27,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import static com.hazelcast.internal.cluster.impl.MembershipUpdateTest.assertMemberViewsAreSame;
 import static com.hazelcast.internal.cluster.impl.MembershipUpdateTest.getMemberMap;
 import static com.hazelcast.spi.properties.GroupProperty.TCP_JOIN_PORT_TRY_COUNT;
+import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
+import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getOldestKnownVersion;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -84,7 +86,7 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
 
     private void parallel_member_join(final boolean multicastEnabled) {
         final AtomicReferenceArray<HazelcastInstance> instances
-                = new AtomicReferenceArray<HazelcastInstance>(factory.getKnownPreviousVersionsCount() + 1);
+                = new AtomicReferenceArray<HazelcastInstance>(getKnownPreviousVersionsCount() + 1);
 
         // start a member with older version to prevent a member with latest codebase version being master
         instances.set(0, factory.newHazelcastInstance(createConfig(multicastEnabled)));
@@ -101,7 +103,7 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 for (int i = 0; i < instances.length(); i++) {
                     HazelcastInstance instance = instances.get(i);
                     assertNotNull(instance);
@@ -148,9 +150,9 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
     @Test
     public void latestVersionMaster_terminates() {
         HazelcastInstance master = HazelcastInstanceFactory.newHazelcastInstance(createConfig(false));
-        master.getCluster().changeClusterVersion(Version.of(factory.getOldestKnownVersion()));
+        master.getCluster().changeClusterVersion(Version.of(getOldestKnownVersion()));
 
-        HazelcastInstance[] instances = factory.newInstances(createConfig(false), factory.getKnownPreviousVersionsCount());
+        HazelcastInstance[] instances = factory.newInstances(createConfig(false), getKnownPreviousVersionsCount());
 
         assertClusterSize(instances.length + 1, master);
         for (HazelcastInstance instance : instances) {
@@ -169,9 +171,9 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
     @Test
     public void previousVersionSlave_terminates() {
         HazelcastInstance master = HazelcastInstanceFactory.newHazelcastInstance(createConfig(false));
-        master.getCluster().changeClusterVersion(Version.of(factory.getOldestKnownVersion()));
+        master.getCluster().changeClusterVersion(Version.of(getOldestKnownVersion()));
 
-        HazelcastInstance[] instances = factory.newInstances(createConfig(false), factory.getKnownPreviousVersionsCount());
+        HazelcastInstance[] instances = factory.newInstances(createConfig(false), getKnownPreviousVersionsCount());
 
         assertClusterSize(instances.length + 1, master);
         for (HazelcastInstance instance : instances) {
@@ -236,10 +238,10 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
 
     private void previousVersionMembers_joinToLatestVersionMaster(boolean multicastEnabled) {
         HazelcastInstance master = HazelcastInstanceFactory.newHazelcastInstance(createConfig(multicastEnabled));
-        master.getCluster().changeClusterVersion(Version.of(factory.getOldestKnownVersion()));
+        master.getCluster().changeClusterVersion(Version.of(getOldestKnownVersion()));
 
         Config config = createConfig(multicastEnabled);
-        HazelcastInstance[] instances = factory.newInstances(config, factory.getKnownPreviousVersionsCount());
+        HazelcastInstance[] instances = factory.newInstances(config, getKnownPreviousVersionsCount());
 
         assertClusterSize(instances.length + 1, master);
 
@@ -255,12 +257,12 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
 
     @Test
     public void upgradeCluster_whenAllOlderVersionMembersLeft() {
-        HazelcastInstance[] instances = factory.newInstances(createConfig(false), factory.getKnownPreviousVersionsCount() + 2);
+        HazelcastInstance[] instances = factory.newInstances(createConfig(false), getKnownPreviousVersionsCount() + 2);
         for (HazelcastInstance instance : instances) {
             assertClusterSizeEventually(instances.length, instance);
         }
 
-        for (int i = 0; i < factory.getKnownPreviousVersionsCount(); i++) {
+        for (int i = 0; i < getKnownPreviousVersionsCount(); i++) {
             instances[i].shutdown();
         }
 
@@ -273,7 +275,7 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(currentVersion, instance2.getCluster().getClusterVersion());
             }
         });
@@ -297,12 +299,12 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
             long end = Clock.currentTimeMillis();
             timeout -= (end - start);
         }
-        throw ExceptionUtil.rethrow(t);
+        throw rethrow(t);
     }
 
     private Config createConfig(boolean multicastEnabled) {
         Config config = new Config();
-        config.setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(factory.getKnownPreviousVersionsCount()));
+        config.setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(getKnownPreviousVersionsCount()));
         if (!multicastEnabled) {
             JoinConfig join = config.getNetworkConfig().getJoin();
             join.getMulticastConfig().setEnabled(false);

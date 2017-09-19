@@ -20,9 +20,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.InvalidClassException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,34 +30,36 @@ import java.util.Set;
 import static com.hazelcast.internal.cluster.Versions.V3_8;
 import static com.hazelcast.test.compatibility.SamplingSerializationService.isTestClass;
 import static com.hazelcast.util.StringUtil.LINE_SEPARATOR;
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 /**
- * Test compatibility of objects serialized in previous, compatible Hazelcast versions with current
+ * Tests compatibility of objects serialized in previous, compatible Hazelcast versions with current.
  */
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({NightlyTest.class, ParallelTest.class})
 public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
 
-    @Parameter
-    public String version;
-
-    static final String CLASSPATH_RESOURCE_PATTERN = "com/hazelcast/test/compatibility/serialized-objects-%s";
-    static final ILogger LOGGER = Logger.getLogger(SerializedObjectsCompatibilityTest.class);
-
-    InternalSerializationService currentSerializationService;
-    String classpathResource;
+    private static final String CLASSPATH_RESOURCE_PATTERN = "com/hazelcast/test/compatibility/serialized-objects-%s";
+    private static final ILogger LOGGER = Logger.getLogger(SerializedObjectsCompatibilityTest.class);
 
     @Parameters(name = "version: {0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {"3.8"},
                 {"3.8.1"},
                 {"3.8.2"},
         });
     }
+
+    @Parameter
+    public String version;
+
+    private InternalSerializationService currentSerializationService;
+    private String classpathResource;
 
     @Before
     public void setup() {
@@ -66,11 +68,11 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
                 .setVersionedSerializationEnabled(true)
                 .setEnableSharedObject(true)
                 .build();
-        classpathResource = String.format(CLASSPATH_RESOURCE_PATTERN, version);
+        classpathResource = format(CLASSPATH_RESOURCE_PATTERN, version);
     }
 
     @Test
-    public void testObjectsAreDeserializedInV3_9() throws Exception {
+    public void testObjectsAreDeserializedInV3_9() {
         SerializedObjectsAccessor serializedObjects = new SerializedObjectsAccessor(classpathResource);
         assertObjectsAreDeserialized(serializedObjects);
     }

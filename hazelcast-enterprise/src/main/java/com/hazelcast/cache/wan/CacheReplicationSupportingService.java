@@ -65,10 +65,9 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                 future.join();
             }
 
-            /** Proxies should be created to initialize listeners, etc. and to show WAN replicated caches in mancenter.
-             * Otherwise, users are forced to manually call cacheManager#getCache
-             * Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
-             */
+            // Proxies should be created to initialize listeners, etc. and to show WAN replicated caches in mancenter.
+            // Otherwise, users are forced to manually call cacheManager#getCache
+            // Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
             proxyService.getDistributedObject(CacheService.SERVICE_NAME, cacheConfig.getNameWithPrefix());
 
             WanReplicationRef wanReplicationRef = cacheConfig.getWanReplicationRef();

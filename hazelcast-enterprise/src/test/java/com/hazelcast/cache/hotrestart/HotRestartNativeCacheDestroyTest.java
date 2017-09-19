@@ -36,12 +36,11 @@ public class HotRestartNativeCacheDestroyTest extends CacheDestroyTest {
 
     @Override
     protected Config createConfig() {
-        Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE);
-        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100");
-
-        // to reduce used native memory size
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+        Config config = new Config()
+                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE)
+                .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
+                // to reduce used native memory size
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)
@@ -63,8 +62,7 @@ public class HotRestartNativeCacheDestroyTest extends CacheDestroyTest {
         HotRestartConfig hrConfig = new HotRestartConfig().setEnabled(true);
 
         CacheConfig<K, V> cacheConfig = super.createCacheConfig();
-        cacheConfig
-                .setInMemoryFormat(InMemoryFormat.NATIVE)
+        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE)
                 .setEvictionConfig(evictionConfig)
                 .setHotRestartConfig(hrConfig);
         return cacheConfig;

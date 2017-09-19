@@ -13,39 +13,39 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import javax.cache.expiry.ExpiryPolicy;
-import java.util.Arrays;
 import java.util.Collection;
 
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
 
-    private static final int OPERATION_COUNT = 1000;
-
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
-                {InMemoryFormat.NATIVE, OPERATION_COUNT, false},
-                {InMemoryFormat.BINARY, OPERATION_COUNT, false}
+        return asList(new Object[][] {
+                {InMemoryFormat.NATIVE, KEY_COUNT, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false}
         });
     }
 
     @Test
-    public void test() throws Exception {
+    public void test() {
         final int expireAfter = 10;
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(expireAfter, expireAfter, expireAfter, MILLISECONDS);
         Config hzConfig = makeConfig(factory.nextAddress());
         HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, String> cache = createCache(hz);
 
-        for (int key = 0; key < OPERATION_COUNT; key++) {
+        for (int key = 0; key < KEY_COUNT; key++) {
             cache.put(key, randomString(), expiryPolicy);
         }
 
@@ -53,8 +53,8 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
         final ICache<Integer, String> finalCache = cache;
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
-                for (int key = 0; key < OPERATION_COUNT; key++) {
+            public void run() {
+                for (int key = 0; key < KEY_COUNT; key++) {
                     assertNull(finalCache.get(key));
                 }
             }

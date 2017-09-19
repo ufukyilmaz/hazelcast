@@ -5,7 +5,6 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.HotRestartConfig;
-import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
@@ -37,21 +36,21 @@ public class HotRestartNativeCacheClearTest extends CacheClearTest {
 
     @Override
     protected Config createConfig() {
-        Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE);
-        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100");
+        Config config = new Config()
+                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE)
+                .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
+                // to reduce used native memory size
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
-        // to reduce used native memory size
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
-
-        HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
-        hotRestartPersistenceConfig.setEnabled(true);
-        hotRestartPersistenceConfig.setBaseDir(new File(folder, "hz_" + instanceIndex.incrementAndGet()));
+        config.getHotRestartPersistenceConfig()
+                .setEnabled(true)
+                .setBaseDir(new File(folder, "hz_" + instanceIndex.incrementAndGet()));
 
         config.getNativeMemoryConfig()
                 .setEnabled(true)
                 .setSize(new MemorySize(128, MemoryUnit.MEGABYTES))
                 .setMetadataSpacePercentage(20);
+
         return config;
     }
 
@@ -64,10 +63,10 @@ public class HotRestartNativeCacheClearTest extends CacheClearTest {
         HotRestartConfig hrConfig = new HotRestartConfig().setEnabled(true);
 
         CacheConfig<K, V> cacheConfig = super.createCacheConfig();
-        cacheConfig
-                .setInMemoryFormat(InMemoryFormat.NATIVE)
+        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE)
                 .setEvictionConfig(evictionConfig)
                 .setHotRestartConfig(hrConfig);
+
         return cacheConfig;
     }
 

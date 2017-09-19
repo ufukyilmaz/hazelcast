@@ -6,6 +6,7 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
@@ -14,18 +15,31 @@ import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
 
 import static com.hazelcast.util.IterableUtil.getFirst;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTest {
+
+    @Parameters(name = "memoryFormat:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {InMemoryFormat.BINARY, KEY_COUNT, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false}
+        });
+    }
 
     @Test
     public void givenDynamicallyCreatedCacheExist_whenClusterRestarted_thenCacheStillExists() {

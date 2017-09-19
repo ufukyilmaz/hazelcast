@@ -11,6 +11,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,13 +20,13 @@ import java.util.Collection;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest {
 
     private static final int OPERATION_COUNT = 10000;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][] {
                 {InMemoryFormat.NATIVE, OPERATION_COUNT, false},
@@ -33,7 +35,7 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
     }
 
     @Test
-    public void test_clear() throws Exception {
+    public void test_clear() {
         test(new CacheAction() {
             @Override
             public int run(ICache cache) {
@@ -44,7 +46,7 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
     }
 
     @Test
-    public void test_destroy() throws Exception {
+    public void test_destroy() {
         test(new CacheAction() {
             @Override
             public int run(ICache cache) {
@@ -55,7 +57,7 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
     }
 
     @Test
-    public void test_close() throws Exception {
+    public void test_close() {
        test(new CacheAction() {
            @Override
            public int run(ICache cache) {
@@ -66,7 +68,7 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
        });
     }
 
-    private void test(CacheAction action) throws Exception {
+    private void test(CacheAction action) {
         Config hzConfig = makeConfig(factory.nextAddress());
         HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, String> cache = createCache(hz);

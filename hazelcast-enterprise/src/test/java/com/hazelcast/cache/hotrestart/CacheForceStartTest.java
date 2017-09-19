@@ -17,33 +17,34 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class CacheForceStartTest extends AbstractCacheHotRestartTest {
 
-    private static final int KEY_COUNT = 1000;
+    private static final int CLUSTER_SIZE = 3;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {InMemoryFormat.BINARY, KEY_COUNT, false},
                 {InMemoryFormat.NATIVE, KEY_COUNT, false}
         });
     }
 
-    private int clusterSize = 3;
     private boolean triggerForceStart = false;
 
     @Test
-    public void test() throws Exception {
-        newInstances(clusterSize);
+    public void test() {
+        newInstances(CLUSTER_SIZE);
         ICache<Integer, Object> cache = createCache();
 
         for (int key = 0; key < KEY_COUNT; key++) {
@@ -52,7 +53,7 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
         }
 
         triggerForceStart = true;
-        restartInstances(clusterSize);
+        restartInstances(CLUSTER_SIZE);
 
         cache = createCache();
         assertEquals(0, cache.size());
@@ -64,7 +65,7 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
         assertEquals(KEY_COUNT, cache.size());
 
         triggerForceStart = false;
-        restartInstances(clusterSize);
+        restartInstances(CLUSTER_SIZE);
 
         cache = createCache();
         assertEquals(KEY_COUNT, cache.size());

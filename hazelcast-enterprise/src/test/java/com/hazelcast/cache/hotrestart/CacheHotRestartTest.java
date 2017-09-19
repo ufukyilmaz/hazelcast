@@ -12,30 +12,31 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
 
-    private static final int KEY_COUNT = 1000;
-
     private ICache<Integer, String> cache;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0},clusterSize:{3}")
+    @Parameters(name = "memoryFormat:{0},clusterSize:{3}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {InMemoryFormat.BINARY, KEY_COUNT, false, 1},
                 {InMemoryFormat.BINARY, KEY_COUNT, false, 3},
                 {InMemoryFormat.NATIVE, KEY_COUNT, false, 1},
@@ -43,7 +44,7 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
         });
     }
 
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public int clusterSize;
 
     @Test
@@ -122,7 +123,7 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
     }
 
     @Test
-    public void cacheProxy_shouldBeCreated_afterHotRestart() throws Exception {
+    public void cacheProxy_shouldBeCreated_afterHotRestart() {
         newInstances(clusterSize);
         cache = createCache();
         String fullCacheName = cache.getPrefixedName();
@@ -134,7 +135,6 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
             Collection<String> names = proxyService.getDistributedObjectNames(ICacheService.SERVICE_NAME);
             assertThat(names, hasItem(fullCacheName));
         }
-
     }
 
     private void fillCacheAndRemoveRandom(Map<Integer, String> expectedMap, Random random) {
@@ -158,7 +158,7 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
         }
     }
 
-    private void resetFixture() throws Exception {
+    private void resetFixture() {
         restartInstances(clusterSize);
         cache = createCache();
     }

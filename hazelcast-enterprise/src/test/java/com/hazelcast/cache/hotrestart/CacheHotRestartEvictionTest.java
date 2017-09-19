@@ -23,10 +23,11 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import javax.cache.Cache;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,13 +37,14 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
 
@@ -50,16 +52,21 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     private static final int MIN_VALUE_SIZE = 32;
     private static final int MAX_VALUE_SIZE = 4096;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {InMemoryFormat.NATIVE, 25000, true},
                 {InMemoryFormat.BINARY, 25000, true}
         });
     }
 
+    @Override
+    MemorySize getNativeMemorySize() {
+        return new MemorySize(256, MemoryUnit.MEGABYTES);
+    }
+
     @Test
-    public void test() throws Exception {
+    public void test() {
         Config hzConfig = makeConfig(factory.nextAddress());
         HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, byte[]> cache = createCache(hz);
@@ -115,46 +122,6 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
         final byte[] value = new byte[valueSize];
         random.nextBytes(value);
         return value;
-    }
-
-    @Override
-    MemorySize getNativeMemorySize() {
-        return new MemorySize(256, MemoryUnit.MEGABYTES);
-    }
-
-    private static class CacheTask implements Runnable {
-
-        private final List<Throwable> failures;
-        private final CountDownLatch latch;
-        private final int operationCount;
-        private final Cache<Integer, byte[]> cache;
-
-        CacheTask(int operationCount, Cache<Integer, byte[]> cache, CountDownLatch latch, List<Throwable> failures) {
-            this.operationCount = operationCount;
-            this.cache = cache;
-            this.failures = failures;
-            this.latch = latch;
-        }
-
-        @Override
-        public void run() {
-            Random random = new Random();
-            try {
-                for (int i = 0; i < operationCount; i++) {
-                    int key = random.nextInt(KEY_RANGE);
-                    byte[] value = randomValue(random);
-                    cache.put(key, value);
-                }
-                for (int i = 0; i < operationCount / 1000; i += 1000) {
-                    int key = random.nextInt(KEY_RANGE);
-                    cache.remove(key);
-                }
-            } catch (Throwable t) {
-                failures.add(t);
-            } finally {
-                latch.countDown();
-            }
-        }
     }
 
     @Test
@@ -233,6 +200,41 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
                     assertEquals("When eviction is triggered, size after put cannot be more than before put",
                             sizeAfter, sizeBefore);
                 }
+            }
+        }
+    }
+
+    private static class CacheTask implements Runnable {
+
+        private final List<Throwable> failures;
+        private final CountDownLatch latch;
+        private final int operationCount;
+        private final Cache<Integer, byte[]> cache;
+
+        CacheTask(int operationCount, Cache<Integer, byte[]> cache, CountDownLatch latch, List<Throwable> failures) {
+            this.operationCount = operationCount;
+            this.cache = cache;
+            this.failures = failures;
+            this.latch = latch;
+        }
+
+        @Override
+        public void run() {
+            Random random = new Random();
+            try {
+                for (int i = 0; i < operationCount; i++) {
+                    int key = random.nextInt(KEY_RANGE);
+                    byte[] value = randomValue(random);
+                    cache.put(key, value);
+                }
+                for (int i = 0; i < operationCount / 1000; i += 1000) {
+                    int key = random.nextInt(KEY_RANGE);
+                    cache.remove(key);
+                }
+            } catch (Throwable t) {
+                failures.add(t);
+            } finally {
+                latch.countDown();
             }
         }
     }

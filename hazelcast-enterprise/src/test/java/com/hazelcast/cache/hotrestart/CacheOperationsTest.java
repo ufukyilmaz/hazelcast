@@ -11,15 +11,17 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -27,17 +29,15 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class CacheOperationsTest extends AbstractCacheHotRestartTest {
 
-    private static final int KEY_COUNT = 1000;
-
     private ICache<Integer, String> cache;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
+        return asList(new Object[][] {
                 {InMemoryFormat.BINARY, KEY_COUNT, false},
                 {InMemoryFormat.OBJECT, KEY_COUNT, false},
                 {InMemoryFormat.NATIVE, KEY_COUNT, false}

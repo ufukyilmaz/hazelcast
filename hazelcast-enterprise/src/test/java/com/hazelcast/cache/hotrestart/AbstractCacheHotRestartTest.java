@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
-import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 import javax.cache.CacheManager;
 import java.io.File;
@@ -35,32 +35,34 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
-import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
 import static com.hazelcast.HDTestSupport.getICache;
+import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
+    protected static final int KEY_COUNT = 1000;
+
     private static InetAddress localAddress;
 
     @Rule
     public TestName testName = new TestName();
 
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public InMemoryFormat memoryFormat;
 
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int keyRange;
 
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean evictionEnabled;
 
     TestHazelcastInstanceFactory factory;
     String cacheName;
-    private File baseDir;
 
+    private File baseDir;
 
     @BeforeClass
     public static void setupClass() throws UnknownHostException {
@@ -68,7 +70,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     }
 
     @Before
-    public final void setup() throws UnknownHostException {
+    public final void setup() {
         baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
         delete(baseDir);
         if (!baseDir.mkdir() && !baseDir.exists()) {

@@ -18,30 +18,28 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 @Ignore
 public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
 
-    private static final int KEY_COUNT = 1000;
-
-    private ICache<Integer, String> cache;
-
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
+        return asList(new Object[][]{
                 {InMemoryFormat.BINARY, KEY_COUNT, false},
                 {InMemoryFormat.NATIVE, KEY_COUNT, false}
         });
@@ -49,6 +47,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
 
     private int clusterSize;
     private int backupCount;
+    private ICache<Integer, String> cache;
 
     @Override
     void setupInternal() {
@@ -57,7 +56,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
     }
 
     @Test
-    public void test_whenClusterIsStable() throws Exception {
+    public void test_whenClusterIsStable() {
         HazelcastInstance[] instances = newInstances(clusterSize);
         warmUpPartitions(instances);
 
@@ -75,7 +74,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
     }
 
     @Test
-    public void test_afterMigration() throws Exception {
+    public void test_afterMigration() {
         HazelcastInstance hz = newHazelcastInstance();
         cache = createCache(hz, backupCount);
 
@@ -96,7 +95,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
     }
 
     @Test
-    public void test_afterRestart() throws Exception {
+    public void test_afterRestart() {
         HazelcastInstance[] instances = newInstances(clusterSize);
         warmUpPartitions(instances);
 
@@ -135,11 +134,12 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
     }
 
     private static class CacheOwnedEntryAssertTask extends AssertTask {
+
         private final HazelcastInstance[] instances;
         private final String nameWithPrefix;
         private final int expectedSize;
 
-        public CacheOwnedEntryAssertTask(HazelcastInstance[] instances, String nameWithPrefix, int expectedSize) {
+        CacheOwnedEntryAssertTask(HazelcastInstance[] instances, String nameWithPrefix, int expectedSize) {
             this.instances = instances;
             this.nameWithPrefix = nameWithPrefix;
             this.expectedSize = expectedSize;
@@ -169,14 +169,15 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
 
     // partition specific task to retrieve size of cache-record-store
     private static class PartitionedCacheSizeTask implements PartitionSpecificRunnable {
+
         private final EnterpriseCacheService service;
         private final String nameWithPrefix;
         private final int partitionId;
         private final AtomicInteger actualSize;
         private final CountDownLatch latch;
 
-        public PartitionedCacheSizeTask(EnterpriseCacheService service, String nameWithPrefix, int partitionId,
-                AtomicInteger actualSize, CountDownLatch latch) {
+        PartitionedCacheSizeTask(EnterpriseCacheService service, String nameWithPrefix, int partitionId, AtomicInteger actualSize,
+                                 CountDownLatch latch) {
             this.service = service;
             this.nameWithPrefix = nameWithPrefix;
             this.partitionId = partitionId;

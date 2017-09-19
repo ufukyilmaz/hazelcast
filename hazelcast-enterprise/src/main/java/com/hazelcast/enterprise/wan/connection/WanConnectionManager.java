@@ -80,7 +80,16 @@ public class WanConnectionManager {
         this.password = password;
         this.maxEndpoints = maxEndpoints;
 
-        addToTargetEndpoints(discoverPublicAddresses());
+        try {
+            addToTargetEndpoints(discoverPublicAddresses());
+        } catch (Exception e) {
+            final String msg = "Failed to initialize WAN endpoint list";
+            if (discoveryService instanceof PredefinedDiscoveryService) {
+                throw new InvalidConfigurationException(msg, e);
+            } else {
+                logger.warning(msg, e);
+            }
+        }
         if (targetEndpoints.size() == 0) {
             final String msg = "There were no discovered nodes for WanPublisherConfig,"
                     + "please define endpoints statically or check the AWS and discovery config";

@@ -3,9 +3,9 @@ package com.hazelcast.enterprise.wan.discovery;
 import com.hazelcast.config.properties.PropertyDefinition;
 import com.hazelcast.config.properties.PropertyTypeConverter;
 import com.hazelcast.config.properties.SimplePropertyDefinition;
+import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 
 import static com.hazelcast.config.properties.PropertyTypeConverter.INTEGER;
-import static com.hazelcast.config.properties.PropertyTypeConverter.STRING;
 
 /**
  * Configuration properties for the Hazelcast Discovery Plugin with statically defined addresses. For more information
@@ -23,7 +23,7 @@ public final class StaticDiscoveryProperties {
      * also contain ports for each address. Addresses without defined ports will use the value provided by the
      * {@code port} property.
      */
-    public static final PropertyDefinition ENDPOINTS = property("endpoints", STRING);
+    public static final PropertyDefinition ENDPOINTS = WanReplicationProperties.ENDPOINTS;
 
     private StaticDiscoveryProperties() {
     }

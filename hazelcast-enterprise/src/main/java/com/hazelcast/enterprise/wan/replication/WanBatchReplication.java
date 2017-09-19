@@ -35,7 +35,7 @@ import static com.hazelcast.util.ThreadUtil.createThreadName;
  * The event count is configurable by {@link WanReplicationProperties#BATCH_SIZE} and is {@value DEFAULT_BATCH_SIZE} by default.
  * The elapsed time is configurable by {@link WanReplicationProperties#BATCH_MAX_DELAY_MILLIS} and is
  * {@value DEFAULT_BATCH_MAX_DELAY_MILLIS} by default.
- * The events are sent to the {@link WanReplicationProperties#ENDPOINTS} depending on the event key partition.
+ * The events are sent to the endpoints depending on the event key partition.
  */
 public class WanBatchReplication extends AbstractWanReplication implements Runnable {
 

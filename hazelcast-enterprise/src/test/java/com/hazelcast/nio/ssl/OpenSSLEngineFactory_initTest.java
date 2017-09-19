@@ -1,9 +1,14 @@
 package com.hazelcast.nio.ssl;
 
 import com.hazelcast.IbmUtil;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import io.netty.handler.ssl.OpenSsl;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import java.util.Properties;
 
@@ -13,6 +18,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class OpenSSLEngineFactory_initTest {
 
     @BeforeClass

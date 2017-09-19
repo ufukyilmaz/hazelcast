@@ -3,6 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.IMap;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -13,12 +14,14 @@ import com.hazelcast.wan.WanSyncStatus;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
 import static org.junit.Assert.assertEquals;
 
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class HdMapWanSyncTest extends AbstractMapWanSyncTest {
 
@@ -74,6 +77,7 @@ public class HdMapWanSyncTest extends AbstractMapWanSyncTest {
     }
 
     @After
+    @Override
     public void cleanup() {
         super.cleanup();
         running = false;

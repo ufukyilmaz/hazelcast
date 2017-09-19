@@ -31,6 +31,7 @@ import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.util.MapUtil;
+import com.hazelcast.wan.WanReplicationService;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -49,10 +50,12 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
     @Override
     protected Config getConfig() {
-        Config config = super.getConfig();
-        config.setProperty(GroupProperty.REST_ENABLED.getName(), "true");
-        MapConfig mapConfig = config.getMapConfig("default");
-        mapConfig.setInMemoryFormat(getMemoryFormat());
+        Config config = super.getConfig()
+                .setProperty(GroupProperty.REST_ENABLED.getName(), "true");
+
+        config.getMapConfig("default")
+                .setInMemoryFormat(getMemoryFormat());
+
         return config;
     }
 
@@ -109,7 +112,9 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         assertKeysNotIn(clusterC, "map", 0, 20);
     }
 
-    // Issue #1371 this topology was requested here https://groups.google.com/forum/#!msg/hazelcast/73jJo9W_v4A/5obqKMDQAnoJ
+    /**
+     * Issue #1371 this topology was requested here https://groups.google.com/forum/#!msg/hazelcast/73jJo9W_v4A/5obqKMDQAnoJ
+     */
     @Test
     public void VTopo_1activeActiveReplica_2producers_withPassThroughMergePolicy() {
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
@@ -192,7 +197,9 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         assertDataInFromWithSleep(clusterC, "map", 0, 10, clusterB);
     }
 
-    // Issue #1368 multi replica topology cluster A replicates to B and C
+    /**
+     * Issue #1368 multi replica topology cluster A replicates to B and C
+     */
     @Test
     public void VTopo_2passiveReplica_1producer() {
         String replicaName = "multiReplica";
@@ -214,7 +221,9 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         assertDataSizeEventually(clusterC, "map", 0);
     }
 
-    //See https://github.com/hazelcast/hazelcast-enterprise/issues/1103
+    /**
+     * Issue #1103
+     */
     @Test
     public void multiBackupTest() {
         String replicaName = "multiBackup";
@@ -226,10 +235,10 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         createDataIn(clusterA4Node, "map", 0, 1000);
         assertKeysIn(clusterB, "map", 0, 1000);
-        for(final HazelcastInstance instance : clusterA4Node) {
+        for (final HazelcastInstance instance : clusterA4Node) {
             assertTrueEventually(new AssertTask() {
                 @Override
-                public void run() throws Exception {
+                public void run() {
                     Map<String, LocalWanStats> stats
                             = getNode(instance).nodeEngine.getWanReplicationService().getStats();
                     LocalWanPublisherStats publisherStats =
@@ -241,7 +250,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    @Ignore // see #linkTopo_ActiveActiveReplication_withThreading
+    @Ignore(value = "see #linkTopo_ActiveActiveReplication_withThreading")
     public void linkTopo_ActiveActiveReplication() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
@@ -284,7 +293,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    @Ignore // same of replicationRing
+    @Ignore(value = "same of replicationRing")
     public void chainTopo_2passiveReplicas_1producer() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
@@ -338,11 +347,13 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         CyclicBarrier gate = new CyclicBarrier(3);
         startGatedThread(new GatedThread(gate) {
+            @Override
             public void go() {
                 createDataIn(clusterA, "map", 0, 1000);
             }
         });
         startGatedThread(new GatedThread(gate) {
+            @Override
             public void go() {
                 createDataIn(clusterB, "map", 500, 1500);
             }
@@ -355,11 +366,13 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         gate = new CyclicBarrier(3);
         startGatedThread(new GatedThread(gate) {
+            @Override
             public void go() {
                 removeDataIn(clusterA, "map", 0, 1000);
             }
         });
         startGatedThread(new GatedThread(gate) {
+            @Override
             public void go() {
                 removeDataIn(clusterB, "map", 500, 1500);
             }
@@ -434,7 +447,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
             keySet.add(serializationService.toData(i));
         }
 
-        //Multiple entry operations
+        // multiple entry operations
         OperationFactory operationFactory
                 = operationProvider.createMultipleEntryOperationFactory(mapProxy.getName(), keySet, new UpdatingEntryProcessor());
 
@@ -449,8 +462,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         assertKeysNotIn(clusterB, "map", 0, 10);
 
-        //Entry operations
-
+        // entry operations
         IPartitionService partitionService = getPartitionService(clusterA[0]);
 
         MapOperation updatingEntryOperation = operationProvider.createEntryOperation(mapProxy.getName(),
@@ -532,8 +544,9 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
-                EnterpriseWanReplicationService ewrs = (EnterpriseWanReplicationService) getNodeEngineImpl(clusterA[0]).getWanReplicationService();
+            public void run() {
+                WanReplicationService wanReplicationService = getNodeEngineImpl(clusterA[0]).getWanReplicationService();
+                EnterpriseWanReplicationService ewrs = (EnterpriseWanReplicationService) wanReplicationService;
                 assert ewrs.getStats().get("atob").getLocalWanPublisherStats().get("B").getOutboundQueueSize() == 0;
             }
         });
@@ -547,7 +560,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         createDataIn(clusterA, "map", 0, 10);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 Collection<DistributedObject> distributedObjects = clusterB[0].getDistributedObjects();
                 assertEquals(1, distributedObjects.size());
             }
@@ -575,23 +588,22 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     private static void assertWanQueueSizesOnAllInstances(final HazelcastInstance[] cluster,
-                                                   final String wanReplicationConfigName,
-                                                   final String endpointGroupName,
-                                                   final int eventCount) {
+                                                          final String wanReplicationConfigName,
+                                                          final String endpointGroupName,
+                                                          final int eventCount) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 int totalBackupEvents = 0;
                 int totalEvents = 0;
                 for (HazelcastInstance instance : cluster) {
-                    final EnterpriseWanReplicationService s = getNode(instance).nodeEngine
-                            .getService(EnterpriseWanReplicationService.SERVICE_NAME);
-                    final WanReplicationPublisherDelegate delegate = (WanReplicationPublisherDelegate)
-                            s.getWanReplicationPublisher(wanReplicationConfigName);
+                    final EnterpriseWanReplicationService s
+                            = getNode(instance).nodeEngine.getService(EnterpriseWanReplicationService.SERVICE_NAME);
+                    final WanReplicationPublisherDelegate delegate
+                            = (WanReplicationPublisherDelegate) s.getWanReplicationPublisher(wanReplicationConfigName);
                     final AbstractWanPublisher endpoint = (AbstractWanPublisher) delegate.getEndpoint(endpointGroupName);
                     totalEvents += endpoint.getCurrentElementCount();
                     totalBackupEvents += endpoint.getCurrentBackupElementCount();
-
                 }
                 assertEquals(eventCount, totalEvents);
                 assertEquals(eventCount, totalBackupEvents);
@@ -622,11 +634,11 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         private final ConcurrentMap<K, V> store;
 
-        public SimpleStore() {
+        SimpleStore() {
             this(new ConcurrentHashMap<K, V>());
         }
 
-        public SimpleStore(ConcurrentMap<K, V> store) {
+        SimpleStore(ConcurrentMap<K, V> store) {
             this.store = store;
         }
 

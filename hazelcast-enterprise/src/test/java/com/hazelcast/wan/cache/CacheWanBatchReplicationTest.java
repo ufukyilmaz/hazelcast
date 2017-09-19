@@ -3,6 +3,7 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.wan.cache.filter.DummyCacheWanFilter;
@@ -10,7 +11,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTest {
 

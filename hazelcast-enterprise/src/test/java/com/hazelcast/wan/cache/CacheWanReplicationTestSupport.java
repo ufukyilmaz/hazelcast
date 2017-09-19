@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "SameParameterValue", "UnusedReturnValue"})
 public abstract class CacheWanReplicationTestSupport extends WanReplicationTestSupport {
 
     protected static final String DEFAULT_CACHE_MANAGER = "my-cache-manager";
@@ -137,14 +137,14 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         final String sourceGroupName = getNode(sourceCluster).getConfig().getGroupConfig().getName();
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertNotNull(manager.getCache(cacheName));
             }
         });
         final ICache<Integer, String> cache = ((AbstractHazelcastCacheManager) manager).getCache(cacheName);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 for (int i = start; i < end; i++) {
                     assertEquals(sourceGroupName + i, cache.get(i));
                 }
@@ -160,7 +160,7 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         final ICache<Integer, String> cache = ((AbstractHazelcastCacheManager) manager).getCache(cacheName);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 for (int i = start; i < end; i++) {
                     assertFalse(cache.containsKey(i));
                 }
@@ -175,14 +175,14 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         final CacheManager manager = getCacheManager(targetCluster, cacheManager, classLoader);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertNotNull(manager.getCache(cacheName));
             }
         });
         final ICache cache = (ICache) manager.getCache(cacheName);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(size, cache.size());
             }
         });
@@ -211,7 +211,7 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         final CacheManager manager = getCacheManager(targetCluster, cacheManager, classLoader);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertNotNull(manager.getCache(cacheName));
             }
         });

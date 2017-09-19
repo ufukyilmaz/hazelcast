@@ -22,6 +22,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,16 +35,13 @@ import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class})
 public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
 
     private static final String BATCH_IMPL = WanBatchReplication.class.getName();
 
-    private HazelcastInstance[] basicCluster = new HazelcastInstance[2];
-    private TestHazelcastInstanceFactory factory;
-
-    @Parameterized.Parameters(name = "replicationImpl:{0},memoryFormat:{1}")
+    @Parameters(name = "replicationImpl:{0},memoryFormat:{1}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
                 {BATCH_IMPL, NATIVE},
@@ -49,13 +49,17 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         });
     }
 
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public String replicationImpl;
 
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public InMemoryFormat memoryFormat;
 
+    private HazelcastInstance[] basicCluster = new HazelcastInstance[2];
+    private TestHazelcastInstanceFactory factory;
+
     @Before
+    @Override
     public void setup() {
         factory = createHazelcastInstanceFactory(2);
         super.setup();

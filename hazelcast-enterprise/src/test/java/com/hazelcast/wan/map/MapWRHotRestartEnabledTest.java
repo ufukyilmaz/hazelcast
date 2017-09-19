@@ -22,7 +22,7 @@ import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.nio.IOUtil.deleteQuietly;
 
 /**
- * WAN replication tests for hot-restart enabled maps
+ * WAN replication tests for hot-restart enabled maps.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)

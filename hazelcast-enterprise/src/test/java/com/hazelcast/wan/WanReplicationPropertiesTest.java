@@ -14,7 +14,6 @@ import java.util.HashMap;
 /**
  * Tests for {@link com.hazelcast.enterprise.wan.replication.WanReplicationProperties}
  */
-
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class WanReplicationPropertiesTest extends HazelcastTestSupport {

@@ -31,6 +31,7 @@ public class MapCustomWanReplicationQuickTest extends MapWanReplicationTestSuppo
     private TestHazelcastInstanceFactory factory;
 
     @Before
+    @Override
     public void setup() {
         super.setup();
         factory = createHazelcastInstanceFactory(4);

@@ -6,15 +6,18 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.util.MapUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import java.util.Map;
 
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class DynamicConfigWANTest extends MapWanReplicationTestSupport {
 
@@ -34,7 +37,7 @@ public class DynamicConfigWANTest extends MapWanReplicationTestSupport {
         String wanSetupName = "atob";
 
         setupReplicateFrom(configA, configB, clusterB.length, wanSetupName, PassThroughMergePolicy.class.getName());
-        //disable WAN replication for the default map config. it's auto-enabled by the setupReplicateFrom()
+        // disable WAN replication for the default map config (it's auto-enabled by the setupReplicateFrom())
         configA.getMapConfig("default").setWanReplicationRef(null);
 
         startClusterA();

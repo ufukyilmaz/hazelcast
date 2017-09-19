@@ -22,7 +22,7 @@ import java.util.concurrent.Callable;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Base class to test WAN sync feature
+ * Base class to test WAN sync feature.
  */
 public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSupport {
 
@@ -167,7 +167,7 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
 
     @Test
     public void checkNewWanConfigExistsInNewNodesAndSyncTest() throws IOException {
-        /*Form Cluster A by starting each instance with different Config object
+        /* Form Cluster A by starting each instance with different Config object
         reference to prevent sharing */
         HazelcastInstance[] instance1 = new HazelcastInstance[1];
         HazelcastInstance[] instance2 = new HazelcastInstance[1];
@@ -212,12 +212,12 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         createDataIn(clusterA, "map", 0, 1000);
         HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
         String result = communicator.syncMapOverWAN("newWRConfigName", "groupName", "mapName");
-        assertEquals("{\"status\":\"fail\",\"message\":\"WAN Replication Config doesn't exist with WAN configuration name newWRConfigName " +
-                "and publisher target group name groupName\"}", result);
+        assertEquals("{\"status\":\"fail\",\"message\":\"WAN Replication Config doesn't exist with WAN configuration"
+                + " name newWRConfigName and publisher target group name groupName\"}", result);
     }
 
     @Test(expected = SyncFailedException.class)
-    public void sendMultipleSyncRequests() throws IOException {
+    public void sendMultipleSyncRequests() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
         getWanReplicationService(clusterA[0]).syncMap("atob", configB.getGroupConfig().getName(), "map");
@@ -235,11 +235,11 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
     }
 
     @Test
-    public void checkWanSyncState() throws IOException {
+    public void checkWanSyncState() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();
-        createDataIn(clusterA, "map",0, 1000);
+        createDataIn(clusterA, "map", 0, 1000);
         assertKeysIn(clusterB, "map", 0, 1000);
 
         clusterB[0].getCluster().shutdown();
@@ -255,7 +255,7 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         assertKeysIn(clusterB, "map", 0, 1000);
         assertEqualsEventually(new Callable<WanSyncStatus>() {
             @Override
-            public WanSyncStatus call() throws Exception {
+            public WanSyncStatus call() {
                 return service.getWanSyncState().getStatus();
             }
         }, WanSyncStatus.READY);

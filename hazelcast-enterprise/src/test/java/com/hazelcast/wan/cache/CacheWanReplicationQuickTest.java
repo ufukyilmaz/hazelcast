@@ -39,7 +39,7 @@ public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport
     private HazelcastInstance[] basicCluster = new HazelcastInstance[2];
     private TestHazelcastInstanceFactory factory;
 
-    @Parameters(name = "replicationImpl:{0},memoryFormat:{1}")
+    @Parameters(name = "replicationImpl:{0}, memoryFormat:{1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {BATCH_IMPL, NATIVE},

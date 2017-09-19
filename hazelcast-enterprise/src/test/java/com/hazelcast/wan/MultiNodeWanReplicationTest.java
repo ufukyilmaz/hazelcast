@@ -131,8 +131,7 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
 
         assertTrueAllTheTime(new AssertTask() {
             @Override
-            public void run()
-                    throws Exception {
+            public void run() {
                 assertFalse(failureMessageBuilder.toString(), testFailed.get());
             }
         }, 30);

@@ -12,6 +12,7 @@ import org.junit.Before;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings({"WeakerAccess", "SameParameterValue"})
 public abstract class MapWanReplicationTestSupport extends WanReplicationTestSupport {
 
     private int ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE = 3 * 60;
@@ -57,7 +58,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         fromConfig.getMapConfig("default").setWanReplicationRef(wanRef);
     }
 
-    //Should be protected, used by hazelcast-solace
+    // should be protected, used by hazelcast-solace
     protected void createDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
         HazelcastInstance node = getNode(cluster);
         IMap<Integer, String> m = node.getMap(mapName);
@@ -123,7 +124,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
     void assertDataSizeEventually(final HazelcastInstance[] cluster, final String mapName, final int size) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 IMap m = getMap(cluster, mapName);
                 assertEquals(size, m.size());
             }
@@ -132,15 +133,17 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
 
     void assertKeysIn(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
         assertTrueEventually(new AssertTask() {
+            @Override
             public void run() {
                 assertTrue(checkKeysIn(cluster, mapName, start, end));
             }
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    //Should be protected, used by hazelcast-solace
+    // should be protected, used by hazelcast-solace
     protected void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
         assertTrueEventually(new AssertTask() {
+            @Override
             public void run() {
                 assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceGroupName));
             }
@@ -149,6 +152,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
 
     protected void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
         assertTrueEventually(new AssertTask() {
+            @Override
             public void run() {
                 assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceCluster));
             }
@@ -157,6 +161,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
 
     void assertDataInFromWithSleep(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
         assertTrueEventually(new AssertTask() {
+            @Override
             public void run() {
                 assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceCluster));
                 sleepSeconds(5);
@@ -166,6 +171,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
 
     void assertKeysNotIn(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
         assertTrueEventually(new AssertTask() {
+            @Override
             public void run() {
                 assertTrue(checkKeysNotIn(cluster, mapName, start, end));
             }

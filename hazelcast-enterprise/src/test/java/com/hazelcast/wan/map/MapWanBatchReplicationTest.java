@@ -5,6 +5,7 @@ import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
@@ -20,6 +21,7 @@ import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import java.io.Serializable;
 import java.net.URL;
@@ -29,17 +31,36 @@ import java.util.Map;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
 import static org.junit.Assert.assertEquals;
 
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
 
+    @After
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        unsetUseDeleteWhenProcessingRemoveEvents();
+    }
+
+    @Override
+    public String getReplicationImpl() {
+        return WanBatchReplication.class.getName();
+    }
+
+    @Override
+    public InMemoryFormat getMemoryFormat() {
+        return InMemoryFormat.BINARY;
+    }
+
     @Test
-    public void failWhenTargetClusterDoesNotContainClassAndUsingRemove() throws IllegalAccessException, InstantiationException {
-        unsetUseDeleteWhenProcessingRemoveEvents(); // false by default
+    public void failWhenTargetClusterDoesNotContainClassAndUsingRemove() throws Exception {
+        // false by default
+        unsetUseDeleteWhenProcessingRemoveEvents();
         testClassNotFoundExceptionTargetCluster(1);
     }
 
     @Test
-    public void noFailuresWhenTargetClusterDoesNotContainClassAndUsingDelete() throws IllegalAccessException, InstantiationException {
+    public void noFailuresWhenTargetClusterDoesNotContainClassAndUsingDelete() throws Exception {
         setUseDeleteWhenProcessingRemoveEvents(true);
         testClassNotFoundExceptionTargetCluster(0);
     }
@@ -52,7 +73,8 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
         for (WanPublisherConfig publisherConfig : configA.getWanReplicationConfig(publisherSetup).getWanPublisherConfigs()) {
             final Map<String, Comparable> properties = publisherConfig.getProperties();
             final String endpoints = (String) properties.get(ENDPOINTS.key());
-            final String endpointsWithError = endpoints.substring(0, endpoints.indexOf(":")) + "\n" + endpoints.substring(endpoints.indexOf(":"));
+            final String endpointsWithError = endpoints.substring(0, endpoints.indexOf(":"))
+                    + "\n" + endpoints.substring(endpoints.indexOf(":"));
             properties.put(ENDPOINTS.key(), endpointsWithError);
         }
 
@@ -100,23 +122,6 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
         assertDataInFrom(clusterB, "map", 0, 1000, singleNodeC[0].getConfig().getGroupConfig().getName());
     }
 
-    @After
-    @Override
-    public void cleanup() {
-        super.cleanup();
-        unsetUseDeleteWhenProcessingRemoveEvents();
-    }
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
-    }
-
-    @Override
-    public InMemoryFormat getMemoryFormat() {
-        return InMemoryFormat.BINARY;
-    }
-
     private void testClassNotFoundExceptionTargetCluster(int expectedFailureCount) throws InstantiationException, IllegalAccessException {
         clusterA = new HazelcastInstance[1];
         clusterB = new HazelcastInstance[1];
@@ -131,7 +136,7 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
         final Object o = c.newInstance();
 
         configA.setClassLoader(childClassloader)
-               .getMapConfig("default").setInMemoryFormat(InMemoryFormat.BINARY);
+                .getMapConfig("default").setInMemoryFormat(InMemoryFormat.BINARY);
         configB.getMapConfig("default").setInMemoryFormat(InMemoryFormat.BINARY);
 
         startClusterA();

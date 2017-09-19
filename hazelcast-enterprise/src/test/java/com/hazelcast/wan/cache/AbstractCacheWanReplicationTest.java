@@ -193,7 +193,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 Collection<DistributedObject> distributedObjects = clusterB[0].getDistributedObjects();
                 assertEquals(1, distributedObjects.size());
             }
@@ -202,7 +202,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     }
 
     @Test
-    @Ignore // useless, cache wan events are now separate from internal cache events
+    @Ignore(value = "useless, cache wan events are now separate from internal cache events")
     public void updateExpiredEntry() {
         initConfigA();
         initConfigB();

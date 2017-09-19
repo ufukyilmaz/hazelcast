@@ -1,6 +1,5 @@
 package com.hazelcast.wan.cache;
 
-
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
@@ -8,6 +7,7 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.SlowTest;
@@ -15,9 +15,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertTrue;
 
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
 
@@ -51,7 +53,7 @@ public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
 
         setupReplicateFrom(configA, configB, clusterB.length, wanSetupName, PassThroughCacheMergePolicy.class.getName(),
                 "default");
-        //disable WAN replication for the default cache config. it's auto-enabled by the setupReplicateFrom()
+        // disable WAN replication for the default cache config (it's auto-enabled by the setupReplicateFrom())
         configA.getCacheConfig("default")
                .setWanReplicationRef(null);
 
@@ -61,7 +63,6 @@ public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setMergePolicy(PassThroughCacheMergePolicy.class.getName());
         wanRef.setName(wanSetupName);
-
 
         CacheSimpleConfig cacheConfig = new CacheSimpleConfig();
         cacheConfig.setName(cacheName);
@@ -94,6 +95,4 @@ public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
             }
         }
     }
-
-
 }

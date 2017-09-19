@@ -11,7 +11,6 @@ import com.hazelcast.core.Member;
 import com.hazelcast.core.Partition;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.properties.GroupProperty;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -26,10 +25,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 
 /**
- * A simple test of a map with ssl connections.
+ * A simple benchmark of a map with SSL connections.
  */
-@Ignore("Not a JUnit test")
-public final class SSLSimpleMapTest {
+public final class SSLSimpleMapBenchmark {
 
     private static final String NAMESPACE = "default";
     private static final long STATS_SECONDS = 10;
@@ -52,7 +50,7 @@ public final class SSLSimpleMapTest {
         System.setProperty("java.net.preferIPv4Stack", "true");
     }
 
-    private SSLSimpleMapTest(int threadCount, int entryCount, int valueSize, int getPercentage, int putPercentage, boolean load)
+    private SSLSimpleMapBenchmark(int threadCount, int entryCount, int valueSize, int getPercentage, int putPercentage, boolean load)
             throws IOException {
         this.threadCount = threadCount;
         this.entryCount = entryCount;
@@ -100,12 +98,12 @@ public final class SSLSimpleMapTest {
                 }
             }
         } else {
-            System.out.println("Help: sh test.sh t200 v130 p10 g85 ");
+            System.out.println("Help: sh test.sh t200 v130 p10 g85");
             System.out.println("means 200 threads, value-size 130 bytes, 10% put, 85% get");
             System.out.println();
         }
 
-        SSLSimpleMapTest test = new SSLSimpleMapTest(threadCount, entryCount, valueSize, getPercentage, putPercentage, load);
+        SSLSimpleMapBenchmark test = new SSLSimpleMapBenchmark(threadCount, entryCount, valueSize, getPercentage, putPercentage, load);
         test.start();
     }
 
@@ -121,6 +119,7 @@ public final class SSLSimpleMapTest {
         final IMap<String, Object> map = instance.getMap(NAMESPACE);
         for (int i = 0; i < threadCount; i++) {
             es.execute(new Runnable() {
+                @Override
                 public void run() {
                     try {
                         while (true) {
@@ -169,6 +168,7 @@ public final class SSLSimpleMapTest {
         final CountDownLatch latch = new CountDownLatch(lsOwnedEntries.size());
         for (final String ownedKey : lsOwnedEntries) {
             es.execute(new Runnable() {
+                @Override
                 public void run() {
                     map.put(ownedKey, createValue());
                     latch.countDown();
@@ -185,6 +185,7 @@ public final class SSLSimpleMapTest {
                 setName("PrintStats." + instance.getName());
             }
 
+            @Override
             public void run() {
                 while (true) {
                     try {

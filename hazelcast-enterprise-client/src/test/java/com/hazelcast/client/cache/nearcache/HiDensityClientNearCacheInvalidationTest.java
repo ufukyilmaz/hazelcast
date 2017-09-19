@@ -9,9 +9,15 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.test.annotation.SlowTest;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
@@ -21,6 +27,9 @@ import static java.util.Arrays.asList;
 /**
  * Test publishing of Near Cache invalidation events, when the cache is configured with NATIVE in-memory format.
  */
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Category(SlowTest.class)
 public class HiDensityClientNearCacheInvalidationTest extends ClientNearCacheInvalidationTest {
 
     private static final MemorySize SERVER_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
@@ -68,12 +77,12 @@ public class HiDensityClientNearCacheInvalidationTest extends ClientNearCacheInv
     }
 
     @Override
-    protected CacheConfig createCacheConfig(InMemoryFormat inMemoryFormat) {
+    protected <K, V> CacheConfig<K, V> createCacheConfig(InMemoryFormat inMemoryFormat) {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(99);
 
-        return super.createCacheConfig(InMemoryFormat.NATIVE)
+        return super.<K, V>createCacheConfig(InMemoryFormat.NATIVE)
                 .setEvictionConfig(evictionConfig);
     }
 }

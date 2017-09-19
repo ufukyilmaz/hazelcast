@@ -14,19 +14,30 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 public class BasicHDCacheJournalTest extends BasicCacheJournalTest {
+
     @Override
     protected Config getConfig() {
-        final Config config = getHDConfig();
-        final int defaultPartitionCount = Integer.parseInt(GroupProperty.PARTITION_COUNT.getDefaultValue());
-        config.addEventJournalConfig(new EventJournalConfig().setCapacity(200 * defaultPartitionCount)
-                                                             .setCacheName("default").setEnabled(true));
-        final CacheSimpleConfig nonEvictingCache = new CacheSimpleConfig().setName("cache")
-                                                                          .setInMemoryFormat(InMemoryFormat.NATIVE);
+        int defaultPartitionCount = Integer.parseInt(GroupProperty.PARTITION_COUNT.getDefaultValue());
+        EventJournalConfig eventJournalConfig = new EventJournalConfig()
+                .setEnabled(true)
+                .setCacheName("default")
+                .setCapacity(200 * defaultPartitionCount);
+
+        CacheSimpleConfig nonEvictingCache = new CacheSimpleConfig()
+                .setName("cache")
+                .setInMemoryFormat(InMemoryFormat.NATIVE);
+
         nonEvictingCache.getEvictionConfig()
-                        .setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
-                        .setSize(Integer.MAX_VALUE);
-        final CacheSimpleConfig evictingCache = new CacheSimpleConfig().setName("evicting")
-                                                                       .setInMemoryFormat(InMemoryFormat.NATIVE);
-        return config.addCacheConfig(nonEvictingCache).addCacheConfig(evictingCache);
+                .setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
+                .setSize(Integer.MAX_VALUE);
+
+        CacheSimpleConfig evictingCache = new CacheSimpleConfig()
+                .setName("evicting")
+                .setInMemoryFormat(InMemoryFormat.NATIVE);
+
+        return getHDConfig()
+                .addEventJournalConfig(eventJournalConfig)
+                .addCacheConfig(nonEvictingCache)
+                .addCacheConfig(evictingCache);
     }
 }

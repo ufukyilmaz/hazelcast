@@ -5,8 +5,8 @@ import com.hazelcast.nio.serialization.Data;
 public class HDDeleteOperation extends HDBaseRemoveOperation {
     private boolean success;
 
-    public HDDeleteOperation(String name, Data dataKey) {
-        super(name, dataKey);
+    public HDDeleteOperation(String name, Data dataKey, boolean disableWanReplicationEvent) {
+        super(name, dataKey, disableWanReplicationEvent);
     }
 
     public HDDeleteOperation() {

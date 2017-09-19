@@ -3,20 +3,46 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.internal.serialization.PortableHook;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.wan.map.filter.DummyMapWanFilter;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.DynamicType;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.Serializable;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Map;
 
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
+import static org.junit.Assert.assertEquals;
 
 @Category(SlowTest.class)
 public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
+
+    @Test
+    public void failWhenTargetClusterDoesNotContainClassAndUsingRemove() throws IllegalAccessException, InstantiationException {
+        unsetUseDeleteWhenProcessingRemoveEvents(); // false by default
+        testClassNotFoundExceptionTargetCluster(1);
+    }
+
+    @Test
+    public void noFailuresWhenTargetClusterDoesNotContainClassAndUsingDelete() throws IllegalAccessException, InstantiationException {
+        setUseDeleteWhenProcessingRemoveEvents(true);
+        testClassNotFoundExceptionTargetCluster(0);
+    }
 
     @Test(expected = InvalidConfigurationException.class)
     public void failStartupWhenEndpointsAreMisconfigured() {
@@ -74,6 +100,13 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
         assertDataInFrom(clusterB, "map", 0, 1000, singleNodeC[0].getConfig().getGroupConfig().getName());
     }
 
+    @After
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        unsetUseDeleteWhenProcessingRemoveEvents();
+    }
+
     @Override
     public String getReplicationImpl() {
         return WanBatchReplication.class.getName();
@@ -82,5 +115,65 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
     @Override
     public InMemoryFormat getMemoryFormat() {
         return InMemoryFormat.BINARY;
+    }
+
+    private void testClassNotFoundExceptionTargetCluster(int expectedFailureCount) throws InstantiationException, IllegalAccessException {
+        clusterA = new HazelcastInstance[1];
+        clusterB = new HazelcastInstance[1];
+        final String publisherName = "atob";
+        final String mapName = "map";
+
+        setupReplicateFrom(configA, configB, clusterB.length, publisherName, PassThroughMergePolicy.class.getName());
+
+        // create class in a separate classloader
+        final URLClassLoader childClassloader = new URLClassLoader(new URL[]{}, PortableHook.class.getClassLoader());
+        final Class<?> c = newSerializableClass("TestClass", childClassloader);
+        final Object o = c.newInstance();
+
+        configA.setClassLoader(childClassloader)
+               .getMapConfig("default").setInMemoryFormat(InMemoryFormat.BINARY);
+        configB.getMapConfig("default").setInMemoryFormat(InMemoryFormat.BINARY);
+
+        startClusterA();
+        startClusterB();
+
+        final IMap<Object, Object> aMap = getNode(clusterA).getMap(mapName);
+        final IMap<Object, Object> bMap = getNode(clusterB).getMap(mapName);
+
+        aMap.put("a", o);
+        assertSizeEventually(1, bMap);
+
+        aMap.delete("a");
+        assertSizeEventually(0, bMap);
+
+
+        // assert no publisher in the entire cluster encountered a failure
+        for (HazelcastInstance instance : clusterA) {
+            final NodeEngineImpl nodeEngine = getNode(instance).nodeEngine;
+            final EnterpriseWanReplicationService s = nodeEngine.getService(EnterpriseWanReplicationService.SERVICE_NAME);
+            final WanReplicationPublisherDelegate atob = (WanReplicationPublisherDelegate) s.getWanReplicationPublisher(publisherName);
+            int failureCount = 0;
+            for (WanReplicationEndpoint endpoint : atob.getEndpoints()) {
+                final WanBatchReplication batchReplication = (WanBatchReplication) endpoint;
+                failureCount += batchReplication.getFailureCount();
+            }
+            assertEquals("Encountered failure in WAN replication", expectedFailureCount, failureCount);
+        }
+    }
+
+    private Class<?> newSerializableClass(String classname, ClassLoader classLoader) {
+        DynamicType.Unloaded<?> def = new ByteBuddy()
+                .subclass(Serializable.class)
+                .name(classname)
+                .make();
+        return def.load(classLoader).getLoaded();
+    }
+
+    private static void setUseDeleteWhenProcessingRemoveEvents(boolean value) {
+        System.setProperty("hazelcast.wan.map.useDeleteWhenProcessingRemoveEvents", String.valueOf(value));
+    }
+
+    private static void unsetUseDeleteWhenProcessingRemoveEvents() {
+        System.clearProperty("hazelcast.wan.map.useDeleteWhenProcessingRemoveEvents");
     }
 }

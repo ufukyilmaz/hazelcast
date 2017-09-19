@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.BATCH_SIZE;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.EXECUTOR_THREAD_COUNT;
@@ -44,10 +45,11 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
     private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 50;
 
     private final Object mutex = new Object();
+    private final AtomicLong failureCount = new AtomicLong();
 
     private volatile StripedExecutor executor;
-    private volatile long lastBatchSendTime = System.currentTimeMillis();
 
+    private volatile long lastBatchSendTime = System.currentTimeMillis();
     private boolean snapshotEnabled;
     private int executorThreadCount;
 
@@ -219,6 +221,8 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                             for (WanReplicationEvent event : batchReplicationEvent.getEventList()) {
                                 removeReplicationEvent(event);
                             }
+                        } else {
+                            failureCount.incrementAndGet();
                         }
                         transmitSucceed = isTargetInvocationSuccessful;
                     }
@@ -247,5 +251,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         public TimeUnit getTimeUnit() {
             return TimeUnit.SECONDS;
         }
+    }
+
+    public long getFailureCount() {
+        return failureCount.get();
     }
 }

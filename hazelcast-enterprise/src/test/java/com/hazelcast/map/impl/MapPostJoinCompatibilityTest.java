@@ -12,7 +12,6 @@ import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.CompatibilityTest;
-import com.hazelcast.test.starter.ReflectionUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -24,10 +23,11 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.test.starter.ReflectionUtils.getFieldValueReflectively;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({CompatibilityTest.class})
+@Category(CompatibilityTest.class)
 public class MapPostJoinCompatibilityTest extends HazelcastTestSupport {
 
     private static String MAP_NAME = "MapPostJoinCompatibilityTest";
@@ -46,11 +46,11 @@ public class MapPostJoinCompatibilityTest extends HazelcastTestSupport {
         instances[0] = factory.newHazelcastInstance(config);
         assertClusterSizeEventually(1, instances[0]);
 
-        IndexInfo power = index("power", false);
+        IndexInfo power = new IndexInfo("power", false);
         instances[0].getMap(MAP_NAME).addIndex(power.getAttributeName(), power.isOrdered());
 
         // GIVEN VALUES
-        IMap map = instances[0].getMap(MAP_NAME);
+        IMap<Integer, Car> map = instances[0].getMap(MAP_NAME);
         for (int i = 0; i < 100; i++) {
             map.put(i, new Car(i));
         }
@@ -78,11 +78,11 @@ public class MapPostJoinCompatibilityTest extends HazelcastTestSupport {
         instances[0] = factory.newHazelcastInstance(config);
         assertClusterSizeEventually(1, instances[0]);
 
-        IndexInfo power = index("power", false);
+        IndexInfo power = new IndexInfo("power", false);
         instances[0].getMap(MAP_NAME).addIndex(power.getAttributeName(), power.isOrdered());
 
         // GIVEN VALUES
-        IMap map = instances[0].getMap(MAP_NAME);
+        IMap<Integer, Car> map = instances[0].getMap(MAP_NAME);
         for (int i = 0; i < 100; i++) {
             map.put(i, new Car(i));
         }
@@ -116,15 +116,16 @@ public class MapPostJoinCompatibilityTest extends HazelcastTestSupport {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, Boolean> getIndexDefinitions(HazelcastInstance instance) {
         try {
-            Object h = ReflectionUtils.getFieldValueReflectively(instance, "h");
-            Object delegate = ReflectionUtils.getFieldValueReflectively(h, "delegate");
-            Object proxy = ReflectionUtils.getFieldValueReflectively(delegate, "original");
-            Object node = ReflectionUtils.getFieldValueReflectively(proxy, "node");
-            Object nodeEngine = ReflectionUtils.getFieldValueReflectively(node, "nodeEngine");
+            Object h = getFieldValueReflectively(instance, "h");
+            Object delegate = getFieldValueReflectively(h, "delegate");
+            Object proxy = getFieldValueReflectively(delegate, "original");
+            Object node = getFieldValueReflectively(proxy, "node");
+            Object nodeEngine = getFieldValueReflectively(node, "nodeEngine");
             Object mapService = callMethod("getService", nodeEngine, MapService.SERVICE_NAME);
-            Object mapServiceContext = ReflectionUtils.getFieldValueReflectively(mapService, "mapServiceContext");
+            Object mapServiceContext = getFieldValueReflectively(mapService, "mapServiceContext");
             Object mapContainer = callMethod("getMapContainer", mapServiceContext, MAP_NAME);
             return (Map<String, Boolean>) callMethod("getIndexDefinitions", mapContainer);
         } catch (Exception ex) {
@@ -132,7 +133,8 @@ public class MapPostJoinCompatibilityTest extends HazelcastTestSupport {
         }
     }
 
-    static Object callMethod(String methodName, Object receiver, Object... params) {
+    @SuppressWarnings("unchecked")
+    private static Object callMethod(String methodName, Object receiver, Object... params) {
         Class[] classParams = new Class[params.length];
         int i = 0;
         for (Object param : params) {
@@ -147,29 +149,28 @@ public class MapPostJoinCompatibilityTest extends HazelcastTestSupport {
                     if (method != null) {
                         break;
                     }
-                } catch (Exception ex) {
+                } catch (Exception e) {
                     receiverClass = receiverClass.getSuperclass();
                 }
             }
-            method.setAccessible(true);
-            return method.invoke(receiver, params);
-        } catch (Throwable e) {
-            throw new RuntimeException(e + " for method " + methodName);
+            if (method != null) {
+                method.setAccessible(true);
+                return method.invoke(receiver, params);
+            }
+        } catch (Throwable t) {
+            throw new RuntimeException(t.getClass().getSimpleName() + " for method " + methodName, t);
         }
+        throw new RuntimeException("Could not find method " + methodName);
     }
 
     private void assertIndexesEqualEventually(final HazelcastInstance instance, IndexInfo... indexInfos) {
         final Map<String, Boolean> indexes = indexes(indexInfos);
         assertEqualsEventually(new Callable<Boolean>() {
             @Override
-            public Boolean call() throws Exception {
+            public Boolean call() {
                 return getIndexDefinitions(instance).equals(indexes);
             }
         }, true);
-    }
-
-    private IndexInfo index(String path, boolean ordered) {
-        return new IndexInfo(path, ordered);
     }
 
     private Map<String, Boolean> indexes(IndexInfo... indexInfos) {
@@ -181,9 +182,10 @@ public class MapPostJoinCompatibilityTest extends HazelcastTestSupport {
     }
 
     public static class Car implements ICar, Serializable {
+
         private final long power;
 
-        public Car(long power) {
+        Car(long power) {
             this.power = power;
         }
 
@@ -193,7 +195,9 @@ public class MapPostJoinCompatibilityTest extends HazelcastTestSupport {
         }
     }
 
+    @SuppressWarnings("unused")
     public interface ICar {
+
         long getPower();
     }
 }

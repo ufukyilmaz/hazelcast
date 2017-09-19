@@ -11,7 +11,7 @@ import static com.hazelcast.test.starter.Utils.assertInstanceOfByClassName;
 import static org.junit.Assert.fail;
 
 /**
- * Compatibility test for Lock
+ * Compatibility test for ILock.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
@@ -24,8 +24,7 @@ public class LockCompatibilityTest extends LockBasicTest {
 
     @Override
     @Test(timeout = 60000)
-    public void testDestroyLockWhenOtherWaitingOnLock()
-            throws InterruptedException {
+    public void testDestroyLockWhenOtherWaitingOnLock() {
         try {
             super.testDestroyLockWhenOtherWaitingOnLock();
             fail("Expected DistributedObjectDestroyedException but no exeption was thrown.");

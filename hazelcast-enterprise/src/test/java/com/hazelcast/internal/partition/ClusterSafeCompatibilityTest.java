@@ -195,9 +195,9 @@ public class ClusterSafeCompatibilityTest extends HazelcastTestSupport {
     }
 
     private Config createConfig() {
-        Config config = new Config();
-        config.setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(getKnownPreviousVersionsCount() + 2));
-        config.setProperty(WAIT_SECONDS_BEFORE_JOIN.getName(), "0");
+        Config config = new Config()
+                .setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(getKnownPreviousVersionsCount() + 2))
+                .setProperty(WAIT_SECONDS_BEFORE_JOIN.getName(), "0");
 
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
@@ -209,5 +209,4 @@ public class ClusterSafeCompatibilityTest extends HazelcastTestSupport {
 
         return config;
     }
-
 }

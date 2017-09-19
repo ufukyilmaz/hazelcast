@@ -6,17 +6,16 @@ import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static com.hazelcast.test.starter.Utils.assertInstanceOfByClassName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 /**
- * Basic compatibility test for AtomicReference
+ * Compatibility test for AtomicReference.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
-public class AtomicReferenceBasicCompatibilityTest extends AtomicReferenceAbstractTest {
+public class AtomicReferenceCompatibilityTest extends AtomicReferenceAbstractTest {
 
     @Override
     protected HazelcastInstance[] newInstances() {

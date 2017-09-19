@@ -27,26 +27,30 @@ import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.CompatibilityTest;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
+import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(CompatibilityTest.class)
 public class UserCodeDeploymentCompatibility_EpAvailableAtLatestVersion_Test extends UserCodeDeploymentAbstractTest {
 
-    @Parameterized.Parameter
+    @Parameter
     public volatile UserCodeDeploymentConfig.ClassCacheMode classCacheMode;
 
-    @Parameterized.Parameters(name = "ClassCacheMode:{0}")
+    @Parameters(name = "ClassCacheMode:{0}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {UserCodeDeploymentConfig.ClassCacheMode.ETERNAL},
@@ -65,16 +69,18 @@ public class UserCodeDeploymentCompatibility_EpAvailableAtLatestVersion_Test ext
     }
 
     @Test
+    @Override
     public void givenSomeMemberCanAccessTheEP_whenTheEPIsFilteredLocally_thenItWillBeLoadedOverNetwork_anonymousInnerClasses() {
-        Assume.assumeTrue(Versions.PREVIOUS_CLUSTER_VERSION.isGreaterThan(Versions.V3_8));
+        assumeTrue(Versions.PREVIOUS_CLUSTER_VERSION.isGreaterThan(Versions.V3_8));
         super.givenSomeMemberCanAccessTheEP_whenTheEPIsFilteredLocally_thenItWillBeLoadedOverNetwork_anonymousInnerClasses();
     }
 
+    @Override
     protected void executeSimpleTestScenario(Config config, Config epFilteredConfig, EntryProcessor<Integer, Integer> ep) {
         int keyCount = 100;
 
         CompatibilityTestHazelcastInstanceFactory factory = (CompatibilityTestHazelcastInstanceFactory) newFactory();
-        factory.newInstances(epFilteredConfig, CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount());
+        factory.newInstances(epFilteredConfig, getKnownPreviousVersionsCount());
         HazelcastInstance instanceWithNewEp = factory.newHazelcastInstance(config);
 
         try {

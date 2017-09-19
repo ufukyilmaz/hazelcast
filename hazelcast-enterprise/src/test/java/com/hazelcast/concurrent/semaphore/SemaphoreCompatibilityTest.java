@@ -22,10 +22,8 @@ import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
-
 /**
- * Compatibility test for Semaphore
+ * Compatibility test for Semaphore.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
@@ -35,5 +33,4 @@ public class SemaphoreCompatibilityTest extends SemaphoreBasicTest {
     protected HazelcastInstance[] newInstances() {
         return createHazelcastInstanceFactory().newInstances();
     }
-
 }

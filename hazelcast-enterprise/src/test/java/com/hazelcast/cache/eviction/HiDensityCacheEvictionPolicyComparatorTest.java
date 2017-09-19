@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictionPolicyComparatorTest {
+public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvictionPolicyComparatorTest {
 
     private static final MemorySize MEMORY_SIZE = new MemorySize(4, MemoryUnit.MEGABYTES);
     private static final int ITERATION_COUNT
@@ -49,23 +49,23 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
 
     @Override
     protected Config createConfig() {
-        Config config = super.createConfig();
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "2");
-        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "4");
-        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
-        memoryConfig.setEnabled(true)
+        NativeMemoryConfig nativeMemoryConfig = new NativeMemoryConfig()
+                .setEnabled(true)
                 .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
                 .setMetadataSpacePercentage(50f)
                 .setPageSize((int) (MEMORY_SIZE.bytes() / 8))
                 .setSize(MEMORY_SIZE);
-        return config;
+
+        return super.createConfig()
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "2")
+                .setProperty(GroupProperty.PARTITION_COUNT.getName(), "4")
+                .setNativeMemoryConfig(nativeMemoryConfig);
     }
 
     @Override
-    protected CacheConfig createCacheConfig(String cacheName) {
-        CacheConfig cacheConfig = super.createCacheConfig(cacheName);
-        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        return cacheConfig;
+    protected CacheConfig<Integer, String> createCacheConfig(String cacheName) {
+        return super.createCacheConfig(cacheName)
+                .setInMemoryFormat(InMemoryFormat.NATIVE);
     }
 
     @Test
@@ -74,7 +74,8 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
                 .setSize(50)
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
                 .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
-        do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
+
+        testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
@@ -83,7 +84,8 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
                 .setSize(50)
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
                 .setComparator(new MyEvictionPolicyComparator());
-        do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
+
+        testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
@@ -92,7 +94,8 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
                 .setSize(50)
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
                 .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
-        do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
+
+        testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
@@ -101,7 +104,8 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
                 .setSize(50)
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
                 .setComparator(new MyEvictionPolicyComparator());
-        do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
+
+        testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
@@ -110,7 +114,8 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
                 .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
                 .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
-        do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
+
+        testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
@@ -119,7 +124,8 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
                 .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
                 .setComparator(new MyEvictionPolicyComparator());
-        do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
+
+        testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
@@ -128,7 +134,8 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
                 .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE)
                 .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
-        do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
+
+        testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
@@ -137,6 +144,7 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
                 .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE)
                 .setComparator(new MyEvictionPolicyComparator());
-        do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
+
+        testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 }

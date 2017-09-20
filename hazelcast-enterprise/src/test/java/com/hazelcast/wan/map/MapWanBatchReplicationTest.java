@@ -73,8 +73,7 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
         for (WanPublisherConfig publisherConfig : configA.getWanReplicationConfig(publisherSetup).getWanPublisherConfigs()) {
             final Map<String, Comparable> properties = publisherConfig.getProperties();
             final String endpoints = (String) properties.get(ENDPOINTS.key());
-            final String endpointsWithError = endpoints.substring(0, endpoints.indexOf(":"))
-                    + "\n" + endpoints.substring(endpoints.indexOf(":"));
+            final String endpointsWithError = endpoints.replaceFirst("\\.", "\\.mumboJumbo\n");
             properties.put(ENDPOINTS.key(), endpointsWithError);
         }
 

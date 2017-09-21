@@ -195,7 +195,6 @@
                 <version>2.3.2</version>
                 <configuration>
                     <fork>true</fork>
-                    <argLine>-XX:MaxPermSize=1024m</argLine>
                     <source>${jdk.version}</source>
                     <target>${jdk.version}</target>
                     <encoding>${project.build.sourceEncoding}</encoding>
@@ -242,7 +241,8 @@
                         ${extraVmArgs}
                     </argLine>
                     <excludedGroups>
-                        com.hazelcast.test.annotation.NightlyTest,com.hazelcast.test.annotation.SlowTest,
+                        com.hazelcast.test.annotation.SlowTest,
+                        com.hazelcast.test.annotation.NightlyTest,
                         com.hazelcast.test.annotation.CompatibilityTest
                     </excludedGroups>
                 </configuration>
@@ -529,11 +529,12 @@
                                     <excludes>
                                         <exclude>**/jsr/**.java</exclude>
                                     </excludes>
-                                    <groups>com.hazelcast.test.annotation.ParallelTest AND
-                                        com.hazelcast.test.annotation.QuickTest
+                                    <groups>com.hazelcast.test.annotation.QuickTest
+                                        AND com.hazelcast.test.annotation.ParallelTest
                                     </groups>
                                     <excludedGroups>
-                                        com.hazelcast.test.annotation.SlowTest,com.hazelcast.test.annotation.NightlyTest
+                                        com.hazelcast.test.annotation.SlowTest,
+                                        com.hazelcast.test.annotation.NightlyTest
                                     </excludedGroups>
                                     <systemPropertyVariables>
                                         <multipleJVM>true</multipleJVM>
@@ -564,9 +565,13 @@
                                     <excludes>
                                         <exclude>**/jsr/**.java</exclude>
                                     </excludes>
-                                    <groups>com.hazelcast.test.annotation.QuickTest</groups>
+                                    <groups>
+                                        com.hazelcast.test.annotation.QuickTest
+                                    </groups>
                                     <excludedGroups>
-                                        com.hazelcast.test.annotation.SlowTest,com.hazelcast.test.annotation.NightlyTest,com.hazelcast.test.annotation.ParallelTest
+                                        com.hazelcast.test.annotation.SlowTest,
+                                        com.hazelcast.test.annotation.NightlyTest,
+                                        com.hazelcast.test.annotation.ParallelTest
                                     </excludedGroups>
                                 </configuration>
                             </execution>
@@ -613,7 +618,10 @@
                                 -Dhazelcast.test.use.network=false
                             </argLine>
                             <testFailureIgnore>true</testFailureIgnore>
-                            <groups>com.hazelcast.test.annotation.NightlyTest,com.hazelcast.test.annotation.SlowTest</groups>
+                            <groups>
+                                com.hazelcast.test.annotation.SlowTest,
+                                com.hazelcast.test.annotation.NightlyTest
+                            </groups>
                         </configuration>
                         <dependencies>
                             <dependency>
@@ -651,9 +659,12 @@
                             <includes>
                                 <include>**/**.java</include>
                             </includes>
-                            <groups>com.hazelcast.test.annotation.QuickTest</groups>
+                            <groups>
+                                com.hazelcast.test.annotation.QuickTest
+                            </groups>
                             <excludedGroups>
-                                com.hazelcast.test.annotation.SlowTest,com.hazelcast.test.annotation.NightlyTest
+                                com.hazelcast.test.annotation.SlowTest,
+                                com.hazelcast.test.annotation.NightlyTest
                             </excludedGroups>
                         </configuration>
                         <dependencies>
@@ -731,7 +742,8 @@
                                 ${extraVmArgs}
                             </argLine>
                             <excludedGroups>
-                                com.hazelcast.test.annotation.NightlyTest,com.hazelcast.test.annotation.SlowTest,
+                                com.hazelcast.test.annotation.SlowTest,
+                                com.hazelcast.test.annotation.NightlyTest,
                                 com.hazelcast.test.annotation.CompatibilityTest
                             </excludedGroups>
                         </configuration>

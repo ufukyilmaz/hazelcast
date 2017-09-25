@@ -66,6 +66,7 @@ import static java.util.Collections.unmodifiableCollection;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -79,6 +80,7 @@ public class ClusterMetadataManager {
 
     private static final String DIR_NAME = "cluster";
     private static final long EXCLUDED_MEMBERS_LEAVE_WAIT_IN_MILLIS = TimeUnit.MINUTES.toMillis(2);
+    private static final long SLOW_PERSISTENCE_THRESHOLD_NANOS = SECONDS.toNanos(1);
 
     private final Node node;
     private final MemberListWriter memberListWriter;
@@ -466,11 +468,7 @@ public class ClusterMetadataManager {
         if (logger.isFineEnabled()) {
             logger.fine("Persisting cluster state: " + newState);
         }
-        try {
-            clusterStateWriter.write(newState);
-        } catch (IOException e) {
-            logger.severe("While persisting cluster state: " + newState, e);
-        }
+        persist(clusterStateWriter, newState, "Cluster State");
     }
 
     public HotRestartClusterStartStatus getHotRestartStatus() {
@@ -481,11 +479,7 @@ public class ClusterMetadataManager {
         if (logger.isFineEnabled()) {
             logger.fine("Persisting cluster version: " + newClusterVersion);
         }
-        try {
-            clusterVersionWriter.write(newClusterVersion);
-        } catch (IOException e) {
-            logger.severe("While persisting cluster state: " + newClusterVersion, e);
-        }
+        persist(clusterVersionWriter, newClusterVersion, "Cluster Version");
     }
 
     File getHomeDir() {
@@ -1367,35 +1361,43 @@ public class ClusterMetadataManager {
     }
 
     private void persistMembers() {
-        try {
-            ClusterServiceImpl clusterService = node.getClusterService();
-            Collection<Member> allMembers = clusterService.getCurrentMembersAndMembersRemovedInNotJoinableState();
-            if (logger.isFineEnabled()) {
-                logger.fine("Persisting " + allMembers.size() + " (active & passive) members -> " + allMembers);
-            }
-            memberListWriter.write(allMembers);
-        } catch (IOException e) {
-            logger.severe("While persisting members", e);
+        ClusterServiceImpl clusterService = node.getClusterService();
+        Collection<Member> allMembers = clusterService.getCurrentMembersAndMembersRemovedInNotJoinableState();
+        if (logger.isFineEnabled()) {
+            logger.fine("Persisting " + allMembers.size() + " (active & passive) members -> " + allMembers);
         }
+        persist(memberListWriter, allMembers, "Member List");
     }
 
     private void persistPartitions() {
-        try {
-            InternalPartitionService partitionService = node.getPartitionService();
-            PartitionTableView partitionTable = partitionService.createPartitionTableView();
-            if (partitionTable.getVersion() == 0) {
-                if (logger.isFinestEnabled()) {
-                    logger.finest("Cannot persist partition table, not initialized yet.");
-                }
-                return;
-            }
-
+        InternalPartitionService partitionService = node.getPartitionService();
+        PartitionTableView partitionTable = partitionService.createPartitionTableView();
+        if (partitionTable.getVersion() == 0) {
             if (logger.isFinestEnabled()) {
-                logger.finest("Persisting partition table version: " + partitionTable.getVersion());
+                logger.finest("Cannot persist partition table, not initialized yet.");
             }
-            partitionTableWriter.write(partitionTable);
+            return;
+        }
+
+        if (logger.isFinestEnabled()) {
+            logger.finest("Persisting partition table version: " + partitionTable.getVersion());
+        }
+        persist(partitionTableWriter, partitionTable, "Partition Table");
+    }
+
+    @SuppressWarnings("checkstyle:illegaltype")
+    private <T> void persist(AbstractMetadataWriter<T> writer, T value, String type) {
+        try {
+            long startTimeNanos = System.nanoTime();
+            writer.write(value);
+
+            long durationNanos = System.nanoTime() - startTimeNanos;
+            if (durationNanos > SLOW_PERSISTENCE_THRESHOLD_NANOS) {
+                long durationMillis = NANOSECONDS.toMillis(durationNanos);
+                logger.warning("Slow disk IO! " + type + " persistence took " + durationMillis + " ms.");
+            }
         } catch (IOException e) {
-            logger.severe("While persisting partition table", e);
+            logger.severe("While persisting " + type, e);
         }
     }
 

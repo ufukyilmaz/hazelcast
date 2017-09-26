@@ -6,9 +6,9 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
-import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -62,34 +62,35 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
     }
 
     @Test
+    @SuppressWarnings("RedundantCast")
     public void samplesSuccessfullyRetrieved() {
-        final int ENTRY_COUNT = 100;
-        final int SAMPLE_COUNT = 15;
+        final int entryCount = 100;
+        final int sampleCount = 15;
 
         map = new SampleableElasticHashMap<SimpleNativeMemoryData>(
-                ENTRY_COUNT, serializationService, memoryBlockAccessor, memoryManager.getSystemAllocator());
+                entryCount, serializationService, memoryBlockAccessor, memoryManager.getSystemAllocator());
 
-        for (int i = 0; i < ENTRY_COUNT; i++) {
+        for (int i = 0; i < entryCount; i++) {
             Data key = newKey(i);
             SimpleNativeMemoryData simpleNativeMemoryData = newValue(i);
             map.put(key, simpleNativeMemoryData);
         }
 
         Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples
-                = map.getRandomSamples(SAMPLE_COUNT);
+                = map.getRandomSamples(sampleCount);
         assertNotNull(samples);
 
-        int sampleCount = 0;
+        int actualSampleCount = 0;
         Map<Data, SimpleNativeMemoryData> map = new HashMap<Data, SimpleNativeMemoryData>();
         for (SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry sample : samples) {
-            // Because of maven compile error, explicit "SimpleNativeMemoryData" casting was added
+            // because of Maven compile error, explicit casting was added
             map.put((Data) sample.getEntryKey(), (SimpleNativeMemoryData) sample.getEntryValue());
-            sampleCount++;
+            actualSampleCount++;
         }
-        // Sure that there is enough sample as we expected
-        assertEquals(SAMPLE_COUNT, sampleCount);
-        // Sure that all samples are different
-        assertEquals(SAMPLE_COUNT, map.size());
+        // assert that there is enough sample as we expected
+        assertEquals(sampleCount, actualSampleCount);
+        // assert that all samples are different
+        assertEquals(sampleCount, map.size());
     }
 
     private Data newKey(int i) {
@@ -105,11 +106,11 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
 
     @Test(timeout = 60000)
     public void test_getRandomSamples_whenMapIsEmpty() {
-        final int ENTRY_COUNT = 8;
-        final int SAMPLE_COUNT = 1;
+        final int entryCount = 8;
+        final int sampleCount = 1;
 
         map = new SampleableElasticHashMap<SimpleNativeMemoryData>(
-                ENTRY_COUNT, serializationService, memoryBlockAccessor, memoryManager.getSystemAllocator()) {
+                entryCount, serializationService, memoryBlockAccessor, memoryManager.getSystemAllocator()) {
 
             @Override
             // overridden to prevent returning Collections#emptyList() when map is empty
@@ -119,18 +120,18 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
         };
 
         Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples
-                = map.getRandomSamples(SAMPLE_COUNT);
+                = map.getRandomSamples(sampleCount);
 
         assertFalse("Not expecting any sample!", samples.iterator().hasNext());
     }
 
     @Test(timeout = 60000)
     public void test_getRandomSamples_whenSampleCountIsGreaterThenCapacity() {
-        final int ENTRY_COUNT = 10;
-        final int SAMPLE_COUNT = 100;
+        final int entryCount = 10;
+        final int sampleCount = 100;
 
         map = new SampleableElasticHashMap<SimpleNativeMemoryData>(
-                ENTRY_COUNT, serializationService, memoryBlockAccessor, memoryManager.getSystemAllocator());
+                entryCount, serializationService, memoryBlockAccessor, memoryManager.getSystemAllocator());
 
         // put single entry
         Data key = serializationService.toData(randomString());
@@ -138,7 +139,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
         map.put(key, record);
 
         Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples
-                = map.getRandomSamples(SAMPLE_COUNT);
+                = map.getRandomSamples(sampleCount);
 
         Iterator<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> iterator = samples.iterator();
         assertTrue(iterator.hasNext());
@@ -149,24 +150,27 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
     private NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(512, MemoryUnit.MEGABYTES);
         return new NativeMemoryConfig()
+                .setEnabled(true)
                 .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
-                .setSize(memorySize).setEnabled(true)
-                .setMinBlockSize(16).setPageSize(1 << 20);
+                .setSize(memorySize)
+                .setMinBlockSize(16)
+                .setPageSize(1 << 20);
     }
 
     private SerializationConfig getSerializationConfig() {
-        SerializationConfig serializationConfig = new SerializationConfig();
-        serializationConfig.setAllowUnsafe(true).setUseNativeByteOrder(true);
-        return serializationConfig;
+        return new SerializationConfig()
+                .setAllowUnsafe(true)
+                .setUseNativeByteOrder(true);
     }
 
     private EnterpriseSerializationService getSerializationService() {
         NativeMemoryConfig memoryConfig = getMemoryConfig();
         SerializationConfig serializationConfig = getSerializationConfig();
+        MemorySize size = memoryConfig.getSize();
         int blockSize = memoryConfig.getMinBlockSize();
         int pageSize = memoryConfig.getPageSize();
         float metadataSpace = memoryConfig.getMetadataSpacePercentage();
-        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
+        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace);
         return new EnterpriseSerializationServiceBuilder()
                 .setConfig(serializationConfig)
                 .setMemoryManager(memoryManager)
@@ -229,14 +233,12 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
             }
 
             SimpleNativeMemoryData record = (SimpleNativeMemoryData) o;
-
             if (address != record.address) {
                 return false;
             }
             if (size != record.size) {
                 return false;
             }
-
             return true;
         }
 
@@ -348,17 +350,13 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
 
         long getSize(MemoryBlock data) {
             if (data == null) {
-                return  0;
+                return 0;
             }
             long size = memoryManager.getUsableSize(data.address());
             if (size == HazelcastMemoryManager.SIZE_INVALID) {
                 size = data.size();
             }
-
             return size;
         }
-
     }
-
 }
-

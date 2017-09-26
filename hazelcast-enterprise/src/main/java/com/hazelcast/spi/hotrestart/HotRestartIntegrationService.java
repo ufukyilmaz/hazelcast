@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.HotRestartPersistenceConfig;
+import com.hazelcast.core.Member;
 import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.hotrestart.BackupTaskStatus;
 import com.hazelcast.hotrestart.InternalHotRestartService;
@@ -11,11 +12,14 @@ import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
+import com.hazelcast.internal.partition.InternalPartitionService;
+import com.hazelcast.internal.partition.operation.SafeStateCheckOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.ManagedService;
+import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartStatusDTOUtil;
 import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
@@ -44,9 +48,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hazelcast.cluster.memberselector.MemberSelectors.DATA_MEMBER_SELECTOR;
 import static com.hazelcast.hotrestart.BackupTaskState.FAILURE;
 import static com.hazelcast.hotrestart.BackupTaskState.IN_PROGRESS;
 import static com.hazelcast.hotrestart.BackupTaskState.NO_TASK;
@@ -800,6 +807,42 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     @Override
     public ClusterHotRestartStatusDTO getCurrentClusterHotRestartStatus() {
         return ClusterHotRestartStatusDTOUtil.create(clusterMetadataManager);
+    }
+
+    @Override
+    public void waitPartitionReplicaSyncOnCluster(long timeout, TimeUnit unit) {
+        ClusterServiceImpl clusterService = node.getClusterService();
+        ClusterState clusterState = clusterService.getClusterState();
+        if (clusterState != ClusterState.PASSIVE) {
+            throw new IllegalStateException("Cluster should be in PASSIVE state! Current state is " + clusterState);
+        }
+        final long timeoutNanos = unit.toNanos(timeout);
+        final long startTimeNanos = System.nanoTime();
+
+        int success = 0;
+        Collection<Member> members = clusterService.getMembers(DATA_MEMBER_SELECTOR);
+        InternalOperationService operationService = node.nodeEngine.getOperationService();
+        for (Member member : members) {
+            while ((System.nanoTime() - startTimeNanos) < timeoutNanos) {
+                Operation operation = new SafeStateCheckOperation();
+                Future<Boolean> future = operationService
+                        .invokeOnTarget(InternalPartitionService.SERVICE_NAME, operation, member.getAddress());
+                try {
+                    boolean safe = future.get();
+                    if (safe) {
+                        success++;
+                        break;
+                    }
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                } catch (Exception e) {
+                    throw new IllegalStateException("Error while syncing partition replicas", e);
+                }
+            }
+        }
+
+        if (success < members.size()) {
+            throw new IllegalStateException(new TimeoutException("Time out while syncing partition replicas"));
+        }
     }
 
     private static class RamStoreDescriptor {

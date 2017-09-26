@@ -25,7 +25,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 
-import static com.hazelcast.internal.nearcache.impl.invalidation.ToHeapDataConverter.toHeapData;
+import static com.hazelcast.internal.util.ToHeapDataConverter.toHeapData;
 import static com.hazelcast.map.impl.operation.EntryOperator.operator;
 
 /**

@@ -6,7 +6,6 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.Offloadable;
 import com.hazelcast.core.ReadOnly;
-import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.impl.MapService;
@@ -34,6 +33,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.core.Offloadable.NO_OFFLOADING;
+import static com.hazelcast.internal.util.ToHeapDataConverter.toHeapData;
 import static com.hazelcast.map.impl.operation.EntryOperator.operator;
 import static com.hazelcast.spi.ExecutionService.OFFLOADABLE_EXECUTOR;
 import static com.hazelcast.spi.InvocationBuilder.DEFAULT_TRY_PAUSE_MILLIS;
@@ -105,7 +105,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
         }
 
         Object value = recordStore.get(dataKey, false);
-        value = new HeapData(((Data) value).toByteArray());
+        value = value == null ? null : toHeapData((Data) value);
 
         String executorName = ((Offloadable) entryProcessor).getExecutorName();
         executorName = executorName.equals(Offloadable.OFFLOADABLE_EXECUTOR) ? OFFLOADABLE_EXECUTOR : executorName;

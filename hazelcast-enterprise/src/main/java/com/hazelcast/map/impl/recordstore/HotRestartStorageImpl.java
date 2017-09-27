@@ -134,10 +134,12 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
         return storage.isEmpty();
     }
 
+    @Override
     public final EntryCostEstimator getEntryCostEstimator() {
         return storage.getEntryCostEstimator();
     }
 
+    @Override
     public final void setEntryCostEstimator(EntryCostEstimator entryCostEstimator) {
         storage.setEntryCostEstimator(entryCostEstimator);
     }

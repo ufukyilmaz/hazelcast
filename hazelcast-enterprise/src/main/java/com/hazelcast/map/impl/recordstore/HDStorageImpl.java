@@ -181,10 +181,12 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         entryCostEstimator.reset();
     }
 
+    @Override
     public EntryCostEstimator getEntryCostEstimator() {
         return entryCostEstimator;
     }
 
+    @Override
     public void setEntryCostEstimator(EntryCostEstimator entryCostEstimator) {
         throw new UnsupportedOperationException();
     }
@@ -213,6 +215,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         return recordProcessor.toData(value, DataType.NATIVE);
     }
 
+    @Override
     public Iterable getRandomSamples(int sampleCount) {
         return map.getRandomSamples(sampleCount);
     }

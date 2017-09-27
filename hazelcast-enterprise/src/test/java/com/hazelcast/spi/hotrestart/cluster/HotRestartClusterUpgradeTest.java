@@ -23,7 +23,6 @@ import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.FULL_RECO
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertNodesVersion;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})

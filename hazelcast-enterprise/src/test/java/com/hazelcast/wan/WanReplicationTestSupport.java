@@ -8,7 +8,6 @@ import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.instance.HazelcastInstanceFactory;
@@ -19,7 +18,6 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.After;
-import org.junit.runner.RunWith;
 
 import java.util.Map;
 import java.util.Random;

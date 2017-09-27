@@ -16,7 +16,6 @@ import org.junit.runner.RunWith;
 import java.io.FileNotFoundException;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 /**
  * Verify cluster version read/write.

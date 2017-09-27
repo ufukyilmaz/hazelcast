@@ -16,10 +16,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.Properties;
-
-import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -45,13 +42,16 @@ public class MemberSecurityTest extends HazelcastTestSupport {
         secCfg.setEnabled(true);
         CredentialsFactoryConfig credentialsFactoryConfig = new CredentialsFactoryConfig();
         credentialsFactoryConfig.setImplementation(new ICredentialsFactory() {
+            @Override
             public Credentials newCredentials() {
-                return new UsernamePasswordCredentials("invalid","credentials");
+                return new UsernamePasswordCredentials("invalid", "credentials");
             }
 
+            @Override
             public void destroy() {
             }
 
+            @Override
             public void configure(GroupConfig groupConfig, Properties properties) {
             }
         });
@@ -63,16 +63,17 @@ public class MemberSecurityTest extends HazelcastTestSupport {
     }
 
     public static class InValidCredentials extends AbstractCredentials {
+
         public InValidCredentials() {
             super("invalid-group-name");
         }
 
         @Override
-        protected void writePortableInternal(PortableWriter writer) throws IOException {
+        protected void writePortableInternal(PortableWriter writer) {
         }
 
         @Override
-        protected void readPortableInternal(PortableReader reader) throws IOException {
+        protected void readPortableInternal(PortableReader reader) {
         }
 
         @Override

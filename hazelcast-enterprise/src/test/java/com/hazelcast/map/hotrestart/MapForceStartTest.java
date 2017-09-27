@@ -17,6 +17,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,13 +27,14 @@ import java.util.Iterator;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapForceStartTest extends AbstractMapHotRestartTest {
 
+    private static final int CLUSTER_SIZE = 3;
     private static final int KEY_COUNT = 1000;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
                 {InMemoryFormat.NATIVE, KEY_COUNT, false},
@@ -39,12 +42,11 @@ public class MapForceStartTest extends AbstractMapHotRestartTest {
         });
     }
 
-    private int clusterSize = 3;
     private boolean triggerForceStart = false;
 
     @Test
-    public void test() throws Exception {
-        newInstances(clusterSize);
+    public void test() {
+        newInstances(CLUSTER_SIZE);
         IMap<Integer, Object> map = createMap();
 
         for (int key = 0; key < KEY_COUNT; key++) {
@@ -53,7 +55,7 @@ public class MapForceStartTest extends AbstractMapHotRestartTest {
         }
 
         triggerForceStart = true;
-        restartInstances(clusterSize);
+        restartInstances(CLUSTER_SIZE);
 
         map = createMap();
         assertEquals(0, map.size());
@@ -65,26 +67,10 @@ public class MapForceStartTest extends AbstractMapHotRestartTest {
         assertEquals(KEY_COUNT, map.size());
 
         triggerForceStart = false;
-        restartInstances(clusterSize);
+        restartInstances(CLUSTER_SIZE);
 
         map = createMap();
         assertEquals(KEY_COUNT, map.size());
-    }
-
-    private static class TriggerForceStart extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
-
-        private Node node;
-
-        @Override
-        public void afterExpectedMembersJoin(Collection<? extends Member> members) {
-            node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
-        }
-
-        @Override
-        public void setHazelcastInstance(HazelcastInstance instance) {
-            this.node = getNode(instance);
-        }
-
     }
 
     @Override
@@ -103,5 +89,20 @@ public class MapForceStartTest extends AbstractMapHotRestartTest {
             }
         }
         return config;
+    }
+
+    private static class TriggerForceStart extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
+
+        private Node node;
+
+        @Override
+        public void afterExpectedMembersJoin(Collection<? extends Member> members) {
+            node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
+        }
+
+        @Override
+        public void setHazelcastInstance(HazelcastInstance instance) {
+            this.node = getNode(instance);
+        }
     }
 }

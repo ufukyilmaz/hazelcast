@@ -24,6 +24,7 @@ public class CacheReplicationRemove extends CacheReplicationObject {
     public CacheReplicationRemove() {
     }
 
+    @Override
     public Data getKey() {
         return key;
     }

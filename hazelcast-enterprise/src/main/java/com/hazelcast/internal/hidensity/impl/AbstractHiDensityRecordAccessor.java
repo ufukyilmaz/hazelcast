@@ -24,6 +24,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     protected abstract R createRecord();
 
+    @Override
     public abstract boolean isEqual(long address1, long address2);
 
     @Override

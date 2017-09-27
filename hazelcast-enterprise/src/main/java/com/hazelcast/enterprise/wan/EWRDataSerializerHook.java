@@ -65,6 +65,7 @@ public class EWRDataSerializerHook implements DataSerializerHook {
     public DataSerializableFactory createFactory() {
         return new DataSerializableFactory() {
 
+            @Override
             public IdentifiedDataSerializable create(int typeId) {
                 switch (typeId) {
                     case BATCH_WAN_REP_EVENT:

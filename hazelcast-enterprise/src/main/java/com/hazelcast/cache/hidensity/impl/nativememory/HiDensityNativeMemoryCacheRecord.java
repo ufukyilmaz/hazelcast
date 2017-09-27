@@ -194,6 +194,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
         setTtlMillis(newTtl);
     }
 
+    @Override
     public long getSequence() {
         return readLong(SEQUENCE_OFFSET);
     }

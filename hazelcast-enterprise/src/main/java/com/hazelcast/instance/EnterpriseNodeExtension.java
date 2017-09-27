@@ -679,6 +679,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return new EnterpriseManagementCenterConnectionFactory();
     }
 
+    @Override
     public ByteArrayProcessor createMulticastInputProcessor(IOService ioService) {
         final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
 

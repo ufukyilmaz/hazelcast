@@ -28,6 +28,7 @@ public class EnterpriseTimedMemberStateFactory extends TimedMemberStateFactory {
         evaluateWeakSecretsInConfig();
     }
 
+    @Override
     protected void createNodeState(MemberStateImpl memberState) {
         Node node = instance.node;
         ClusterService cluster = instance.node.clusterService;

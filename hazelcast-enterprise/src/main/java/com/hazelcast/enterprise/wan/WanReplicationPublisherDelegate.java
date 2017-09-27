@@ -88,6 +88,7 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
         return statsMap;
     }
 
+    @Override
     public void checkWanReplicationQueues() {
         for (WanReplicationEndpoint endpoint : endpoints.values()) {
             endpoint.checkWanReplicationQueues();

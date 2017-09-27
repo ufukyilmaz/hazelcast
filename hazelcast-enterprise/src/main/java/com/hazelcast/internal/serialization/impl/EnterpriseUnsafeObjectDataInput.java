@@ -37,6 +37,7 @@ final class EnterpriseUnsafeObjectDataInput extends UnsafeObjectDataInput implem
         return enterpriseSerializationService;
     }
 
+    @Override
     public Data readData(DataType type) throws IOException {
         return EnterpriseSerializationUtil
                 .readDataInternal(this, type, enterpriseSerializationService.getCurrentMemoryAllocator(), false);

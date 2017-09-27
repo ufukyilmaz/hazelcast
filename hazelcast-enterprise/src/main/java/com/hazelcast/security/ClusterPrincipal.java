@@ -30,6 +30,7 @@ public final class ClusterPrincipal implements Principal, IdentifiedDataSerializ
         return credentials != null ? credentials.getPrincipal() : null;
     }
 
+    @Override
     public String getName() {
         return SecurityUtil.getCredentialsFullName(credentials);
     }
@@ -52,10 +53,12 @@ public final class ClusterPrincipal implements Principal, IdentifiedDataSerializ
         return SecurityDataSerializerHook.CLUSTER_PRINCIPAL;
     }
 
+    @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeObject(credentials);
     }
 
+    @Override
     public void readData(ObjectDataInput in) throws IOException {
         credentials = in.readObject();
     }

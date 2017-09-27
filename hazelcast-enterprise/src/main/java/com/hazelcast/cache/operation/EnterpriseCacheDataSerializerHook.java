@@ -26,6 +26,7 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
     public DataSerializableFactory createFactory() {
         return new DataSerializableFactory() {
 
+            @Override
             public IdentifiedDataSerializable create(int typeId) {
                 switch (typeId) {
                     case WAN_MERGE:

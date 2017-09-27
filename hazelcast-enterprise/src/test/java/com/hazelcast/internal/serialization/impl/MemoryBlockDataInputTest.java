@@ -25,7 +25,7 @@ public class MemoryBlockDataInputTest extends AbstractEnterpriseSerializationTes
     private MemoryBlockDataInput in;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         initMemoryManagerAndSerializationService();
         Data nativeData = serializationService.convertData(new HeapData(INIT_DATA), DataType.NATIVE);
         in = new MemoryBlockDataInput((MemoryBlock) nativeData, 0, 0, serializationService);
@@ -203,7 +203,7 @@ public class MemoryBlockDataInputTest extends AbstractEnterpriseSerializationTes
 
     @Test
     public void testLong_withPosition() throws Exception {
-        Long obj = 15l;
+        Long obj = 15L;
         MemoryBlockDataInput memoryBlockDataInput = (MemoryBlockDataInput) createNativeInput(obj);
         EnterpriseBufferObjectDataInput input = createInput(obj);
 
@@ -218,7 +218,7 @@ public class MemoryBlockDataInputTest extends AbstractEnterpriseSerializationTes
 
     @Test
     public void testLong() throws Exception {
-        Long obj = 15l;
+        Long obj = 15L;
         MemoryBlockDataInput memoryBlockDataInput = (MemoryBlockDataInput) createNativeInput(obj);
         EnterpriseBufferObjectDataInput input = createInput(obj);
 
@@ -298,8 +298,8 @@ public class MemoryBlockDataInputTest extends AbstractEnterpriseSerializationTes
     }
 
     @Test
-    public void testSkip() throws Exception {
-        long obj = 0x11121314l;
+    public void testSkip() {
+        long obj = 0x11121314L;
         int skipBytes = 4;
         MemoryBlockDataInput memoryBlockDataInput = (MemoryBlockDataInput) createNativeInput(obj);
         memoryBlockDataInput.skip(skipBytes);
@@ -343,12 +343,12 @@ public class MemoryBlockDataInputTest extends AbstractEnterpriseSerializationTes
     }
 
     @Test(expected = UnsupportedOperationException.class)
-    public void testInit() throws Exception {
+    public void testInit() {
         in.init(null,0);
     }
 
     @Test(expected = UnsupportedOperationException.class)
-    public void testClear() throws Exception {
+    public void testClear() {
         in.clear();
     }
 
@@ -365,7 +365,7 @@ public class MemoryBlockDataInputTest extends AbstractEnterpriseSerializationTes
     }
 
     @Test
-    public void testGetSerializationService() throws Exception {
+    public void testGetSerializationService() {
         assertEquals(serializationService, in.getSerializationService());
     }
 

@@ -19,7 +19,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -44,12 +44,12 @@ public class HDPartitionScanExecutorTest {
     }
 
     @Test
-    public void execute_success() throws Exception {
+    public void execute_success() {
         HDPartitionScanRunner runner = mock(HDPartitionScanRunner.class);
         HDPartitionScanExecutor executor = executor(runner);
         Predicate predicate = Predicates.equal("attribute", 1);
 
-        Collection<QueryableEntry> result = executor.execute("Map", predicate, asList(1));
+        Collection<QueryableEntry> result = executor.execute("Map", predicate, singletonList(1));
         assertEquals(0, result.size());
     }
 }

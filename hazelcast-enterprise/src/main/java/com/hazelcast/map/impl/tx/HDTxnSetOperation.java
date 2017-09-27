@@ -92,12 +92,14 @@ public class HDTxnSetOperation extends HDBasePutOperation implements MapTxnOpera
         return true;
     }
 
+    @Override
     public Operation getBackupOperation() {
         final Record record = recordStore.getRecord(dataKey);
         final RecordInfo replicationInfo = record != null ? Records.buildRecordInfo(record) : null;
         return new HDPutBackupOperation(name, dataKey, dataValue, replicationInfo, true, false);
     }
 
+    @Override
     public void onWaitExpire() {
         sendResponse(false);
     }
@@ -107,6 +109,7 @@ public class HDTxnSetOperation extends HDBasePutOperation implements MapTxnOpera
         return shouldBackup && recordStore.getRecord(dataKey) != null;
     }
 
+    @Override
     public WaitNotifyKey getNotifiedKey() {
         return getWaitKey();
     }

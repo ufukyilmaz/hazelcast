@@ -54,6 +54,7 @@ public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTx
         return false;
     }
 
+    @Override
     public void afterRun() {
         if (successful) {
             super.afterRun();
@@ -67,10 +68,12 @@ public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTx
         sendResponse(false);
     }
 
+    @Override
     public long getVersion() {
         return version;
     }
 
+    @Override
     public void setVersion(long version) {
         this.version = version;
     }
@@ -80,10 +83,12 @@ public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTx
         return Boolean.TRUE;
     }
 
+    @Override
     public boolean shouldNotify() {
         return true;
     }
 
+    @Override
     public Operation getBackupOperation() {
         return new HDRemoveBackupOperation(name, dataKey, true);
     }
@@ -98,6 +103,7 @@ public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTx
         return true;
     }
 
+    @Override
     public WaitNotifyKey getNotifiedKey() {
         return getWaitKey();
     }

@@ -45,6 +45,7 @@ public class HDTxnLockAndGetOperation extends HDLockAwareOperation implements Mu
         response = new VersionedValue(value, record == null ? 0 : record.getVersion());
     }
 
+    @Override
     public boolean shouldWait() {
         return !recordStore.canAcquireLock(dataKey, ownerUuid, getThreadId());
     }

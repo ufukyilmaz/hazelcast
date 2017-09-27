@@ -155,6 +155,7 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
         final CountDownLatch finished = new CountDownLatch(2);
 
         new Thread() {
+            @Override
             public void run() {
                 try {
                     startSyncLatch.await();
@@ -181,6 +182,7 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
         }.start();
 
         new Thread() {
+            @Override
             public void run() {
                 try {
                     startSyncLatch.await();

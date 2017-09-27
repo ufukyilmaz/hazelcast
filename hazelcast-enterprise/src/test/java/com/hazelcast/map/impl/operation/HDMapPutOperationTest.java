@@ -5,7 +5,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -26,11 +25,6 @@ public class HDMapPutOperationTest extends AbstractHDOperationTest {
     private static final int ITEM_COUNT = 5;
     private static final int PARTITION_COUNT = 3;
     private static final int PARTITION_ID = 23;
-
-    @Before
-    public void setUp() {
-        super.setUp();
-    }
 
     @Test
     public void testRun() throws Exception {

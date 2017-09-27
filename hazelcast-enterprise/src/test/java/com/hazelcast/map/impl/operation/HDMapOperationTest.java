@@ -21,6 +21,7 @@ public class HDMapOperationTest extends AbstractHDOperationTest {
     private TestHDOperation operation;
 
     @Before
+    @Override
     public void setUp() {
         super.setUp();
 

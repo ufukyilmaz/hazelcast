@@ -34,6 +34,7 @@ public class MockJoinerClusterUpgradeTest extends AbstractClusterUpgradeTest {
         upgradeClusterMembers(factory, instances, version, config);
     }
 
+    @Override
     void assertNodesVersion(MemberVersion version) {
         for (int i=0; i < CLUSTER_MEMBERS_COUNT; i++) {
             assertEquals(version, getNode(clusterMembers[i]).getVersion());

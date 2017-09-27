@@ -47,6 +47,7 @@ public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTes
         }
     }
 
+    @Override
     void assertNodesVersion(MemberVersion version) {
         for (int i=0; i < CLUSTER_MEMBERS_COUNT; i++) {
             assertEquals(version, getNode(clusterMembers[i]).getVersion());

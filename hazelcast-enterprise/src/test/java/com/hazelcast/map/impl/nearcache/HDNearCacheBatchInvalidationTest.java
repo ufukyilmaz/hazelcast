@@ -22,6 +22,7 @@ public class HDNearCacheBatchInvalidationTest extends NearCacheBatchInvalidation
 
     private static final MemorySize NATIVE_MEMORY_SIZE = new MemorySize(32, MemoryUnit.MEGABYTES);
 
+    @Override
     protected Config newConfig(String mapName) {
         NearCacheConfig nearCacheConfig = new NearCacheConfig();
         EvictionConfig evictionConfig = nearCacheConfig.getEvictionConfig();

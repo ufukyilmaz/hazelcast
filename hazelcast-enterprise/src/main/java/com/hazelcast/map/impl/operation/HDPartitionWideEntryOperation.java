@@ -29,10 +29,9 @@ import static com.hazelcast.internal.util.ToHeapDataConverter.toHeapData;
 import static com.hazelcast.map.impl.operation.EntryOperator.operator;
 
 /**
- * GOTCHA : This operation does NOT load missing keys from map-store for now.
+ * GOTCHA: This operation does NOT load missing keys from the MapStore for now.
  */
 public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperation implements BackupAwareOperation {
-
 
     protected transient EntryOperator operator;
     protected transient QueryOptimizer queryOptimizer;
@@ -64,7 +63,7 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
     }
 
     /**
-     * @return true if index has been used and the EP has been executed on its keys
+     * @return {@code true} if index has been used and the EP has been executed on its keys, {@code false} otherwise
      */
     private boolean runWithIndex() {
         // here we try to query the partitioned-index
@@ -122,9 +121,9 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
         }
 
         if (outComes != null) {
-            // This iteration is needed to work around an issue related with binary elastic hash map(BEHM).
-            // Removal via map#remove while iterating on BEHM distortes it and we can see some entries are remained
-            // in map even we know that iteration is finished. Because in this case, iteration can miss some entries.
+            // This iteration is needed to work around an issue related with binary elastic hash map (BEHM).
+            // Removal via map#remove() while iterating on BEHM distorts it and we can see some entries remain
+            // in the map even we know that iteration is finished. Because in this case, iteration can miss some entries.
             do {
                 Data dataKey = (Data) outComes.poll();
                 Object oldValue = outComes.poll();
@@ -198,5 +197,4 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
     public int getId() {
         return EnterpriseMapDataSerializerHook.PARTITION_WIDE_ENTRY;
     }
-
 }

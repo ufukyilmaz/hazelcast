@@ -54,9 +54,9 @@ public class HDPartitionWideEntryBackupOperation extends AbstractHDMultipleEntry
         }
 
         if (outComes != null) {
-            // This iteration is needed to work around an issue related with binary elastic hash map(BEHM).
-            // Removal via map#remove while iterating on BEHM distortes it and we can see some entries are remained
-            // in map even we know that iteration is finished. Because in this case, iteration can miss some entries.
+            // This iteration is needed to work around an issue related with binary elastic hash map (BEHM).
+            // Removal via map#remove() while iterating on BEHM distorts it and we can see some entries remain
+            // in the map even we know that iteration is finished. Because in this case, iteration can miss some entries.
             do {
                 Data dataKey = (Data) outComes.poll();
                 Object oldValue = outComes.poll();

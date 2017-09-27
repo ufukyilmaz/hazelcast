@@ -11,7 +11,6 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.internal.networking.Channel;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
@@ -40,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static org.junit.Assert.assertEquals;
 
@@ -51,7 +51,7 @@ public class SSLConnectionTest {
 
     @Before
     @After
-    public void killAllHazelcastInstances() throws IOException {
+    public void killAllHazelcastInstances() {
         HazelcastInstanceFactory.terminateAll();
     }
 
@@ -85,10 +85,10 @@ public class SSLConnectionTest {
             if (socket != null) {
                 try {
                     socket.close();
-                } catch (IOException e) {
+                } catch (IOException ignored) {
                 }
             }
-            IOUtil.closeResource(serverSocketChannel);
+            closeResource(serverSocketChannel);
         }
     }
 
@@ -113,13 +113,15 @@ public class SSLConnectionTest {
             final CountDownLatch latch = new CountDownLatch(2);
 
             ex.execute(new ChannelWriter(channel, count, latch) {
-                int prepareData(int i) throws Exception {
+                @Override
+                int prepareData(int i) {
                     return i;
                 }
             });
 
             ex.execute(new ChannelReader(channel, count, latch) {
-                void processData(int i, int data) throws Exception {
+                @Override
+                void processData(int i, int data) {
                     try {
                         assertEquals(i * 2 + 1, data);
                     } catch (AssertionError e) {
@@ -137,8 +139,8 @@ public class SSLConnectionTest {
             }
         } finally {
             ex.shutdownNow();
-            IOUtil.closeResource(channel);
-            IOUtil.closeResource(serverSocketChannel);
+            closeResource(channel);
+            closeResource(serverSocketChannel);
         }
     }
 
@@ -161,6 +163,7 @@ public class SSLConnectionTest {
             this.latch = latch;
         }
 
+        @Override
         public void run() {
             ByteBuffer in = ByteBuffer.allocate(4);
             try {
@@ -194,6 +197,7 @@ public class SSLConnectionTest {
             this.latch = latch;
         }
 
+        @Override
         public final void run() {
             ByteBuffer out = ByteBuffer.allocate(4);
             try {
@@ -228,6 +232,7 @@ public class SSLConnectionTest {
             this.ex = ex;
         }
 
+        @Override
         public void run() {
             Channel channel = null;
             try {
@@ -240,11 +245,13 @@ public class SSLConnectionTest {
                 final BlockingQueue<Integer> queue = new ArrayBlockingQueue<Integer>(count);
 
                 ex.execute(new ChannelReader(channel, count, latch) {
-                    void processData(int i, int data) throws Exception {
+                    @Override
+                    void processData(int i, int data) {
                         queue.add(data);
                     }
                 });
                 ex.execute(new ChannelWriter(channel, count, latch) {
+                    @Override
                     int prepareData(int i) throws Exception {
                         int data = queue.poll(30, TimeUnit.SECONDS);
                         return data * 2 + 1;
@@ -255,7 +262,7 @@ public class SSLConnectionTest {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                IOUtil.closeResource(channel);
+                closeResource(channel);
             }
         }
     }
@@ -278,7 +285,7 @@ public class SSLConnectionTest {
     }
 
     @Test(timeout = 1000 * 180)
-    public void testNodes() throws Exception {
+    public void testNodes() {
         Config config = new Config();
         config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         JoinConfig join = config.getNetworkConfig().getJoin();
@@ -322,7 +329,7 @@ public class SSLConnectionTest {
     }
 
     @Test(timeout = 1000 * 600)
-    public void testPutAndGetAlwaysGoesToWire() throws Exception {
+    public void testPutAndGetAlwaysGoesToWire() {
         Config config = new Config();
         config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         JoinConfig join = config.getNetworkConfig().getJoin();

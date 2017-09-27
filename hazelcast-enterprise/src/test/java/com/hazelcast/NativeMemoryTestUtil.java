@@ -34,8 +34,8 @@ import static org.junit.Assert.fail;
  */
 public final class NativeMemoryTestUtil {
 
-    private static boolean DEBUG_STACKTRACES = false;
-    private static int MAX_ALLOCATIONS_PER_STACKTRACE = 10;
+    private static final boolean DEBUG_STACKTRACES = false;
+    private static final int MAX_ALLOCATIONS_PER_STACKTRACE = 10;
 
     private NativeMemoryTestUtil() {
     }

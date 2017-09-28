@@ -115,9 +115,12 @@ public abstract class HDMapOperation extends MapOperation {
         ensureInitialized();
 
         int partitionId = getPartitionId();
-        RecordStore recordStore = mapServiceContext.getExistingRecordStore(partitionId, name);
-        if (recordStore != null) {
-            recordStore.disposeDeferredBlocks();
+        // the operation might be run on the generic thread and not be associated with a partition, e.g. HDQueryOperation
+        if (partitionId != GENERIC_PARTITION_ID) {
+            RecordStore recordStore = mapServiceContext.getExistingRecordStore(partitionId, name);
+            if (recordStore != null) {
+                recordStore.disposeDeferredBlocks();
+            }
         }
     }
 
@@ -179,6 +182,7 @@ public abstract class HDMapOperation extends MapOperation {
 
     /**
      * Force eviction on other NATIVE in-memory-formatted record-stores of this partition thread.
+     * This will not evict from any record store in case this operation is run on a generic thread.
      */
     private void forceEvictionOnOthers() {
         NodeEngine nodeEngine = getNodeEngine();
@@ -246,6 +250,7 @@ public abstract class HDMapOperation extends MapOperation {
 
     /**
      * Evicts all record-stores on the partitions owned by partition thread of current partition.
+     * This will not evict from any record store in case this operation is run on a generic thread.
      */
     private void evictAll(boolean backup) {
         NodeEngine nodeEngine = getNodeEngine();

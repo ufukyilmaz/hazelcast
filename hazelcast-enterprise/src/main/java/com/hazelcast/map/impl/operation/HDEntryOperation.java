@@ -9,7 +9,6 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.Offloadable;
 import com.hazelcast.core.ReadOnly;
-import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.impl.MapContainer;
@@ -45,6 +44,7 @@ import static com.hazelcast.core.EntryEventType.ADDED;
 import static com.hazelcast.core.EntryEventType.REMOVED;
 import static com.hazelcast.core.EntryEventType.UPDATED;
 import static com.hazelcast.core.Offloadable.NO_OFFLOADING;
+import static com.hazelcast.internal.util.ToHeapDataConverter.toHeapData;
 import static com.hazelcast.map.impl.EntryViews.createSimpleEntryView;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.recordstore.RecordStore.DEFAULT_TTL;
@@ -55,7 +55,7 @@ import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
 /**
  * Contains HD Version of the Offloadable contract for EntryProcessor.
  * See the javadoc on {@link EntryOperation} for full documentation.
- *
+ * <p>
  * GOTCHA : This operation LOADS missing keys from map-store, in contrast with PartitionWideEntryOperation.
  */
 @SuppressWarnings("checkstyle:methodcount")
@@ -121,7 +121,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation implements BackupAw
         }
 
         Object value = recordStore.get(dataKey, false);
-        value = new HeapData(((Data) value).toByteArray());
+        value = value == null ? null : toHeapData((Data) value);
 
         String executorName = ((Offloadable) entryProcessor).getExecutorName();
         executorName = executorName.equals(Offloadable.OFFLOADABLE_EXECUTOR) ? OFFLOADABLE_EXECUTOR : executorName;

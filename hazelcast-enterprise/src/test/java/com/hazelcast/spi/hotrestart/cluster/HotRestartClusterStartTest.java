@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import com.hazelcast.core.MembershipAdapter;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.instance.NodeState;
@@ -23,6 +24,7 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
+import static com.hazelcast.internal.partition.AntiEntropyCorrectnessTest.setBackupPacketDropFilter;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
@@ -223,5 +225,49 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
         }, 5);
 
         dataLoadLatch.countDown();
+    }
+
+    @Test
+    public void test_backupReplicasAreSynced_whileShuttingDownCluster() {
+        HazelcastInstance[] instances = startNewInstances(3);
+        for (HazelcastInstance instance : instances) {
+            setBackupPacketDropFilter(instance, 100f);
+        }
+
+        final String mapName = mapNames[2];
+        final int entryCount = 1000;
+
+        IMap<Object, Object> map = instances[0].getMap(mapName);
+        for (int i = 0; i < entryCount; i++) {
+            map.setAsync(i, i);
+        }
+
+        final IMap<Object, Object> finalMap = map;
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                assertEquals(entryCount, finalMap.size());
+            }
+        });
+
+        Address[] addresses = getAddresses(instances);
+        instances[0].getCluster().shutdown();
+
+        instances = restartInstances(addresses);
+        assertInstancesJoined(3, NodeState.ACTIVE, ClusterState.ACTIVE);
+
+        map = instances[0].getMap(mapName);
+
+        for (int i = 0; i < entryCount; i++) {
+            assertEquals(i, map.get(i));
+        }
+
+        for (int i = 1; i < instances.length; i++) {
+            instances[i].getLifecycleService().terminate();
+        }
+
+        for (int i = 0; i < entryCount; i++) {
+            assertEquals(i, map.get(i));
+        }
     }
 }

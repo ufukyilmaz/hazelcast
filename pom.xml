@@ -36,7 +36,7 @@
         <maven.gpg.plugin.version>1.4</maven.gpg.plugin.version>
         <maven.javadoc.plugin.version>2.9</maven.javadoc.plugin.version>
 
-        <maven.surefire.plugin.version>2.20.1</maven.surefire.plugin.version>
+        <maven.surefire.plugin.version>2.18.1</maven.surefire.plugin.version>
         <maven.checkstyle.plugin.version>2.15</maven.checkstyle.plugin.version>
         <maven.findbugs.plugin.version>3.0.1</maven.findbugs.plugin.version>
         <maven.sonar.plugin.version>2.6</maven.sonar.plugin.version>
@@ -128,6 +128,14 @@
             </snapshots>
         </repository>
     </repositories>
+
+    <pluginRepositories>
+        <!-- JitPack repository is needed to fetch patch surefire-common plugin -->
+        <pluginRepository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </pluginRepository>
+    </pluginRepositories>
 
     <build>
         <extensions>
@@ -238,6 +246,13 @@
                         com.hazelcast.test.annotation.CompatibilityTest
                     </excludedGroups>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.github.jerrinot.maven-surefire</groupId>
+                        <artifactId>maven-surefire-common</artifactId>
+                        <version>${maven.surefire.plugin.version}-buffered</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <plugin>
@@ -464,6 +479,13 @@
                                 </configuration>
                             </execution>
                         </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.github.jerrinot.maven-surefire</groupId>
+                                <artifactId>maven-surefire-common</artifactId>
+                                <version>${maven.surefire.plugin.version}-buffered</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
@@ -554,6 +576,13 @@
                                 </configuration>
                             </execution>
                         </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.github.jerrinot.maven-surefire</groupId>
+                                <artifactId>maven-surefire-common</artifactId>
+                                <version>${maven.surefire.plugin.version}-buffered</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
@@ -594,6 +623,13 @@
                                 com.hazelcast.test.annotation.NightlyTest
                             </groups>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.github.jerrinot.maven-surefire</groupId>
+                                <artifactId>maven-surefire-common</artifactId>
+                                <version>${maven.surefire.plugin.version}-buffered</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
@@ -631,6 +667,13 @@
                                 com.hazelcast.test.annotation.NightlyTest
                             </excludedGroups>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.github.jerrinot.maven-surefire</groupId>
+                                <artifactId>maven-surefire-common</artifactId>
+                                <version>${maven.surefire.plugin.version}-buffered</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
@@ -704,6 +747,13 @@
                                 com.hazelcast.test.annotation.CompatibilityTest
                             </excludedGroups>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.github.jerrinot.maven-surefire</groupId>
+                                <artifactId>maven-surefire-common</artifactId>
+                                <version>${maven.surefire.plugin.version}-buffered</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>

@@ -158,12 +158,13 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
         assertOpenEventually(latch);
 
-        Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
-        if (!instances.isEmpty()) {
-            HazelcastInstance instance = instances.iterator().next();
+        HazelcastInstance[] instances = factory.getAllHazelcastInstances().toArray(new HazelcastInstance[0]);
+        if (instances.length > 0) {
+            assertClusterSizeEventually(clusterSize, instances);
+            HazelcastInstance instance = instances[0];
             instance.getCluster().changeClusterState(state);
         }
-        return instances.toArray(new HazelcastInstance[0]);
+        return instances;
     }
 
     HazelcastInstance restartHazelcastInstance(HazelcastInstance hz, Config config) {

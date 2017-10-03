@@ -43,7 +43,12 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
     // list of versions e.g. "-Dhazelcast.test.compatibility.versions=3.8,3.8.1"
     private static final String COMPATIBILITY_TEST_VERSIONS = "hazelcast.test.compatibility.versions";
     private static final String[] RELEASED_VERSIONS = new String[]{"3.8", "3.8.1", "3.8.2"};
-    private static final String CURRENT_VERSION = "3.9";
+    /**
+     * Refers to the latest hazelcast version.
+     * Unlike other hazelcast instances, this one will not be proxied and
+     * you can inspect the internal state by getting the node engine.
+     */
+    public static final String CURRENT_VERSION = "3.9";
 
     // actual member versions to be used in round-robin when creating new Hazelcast instances
     private final String[] versions;

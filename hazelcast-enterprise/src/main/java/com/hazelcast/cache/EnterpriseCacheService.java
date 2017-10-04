@@ -32,6 +32,7 @@ import com.hazelcast.cache.wan.filter.CacheWanEventFilter;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.cache.impl.PreJoinCacheConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
@@ -75,6 +76,9 @@ import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartiti
  * <li>Destroying segments and caches</li>
  * <li>Mediating for cache events and listeners</li>
  * </ul>
+ *
+ * When interacting with Hot Restart persistent stores, cache configurations must be persisted in the serialized form of
+ * {@link PreJoinCacheConfig}.
  */
 @SuppressWarnings({
         "checkstyle:methodcount",
@@ -130,7 +134,9 @@ public class EnterpriseCacheService
                 @Override
                 public void onConfigurationLoaded(String serviceName, String name, Object config) {
                     if (SERVICE_NAME.equals(serviceName)) {
-                        if (config instanceof CacheConfig) {
+                        if (config instanceof PreJoinCacheConfig) {
+                            putCacheConfigIfAbsent(((PreJoinCacheConfig) config).asCacheConfig());
+                        } else if (config instanceof CacheConfig) {
                             putCacheConfigIfAbsent((CacheConfig) config);
                         } else {
                             logger.warning("Configuration " + config + " has an unknown type " + config.getClass());
@@ -205,7 +211,9 @@ public class EnterpriseCacheService
                         + " but Hot Restart persistence is not enabled!");
             }
 
-            hotRestartService.ensureHasConfiguration(SERVICE_NAME, cacheNameWithPrefix, cacheConfig);
+            // store in hot restart persistent store with PreJoinCacheConfig format
+            hotRestartService.ensureHasConfiguration(SERVICE_NAME, cacheNameWithPrefix,
+                    new PreJoinCacheConfig(cacheConfig, false));
             prefix = hotRestartService.registerRamStore(this, SERVICE_NAME, cacheNameWithPrefix, partitionId);
             nodeEngine.getProxyService().initializeDistributedObject(SERVICE_NAME, cacheNameWithPrefix);
         }
@@ -512,7 +520,8 @@ public class EnterpriseCacheService
         CacheConfig localConfig = super.putCacheConfigIfAbsent(config);
         if (localConfig == null) {
             if (hotRestartService != null && config.getHotRestartConfig().isEnabled()) {
-                hotRestartService.ensureHasConfiguration(SERVICE_NAME, config.getNameWithPrefix(), config);
+                hotRestartService.ensureHasConfiguration(SERVICE_NAME, config.getNameWithPrefix(),
+                        new PreJoinCacheConfig(config, false));
             }
         } else {
             //there is already a configuration object for a given cache. let's use it instead

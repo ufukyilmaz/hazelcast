@@ -3,6 +3,7 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
@@ -36,7 +37,15 @@ public class HDMapOperationTest extends AbstractHDOperationTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testSetThreadId() {
-        operation.setThreadId(Operation.GENERIC_PARTITION_ID);
+        operation.setThreadId(Thread.currentThread().getId());
+    }
+
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
+    public void testBeforeRun_whenGenericPartitionIdIsSet_thenThrowAssertion() throws Exception {
+        operation.setPartitionId(Operation.GENERIC_PARTITION_ID);
+
+        operation.beforeRun();
     }
 
     @Test

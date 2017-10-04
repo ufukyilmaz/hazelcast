@@ -7,6 +7,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.operation.HDMapOperation;
 import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
@@ -39,13 +40,13 @@ public class HDBasicMapTest extends BasicMapTest {
         return getHDConfig();
     }
 
-
     /**
      * Asserts that the exception handling logic for a HD map operation does not try to load the record store
      * when the operation is not run on a partition thread.
      * See: https://github.com/hazelcast/hazelcast-enterprise/issues/1735
      */
     @Test
+    @RequireAssertEnabled
     public void HDMapOperationRunOnGenericThreadDoesNotDisposeDeferredBlocks() {
         final HazelcastInstance instance = getInstance();
         final Node node = getNode(instance);
@@ -54,7 +55,8 @@ public class HDBasicMapTest extends BasicMapTest {
     }
 
     public static class ExceptionThrowingOp extends HDMapOperation {
-        public ExceptionThrowingOp(String mapName) {
+
+        ExceptionThrowingOp(String mapName) {
             super(mapName);
         }
 

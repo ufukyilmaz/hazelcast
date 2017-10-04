@@ -25,6 +25,7 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.spi.serialization.SerializationService;
+import org.junit.Before;
 import org.mockito.Matchers;
 import org.mockito.stubbing.OngoingStubbing;
 
@@ -39,6 +40,7 @@ import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.AdditionalMatchers.geq;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
@@ -54,7 +56,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-abstract class AbstractHDOperationTest {
+public abstract class AbstractHDOperationTest {
 
     enum OperationType {
         PUT_ALL,
@@ -64,17 +66,18 @@ abstract class AbstractHDOperationTest {
     int syncBackupCount;
     boolean throwNativeOOME;
 
+    HDEvictorImpl evictor;
+    RecordStore recordStore;
+    ConcurrentHashMap<String, RecordStore> partitionMaps;
+    MapService mapService;
+
     private int numberOfNativeOOME;
 
-    private MapService mapService;
+    private NodeEngine nodeEngine;
     private MapContainer mapContainer;
-
-    private RecordStore recordStore;
-    private HDEvictorImpl hdEvictor;
     private TestInvalidator nearCacheInvalidator;
 
-    private NodeEngine nodeEngine;
-
+    @Before
     public void setUp() {
         IPartitionService partitionService = mock(IPartitionService.class);
         when(partitionService.getPartitionCount()).thenReturn(getPartitionCount());
@@ -94,12 +97,12 @@ abstract class AbstractHDOperationTest {
         MapConfig mapConfig = new MapConfig();
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
 
-        hdEvictor = mock(HDEvictorImpl.class);
+        evictor = mock(HDEvictorImpl.class);
 
         mapContainer = mock(MapContainer.class);
         when(mapContainer.getWanReplicationPublisher()).thenReturn(null);
         when(mapContainer.getMapConfig()).thenReturn(mapConfig);
-        when(mapContainer.getEvictor()).thenReturn(hdEvictor);
+        when(mapContainer.getEvictor()).thenReturn(evictor);
         when(mapContainer.hasInvalidationListener()).thenReturn(true);
 
         MapDataStore mapDataStore = mock(MapDataStore.class);
@@ -113,10 +116,11 @@ abstract class AbstractHDOperationTest {
         when(recordStore.putBackup(any(Data.class), any())).thenReturn(record);
         when(recordStore.putBackup(any(Data.class), any(Data.class), anyInt(), anyBoolean())).thenReturn(record);
 
+        partitionMaps = new ConcurrentHashMap<String, RecordStore>();
+
         PartitionContainer partitionContainer = mock(PartitionContainer.class);
         when(partitionContainer.getRecordStore(eq(getMapName()))).thenReturn(recordStore);
-        when(partitionContainer.getExistingRecordStore(eq(getMapName()))).thenReturn(recordStore);
-        when(partitionContainer.getMaps()).thenReturn(new ConcurrentHashMap<String, RecordStore>());
+        when(partitionContainer.getMaps()).thenReturn(partitionMaps);
 
         MapEventPublisher mapEventPublisher = mock(MapEventPublisher.class);
         when(mapEventPublisher.hasEventListener(eq(getMapName()))).thenReturn(false);
@@ -124,7 +128,7 @@ abstract class AbstractHDOperationTest {
         EnterpriseMapNearCacheManager nearCacheManager = mock(EnterpriseMapNearCacheManager.class, RETURNS_DEEP_STUBS);
 
         MapServiceContext mapServiceContext = mock(MapServiceContext.class);
-        when(mapServiceContext.getPartitionContainer(anyInt())).thenReturn(partitionContainer);
+        when(mapServiceContext.getPartitionContainer(geq(1))).thenReturn(partitionContainer);
         when(mapServiceContext.getMapEventPublisher()).thenReturn(mapEventPublisher);
         when(mapServiceContext.getMapNearCacheManager()).thenReturn(nearCacheManager);
         when(mapServiceContext.getMapContainer(eq(getMapName()))).thenReturn(mapContainer);
@@ -135,25 +139,6 @@ abstract class AbstractHDOperationTest {
 
         mapService = mock(MapService.class);
         when(mapService.getMapServiceContext()).thenReturn(mapServiceContext);
-
-    }
-
-    private class TestInvalidator extends Invalidator {
-
-        private final AtomicInteger count = new AtomicInteger();
-
-        public TestInvalidator(MapServiceContext mapServiceContext) {
-            super(SERVICE_NAME, TRUE_FILTER, mapServiceContext.getNodeEngine());
-        }
-
-        public int getCount() {
-            return count.get();
-        }
-
-        @Override
-        protected void invalidateInternal(Invalidation invalidation, int i) {
-            count.incrementAndGet();
-        }
     }
 
     /**
@@ -314,10 +299,10 @@ abstract class AbstractHDOperationTest {
     void verifyHDEvictor(OperationType operationType) {
         if (throwNativeOOME) {
             int expectedCount = (operationType == PUT) ? getItemCount() : 1;
-            verify(hdEvictor, times(expectedCount)).forceEvict(eq(recordStore));
-            verifyNoMoreInteractions(hdEvictor);
+            verify(evictor, times(expectedCount)).forceEvict(eq(recordStore));
+            verifyNoMoreInteractions(evictor);
         } else {
-            verifyZeroInteractions(hdEvictor);
+            verifyZeroInteractions(evictor);
         }
     }
 
@@ -326,4 +311,22 @@ abstract class AbstractHDOperationTest {
     abstract int getItemCount();
 
     abstract int getPartitionCount();
+
+    private static class TestInvalidator extends Invalidator {
+
+        private final AtomicInteger count = new AtomicInteger();
+
+        TestInvalidator(MapServiceContext mapServiceContext) {
+            super(SERVICE_NAME, TRUE_FILTER, mapServiceContext.getNodeEngine());
+        }
+
+        public int getCount() {
+            return count.get();
+        }
+
+        @Override
+        protected void invalidateInternal(Invalidation invalidation, int i) {
+            count.incrementAndGet();
+        }
+    }
 }

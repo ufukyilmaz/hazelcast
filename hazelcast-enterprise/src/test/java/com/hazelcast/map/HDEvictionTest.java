@@ -35,7 +35,7 @@ public class HDEvictionTest extends EvictionTest {
 
     @Test
     public void testForceEviction() {
-        //never run an explicit eviction -> rely on forced eviction instead
+        // never run an explicit eviction -> rely on forced eviction instead
         int mapMaxSize = Integer.MAX_VALUE;
         String mapName = randomMapName();
 
@@ -46,25 +46,25 @@ public class HDEvictionTest extends EvictionTest {
         mapConfig.setEvictionPolicy(LFU);
         mapConfig.getMaxSizeConfig().setSize(mapMaxSize);
 
-        //640K ought to be enough for anybody
+        // 640K ought to be enough for anybody
         config.getNativeMemoryConfig().setSize(new MemorySize(640, KILOBYTES));
 
         HazelcastInstance node = createHazelcastInstance(config);
         IMap<Object, Object> map = node.getMap(mapName);
 
-        //now let's insert more than it can fit into a memory
+        // now let's insert more than it can fit into a memory
         for (int i = 0; i < 20000; i++) {
             map.put(i, i);
         }
 
-        //let's check not everything was evicted.
-        //this is an extra step. the main goal is to not fail with NativeOutOfMemoryError
+        // let's check not everything was evicted
+        // this is an extra step, the main goal is to not fail with NativeOutOfMemoryError
         assertTrue(map.size() > 0);
     }
 
     @Test
     public void testForceEviction_withIndexes() {
-        //never run an explicit eviction -> rely on forced eviction instead
+        // never run an explicit eviction -> rely on forced eviction instead
         int mapMaxSize = Integer.MAX_VALUE;
         String mapName = randomMapName();
 
@@ -76,37 +76,35 @@ public class HDEvictionTest extends EvictionTest {
         mapConfig.getMaxSizeConfig().setSize(mapMaxSize);
         mapConfig.addMapIndexConfig(new MapIndexConfig().setAttribute("age").setOrdered(true));
 
-        //640K ought to be enough for anybody
+        // 640K ought to be enough for anybody
         config.getNativeMemoryConfig()
-              .setSize(new MemorySize(640, KILOBYTES));
+                .setSize(new MemorySize(640, KILOBYTES));
 
         HazelcastInstance node = createHazelcastInstance(config);
         IMap<Object, Object> map = node.getMap(mapName);
 
-        //now let's insert more than it can fit into a memory
+        // now let's insert more than it can fit into a memory
         for (int i = 0; i < 2000; i++) {
             map.put(i, new Person(i));
         }
 
-        //let's check not everything was evicted.
-        //this is an extra step. the main goal is to not fail with NativeOutOfMemoryError
+        // let's check not everything was evicted
+        // this is an extra step, the main goal is to not fail with NativeOutOfMemoryError
         assertTrue(map.size() > 0);
     }
 
     public static class Person implements DataSerializable {
+
         private int age;
-        // Hand picked size - don't change!!
-        public long[] rands = new long[6];
+
+        // hand picked size - don't change!!
+        private long[] rands = new long[6];
 
         public Person() {
         }
 
         public Person(int age) {
             this.age = age;
-        }
-
-        public int getAge() {
-            return age;
         }
 
         @Override

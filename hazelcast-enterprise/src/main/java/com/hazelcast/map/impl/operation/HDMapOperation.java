@@ -12,13 +12,15 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
-import com.hazelcast.util.ExceptionUtil;
 
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
 import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.util.EmptyStatement.ignore;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static java.lang.String.format;
 
 /**
  * Includes retry logic when a map operation fails to put an entry into {@code IMap} due to a
@@ -35,15 +37,18 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
  */
 public abstract class HDMapOperation extends MapOperation {
 
-    private static final int FORCED_EVICTION_RETRY_COUNT = 5;
-
-    protected transient NativeOutOfMemoryError oome;
+    static final int FORCED_EVICTION_RETRY_COUNT = 5;
 
     public HDMapOperation() {
     }
 
     public HDMapOperation(String name) {
         this.name = name;
+    }
+
+    @Override
+    public final int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
     }
 
     @Override
@@ -58,24 +63,24 @@ public abstract class HDMapOperation extends MapOperation {
 
     @Override
     public void innerBeforeRun() throws Exception {
+        assert getPartitionId() != GENERIC_PARTITION_ID : "HDMapOperations are not allowed to run on GENERIC_PARTITION_ID";
         try {
             super.innerBeforeRun();
         } catch (Throwable e) {
             disposeDeferredBlocks();
-            throw ExceptionUtil.rethrow(e, Exception.class);
+            throw rethrow(e, Exception.class);
         }
     }
 
     @Override
-    public final void run() throws Exception {
+    public final void run() {
         try {
-            runInternal();
+            runInternalWithForcedEviction();
         } catch (NativeOutOfMemoryError e) {
-            forceEvictionAndRunInternal();
+            disposeDeferredBlocks();
+            throw e;
         }
     }
-
-    protected abstract void runInternal();
 
     @Override
     public void afterRun() throws Exception {
@@ -111,11 +116,12 @@ public abstract class HDMapOperation extends MapOperation {
         }
     }
 
+    protected abstract void runInternal();
+
     protected final void disposeDeferredBlocks() {
         ensureInitialized();
 
         int partitionId = getPartitionId();
-        // the operation might be run on the generic thread and not be associated with a partition, e.g. HDQueryOperation
         if (partitionId != GENERIC_PARTITION_ID) {
             RecordStore recordStore = mapServiceContext.getExistingRecordStore(partitionId, name);
             if (recordStore != null) {
@@ -133,56 +139,114 @@ public abstract class HDMapOperation extends MapOperation {
         }
     }
 
-    private void forceEvictionAndRunInternal() throws Exception {
-        tryForceEviction();
-
-        tryEvictAll();
-
-        if (oome != null) {
-            disposeDeferredBlocks();
-            throw oome;
-        }
-    }
-
-    private void tryForceEviction() {
-        final ILogger logger = getLogger();
-
-        for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
-            try {
-                if (logger.isFineEnabled()) {
-                    logger.fine("Applying force eviction on current record store!");
-                }
-                // if there is still an OOME, apply eviction on current RecordStore and try again
-                forceEviction(recordStore);
-                runInternal();
-                oome = null;
-                break;
-            } catch (NativeOutOfMemoryError e) {
-                oome = e;
-            }
-        }
-
-        if (oome != null) {
-            for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
-                try {
-                    if (logger.isFineEnabled()) {
-                        logger.fine("Applying force eviction on other record stores owned by same partition thread!");
-                    }
-                    // if there is still an OOME, apply for eviction on others and try again
-                    forceEvictionOnOthers();
-                    runInternal();
-                    oome = null;
-                    break;
-                } catch (NativeOutOfMemoryError e) {
-                    oome = e;
-                }
+    /**
+     * Executes the {@link #runInternal()} method and forces eviction in case of a {@link NativeOutOfMemoryError}.
+     *
+     * @throws NativeOutOfMemoryError from the last {@link #runInternal()} call, if all evictions were not effective
+     */
+    private void runInternalWithForcedEviction() {
+        try {
+            runInternal();
+        } catch (NativeOutOfMemoryError e) {
+            if (!forceEvictionAndRetry()) {
+                evictAllAndRetry();
             }
         }
     }
 
     /**
-     * Force eviction on other NATIVE in-memory-formatted record-stores of this partition thread.
-     * This will not evict from any record store in case this operation is run on a generic thread.
+     * Executes {@link HDEvictorImpl#forceEvict(RecordStore)} calls on local and other RecordStores
+     * and retries the {@link #runInternal()} method.
+     *
+     * @return {@code true} if the forced eviction was successful, {@code false} otherwise
+     */
+    private boolean forceEvictionAndRetry() {
+        ILogger logger = getLogger();
+
+        for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
+            try {
+                if (logger.isFineEnabled()) {
+                    logger.fine(format("Applying forced eviction on current RecordStore (map %s, partitionId: %d)!",
+                            name, getPartitionId()));
+                }
+                // if there is still an NOOME, apply eviction on current RecordStore and try again
+                forceEviction(recordStore);
+                runInternal();
+                return true;
+            } catch (NativeOutOfMemoryError e) {
+                ignore(e);
+            }
+        }
+
+        for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
+            try {
+                if (logger.isFineEnabled()) {
+                    logger.fine(format("Applying forced eviction on other RecordStores owned by same the partition thread"
+                            + " (map %s, partitionId: %d", name, getPartitionId()));
+                }
+                // if there is still an NOOME, apply for eviction on others and try again
+                forceEvictionOnOthers();
+                runInternal();
+                return true;
+            } catch (NativeOutOfMemoryError e) {
+                ignore(e);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Executes {@link RecordStore#evictAll(boolean)} calls on local and other RecordStores
+     * and retries the {@link #runInternal()} method.
+     *
+     * @throws NativeOutOfMemoryError from the last {@link #runInternal()} call, if all evictions were not effective
+     */
+    private void evictAllAndRetry() {
+        ILogger logger = getLogger();
+        boolean isBackup = this instanceof BackupOperation;
+
+        if (recordStore != null) {
+            try {
+                if (logger.isLoggable(Level.INFO)) {
+                    logger.info("Evicting all entries in current RecordStores because force eviction was not enough!");
+                }
+                // if there is still NOOME, clear the current RecordStore and try again
+                recordStore.evictAll(isBackup);
+                runInternal();
+                return;
+            } catch (NativeOutOfMemoryError e) {
+                ignore(e);
+            }
+        }
+
+        if (logger.isLoggable(Level.INFO)) {
+            logger.info("Evicting all entries in other RecordStores owned by same the partition thread"
+                    + " because force eviction was not enough!");
+        }
+        // if there is still NOOME, for the last chance, evict other record stores and try again
+        evictAll(isBackup);
+        runInternal();
+    }
+
+    /**
+     * Force eviction on this particular RecordStore.
+     */
+    private void forceEviction(RecordStore recordStore) {
+        if (recordStore == null) {
+            return;
+        }
+        MapContainer mapContainer = recordStore.getMapContainer();
+        InMemoryFormat inMemoryFormat = mapContainer.getMapConfig().getInMemoryFormat();
+        if (inMemoryFormat == NATIVE) {
+            Evictor evictor = mapContainer.getEvictor();
+            if (evictor instanceof HDEvictorImpl) {
+                ((HDEvictorImpl) evictor).forceEvict(recordStore);
+            }
+        }
+    }
+
+    /**
+     * Force eviction on other NATIVE in-memory-formatted RecordStores of this partition thread.
      */
     private void forceEvictionOnOthers() {
         NodeEngine nodeEngine = getNodeEngine();
@@ -190,6 +254,7 @@ public abstract class HDMapOperation extends MapOperation {
         InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
         int threadCount = operationService.getPartitionThreadCount();
         int mod = getPartitionId() % threadCount;
+
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
                 ConcurrentMap<String, RecordStore> maps = mapServiceContext.getPartitionContainer(partitionId).getMaps();
@@ -201,58 +266,9 @@ public abstract class HDMapOperation extends MapOperation {
     }
 
     /**
-     * Force eviction on this particular record-store.
+     * Evicts all RecordStores on the partitions owned by the partition thread of current partition.
      */
-    private void forceEviction(RecordStore recordStore) {
-        MapContainer mapContainer = recordStore.getMapContainer();
-        InMemoryFormat inMemoryFormat = mapContainer.getMapConfig().getInMemoryFormat();
-        if (NATIVE == inMemoryFormat) {
-            Evictor evictor = mapContainer.getEvictor();
-            if (evictor instanceof HDEvictorImpl) {
-                ((HDEvictorImpl) evictor).forceEvict(recordStore);
-            }
-        }
-    }
-
-    private void tryEvictAll() {
-        ILogger logger = getLogger();
-        boolean backup = this instanceof BackupOperation;
-
-        if (oome != null) {
-            try {
-                if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Evicting all entries in current record-store because force eviction was not enough!");
-                }
-                // if there is still OOME, clear the current RecordStore and try again
-                recordStore.evictAll(backup);
-                runInternal();
-                oome = null;
-            } catch (NativeOutOfMemoryError e) {
-                oome = e;
-            }
-        }
-
-        if (oome != null) {
-            try {
-                if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Evicting all entries in other record-stores owned by same partition thread "
-                            + "because force eviction was not enough!");
-                }
-                // if there is still OOME, for the last chance, evict other record stores and try again
-                evictAll(backup);
-                runInternal();
-                oome = null;
-            } catch (NativeOutOfMemoryError e) {
-                oome = e;
-            }
-        }
-    }
-
-    /**
-     * Evicts all record-stores on the partitions owned by partition thread of current partition.
-     * This will not evict from any record store in case this operation is run on a generic thread.
-     */
-    private void evictAll(boolean backup) {
+    private void evictAll(boolean isBackup) {
         NodeEngine nodeEngine = getNodeEngine();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
@@ -264,16 +280,11 @@ public abstract class HDMapOperation extends MapOperation {
                 ConcurrentMap<String, RecordStore> maps = mapServiceContext.getPartitionContainer(partitionId).getMaps();
                 for (RecordStore recordStore : maps.values()) {
                     MapConfig mapConfig = recordStore.getMapContainer().getMapConfig();
-                    if (NONE != mapConfig.getEvictionPolicy() && NATIVE == mapConfig.getInMemoryFormat()) {
-                        recordStore.evictAll(backup);
+                    if (mapConfig.getEvictionPolicy() != NONE && mapConfig.getInMemoryFormat() == NATIVE) {
+                        recordStore.evictAll(isBackup);
                     }
                 }
             }
         }
-    }
-
-    @Override
-    public final int getFactoryId() {
-        return EnterpriseMapDataSerializerHook.F_ID;
     }
 }

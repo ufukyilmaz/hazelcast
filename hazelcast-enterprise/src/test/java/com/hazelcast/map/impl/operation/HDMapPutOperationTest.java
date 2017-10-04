@@ -1,11 +1,11 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -18,7 +18,6 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore
 public class HDMapPutOperationTest extends AbstractHDOperationTest {
 
     private static final String MAP_NAME = "HDMapPutOperationTest";
@@ -59,12 +58,13 @@ public class HDMapPutOperationTest extends AbstractHDOperationTest {
     }
 
     private void testRunInternal() throws Exception {
-        Data dataKey = mock(Data.class);
-        Data dataValue = mock(Data.class);
+        Data dataKey = mock(HeapData.class);
+        Data dataValue = mock(HeapData.class);
 
         configureBackups();
         configureRecordStore(PUT);
 
+        // HDPutOperation
         List<Operation> list = new ArrayList<Operation>(ITEM_COUNT);
         for (int i = 0; i < ITEM_COUNT; i++) {
             HDPutOperation operation = new HDPutOperation(MAP_NAME, dataKey, dataValue, 0);
@@ -79,6 +79,7 @@ public class HDMapPutOperationTest extends AbstractHDOperationTest {
         verifyRecordStoreAfterOperation(PUT, false);
         verifyHDEvictor(PUT);
 
+        // HDPutBackupOperation
         if (syncBackupCount > 0) {
             for (Operation operation : list) {
                 operation.setPartitionId(PARTITION_ID);

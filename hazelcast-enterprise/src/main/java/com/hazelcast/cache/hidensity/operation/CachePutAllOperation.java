@@ -23,8 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Cache PutAll Operation is the operation used by put all operation.
- * Basicly it puts the entries (keys and values) as batch.
+ * Executes the putAll() operation on HD caches.
  */
 public class CachePutAllOperation
         extends BackupAwareHiDensityCacheOperation
@@ -45,18 +44,23 @@ public class CachePutAllOperation
     }
 
     @Override
-    protected void runInternal() throws Exception {
-        final CacheService service = getService();
-        String callerUuid = getCallerUuid();
+    protected void beforeRunInternal() {
+        super.beforeRunInternal();
 
         int backups = getSyncBackupCount() + getAsyncBackupCount();
         if (backups > 0) {
             cacheBackupRecordStore = new CacheBackupRecordStore(entries.size());
         }
+    }
 
-        Iterator<Map.Entry<Data, Data>> iter = entries.iterator();
-        while (iter.hasNext()) {
-            Map.Entry<Data, Data> entry = iter.next();
+    @Override
+    protected void runInternal() {
+        final CacheService service = getService();
+        String callerUuid = getCallerUuid();
+
+        Iterator<Map.Entry<Data, Data>> iterator = entries.iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Data, Data> entry = iterator.next();
             Data key = entry.getKey();
             Data value = entry.getValue();
             final CacheRecord record = cache.put(key, value, expiryPolicy, callerUuid, completionId);
@@ -87,20 +91,22 @@ public class CachePutAllOperation
                 publisher.publishWanReplicationUpdate(name, view);
             }
 
-            iter.remove();
+            // we remove each fully processed entry, so it won't be processed
+            // again on a continuation of the operation after a NativeOOME
+            iterator.remove();
         }
     }
 
     @Override
     protected void disposeInternal(EnterpriseSerializationService serializationService) {
-        Iterator<Map.Entry<Data, Data>> iter = entries.iterator();
-        while (iter.hasNext()) {
-            Map.Entry<Data, Data> entry = iter.next();
+        Iterator<Map.Entry<Data, Data>> iterator = entries.iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Data, Data> entry = iterator.next();
             Data key = entry.getKey();
             Data value = entry.getValue();
             serializationService.disposeData(key);
             serializationService.disposeData(value);
-            iter.remove();
+            iterator.remove();
         }
     }
 
@@ -147,5 +153,4 @@ public class CachePutAllOperation
             entries.add(new AbstractMap.SimpleImmutableEntry<Data, Data>(key, value));
         }
     }
-
 }

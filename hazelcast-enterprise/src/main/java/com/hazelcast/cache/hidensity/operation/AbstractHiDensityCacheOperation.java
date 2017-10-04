@@ -29,8 +29,8 @@ abstract class AbstractHiDensityCacheOperation
         extends AbstractNamedOperation
         implements PartitionAwareOperation, ServiceNamespaceAware, IdentifiedDataSerializable {
 
-    protected static final int FORCED_EVICTION_RETRY_COUNT =
-            ICacheRecordStore.UNIT_PERCENTAGE / HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
+    private static final int FORCED_EVICTION_RETRY_COUNT
+            = ICacheRecordStore.UNIT_PERCENTAGE / HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
 
     protected Object response;
     protected int completionId = MutableOperation.IGNORE_COMPLETION;
@@ -58,8 +58,7 @@ abstract class AbstractHiDensityCacheOperation
         this(name, completionId, false);
     }
 
-    protected AbstractHiDensityCacheOperation(String name, int completionId,
-                                              boolean dontCreateCacheRecordStoreIfNotExist) {
+    protected AbstractHiDensityCacheOperation(String name, int completionId, boolean dontCreateCacheRecordStoreIfNotExist) {
         super(name);
         this.completionId = completionId;
         this.dontCreateCacheRecordStoreIfNotExist = dontCreateCacheRecordStoreIfNotExist;
@@ -70,6 +69,36 @@ abstract class AbstractHiDensityCacheOperation
             cacheService = getService();
             serializationService = cacheService.getSerializationService();
         }
+    }
+
+    @Override
+    public int getFactoryId() {
+        return HiDensityCacheDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public String getServiceName() {
+        return EnterpriseCacheService.SERVICE_NAME;
+    }
+
+    @Override
+    public ServiceNamespace getServiceNamespace() {
+        ICacheRecordStore recordStore = cache;
+        if (recordStore == null) {
+            EnterpriseCacheService service = getService();
+            recordStore = service.getOrCreateRecordStore(name, getPartitionId());
+        }
+        return recordStore.getObjectNamespace();
+    }
+
+    @Override
+    public boolean returnsResponse() {
+        return true;
+    }
+
+    @Override
+    public final Object getResponse() {
+        return response;
     }
 
     @Override
@@ -98,15 +127,6 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     protected void beforeRunInternal() {
-
-    }
-
-    private int forceEvict() {
-        return cacheService.forceEvict(name, getPartitionId());
-    }
-
-    private int forceEvictOnOthers() {
-        return cacheService.forceEvictOnOthers(name, getPartitionId());
     }
 
     @Override
@@ -117,6 +137,70 @@ abstract class AbstractHiDensityCacheOperation
             forceEvictAndRunInternal();
         }
         runCompleted = true;
+    }
+
+    protected abstract void runInternal() throws Exception;
+
+    @Override
+    public void afterRun() throws Exception {
+        super.afterRun();
+
+        disposeDeferredBlocks();
+    }
+
+    @Override
+    public void onExecutionFailure(Throwable e) {
+        dispose();
+        super.onExecutionFailure(e);
+    }
+
+    protected final void dispose() {
+        ensureInitialized();
+
+        disposeDeferredBlocks();
+
+        try {
+            disposeInternal(serializationService);
+        } catch (Throwable e) {
+            getLogger().warning("Error while disposing internal...", e);
+            // TODO: ignored error at the moment
+            // a double free() error may be thrown if an operation fails
+            // since internally key/value references are freed on OOME
+        }
+    }
+
+    protected void disposeInternal(EnterpriseSerializationService serializationService) {
+    }
+
+    @Override
+    public void logError(Throwable e) {
+        ILogger logger = getLogger();
+        if (e instanceof NativeOutOfMemoryError) {
+            Level level = this instanceof BackupOperation ? Level.FINEST : Level.WARNING;
+            logger.log(level, "Cannot complete operation! -> " + e.getMessage());
+        } else {
+            super.logError(e);
+        }
+    }
+
+    @Override
+    protected void writeInternal(ObjectDataOutput out) throws IOException {
+        super.writeInternal(out);
+        out.writeInt(completionId);
+    }
+
+    @Override
+    protected void readInternal(ObjectDataInput in) throws IOException {
+        super.readInternal(in);
+        completionId = in.readInt();
+    }
+
+    public int getCompletionId() {
+        return completionId;
+    }
+
+    public void setCompletionId(int completionId) {
+        this.completionId = completionId;
     }
 
     private void forceEvictAndRunInternal() throws Exception {
@@ -166,6 +250,14 @@ abstract class AbstractHiDensityCacheOperation
         }
     }
 
+    private void forceEvict() {
+        cacheService.forceEvict(name, getPartitionId());
+    }
+
+    private void forceEvictOnOthers() {
+        cacheService.forceEvictOnOthers(name, getPartitionId());
+    }
+
     private void tryRunInternalByClearing() throws Exception {
         final ILogger logger = getLogger();
 
@@ -187,8 +279,8 @@ abstract class AbstractHiDensityCacheOperation
         if (oome != null) {
             try {
                 if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Clearing other record stores owned by same partition thread "
-                            + "because force eviction was not enough!");
+                    logger.info("Clearing other record stores owned by same partition thread"
+                            + " because force eviction was not enough!");
                 }
                 // if there still is OOME, for the last chance,
                 // clear other record stores and try again
@@ -198,23 +290,6 @@ abstract class AbstractHiDensityCacheOperation
             } catch (NativeOutOfMemoryError e) {
                 oome = e;
             }
-        }
-    }
-
-    protected abstract void runInternal() throws Exception;
-
-    protected final void dispose() {
-        ensureInitialized();
-
-        disposeDeferredBlocks();
-
-        try {
-            disposeInternal(serializationService);
-        } catch (Throwable e) {
-            getLogger().warning("Error while disposing internal...", e);
-            // TODO ignored error at the moment.
-            // a double free() error may be thrown if an operation fails
-            // since internally key/value references are freed on OOME
         }
     }
 
@@ -229,84 +304,6 @@ abstract class AbstractHiDensityCacheOperation
         } catch (Throwable e) {
             getLogger().warning("Error while freeing deferred memory blocks...", e);
         }
-    }
-
-    protected void disposeInternal(EnterpriseSerializationService serializationService) {
-
-    }
-
-    @Override
-    public void afterRun() throws Exception {
-        super.afterRun();
-
-        disposeDeferredBlocks();
-    }
-
-    @Override
-    public boolean returnsResponse() {
-        return true;
-    }
-
-    @Override
-    public final Object getResponse() {
-        return response;
-    }
-
-    @Override
-    public void onExecutionFailure(Throwable e) {
-        dispose();
-        super.onExecutionFailure(e);
-    }
-
-    @Override
-    public void logError(Throwable e) {
-        ILogger logger = getLogger();
-        if (e instanceof NativeOutOfMemoryError) {
-            Level level = this instanceof BackupOperation ? Level.FINEST : Level.WARNING;
-            logger.log(level, "Cannot complete operation! -> " + e.getMessage());
-        } else {
-            super.logError(e);
-        }
-    }
-
-    public int getCompletionId() {
-        return completionId;
-    }
-
-    public void setCompletionId(int completionId) {
-        this.completionId = completionId;
-    }
-
-    @Override
-    public ServiceNamespace getServiceNamespace() {
-        ICacheRecordStore recordStore = cache;
-        if (recordStore == null) {
-            EnterpriseCacheService service = getService();
-            recordStore = service.getOrCreateRecordStore(name, getPartitionId());
-        }
-        return recordStore.getObjectNamespace();
-    }
-
-    @Override
-    protected void writeInternal(ObjectDataOutput out) throws IOException {
-        super.writeInternal(out);
-        out.writeInt(completionId);
-    }
-
-    @Override
-    protected void readInternal(ObjectDataInput in) throws IOException {
-        super.readInternal(in);
-        completionId = in.readInt();
-    }
-
-    @Override
-    public String getServiceName() {
-        return EnterpriseCacheService.SERVICE_NAME;
-    }
-
-    @Override
-    public int getFactoryId() {
-        return HiDensityCacheDataSerializerHook.F_ID;
     }
 
     public static Data readHeapOperationData(ObjectDataInput in) throws IOException {

@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -27,12 +28,14 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<HDRecord> {
 
     private final HiDensityRecordProcessor recordProcessor;
+    private final HiDensityStorageInfo storageInfo;
     private final EntryCostEstimator<NativeMemoryData, MemoryBlock> entryCostEstimator;
     private final HDStorageSCHM map;
     private volatile int entryCount;
 
     public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
+        this.storageInfo = ((DefaultHiDensityRecordProcessor) recordProcessor).getStorageInfo();
         this.entryCostEstimator = new NativeMapEntryCostEstimator(recordProcessor);
         this.map = new HDStorageSCHM(recordProcessor, serializationService);
     }
@@ -54,6 +57,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         addDeferredDispose(oldRecord);
 
         entryCostEstimator.adjustEstimateBy(-entryCostEstimator.calculateEntryCost((NativeMemoryData) key, record));
+        storageInfo.decreaseEntryCount();
         setEntryCount(map.size());
     }
 
@@ -80,6 +84,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
                     entryCostEstimator.adjustEstimateBy(entryCostEstimator.calculateValueCost(record));
                 } else {
                     entryCostEstimator.adjustEstimateBy(entryCostEstimator.calculateEntryCost(nativeKey, record));
+                    storageInfo.increaseEntryCount();
                 }
             } else {
                 addDeferredDispose(record);
@@ -134,8 +139,11 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
             // otherwise will cause a SIGSEGV
             return;
         }
+
+        long entryCount = map.size();
         map.clear();
         setEntryCount(0);
+        storageInfo.removeEntryCount(entryCount);
         entryCostEstimator.reset();
     }
 
@@ -175,9 +183,12 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
             // otherwise will cause a SIGSEGV
             return;
         }
+
+        long entryCount = map.size();
         disposeDeferredBlocks();
         map.dispose();
         setEntryCount(0);
+        storageInfo.removeEntryCount(entryCount);
         entryCostEstimator.reset();
     }
 

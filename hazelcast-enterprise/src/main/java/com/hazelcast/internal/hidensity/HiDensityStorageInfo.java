@@ -41,6 +41,7 @@ public class HiDensityStorageInfo {
         return entryCount.decrementAndGet();
     }
 
+    @Probe(name = "entryCount", level = MANDATORY)
     public long getEntryCount() {
         return entryCount.get();
     }
@@ -53,6 +54,7 @@ public class HiDensityStorageInfo {
         return usedMemory.addAndGet(-size);
     }
 
+    @Probe(name = "usedMemory", level = MANDATORY)
     public long getUsedMemory() {
         return usedMemory.get();
     }

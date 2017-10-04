@@ -224,4 +224,8 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
     public EnterpriseSerializationService getSerializationService() {
         return serializationService;
     }
+
+    public HiDensityStorageInfo getStorageInfo() {
+        return storageInfo;
+    }
 }

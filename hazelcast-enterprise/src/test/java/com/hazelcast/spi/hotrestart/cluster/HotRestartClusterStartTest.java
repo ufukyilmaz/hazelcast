@@ -3,15 +3,19 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.core.IndeterminateOperationStateException;
 import com.hazelcast.core.MembershipAdapter;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
+import com.hazelcast.partition.IndeterminateOperationStateExceptionTest.PrimaryOperation;
+import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.RandomPicker;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -21,7 +25,9 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.internal.partition.AntiEntropyCorrectnessTest.setBackupPacketDropFilter;
@@ -29,6 +35,7 @@ import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStar
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -269,5 +276,98 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
         for (int i = 0; i < entryCount; i++) {
             assertEquals(i, map.get(i));
         }
+    }
+
+    @Test
+    public void test_backupOperationNotAllowed_untilStartupIsCompleted() throws Exception {
+        Assume.assumeTrue("Restarting a single node, address change is irrelevant", addressChangePolicy == NONE);
+
+        HazelcastInstance[] instances = startNewInstances(2);
+        warmUpPartitions(instances);
+        changeClusterStateEventually(instances[0], ClusterState.FROZEN);
+
+        final Address restartingNodeAddress = getAddress(instances[1]);
+        instances[1].shutdown();
+
+        final CountDownLatch dataLoadStartedLatch = new CountDownLatch(1);
+        final CountDownLatch dataLoadResumeLatch = new CountDownLatch(1);
+        spawn(new Callable<HazelcastInstance>() {
+            @Override
+            public HazelcastInstance call() throws Exception {
+                return restartInstance(restartingNodeAddress, new ClusterHotRestartEventListener() {
+                    @Override
+                    public void onDataLoadStart(Address address) {
+                        dataLoadStartedLatch.countDown();
+                        assertOpenEventually(dataLoadResumeLatch);
+                    }
+                });
+            }
+        });
+
+        assertClusterSizeEventually(2, instances[0]);
+        assertOpenEventually(dataLoadStartedLatch);
+
+        int partitionId = getPartitionId(instances[0]);
+        InternalCompletableFuture<Object> future = getOperationService(instances[0])
+                .createInvocationBuilder("", new PrimaryOperation(), partitionId)
+                .setFailOnIndeterminateOperationState(true)
+                .invoke();
+
+        try {
+            future.get();
+            fail("Backups should not be allowed before startup is completed!");
+        } catch (ExecutionException e) {
+            assertInstanceOf(IndeterminateOperationStateException.class, e.getCause());
+        }
+        dataLoadResumeLatch.countDown();
+    }
+
+    @Test
+    public void test_antiEntropyCheckNotAllowed_untilStartupIsCompleted() throws Exception {
+        Assume.assumeTrue("Restarting a single node, address change is irrelevant", addressChangePolicy == NONE);
+
+        final HazelcastInstance[] instances = startNewInstances(2);
+        warmUpPartitions(instances);
+        changeClusterStateEventually(instances[0], ClusterState.FROZEN);
+
+        final Address restartingNodeAddress = getAddress(instances[1]);
+        instances[1].shutdown();
+
+        IMap<Object, Object> map = instances[0].getMap(mapNames[1]);
+        String key = generateKeyOwnedBy(instances[0]);
+        map.set(key, "value");
+
+        final CountDownLatch dataLoadStartedLatch = new CountDownLatch(1);
+        final CountDownLatch dataLoadResumeLatch = new CountDownLatch(1);
+        spawn(new Callable<HazelcastInstance>() {
+            @Override
+            public HazelcastInstance call() throws Exception {
+                return restartInstance(restartingNodeAddress, new ClusterHotRestartEventListener() {
+                    @Override
+                    public void onDataLoadStart(Address address) {
+                        dataLoadStartedLatch.countDown();
+                        assertOpenEventually(dataLoadResumeLatch);
+                    }
+                });
+            }
+        });
+
+        assertClusterSizeEventually(2, instances[0]);
+        assertOpenEventually(dataLoadStartedLatch);
+
+        assertTrueAllTheTime(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                assertFalse(isInstanceInSafeState(instances[0]));
+            }
+        }, 5);
+
+        dataLoadResumeLatch.countDown();
+
+        assertTrueEventually(new AssertTask() {
+            public void run() {
+                assertTrue(isInstanceInSafeState(instances[0]));
+            }
+        });
     }
 }

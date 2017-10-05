@@ -13,17 +13,14 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hazelcast.map.impl.operation.AbstractHDOperationTest.OperationType.PUT;
+import static com.hazelcast.map.impl.operation.AbstractHDMapOperationTest.OperationType.PUT;
 import static org.mockito.Mockito.mock;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class HDMapPutOperationTest extends AbstractHDOperationTest {
+public class HDPutOperationTest extends AbstractHDMapOperationTest {
 
-    private static final String MAP_NAME = "HDMapPutOperationTest";
-    private static final int ITEM_COUNT = 5;
-    private static final int PARTITION_COUNT = 3;
-    private static final int PARTITION_ID = 23;
+    private static final String MAP_NAME = "HDPutOperationTest";
 
     @Test
     public void testRun() throws Exception {
@@ -58,34 +55,31 @@ public class HDMapPutOperationTest extends AbstractHDOperationTest {
     }
 
     private void testRunInternal() throws Exception {
-        Data dataKey = mock(HeapData.class);
-        Data dataValue = mock(HeapData.class);
-
         configureBackups();
         configureRecordStore(PUT);
 
-        // HDPutOperation
-        List<Operation> list = new ArrayList<Operation>(ITEM_COUNT);
-        for (int i = 0; i < ITEM_COUNT; i++) {
-            HDPutOperation operation = new HDPutOperation(MAP_NAME, dataKey, dataValue, 0);
-            prepareOperation(operation);
+        Data dataKey = mock(HeapData.class);
+        Data dataValue = mock(HeapData.class);
 
-            executeMapOperation(operation, PARTITION_ID);
+        // HDPutOperation
+        List<Operation> list = new ArrayList<Operation>(ENTRY_COUNT);
+        for (int i = 0; i < ENTRY_COUNT; i++) {
+            HDPutOperation operation = new HDPutOperation(MAP_NAME, dataKey, dataValue, 0);
+            executeOperation(operation, PARTITION_ID);
 
             if (syncBackupCount > 0) {
                 list.add(operation.getBackupOperation());
             }
         }
-        verifyRecordStoreAfterOperation(PUT, false);
+        verifyRecordStoreAfterRun(PUT, false);
         verifyHDEvictor(PUT);
 
         // HDPutBackupOperation
         if (syncBackupCount > 0) {
             for (Operation operation : list) {
-                operation.setPartitionId(PARTITION_ID);
-                executeMapOperation(operation, PARTITION_ID);
+                executeOperation(operation, PARTITION_ID);
             }
-            verifyRecordStoreAfterOperation(PUT, true);
+            verifyRecordStoreAfterRun(PUT, true);
             verifyHDEvictor(PUT);
         }
     }
@@ -93,15 +87,5 @@ public class HDMapPutOperationTest extends AbstractHDOperationTest {
     @Override
     String getMapName() {
         return MAP_NAME;
-    }
-
-    @Override
-    int getItemCount() {
-        return ITEM_COUNT;
-    }
-
-    @Override
-    int getPartitionCount() {
-        return PARTITION_COUNT;
     }
 }

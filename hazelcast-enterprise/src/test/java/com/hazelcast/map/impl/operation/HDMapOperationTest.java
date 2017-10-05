@@ -13,11 +13,9 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class HDMapOperationTest extends AbstractHDOperationTest {
+public class HDMapOperationTest extends AbstractHDMapOperationTest {
 
     private static final String MAP_NAME = "HDMapOperationTest";
-    private static final int ITEM_COUNT = 5;
-    private static final int PARTITION_COUNT = 3;
 
     private TestHDOperation operation;
 
@@ -27,7 +25,7 @@ public class HDMapOperationTest extends AbstractHDOperationTest {
         super.setUp();
 
         operation = new TestHDOperation();
-        prepareOperation(operation);
+        prepareOperation(operation, PARTITION_ID);
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -61,16 +59,6 @@ public class HDMapOperationTest extends AbstractHDOperationTest {
     @Override
     String getMapName() {
         return MAP_NAME;
-    }
-
-    @Override
-    int getItemCount() {
-        return ITEM_COUNT;
-    }
-
-    @Override
-    int getPartitionCount() {
-        return PARTITION_COUNT;
     }
 
     private static class TestHDOperation extends HDMapOperation {

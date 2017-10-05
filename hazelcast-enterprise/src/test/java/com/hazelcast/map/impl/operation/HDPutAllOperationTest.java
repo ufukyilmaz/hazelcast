@@ -9,16 +9,13 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.map.impl.operation.AbstractHDOperationTest.OperationType.PUT_ALL;
+import static com.hazelcast.map.impl.operation.AbstractHDMapOperationTest.OperationType.PUT_ALL;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class HDPutAllOperationTest extends AbstractHDOperationTest {
+public class HDPutAllOperationTest extends AbstractHDMapOperationTest {
 
     private static final String MAP_NAME = "HDPutAllOperationTest";
-    private static final int ITEM_COUNT = 5;
-    private static final int PARTITION_COUNT = 3;
-    private static final int PARTITION_ID = 23;
 
     private MapEntries mapEntries;
 
@@ -27,7 +24,7 @@ public class HDPutAllOperationTest extends AbstractHDOperationTest {
     public void setUp() {
         super.setUp();
 
-        mapEntries = createMapEntries(ITEM_COUNT);
+        mapEntries = createMapEntries(ENTRY_COUNT);
     }
 
     @Test
@@ -68,33 +65,25 @@ public class HDPutAllOperationTest extends AbstractHDOperationTest {
 
         // HDPutAllOperation
         HDPutAllOperation operation = new HDPutAllOperation(MAP_NAME, mapEntries);
-        executeMapOperation(operation, PARTITION_ID);
+        executeOperation(operation, PARTITION_ID);
         assertBackupConfiguration(operation);
 
-        verifyRecordStoreAfterOperation(PUT_ALL, false);
+        verifyRecordStoreAfterRun(PUT_ALL, false);
+        verifyNearCacheInvalidatorAfterRun();
+        verifyHDEvictor(PUT_ALL);
 
         // HDPutAllBackupOperation
         if (syncBackupCount > 0) {
-            executeMapOperation(operation.getBackupOperation(), PARTITION_ID);
-        }
+            executeOperation(operation.getBackupOperation(), PARTITION_ID);
 
-        verifyRecordStoreAfterOperation(PUT_ALL, true);
-        verifyNearCacheInvalidatorAfterOperation();
-        verifyHDEvictor(PUT_ALL);
+            verifyRecordStoreAfterRun(PUT_ALL, true);
+            verifyNearCacheInvalidatorAfterRun();
+            verifyHDEvictor(PUT_ALL);
+        }
     }
 
     @Override
     String getMapName() {
         return MAP_NAME;
-    }
-
-    @Override
-    int getItemCount() {
-        return ITEM_COUNT;
-    }
-
-    @Override
-    int getPartitionCount() {
-        return PARTITION_COUNT;
     }
 }

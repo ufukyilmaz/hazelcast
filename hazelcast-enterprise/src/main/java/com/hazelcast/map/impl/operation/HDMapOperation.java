@@ -21,6 +21,8 @@ import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
 /**
+ * This class should be extended if operation runs by partition operation threads.
+ *
  * Includes retry logic when a map operation fails to put an entry into {@code IMap} due to a
  * {@link NativeOutOfMemoryError}.
  * <p>

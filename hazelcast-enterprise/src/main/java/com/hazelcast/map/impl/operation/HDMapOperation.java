@@ -123,12 +123,9 @@ public abstract class HDMapOperation extends MapOperation {
     protected final void disposeDeferredBlocks() {
         ensureInitialized();
 
-        int partitionId = getPartitionId();
-        if (partitionId != GENERIC_PARTITION_ID) {
-            RecordStore recordStore = mapServiceContext.getExistingRecordStore(partitionId, name);
-            if (recordStore != null) {
-                recordStore.disposeDeferredBlocks();
-            }
+        RecordStore recordStore = mapServiceContext.getExistingRecordStore(getPartitionId(), name);
+        if (recordStore != null) {
+            recordStore.disposeDeferredBlocks();
         }
     }
 

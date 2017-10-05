@@ -1,7 +1,6 @@
 package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.Node;
 import com.hazelcast.map.impl.MapService;
@@ -41,23 +40,22 @@ public class HDBasicMapTest extends BasicMapTest {
     }
 
     /**
-     * Asserts that the exception handling logic for a HD map operation does not try to load the record store
-     * when the operation is not run on a partition thread.
-     * See: https://github.com/hazelcast/hazelcast-enterprise/issues/1735
+     * Asserts that an operation which extends {@link HDMapOperation} is not allowed to run on the generic partition thread.
      */
-    @Test
+    @Test(expected = AssertionError.class)
     @RequireAssertEnabled
-    public void HDMapOperationRunOnGenericThreadDoesNotDisposeDeferredBlocks() {
-        final HazelcastInstance instance = getInstance();
-        final Node node = getNode(instance);
-        node.nodeEngine.getOperationService().invokeOnTarget(MapService.SERVICE_NAME,
-                new ExceptionThrowingOp("mappy"), node.getThisAddress());
+    public void whenHDMapOperationIsRunOnGenericThread_thenTriggerAssertion() {
+        GenericThreadOperation operation = new GenericThreadOperation("myMap");
+
+        Node node = getNode(getInstance());
+        node.nodeEngine.getOperationService().invokeOnTarget(MapService.SERVICE_NAME, operation, node.getThisAddress());
     }
 
-    public static class ExceptionThrowingOp extends HDMapOperation {
+    public static class GenericThreadOperation extends HDMapOperation {
 
-        ExceptionThrowingOp(String mapName) {
+        GenericThreadOperation(String mapName) {
             super(mapName);
+            setPartitionId(GENERIC_PARTITION_ID);
         }
 
         @Override
@@ -67,7 +65,7 @@ public class HDBasicMapTest extends BasicMapTest {
 
         @Override
         protected void runInternal() {
-            throw new RuntimeException("BOOM!");
+            throw new RuntimeException("This will not be executed!");
         }
     }
 }

@@ -445,9 +445,21 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     }
 
     public void shutdown() {
+        logger.info("Shutting down hot-restart service.");
+        long start = System.nanoTime();
+
+        logger.fine("Shutting down cluster metadata manager");
         clusterMetadataManager.shutdown();
+
+        logger.fine("Closing all hot-restart stores");
         closeHotRestartStores();
+
         directoryLock.release();
+
+        if (logger.isFineEnabled()) {
+            long end = System.nanoTime();
+            logger.fine("Hot-restart service shutdown took " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms.");
+        }
     }
 
     private int persistedStoreCount() {
@@ -862,9 +874,12 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         final FileLock lock;
 
         private DirectoryLock() {
-            File lockFile = new File(hotRestartHome, LOCK_FILE_NAME);
+            File lockFile = getFile();
             channel = openChannel(lockFile);
             lock = acquireLock(lockFile);
+            if (logger.isFineEnabled()) {
+                logger.fine("Acquired lock on " + lockFile.getAbsolutePath());
+            }
         }
 
         private FileLock acquireLock(File lockFile) {
@@ -897,13 +912,19 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         }
 
         void release() {
+            if (logger.isFineEnabled()) {
+                logger.fine("Releasing lock on " + getFile().getAbsolutePath());
+            }
             try {
                 lock.release();
                 channel.close();
             } catch (IOException e) {
-                logger.severe("Problem while releasing the lock and closing channel on "
-                        + new File(hotRestartHome, LOCK_FILE_NAME), e);
+                logger.severe("Problem while releasing the lock and closing channel on " + getFile(), e);
             }
+        }
+
+        private File getFile() {
+            return new File(hotRestartHome, LOCK_FILE_NAME);
         }
     }
 }

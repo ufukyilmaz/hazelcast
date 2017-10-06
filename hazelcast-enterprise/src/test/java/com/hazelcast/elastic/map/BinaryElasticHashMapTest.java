@@ -1,6 +1,8 @@
 package com.hazelcast.elastic.map;
 
+import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.elastic.SlottableIterator;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
@@ -9,17 +11,21 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
@@ -32,38 +38,58 @@ import java.util.Random;
 import java.util.Set;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
-@RunWith(HazelcastParallelClassRunner.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(QuickTest.class)
 public class BinaryElasticHashMapTest {
 
+    @Parameters(name = "memoryAllocatorType:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {MemoryAllocatorType.STANDARD},
+                {MemoryAllocatorType.POOLED},
+        });
+    }
+
+    @Parameter
+    public MemoryAllocatorType memoryAllocatorType;
+
     private final Random random = new Random();
+
     private HazelcastMemoryManager memoryManager;
     private EnterpriseSerializationService serializationService;
     private BinaryElasticHashMap<NativeMemoryData> map;
 
     @Before
-    public void setUp() throws Exception {
-        memoryManager = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
+    public void setUp() {
+        MemorySize memorySize = new MemorySize(32, MemoryUnit.MEGABYTES);
+        if (memoryAllocatorType == MemoryAllocatorType.STANDARD) {
+            memoryManager = new StandardMemoryManager(memorySize);
+        } else {
+            memoryManager = new PoolingMemoryManager(memorySize);
+        }
 
-        serializationService
-                = new EnterpriseSerializationServiceBuilder()
-                .setAllowUnsafe(true).setUseNativeByteOrder(true)
+        serializationService = new EnterpriseSerializationServiceBuilder()
+                .setAllowUnsafe(true)
+                .setUseNativeByteOrder(true)
                 .setMemoryManager(memoryManager)
                 .build();
 
-        map = new BinaryElasticHashMap<NativeMemoryData>(serializationService,
-                new NativeMemoryDataAccessor(serializationService), memoryManager);
+        NativeMemoryDataAccessor accessor = new NativeMemoryDataAccessor(serializationService);
+        map = new BinaryElasticHashMap<NativeMemoryData>(serializationService, accessor, memoryManager);
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         if (map.capacity() > 0) {
             map.clear();
         }
@@ -73,7 +99,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testPut() throws Exception {
+    public void testPut() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         assertNull(map.put(key, value));
@@ -84,7 +110,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testSet() throws Exception {
+    public void testSet() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         assertTrue(map.set(key, value));
@@ -94,7 +120,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testGet() throws Exception {
+    public void testGet() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         map.set(key, value);
@@ -104,7 +130,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testGetIfSameKey() throws Exception {
+    public void testGetIfSameKey() {
         Data key = serializationService.toData(random.nextLong(), DataType.NATIVE);
         NativeMemoryData value = newValue();
         map.set(key, value);
@@ -114,14 +140,14 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testPutIfAbsent_success() throws Exception {
+    public void testPutIfAbsent_success() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         assertNull(map.putIfAbsent(key, value));
     }
 
     @Test
-    public void testPutIfAbsent_fail() throws Exception {
+    public void testPutIfAbsent_fail() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         map.set(key, value);
@@ -131,7 +157,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testPutAll() throws Exception {
+    public void testPutAll() {
         int count = 100;
         Map<Data, NativeMemoryData> entries = new HashMap<Data, NativeMemoryData>(count);
 
@@ -150,7 +176,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testReplace() throws Exception {
+    public void testReplace() {
         Data key = newKey();
         NativeMemoryData value = newValue();
 
@@ -163,7 +189,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testReplace_if_same_success() throws Exception {
+    public void testReplace_if_same_success() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         map.set(key, value);
@@ -173,7 +199,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testReplace_if_same_not_exist() throws Exception {
+    public void testReplace_if_same_not_exist() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         NativeMemoryData newValue = newValue();
@@ -181,7 +207,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testReplace_if_same_fail() throws Exception {
+    public void testReplace_if_same_fail() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         map.set(key, value);
@@ -192,7 +218,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testRemove() throws Exception {
+    public void testRemove() {
         Data key = newKey();
         assertNull(map.remove(key));
 
@@ -204,7 +230,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testDelete() throws Exception {
+    public void testDelete() {
         Data key = newKey();
         assertFalse(map.delete(key));
 
@@ -215,7 +241,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testRemove_if_same_success() throws Exception {
+    public void testRemove_if_same_success() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         map.set(key, value);
@@ -224,14 +250,14 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testRemove_if_same_not_exist() throws Exception {
+    public void testRemove_if_same_not_exist() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         assertFalse(map.remove(key, value));
     }
 
     @Test
-    public void testRemove_if_same_fail() throws Exception {
+    public void testRemove_if_same_fail() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         map.set(key, value);
@@ -241,13 +267,13 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testContainsKey_fail() throws Exception {
+    public void testContainsKey_fail() {
         Data key = newKey();
         assertFalse(map.containsKey(key));
     }
 
     @Test
-    public void testContainsKey_success() throws Exception {
+    public void testContainsKey_success() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         map.set(key, value);
@@ -256,13 +282,13 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testContainsValue_fail() throws Exception {
+    public void testContainsValue_fail() {
         NativeMemoryData value = newValue();
         assertFalse(map.containsValue(value));
     }
 
     @Test
-    public void testContainsValue_success() throws Exception {
+    public void testContainsValue_success() {
         Data key = newKey();
         NativeMemoryData value = newValue();
         map.set(key, value);
@@ -292,7 +318,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testKeySet() throws Exception {
+    public void testKeySet() {
         Set<Data> keys = map.keySet();
         assertTrue(keys.isEmpty());
 
@@ -309,7 +335,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testKeySet_iterator() throws Exception {
+    public void testKeySet_iterator() {
         Set<Data> keys = map.keySet();
         assertFalse(keys.iterator().hasNext());
 
@@ -336,7 +362,8 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test(expected = ConcurrentModificationException.class)
-    public void testKeySet_iterator_throws_CME() throws Exception {
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
+    public void testKeySet_iterator_throws_CME() {
         for (int i = 0; i < 100; i++) {
             Data key = serializationService.toData(i);
             map.set(key, newValue());
@@ -350,7 +377,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testValues() throws Exception {
+    public void testValues() {
         Collection<NativeMemoryData> values = map.values();
         assertTrue(values.isEmpty());
 
@@ -368,7 +395,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testValues_iterator() throws Exception {
+    public void testValues_iterator() {
         Collection<NativeMemoryData> values = map.values();
         assertFalse(values.iterator().hasNext());
 
@@ -396,7 +423,8 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test(expected = ConcurrentModificationException.class)
-    public void testValues_iterator_throws_CME() throws Exception {
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
+    public void testValues_iterator_throws_CME() {
         Data key1 = serializationService.toData(1);
         map.put(key1, newValue());
 
@@ -411,7 +439,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testEntrySet() throws Exception {
+    public void testEntrySet() {
         Set<Map.Entry<Data, NativeMemoryData>> entries = map.entrySet();
         assertTrue(entries.isEmpty());
 
@@ -429,7 +457,8 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test(expected = ConcurrentModificationException.class)
-    public void testEntrySet_iterator_throws_CME() throws Exception {
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
+    public void testEntrySet_iterator_throws_CME() {
         for (int i = 0; i < 100; i++) {
             Data key = serializationService.toData(i);
             map.set(key, newValue());
@@ -443,7 +472,8 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test(expected = ConcurrentModificationException.class)
-    public void testEntrySet_iterator_throws_CME_onClear() throws Exception {
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
+    public void testEntrySet_iterator_throws_CME_onClear() {
         for (int i = 0; i < 100; i++) {
             Data key = serializationService.toData(i);
             map.set(key, newValue());
@@ -458,7 +488,7 @@ public class BinaryElasticHashMapTest {
 
 
     @Test
-    public void testEntrySet_iterator() throws Exception {
+    public void testEntrySet_iterator() {
         Set<Map.Entry<Data, NativeMemoryData>> entries = map.entrySet();
         assertFalse(entries.iterator().hasNext());
 
@@ -489,7 +519,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testSize() throws Exception {
+    public void testSize() {
         assertEquals(0, map.size());
 
         int expected = 100;
@@ -503,7 +533,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void testClear() throws Exception {
+    public void testClear() {
         for (int i = 0; i < 100; i++) {
             Data key = serializationService.toData(i);
             NativeMemoryData value = newValue();
@@ -511,12 +541,13 @@ public class BinaryElasticHashMapTest {
         }
 
         map.clear();
+
         assertEquals(0, map.size());
         assertTrue(map.isEmpty());
     }
 
     @Test
-    public void testIsEmpty() throws Exception {
+    public void testIsEmpty() {
         assertTrue(map.isEmpty());
 
         Data key = newKey();
@@ -527,61 +558,63 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testGet_after_dispose() throws Exception {
+    public void testGet_after_dispose() {
         map.dispose();
         map.get(newKey());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testPut_after_dispose() throws Exception {
+    public void testPut_after_dispose() {
         map.dispose();
         map.put(newKey(), newValue());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testRemove_after_dispose() throws Exception {
+    public void testRemove_after_dispose() {
         map.dispose();
         map.remove(newKey());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testReplace_after_dispose() throws Exception {
+    public void testReplace_after_dispose() {
         map.dispose();
         map.replace(newKey(), newValue());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testContainsKey_after_dispose() throws Exception {
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void testContainsKey_after_dispose() {
         map.dispose();
         map.containsKey(newKey());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testContainsValue_after_dispose() throws Exception {
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void testContainsValue_after_dispose() {
         map.dispose();
         map.containsValue(newValue());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testKeySet_after_dispose() throws Exception {
+    public void testKeySet_after_dispose() {
         map.dispose();
         map.keySet();
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testEntrySet_after_dispose() throws Exception {
+    public void testEntrySet_after_dispose() {
         map.dispose();
         map.entrySet();
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testValues_after_dispose() throws Exception {
+    public void testValues_after_dispose() {
         map.dispose();
         map.values();
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testKeySet_iterator_after_dispose() throws Exception {
+    public void testKeySet_iterator_after_dispose() {
         map.set(newKey(), newValue());
         Iterator<Data> iterator = map.keySet().iterator();
         map.dispose();
@@ -589,7 +622,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testEntrySet_iterator_after_dispose() throws Exception {
+    public void testEntrySet_iterator_after_dispose() {
         map.set(newKey(), newValue());
         Iterator<Map.Entry<Data, NativeMemoryData>> iterator = map.entrySet().iterator();
         map.dispose();
@@ -597,7 +630,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testValues_iterator_after_dispose() throws Exception {
+    public void testValues_iterator_after_dispose() {
         map.set(newKey(), newValue());
         Iterator<NativeMemoryData> iterator = map.values().iterator();
         map.dispose();
@@ -609,38 +642,32 @@ public class BinaryElasticHashMapTest {
         int keyRange = 100;
 
         for (int i = 0; i < 100000; i++) {
-            int k = random.nextInt(8);
-            switch (k) {
+            int methodId = random.nextInt(8);
+            switch (methodId) {
                 case 0:
-                    _put_(keyRange);
+                    putInternal(keyRange);
                     break;
-
                 case 1:
-                    _set_(keyRange);
+                    setInternal(keyRange);
                     break;
-
                 case 2:
-                    _putIfAbsent_(keyRange);
+                    putIfAbsentInternal(keyRange);
                     break;
-
                 case 3:
-                    _replace_(keyRange);
+                    replaceInternal(keyRange);
                     break;
-
                 case 4:
-                    _replaceIfSame_(keyRange);
+                    replaceIfSameInternal(keyRange);
                     break;
-
                 case 5:
-                    _remove_(keyRange);
+                    removeInternal(keyRange);
                     break;
-
                 case 6:
-                    _removeIfPresent_(keyRange);
+                    removeIfPresentInternal(keyRange);
                     break;
-
                 case 7:
-                    _delete_(keyRange);
+                    deleteInternal(keyRange);
+                    break;
             }
         }
 
@@ -650,45 +677,34 @@ public class BinaryElasticHashMapTest {
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
-    private void _put_(int keyRange) {
-        Data key;
-        NativeMemoryData value;
-        NativeMemoryData old;
-        key = newKey(random.nextInt(keyRange));
-        value = newValue();
-        old = map.put(key, value);
+    private void putInternal(int keyRange) {
+        Data key = newKey(random.nextInt(keyRange));
+        NativeMemoryData value = newValue();
+        NativeMemoryData old = map.put(key, value);
         if (old != null) {
             serializationService.disposeData(old);
         }
     }
 
-    private void _set_(int keyRange) {
-        Data key;
-        NativeMemoryData value;
-        key = newKey(random.nextInt(keyRange));
-        value = newValue();
+    private void setInternal(int keyRange) {
+        Data key = newKey(random.nextInt(keyRange));
+        NativeMemoryData value = newValue();
         map.set(key, value);
     }
 
-    private void _putIfAbsent_(int keyRange) {
-        Data key;
-        NativeMemoryData value;
-        NativeMemoryData old;
-        key = newKey(random.nextInt(keyRange));
-        value = newValue();
-        old = map.putIfAbsent(key, value);
+    private void putIfAbsentInternal(int keyRange) {
+        Data key = newKey(random.nextInt(keyRange));
+        NativeMemoryData value = newValue();
+        NativeMemoryData old = map.putIfAbsent(key, value);
         if (old != null) {
             serializationService.disposeData(value);
         }
     }
 
-    private void _replace_(int keyRange) {
-        Data key;
-        NativeMemoryData value;
-        NativeMemoryData old;
-        key = newKey(random.nextInt(keyRange));
-        value = newValue();
-        old = map.replace(key, value);
+    private void replaceInternal(int keyRange) {
+        Data key = newKey(random.nextInt(keyRange));
+        NativeMemoryData value = newValue();
+        NativeMemoryData old = map.replace(key, value);
         serializationService.disposeData(key);
         if (old != null) {
             serializationService.disposeData(old);
@@ -697,13 +713,10 @@ public class BinaryElasticHashMapTest {
         }
     }
 
-    private void _replaceIfSame_(int keyRange) {
-        Data key;
-        NativeMemoryData value;
-        NativeMemoryData old;
-        key = newKey(random.nextInt(keyRange));
-        value = newValue();
-        old = map.get(key);
+    private void replaceIfSameInternal(int keyRange) {
+        Data key = newKey(random.nextInt(keyRange));
+        NativeMemoryData value = newValue();
+        NativeMemoryData old = map.get(key);
         if (old != null) {
             map.replace(key, old, value);
         } else {
@@ -712,22 +725,18 @@ public class BinaryElasticHashMapTest {
         serializationService.disposeData(key);
     }
 
-    private void _remove_(int keyRange) {
-        Data key;
-        NativeMemoryData old;
-        key = newKey(random.nextInt(keyRange));
-        old = map.remove(key);
+    private void removeInternal(int keyRange) {
+        Data key = newKey(random.nextInt(keyRange));
+        NativeMemoryData old = map.remove(key);
         serializationService.disposeData(key);
         if (old != null) {
             serializationService.disposeData(old);
         }
     }
 
-    private void _removeIfPresent_(int keyRange) {
-        Data key;
-        NativeMemoryData old;
-        key = newKey(random.nextInt(keyRange));
-        old = map.get(key);
+    private void removeIfPresentInternal(int keyRange) {
+        Data key = newKey(random.nextInt(keyRange));
+        NativeMemoryData old = map.get(key);
         if (old != null) {
             map.remove(key, old);
             serializationService.disposeData(key);
@@ -735,9 +744,8 @@ public class BinaryElasticHashMapTest {
         }
     }
 
-    private void _delete_(int keyRange) {
-        Data key;
-        key = newKey(random.nextInt(keyRange));
+    private void deleteInternal(int keyRange) {
+        Data key = newKey(random.nextInt(keyRange));
         map.delete(key);
         serializationService.disposeData(key);
     }
@@ -810,11 +818,14 @@ public class BinaryElasticHashMapTest {
 
     @Test
     public void testMemoryLeak_whenCapacityExpandFails() {
+        assumeTrue(memoryAllocatorType == MemoryAllocatorType.STANDARD);
+
         byte[] bytes = new byte[8];
 
         while (true) {
             // key is on-heap
             Data key = newKey();
+            // the value is off-heap
             NativeMemoryData value = newValue(bytes);
             try {
                 map.put(key, value);
@@ -832,14 +843,14 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_put_nullValue() {
+    public void testPut_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         assertNull(map.put(key, value));
     }
 
     @Test
-    public void test_put_put_nullValue() {
+    public void testPut_put_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         assertNull(map.put(key, value));
@@ -847,7 +858,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_get_nullValue() {
+    public void testGet_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -855,7 +866,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_containsKey_nullValue() {
+    public void testContainsKey_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -863,7 +874,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_containsValue_nullValue() {
+    public void testContainsValue_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -871,7 +882,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_putIfAbsent_nullValue() {
+    public void testPutIfAbsent_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -879,14 +890,14 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_set_nullValue() {
+    public void testSet_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.set(key, value);
     }
 
     @Test
-    public void test_set_set_nullValue() {
+    public void testSet_setNullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         assertTrue(map.set(key, value));
@@ -894,7 +905,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_remove_nullValue() {
+    public void testRemove_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -902,7 +913,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_delete_nullValue() {
+    public void testDelete_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -910,7 +921,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_removeIfSame_nullValue() {
+    public void testRemoveIfSame_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -918,7 +929,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_replace_nullValue() {
+    public void testReplace_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -926,7 +937,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_replaceIfSame_nullValue() {
+    public void testReplaceIfSame_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -934,7 +945,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_clear_nullValue() {
+    public void testClear_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -942,7 +953,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_isEmpty_nullValue() {
+    public void testIsEmpty_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -950,7 +961,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_size_nullValue() {
+    public void testSize_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -958,7 +969,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_dispose_nullValue() {
+    public void testDispose_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -966,7 +977,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_keySet_nullValue() {
+    public void testKeySet_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -976,7 +987,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_keySetIterator_nullValue() {
+    public void testKeySetIterator_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -987,7 +998,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_values_nullValue() {
+    public void testValues_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -997,7 +1008,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_valuesIterator_nullValue() {
+    public void testValuesIterator_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -1008,7 +1019,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_entrySet_nullValue() {
+    public void testEntrySet_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -1018,7 +1029,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_entrySetIterator_nullValue() {
+    public void testEntrySetIterator_nullValue() {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
@@ -1031,7 +1042,7 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_getNativeKeyAddress() {
+    public void testGetNativeKeyAddress() {
         Data key = newKey();
         map.put(key, newValue());
 
@@ -1043,19 +1054,19 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
-    public void test_null_getNativeKeyAddress() {
+    public void testNull_getNativeKeyAddress() {
         Data key = newKey();
         long nativeKeyAddress = map.getNativeKeyAddress(key);
         assertEquals(NULL_ADDRESS, nativeKeyAddress);
     }
 
     @Test
-    public void test_capacity() {
+    public void testCapacity() {
         assertEquals(CapacityUtil.DEFAULT_CAPACITY, map.capacity());
     }
 
     @Test
-    public void test_capacity_after_dispose() {
+    public void testCapacity_afterDispose() {
         map.dispose();
         assertEquals(0, map.capacity());
     }

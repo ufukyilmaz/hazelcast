@@ -37,21 +37,19 @@ public class ConcurrentElasticHashMapTest extends HazelcastTestSupport {
     private static final Random random = new Random();
 
     private static HazelcastMemoryManager memoryManager;
-    private EnterpriseSerializationService serializationService;
     private ConcurrentElasticHashMap<Integer, Integer> map;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         memoryManager = new PoolingMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        serializationService
-                = new EnterpriseSerializationServiceBuilder()
-                    .setMemoryManager(memoryManager)
-                    .build();
+        EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
+                .build();
         map = new ConcurrentElasticHashMap<Integer, Integer>(serializationService, memoryManager);
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         memoryManager.dispose();
     }
 
@@ -71,7 +69,7 @@ public class ConcurrentElasticHashMapTest extends HazelcastTestSupport {
     public void test_basicOperations() throws Exception {
         final int WORKER_COUNT = 2 * WorkerOperationType.values().length;
 
-        List<Future> futures = new ArrayList(WORKER_COUNT);
+        List<Future> futures = new ArrayList<Future>(WORKER_COUNT);
         AtomicBoolean stop = new AtomicBoolean(false);
         CountDownLatch completedLatch = new CountDownLatch(WORKER_COUNT);
 
@@ -109,7 +107,6 @@ public class ConcurrentElasticHashMapTest extends HazelcastTestSupport {
         REPLACE,
         REMOVE,
         CONTAINS
-
     }
 
     private static class CEHMWorker implements Runnable {
@@ -203,10 +200,9 @@ public class ConcurrentElasticHashMapTest extends HazelcastTestSupport {
                         }
                         break;
                 }
-            } finally{
+            } finally {
                 completedLatch.countDown();
             }
         }
     }
-
 }

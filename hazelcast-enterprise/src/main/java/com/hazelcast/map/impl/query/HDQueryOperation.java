@@ -4,7 +4,7 @@ import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
-import com.hazelcast.map.impl.operation.HDMapOperation;
+import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.ExceptionAction;
@@ -29,7 +29,7 @@ import static com.hazelcast.util.CollectionUtil.toIntArray;
  * the network overhead. So each member gets a single HDQueryOperation and then it queries all local partitions
  * on partitions threads.
  */
-public class HDQueryOperation extends HDMapOperation implements ReadonlyOperation {
+public class HDQueryOperation extends MapOperation implements ReadonlyOperation {
 
     private Query query;
 
@@ -42,7 +42,7 @@ public class HDQueryOperation extends HDMapOperation implements ReadonlyOperatio
     }
 
     @Override
-    public void runInternal() {
+    public void run() {
         QueryRunner queryRunner = mapServiceContext.getMapQueryRunner(getName());
         runAsyncPartitionThreadScanForNative(queryRunner);
     }
@@ -140,5 +140,10 @@ public class HDQueryOperation extends HDMapOperation implements ReadonlyOperatio
     @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.QUERY_OP;
+    }
+
+    @Override
+    public final int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
     }
 }

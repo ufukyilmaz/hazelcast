@@ -23,6 +23,8 @@ import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
+import com.hazelcast.internal.diagnostics.Diagnostics;
+import com.hazelcast.internal.diagnostics.WANPlugin;
 import com.hazelcast.internal.dynamicconfig.DynamicConfigListener;
 import com.hazelcast.internal.dynamicconfig.HotRestartConfigListener;
 import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
@@ -701,6 +703,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
 
         return super.createMulticastOutputProcessor(ioService);
+    }
+
+    @Override
+    public void registerPlugins(Diagnostics diagnostics) {
+        super.registerPlugins(diagnostics);
+        diagnostics.register(new WANPlugin(node.nodeEngine));
     }
 
     @Override

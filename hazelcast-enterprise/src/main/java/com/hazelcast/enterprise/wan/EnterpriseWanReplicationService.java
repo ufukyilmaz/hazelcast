@@ -271,6 +271,10 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * Returns map from WAN replication config name to {@link LocalWanStats}.
+     */
     @Override
     public Map<String, LocalWanStats> getStats() {
         if (wanReplications.isEmpty()) {
@@ -280,10 +284,10 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         Map<String, LocalWanStats> wanStatsMap = MapUtil.createHashMap(wanReplications.size());
         for (Map.Entry<String, WanReplicationPublisherDelegate> delegateEntry : wanReplications.entrySet()) {
             LocalWanStats localWanStats = new LocalWanStatsImpl();
-            String schemeName = delegateEntry.getKey();
+            String wanReplicationConfigName = delegateEntry.getKey();
             WanReplicationPublisherDelegate delegate = delegateEntry.getValue();
             localWanStats.getLocalWanPublisherStats().putAll(delegate.getStats());
-            wanStatsMap.put(schemeName, localWanStats);
+            wanStatsMap.put(wanReplicationConfigName, localWanStats);
         }
         return wanStatsMap;
     }

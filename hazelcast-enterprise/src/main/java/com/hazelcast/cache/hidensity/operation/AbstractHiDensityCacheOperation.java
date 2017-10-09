@@ -25,11 +25,13 @@ import com.hazelcast.util.ExceptionUtil;
 import java.io.IOException;
 import java.util.logging.Level;
 
+import static java.lang.String.format;
+
 abstract class AbstractHiDensityCacheOperation
         extends AbstractNamedOperation
         implements PartitionAwareOperation, ServiceNamespaceAware, IdentifiedDataSerializable {
 
-    private static final int FORCED_EVICTION_RETRY_COUNT
+    static final int FORCED_EVICTION_RETRY_COUNT
             = ICacheRecordStore.UNIT_PERCENTAGE / HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
 
     protected Object response;
@@ -103,11 +105,9 @@ abstract class AbstractHiDensityCacheOperation
 
     @Override
     public final void beforeRun() throws Exception {
-        // No need to handle native memory OOME.
-        // Native memory OOME is not possible because if there is not enough memory for reading operation data
-        // into native memory, it is read into heap memory.
-        // But if there is heap memory OOME,
-        // there is no need to take an action since OOME handler will shutdown the node.
+        // no need to handle NativeOutOfMemoryError, since NOOME is not possible here
+        // (if there is not enough memory for reading operation data into native memory, it is read into heap memory,
+        // but if there is a heap OOME, there is no need to take an action since OOME handler will shutdown the node)
 
         ensureInitialized();
 
@@ -165,7 +165,7 @@ abstract class AbstractHiDensityCacheOperation
             getLogger().warning("Error while disposing internal...", e);
             // TODO: ignored error at the moment
             // a double free() error may be thrown if an operation fails
-            // since internally key/value references are freed on OOME
+            // since internally key/value references are freed on NOOME
         }
     }
 
@@ -215,14 +215,15 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     private void tryRunInternalByForceEviction() throws Exception {
-        final ILogger logger = getLogger();
+        ILogger logger = getLogger();
 
         for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
             try {
                 if (logger.isFineEnabled()) {
-                    logger.fine("Applying force eviction on current record store!");
+                    logger.fine(format("Applying forced eviction on current RecordStore (cache %s, partitionId: %d)!",
+                            name, getPartitionId()));
                 }
-                // If there is OOME, apply for eviction on current record store and try again.
+                // if there is NOOME, apply for eviction on current record store and try again
                 forceEvict();
                 runInternal();
                 oome = null;
@@ -236,9 +237,10 @@ abstract class AbstractHiDensityCacheOperation
             for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
                 try {
                     if (logger.isFineEnabled()) {
-                        logger.fine("Applying force eviction on other record stores owned by same partition thread!");
+                        logger.fine(format("Applying forced eviction on other RecordStores owned by the same partition thread"
+                                + " (cache %s, partitionId: %d", name, getPartitionId()));
                     }
-                    // if still there is OOME, apply for eviction on others and try again
+                    // if still there is NOOME, apply for eviction on others and try again
                     forceEvictOnOthers();
                     runInternal();
                     oome = null;
@@ -259,14 +261,14 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     private void tryRunInternalByClearing() throws Exception {
-        final ILogger logger = getLogger();
+        ILogger logger = getLogger();
 
         if (oome != null) {
             try {
                 if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Clearing current record store because force eviction was not enough!");
+                    logger.info("Clearing current RecordStore because forced eviction was not enough!");
                 }
-                // if there is still OOME, clear current record store and try again
+                // if there is still NOOME, clear current record store and try again
                 cache.clear();
                 cacheService.sendInvalidationEvent(cache.getName(), null, AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE);
                 runInternal();
@@ -279,11 +281,10 @@ abstract class AbstractHiDensityCacheOperation
         if (oome != null) {
             try {
                 if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Clearing other record stores owned by same partition thread"
-                            + " because force eviction was not enough!");
+                    logger.info("Clearing other RecordStores owned by the same partition thread"
+                            + " because forced eviction was not enough!");
                 }
-                // if there still is OOME, for the last chance,
-                // clear other record stores and try again
+                // if there still is NOOME, for the last chance, clear other record stores and try again
                 cacheService.clearAll(getPartitionId());
                 runInternal();
                 oome = null;

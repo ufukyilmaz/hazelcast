@@ -386,7 +386,8 @@ public class HiDensityNativeMemoryCacheRecordStore
              */
             final HiDensityNativeMemoryCacheRecord removed = records.remove(key);
             if (removed != null) {
-                cacheService.getEventJournal().writeRemoveEvent(objectNamespace, partitionId, key, recordToValue(record));
+                cacheService.getEventJournal().writeRemoveEvent(eventJournalConfig, objectNamespace, partitionId,
+                        key, recordToValue(record));
             }
             if (value instanceof NativeMemoryData) {
                 // if value is allocated outside of record store, disposing value is its responsibility
@@ -521,8 +522,8 @@ public class HiDensityNativeMemoryCacheRecordStore
             cacheRecordProcessor.dispose(removedRecord);
         }
         if (removedRecord != null) {
-            cacheService.getEventJournal().writeRemoveEvent(objectNamespace, partitionId, key,
-                    recordToReturn != null ? recordToReturn.getValue() : null);
+            cacheService.getEventJournal().writeRemoveEvent(eventJournalConfig, objectNamespace, partitionId,
+                    key, recordToReturn != null ? recordToReturn.getValue() : null);
         }
         return recordToReturn;
     }
@@ -641,7 +642,8 @@ public class HiDensityNativeMemoryCacheRecordStore
              */
             final HiDensityNativeMemoryCacheRecord removed = records.remove(key);
             if (removed != null) {
-                cacheService.getEventJournal().writeRemoveEvent(objectNamespace, partitionId, key, recordToValue(removed));
+                cacheService.getEventJournal().writeRemoveEvent(eventJournalConfig, objectNamespace, partitionId,
+                        key, recordToValue(removed));
             }
             if (value instanceof NativeMemoryData) {
                 record.setValue(null);
@@ -701,13 +703,14 @@ public class HiDensityNativeMemoryCacheRecordStore
                 record = createRecord(value, now, Long.MAX_VALUE);
                 creationTime = now;
                 records.put(key, record);
-                cacheService.getEventJournal().writeCreatedEvent(objectNamespace, partitionId, key, recordToValue(record));
+                cacheService.getEventJournal().writeCreatedEvent(eventJournalConfig, objectNamespace, partitionId,
+                        key, recordToValue(record));
             } else {
                 oldValueData = record.getValue();
                 creationTime = record.getCreationTime();
                 updateRecordValue(record, toNativeMemoryData(value));
-                cacheService.getEventJournal().writeUpdateEvent(objectNamespace, partitionId, key,
-                        toHeapData(oldValueData), recordToValue(record));
+                cacheService.getEventJournal().writeUpdateEvent(eventJournalConfig, objectNamespace, partitionId,
+                        key, toHeapData(oldValueData), recordToValue(record));
             }
 
             onAccess(now, record, creationTime);

@@ -795,6 +795,7 @@
             <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
+
         <!-- Required for compatibility testing -->
         <dependency>
             <groupId>net.bytebuddy</groupId>
@@ -806,6 +807,14 @@
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy-agent</artifactId>
             <version>${bytebuddy.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Required for a map test (2.7.9 is the last Java 6 compatible version) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.7.9</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

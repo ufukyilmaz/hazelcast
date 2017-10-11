@@ -810,11 +810,11 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Required for a map test (2.6.7 is the last Java 6 compatible version) -->
+        <!-- Required for a map test (2.7.9 is the last Java 6 compatible version) -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.6.7</version>
+            <version>2.7.9</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

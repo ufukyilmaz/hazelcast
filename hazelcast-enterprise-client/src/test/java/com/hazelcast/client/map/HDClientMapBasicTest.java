@@ -4,6 +4,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
@@ -16,5 +18,11 @@ public class HDClientMapBasicTest extends ClientMapBasicTest {
     @Override
     protected Config getConfig() {
         return getHDConfig();
+    }
+
+    @Test
+    @Ignore(value = "https://github.com/hazelcast/hazelcast-enterprise/issues/1764")
+    @Override
+    public void github_11489_verifyNoFailingCastOnValue() {
     }
 }

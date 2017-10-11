@@ -180,7 +180,7 @@ public abstract class HDMapOperation extends MapOperation {
         for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
             try {
                 if (logger.isFineEnabled()) {
-                    logger.fine(format("Applying forced eviction on other RecordStores owned by same the partition thread"
+                    logger.fine(format("Applying forced eviction on other RecordStores owned by the same partition thread"
                             + " (map %s, partitionId: %d", name, getPartitionId()));
                 }
                 // if there is still an NOOME, apply for eviction on others and try again
@@ -207,7 +207,7 @@ public abstract class HDMapOperation extends MapOperation {
         if (recordStore != null) {
             try {
                 if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Evicting all entries in current RecordStores because force eviction was not enough!");
+                    logger.info("Evicting all entries in current RecordStores because forced eviction was not enough!");
                 }
                 // if there is still NOOME, clear the current RecordStore and try again
                 recordStore.evictAll(isBackup);
@@ -219,8 +219,8 @@ public abstract class HDMapOperation extends MapOperation {
         }
 
         if (logger.isLoggable(Level.INFO)) {
-            logger.info("Evicting all entries in other RecordStores owned by same the partition thread"
-                    + " because force eviction was not enough!");
+            logger.info("Evicting all entries in other RecordStores owned by the same partition thread"
+                    + " because forced eviction was not enough!");
         }
         // if there is still NOOME, for the last chance, evict other record stores and try again
         evictAll(isBackup);
@@ -228,7 +228,7 @@ public abstract class HDMapOperation extends MapOperation {
     }
 
     /**
-     * Force eviction on this particular RecordStore.
+     * Executes a forced eviction on this particular RecordStore.
      */
     private void forceEviction(RecordStore recordStore) {
         if (recordStore == null) {
@@ -245,7 +245,7 @@ public abstract class HDMapOperation extends MapOperation {
     }
 
     /**
-     * Force eviction on other NATIVE in-memory-formatted RecordStores of this partition thread.
+     * Executes a forced eviction on other NATIVE in-memory-formatted RecordStores of this partition thread.
      */
     private void forceEvictionOnOthers() {
         NodeEngine nodeEngine = getNodeEngine();

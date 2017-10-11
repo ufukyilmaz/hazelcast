@@ -58,13 +58,14 @@ public abstract class AbstractHDCacheOperationTest {
     int syncBackupCount;
     boolean throwNativeOOME;
 
+    EnterpriseCacheService cacheService;
+    HiDensityCacheRecordStore recordStore;
+    HiDensityRecordProcessor recordProcessor;
+
     private int numberOfNativeOOME;
 
-    private HiDensityCacheRecordStore recordStore;
     private CacheConfig cacheConfig;
-
     private NodeEngine nodeEngine;
-    private EnterpriseCacheService cacheService;
 
     @Before
     public void setUp() {
@@ -79,7 +80,7 @@ public abstract class AbstractHDCacheOperationTest {
                 .setInMemoryFormat(InMemoryFormat.NATIVE);
 
         CacheRecord record = mock(CacheRecord.class);
-        HiDensityRecordProcessor recordProcessor = mock(HiDensityRecordProcessor.class);
+        recordProcessor = mock(HiDensityRecordProcessor.class);
 
         recordStore = mock(HiDensityCacheRecordStore.class);
         when(recordStore.getConfig()).thenReturn(cacheConfig);

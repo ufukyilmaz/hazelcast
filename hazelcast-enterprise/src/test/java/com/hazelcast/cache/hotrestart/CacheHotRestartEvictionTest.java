@@ -189,7 +189,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
                 int sizeAfter = cache.size();
 
                 if (forceEvictionCountBefore == forceEvictionCountAfter) {
-                    // Force eviction might be applied to other partitions owned by same thread
+                    // Forced eviction might be applied to other partitions owned by same thread
                     // so these partitions might be totally empty.
                     // In this case, no eviction is applied to that partition based record store since there is no entry.
                     // At the moment, we simply finish the test but we can improve this test later.

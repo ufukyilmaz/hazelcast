@@ -781,11 +781,6 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public Object getAndReplace(Data key, Object value, String caller, int completionId) {
-        return getAndReplace(key, value, defaultExpiryPolicy, caller, completionId);
-    }
-
-    @Override
     protected void onRemoveError(Data key, Object value, String caller, boolean getValue,
                                  HiDensityNativeMemoryCacheRecord record, boolean removed, Throwable error) {
         // if record has been somehow removed and if it is still valid, dispose it and its data

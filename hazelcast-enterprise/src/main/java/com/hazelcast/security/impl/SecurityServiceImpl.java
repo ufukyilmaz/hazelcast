@@ -4,17 +4,14 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.management.operation.UpdatePermissionConfigOperation;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.security.SecurityService;
 import com.hazelcast.spi.CoreService;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationFactory;
 import com.hazelcast.spi.PreJoinAwareService;
 import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.Version;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -44,8 +41,8 @@ public class SecurityServiceImpl implements SecurityService, CoreService, PreJoi
 
         Set<PermissionConfig> clonedConfigs = clonePermissionConfigs(permissionConfigs);
 
-        OperationFactory operationFactory = new UpdatePermissionConfigOperationFactory(clonedConfigs);
-        ICompletableFuture<Object> future = invokeOnStableClusterSerial(node.nodeEngine, operationFactory, RETRY_COUNT);
+        Supplier<Operation> supplier = new UpdatePermissionConfigOperationSupplier(clonedConfigs);
+        ICompletableFuture<Object> future = invokeOnStableClusterSerial(node.nodeEngine, supplier, RETRY_COUNT);
         try {
             future.get();
         } catch (Exception e) {
@@ -75,40 +72,17 @@ public class SecurityServiceImpl implements SecurityService, CoreService, PreJoi
         return new UpdatePermissionConfigOperation(permissionConfigs);
     }
 
-    public static class UpdatePermissionConfigOperationFactory implements OperationFactory {
+    public static class UpdatePermissionConfigOperationSupplier implements Supplier<Operation> {
 
         private Set<PermissionConfig> permissionConfigs;
 
-        public UpdatePermissionConfigOperationFactory() {
-        }
-
-        public UpdatePermissionConfigOperationFactory(Set<PermissionConfig> permissionConfigs) {
+        public UpdatePermissionConfigOperationSupplier(Set<PermissionConfig> permissionConfigs) {
             this.permissionConfigs = permissionConfigs;
         }
 
         @Override
-        public Operation createOperation() {
+        public Operation get() {
             return new UpdatePermissionConfigOperation(permissionConfigs);
-        }
-
-        @Override
-        public int getFactoryId() {
-            throw new UnsupportedOperationException("UpdatePermissionConfigOperationFactory must not be serialized");
-        }
-
-        @Override
-        public int getId() {
-            throw new UnsupportedOperationException("UpdatePermissionConfigOperationFactory must not be serialized");
-        }
-
-        @Override
-        public void writeData(ObjectDataOutput out) throws IOException {
-            throw new UnsupportedOperationException("UpdatePermissionConfigOperationFactory must not be serialized");
-        }
-
-        @Override
-        public void readData(ObjectDataInput in) throws IOException {
-            throw new UnsupportedOperationException("UpdatePermissionConfigOperationFactory must not be serialized");
         }
     }
 }

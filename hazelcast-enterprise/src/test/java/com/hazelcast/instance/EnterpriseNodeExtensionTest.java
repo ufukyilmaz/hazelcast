@@ -13,7 +13,6 @@ import com.hazelcast.nio.Packet;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.UuidUtil;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
 import org.junit.Before;
@@ -23,8 +22,8 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-import java.net.UnknownHostException;
-
+import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -37,93 +36,98 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
 
-    private HazelcastInstance hazelcastInstance;
+    private int buildNumber;
     private Node node;
     private NodeExtension nodeExtension;
-    private MemberVersion currentVersion;
+    private MemberVersion nodeVersion;
+    private Address joinAddress;
 
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
     @Before
     public void setup() throws Exception {
-        hazelcastInstance = createHazelcastInstance();
+        buildNumber = BuildInfoProvider.getBuildInfo().getBuildNumber();
+        HazelcastInstance hazelcastInstance = createHazelcastInstance();
         nodeExtension = getNode(hazelcastInstance).getNodeExtension();
         node = getNode(hazelcastInstance);
-        currentVersion = node.getVersion();
+        nodeVersion = node.getVersion();
+        joinAddress = new Address("127.0.0.1", 9999);
     }
 
     @Test
     public void test_nodeCurrentVersionCompatibleWith_clusterPreviousMinorVersion() {
-        Version minorMinusOne = Version.of(currentVersion.getMajor(), currentVersion.getMinor() - 1);
+        Version minorMinusOne = Version.of(nodeVersion.getMajor(), nodeVersion.getMinor() - 1);
         assertTrue(nodeExtension.isNodeVersionCompatibleWith(minorMinusOne));
     }
 
     @Test
     public void test_nodeCurrentVersionNotCompatibleWith_clusterNextMinorVersion() {
-        Version minorPlusOne = Version.of(currentVersion.getMajor(), currentVersion.getMinor() + 1);
+        Version minorPlusOne = Version.of(nodeVersion.getMajor(), nodeVersion.getMinor() + 1);
         assertFalse(nodeExtension.isNodeVersionCompatibleWith(minorPlusOne));
     }
 
     @Test
     public void test_nodeCurrentVersionNotCompatibleWith_clusterOtherMajorVersion() {
-        Version majorPlusOne = Version.of(currentVersion.getMajor() + 1, currentVersion.getMinor());
+        Version majorPlusOne = Version.of(nodeVersion.getMajor() + 1, nodeVersion.getMinor());
         assertFalse(nodeExtension.isNodeVersionCompatibleWith(majorPlusOne));
     }
 
     @Test
     public void test_currentMemberVersionCompatibleWith_clusterCurrentVersion() {
-        Version currentClusterVersion = currentVersion.asVersion();
+        Version currentClusterVersion = nodeVersion.asVersion();
         assertTrue(nodeExtension.isNodeVersionCompatibleWith(currentClusterVersion));
     }
 
     @Test
-    public void test_nodeJoinRequestAllowed_whenClusterSameVersion()
-            throws UnknownHostException {
-        JoinRequest joinRequest = new JoinRequest(Packet.VERSION, BuildInfoProvider.getBuildInfo().getBuildNumber(), node.getVersion(),
-                new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, null, null);
+    public void test_nodeJoinRequestAllowed_whenClusterSameVersion() {
+        JoinRequest joinRequest = new JoinRequest(Packet.VERSION, buildNumber, nodeVersion, joinAddress, newUnsecureUuidString(),
+                false, null, null, null, null);
+
         nodeExtension.validateJoinRequest(joinRequest);
     }
 
     @Test
-    public void test_nodeJoinRequestAllowed_whenClusterOtherPatchVersion()
-            throws UnknownHostException {
-        MemberVersion otherPatchVersion = MemberVersion
-                .of(node.getVersion().getMajor(), node.getVersion().getMinor(), node.getVersion().getPatch() + 1);
-        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BuildInfoProvider.getBuildInfo().getBuildNumber(), otherPatchVersion,
-                new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, 0);
+    public void test_nodeJoinRequestAllowed_whenClusterOtherPatchVersion() {
+        MemberVersion otherPatchVersion = MemberVersion.of(nodeVersion.getMajor(), nodeVersion.getMinor(),
+                nodeVersion.getPatch() + 1);
+        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, buildNumber, otherPatchVersion, joinAddress,
+                newUnsecureUuidString(), false, null, null, 0);
+
         nodeExtension.validateJoinRequest(joinMessage);
     }
 
     @Test
-    public void test_nodeJoinRequestAllowed_whenClusterNextMinorVersion()
-            throws UnknownHostException {
-        MemberVersion nextMinorVersion = MemberVersion
-                .of(node.getVersion().getMajor(), node.getVersion().getMinor() + 1, node.getVersion().getPatch());
-        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BuildInfoProvider.getBuildInfo().getBuildNumber(), nextMinorVersion,
-                new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, 0);
+    public void test_nodeJoinRequestAllowed_whenClusterNextMinorVersion() {
+        MemberVersion nextMinorVersion = MemberVersion.of(nodeVersion.getMajor(), nodeVersion.getMinor() + 1,
+                nodeVersion.getPatch());
+        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, buildNumber, nextMinorVersion, joinAddress,
+                newUnsecureUuidString(), false, null, null, 0);
+
         nodeExtension.validateJoinRequest(joinMessage);
     }
 
     @Test
-    public void test_nodeJoinRequestNotAllowed_whenClusterPreviousMinorVersion()
-            throws UnknownHostException {
-        MemberVersion previousMinorVersion = MemberVersion
-                .of(node.getVersion().getMajor(), node.getVersion().getMinor() - 1, node.getVersion().getPatch());
-        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BuildInfoProvider.getBuildInfo().getBuildNumber(), previousMinorVersion,
-                new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, 0);
+    public void test_nodeJoinRequestNotAllowed_whenClusterPreviousMinorVersion() {
+        MemberVersion previousMinorVersion = MemberVersion.of(nodeVersion.getMajor(), nodeVersion.getMinor() - 1,
+                nodeVersion.getPatch());
+        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, buildNumber, previousMinorVersion, joinAddress,
+                newUnsecureUuidString(), false, null, null, 0);
+
         expected.expect(VersionMismatchException.class);
+        expected.expectMessage(containsString("Rolling Member Upgrades are only supported for the next minor version"));
         nodeExtension.validateJoinRequest(joinMessage);
     }
 
     @Test
-    public void test_nodeJoinRequestFails_whenClusterOtherMajorVersion()
-            throws UnknownHostException {
-        MemberVersion nextMajorVersion = MemberVersion
-                .of(node.getVersion().getMajor() + 1, node.getVersion().getMinor(), node.getVersion().getPatch());
-        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, BuildInfoProvider.getBuildInfo().getBuildNumber(), nextMajorVersion,
-                new Address("127.0.0.1", 9999), UuidUtil.newUnsecureUuidString(), false, null, null, 0);
+    public void test_nodeJoinRequestFails_whenClusterOtherMajorVersion() {
+        MemberVersion nextMajorVersion = MemberVersion.of(nodeVersion.getMajor() + 1, nodeVersion.getMinor(),
+                nodeVersion.getPatch());
+        JoinMessage joinMessage = new JoinMessage(Packet.VERSION, buildNumber, nextMajorVersion, joinAddress,
+                newUnsecureUuidString(), false, null, null, 0);
+
         expected.expect(VersionMismatchException.class);
+        expected.expectMessage(containsString("Rolling Member Upgrades are only supported for the same major version"));
         nodeExtension.validateJoinRequest(joinMessage);
     }
 
@@ -138,9 +142,9 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
     public void test_returningCipherByteArrayProcessor_whenSymmetricEnc() {
         NodeIOService nodeIOService = new NodeIOService(node, node.nodeEngine);
         SymmetricEncryptionConfig sec = new SymmetricEncryptionConfig()
-            .setEnabled(true)
-            .setPassword("foo")
-            .setSalt("foobar");
+                .setEnabled(true)
+                .setPassword("foo")
+                .setSalt("foobar");
         node.getConfig().getNetworkConfig().setSymmetricEncryptionConfig(sec);
 
         assertTrue(nodeExtension.createMulticastInputProcessor(nodeIOService) instanceof CipherByteArrayProcessor);

@@ -76,6 +76,7 @@ import com.hazelcast.util.ByteArrayProcessor;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.Preconditions;
 import com.hazelcast.util.function.Supplier;
+import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
@@ -526,14 +527,13 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (!memoryConfig.isEnabled()) {
             return;
         }
-        //3.5 license keys have limited HD so we check available hd memory.
+        // 3.5 license keys have limited HD so we check available HD memory
         if (license.getVersion() == LicenseVersion.V2) {
-            long totalNativeMemorySize = node.getClusterService().getSize()
-                    * memoryConfig.getSize().bytes();
+            long totalNativeMemorySize = node.getClusterService().getSize() * memoryConfig.getSize().bytes();
             long licensedNativeMemorySize = MemoryUnit.GIGABYTES.toBytes(license.getAllowedNativeMemorySize());
             if (totalNativeMemorySize >= licensedNativeMemorySize) {
-                throw new InvalidLicenseException("Total native memory of cluster exceeds licensed native memory. "
-                        + "Please contact sales@hazelcast.com");
+                throw new InvalidLicenseException("Total native memory of cluster exceeds licensed native memory."
+                        + " Please contact sales@hazelcast.com");
             }
         }
     }
@@ -542,11 +542,16 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     // operates
     private void validateJoiningMemberVersion(JoinMessage joinMessage) {
         Version clusterVersion = node.getClusterService().getClusterVersion();
+        MemberVersion memberVersion = joinMessage.getMemberVersion();
 
-        if (clusterVersion.getMajor() != joinMessage.getMemberVersion().getMajor()
-                || clusterVersion.getMinor() > joinMessage.getMemberVersion().getMinor()) {
-            throw new VersionMismatchException("Joining node's version " + joinMessage.getMemberVersion() + " is not compatible "
-                    + "with cluster version " + clusterVersion);
+        String msg = "Joining node's version " + memberVersion + " is not compatible with cluster version " + clusterVersion;
+        if (clusterVersion.getMajor() != memberVersion.getMajor()) {
+            msg += " (Rolling Member Upgrades are only supported for the same major version)";
+            throw new VersionMismatchException(msg);
+        }
+        if (clusterVersion.getMinor() > memberVersion.getMinor()) {
+            msg += " (Rolling Member Upgrades are only supported for the next minor version)";
+            throw new VersionMismatchException(msg);
         }
     }
 

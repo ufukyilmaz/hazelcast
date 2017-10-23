@@ -6,11 +6,12 @@ import com.hazelcast.config.properties.PropertyTypeConverter;
 import com.hazelcast.config.properties.SimplePropertyDefinition;
 import com.hazelcast.config.properties.ValueValidator;
 import com.hazelcast.enterprise.wan.connection.WanConnectionManager;
+import com.hazelcast.spi.discovery.DiscoveryNode;
 
 import java.util.Map;
 
 /**
- * Property definitions for  {@link WanBatchReplication} implementation.
+ * Property definitions for {@link WanBatchReplication} implementation.
  */
 public final class WanReplicationProperties {
 
@@ -22,28 +23,32 @@ public final class WanReplicationProperties {
             = property("batch.size", PropertyTypeConverter.INTEGER);
 
     /**
-     * Defines the maximum amount of time to be waited before sending a batch of events to target cluster,
-     * if {@link #BATCH_SIZE} of events are not arrived within this duration.
+     * Defines the maximum amount of time to be waited before sending a batch of
+     * events to target cluster, if {@link #BATCH_SIZE} of events have not arrived
+     * within this duration.
      */
     public static final PropertyDefinition BATCH_MAX_DELAY_MILLIS
             = property("batch.max.delay.millis", PropertyTypeConverter.LONG);
 
     /**
-     * This property is only valid when used with {@link WanBatchReplication} implementation.
-     * When enabled, only the latest {@link com.hazelcast.wan.WanReplicationEvent} of a key is sent to target.
+     * This property is only valid when used with {@link WanBatchReplication}
+     * implementation. When enabled, only the latest
+     * {@link com.hazelcast.wan.WanReplicationEvent} of a key is sent to target.
      */
     public static final PropertyDefinition SNAPSHOT_ENABLED
             = property("snapshot.enabled", PropertyTypeConverter.BOOLEAN);
 
     /**
-     * Duration in milliseconds to define waiting time before retrying to send the events to target cluster again
-     * in case of acknowledgement is not arrived.
+     * Duration in milliseconds to define waiting time before retrying to
+     * send the events to target cluster again in case of acknowledgement
+     * is not arrived.
      */
     public static final PropertyDefinition RESPONSE_TIMEOUT_MILLIS
             = property("response.timeout.millis", PropertyTypeConverter.LONG);
 
     /**
-     * Determines acknowledgement waiting type of WAN replication operation invocation.
+     * Determines acknowledgement waiting type of WAN replication operation
+     * invocation.
      *
      * @see com.hazelcast.config.WanAcknowledgeType for valid values.
      */
@@ -57,33 +62,53 @@ public final class WanReplicationProperties {
             = property("group.password", false, PropertyTypeConverter.STRING);
 
     /**
-     * Comma separated list of target cluster members, e.g. {@code 127.0.0.1:5701, 127.0.0.1:5702}.
+     * Comma separated list of target cluster members,
+     * e.g. {@code 127.0.0.1:5701, 127.0.0.1:5702}.
      */
     public static final PropertyDefinition ENDPOINTS = property("endpoints", PropertyTypeConverter.STRING);
 
     /**
-     * Period in seconds in which WAN tries to discover new endpoints and reestablish connections to failed endpoints.
-     * Default is 10 (seconds).
+     * Period in seconds in which WAN tries to discover new endpoints
+     * and reestablish connections to failed endpoints.
+     * The default is 10 (seconds).
      */
     public static final PropertyDefinition DISCOVERY_PERIOD = property("discovery.period", PropertyTypeConverter.INTEGER);
 
     /**
-     * The maximum number of endpoints that WAN will connect to when using a discovery mechanism to define endpoints.
+     * The maximum number of endpoints that WAN will connect to when
+     * using a discovery mechanism to define endpoints.
      * Default is {@link WanConnectionManager#DEFAULT_MAX_ENDPOINTS}.
-     * This property has no effect when static endpoint IPs are defined using the {@link #ENDPOINTS} property.
+     * This property has no effect when static endpoint IPs are defined
+     * using the {@link #ENDPOINTS} property.
      */
     public static final PropertyDefinition MAX_ENDPOINTS = property("maxEndpoints", PropertyTypeConverter.INTEGER);
 
     /**
-     * The number of threads that the {@link WanBatchReplication} executor will have. The executor is used to send WAN
-     * events to the endpoints and ideally you want to have one thread per endpoint.
-     * If this property is omitted and you have specified the {@link #ENDPOINTS} property, this will be the case.
-     * If, on the other hand, you are using WAN with the discovery SPI and you have not specified this property, the executor
-     * will be sized to the initial number of discovered endpoints. This can lead to performance issues if the number of
-     * endpoints changes in the future - either contention on a too small number of threads or wasted threads that will not be
-     * performing any work.
+     * The number of threads that the {@link WanBatchReplication} executor will have.
+     * The executor is used to send WAN events to the endpoints and ideally you want
+     * to have one thread per endpoint. If this property is omitted and you have
+     * specified the {@link #ENDPOINTS} property, this will be the case.
+     * If, on the other hand, you are using WAN with the discovery SPI and you have
+     * not specified this property, the executor will be sized to the initial number
+     * of discovered endpoints. This can lead to performance issues if the number of
+     * endpoints changes in the future - either contention on a too small number of
+     * threads or wasted threads that will not be performing any work.
      */
     public static final PropertyDefinition EXECUTOR_THREAD_COUNT = property("executorThreadCount", PropertyTypeConverter.INTEGER);
+
+
+    /**
+     * Determines whether the WAN connection manager should connect to the
+     * endpoint on the private address returned by the discovery SPI.
+     * By default this property is {@code false} which means the WAN connection
+     * manager will always use the public address.
+     *
+     * @see WanConnectionManager#discoverEndpointAddresses()
+     * @see DiscoveryNode#getPublicAddress()
+     * @see DiscoveryNode#getPrivateAddress()
+     */
+    public static final PropertyDefinition DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS
+            = property("discovery.useEndpointPrivateAddress", PropertyTypeConverter.BOOLEAN);
 
     private WanReplicationProperties() {
     }

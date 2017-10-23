@@ -33,6 +33,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -266,10 +267,36 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         assertTrue(connectedEndpointIsDiscovered);
     }
 
+    @Test
+    public void connectToPrivateAddress() {
+        final HashMap<String, Comparable> publisherProperties = new HashMap<String, Comparable>();
+        publisherProperties.put(WanReplicationProperties.DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS.key(), true);
+        final ArrayListDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(
+                new ArrayListDiscoveryStrategyFactory(), publisherProperties);
+        final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
+        discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length, false));
+
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 1000);
+        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+
+        assertAllEndpointsDiscovered(discoveryEndpoints, 2);
+    }
+
     private <T extends DiscoveryStrategyFactory> T setupDiscoveryStrategyFactory(T discoveryStrategyFactory) {
+        return setupDiscoveryStrategyFactory(discoveryStrategyFactory, Collections.<String, Comparable>emptyMap());
+    }
+
+    private <T extends DiscoveryStrategyFactory> T setupDiscoveryStrategyFactory(T discoveryStrategyFactory,
+                                                                                 Map<String, Comparable> publisherProperties) {
         final DiscoveryStrategyConfig discoveryConfig = new DiscoveryStrategyConfig(discoveryStrategyFactory);
-        discoveryConfig.addProperty(WanReplicationProperties.DISCOVERY_PERIOD.key(), 1);
         addDiscoveryConfig(configA, wanReplicationName, discoveryConfig);
+        final WanPublisherConfig publisherConfig =
+                configA.getWanReplicationConfig(wanReplicationName).getWanPublisherConfigs().iterator().next();
+        publisherConfig.getProperties().put(WanReplicationProperties.DISCOVERY_PERIOD.key(), 1);
+        publisherConfig.getProperties().putAll(publisherProperties);
         return discoveryStrategyFactory;
     }
 
@@ -295,12 +322,16 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     }
 
     private static ArrayList<DiscoveryNode> clusterDiscoveryNodes(Config config, int count) {
+        return clusterDiscoveryNodes(config, count, true);
+    }
+
+    private static ArrayList<DiscoveryNode> clusterDiscoveryNodes(Config config, int count, boolean hasPublicAddress) {
         try {
             final ArrayList<DiscoveryNode> nodes = new ArrayList<DiscoveryNode>();
             int port = config.getNetworkConfig().getPort();
             for (int i = 0; i < count; i++) {
                 final Address addr = new Address("127.0.0.1", port++);
-                nodes.add(new SimpleDiscoveryNode(addr, addr));
+                nodes.add(new SimpleDiscoveryNode(addr, hasPublicAddress ? addr : null));
             }
             return nodes;
         } catch (UnknownHostException e) {

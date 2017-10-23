@@ -30,10 +30,7 @@ import java.util.Map;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ACK_TYPE;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.BATCH_MAX_DELAY_MILLIS;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.BATCH_SIZE;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.DISCOVERY_PERIOD;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.GROUP_PASSWORD;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.MAX_ENDPOINTS;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.RESPONSE_TIMEOUT_MILLIS;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.getProperty;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
@@ -48,7 +45,6 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
     private static final int DEFAULT_BATCH_SIZE = 500;
     private static final long DEFAULT_BATCH_MAX_DELAY_MILLIS = 1000;
     private static final long DEFAULT_RESPONSE_TIMEOUT_MILLIS = 60000;
-    private static final String DEFAULT_GROUP_PASS = "dev-pass";
 
     protected WanAcknowledgeType acknowledgeType;
     protected WanConnectionManager connectionManager;
@@ -61,24 +57,19 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
         super.init(node, wanReplicationConfig, publisherConfig);
-        final Map<String, Comparable> props = publisherConfig.getProperties();
-        final String groupPass = getProperty(GROUP_PASSWORD, props, DEFAULT_GROUP_PASS);
-        final Integer maxEndpoints = isNullOrEmpty(getProperty(ENDPOINTS, props, ""))
-                ? getProperty(MAX_ENDPOINTS, props, WanConnectionManager.DEFAULT_MAX_ENDPOINTS)
-                : WanConnectionManager.DEFAULT_MAX_ENDPOINTS;
+        final Map<String, Comparable> publisherProps = publisherConfig.getProperties();
 
-        this.batchSize = getProperty(BATCH_SIZE, props, DEFAULT_BATCH_SIZE);
-        this.batchMaxDelayMillis = getProperty(BATCH_MAX_DELAY_MILLIS, props, DEFAULT_BATCH_MAX_DELAY_MILLIS);
-        this.responseTimeoutMillis = getProperty(RESPONSE_TIMEOUT_MILLIS, props, DEFAULT_RESPONSE_TIMEOUT_MILLIS);
+        this.batchSize = getProperty(BATCH_SIZE, publisherProps, DEFAULT_BATCH_SIZE);
+        this.batchMaxDelayMillis = getProperty(BATCH_MAX_DELAY_MILLIS, publisherProps, DEFAULT_BATCH_MAX_DELAY_MILLIS);
+        this.responseTimeoutMillis = getProperty(RESPONSE_TIMEOUT_MILLIS, publisherProps, DEFAULT_RESPONSE_TIMEOUT_MILLIS);
         this.acknowledgeType = WanAcknowledgeType.valueOf(
-                getProperty(ACK_TYPE, props, WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE.name()));
+                getProperty(ACK_TYPE, publisherProps, WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE.name()));
 
         this.discoveryService = checkNotNull(createDiscoveryService(publisherConfig));
         this.discoveryService.start();
 
         this.connectionManager = new WanConnectionManager(node, discoveryService);
-        this.connectionManager.init(targetGroupName, groupPass,
-                getProperty(DISCOVERY_PERIOD, props, WanConnectionManager.DEFAULT_DISCOVERY_TASK_PERIOD), maxEndpoints);
+        this.connectionManager.init(targetGroupName, publisherProps);
     }
 
     private DiscoveryService createDiscoveryService(WanPublisherConfig config) {

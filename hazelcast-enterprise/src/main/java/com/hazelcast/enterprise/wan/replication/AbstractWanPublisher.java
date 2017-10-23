@@ -84,7 +84,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     protected int queueCapacity;
     protected WANQueueFullBehavior queueFullBehavior;
 
-    protected long lastQueueFullLogTimeMs;
+    protected volatile long lastQueueFullLogTimeMs;
 
     protected int queueLoggerTimePeriodMs = QUEUE_LOGGER_PERIOD_MILLIS;
 

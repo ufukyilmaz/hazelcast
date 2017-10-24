@@ -5,6 +5,7 @@ import com.hazelcast.internal.networking.ChannelOutboundHandler;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.Packet;
+import com.hazelcast.nio.PacketIOHelper;
 
 import javax.crypto.Cipher;
 import java.nio.ByteBuffer;
@@ -14,7 +15,7 @@ import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
 public class SymmetricCipherMemberChannelOutboundHandler implements ChannelOutboundHandler<Packet> {
 
     private final Cipher cipher;
-
+    private final PacketIOHelper packetWriter = new PacketIOHelper();
     private ByteBuffer packetBuffer;
     private boolean packetWritten;
 
@@ -36,7 +37,7 @@ public class SymmetricCipherMemberChannelOutboundHandler implements ChannelOutbo
             if (packetBuffer.capacity() < packet.packetSize()) {
                 packetBuffer = ByteBuffer.allocate(packet.packetSize());
             }
-            if (!packet.writeTo(packetBuffer)) {
+            if (!packetWriter.writeTo(packet, packetBuffer)) {
                 throw new HazelcastException("Packet didn't fit into the buffer! " + packet.packetSize()
                         + " VS " + packetBuffer);
             }

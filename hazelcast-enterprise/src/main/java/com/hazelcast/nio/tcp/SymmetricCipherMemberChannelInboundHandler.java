@@ -4,6 +4,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.Packet;
+import com.hazelcast.nio.PacketIOHelper;
 import com.hazelcast.spi.impl.PacketHandler;
 
 import javax.crypto.Cipher;
@@ -17,7 +18,7 @@ public class SymmetricCipherMemberChannelInboundHandler extends MemberChannelInb
 
     private final ILogger logger;
     private final Cipher cipher;
-
+    private final PacketIOHelper packetReader = new PacketIOHelper();
     private ByteBuffer cipherBuffer;
     private int size = -1;
 
@@ -63,16 +64,11 @@ public class SymmetricCipherMemberChannelInboundHandler extends MemberChannelInb
             }
             cipherBuffer.flip();
             while (cipherBuffer.hasRemaining()) {
+                Packet packet = packetReader.readFrom(cipherBuffer);
                 if (packet == null) {
-                    packet = new Packet();
-                }
-                boolean complete = packet.readFrom(cipherBuffer);
-                if (complete) {
-                    handlePacket(packet);
-                    packet = null;
-                } else {
                     break;
                 }
+                onPacketComplete(packet);
             }
 
             if (cipherBuffer.hasRemaining()) {

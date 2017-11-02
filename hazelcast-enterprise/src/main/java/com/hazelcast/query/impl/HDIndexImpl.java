@@ -7,7 +7,8 @@ import com.hazelcast.query.impl.getters.Extractors;
 public class HDIndexImpl extends IndexImpl {
 
     public HDIndexImpl(String attributeName, boolean ordered, EnterpriseSerializationService ss, Extractors extractors) {
-        super(attributeName, ordered, ss, extractors);
+        // HD index does not use do any result set copying, thus we may pass NEVER here
+        super(attributeName, ordered, ss, extractors, IndexCopyBehavior.NEVER);
     }
 
     @Override

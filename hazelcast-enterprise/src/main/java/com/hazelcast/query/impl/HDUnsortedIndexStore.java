@@ -29,6 +29,8 @@ class HDUnsortedIndexStore extends BaseIndexStore {
     private final HDIndexNestedHashMap<QueryableEntry> records;
 
     HDUnsortedIndexStore(EnterpriseSerializationService ess, MemoryAllocator malloc) {
+        // HD index does not use do any result set copying, thus we may pass NEVER here
+        super(IndexCopyBehavior.NEVER);
         assertRunningOnPartitionThread();
         this.ess = ess;
         this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(ess, malloc, new OnHeapCachedQueryEntryFactory(ess));

@@ -39,17 +39,17 @@ import static org.junit.Assume.assumeFalse;
  */
 public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInstanceFactory {
 
-    // to override the versions to be used by any compatibility test, set this system property to a comma-separated
-    // list of versions e.g. "-Dhazelcast.test.compatibility.versions=3.8,3.8.1"
-    private static final String COMPATIBILITY_TEST_VERSIONS = "hazelcast.test.compatibility.versions";
-    private static final String[] RELEASED_VERSIONS = new String[]{"3.8", "3.8.1", "3.8.2"};
+    public static final String[] RELEASED_VERSIONS = new String[]{"3.9", "3.9"};
     /**
      * Refers to the latest hazelcast version.
      * Unlike other hazelcast instances, this one will not be proxied and
      * you can inspect the internal state by getting the node engine.
      */
-    public static final String CURRENT_VERSION = "3.9";
+    public static final String CURRENT_VERSION = "3.10";
 
+    // to override the versions to be used by any compatibility test, set this system property to a comma-separated
+    // list of versions e.g. "-Dhazelcast.test.compatibility.versions=3.8,3.8.1"
+    public static final String COMPATIBILITY_TEST_VERSIONS = "hazelcast.test.compatibility.versions";
     // actual member versions to be used in round-robin when creating new Hazelcast instances
     private final String[] versions;
     // keep track of number of created instances
@@ -84,6 +84,15 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
      */
     public static String getOldestKnownVersion() {
         return RELEASED_VERSIONS[0];
+    }
+
+    /**
+     * @return an array of {@code String}s including all known previously released versions and current version.
+     */
+    public static String[] getKnownReleasedAndCurrentVersions() {
+        String[] allReleasedAndCurrentVersion = new String[RELEASED_VERSIONS.length + 1];
+        ArrayUtils.concat(RELEASED_VERSIONS, new String[]{CURRENT_VERSION}, allReleasedAndCurrentVersion);
+        return allReleasedAndCurrentVersion;
     }
 
     /**
@@ -271,8 +280,6 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
             return versions;
         }
 
-        String[] allReleasedAndCurrentVersion = new String[RELEASED_VERSIONS.length + 1];
-        ArrayUtils.concat(RELEASED_VERSIONS, new String[]{CURRENT_VERSION}, allReleasedAndCurrentVersion);
-        return allReleasedAndCurrentVersion;
+        return getKnownReleasedAndCurrentVersions();
     }
 }

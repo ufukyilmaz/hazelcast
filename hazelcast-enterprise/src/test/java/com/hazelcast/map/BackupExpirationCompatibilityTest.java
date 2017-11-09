@@ -25,7 +25,9 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.spi.partition.IPartition.MAX_BACKUP_COUNT;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
+import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -35,9 +37,9 @@ import static org.junit.Assert.assertEquals;
 public class BackupExpirationCompatibilityTest extends HazelcastTestSupport {
 
     private static final String MAP_NAME = "BackupExpirationCompatibilityTest";
-    // all known 3.8.X releases + 3.9
+    // all known previous releases + current
     private static final int NODE_COUNT = getKnownPreviousVersionsCount() + 1;
-    private static final int BACKUP_COUNT = NODE_COUNT - 1;
+    private static final int BACKUP_COUNT = min(NODE_COUNT - 1, MAX_BACKUP_COUNT);
     private static final int REPLICA_COUNT = BACKUP_COUNT + 1;
     private static final int ENTRY_COUNT = 100;
 

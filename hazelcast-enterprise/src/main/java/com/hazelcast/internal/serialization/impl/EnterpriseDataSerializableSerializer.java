@@ -45,7 +45,7 @@ import static com.hazelcast.util.ExceptionUtil.rethrow;
  * into the code. What we can order are the minor releases -> it's obvious that 3.8 was released before 3.9.
  * <p>
  * What is more, there should not be any byte format differences between patch releases.
- * Between two patch releases everything should work out of the box due to our binary compatibility policy and we don't
+ * Between two patch releases everything should work out-of-the-box due to our binary compatibility policy and we don't
  * want to change that. Enabling binary versioning among patch releases would cause a lot of overhead and would make our
  * coding and testing process massively more complex.
  */

@@ -28,10 +28,10 @@ import static org.junit.Assert.assertThat;
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStartTest {
 
-    private static final MemberVersion MEMBER_VERSION = MemberVersion.of("1.2.0");
-    private static final MemberVersion NEXT_MINOR_MEMBER_VERSION = MemberVersion.of("1.3.0");
-    private static final MemberVersion PREVIOUS_MINOR_MEMBER_VERSION = MemberVersion.of("1.1.0");
-    private static final MemberVersion NEXT_MAJOR_MEMBER_VERSION = MemberVersion.of("2.0.0");
+    private static final MemberVersion MEMBER_VERSION = MemberVersion.of("3.9.0");
+    private static final MemberVersion NEXT_MINOR_MEMBER_VERSION = MemberVersion.of("3.10.0");
+    private static final MemberVersion PREVIOUS_MINOR_MEMBER_VERSION = MemberVersion.of("3.8.0");
+    private static final MemberVersion NEXT_MAJOR_MEMBER_VERSION = MemberVersion.of("4.0.0");
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

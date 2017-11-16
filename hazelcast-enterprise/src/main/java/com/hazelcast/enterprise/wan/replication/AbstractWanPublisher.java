@@ -237,7 +237,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
             }
             return;
         }
-        removeLocal();
         updateStats(wanReplicationEvent);
         final Data wanReplicationEventData = node.getSerializationService().toData(wanReplicationEvent);
         final OperationService operationService = node.nodeEngine.getOperationService();
@@ -276,9 +275,9 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         localWanPublisherStats.incrementPublishedEventCount(latency < 0 ? 0 : latency);
     }
 
-    private void removeLocal() {
+    protected void decrementWANQueueSize(int delta) {
         if (currentElementCount.get() > 0) {
-            currentElementCount.decrementAndGet();
+            currentElementCount.addAndGet(-delta);
         }
     }
 

@@ -79,4 +79,9 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
     public int getFactoryId() {
         return EWRDataSerializerHook.F_ID;
     }
+
+    @Override
+    public String getObjectName() {
+        return cacheName;
+    }
 }

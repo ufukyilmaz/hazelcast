@@ -67,6 +67,14 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         }
     }
 
+    protected void createDataIn(HazelcastInstance[] cluster, String mapName, int start, int end, String value) {
+        HazelcastInstance node = getNode(cluster);
+        IMap<Integer, String> m = node.getMap(mapName);
+        for (; start < end; start++) {
+            m.put(start, value);
+        }
+    }
+
     void increaseHitCount(HazelcastInstance[] cluster, String mapName, int start, int end, int repeat) {
         IMap m = getMap(cluster, mapName);
         for (; start < end; start++) {

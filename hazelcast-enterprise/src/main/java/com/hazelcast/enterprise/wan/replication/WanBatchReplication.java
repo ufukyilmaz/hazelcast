@@ -102,7 +102,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                 }
                 for (Entry<Address, BatchWanReplicationEvent> entry : batchReplicationEventMap.entrySet()) {
                     BatchWanReplicationEvent event = entry.getValue();
-                    if (event.getEventList().size() > 0) {
+                    if (event.getEvents().size() > 0) {
                         handleBatchReplicationEventObject(entry.getKey(), entry.getValue());
                     }
                 }
@@ -218,9 +218,10 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                         boolean isTargetInvocationSuccessful = invokeOnWanTarget(
                                 connectionWrapper.getConnection().getEndPoint(), batchReplicationEvent);
                         if (isTargetInvocationSuccessful) {
-                            for (WanReplicationEvent event : batchReplicationEvent.getEventList()) {
+                            for (WanReplicationEvent event : batchReplicationEvent.getEvents()) {
                                 removeReplicationEvent(event);
                             }
+                            decrementWANQueueSize(batchReplicationEvent.getAddedEventCount());
                         } else {
                             failureCount.incrementAndGet();
                         }

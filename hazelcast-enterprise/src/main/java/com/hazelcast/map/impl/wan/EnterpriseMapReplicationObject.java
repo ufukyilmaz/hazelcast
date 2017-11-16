@@ -68,4 +68,9 @@ public abstract class EnterpriseMapReplicationObject implements EnterpriseReplic
     public int getFactoryId() {
         return EWRDataSerializerHook.F_ID;
     }
+
+    @Override
+    public String getObjectName() {
+        return mapName;
+    }
 }

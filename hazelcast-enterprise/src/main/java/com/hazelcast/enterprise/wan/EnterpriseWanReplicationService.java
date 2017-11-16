@@ -411,7 +411,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         @Override
         public void run() {
             try {
-                for (WanReplicationEvent wanReplicationEvent : batchEvent.getEventList()) {
+                for (WanReplicationEvent wanReplicationEvent : batchEvent.getEvents()) {
                     String serviceName = wanReplicationEvent.getServiceName();
                     ReplicationSupportingService service = node.nodeEngine.getService(serviceName);
                     wanReplicationEvent.setAcknowledgeType(operation.getAcknowledgeType());
@@ -459,11 +459,12 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      * Returns the partition ID for the first event or -1 if the event batch is empty.
      */
     private int getPartitionId(BatchWanReplicationEvent batchWanReplicationEvent) {
-        List<WanReplicationEvent> eventList = batchWanReplicationEvent.getEventList();
+        final Collection<WanReplicationEvent> eventList = batchWanReplicationEvent.getEvents();
         if (eventList.isEmpty()) {
             return DEFAULT_KEY_FOR_STRIPED_EXECUTORS;
         }
-        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) eventList.get(0).getEventObject();
+        final WanReplicationEvent firstEvent = eventList.iterator().next();
+        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) firstEvent.getEventObject();
         return getPartitionId(eventObject.getKey());
     }
 

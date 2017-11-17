@@ -379,7 +379,7 @@ public class ClusterMetadataManager {
     public void forceStartCompleted() {
         if (hotRestartStatus != CLUSTER_START_SUCCEEDED || excludedMemberUuids.contains(node.getThisUuid())) {
             throw new IllegalStateException("cannot complete force start with " + hotRestartStatus
-                    + " and excluded member uuids: " + excludedMemberUuids);
+                    + " and excluded member UUIDs: " + excludedMemberUuids);
         }
 
         startCompleted = true;
@@ -389,7 +389,7 @@ public class ClusterMetadataManager {
     private void awaitUntilExcludedMembersLeave() throws InterruptedException {
         HotRestartClusterStartStatus hotRestartStatus = this.hotRestartStatus;
         if (hotRestartStatus != CLUSTER_START_SUCCEEDED) {
-            throw new IllegalStateException("Cannot wait for excluded uuids to leave because in " + hotRestartStatus + " status");
+            throw new IllegalStateException("Cannot wait for excluded UUIDs to leave because in " + hotRestartStatus + " status");
         }
 
         long deadline = Clock.currentTimeMillis() + EXCLUDED_MEMBERS_LEAVE_WAIT_IN_MILLIS;
@@ -616,7 +616,7 @@ public class ClusterMetadataManager {
     private void validateSenderClusterStartInfoWhenSuccess(Address sender, String senderUuid,
                                                            MemberClusterStartInfo senderClusterStartInfo) {
         if (excludedMemberUuids.contains(senderUuid)) {
-            logger.info(sender + " with uuid: " + senderUuid + " is excluded in start.");
+            logger.info(sender + " with UUID: " + senderUuid + " is excluded in start.");
             Operation op = new SendClusterStartResultOperation(hotRestartStatus, excludedMemberUuids, null);
             sendIfNotThisMember(op, sender);
             return;
@@ -1010,7 +1010,7 @@ public class ClusterMetadataManager {
     /**
      * Fails with an {@code HotRestartException} if a member is joined but that doesn't exist in restored members.
      *
-     * @param restoredMemberUuids restored member uuid set
+     * @param restoredMemberUuids restored member UUID set
      * @param members current members
      */
     private void failIfUnexpectedMemberJoins(Set<String> restoredMemberUuids, Collection<MemberImpl> members) {
@@ -1210,7 +1210,7 @@ public class ClusterMetadataManager {
         try {
             if (hotRestartStatus == CLUSTER_START_FAILED
                     || (hotRestartStatus == CLUSTER_START_SUCCEEDED && excludedMemberUuids.contains(senderUuid))) {
-                logger.info(sender + " with uuid: " + senderUuid + " is excluded in start.");
+                logger.info(sender + " with UUID: " + senderUuid + " is excluded in start.");
                 Operation op = new SendClusterStartResultOperation(hotRestartStatus, excludedMemberUuids, null);
                 sendIfNotThisMember(op, sender);
             } else if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
@@ -1278,7 +1278,7 @@ public class ClusterMetadataManager {
             node.getClusterService().shrinkMembersRemovedInNotJoinableState(this.excludedMemberUuids);
             hotRestartStatus = CLUSTER_START_SUCCEEDED;
 
-            logger.warning("Partial data recovery is set. Excluded member uuids: " + excludedMemberUuids);
+            logger.warning("Partial data recovery is set. Excluded member UUIDs: " + excludedMemberUuids);
             broadcast(new SendClusterStartResultOperation(hotRestartStatus, excludedMemberUuids, clusterState));
         }
     }
@@ -1307,7 +1307,7 @@ public class ClusterMetadataManager {
         }
 
         if (logger.isFineEnabled()) {
-            logger.fine("Partition table version -> member uuids: " + membersUuidsByPartitionTableVersion);
+            logger.fine("Partition table version -> member UUIDs: " + membersUuidsByPartitionTableVersion);
         }
 
         return membersUuidsByPartitionTableVersion;

@@ -15,7 +15,7 @@ import java.util.Set;
 import static java.util.Collections.unmodifiableSet;
 
 /**
- * Sends excluded member uuids to a member which is in that set.
+ * Sends excluded member UUIDs to a member which is in that set.
  *
  * We need this operation because we don't allow an excluded member to join to the cluster.
  * Therefore, we notify it so that the excluded member can force-start itself.

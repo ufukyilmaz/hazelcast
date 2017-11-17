@@ -624,7 +624,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
         final Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
         if (!excludedMemberUuids.contains(node.getThisUuid())) {
-            throw new HotRestartException("cannot reset hot restart data since this node is not excluded! excluded member uuids: "
+            throw new HotRestartException("cannot reset hot restart data since this node is not excluded! excluded member UUIDs: "
                     + excludedMemberUuids);
         }
 
@@ -633,7 +633,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
     /**
      * @param isAfterJoin if true, local node joins back to the cluster and completes the start process, after force-started.
-     *                    Otherwise, it only resets itself, clears the hot restart data and gets a new uuid.
+     *                    Otherwise, it only resets itself, clears the hot restart data and gets a new UUID.
      */
     private void handleForceStart(boolean isAfterJoin) {
         ClusterServiceImpl clusterService = node.getClusterService();
@@ -809,7 +809,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     @Override
     public void handleExcludedMemberUuids(Address sender, Set<String> excludedMemberUuids) {
         if (!excludedMemberUuids.contains(node.getThisUuid())) {
-            logger.warning("Should handle final cluster start result with excluded member uuids: " + excludedMemberUuids
+            logger.warning("Should handle final cluster start result with excluded member UUIDs: " + excludedMemberUuids
                     + " within hot restart service since this member is not excluded. sender: " + sender);
             return;
         }

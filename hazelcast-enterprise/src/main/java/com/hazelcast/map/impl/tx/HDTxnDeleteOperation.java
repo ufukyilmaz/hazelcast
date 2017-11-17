@@ -35,7 +35,7 @@ public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTx
         super.innerBeforeRun();
 
         if (!recordStore.canAcquireLock(dataKey, ownerUuid, threadId)) {
-            throw new TransactionException("Cannot acquire lock uuid: " + ownerUuid + ", threadId: " + threadId);
+            throw new TransactionException("Cannot acquire lock UUID: " + ownerUuid + ", threadId: " + threadId);
         }
     }
 

@@ -5,7 +5,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Reads local member uuid from a specific file if exists.
+ * Reads local member UUID from a specific file if exists.
  */
 class LocalMemberReader extends MemberListReader {
 

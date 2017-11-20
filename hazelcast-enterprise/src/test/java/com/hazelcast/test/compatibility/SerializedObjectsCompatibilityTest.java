@@ -1,12 +1,18 @@
 package com.hazelcast.test.compatibility;
 
 import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionAware;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
+import com.hazelcast.memory.FreeMemoryChecker;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.NightlyTest;
@@ -25,9 +31,10 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.io.InvalidClassException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 
-import static com.hazelcast.internal.cluster.Versions.V3_8;
+import static com.hazelcast.internal.cluster.Versions.PREVIOUS_CLUSTER_VERSION;
 import static com.hazelcast.test.compatibility.SamplingSerializationService.isTestClass;
 import static com.hazelcast.util.StringUtil.LINE_SEPARATOR;
 import static java.lang.String.format;
@@ -44,14 +51,13 @@ import static org.junit.Assert.fail;
 public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
 
     private static final String CLASSPATH_RESOURCE_PATTERN = "com/hazelcast/test/compatibility/serialized-objects-%s";
+    private static final String EE_CLASSPATH_RESOURCE_PATTERN = "com/hazelcast/test/compatibility/serialized-objects-%s-ee";
     private static final ILogger LOGGER = Logger.getLogger(SerializedObjectsCompatibilityTest.class);
 
     @Parameters(name = "version: {0}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {"3.8"},
-                {"3.8.1"},
-                {"3.8.2"},
+                {"3.9"},
         });
     }
 
@@ -59,21 +65,37 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     public String version;
 
     private InternalSerializationService currentSerializationService;
-    private String classpathResource;
+    private String serializedObjectsResource;
+    private String eeSerializedObjectsResource;
 
     @Before
     public void setup() {
+        serializedObjectsResource = format(CLASSPATH_RESOURCE_PATTERN, version);
+        eeSerializedObjectsResource = format(EE_CLASSPATH_RESOURCE_PATTERN, version);
+    }
+
+    @Test
+    public void testObjectsAreDeserializedInCurrentVersion_whenOSSerializationService() {
+        currentSerializationService = new DefaultSerializationServiceBuilder()
+                .setEnableSharedObject(true)
+                .build();
+        SerializedObjectsAccessor serializedObjects = new SerializedObjectsAccessor(serializedObjectsResource);
+        assertObjectsAreDeserialized(serializedObjects);
+    }
+
+    @Test
+    public void testObjectsAreDeserializedInCurrentVersion_whenEESerializationService() {
+        MemorySize size = new MemorySize(16, MemoryUnit.MEGABYTES);
+        FreeMemoryChecker freeMemoryChecker = new FreeMemoryChecker(new HazelcastProperties((Properties) null));
+        StandardMemoryManager memoryManager = new StandardMemoryManager(size, freeMemoryChecker);
+
         currentSerializationService = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
                 .setClusterVersionAware(new TestClusterVersionAware())
                 .setVersionedSerializationEnabled(true)
                 .setEnableSharedObject(true)
                 .build();
-        classpathResource = format(CLASSPATH_RESOURCE_PATTERN, version);
-    }
-
-    @Test
-    public void testObjectsAreDeserializedInV3_9() {
-        SerializedObjectsAccessor serializedObjects = new SerializedObjectsAccessor(classpathResource);
+        SerializedObjectsAccessor serializedObjects = new SerializedObjectsAccessor(eeSerializedObjectsResource);
         assertObjectsAreDeserialized(serializedObjects);
     }
 
@@ -121,7 +143,7 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     private static class TestClusterVersionAware implements EnterpriseClusterVersionAware {
         @Override
         public Version getClusterVersion() {
-            return V3_8;
+            return PREVIOUS_CLUSTER_VERSION;
         }
     }
 }

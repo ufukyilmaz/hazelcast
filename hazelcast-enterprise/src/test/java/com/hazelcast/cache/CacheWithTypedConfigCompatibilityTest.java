@@ -21,6 +21,9 @@ import javax.cache.CacheManager;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.spi.CachingProvider;
 
+import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getCurrentVersion;
+import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getOldestKnownVersion;
+
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
 public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport {
@@ -42,9 +45,7 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
 
     @Test
     public void testTypedCacheConfig_worksOnPreviousClusterVersion() {
-        String[] versions = new String[] {"3.8", "3.8.1", "3.8.2", "3.8.3", "3.8.4",
-                                          "3.8.5", "3.8.6", "3.9"};
-        factory = new CompatibilityTestHazelcastInstanceFactory(versions);
+        factory = new CompatibilityTestHazelcastInstanceFactory();
         instances = factory.newInstances();
         currentVersionInstance = instances[instances.length - 1];
         Cache<String, Person> cache = createCache();
@@ -54,9 +55,9 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
 
     @Test
     public void testPreviousVersionMember_joinsCurrentVersionMaster_withTypedCacheConfig() {
-        String[] versions = new String[] {"3.8", "3.9", "3.8"};
+        String[] versions = new String[] {getOldestKnownVersion(), getCurrentVersion(), getOldestKnownVersion()};
         factory = new CompatibilityTestHazelcastInstanceFactory(versions);
-        // start 3.8 & 3.9 instances
+        // start previous & current instances
         instances = factory.newInstances(null, versions.length - 1);
         currentVersionInstance = instances[instances.length - 1];
         Cache<String, Person> cache = createCache();
@@ -65,16 +66,16 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
 
         // shutdown oldest member
         instances[0].shutdown();
-        // start once more 3.8 member, this time 3.9 member is cluster master and should deliver the OnJoinCacheOp as post-join
+        // start once more previous member, this time current member is cluster master
         instances[0] = factory.newHazelcastInstance();
         assertClusterSizeEventually(2, currentVersionInstance);
     }
 
     @Test
     public void testCurrentVersionMember_joinsCurrentVersionMasterWithTypedCacheConfig_afterUpgrade() {
-        String[] versions = new String[] {"3.8", "3.9", "3.9"};
+        String[] versions = new String[] {getOldestKnownVersion(), getCurrentVersion(), getCurrentVersion()};
         factory = new CompatibilityTestHazelcastInstanceFactory(versions);
-        // start 3.8 & 3.9 instances
+        // start previous & current instances
         instances = factory.newInstances(null, versions.length - 1);
         currentVersionInstance = instances[instances.length - 1];
         Cache<String, Person> cache = createCache();
@@ -86,7 +87,7 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
         waitClusterForSafeState(currentVersionInstance);
         currentVersionInstance.getCluster().changeClusterVersion(Versions.CURRENT_CLUSTER_VERSION);
 
-        // start a new 3.9 member, this time 3.9 member is cluster master and should deliver the OnJoinCacheOp as pre-join
+        // start a new current member, this time current member is cluster master and has been upgraded
         instances[0] = factory.newHazelcastInstance();
         assertClusterSizeEventually(2, currentVersionInstance);
     }

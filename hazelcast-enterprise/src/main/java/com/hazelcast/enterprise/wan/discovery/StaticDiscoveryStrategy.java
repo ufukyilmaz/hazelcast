@@ -7,6 +7,7 @@ import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.SimpleDiscoveryNode;
 import com.hazelcast.util.AddressUtil;
 import com.hazelcast.util.AddressUtil.AddressHolder;
+import com.hazelcast.util.StringUtil;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -30,9 +31,12 @@ public class StaticDiscoveryStrategy extends AbstractDiscoveryStrategy {
 
         for (String endpoint : endpoints.split(",")) {
             try {
-                final AddressHolder holder = AddressUtil.getAddressHolder(endpoint.trim(), port);
-                final Address addr = new Address(holder.getAddress(), holder.getPort());
-                ret.add(new SimpleDiscoveryNode(addr, addr));
+                final String trimmedEndpoint = endpoint.trim();
+                if (!StringUtil.isNullOrEmpty(trimmedEndpoint)) {
+                    final AddressHolder holder = AddressUtil.getAddressHolder(trimmedEndpoint, port);
+                    final Address addr = new Address(holder.getAddress(), holder.getPort());
+                    ret.add(new SimpleDiscoveryNode(addr, addr));
+                }
             } catch (UnknownHostException e) {
                 throw new RuntimeException("Failed to parse publisher endpoints property", e);
             }

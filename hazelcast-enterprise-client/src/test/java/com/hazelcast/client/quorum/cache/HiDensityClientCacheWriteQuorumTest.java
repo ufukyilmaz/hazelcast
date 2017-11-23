@@ -1,4 +1,4 @@
-package com.hazelcast.client.quorum;
+package com.hazelcast.client.quorum.cache;
 
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.quorum.QuorumException;
@@ -24,21 +24,11 @@ import static org.junit.Assert.assertNull;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class HiDensityClientCacheReadWriteQuorumTest extends HiDensityClientCacheQuorumTestSupport {
+public class HiDensityClientCacheWriteQuorumTest extends HiDensityClientCacheQuorumTestSupport {
 
     @BeforeClass
     public static void init() throws Exception {
-        HiDensityClientCacheQuorumTestSupport.initialize(QuorumType.READ_WRITE);
-    }
-
-    @Test
-    public void testGetOperationSuccessfulWhenQuorumSizeMet() {
-        cache1.get(1);
-    }
-
-    @Test(expected = QuorumException.class)
-    public void testGetOperationThrowsExceptionWhenQuorumSizeNotMet() {
-        cache4.get(1);
+        HiDensityClientCacheQuorumTestSupport.initialize(QuorumType.WRITE);
     }
 
     @Test
@@ -49,30 +39,6 @@ public class HiDensityClientCacheReadWriteQuorumTest extends HiDensityClientCach
     @Test(expected = QuorumException.class)
     public void testPutOperationThrowsExceptionWhenQuorumSizeNotMet() {
         cache4.put(1, "");
-    }
-
-    @Test
-    public void testContainsOperationSuccessfulWhenQuorumSizeMet() {
-        cache1.containsKey(1);
-    }
-
-    @Test(expected = QuorumException.class)
-    public void testContainsOperationThrowsExceptionWhenQuorumSizeNotMet() {
-        cache4.containsKey(1);
-    }
-
-    @Test
-    public void testGetAllOperationSuccessfulWhenQuorumSizeMet() {
-        HashSet<Integer> hashSet = new HashSet<Integer>();
-        hashSet.add(123);
-        cache1.getAll(hashSet);
-    }
-
-    @Test(expected = QuorumException.class)
-    public void testGetAllOperationThrowsExceptionWhenQuorumSizeNotMet() {
-        HashSet<Integer> hashSet = new HashSet<Integer>();
-        hashSet.add(123);
-        cache4.getAll(hashSet);
     }
 
     @Test
@@ -113,16 +79,6 @@ public class HiDensityClientCacheReadWriteQuorumTest extends HiDensityClientCach
     @Test(expected = QuorumException.class)
     public void testClearOperationThrowsExceptionWhenQuorumSizeNotMet() {
         cache4.clear();
-    }
-
-    @Test
-    public void testIteratorOperationSuccessfulWhenQuorumSizeMet() {
-        cache1.iterator();
-    }
-
-    @Test(expected = QuorumException.class)
-    public void testIteratorOperationThrowsExceptionWhenQuorumSizeNotMet() {
-        cache4.iterator();
     }
 
     @Test
@@ -180,18 +136,6 @@ public class HiDensityClientCacheReadWriteQuorumTest extends HiDensityClientCach
     }
 
     @Test
-    public void testGetAsyncOperationSuccessfulWhenQuorumSizeMet() throws Exception {
-        Future<String> foo = cache1.getAsync(1);
-        foo.get();
-    }
-
-    @Test(expected = ExecutionException.class)
-    public void testGetAsyncOperationThrowsExceptionWhenQuorumSizeNotMet() throws Exception {
-        Future<String> foo = cache4.getAsync(1);
-        foo.get();
-    }
-
-    @Test
     public void testGetAndPutAsyncOperationSuccessfulWhenQuorumSizeMet() {
         cache1.getAndPutAsync(1, "");
     }
@@ -224,6 +168,32 @@ public class HiDensityClientCacheReadWriteQuorumTest extends HiDensityClientCach
     public void testGetAndReplaceAsyncOperationThrowsExceptionWhenQuorumSizeNotMet() throws Exception {
         Future<String> foo = cache4.getAndReplaceAsync(1, "");
         foo.get();
+    }
+
+    @Test
+    public void testInvokeOperationSuccessfulWhenQuorumSizeMet() {
+        cache1.invoke(123, new SimpleEntryProcessor());
+    }
+
+    @Test(expected = EntryProcessorException.class)
+    public void testInvokeOperationThrowsExceptionWhenQuorumSizeNotMet() {
+        cache4.invoke(123, new SimpleEntryProcessor());
+    }
+
+    @Test
+    public void testInvokeAllOperationSuccessfulWhenQuorumSizeMet() {
+        HashSet<Integer> hashSet = new HashSet<Integer>();
+        hashSet.add(123);
+        EntryProcessorResult epr = cache1.invokeAll(hashSet, new SimpleEntryProcessor()).get(123);
+        assertNull(epr);
+
+    }
+
+    @Test(expected = EntryProcessorException.class)
+    public void testInvokeAllOperationThrowsExceptionWhenQuorumSizeNotMet() {
+        HashSet<Integer> hashSet = new HashSet<Integer>();
+        hashSet.add(123);
+        cache4.invokeAll(hashSet, new SimpleEntryProcessor()).get(123).get();
     }
 
     @Test
@@ -275,31 +245,6 @@ public class HiDensityClientCacheReadWriteQuorumTest extends HiDensityClientCach
     }
 
     @Test
-    public void testInvokeOperationSuccessfulWhenQuorumSizeMet() {
-        cache1.invoke(123, new SimpleEntryProcessor());
-    }
-
-    @Test(expected = EntryProcessorException.class)
-    public void testInvokeOperationThrowsExceptionWhenQuorumSizeNotMet() {
-        cache4.invoke(123, new SimpleEntryProcessor());
-    }
-
-    @Test
-    public void testInvokeAllOperationSuccessfulWhenQuorumSizeMet() {
-        HashSet<Integer> hashSet = new HashSet<Integer>();
-        hashSet.add(123);
-        EntryProcessorResult epr = cache1.invokeAll(hashSet, new SimpleEntryProcessor()).get(123);
-        assertNull(epr);
-    }
-
-    @Test(expected = EntryProcessorException.class)
-    public void testInvokeAllOperationThrowsExceptionWhenQuorumSizeNotMet() {
-        HashSet<Integer> hashSet = new HashSet<Integer>();
-        hashSet.add(123);
-        cache4.invokeAll(hashSet, new SimpleEntryProcessor()).get(123).get();
-    }
-
-    @Test
     public void testPutGetWhenQuorumSizeMet() {
         cache1.put(123, "foo");
         assertEquals("foo", cache2.get(123));
@@ -313,6 +258,8 @@ public class HiDensityClientCacheReadWriteQuorumTest extends HiDensityClientCach
     }
 
     public static class SimpleEntryProcessor implements EntryProcessor<Integer, String, Void>, Serializable {
+
+        private static final long serialVersionUID = -396575576353368113L;
 
         @Override
         public Void process(MutableEntry<Integer, String> entry, Object... arguments) throws EntryProcessorException {

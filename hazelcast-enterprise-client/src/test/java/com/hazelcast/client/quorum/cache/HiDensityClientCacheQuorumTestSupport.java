@@ -1,4 +1,4 @@
-package com.hazelcast.client.quorum;
+package com.hazelcast.client.quorum.cache;
 
 import com.hazelcast.cache.ICache;
 import com.hazelcast.client.cache.impl.HazelcastClientCachingProvider;

@@ -1,6 +1,9 @@
-package com.hazelcast.quorum;
+package com.hazelcast.quorum.cache;
 
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.quorum.HiDensityCacheQuorumTestSupport;
+import com.hazelcast.quorum.QuorumException;
+import com.hazelcast.quorum.QuorumType;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.BeforeClass;
 import org.junit.Test;

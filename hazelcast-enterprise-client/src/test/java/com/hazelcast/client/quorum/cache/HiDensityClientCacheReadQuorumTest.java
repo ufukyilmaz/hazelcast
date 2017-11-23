@@ -1,4 +1,4 @@
-package com.hazelcast.client.quorum;
+package com.hazelcast.client.quorum.cache;
 
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.quorum.QuorumException;

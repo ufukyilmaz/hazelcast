@@ -5,7 +5,7 @@ import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.client.cache.impl.HazelcastClientCachingProvider;
-import com.hazelcast.client.quorum.HiDensityClientCacheReadWriteQuorumTest;
+import com.hazelcast.client.quorum.cache.HiDensityClientCacheReadWriteQuorumTest;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;

@@ -54,6 +54,34 @@ The following are the other improvements performed to solve the enhancement issu
 
 3. Fixes
 
+*3.9.1 Fixes*
+
+- MulticastJoiner may cause OutOfMemoryException due to the self-amplification in SplitBrainJoinMessage sending. [#11836]
+- Dynamic configuration added on the lite member is not found after a Split-Brain healing. [#11815]
+- Client transactions does not respect to unisocket behavior. [#11802]
+- Incorrect null log message in DelegatingAddressPicker. [#11783]
+- A high number of EntryEventType[] is created in a client application which receives many entry events. In a specific application, EntryEventType[] dominates the application's overall memory allocation. [#11777]
+- Hazelcast client fails to connect to the cluster if the first cluster member is down. [#11735]
+- After promoting a member (HazelcastInstance.getCluster().promoteLocalLiteMember()) the instance of the member retrieved by getMembers() is not updated. [#11720]
+- Enqueued item gets lost when the client stops and reconnects sooner than hazelcast.client.endpoint.remove.delay.seconds. [#11700]
+- While trying to setup Hazelcast on AWS, the order of member initialization is wrong. [#11681]
+- Query cache on an IMap that is subsequently destroyed and recreated does not work. [#11666]
+- The method DefaultQueryCache::getAll does not check for null values. [#11665]
+- When the method HazelcastInstance.shutdown() is called, the following error is thrown: "Could not retrieve ringbuffer service to destroy event journal". [#11662]
+- Defining management center in the configuration causes partition migrations even though there is no data. [#11598]
+- Weird Split-Brain like issue with Hazelcast 3.8.4. [#11533]
+- Consider logging new HTTP connections with DEBUG or lower level. [#11196]
+- HashSet and HashMap are initialized with a too small size. [#9445]
+- Introduce configuration option for WAN to connect to a private address when using Discovery SPI. [#1176]
+- Member throws OutOfMemoryException in the smaller cluster side on Split-Brain recovery cycle. [#1763]
+
+Coverity Fixes
+- Dereference null return value in the methodClientConnectionManagerImpl.encodeAuthenticationRequest(). [#11767]
+- Using invalid iterator in the method SmartClientListenerService.deregisterListenerInternal(String). [#11760]
+- Resource leak in client's ProxyManager. [#11751]
+
+*3.9 Fixes*
+
 - Members cannot join to 3.9 cluster when using cache with a key/value type that is only resolvable from the user code deployment repository. [#11505]
 - Hazelcast listeners may fail to be registered to a new joined member. This is caused by a race condition between PostJoinOperations and the member doing the listener registration. [#11490]
 - Regression occurs after returning ResultSet instead of SortedQueryResultSet. [#11489]

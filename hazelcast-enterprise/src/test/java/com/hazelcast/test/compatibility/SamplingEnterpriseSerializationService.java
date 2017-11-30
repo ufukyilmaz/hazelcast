@@ -20,21 +20,21 @@ public class SamplingEnterpriseSerializationService extends SamplingSerializatio
     @Override
     public <B extends Data> B toData(Object obj, DataType type) {
         B data = enterpriseSerializationService.toData(obj, type);
-        sampleObject(obj, data.toByteArray());
+        sampleObject(obj, data == null ? null : data.toByteArray());
         return data;
     }
 
     @Override
     public <B extends Data> B toNativeData(Object obj, MemoryAllocator malloc) {
         B data = enterpriseSerializationService.toNativeData(obj, malloc);
-        sampleObject(obj, data.toByteArray());
+        sampleObject(obj, data == null ? null : data.toByteArray());
         return data;
     }
 
     @Override
     public <B extends Data> B toData(Object obj, DataType type, PartitioningStrategy strategy) {
         B data = enterpriseSerializationService.toData(obj, type, strategy);
-        sampleObject(obj, data.toByteArray());
+        sampleObject(obj, data == null ? null : data.toByteArray());
         return data;
     }
 

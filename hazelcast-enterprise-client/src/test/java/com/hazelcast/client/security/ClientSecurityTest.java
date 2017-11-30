@@ -389,7 +389,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        assertEquals(new Integer(11), client.getExecutorService("test").submit(new DummyCallable()).get());
+        assertEquals(new Integer(12), client.getExecutorService("test").submit(new DummyCallable()).get());
     }
 
     @Test(expected = ExecutionException.class)
@@ -540,6 +540,10 @@ public class ClientSecurityTest {
             hz.getIdGenerator("id_generator").init(0);
             result += hz.getIdGenerator("id_generator").newId(); // +1
 
+            hz.getFlakeIdGenerator("flake_id_generator").newId();
+            hz.getFlakeIdGenerator("flake_id_generator").newIdBatch(1);
+            result++; // +1
+
             hz.getLock("lock").lock();
             hz.getLock("lock").unlock();
             result++; // +1
@@ -641,6 +645,7 @@ public class ClientSecurityTest {
         addAllPermission(config, PermissionType.ATOMIC_LONG, "atomic_long");
         addAllPermission(config, PermissionType.COUNTDOWN_LATCH, "countdown_latch");
         addAllPermission(config, PermissionType.SEMAPHORE, "semaphore");
+        addAllPermission(config, PermissionType.FLAKE_ID_GENERATOR, "flake_id_generator");
     }
 
     // create a Cache<String, String> on the default CacheManager backed by the given HazelcastInstance

@@ -20,7 +20,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART;
@@ -32,7 +31,7 @@ import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.V4_LICENSE_WITH_HD_MEMORY_DISABLED;
 import static com.hazelcast.util.StringUtil.stringToBytes;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -47,10 +46,10 @@ public class LicenseTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testXmlConfig() throws IOException {
+    public void testXmlConfig() {
         String license = "HazelcastEnterprise#2Nodes#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
 
-        String xml = "<hazelcast-client xsi:schemaLocation=\"http://www.hazelcast.com/schema/client-config hazelcast-client-config-3.5.xsd\"\n"
+        String xml = "<hazelcast-client xsi:schemaLocation=\"http://www.hazelcast.com/schema/client-config hazelcast-client-config-3.10.xsd\"\n"
                 + "           xmlns=\"http://www.hazelcast.com/schema/client-config\"\n"
                 + "           xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
                 + "<properties>"
@@ -224,7 +223,7 @@ public class LicenseTest extends HazelcastTestSupport {
         HazelcastClientProxy clientProxy = (HazelcastClientProxy) factory.newHazelcastClient(clientConfig);
 
         ClientProxyFactory proxyFactory = clientProxy.client.getClientExtension().createServiceProxyFactory(MapService.class);
-        assertTrue(proxyFactory instanceof ClientProxyFactory);
+        assertNotNull(proxyFactory);
     }
 
     @Test(expected = InvalidLicenseException.class)
@@ -244,5 +243,4 @@ public class LicenseTest extends HazelcastTestSupport {
 
         factory.newHazelcastClient(clientConfig);
     }
-
 }

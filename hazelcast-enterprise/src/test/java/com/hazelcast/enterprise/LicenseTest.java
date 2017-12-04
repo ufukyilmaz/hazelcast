@@ -25,7 +25,6 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.net.UnknownHostException;
 import java.util.Arrays;
 
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
@@ -52,7 +51,7 @@ public class LicenseTest extends HazelcastTestSupport {
     public TestName testName = new TestName();
 
     @Before
-    public final void setup() throws UnknownHostException {
+    public final void setup() {
         folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
         delete(folder);
         if (!folder.mkdir() && !folder.exists()) {
@@ -69,7 +68,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
     @Test
     public void testXmlConfig() {
-        String xml = "<hazelcast xsi:schemaLocation=\"http://www.hazelcast.com/schema/config hazelcast-config-3.7.xsd\"\n"
+        String xml = "<hazelcast xsi:schemaLocation=\"http://www.hazelcast.com/schema/config hazelcast-config-3.10.xsd\"\n"
                 + "           xmlns=\"http://www.hazelcast.com/schema/config\"\n"
                 + "           xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n"
                 + "    <group>\n"
@@ -216,7 +215,7 @@ public class LicenseTest extends HazelcastTestSupport {
         factory.newHazelcastInstance(config); // Node should not start
     }
 
-    Config makeHotRestartConfigWithHotRestartDisabledLicense() {
+    private Config makeHotRestartConfigWithHotRestartDisabledLicense() {
         Config config = new Config();
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.V4_LICENSE_WITH_HOT_RESTART_DISABLED);
         config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100");

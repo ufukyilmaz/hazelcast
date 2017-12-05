@@ -540,8 +540,7 @@ public class ClientSecurityTest {
             hz.getIdGenerator("id_generator").init(0);
             result += hz.getIdGenerator("id_generator").newId(); // +1
 
-            hz.getFlakeIdGenerator("flake_id_generator").newId();
-            hz.getFlakeIdGenerator("flake_id_generator").newIdBatch(1);
+            hz.getReliableIdGenerator("reliable_id_generator").newId();
             result++; // +1
 
             hz.getLock("lock").lock();
@@ -645,7 +644,7 @@ public class ClientSecurityTest {
         addAllPermission(config, PermissionType.ATOMIC_LONG, "atomic_long");
         addAllPermission(config, PermissionType.COUNTDOWN_LATCH, "countdown_latch");
         addAllPermission(config, PermissionType.SEMAPHORE, "semaphore");
-        addAllPermission(config, PermissionType.FLAKE_ID_GENERATOR, "flake_id_generator");
+        addAllPermission(config, PermissionType.RELIABLE_ID_GENERATOR, "reliable_id_generator");
     }
 
     // create a Cache<String, String> on the default CacheManager backed by the given HazelcastInstance

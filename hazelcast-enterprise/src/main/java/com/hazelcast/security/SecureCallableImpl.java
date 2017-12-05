@@ -9,7 +9,7 @@ import com.hazelcast.core.Cluster;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.DistributedObjectListener;
 import com.hazelcast.core.Endpoint;
-import com.hazelcast.core.FlakeIdGenerator;
+import com.hazelcast.core.ReliableIdGenerator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IAtomicLong;
@@ -48,7 +48,7 @@ import com.hazelcast.security.permission.CardinalityEstimatorPermission;
 import com.hazelcast.security.permission.CountDownLatchPermission;
 import com.hazelcast.security.permission.DurableExecutorServicePermission;
 import com.hazelcast.security.permission.ExecutorServicePermission;
-import com.hazelcast.security.permission.FlakeIdGeneratorPermission;
+import com.hazelcast.security.permission.ReliableIdGeneratorPermission;
 import com.hazelcast.security.permission.ListPermission;
 import com.hazelcast.security.permission.LockPermission;
 import com.hazelcast.security.permission.MapPermission;
@@ -327,9 +327,9 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public FlakeIdGenerator getFlakeIdGenerator(String name) {
-            checkPermission(new FlakeIdGeneratorPermission(name, ActionConstants.ACTION_CREATE));
-            return getProxy(new FlakeIdGeneratorInvocationHandler(instance.getFlakeIdGenerator(name)));
+        public ReliableIdGenerator getReliableIdGenerator(String name) {
+            checkPermission(new ReliableIdGeneratorPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ReliableIdGeneratorInvocationHandler(instance.getReliableIdGenerator(name)));
         }
 
         @Override
@@ -800,9 +800,9 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
     }
 
-    private class FlakeIdGeneratorInvocationHandler extends SecureInvocationHandler {
+    private class ReliableIdGeneratorInvocationHandler extends SecureInvocationHandler {
 
-        FlakeIdGeneratorInvocationHandler(DistributedObject distributedObject) {
+        ReliableIdGeneratorInvocationHandler(DistributedObject distributedObject) {
             super(distributedObject);
         }
 
@@ -812,12 +812,12 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             if (action == null) {
                 return null;
             }
-            return new FlakeIdGeneratorPermission(distributedObject.getName(), action);
+            return new ReliableIdGeneratorPermission(distributedObject.getName(), action);
         }
 
         @Override
         public String getStructureName() {
-            return "flakeIdGenerator";
+            return "reliableIdGenerator";
         }
     }
 

@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
+import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.Versions.PREVIOUS_CLUSTER_VERSION;
 import static com.hazelcast.test.compatibility.SamplingSerializationService.isTestClass;
 import static com.hazelcast.util.StringUtil.LINE_SEPARATOR;
@@ -58,6 +59,7 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {"3.9"},
+                {"3.9.1"},
         });
     }
 
@@ -76,11 +78,17 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
 
     @Test
     public void testObjectsAreDeserializedInCurrentVersion_whenOSSerializationService() {
-        currentSerializationService = new DefaultSerializationServiceBuilder()
-                .setEnableSharedObject(true)
-                .build();
-        SerializedObjectsAccessor serializedObjects = new SerializedObjectsAccessor(serializedObjectsResource);
-        assertObjectsAreDeserialized(serializedObjects);
+        // OS serialization version always uses current cluster version, so override this to emulate previous cluster version
+        System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, PREVIOUS_CLUSTER_VERSION.toString());
+        try {
+            currentSerializationService = new DefaultSerializationServiceBuilder()
+                    .setEnableSharedObject(true)
+                    .build();
+            SerializedObjectsAccessor serializedObjects = new SerializedObjectsAccessor(serializedObjectsResource);
+            assertObjectsAreDeserialized(serializedObjects);
+        } finally {
+            System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
+        }
     }
 
     @Test

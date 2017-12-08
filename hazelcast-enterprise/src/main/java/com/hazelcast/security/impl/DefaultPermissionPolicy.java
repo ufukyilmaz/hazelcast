@@ -17,9 +17,9 @@ import com.hazelcast.security.permission.DenyAllPermissionCollection;
 import javax.security.auth.Subject;
 import java.security.Permission;
 import java.security.PermissionCollection;
-import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
@@ -91,41 +91,51 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
         }
     }
 
+    /**
+     * Returns permission collection of given type for all {@link ClusterPrincipal} instances in the given JAAS Subject.
+     *
+     * @see com.hazelcast.security.IPermissionPolicy#getPermissions(javax.security.auth.Subject, java.lang.Class)
+     */
     @Override
     @SuppressWarnings("checkstyle:npathcomplexity")
     public PermissionCollection getPermissions(Subject subject, Class<? extends Permission> type) {
-        final ClusterPrincipal principal = getPrincipal(subject);
-        if (principal == null) {
+        final Set<ClusterPrincipal> principals = new HashSet<ClusterPrincipal>(subject.getPrincipals(ClusterPrincipal.class));
+        if (principals.isEmpty()) {
             return DENY_ALL;
         }
 
-        PrincipalPermissionsHolder permissionsHolder;
-        do {
-            ensurePrincipalPermissions(principal);
-            permissionsHolder = principalPermissions.get(principal.getName());
-        } while (permissionsHolder == null);
-        if (!permissionsHolder.prepared) {
-            try {
-                synchronized (permissionsHolder) {
-                    while (!permissionsHolder.prepared) {
-                        permissionsHolder.wait();
+        ClusterPermissionCollection allPrincipalsPermissionCollection = new ClusterPermissionCollection(type);
+        for (ClusterPrincipal principal : principals) {
+            PrincipalPermissionsHolder permissionsHolder;
+            do {
+                ensurePrincipalPermissions(principal);
+                permissionsHolder = principalPermissions.get(principal.getName());
+            } while (permissionsHolder == null);
+            if (!permissionsHolder.prepared) {
+                try {
+                    synchronized (permissionsHolder) {
+                        while (!permissionsHolder.prepared) {
+                            permissionsHolder.wait();
+                        }
                     }
+                } catch (InterruptedException ignored) {
+                    currentThread().interrupt();
+                    throw new HazelcastException("Interrupted while waiting for the permissions holder to get prepared");
                 }
-            } catch (InterruptedException ignored) {
-                currentThread().interrupt();
-                throw new HazelcastException("Interrupted while waiting for the permissions holder to get prepared");
+            }
+
+            if (permissionsHolder.hasAllPermissions) {
+                return ALLOW_ALL;
+            }
+            PermissionCollection coll = permissionsHolder.permissions.get(type);
+            if (coll == null) {
+                coll = DENY_ALL;
+                permissionsHolder.permissions.putIfAbsent(type, coll);
+            } else if (coll != DENY_ALL) {
+                allPrincipalsPermissionCollection.add(coll);
             }
         }
-
-        if (permissionsHolder.hasAllPermissions) {
-            return ALLOW_ALL;
-        }
-        PermissionCollection coll = permissionsHolder.permissions.get(type);
-        if (coll == null) {
-            coll = DENY_ALL;
-            permissionsHolder.permissions.putIfAbsent(type, coll);
-        }
-        return coll;
+        return allPrincipalsPermissionCollection;
     }
 
     @Override
@@ -135,16 +145,6 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
             loadPermissionConfig(updatedPermissionConfigs);
             principalPermissions.clear();
         }
-    }
-
-    private ClusterPrincipal getPrincipal(Subject subject) {
-        final Set<Principal> principals = subject.getPrincipals();
-        for (Principal p : principals) {
-            if (p instanceof ClusterPrincipal) {
-                return (ClusterPrincipal) p;
-            }
-        }
-        return null;
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")

@@ -115,7 +115,7 @@ public class SSLChannel extends NioChannel {
             if (logger.isFineEnabled()) {
                 SSLSession sslSession = sslEngine.getSession();
                 logger.fine("handshake finished, channel=" + this + " protocol=" + sslSession.getProtocol() + ", cipherSuite="
-                    + sslSession.getCipherSuite());
+                        + sslSession.getCipherSuite());
             }
 
             appBuffer.clear();
@@ -234,9 +234,14 @@ public class SSLChannel extends NioChannel {
                     // do nothing; sslEngine is closed.
                     return;
                 case BUFFER_OVERFLOW:
-                    // the netOutBuffer doesn't contain enough data for decoding. So we need to expand it.
                     if (sslEngine.getSession().getPacketBufferSize() > netOutBuffer.capacity()) {
+                        // the netOutBuffer doesn't have enough space for decoding. So we need to expand it.
                         netOutBuffer = expandBufferInWriteMode(netOutBuffer, sslEngine.getSession().getPacketBufferSize());
+                    } else {
+                        // the netOutBuffer is big enough, but it is dirty. So end the wrap and let the netOutBuffer be flushed
+                        // to socket before doing the next wrap. Otherwise the wrap end up in a loop; asking for more space
+                        // but no increasing netOutBuffer.
+                        return;
                     }
                     break;
                 default:

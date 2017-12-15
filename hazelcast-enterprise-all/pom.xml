@@ -42,7 +42,7 @@
                             <transformers>
                                 <transformer
                                         implementation="com.hazelcast.buildutils.HazelcastManifestTransformer">
-                                    <mainClass>com.hazelcast.console.ConsoleApp</mainClass>
+                                    <mainClass>${hazelcast.serverMainClass}</mainClass>
                                     <overrideInstructions>
                                         <Import-Package>
                                             com.fasterxml.jackson.annotation;resolution:=optional,

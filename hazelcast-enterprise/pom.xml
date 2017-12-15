@@ -45,6 +45,7 @@
                         <index>true</index>
                         <compress>true</compress>
                         <manifest>
+                            <mainClass>${hazelcast.serverMainClass}</mainClass>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>

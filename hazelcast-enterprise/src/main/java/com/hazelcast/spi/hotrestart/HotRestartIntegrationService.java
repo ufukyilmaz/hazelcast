@@ -702,6 +702,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private void resetHotRestart(boolean isAfterJoin) {
         logger.info("Closing Hot Restart stores");
         closeHotRestartStores();
+        clusterMetadataManager.stopPersistence();
 
         logger.info("Deleting Hot Restart base-dir " + hotRestartHome);
         IOUtil.delete(hotRestartHome);

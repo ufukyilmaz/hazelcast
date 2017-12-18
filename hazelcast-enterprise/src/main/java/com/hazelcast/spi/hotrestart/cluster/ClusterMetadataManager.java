@@ -66,7 +66,6 @@ import static java.util.Collections.unmodifiableCollection;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -80,13 +79,8 @@ public class ClusterMetadataManager {
 
     private static final String DIR_NAME = "cluster";
     private static final long EXCLUDED_MEMBERS_LEAVE_WAIT_IN_MILLIS = TimeUnit.MINUTES.toMillis(2);
-    private static final long SLOW_PERSISTENCE_THRESHOLD_NANOS = SECONDS.toNanos(1);
 
     private final Node node;
-    private final MemberListWriter memberListWriter;
-    private final PartitionTableWriter partitionTableWriter;
-    private final ClusterStateWriter clusterStateWriter;
-    private final ClusterVersionWriter clusterVersionWriter;
     private final File homeDir;
     private final ILogger logger;
     private final long validationTimeout;
@@ -102,6 +96,7 @@ public class ClusterMetadataManager {
             new CopyOnWriteArrayList<ClusterHotRestartEventListener>();
     private Thread pingThread;
 
+    private volatile ClusterMetadataWriterLoop metadataWriterLoop;
     private volatile boolean startWithHotRestart = true;
     private volatile HotRestartClusterStartStatus hotRestartStatus = CLUSTER_START_IN_PROGRESS;
     private volatile boolean startCompleted;
@@ -114,14 +109,11 @@ public class ClusterMetadataManager {
         this.node = node;
         logger = node.getLogger(getClass());
         homeDir = new File(hotRestartHome, DIR_NAME);
-        mkdirHome();
         validationTimeout = TimeUnit.SECONDS.toMillis(cfg.getValidationTimeoutSeconds());
         dataLoadTimeout = TimeUnit.SECONDS.toMillis(cfg.getDataLoadTimeoutSeconds());
-        memberListWriter = new MemberListWriter(homeDir, node);
+
         clusterDataRecoveryPolicy = cfg.getClusterDataRecoveryPolicy();
-        partitionTableWriter = new PartitionTableWriter(homeDir);
-        clusterStateWriter = new ClusterStateWriter(homeDir);
-        clusterVersionWriter = new ClusterVersionWriter(homeDir);
+        metadataWriterLoop = new ClusterMetadataWriterLoop(homeDir, node);
     }
 
     /**
@@ -210,6 +202,7 @@ public class ClusterMetadataManager {
      */
     // main thread
     public void start() {
+        metadataWriterLoop.start();
         try {
             validate();
         } catch (InterruptedException e) {
@@ -466,9 +459,9 @@ public class ClusterMetadataManager {
     // operation thread
     public void onClusterStateChange(ClusterState newState) {
         if (logger.isFineEnabled()) {
-            logger.fine("Persisting cluster state: " + newState);
+            logger.fine("Will persist cluster state: " + newState);
         }
-        persist(clusterStateWriter, newState, "Cluster State");
+        metadataWriterLoop.writeClusterState(newState);
     }
 
     public HotRestartClusterStartStatus getHotRestartStatus() {
@@ -477,9 +470,9 @@ public class ClusterMetadataManager {
 
     public void onClusterVersionChange(Version newClusterVersion) {
         if (logger.isFineEnabled()) {
-            logger.fine("Persisting cluster version: " + newClusterVersion);
+            logger.fine("Will persist cluster version: " + newClusterVersion);
         }
-        persist(clusterVersionWriter, newClusterVersion, "Cluster Version");
+        metadataWriterLoop.writeClusterVersion(newClusterVersion);
     }
 
     File getHomeDir() {
@@ -567,14 +560,22 @@ public class ClusterMetadataManager {
         return false;
     }
 
+    public void stopPersistence() {
+        ClusterMetadataWriterLoop writerLoop = metadataWriterLoop;
+        metadataWriterLoop = null;
+        writerLoop.stop(false);
+    }
+
     public void reset() {
+        metadataWriterLoop = new ClusterMetadataWriterLoop(homeDir, node);
+        metadataWriterLoop.start();
+
         hotRestartStatusLock.lock();
         try {
             restoredMembersRef.set(null);
             expectedMembersRef.set(null);
             partitionTableRef.set(null);
             memberClusterStartInfos.clear();
-            mkdirHome();
         } finally {
             hotRestartStatusLock.unlock();
         }
@@ -586,6 +587,7 @@ public class ClusterMetadataManager {
             logger.fine("Persisting partition table during shutdown");
             persistPartitions();
         }
+        metadataWriterLoop.stop(true);
     }
 
     // operation thread
@@ -1364,9 +1366,9 @@ public class ClusterMetadataManager {
         ClusterServiceImpl clusterService = node.getClusterService();
         Collection<Member> allMembers = clusterService.getCurrentMembersAndMembersRemovedInNotJoinableState();
         if (logger.isFineEnabled()) {
-            logger.fine("Persisting " + allMembers.size() + " (active & passive) members -> " + allMembers);
+            logger.fine("Will persist " + allMembers.size() + " (active & passive) members -> " + allMembers);
         }
-        persist(memberListWriter, allMembers, "Member List");
+        metadataWriterLoop.writeMembers(allMembers);
     }
 
     private void persistPartitions() {
@@ -1380,36 +1382,14 @@ public class ClusterMetadataManager {
         }
 
         if (logger.isFinestEnabled()) {
-            logger.finest("Persisting partition table version: " + partitionTable.getVersion());
+            logger.finest("Will persist partition table version: " + partitionTable.getVersion());
         }
-        persist(partitionTableWriter, partitionTable, "Partition Table");
-    }
-
-    @SuppressWarnings("checkstyle:illegaltype")
-    private <T> void persist(AbstractMetadataWriter<T> writer, T value, String type) {
-        try {
-            long startTimeNanos = System.nanoTime();
-            writer.write(value);
-
-            long durationNanos = System.nanoTime() - startTimeNanos;
-            if (durationNanos > SLOW_PERSISTENCE_THRESHOLD_NANOS) {
-                long durationMillis = NANOSECONDS.toMillis(durationNanos);
-                logger.warning("Slow disk IO! " + type + " persistence took " + durationMillis + " ms.");
-            }
-        } catch (IOException e) {
-            logger.severe("While persisting " + type, e);
-        }
+        metadataWriterLoop.writePartitionTable(partitionTable);
     }
 
     private void broadcast(Operation operation) {
         for (Member member : restoredMembersRef.get()) {
             sendIfNotThisMember(operation, member.getAddress());
-        }
-    }
-
-    private void mkdirHome() {
-        if (!homeDir.exists() && !homeDir.mkdirs()) {
-            throw new HotRestartException("Cannot create Hot Restart base directory: " + homeDir.getAbsolutePath());
         }
     }
 

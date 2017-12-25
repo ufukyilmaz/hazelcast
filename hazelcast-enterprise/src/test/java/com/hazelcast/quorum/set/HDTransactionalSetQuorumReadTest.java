@@ -1,6 +1,8 @@
-package com.hazelcast.quorum.list;
+package com.hazelcast.quorum.set;
 
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.quorum.list.ListQuorumReadTest;
+import com.hazelcast.quorum.list.TransactionalListQuorumReadTest;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
@@ -14,7 +16,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(QuickTest.class)
-public class HDListWriteQuorumTest extends ListWriteQuorumTest {
+public class HDTransactionalSetQuorumReadTest extends TransactionalListQuorumReadTest {
 
     @BeforeClass
     public static void setUp() {

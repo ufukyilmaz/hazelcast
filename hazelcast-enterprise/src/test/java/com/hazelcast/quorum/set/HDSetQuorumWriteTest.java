@@ -14,7 +14,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(QuickTest.class)
-public class HDSetWriteQuorumTest extends SetWriteQuorumTest {
+public class HDSetQuorumWriteTest extends SetQuorumWriteTest {
 
     @BeforeClass
     public static void setUp() {

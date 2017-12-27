@@ -1,7 +1,7 @@
 package com.hazelcast.cache.impl.event;
 
 import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.EnterpriseCacheService;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CacheEventContext;
 import com.hazelcast.cache.impl.CacheEventContextUtil;
 import com.hazelcast.nio.serialization.Data;

@@ -64,10 +64,7 @@ Fixes:
 - Some client TransactionalMap operations deserializes on the server side, while IMap.values() does not do so. This causes serialization exceptions on a client-member setup when members do not have the serialization information, e.g., in case where portables are used. [#11885]
 - Replicated map's Javadoc contains only member behaviors/requirements which the client cannot meet due to its technical difference. [#11707]
 - Ringbuffer access throws HazelcastInstanceNotActiveException when cluster state is PASSIVE. [#11664]
-- TLS enters a loop while encoding: The problem is that the wrap method ends up in a loop. When the `sslsession packetbuffer` size is equal to the actual buffer capacity
-(the buffer is dirty), it means there is not enough space to encode, but there is also no
-reason to increase the capacity of the buffer since the buffer capacity is equal to
-`session.packetBufferSize`. The consequence is that the IO thread gets into a loop and therefore will not process any other requests and eventually the connections become useless and get closed. [#1825]
+- Due to a problem in the TLS mechanism;  there's a possibility that the IO threads can get in a 'stuck' state and don't make any progress (although they are using a lot of CPU cycles, no frames get processed). Once this happens, traffic among the members stop and therefore the cluster falls apart; we get heartbeat timeouts and even split-brains. The fix eliminates this possibility. [#1825]
 
 Coverity Fixes:
 - The method addressTranslator.translate(target) of com.hazelcast.client.connection.nio.ClientConnectionManagerImpl.InitConnectionTask.run() may return null. The returned value is used as an argument for the method createSocketConnection(Address) which uses the value without a null-check. [#11771]

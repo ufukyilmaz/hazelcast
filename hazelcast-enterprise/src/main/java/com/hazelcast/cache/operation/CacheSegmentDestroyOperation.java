@@ -1,6 +1,6 @@
 package com.hazelcast.cache.operation;
 
-import com.hazelcast.cache.EnterpriseCacheService;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

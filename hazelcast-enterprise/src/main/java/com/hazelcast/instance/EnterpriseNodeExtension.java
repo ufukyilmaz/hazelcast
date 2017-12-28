@@ -1,6 +1,6 @@
 package com.hazelcast.instance;
 
-import com.hazelcast.cache.EnterpriseCacheService;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;

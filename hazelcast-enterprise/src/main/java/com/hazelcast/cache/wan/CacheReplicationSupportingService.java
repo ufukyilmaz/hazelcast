@@ -1,7 +1,7 @@
 package com.hazelcast.cache.wan;
 
 import com.hazelcast.cache.CacheMergePolicy;
-import com.hazelcast.cache.EnterpriseCacheService;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.operation.CacheCreateConfigOperation;

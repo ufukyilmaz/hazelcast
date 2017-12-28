@@ -1,6 +1,6 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.EnterpriseCacheService;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;

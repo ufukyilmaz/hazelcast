@@ -79,14 +79,11 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
      * @param ttl ttl in milliseconds.
      */
     @Override
-    protected void markRecordStoreExpirable(long ttl) {
+    protected boolean isInfiniteTTL(long ttl) {
         if (NATIVE == inMemoryFormat) {
-            if (ttl > 0L && ttl < HD_RECORD_MAX_TTL_MILLIS) {
-                super.markRecordStoreExpirable(ttl);
-            }
-        } else {
-            super.markRecordStoreExpirable(ttl);
+            return !(ttl > 0L && ttl < HD_RECORD_MAX_TTL_MILLIS);
         }
+        return super.isInfiniteTTL(ttl);
     }
 
     @Override

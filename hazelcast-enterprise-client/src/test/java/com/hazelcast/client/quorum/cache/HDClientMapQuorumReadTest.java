@@ -1,10 +1,9 @@
-package com.hazelcast.client.quorum.list;
+package com.hazelcast.client.quorum.cache;
 
+import com.hazelcast.cache.ICache;
 import com.hazelcast.client.quorum.PartitionedClusterClients;
 import com.hazelcast.client.test.TestHazelcastFactory;
-import com.hazelcast.core.IList;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.quorum.list.ListQuorumReadTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -17,7 +16,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class})
-public class HDClientListQuorumReadTest extends ListQuorumReadTest {
+public class HDClientMapQuorumReadTest extends ClientCacheQuorumReadTest {
 
     private static PartitionedClusterClients clients;
 
@@ -34,8 +33,9 @@ public class HDClientListQuorumReadTest extends ListQuorumReadTest {
         clients.terminateAll();
     }
 
-    protected IList list(int index) {
-        return clients.client(index).getList(LIST_NAME + quorumType.name());
+    @Override
+    protected ICache<Integer, String> cache(int index) {
+        return clients.client(index).getCacheManager().getCache(CACHE_NAME + quorumType.name());
     }
 
 }

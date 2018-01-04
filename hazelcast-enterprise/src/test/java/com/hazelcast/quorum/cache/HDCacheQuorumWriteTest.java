@@ -1,4 +1,4 @@
-package com.hazelcast.quorum.set;
+package com.hazelcast.quorum.cache;
 
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -14,7 +14,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(QuickTest.class)
-public class HDSetQuorumWriteTest extends SetQuorumWriteTest {
+public class HDCacheQuorumWriteTest extends CacheQuorumWriteTest {
 
     @BeforeClass
     public static void setUp() {

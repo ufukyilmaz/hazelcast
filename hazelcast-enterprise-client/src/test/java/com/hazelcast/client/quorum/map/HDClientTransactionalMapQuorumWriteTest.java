@@ -16,7 +16,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class})
 public class HDClientTransactionalMapQuorumWriteTest extends ClientTransactionalMapQuorumWriteTest {
 
     private static PartitionedClusterClients clients;
@@ -34,6 +34,7 @@ public class HDClientTransactionalMapQuorumWriteTest extends ClientTransactional
         clients.terminateAll();
     }
 
+    @Override
     public TransactionContext newTransactionContext(int index) {
         return clients.client(index).newTransactionContext(options);
     }

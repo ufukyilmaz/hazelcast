@@ -33,6 +33,7 @@ public class HDClientMapQuorumReadTest extends ClientMapQuorumReadTest {
         clients.terminateAll();
     }
 
+    @Override
     protected IMap map(int index) {
         return clients.client(index).getMap(MAP_NAME + quorumType.name());
     }

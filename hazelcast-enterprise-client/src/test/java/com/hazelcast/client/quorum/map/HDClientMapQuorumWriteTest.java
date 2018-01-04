@@ -16,7 +16,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class})
 public class HDClientMapQuorumWriteTest extends ClientMapQuorumWriteTest {
 
     private static PartitionedClusterClients clients;
@@ -34,6 +34,7 @@ public class HDClientMapQuorumWriteTest extends ClientMapQuorumWriteTest {
         clients.terminateAll();
     }
 
+    @Override
     protected IMap map(int index) {
         return clients.client(index).getMap(MAP_NAME + quorumType.name());
     }

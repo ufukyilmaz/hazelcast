@@ -33,6 +33,7 @@ public class HDClientTransactionalMapQuorumReadTest extends ClientTransactionalM
         clients.terminateAll();
     }
 
+    @Override
     public TransactionContext newTransactionContext(int index) {
         return clients.client(index).newTransactionContext(options);
     }

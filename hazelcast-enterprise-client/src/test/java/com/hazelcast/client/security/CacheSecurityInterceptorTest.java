@@ -5,9 +5,9 @@ import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.client.cache.impl.HazelcastClientCachingProvider;
-import com.hazelcast.client.quorum.cache.HiDensityClientCacheReadWriteQuorumTest;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.quorum.cache.CacheQuorumWriteTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -152,11 +152,11 @@ public class CacheSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void replace_withExpiryPolicy(){
+    public void replace_withExpiryPolicy() {
         final String key = randomString();
         final String oldVal = randomString();
         final String newVal = randomString();
-        HazelcastExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1,1,1);
+        HazelcastExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1, 1, 1);
 
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "replace", key, oldVal, newVal, expiryPolicy);
         cache.replace(key, oldVal, newVal, expiryPolicy);
@@ -166,7 +166,7 @@ public class CacheSecurityInterceptorTest extends InterceptorTestSupport {
     public void replace_withoutNewValueWithExpiryPolicy() {
         final String key = randomString();
         final String value = randomString();
-        HazelcastExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1,1,1);
+        HazelcastExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1, 1, 1);
 
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "replace", key, value, expiryPolicy);
         cache.replace(key, value, expiryPolicy);
@@ -192,18 +192,20 @@ public class CacheSecurityInterceptorTest extends InterceptorTestSupport {
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "clear");
         cache.clear();
     }
+
     @Ignore
     @Test
     public void getConfiguration() {
         // it does not make a remote call, no need for security check
     }
+
     @Ignore
     @Test
     public void invoke() {
         final String keys = randomString();
 
         final javax.cache.processor.EntryProcessor entryProcessor =
-                new HiDensityClientCacheReadWriteQuorumTest.SimpleEntryProcessor();
+                new CacheQuorumWriteTest.SimpleEntryProcessor();
 
         cache.invoke(keys, entryProcessor, null);
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "invoke", keys, null, null);
@@ -214,33 +216,38 @@ public class CacheSecurityInterceptorTest extends InterceptorTestSupport {
     public void invokeAll() {
         HashSet keys = new HashSet();
         final javax.cache.processor.EntryProcessor entryProcessor =
-                new HiDensityClientCacheReadWriteQuorumTest.SimpleEntryProcessor();
+                new CacheQuorumWriteTest.SimpleEntryProcessor();
 
         keys.add(randomString());
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "invokeAll", keys, null, null);
         cache.invokeAll(keys, entryProcessor, null);
     }
+
     @Ignore
     @Test
     public void getName() {
         // it does not make a remote call, no need for security check
     }
+
     @Ignore
     @Test
     public void getCacheManager() {
         // it does not make a remote call, no need for security check
     }
+
     @Ignore
     @Test
     public void close() {
         // it does not make a remote call, no need for security check
 
     }
+
     @Ignore
     @Test
     public void isClosed() {
         // it does not make a remote call, no need for security check
     }
+
     @Ignore
     @Test
     public void unwrap() {

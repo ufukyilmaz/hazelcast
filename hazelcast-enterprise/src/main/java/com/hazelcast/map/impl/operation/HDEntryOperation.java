@@ -53,7 +53,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
     private EntryProcessor entryProcessor;
 
-    private transient boolean offloading;
+    private transient boolean offload;
 
     // HDEntryOperation
     private transient Object response;
@@ -89,7 +89,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
     @Override
     protected void runInternal() {
-        if (offloading) {
+        if (offload) {
             runOffloaded();
         } else {
             runVanilla();
@@ -120,7 +120,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
     @SuppressWarnings("unchecked")
     private void runOffloadedReadOnlyEntryProcessor(final Object previousValue, String executorName) {
         ops.onStartAsyncOperation(this);
-        getNodeEngine().getExecutionService().execute(executorName, new Runnable() {
+        exs.execute(executorName, new Runnable() {
             @Override
             public void run() {
                 try {
@@ -138,8 +138,6 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
     @SuppressWarnings("unchecked")
     private void runOffloadedModifyingEntryProcessor(final Object previousValue, String executorName) {
-        final OperationServiceImpl ops = (OperationServiceImpl) getNodeEngine().getOperationService();
-
         // callerId is random since the local locks are NOT re-entrant
         // using a randomID every time prevents from re-entering the already acquired lock
         final String finalCaller = UuidUtil.newUnsecureUuidString();
@@ -154,7 +152,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
         try {
             ops.onStartAsyncOperation(this);
-            getNodeEngine().getExecutionService().execute(executorName, new Runnable() {
+            exs.execute(executorName, new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -203,63 +201,16 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
     @SuppressWarnings({"unchecked", "checkstyle:methodlength"})
     private void updateAndUnlock(Data previousValue, Data newValue, EntryEventType modificationType, String caller,
                                  long threadId, final Object result, long now) {
-        HDEntryOffloadableSetUnlockOperation updateOperation = new HDEntryOffloadableSetUnlockOperation(name, modificationType,
-                dataKey, previousValue, newValue, caller, threadId, now, entryProcessor.getBackupProcessor());
+        Operation setUnlockOperation = new HDEntryOffloadableSetUnlockOperation(name, modificationType,
+                dataKey, previousValue, newValue, caller, threadId, now, entryProcessor.getBackupProcessor())
+                .setPartitionId(getPartitionId())
+                .setReplicaIndex(0)
+                .setNodeEngine(getNodeEngine())
+                .setCallerUuid(getCallerUuid())
+                .setOperationResponseHandler(new SetUnlockOperationResponseHandler(result));
 
-        updateOperation.setPartitionId(getPartitionId());
-        updateOperation.setReplicaIndex(0);
-        updateOperation.setNodeEngine(getNodeEngine());
-        updateOperation.setCallerUuid(getCallerUuid());
-        OperationAccessor.setCallerAddress(updateOperation, getCallerAddress());
-        @SuppressWarnings("checkstyle:anoninnerlength")
-        OperationResponseHandler setUnlockResponseHandler = new OperationResponseHandler() {
-            @Override
-            public void sendResponse(Operation op, Object response) {
-                if (isRetryable(response) || isTimeout(response)) {
-                    retry(op);
-                } else {
-                    handleResponse(response);
-                }
-            }
-
-            private void retry(final Operation op) {
-                setUnlockRetryCount++;
-                if (isFastRetryLimitReached()) {
-                    exs.schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            ops.execute(op);
-                        }
-                    }, DEFAULT_TRY_PAUSE_MILLIS, TimeUnit.MILLISECONDS);
-                } else {
-                    ops.execute(op);
-                }
-            }
-
-            private void handleResponse(Object response) {
-                if (response instanceof Throwable) {
-                    Throwable t = (Throwable) response;
-                    try {
-                        // EntryOffloadableLockMismatchException is a marker send from the EntryOffloadableSetUnlockOperation
-                        // meaning that the whole invocation of the EntryOffloadableOperation should be retried
-                        if (t instanceof EntryOffloadableLockMismatchException) {
-                            t = new RetryableHazelcastException(t.getMessage(), t);
-                        }
-                        getOperationResponseHandler().sendResponse(HDEntryOperation.this, t);
-                    } finally {
-                        ops.onCompletionAsyncOperation(HDEntryOperation.this);
-                    }
-                } else {
-                    try {
-                        getOperationResponseHandler().sendResponse(HDEntryOperation.this, result);
-                    } finally {
-                        ops.onCompletionAsyncOperation(HDEntryOperation.this);
-                    }
-                }
-            }
-        };
-        updateOperation.setOperationResponseHandler(setUnlockResponseHandler);
-        ops.execute(updateOperation);
+        OperationAccessor.setCallerAddress(setUnlockOperation, getCallerAddress());
+        ops.execute(setUnlockOperation);
     }
 
     private boolean isRetryable(Object response) {
@@ -280,7 +231,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
     @Override
     public void onExecutionFailure(Throwable e) {
-        if (offloading) {
+        if (offload) {
             // This is required since if the returnsResponse() method returns false there won't be any response sent
             // to the invoking party - this means that the operation won't be retried if the exception is instanceof
             // HazelcastRetryableException
@@ -292,7 +243,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
     @Override
     public boolean returnsResponse() {
-        if (offloading) {
+        if (offload) {
             // This has to be false, since the operation uses the deferred-response mechanism.
             // This method returns false, but the response will be send later on using the response handler
             return false;
@@ -308,7 +259,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
     @Override
     public void afterRun() throws Exception {
-        if (!offloading) {
+        if (!offload) {
             disposeDeferredBlocks();
         }
     }
@@ -322,17 +273,17 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
     public boolean shouldWait() {
         // optimisation for ReadOnly processors -> they will not wait for the lock
         if (entryProcessor instanceof ReadOnly) {
-            offloading = isOffloadingRequested(entryProcessor);
+            offload = isOffloadingRequested(entryProcessor);
             return false;
         }
         // mutating offloading -> only if key not locked, since it uses locking too (but on reentrant one)
         if (!recordStore.isLocked(dataKey) && isOffloadingRequested(entryProcessor)) {
-            offloading = true;
+            offload = true;
             return false;
         }
         //at this point we cannot offload. the entry is locked or the EP does not support offloading
         //if the entry is locked by us then we can still run the EP on the partition thread
-        offloading = false;
+        offload = false;
         return !recordStore.canAcquireLock(dataKey, getCallerUuid(), getThreadId());
     }
 
@@ -353,7 +304,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
     @Override
     public Object getResponse() {
-        if (offloading) {
+        if (offload) {
             return null;
         }
         return response;
@@ -361,7 +312,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
     @Override
     public Operation getBackupOperation() {
-        if (offloading) {
+        if (offload) {
             return null;
         }
         EntryBackupProcessor backupProcessor = entryProcessor.getBackupProcessor();
@@ -370,7 +321,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
     @Override
     public boolean shouldBackup() {
-        if (offloading) {
+        if (offload) {
             return false;
         }
         return mapContainer.getTotalBackupCount() > 0 && entryProcessor.getBackupProcessor() != null;
@@ -406,5 +357,58 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
     @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.ENTRY;
+    }
+
+    private class SetUnlockOperationResponseHandler implements OperationResponseHandler {
+        private final Object result;
+
+        SetUnlockOperationResponseHandler(Object result) {
+            this.result = result;
+        }
+
+        @Override
+        public void sendResponse(Operation op, Object response) {
+            if (isRetryable(response) || isTimeout(response)) {
+                retry(op);
+            } else {
+                handleResponse(response);
+            }
+        }
+
+        private void retry(final Operation op) {
+            setUnlockRetryCount++;
+            if (isFastRetryLimitReached()) {
+                exs.schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        ops.execute(op);
+                    }
+                }, DEFAULT_TRY_PAUSE_MILLIS, TimeUnit.MILLISECONDS);
+            } else {
+                ops.execute(op);
+            }
+        }
+
+        private void handleResponse(Object response) {
+            if (response instanceof Throwable) {
+                Throwable t = (Throwable) response;
+                try {
+                    // EntryOffloadableLockMismatchException is a marker send from the EntryOffloadableSetUnlockOperation
+                    // meaning that the whole invocation of the EntryOffloadableOperation should be retried
+                    if (t instanceof EntryOffloadableLockMismatchException) {
+                        t = new RetryableHazelcastException(t.getMessage(), t);
+                    }
+                    HDEntryOperation.this.sendResponse(t);
+                } finally {
+                    ops.onCompletionAsyncOperation(HDEntryOperation.this);
+                }
+            } else {
+                try {
+                    HDEntryOperation.this.sendResponse(result);
+                } finally {
+                    ops.onCompletionAsyncOperation(HDEntryOperation.this);
+                }
+            }
+        }
     }
 }

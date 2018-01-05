@@ -151,6 +151,8 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
 
     @Override
     protected InputOutputFactory createInputOutputFactory() {
+        overrideByteOrder();
+
         if (byteOrder == null) {
             byteOrder = ByteOrder.BIG_ENDIAN;
         }

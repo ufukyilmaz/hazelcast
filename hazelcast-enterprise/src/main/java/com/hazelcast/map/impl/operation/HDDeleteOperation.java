@@ -1,8 +1,9 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.impl.MutatingOperation;
 
-public class HDDeleteOperation extends HDBaseRemoveOperation {
+public class HDDeleteOperation extends HDBaseRemoveOperation implements MutatingOperation {
     private boolean success;
 
     public HDDeleteOperation(String name, Data dataKey, boolean disableWanReplicationEvent) {

@@ -2,8 +2,9 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.impl.MutatingOperation;
 
-public class HDRemoveOperation extends HDBaseRemoveOperation implements IdentifiedDataSerializable {
+public class HDRemoveOperation extends HDBaseRemoveOperation implements IdentifiedDataSerializable, MutatingOperation {
 
     protected boolean successful;
 

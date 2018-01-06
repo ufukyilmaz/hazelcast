@@ -1,8 +1,9 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.impl.MutatingOperation;
 
-public class HDPutIfAbsentOperation extends HDBasePutOperation {
+public class HDPutIfAbsentOperation extends HDBasePutOperation implements MutatingOperation {
 
     private boolean successful;
 

@@ -3,10 +3,11 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.impl.MutatingOperation;
 
 import java.io.IOException;
 
-public class HDReplaceIfSameOperation extends HDBasePutOperation {
+public class HDReplaceIfSameOperation extends HDBasePutOperation implements MutatingOperation {
 
     private Data expect;
     private boolean successful;

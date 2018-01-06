@@ -3,12 +3,11 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.impl.MutatingOperation;
 import com.hazelcast.util.Clock;
 
 import static com.hazelcast.core.EntryEventType.REMOVED;
 
-public abstract class HDBaseRemoveOperation extends HDLockAwareOperation implements BackupAwareOperation, MutatingOperation {
+public abstract class HDBaseRemoveOperation extends HDLockAwareOperation implements BackupAwareOperation {
 
     protected transient Data dataOldValue;
 

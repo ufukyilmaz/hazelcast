@@ -1,8 +1,9 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.impl.MutatingOperation;
 
-public class HDTryPutOperation extends HDBasePutOperation {
+public class HDTryPutOperation extends HDBasePutOperation implements MutatingOperation {
 
     public HDTryPutOperation() {
     }

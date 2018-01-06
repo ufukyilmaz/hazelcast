@@ -3,8 +3,9 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.impl.MutatingOperation;
 
-public class HDSetOperation extends HDBasePutOperation implements IdentifiedDataSerializable {
+public class HDSetOperation extends HDBasePutOperation implements IdentifiedDataSerializable, MutatingOperation {
 
     private boolean newRecord;
 

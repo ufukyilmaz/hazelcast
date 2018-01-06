@@ -2,8 +2,9 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.impl.MutatingOperation;
 
-public class HDPutOperation extends HDBasePutOperation implements IdentifiedDataSerializable {
+public class HDPutOperation extends HDBasePutOperation implements IdentifiedDataSerializable, MutatingOperation {
 
     public HDPutOperation() {
     }

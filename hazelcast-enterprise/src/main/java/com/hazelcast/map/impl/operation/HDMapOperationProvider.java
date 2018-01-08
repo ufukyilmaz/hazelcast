@@ -161,9 +161,9 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createMergeOperation(String name, Data dataKey, EntryView<Data, Data> entryView,
+    public MapOperation createMergeOperation(String name, EntryView<Data, Data> entryView,
                                              MapMergePolicy policy, boolean disableWanReplicationEvent) {
-        return new HDMergeOperation(name, dataKey, entryView, policy, disableWanReplicationEvent);
+        return new HDMergeOperation(name, entryView, policy, disableWanReplicationEvent);
     }
 
     @Override

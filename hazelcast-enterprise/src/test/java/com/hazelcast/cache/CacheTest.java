@@ -32,6 +32,7 @@ import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -630,6 +631,7 @@ public class CacheTest extends AbstractCacheTest {
     }
 
     @Test
+    @Ignore
     public void testNativeCache_UsedNativeMemory_beforeAndAfterShutdown() {
         CacheConfig<Integer, Integer> cacheConfig = createCacheConfig(CACHE_NAME, InMemoryFormat.NATIVE);
         Cache<Integer, Integer> cache = getICache(cacheManager, cacheConfig, CACHE_NAME);

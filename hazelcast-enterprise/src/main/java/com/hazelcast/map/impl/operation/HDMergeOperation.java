@@ -26,9 +26,9 @@ public class HDMergeOperation extends HDBasePutOperation {
     public HDMergeOperation() {
     }
 
-    public HDMergeOperation(String name, Data dataKey, EntryView<Data, Data> entryView,
+    public HDMergeOperation(String name, EntryView<Data, Data> entryView,
                             MapMergePolicy policy, boolean disableWanReplicationEvent) {
-        super(name, dataKey, null);
+        super(name, entryView.getKey(), null);
         this.mergingEntry = entryView;
         this.mergePolicy = policy;
         this.disableWanReplicationEvent = disableWanReplicationEvent;

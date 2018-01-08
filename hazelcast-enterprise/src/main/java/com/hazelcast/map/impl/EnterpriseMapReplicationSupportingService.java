@@ -88,8 +88,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
                 EntryView<Data, Data> entryView = replicationUpdate.getEntryView();
                 MapMergePolicy mergePolicy = replicationUpdate.getMergePolicy();
 
-                Data dataKey = mapServiceContext.toData(entryView.getKey(), mapContainer.getPartitioningStrategy());
-                MapOperation operation = operationProvider.createMergeOperation(mapName, dataKey, entryView, mergePolicy, true);
+                MapOperation operation = operationProvider.createMergeOperation(mapName, entryView, mergePolicy, true);
                 completableFuture = invokeOnPartition(entryView.getKey(), operation);
             } else if (eventObject instanceof EnterpriseMapReplicationRemove) {
                 EnterpriseMapReplicationRemove replicationRemove = (EnterpriseMapReplicationRemove) eventObject;
@@ -112,11 +111,9 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     private void handleSyncObject(EnterpriseMapReplicationSync syncObject) {
         EntryView<Data, Data> entryView = syncObject.getEntryView();
         String mapName = syncObject.getMapName();
-        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
-        Data dataKey = mapServiceContext.toData(entryView.getKey(), mapContainer.getPartitioningStrategy());
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
         MapOperation operation
-                = operationProvider.createMergeOperation(mapName, dataKey, entryView, defaultSyncMergePolicy, true);
+                = operationProvider.createMergeOperation(mapName, entryView, defaultSyncMergePolicy, true);
         invokeOnPartition(entryView.getKey(), operation);
     }
 
@@ -124,7 +121,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             return nodeEngine.getOperationService()
-                             .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
+                    .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
             throw ExceptionUtil.rethrow(t);
         }

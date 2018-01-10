@@ -76,14 +76,49 @@ public abstract class HDMapOperation extends MapOperation {
 
     @Override
     public final void run() {
+        ILogger logger = getLogger();
         try {
+            // first attempt; hope no eviction was needed
             try {
                 runInternal();
+                return;
             } catch (NativeOutOfMemoryError e) {
-                if (!forceEvictionAndRetry()) {
-                    evictAllAndRetry();
+                ignore(e);
+            }
+
+            // first attempt failed, so lets try to evict the current record store and then try again
+            for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
+                try {
+                    if (logger.isFineEnabled()) {
+                        logger.fine(format("Applying forced eviction on current RecordStore (map %s, partitionId: %d)!",
+                                name, getPartitionId()));
+                    }
+                    // if there is still an NOOME, apply eviction on current RecordStore and try again
+                    forceEviction(recordStore);
+                    runInternal();
+                    return;
+                } catch (NativeOutOfMemoryError e) {
+                    ignore(e);
                 }
             }
+
+            // cleaning up the current record stores didn't help, so lets try to clean the other record stores and try again
+            for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
+                try {
+                    if (logger.isFineEnabled()) {
+                        logger.fine(format("Applying forced eviction on other RecordStores owned by the same partition thread"
+                                + " (map %s, partitionId: %d", name, getPartitionId()));
+                    }
+                    // if there is still an NOOME, apply for eviction on others and try again
+                    forceEvictionOnOthers();
+                    runInternal();
+                    return;
+                } catch (NativeOutOfMemoryError e) {
+                    ignore(e);
+                }
+            }
+
+            evictAllAndRetry();
         } catch (NativeOutOfMemoryError e) {
             disposeDeferredBlocks();
             throw e;
@@ -142,47 +177,6 @@ public abstract class HDMapOperation extends MapOperation {
             mapContainer = mapServiceContext.getMapContainer(name);
             mapEventPublisher = mapServiceContext.getMapEventPublisher();
         }
-    }
-
-    /**
-     * Executes {@link HDEvictorImpl#forceEvict(RecordStore)} calls on local and other RecordStores
-     * and retries the {@link #runInternal()} method.
-     *
-     * @return {@code true} if the forced eviction was successful, {@code false} otherwise
-     */
-    private boolean forceEvictionAndRetry() {
-        ILogger logger = getLogger();
-
-        for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
-            try {
-                if (logger.isFineEnabled()) {
-                    logger.fine(format("Applying forced eviction on current RecordStore (map %s, partitionId: %d)!",
-                            name, getPartitionId()));
-                }
-                // if there is still an NOOME, apply eviction on current RecordStore and try again
-                forceEviction(recordStore);
-                runInternal();
-                return true;
-            } catch (NativeOutOfMemoryError e) {
-                ignore(e);
-            }
-        }
-
-        for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
-            try {
-                if (logger.isFineEnabled()) {
-                    logger.fine(format("Applying forced eviction on other RecordStores owned by the same partition thread"
-                            + " (map %s, partitionId: %d", name, getPartitionId()));
-                }
-                // if there is still an NOOME, apply for eviction on others and try again
-                forceEvictionOnOthers();
-                runInternal();
-                return true;
-            } catch (NativeOutOfMemoryError e) {
-                ignore(e);
-            }
-        }
-        return false;
     }
 
     /**

@@ -1,10 +1,6 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.map.impl.LazyMapEntry;
-import com.hazelcast.map.impl.LocalMapStatsProvider;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.monitor.impl.LocalMapStatsImpl;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -13,7 +9,6 @@ import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
-import java.util.Map;
 
 public abstract class HDKeyBasedMapOperation extends HDMapOperation implements PartitionAwareOperation, NamedOperation {
 
@@ -48,17 +43,6 @@ public abstract class HDKeyBasedMapOperation extends HDMapOperation implements P
         this.dataKey = dataKey;
         this.dataValue = dataValue;
         this.ttl = ttl;
-    }
-
-    protected boolean noOp(Map.Entry entry, Object oldValue) {
-        final LazyMapEntry mapEntrySimple = (LazyMapEntry) entry;
-        return !mapEntrySimple.isModified() || (oldValue == null && entry.getValue() == null);
-    }
-
-    protected LocalMapStatsImpl getLocalMapStats() {
-        final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        final LocalMapStatsProvider localMapStatsProvider = mapServiceContext.getLocalMapStatsProvider();
-        return localMapStatsProvider.getLocalMapStatsImpl(name);
     }
 
     protected long getNow() {

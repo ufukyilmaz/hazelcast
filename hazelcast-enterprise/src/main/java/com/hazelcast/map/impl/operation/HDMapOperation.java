@@ -77,7 +77,13 @@ public abstract class HDMapOperation extends MapOperation {
     @Override
     public final void run() {
         try {
-            runInternalWithForcedEviction();
+            try {
+                runInternal();
+            } catch (NativeOutOfMemoryError e) {
+                if (!forceEvictionAndRetry()) {
+                    evictAllAndRetry();
+                }
+            }
         } catch (NativeOutOfMemoryError e) {
             disposeDeferredBlocks();
             throw e;
@@ -135,21 +141,6 @@ public abstract class HDMapOperation extends MapOperation {
             mapServiceContext = mapService.getMapServiceContext();
             mapContainer = mapServiceContext.getMapContainer(name);
             mapEventPublisher = mapServiceContext.getMapEventPublisher();
-        }
-    }
-
-    /**
-     * Executes the {@link #runInternal()} method and forces eviction in case of a {@link NativeOutOfMemoryError}.
-     *
-     * @throws NativeOutOfMemoryError from the last {@link #runInternal()} call, if all evictions were not effective
-     */
-    private void runInternalWithForcedEviction() {
-        try {
-            runInternal();
-        } catch (NativeOutOfMemoryError e) {
-            if (!forceEvictionAndRetry()) {
-                evictAllAndRetry();
-            }
         }
     }
 

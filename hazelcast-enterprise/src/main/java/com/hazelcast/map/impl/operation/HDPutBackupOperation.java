@@ -10,12 +10,11 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.BackupOperation;
-import com.hazelcast.spi.impl.MutatingOperation;
 
 import java.io.IOException;
 
 public final class HDPutBackupOperation extends HDKeyBasedMapOperation implements BackupOperation,
-        IdentifiedDataSerializable, MutatingOperation {
+        IdentifiedDataSerializable {
 
     // TODO unlockKey is a logic just used in transactional put operations.
     // TODO It complicates here there should be another Operation for that logic, e.g., TxnSetBackup

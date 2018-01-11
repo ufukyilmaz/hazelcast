@@ -13,7 +13,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.BackupOperation;
-import com.hazelcast.spi.impl.MutatingOperation;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
@@ -28,7 +27,7 @@ import java.util.List;
  */
 public class CachePutAllBackupOperation
         extends AbstractHiDensityCacheOperation
-        implements BackupOperation, MutableOperation, MutatingOperation {
+        implements BackupOperation, MutableOperation {
 
     private CacheBackupRecordStore cacheBackupRecordStore;
     private ExpiryPolicy expiryPolicy;

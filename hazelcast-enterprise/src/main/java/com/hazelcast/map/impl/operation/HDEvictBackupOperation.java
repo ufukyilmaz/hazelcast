@@ -5,12 +5,11 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.BackupOperation;
-import com.hazelcast.spi.impl.MutatingOperation;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 
-public class HDEvictBackupOperation extends HDKeyBasedMapOperation implements BackupOperation, MutatingOperation,
+public class HDEvictBackupOperation extends HDKeyBasedMapOperation implements BackupOperation,
         IdentifiedDataSerializable {
 
     protected boolean unlockKey;

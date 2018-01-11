@@ -10,7 +10,6 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.BackupOperation;
-import com.hazelcast.spi.impl.MutatingOperation;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
@@ -20,7 +19,7 @@ import java.io.IOException;
  */
 public class CachePutBackupOperation
         extends AbstractKeyBasedHiDensityCacheOperation
-        implements BackupOperation, MutableOperation, MutatingOperation {
+        implements BackupOperation, MutableOperation {
 
     private Data value;
     private ExpiryPolicy expiryPolicy;

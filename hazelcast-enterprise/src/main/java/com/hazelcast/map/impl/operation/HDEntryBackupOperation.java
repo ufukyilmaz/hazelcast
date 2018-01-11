@@ -7,13 +7,12 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupOperation;
-import com.hazelcast.spi.impl.MutatingOperation;
 
 import java.io.IOException;
 
 import static com.hazelcast.map.impl.operation.EntryOperator.operator;
 
-public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements BackupOperation, MutatingOperation {
+public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements BackupOperation {
 
     private EntryBackupProcessor entryProcessor;
 

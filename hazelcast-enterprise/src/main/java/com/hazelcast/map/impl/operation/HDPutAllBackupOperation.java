@@ -9,7 +9,6 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.PartitionAwareOperation;
-import com.hazelcast.spi.impl.MutatingOperation;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,8 +17,7 @@ import java.util.List;
 import static com.hazelcast.map.impl.EntryViews.createSimpleEntryView;
 import static com.hazelcast.map.impl.record.Records.applyRecordInfo;
 
-public class HDPutAllBackupOperation extends HDMapOperation implements PartitionAwareOperation, BackupOperation,
-        MutatingOperation {
+public class HDPutAllBackupOperation extends HDMapOperation implements PartitionAwareOperation, BackupOperation {
 
     private MapEntries entries;
     private List<RecordInfo> recordInfos;

@@ -7,7 +7,6 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.BackupOperation;
-import com.hazelcast.spi.impl.MutatingOperation;
 
 import java.io.IOException;
 
@@ -16,7 +15,7 @@ import java.io.IOException;
  */
 public class CacheRemoveBackupOperation
         extends AbstractKeyBasedHiDensityCacheOperation
-        implements BackupOperation, MutableOperation, MutatingOperation {
+        implements BackupOperation, MutableOperation {
 
     private boolean wanOriginated;
 

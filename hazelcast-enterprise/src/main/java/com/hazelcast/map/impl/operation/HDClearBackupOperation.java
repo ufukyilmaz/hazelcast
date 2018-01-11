@@ -1,9 +1,8 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.spi.BackupOperation;
-import com.hazelcast.spi.impl.MutatingOperation;
 
-public class HDClearBackupOperation extends HDMapOperation implements BackupOperation, MutatingOperation {
+public class HDClearBackupOperation extends HDMapOperation implements BackupOperation {
 
     public HDClearBackupOperation() {
         this(null);

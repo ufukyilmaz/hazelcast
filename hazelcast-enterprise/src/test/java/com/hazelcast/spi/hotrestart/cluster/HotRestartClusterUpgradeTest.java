@@ -6,6 +6,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -22,6 +23,7 @@ import java.util.Collection;
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertNodesVersion;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 @RunWith(HazelcastParallelClassRunner.class)
@@ -156,9 +158,23 @@ public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStart
     }
 
     private void shutdownCluster() {
-        Collection<HazelcastInstance> instances = getAllInstances();
+        final Collection<HazelcastInstance> instances = getAllInstances();
         assertThat(instances, Matchers.not(Matchers.<HazelcastInstance>empty()));
         waitAllForSafeState(instances);
-        instances.iterator().next().getCluster().shutdown();
+
+        final HazelcastInstance hz = instances.iterator().next();
+        // For 3.9 compatibility:
+        // Ensure that all members have the same member-list version after rolling upgrade.
+        // See MembershipManager.scheduleMemberListVersionIncrement().
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                int memberListVersion = getNode(hz).getClusterService().getMemberListVersion();
+                for (HazelcastInstance instance : instances) {
+                    assertEquals(memberListVersion, getNode(instance).getClusterService().getMemberListVersion());
+                }
+            }
+        });
+        hz.getCluster().shutdown();
     }
 }

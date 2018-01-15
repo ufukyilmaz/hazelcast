@@ -631,7 +631,6 @@ public class CacheTest extends AbstractCacheTest {
     }
 
     @Test
-    @Ignore
     public void testNativeCache_UsedNativeMemory_beforeAndAfterShutdown() {
         CacheConfig<Integer, Integer> cacheConfig = createCacheConfig(CACHE_NAME, InMemoryFormat.NATIVE);
         Cache<Integer, Integer> cache = getICache(cacheManager, cacheConfig, CACHE_NAME);

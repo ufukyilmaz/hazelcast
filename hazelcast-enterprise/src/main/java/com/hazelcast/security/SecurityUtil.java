@@ -10,7 +10,7 @@ import com.hazelcast.security.permission.ClusterPermission;
 import com.hazelcast.security.permission.CountDownLatchPermission;
 import com.hazelcast.security.permission.DurableExecutorServicePermission;
 import com.hazelcast.security.permission.ExecutorServicePermission;
-import com.hazelcast.security.permission.ReliableIdGeneratorPermission;
+import com.hazelcast.security.permission.FlakeIdGeneratorPermission;
 import com.hazelcast.security.permission.ListPermission;
 import com.hazelcast.security.permission.LockPermission;
 import com.hazelcast.security.permission.MapPermission;
@@ -63,8 +63,8 @@ public final class SecurityUtil {
                 return new TopicPermission(permissionConfig.getName(), actions);
             case ID_GENERATOR:
                 return new AtomicLongPermission(IdGeneratorService.ATOMIC_LONG_NAME + permissionConfig.getName(), actions);
-            case RELIABLE_ID_GENERATOR:
-                return new ReliableIdGeneratorPermission(permissionConfig.getName(), actions);
+            case FLAKE_ID_GENERATOR:
+                return new FlakeIdGeneratorPermission(permissionConfig.getName(), actions);
             case TRANSACTION:
                 return new TransactionPermission();
             case DURABLE_EXECUTOR_SERVICE:

@@ -2,7 +2,6 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
-import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordInfo;
 import com.hazelcast.nio.serialization.Data;
@@ -11,11 +10,13 @@ import com.hazelcast.spi.Operation;
 
 import static com.hazelcast.core.EntryEventType.ADDED;
 import static com.hazelcast.core.EntryEventType.UPDATED;
+import static com.hazelcast.map.impl.EntryViews.createSimpleEntryView;
 import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
 
 public abstract class HDBasePutOperation extends HDLockAwareOperation implements BackupAwareOperation {
 
     protected transient Data dataOldValue;
+    protected transient Data dataMergingValue;
     protected transient EntryEventType eventType;
     protected transient boolean putTransient;
 
@@ -34,15 +35,15 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
     public void afterRun() throws Exception {
         mapServiceContext.interceptAfterPut(name, dataValue);
         Object value = isPostProcessing(recordStore) ? recordStore.getRecord(dataKey).getValue() : dataValue;
-        mapEventPublisher.publishEvent(getCallerAddress(), name, getEventType(), dataKey, dataOldValue, value);
-        publishWANReplicationEvent(value);
+        mapEventPublisher.publishEvent(getCallerAddress(), name, getEventType(),
+                dataKey, dataOldValue, value, dataMergingValue);
         invalidateNearCache(dataKey);
+        publishWANReplicationEvent(value);
         evict(dataKey);
     }
 
-
     private void publishWANReplicationEvent(Object value) {
-        if (!mapContainer.isWanReplicationEnabled()) {
+        if (!mapContainer.isWanReplicationEnabled() || !canThisOpGenerateWANEvent()) {
             return;
         }
 
@@ -50,9 +51,19 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
         if (record == null) {
             return;
         }
-        final Data valueConvertedData = mapServiceContext.toData(value);
-        final EntryView entryView = EntryViews.createSimpleEntryView(dataKey, valueConvertedData, record);
+
+        Data valueConvertedData = mapServiceContext.toData(value);
+        EntryView entryView = createSimpleEntryView(dataKey, valueConvertedData, record);
+
         mapEventPublisher.publishWanReplicationUpdate(name, entryView);
+    }
+
+    /**
+     * @return {@code true} if this operation can generate WAN event, otherwise return {@code false}
+     * to indicate WAN event generation is not allowed for this operation
+     */
+    protected boolean canThisOpGenerateWANEvent() {
+        return true;
     }
 
     private EntryEventType getEventType() {

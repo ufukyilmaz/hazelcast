@@ -17,9 +17,9 @@ public class HDMergeOperation extends HDBasePutOperation {
 
     private MapMergePolicy mergePolicy;
     private EntryView<Data, Data> mergingEntry;
-    private boolean merged;
-    private Data mergingValue;
     private boolean disableWanReplicationEvent;
+
+    private transient boolean merged;
 
     public HDMergeOperation() {
     }
@@ -43,7 +43,7 @@ public class HDMergeOperation extends HDBasePutOperation {
             Record record = recordStore.getRecord(dataKey);
             if (record != null) {
                 dataValue = mapServiceContext.toData(record.getValue());
-                mergingValue = mapServiceContext.toData(mergingEntry.getValue());
+                dataMergingValue = mapServiceContext.toData(mergingEntry.getValue());
             }
         }
     }

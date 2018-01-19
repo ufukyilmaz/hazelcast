@@ -3,7 +3,6 @@ package com.hazelcast.cache.impl;
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheEventType;
 import com.hazelcast.cache.CacheNotExistsException;
-import com.hazelcast.cache.DefaultEnterpriseCacheRecordStore;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.HiDensityCacheStorageInfo;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;

@@ -1,7 +1,7 @@
-package com.hazelcast.cache;
+package com.hazelcast.cache.impl;
 
-import com.hazelcast.cache.impl.AbstractCacheService;
-import com.hazelcast.cache.impl.CacheRecordStore;
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.serialization.Data;
@@ -12,7 +12,7 @@ import com.hazelcast.util.ExceptionUtil;
 import static com.hazelcast.cache.impl.CacheEventContextUtil.createCacheCompleteEvent;
 
 /**
- * The {@link com.hazelcast.cache.EnterpriseCacheRecordStore} implementation that provides
+ * The {@link EnterpriseCacheRecordStore} implementation that provides
  * merge function implementation.
  */
 public class DefaultEnterpriseCacheRecordStore extends CacheRecordStore

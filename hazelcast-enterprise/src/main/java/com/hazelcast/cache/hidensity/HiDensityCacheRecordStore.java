@@ -1,6 +1,6 @@
 package com.hazelcast.cache.hidensity;
 
-import com.hazelcast.cache.EnterpriseCacheRecordStore;
+import com.hazelcast.cache.impl.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.elastic.SlottableIterator;

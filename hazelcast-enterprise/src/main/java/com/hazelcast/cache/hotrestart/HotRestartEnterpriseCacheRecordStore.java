@@ -1,6 +1,6 @@
 package com.hazelcast.cache.hotrestart;
 
-import com.hazelcast.cache.impl.DefaultEnterpriseCacheRecordStore;
+import com.hazelcast.cache.impl.CacheRecordStore;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.internal.serialization.impl.HeapData;
@@ -18,14 +18,14 @@ import com.hazelcast.util.Clock;
 /**
  * On-heap cache record store with Hot Restart support.
  */
-public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCacheRecordStore implements RamStore {
+public class HotRestartEnterpriseCacheRecordStore extends CacheRecordStore implements RamStore {
 
     private final long prefix;
     private final boolean fsync;
     private final HotRestartStore hotRestartStore;
 
     public HotRestartEnterpriseCacheRecordStore(String name, int partitionId, NodeEngine nodeEngine,
-            EnterpriseCacheService cacheService, boolean fsync, long keyPrefix) {
+                                                EnterpriseCacheService cacheService, boolean fsync, long keyPrefix) {
         super(name, partitionId, nodeEngine, cacheService);
         this.fsync = fsync;
         this.prefix = keyPrefix;

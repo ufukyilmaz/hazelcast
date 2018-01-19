@@ -1,6 +1,5 @@
 package com.hazelcast.cache.hidensity;
 
-import com.hazelcast.cache.impl.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.elastic.SlottableIterator;
@@ -23,7 +22,7 @@ import java.util.Map;
  * @see com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore
  */
 public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
-        extends HiDensityRecordStore<R>, EnterpriseCacheRecordStore {
+        extends HiDensityRecordStore<R>, ICacheRecordStore {
 
     /**
      * Constant for system property name for enabling/disabling throwing exception behavior

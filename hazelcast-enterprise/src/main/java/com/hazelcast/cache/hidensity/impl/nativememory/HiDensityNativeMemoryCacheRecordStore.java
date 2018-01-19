@@ -1,8 +1,5 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.CacheMergePolicy;
-import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeEvictionChecker;
@@ -10,7 +7,7 @@ import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentage
 import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeEvictionChecker;
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
-import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionConfig;
@@ -38,8 +35,6 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import static com.hazelcast.cache.impl.CacheEventContextUtil.createCacheCompleteEvent;
 
 @SuppressWarnings("checkstyle:methodcount")
 public class HiDensityNativeMemoryCacheRecordStore
@@ -788,66 +783,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             cacheRecordProcessor.dispose(record);
             return;
         }
-    }
-
-    @Override
-    public boolean merge(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
-                         String caller, int completionId, String origin) {
-        final long now = Clock.currentTimeMillis();
-        final long start = isStatisticsEnabled() ? System.nanoTime() : 0;
-
-        boolean merged = false;
-        Data key = cacheEntryView.getKey();
-        Object value = cacheEntryView.getValue();
-        long expiryTime = cacheEntryView.getExpirationTime();
-        HiDensityNativeMemoryCacheRecord record = records.get(key);
-        boolean isExpired = processExpiredEntry(key, record, now);
-
-        try {
-            if (record == null || isExpired) {
-                merged = createRecordWithExpiry(key, value, expiryTime,
-                        now, true, completionId, origin) != null;
-            } else {
-                NativeMemoryData existingValue = record.getValue();
-                Object newValue =
-                        mergePolicy.merge(name,
-                                cacheEntryView,
-                                new DefaultCacheEntryView(key,
-                                        existingValue,
-                                        record.getCreationTime(),
-                                        record.getExpirationTime(),
-                                        record.getLastAccessTime(),
-                                        record.getAccessHit()));
-                if (existingValue != newValue) {
-                    merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
-                            now, true, completionId, caller, origin);
-                }
-                publishEvent(createCacheCompleteEvent(toHeapData(key),
-                        CacheRecord.TIME_NOT_AVAILABLE,
-                        origin, completionId));
-            }
-
-            onMerge(cacheEntryView, mergePolicy, caller, true, record, isExpired, merged);
-
-            if (merged && isStatisticsEnabled()) {
-                statistics.increaseCachePuts(1);
-                statistics.addPutTimeNanos(System.nanoTime() - start);
-            }
-
-            return merged;
-        } catch (Throwable error) {
-            onMergeError(cacheEntryView, mergePolicy, caller, true, record, error);
-            throw ExceptionUtil.rethrow(error);
-        }
-    }
-
-    protected void onMerge(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
-                           String caller, boolean disableWriteThrough, CacheRecord record,
-                           boolean isExpired, boolean isSaveSucceed) {
-    }
-
-    protected void onMergeError(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
-                                String caller, boolean disableWriteThrough, CacheRecord record, Throwable error) {
     }
 
     @Override

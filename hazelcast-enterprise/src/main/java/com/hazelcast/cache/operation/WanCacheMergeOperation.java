@@ -2,15 +2,17 @@ package com.hazelcast.cache.operation;
 
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheMergePolicy;
-import com.hazelcast.cache.impl.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.operation.AbstractMutatingCacheOperation;
 import com.hazelcast.cache.impl.operation.CachePutBackupOperation;
+import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 
 import java.io.IOException;
+
+import static java.lang.Boolean.TRUE;
 
 /**
  * Operation implementation for merging entries.
@@ -37,18 +39,17 @@ public class WanCacheMergeOperation
     @Override
     public void run()
             throws Exception {
-        response = ((EnterpriseCacheRecordStore) cache)
-                .merge(cacheEntryView, mergePolicy, getCallerUuid(),
-                        completionId, wanGroupName);
+        CacheRecord record = cache.merge(cacheEntryView, mergePolicy, getCallerUuid(), wanGroupName, completionId);
+        response = record != null;
 
-        if (Boolean.TRUE.equals(response)) {
+        if (TRUE.equals(response)) {
             backupRecord = cache.getRecord(key);
         }
     }
 
     @Override
     public boolean shouldBackup() {
-        return Boolean.TRUE.equals(response);
+        return TRUE.equals(response);
     }
 
     @Override

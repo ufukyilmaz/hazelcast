@@ -27,8 +27,8 @@ public class WanCacheRemoveOperation
     }
 
     @Override
-    public void runInternal() throws Exception {
-        response = cache.remove(key, getCallerUuid(), completionId, wanGroupName);
+    public void runInternal() {
+        response = cache.remove(key, getCallerUuid(), wanGroupName, completionId);
     }
 
     @Override

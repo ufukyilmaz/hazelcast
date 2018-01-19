@@ -1,6 +1,7 @@
-package com.hazelcast.cache;
+package com.hazelcast.cache.impl;
 
-import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.nio.serialization.Data;
 
 /**

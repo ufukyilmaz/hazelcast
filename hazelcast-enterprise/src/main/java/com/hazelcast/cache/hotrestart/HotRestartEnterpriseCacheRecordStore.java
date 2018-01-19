@@ -1,6 +1,6 @@
 package com.hazelcast.cache.hotrestart;
 
-import com.hazelcast.cache.DefaultEnterpriseCacheRecordStore;
+import com.hazelcast.cache.impl.DefaultEnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.internal.serialization.impl.HeapData;

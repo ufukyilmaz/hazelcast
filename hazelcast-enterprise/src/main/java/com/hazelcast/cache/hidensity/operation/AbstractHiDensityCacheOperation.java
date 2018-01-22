@@ -1,8 +1,8 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
@@ -31,8 +31,9 @@ abstract class AbstractHiDensityCacheOperation
         extends AbstractNamedOperation
         implements PartitionAwareOperation, ServiceNamespaceAware, IdentifiedDataSerializable {
 
+    static final int UNIT_PERCENTAGE = 100;
     static final int FORCED_EVICTION_RETRY_COUNT
-            = ICacheRecordStore.UNIT_PERCENTAGE / HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
+            = UNIT_PERCENTAGE / HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
 
     protected Object response;
     protected int completionId = MutableOperation.IGNORE_COMPLETION;

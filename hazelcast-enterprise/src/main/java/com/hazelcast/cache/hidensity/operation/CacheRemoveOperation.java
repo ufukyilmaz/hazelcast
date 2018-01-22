@@ -31,9 +31,9 @@ public class CacheRemoveOperation
     @Override
     protected void runInternal() throws Exception {
         if (currentValue == null) {
-            response = cache.remove(key, getCallerUuid(), completionId);
+            response = cache.remove(key, getCallerUuid(), null, completionId);
         } else {
-            response = cache.remove(key, currentValue, getCallerUuid(), completionId);
+            response = cache.remove(key, currentValue, getCallerUuid(), null, completionId);
         }
     }
 

@@ -1,9 +1,10 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheMergePolicy;
+import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -37,8 +38,9 @@ public class WanCacheMergeOperation
     }
 
     @Override
-    public void runInternal() throws Exception {
-        response = cache.merge(cacheEntryView, mergePolicy, getCallerUuid(), completionId, wanGroupName);
+    public void runInternal() {
+        CacheRecord record = cache.merge(cacheEntryView, mergePolicy, getCallerUuid(), wanGroupName, completionId);
+        response = record != null;
     }
 
     @Override

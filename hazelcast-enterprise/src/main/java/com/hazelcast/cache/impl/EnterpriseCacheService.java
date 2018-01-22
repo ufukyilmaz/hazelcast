@@ -71,7 +71,7 @@ import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartiti
  * <li>Destroying segments and caches</li>
  * <li>Mediating for cache events and listeners</li>
  * </ul>
- *
+ * <p>
  * When interacting with Hot Restart persistent stores, cache configurations must be persisted in the serialized form of
  * {@link PreJoinCacheConfig}.
  */
@@ -232,7 +232,7 @@ public class EnterpriseCacheService
     private ICacheRecordStore newHeapRecordStore(String name, int partitionId, HotRestartConfig hotRestart, long prefix) {
         return hotRestart.isEnabled()
                 ? new HotRestartEnterpriseCacheRecordStore(name, partitionId, nodeEngine, this, hotRestart.isFsync(), prefix)
-                : new DefaultEnterpriseCacheRecordStore(name, partitionId, nodeEngine, this);
+                : new CacheRecordStore(name, partitionId, nodeEngine, this);
     }
 
     private ICacheRecordStore newNativeRecordStore(String cacheNameWithPrefix, int partitionId,

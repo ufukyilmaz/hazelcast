@@ -1,28 +1,97 @@
 
 
-In this Release Notes document, you will find the new features, enhancements and fixes of the Hazelcast 3.9.x release.
+In this Release Notes document, you will find the new features, enhancements and fixes of the Hazelcast 3.9 and 3.9.x releases.
 
-The numbers in the square brackets refer to the issue number in Hazelcast’s GitHub repository. You can reach
-to the full descriptions of the issues at https://github.com/hazelcast/hazelcast/issues/<issue number>.
+The numbers in the square brackets refer to the issue numbers.
+
+==== 3.9.3 RELEASE NOTES ====
+
+Enhancements:
+
+- Ping Failure Detector for Hazelcast Java Client: Ping Failure Detector provides a quicker and more deterministic detection of hardware and other lower level events. It has been available for Hazelcast members; now, it can also be used for Hazelcast Java clients. The related PR is [#12049]. Please see the Client Ping Failure Detector section.
+
+
+Fixes:
+
+- Java serialization compression issue: Since GZipInputStream read more bytes than it needs, the fields coming after a compressed data is not able to be read. [#12104]
+- Setting the property hazelcast.mc.max.visible.instance.count to Integer.MAX or a huge value causes OOME. [#12095]
+- The Javadoc for SHUFFLE_MEMBER_LIST in the class ClientProperty is not correct. The shuffling is done when the related property (hazelcast.client.shuffle.member.list) is set to true. Also the description in the Hazelcast Reference Manual should be corrected accordingly. [#12082]
+- Endianness not taken into account consistently for serializer type IDs. [#12077]
+- Hazelcast client throws "AuthenticationException: Invalid credentials after owner member left". Clients should detect when a member is gone ungracefully. [#12038]
+- Query results should be converted to OBJECT in-memory format while creating the query-result-set, if the transaction is not originated from the client. [#12050]
+- There is a race condition in the client's Near Cache: "File is already being used by this Hazelcast instance". This was caused by the a problem with the synchronization between Near Cache creation and the destroy inside the Near Cache manager. [#11648]
+
+Behavioral Changes:
+
+- Default value of the system property hazelcast.mc.max.visible.instance.count changed from 100 to Integer.MAX_VALUE. So you may see more than usual data in your Management Center, if you have more than 100 data structures in your Hazelcast cluster.
+
+==== 3.9.2 RELEASE NOTES ====
+
+Enhancements: 
+
+- Expiration operations can be stopped/canceled during the SHUTTING_DOWN state. Otherwise it causes graceful shutdowns which take longer, especially on clusters with a large amount of data, e.g., High-Density Memory Store backed maps. It is not necessary to block the shutdown for these operations since it will eventually be handled on the new owner of the entries. [#11919]
+- Changed Hazelcast base images from Debian to Alpine Linux. Hence, the size of the image is reduced. [#48](On Hazelcast-Docker GitHub repo).
+
+
+Fixes:
+
+- PartitionPredicate on MapAggregation throws exception when it is called from the client. [#11923]
+- Some client TransactionalMap operations deserializes on the server side, while IMap.values() does not do so. This causes serialization exceptions on a client-member setup when members do not have the serialization information, e.g., in case where portables are used. [#11885]
+- Replicated map's Javadoc contains only member behaviors/requirements which the client cannot meet due to its technical difference. [#11707]
+- Ringbuffer access throws HazelcastInstanceNotActiveException when cluster state is PASSIVE. [#11664]
+- Due to a problem in the TLS mechanism, IO threads could become stuck and fail to process further frames. Once this happens, traffic between members stops and the cluster ceases to operate correctly. Symptoms included heartbeat timeouts and split-brains. This fix resolves this issue. [#1825]
+
+Coverity Fixes:
+
+- The method addressTranslator.translate(target) of com.hazelcast.client.connection.nio.ClientConnectionManagerImpl.InitConnectionTask.run() may return null. The returned value is used as an argument for the method createSocketConnection(Address) which uses the value without a null-check. [#11771]
+
+==== 3.9.1 RELEASE NOTES ====
+
+New Features:
+
+- Ping Failure Detector: Ping Failure Detector provides a quicker and more deterministic detection of hardware and other lower level events.
+
+
+Fixes:
+
+- MulticastJoiner may cause OOME because of the self-amplification in SplitBrainJoinMessage sending. [#11836]
+- Dynamic config added on lite member not found after split-brain healing. [#11815]
+- Client Transactions does not respect unisocket behavior. [#11802]
+- Incorrect null log message in Delegating Address Picker Contribution-Welcome. [#11783] 
+- Excessive EntryEventType[] allocations. [#11777]
+- Hazelcast Client fails to connect the cluster if the first cluster member is down. [#11735]
+- After promoting a member (HazelcastInstance.getCluster ().promoteLocalLiteMember ()), the instance of the member retrieved by getMembers() is not updated. [#11720]
+- Enqueued item gets lost when the client stops and reconnects sooner than hazelcast.client.endpoint.remove.delay.seconds. [#11700]
+- Node Initialization order is wrong. [#11681]
+- QueryCache on an IMap that is subsequently destroyed and recreated doesn't work. [#11666]
+- DefaultQueryCache::getAll doesn't check for null values. [#11665]
+- "Could not retrieve ringbuffer service to destroy event journal" on shutdown. [#11662]
+- Defining ManCenter in config causes PartitonMigration even though there is no data. [#11598]
+- Weird split-brain like issue with Hazelcast 3.8.4. [#11533]
+- Consider logging new HTTP connections with DEBUG or lower level. [#11196]
+- HashSet and HashMaps initialized to too small size. [#9445]
+- Introduce configuration option for WAN to connect to a private address when using Discovery SPI. [#1176]
+- Member throws OutOfMemoryException in the smaller cluster side on Split-Brain recovery cycle. [#1763]
+
+
+Coverity Fixes:
+
+- Dereference null return value - ClientConnectionManagerImpl.encodeAuthenticationRequest(). [#11767]
+- Using invalid iterator - SmartClientListenerService.deregisterListenerInternal(String). [#11760]
+- Resource leak in client's ProxyManager. [#11751]
+
+
+==== 3.9 RELEASE NOTES ====
+
 
 1. New Features
 
-**Hazelcast IMDG Enterprise Features**
-
 - WAN Replication Using Discovery API: With this new feature, you can run multiple clusters within environments, that have Hazelcast's Discovery SPI implemented, without manually configuring IP addresses and use Hazelcast's WAN replication to keep them in sync.
-
-**Hazelcast IMDG Open Source Features**
-
 - Dynamic Creation of Distributed Objects Configuration: You can perform on the fly configuration of your distributed objects.
 
 2. Enhancements
 
-**Hazelcast IMDG Enterprise Enhancements**
-
 - OpenSSL Integration: OpenSSL is integrated into Hazelcast
-
-**Hazelcast IMDG Open Source Enhancements**
-
 - Client Support for User Code Deployment: You can now perform dynamic class loading from Hazelcast clients too. Please see the Client User Code Deployment section.
 - Event Journal: This new distributed data structure stores the history of mutation actions on data structures such as map or cache. Please see the Event Journal section.
 - Fine-Grained Anti-Entropy Mechanism: Allows to detect inconsistencies for each data structure in a single partition and replicate only the specific fragment of it instead of the whole partition. Please see the Consistency and Replication Model chapter.
@@ -53,55 +122,6 @@ The following are the other improvements performed to solve the enhancement issu
 
 
 3. Fixes
-
-*3.9.2*
-
-Enhancements: 
-- Expiration operations can be stopped/canceled during the SHUTTING_DOWN state. Otherwise it causes graceful shutdowns which take longer, especially on clusters with a large amount of data, e.g., High-Density Memory Store backed maps. It is not necessary to block the shutdown for these operations since it will eventually be handled on the new owner of the entries. [#11919]
-- Changed Hazelcast base images from Debian to Alpine Linux. Hence, the size of the image is reduced. [#48](On Hazelcast-Docker GitHub repo).
-
-
-Fixes:
-- PartitionPredicate on MapAggregation throws exception when it is called from the client. [#11923]
-- Some client TransactionalMap operations deserializes on the server side, while IMap.values() does not do so. This causes serialization exceptions on a client-member setup when members do not have the serialization information, e.g., in case where portables are used. [#11885]
-- Replicated map's Javadoc contains only member behaviors/requirements which the client cannot meet due to its technical difference. [#11707]
-- Ringbuffer access throws HazelcastInstanceNotActiveException when cluster state is PASSIVE. [#11664]
-- Due to a problem in the TLS mechanism, IO threads could become stuck and fail to process further frames. Once this happens, traffic between members stops and the cluster ceases to operate correctly. Symptoms included heartbeat timeouts and split-brains. This fix resolves this issue. [#1825]
-
-Coverity Fixes:
-- The method addressTranslator.translate(target) of com.hazelcast.client.connection.nio.ClientConnectionManagerImpl.InitConnectionTask.run() may return null. The returned value is used as an argument for the method createSocketConnection(Address) which uses the value without a null-check. [#11771]
-
-*3.9.1*
-
-New Features:
-- Ping Failure Detector: Ping Failure Detector provides a quicker and more deterministic detection of hardware and other lower level events.
-
-Fixes:
-- MulticastJoiner may cause OutOfMemoryException due to the self-amplification in SplitBrainJoinMessage sending. [#11836]
-- Dynamic configuration added on the lite member is not found after a Split-Brain healing. [#11815]
-- Client transactions does not respect to unisocket behavior. [#11802]
-- Incorrect null log message in DelegatingAddressPicker. [#11783]
-- A high number of EntryEventType[] is created in a client application which receives many entry events. In a specific application, EntryEventType[] dominates the application's overall memory allocation. [#11777]
-- Hazelcast client fails to connect to the cluster if the first cluster member is down. [#11735]
-- After promoting a member (HazelcastInstance.getCluster().promoteLocalLiteMember()) the instance of the member retrieved by getMembers() is not updated. [#11720]
-- Enqueued item gets lost when the client stops and reconnects sooner than hazelcast.client.endpoint.remove.delay.seconds. [#11700]
-- While trying to setup Hazelcast on AWS, the order of member initialization is wrong. [#11681]
-- Query cache on an IMap that is subsequently destroyed and recreated does not work. [#11666]
-- The method DefaultQueryCache::getAll does not check for null values. [#11665]
-- When the method HazelcastInstance.shutdown() is called, the following error is thrown: "Could not retrieve ringbuffer service to destroy event journal". [#11662]
-- Defining management center in the configuration causes partition migrations even though there is no data. [#11598]
-- Weird Split-Brain like issue with Hazelcast 3.8.4. [#11533]
-- Consider logging new HTTP connections with DEBUG or lower level. [#11196]
-- HashSet and HashMap are initialized with a too small size. [#9445]
-- Introduce configuration option for WAN to connect to a private address when using Discovery SPI. [#1176]
-- Member throws OutOfMemoryException in the smaller cluster side on Split-Brain recovery cycle. [#1763]
-
-Coverity Fixes
-- Dereference null return value in the methodClientConnectionManagerImpl.encodeAuthenticationRequest(). [#11767]
-- Using invalid iterator in the method SmartClientListenerService.deregisterListenerInternal(String). [#11760]
-- Resource leak in client's ProxyManager. [#11751]
-
-*3.9 Fixes*
 
 - Members cannot join to 3.9 cluster when using cache with a key/value type that is only resolvable from the user code deployment repository. [#11505]
 - Hazelcast listeners may fail to be registered to a new joined member. This is caused by a race condition between PostJoinOperations and the member doing the listener registration. [#11490]

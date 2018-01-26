@@ -39,6 +39,8 @@ public class SSLChannelFactory implements ChannelFactory {
             SSLEngineFactory sslEngineFactory = (SSLEngineFactory) implementation;
             sslEngineFactory.init(sslConfig.getProperties(), forClient);
             return sslEngineFactory;
+        } catch (HazelcastException e) {
+            throw e;
         } catch (Exception e) {
             throw new HazelcastException(e);
         }

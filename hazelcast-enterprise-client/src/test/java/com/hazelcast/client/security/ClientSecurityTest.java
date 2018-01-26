@@ -12,10 +12,12 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.XmlConfigBuilder;
+import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.security.loginmodules.TestLoginModule;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.FilteringClassLoader;
@@ -60,6 +62,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -314,6 +317,7 @@ public class ClientSecurityTest {
 
     private HazelcastInstance createHazelcastClient() {
         ClientConfig config = new ClientConfig();
+        config.getNetworkConfig().setConnectionTimeout(300000);
         return factory.newHazelcastClient(config);
     }
 
@@ -486,6 +490,61 @@ public class ClientSecurityTest {
     @Test
     public void testUserCodeDeploymentDeployAllAllowed() {
         testUserCodeDeployment(ActionConstants.ACTION_ALL);
+    }
+
+    /**
+     * Tests multiple principals in JAAS Subject.
+     *
+     * <pre>
+     * Given: Member has configured permissions for 2 Maps
+     *   - "production" with permissions for "admin" and "dev" principals
+     *   - "test" with permissions for "test" principal
+     * When: Client joins and has Subject with 3 JAAS principals:
+     *   - "admin" ClusterPrincipal
+     *   - "dev" ClusterPrincipal
+     *   - "test" instance of Principal, which is not ClusterPrincipal
+     * Then: the client has all the mapped permissions for "admin" and "dev", but it does not get permissions mapped for the "test"
+     * </pre>
+     */
+    @Test
+    public void testMultiplePrincipalsInSubject() {
+        Properties properties = new Properties();
+        properties.setProperty(TestLoginModule.PROPERTY_PRINCIPALS_SIMPLE, "test");
+        properties.setProperty(TestLoginModule.PROPERTY_PRINCIPALS_CLUSTER, "dev,admin");
+        final Config config = createTestLoginModuleConfig(properties);
+        addPermission(config, PermissionType.MAP, "production", "admin,dev")
+                .addAction(ActionConstants.ACTION_CREATE);
+        addPermission(config, PermissionType.MAP, "production", "dev")
+                .addAction(ActionConstants.ACTION_READ)
+                .addAction(ActionConstants.ACTION_PUT);
+        addPermission(config, PermissionType.MAP, "production", "admin")
+                .addAction(ActionConstants.ACTION_REMOVE);
+        addPermission(config, PermissionType.MAP, "test", "test")
+                .addAction(ActionConstants.ACTION_CREATE)
+                .addAction(ActionConstants.ACTION_PUT)
+                .addAction(ActionConstants.ACTION_READ)
+                .addAction(ActionConstants.ACTION_REMOVE);
+
+        factory.newHazelcastInstance(config);
+
+        HazelcastInstance client = createHazelcastClient();
+        IMap<String, String> map = client.getMap("production");
+        assertNull(map.put("1", "A"));
+        assertEquals("A", map.get("1"));
+        assertEquals("A", map.remove("1"));
+        try {
+            map.lock("1");
+            fail("Lock operation on 'production' IMap should be denied.");
+        } catch (RuntimeException e) {
+            // expected
+        }
+
+        try {
+            client.getMap("test");
+            fail("Create operation on 'test' IMap should be denied.");
+        } catch (RuntimeException e) {
+            // expected
+        }
     }
 
     public void testUserCodeDeployment(String actionType) {
@@ -661,4 +720,21 @@ public class ClientSecurityTest {
                 HazelcastCachingProvider.propertiesByInstanceItself(hazelcastInstance));
     }
 
+    /**
+     * Creates member configuration with security enabled and custom client login module.
+     *
+     * @param properties properties of the {@link TestLoginModule} used for clients (see constants in {@link TestLoginModule}
+     *        for the property names)
+     */
+    private Config createTestLoginModuleConfig(Properties properties) {
+        final Config config = new Config();
+        final SecurityConfig secCfg = config.getSecurityConfig();
+        secCfg.setEnabled(true);
+        LoginModuleConfig loginModuleConfig = new LoginModuleConfig();
+        loginModuleConfig.setClassName(TestLoginModule.class.getName());
+        loginModuleConfig.setUsage(LoginModuleUsage.REQUIRED);
+        loginModuleConfig.setProperties(properties);
+        secCfg.addClientLoginModuleConfig(loginModuleConfig);
+        return config;
+    }
 }

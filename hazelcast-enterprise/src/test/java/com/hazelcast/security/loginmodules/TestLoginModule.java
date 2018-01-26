@@ -1,38 +1,23 @@
-/*
- * Copyright (c) 2017, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.security.loginmodules;
-
-import java.security.Principal;
-import java.util.Map;
-import java.util.Set;
-
-import javax.security.auth.Subject;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.login.LoginException;
-import javax.security.auth.spi.LoginModule;
 
 import com.hazelcast.security.ClusterPrincipal;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.util.StringUtil;
 
+import javax.security.auth.Subject;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.login.LoginException;
+import javax.security.auth.spi.LoginModule;
+import java.security.Principal;
+import java.util.Map;
+import java.util.Set;
+
 /**
- * Login module for testing behavior of different login phases. Based on configured properties it's able to throw a
- * {@link LoginException} in methods covering the login phases. This login module allows to add set of principals as either
- * {@link ClusterPrincipal} instances or just a simple Principal implementations.
+ * Login module for testing behavior of different login phases.
+ * <p>
+ * Based on configured properties it's able to throw a {@link LoginException} in methods covering the login phases.
+ * This login module allows to add set of principals as either {@link ClusterPrincipal} instances or just a simple
+ * Principal implementations.
  */
 public class TestLoginModule implements LoginModule {
 
@@ -78,8 +63,7 @@ public class TestLoginModule implements LoginModule {
     private Subject subject;
 
     @Override
-    public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState,
-            Map<String, ?> options) {
+    public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
         this.options = options;
         this.subject = subject;
     }
@@ -122,7 +106,7 @@ public class TestLoginModule implements LoginModule {
         if (VALUE_ACTION_FAIL.equals(propertyVal)) {
             throw new LoginException("Property " + propertyVal + " asked for this exception.");
         }
-        return ! VALUE_ACTION_SKIP.equals(propertyVal);
+        return !VALUE_ACTION_SKIP.equals(propertyVal);
     }
 
     private String[] getPrincipals(String propertyPrincipals) {
@@ -145,7 +129,6 @@ public class TestLoginModule implements LoginModule {
         public String getName() {
             return name;
         }
-
     }
 
     /**
@@ -173,6 +156,5 @@ public class TestLoginModule implements LoginModule {
         public String getPrincipal() {
             return name;
         }
-
     }
 }

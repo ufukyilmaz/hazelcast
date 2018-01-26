@@ -211,18 +211,6 @@ public class SSLConnectionTest {
     }
 
     /**
-     * Tests that 2 nodes don't form cluster if their SSL configurations have different protocols.
-     */
-    @Test
-    public void testDifferentProtocols() throws GeneralSecurityException {
-        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(createConfigWithSslProperty("protocol", "SSL"));
-        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(createConfigWithSslProperty("protocol", "TLS"));
-
-        // Size 1 for both! we expect the instances won't form a cluster.
-        assertClusterSize(1, h1, h2);
-    }
-
-    /**
      * Tests that 2 nodes form cluster if their SSL configurations have the same protocol property value.
      */
     @Test

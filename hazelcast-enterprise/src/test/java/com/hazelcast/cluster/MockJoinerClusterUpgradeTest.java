@@ -16,7 +16,7 @@ import static com.hazelcast.test.TestClusterUpgradeUtils.upgradeClusterMembers;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Create a cluster, then change cluster version.
+ * Creates a cluster, then change cluster version.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class})
@@ -36,7 +36,7 @@ public class MockJoinerClusterUpgradeTest extends AbstractClusterUpgradeTest {
 
     @Override
     void assertNodesVersion(MemberVersion version) {
-        for (int i=0; i < CLUSTER_MEMBERS_COUNT; i++) {
+        for (int i = 0; i < CLUSTER_MEMBERS_COUNT; i++) {
             assertEquals(version, getNode(clusterMembers[i]).getVersion());
         }
     }

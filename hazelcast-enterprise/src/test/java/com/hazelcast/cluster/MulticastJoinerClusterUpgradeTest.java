@@ -14,7 +14,7 @@ import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRI
 import static org.junit.Assert.assertEquals;
 
 /**
- * Create a cluster configured with multicast joiner, then change cluster version.
+ * Creates a cluster configured with multicast joiner, then change cluster version.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({NightlyTest.class})
@@ -41,15 +41,14 @@ public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTes
                 // assert all members are in the cluster
                 assertClusterSizeEventually(instances.length, instances[0], 15);
             }
-        }
-        finally {
+        } finally {
             System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
         }
     }
 
     @Override
     void assertNodesVersion(MemberVersion version) {
-        for (int i=0; i < CLUSTER_MEMBERS_COUNT; i++) {
+        for (int i = 0; i < CLUSTER_MEMBERS_COUNT; i++) {
             assertEquals(version, getNode(clusterMembers[i]).getVersion());
         }
     }

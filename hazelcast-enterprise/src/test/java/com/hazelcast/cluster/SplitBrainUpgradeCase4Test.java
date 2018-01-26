@@ -18,32 +18,38 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * 2.2 cluster with mixed 2.2.0 & 2.3.0 codebase nodes splits; one brain upgrades to 2.3 (only 2.3.0 members), other stays
- * at 2.2 cluster version with 2.3.0 master. After comms unblocked, two separate clusters remain, as cluster at version 2.2
- * should not merge with 2.3 (would result in "sneaky upgrade" of 2.3.0-master and kicking 2.2.0 member out).
- *
+ * at 2.2 cluster version with 2.3.0 master. After communications unblocked, two separate clusters remain, as cluster at
+ * version 2.2 should not merge with 2.3 (would result in "sneaky upgrade" of 2.3.0-master and kicking 2.2.0 member out).
+ * <p>
  * Initial cluster:
- *                  2x2.2.0/2.2 + 4x2.3.0/2.2 nodes
+ * <ul>
+ * <li>2x 2.2.0/2.2 + 4x 2.3.0/2.2 nodes</li>
+ * </ul>
  * After split brain:
- *      first half  2x2.2.0/2.2, 1x2.3.0/2.2, shutdown 1x2.2.0/2.2, 2.3.0/2.2 becomes master of first half
- *      second half 3x2.3.0/2.2, get cluster version upgrade to 3x2.3.0/2.3
+ * <ul>
+ * <li>first half  2x 2.2.0/2.2, 1x 2.3.0/2.2, shutdown 1x 2.2.0/2.2, 2.3.0/2.2 becomes master of first half</li>
+ * <li>second half 3x 2.3.0/2.2, get cluster version upgrade to 3x 2.3.0/2.3</li>
+ * </ul>
  * After communications restored:
- *                  1x2.2.0/2.2 + 1x2.3.0/2.2, separate from 3x2.3.0/2.3 cluster
- *
+ * <ul>
+ * <li>1x 2.2.0/2.2 + 1x 2.3.0/2.2, separate from 3x 2.3.0/2.3 cluster</li>
+ * </ul>
  * Version notation: NODE.CODEBASE.VERSION/CLUSTER.VERSION. For example, 2.3.0/2.2 denotes a node with codebase version
  * 2.3.0, operating at 2.2 cluster version.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(NightlyTest.class)
-public class SplitBrainUpgradeCase4Test
-        extends AbstractSplitBrainUpgradeTest {
+public class SplitBrainUpgradeCase4Test extends AbstractSplitBrainUpgradeTest {
 
     @Override
     protected HazelcastInstance[] startInitialCluster(Config config, int clusterSize) {
         factory = createHazelcastInstanceFactory(clusterSize * 2);
         HazelcastInstance[] instances = new HazelcastInstance[clusterSize];
+
         // this starts as the master. will be shutdown after split brain to allow 2.3.0 at [1] to become master
         instances[0] = newHazelcastInstance(factory, VERSION_2_2_0, config);
         instances[1] = newHazelcastInstance(factory, VERSION_2_3_0, config);
+
         // this is the one whose behaviour we are inspecting
         instances[2] = newHazelcastInstance(factory, VERSION_2_2_0, config);
         instances[3] = newHazelcastInstance(factory, VERSION_2_3_0, config);
@@ -54,12 +60,11 @@ public class SplitBrainUpgradeCase4Test
 
     @Override
     protected int[] brains() {
-        return new int[] {3, 3};
+        return new int[]{3, 3};
     }
 
     @Override
-    protected void onAfterSplitBrainCreated(HazelcastInstance[] firstBrain, HazelcastInstance[] secondBrain)
-            throws Exception {
+    protected void onAfterSplitBrainCreated(HazelcastInstance[] firstBrain, HazelcastInstance[] secondBrain) {
         waitAllForSafeState(firstBrain);
         waitAllForSafeState(secondBrain);
         // upgrade just the second brain so it now has 3 members and is upgraded to cluster version 2.3.0
@@ -81,15 +86,14 @@ public class SplitBrainUpgradeCase4Test
     }
 
     @Override
-    protected void onAfterSplitBrainHealed(final HazelcastInstance[] instances)
-            throws Exception {
+    protected void onAfterSplitBrainHealed(final HazelcastInstance[] instances) {
         // after network partition is healed:
         // - nodes 3,4 & 5 are in a single cluster at 2.3.0
         // - nodes 1 & 2 are in another cluster at 2.2.0
-        HazelcastInstance[] instancesAtClusterVersion_2_3_0 = new HazelcastInstance[] {
+        HazelcastInstance[] instancesAtClusterVersion_2_3_0 = new HazelcastInstance[]{
                 instances[3], instances[4], instances[5]
         };
-        HazelcastInstance[] instancesAtClusterVersion_2_2_0 = new HazelcastInstance[] {
+        HazelcastInstance[] instancesAtClusterVersion_2_2_0 = new HazelcastInstance[]{
                 instances[1], instances[2]
         };
         assertClusterVersion(instancesAtClusterVersion_2_3_0, CLUSTER_VERSION_2_3);

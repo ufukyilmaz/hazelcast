@@ -9,11 +9,11 @@ import org.junit.After;
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 
 /**
- * Abstract class for split-brain cluster upgrade tests
+ * Abstract class for split-brain cluster upgrade tests.
  */
 public abstract class AbstractSplitBrainUpgradeTest extends SplitBrainTestSupport {
 
-    protected String groupName;
+    private String groupName;
 
     @Override
     protected void onBeforeSetup() {
@@ -23,12 +23,8 @@ public abstract class AbstractSplitBrainUpgradeTest extends SplitBrainTestSuppor
 
     @Override
     protected boolean shouldAssertAllNodesRejoined() {
-        // sleep for a while to allow split brain handler to execute
-        try {
-            Thread.sleep(30000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        // sleep for a while to allow split-brain handler to execute
+        sleepSeconds(30);
         return false;
     }
 
@@ -44,7 +40,8 @@ public abstract class AbstractSplitBrainUpgradeTest extends SplitBrainTestSuppor
         return config;
     }
 
-    protected HazelcastInstance createHazelcastInstanceInBrain(int brain, MemberVersion memberVersion) {
+    @SuppressWarnings("SameParameterValue")
+    HazelcastInstance createHazelcastInstanceInBrain(int brain, MemberVersion memberVersion) {
         String existingValue = System.getProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
         System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, memberVersion.toString());
         try {

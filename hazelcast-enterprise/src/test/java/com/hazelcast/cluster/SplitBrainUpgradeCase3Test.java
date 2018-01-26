@@ -15,24 +15,29 @@ import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static com.hazelcast.test.TestClusterUpgradeUtils.newHazelcastInstance;
 
 /**
- * 2.2.0 cluster with mixed 2.2.0 & 2.3.0 codebase nodes splits; one brain upgrades to 2.3.0 (3x2.3.0 members), other stays
- * at 2.2.0 cluster version with 2.2.0 master (with fewer members). After comms unblocked, they remain two separate clusters.
- *
+ * 2.2.0 cluster with mixed 2.2.0 & 2.3.0 codebase nodes splits; one brain upgrades to 2.3.0 (3x 2.3.0 members), other stays
+ * at 2.2.0 cluster version with 2.2.0 master (with fewer members). After communications unblocked, they remain two separate
+ * clusters.
+ * <p>
  * Initial cluster:
- *                  1x2.2.0/2.2 + 4x2.3.0/2.2 nodes
+ * <ul>
+ * <li>1x 2.2.0/2.2 + 4x 2.3.0/2.2 nodes</li>
+ * </ul>
  * After split brain:
- *      first half  1x2.2.0/2.2, 1x2.3.0/2.2
- *      second half 3x2.3.0/2.2, get cluster version upgrade to 3x2.3.0/2.3
+ * <ul>
+ * <li>first half  1x 2.2.0/2.2, 1x 2.3.0/2.2</li>
+ * <li>second half 3x 2.3.0/2.2, get cluster version upgrade to 3x 2.3.0/2.3</li>
+ * </ul>
  * After communications restored:
- *                  1x2.2.0/2.2 + 1x2.3.0/2.2, separate from 3x2.3.0/2.3 cluster
- *
+ * <ul>
+ * <li>1x 2.2.0/2.2 + 1x 2.3.0/2.2, separate from 3x 2.3.0/2.3 cluster</li>
+ * </ul>
  * Version notation: NODE.CODEBASE.VERSION/CLUSTER.VERSION. For example, 2.3.0/2.2 denotes a node with codebase version
  * 2.3.0, operating at 2.2 cluster version.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(NightlyTest.class)
-public class SplitBrainUpgradeCase3Test
-        extends AbstractSplitBrainUpgradeTest {
+public class SplitBrainUpgradeCase3Test extends AbstractSplitBrainUpgradeTest {
 
     @Override
     protected HazelcastInstance[] startInitialCluster(Config config, int clusterSize) {
@@ -48,14 +53,14 @@ public class SplitBrainUpgradeCase3Test
 
     @Override
     protected int[] brains() {
-        return new int[] {2, 3};
+        return new int[]{2, 3};
     }
 
     @Override
-    protected void onAfterSplitBrainCreated(HazelcastInstance[] firstBrain, HazelcastInstance[] secondBrain)
-            throws Exception {
+    protected void onAfterSplitBrainCreated(HazelcastInstance[] firstBrain, HazelcastInstance[] secondBrain) {
         waitAllForSafeState(firstBrain);
         waitAllForSafeState(secondBrain);
+
         // upgrade just the second brain so it now has more members and is upgraded to cluster version 2.3.0
         assertClusterVersion(secondBrain, CLUSTER_VERSION_2_2);
         getClusterService(secondBrain[0]).changeClusterVersion(CLUSTER_VERSION_2_3);
@@ -66,11 +71,9 @@ public class SplitBrainUpgradeCase3Test
     }
 
     @Override
-    protected void onAfterSplitBrainHealed(HazelcastInstance[] instances)
-            throws Exception {
+    protected void onAfterSplitBrainHealed(HazelcastInstance[] instances) {
         Brains brains = getBrains();
         assertClusterVersion(brains.getFirstHalf(), CLUSTER_VERSION_2_2);
         assertClusterVersion(brains.getSecondHalf(), CLUSTER_VERSION_2_3);
     }
-
 }

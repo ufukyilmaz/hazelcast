@@ -18,9 +18,10 @@ import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanReplicationService;
 
 /**
- * This class handles incoming WAN replication events.
+ * This class handles incoming cache WAN replication events.
  */
 public class CacheReplicationSupportingService implements ReplicationSupportingService {
 
@@ -32,105 +33,175 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
     private final EnterpriseCacheService cacheService;
     private final NodeEngine nodeEngine;
     private final ProxyService proxyService;
+    private final WanReplicationService wanService;
 
     public CacheReplicationSupportingService(EnterpriseCacheService cacheService) {
         this.cacheService = cacheService;
         this.nodeEngine = cacheService.getNodeEngine();
         this.proxyService = nodeEngine.getProxyService();
+        this.wanService = nodeEngine.getWanReplicationService();
     }
 
     @Override
     public void onReplicationEvent(WanReplicationEvent replicationEvent) {
-        Object eventObject = replicationEvent.getEventObject();
+        final Object eventObject = replicationEvent.getEventObject();
+        if (!(eventObject instanceof CacheReplicationObject)) {
+            return;
+        }
 
-        if (eventObject instanceof CacheReplicationObject) {
-            CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
-            CacheConfig cacheConfig = null;
-            try {
-                cacheConfig = getCacheConfig(cacheReplicationObject.getNameWithPrefix(),
-                                             cacheReplicationObject.getCacheName());
-            } catch (Exception e) {
-                ExceptionUtil.rethrow(e);
-            }
-            CacheConfig existingCacheConfig = cacheService.putCacheConfigIfAbsent(cacheConfig);
-            if (existingCacheConfig == null) {
-                CacheCreateConfigOperation op =
-                        new CacheCreateConfigOperation(cacheConfig, true);
-                // run "CacheCreateConfigOperation" on this node, the operation itself handles interaction with other nodes
-                // this operation doesn't block operation thread even "syncCreate" is specified
-                // in that case, scheduled thread is used, not the operation thread
-                InternalCompletableFuture future =
-                        nodeEngine.getOperationService()
-                                .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
-                future.join();
-            }
+        final CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
+        final CacheConfig cacheConfig = getCacheConfig(cacheReplicationObject);
 
-            // Proxies should be created to initialize listeners, etc. and to show WAN replicated caches in mancenter.
-            // Otherwise, users are forced to manually call cacheManager#getCache
-            // Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
-            proxyService.getDistributedObject(CacheService.SERVICE_NAME, cacheConfig.getNameWithPrefix());
+        // Proxies should be created to initialize listeners, etc. and to show WAN replicated caches in mancenter.
+        // Otherwise, users are forced to manually call cacheManager#getCache
+        // Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
+        proxyService.getDistributedObject(CacheService.SERVICE_NAME, cacheConfig.getNameWithPrefix());
 
-            WanReplicationRef wanReplicationRef = cacheConfig.getWanReplicationRef();
-            if (wanReplicationRef != null && wanReplicationRef.isRepublishingEnabled()) {
-                cacheService.publishWanEvent(cacheConfig.getNameWithPrefix(), replicationEvent);
-            }
+        republishIfNecessary(replicationEvent, cacheConfig);
 
-            InternalCompletableFuture completableFuture = null;
-            if (cacheReplicationObject instanceof CacheReplicationUpdate) {
-                completableFuture = handleCacheUpdate((CacheReplicationUpdate) cacheReplicationObject, cacheConfig);
-            } else if (cacheReplicationObject instanceof CacheReplicationRemove) {
-                completableFuture = handleCacheRemove((CacheReplicationRemove) cacheReplicationObject, cacheConfig);
-            }
-
-            if (completableFuture != null
-                    && replicationEvent.getAcknowledgeType() == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
-                completableFuture.join();
-            }
+        if (cacheReplicationObject instanceof CacheReplicationUpdate) {
+            handleUpdateEvent((CacheReplicationUpdate) cacheReplicationObject,
+                    cacheConfig, replicationEvent.getAcknowledgeType());
+            wanService.getReceivedEventCounter(ICacheService.SERVICE_NAME)
+                      .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
+        } else if (cacheReplicationObject instanceof CacheReplicationRemove) {
+            handleRemoveEvent((CacheReplicationRemove) cacheReplicationObject,
+                    cacheConfig, replicationEvent.getAcknowledgeType());
+            wanService.getReceivedEventCounter(ICacheService.SERVICE_NAME)
+                      .incrementRemove(cacheReplicationObject.getNameWithPrefix());
         }
     }
 
-    private CacheConfig getCacheConfig(String cacheNameWithPrefix, String name) {
+    /**
+     * Republishes the WAN {@code event} if configured to do so.
+     *
+     * @param event       the WAN replication event
+     * @param cacheConfig the config for the cache on which this event
+     *                    occurred
+     */
+    private void republishIfNecessary(WanReplicationEvent event, CacheConfig cacheConfig) {
+        WanReplicationRef wanReplicationRef = cacheConfig.getWanReplicationRef();
+        if (wanReplicationRef != null && wanReplicationRef.isRepublishingEnabled()) {
+            cacheService.publishWanEvent(cacheConfig.getNameWithPrefix(), event);
+        }
+    }
+
+    /**
+     * Returns the existing local cache config or creates one if there is none.
+     *
+     * @param cacheReplicationObject the WAN replication object for the cache
+     * @return the local cache config
+     * @see CacheCreateConfigOperation
+     */
+    private CacheConfig getCacheConfig(CacheReplicationObject cacheReplicationObject) {
+        CacheConfig cacheConfig;
+        try {
+            cacheConfig = getLocalCacheConfig(cacheReplicationObject.getNameWithPrefix(),
+                    cacheReplicationObject.getCacheName());
+        } catch (Exception e) {
+            throw ExceptionUtil.rethrow(e);
+        }
+        CacheConfig existingCacheConfig = cacheService.putCacheConfigIfAbsent(cacheConfig);
+        if (existingCacheConfig == null) {
+            CacheCreateConfigOperation op = new CacheCreateConfigOperation(cacheConfig, true);
+            // run "CacheCreateConfigOperation" on this node, the operation itself handles interaction with other nodes
+            // this operation doesn't block operation thread even "syncCreate" is specified
+            // in that case, scheduled thread is used, not the operation thread
+            InternalCompletableFuture future =
+                    nodeEngine.getOperationService()
+                              .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
+            future.join();
+        }
+        return cacheConfig;
+    }
+
+
+    /**
+     * Returns the local cache config or {@code null} if none was found.
+     *
+     * @param cacheNameWithPrefix the full name of the
+     *                            {@link com.hazelcast.cache.ICache}, including
+     *                            the manager scope prefix
+     * @param cacheSimpleName     pure cache name without any prefix
+     * @return the cache config or {@code null} if none was found
+     */
+    private CacheConfig getLocalCacheConfig(String cacheNameWithPrefix, String cacheSimpleName) {
         CacheConfig cacheConfig = cacheService.getCacheConfig(cacheNameWithPrefix);
         if (cacheConfig == null) {
-            cacheConfig = cacheService.findCacheConfig(name);
+            cacheConfig = cacheService.findCacheConfig(cacheSimpleName);
             if (cacheConfig != null) {
-                cacheConfig.setManagerPrefix(cacheNameWithPrefix.substring(0, cacheNameWithPrefix.lastIndexOf(name)));
+                cacheConfig.setManagerPrefix(cacheNameWithPrefix.substring(0, cacheNameWithPrefix.lastIndexOf(cacheSimpleName)));
             }
         }
         return cacheConfig;
     }
 
-    private InternalCompletableFuture handleCacheRemove(CacheReplicationRemove cacheReplicationRemove,
-                                   CacheConfig cacheConfig) {
-        EnterpriseCacheOperationProvider operationProvider;
-        operationProvider = (EnterpriseCacheOperationProvider) cacheService
-                                .getCacheOperationProvider(cacheReplicationRemove.getNameWithPrefix(),
-                                                           cacheConfig.getInMemoryFormat());
-        Operation operation =
-                operationProvider.createWanRemoveOperation(ORIGIN, cacheReplicationRemove.getKey(),
-                                                           MutableOperation.IGNORE_COMPLETION);
-        return invokeOnPartition(cacheReplicationRemove.getKey(), operation);
+    /**
+     * Processes a WAN remove event by forwarding it to the partition owner.
+     * Depending on the {@code acknowledgeType}, it will either return as soon
+     * as the event has been forwarded to the partition owner or block until
+     * it has been processed on the partition owner.
+     *
+     * @param event           the WAN remove event
+     * @param cacheConfig     the config for the cache on which this event
+     *                        occurred
+     * @param acknowledgeType determines whether the method will wait for the
+     *                        update to be processed on the partition owner
+     */
+    private void handleRemoveEvent(CacheReplicationRemove event,
+                                   CacheConfig cacheConfig,
+                                   WanAcknowledgeType acknowledgeType) {
+        final EnterpriseCacheOperationProvider operationProvider = (EnterpriseCacheOperationProvider) cacheService
+                .getCacheOperationProvider(event.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
+        final Operation operation = operationProvider.createWanRemoveOperation(ORIGIN, event.getKey(),
+                MutableOperation.IGNORE_COMPLETION);
+        final InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
+        if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
+            future.join();
+        }
     }
 
-    private InternalCompletableFuture handleCacheUpdate(CacheReplicationUpdate cacheReplicationUpdate,
-                                   CacheConfig cacheConfig) {
-        EnterpriseCacheOperationProvider operationProvider;
-        operationProvider = (EnterpriseCacheOperationProvider) cacheService
-                                .getCacheOperationProvider(cacheReplicationUpdate.getNameWithPrefix(),
-                                                           cacheConfig.getInMemoryFormat());
-        CacheMergePolicy mergePolicy = cacheService
-                .getCacheMergePolicyProvider().getMergePolicy(cacheReplicationUpdate.getMergePolicy());
-        Operation operation =
-                operationProvider.createWanMergeOperation(ORIGIN, cacheReplicationUpdate.getEntryView(),
-                                                          mergePolicy, MutableOperation.IGNORE_COMPLETION);
-        return invokeOnPartition(cacheReplicationUpdate.getKey(), operation);
+
+    /**
+     * Processes a WAN remove event by forwarding it to the partition owner.
+     * Depending on the {@code acknowledgeType}, it will either return as soon
+     * as the event has been forwarded to the partition owner or block until
+     * it has been processed on the partition owner.
+     *
+     * @param event           the WAN remove event
+     * @param cacheConfig     the config for the cache on which this event
+     *                        occurred
+     * @param acknowledgeType determines whether the method will wait for the
+     *                        update to be processed on the partition owner
+     */
+    private void handleUpdateEvent(CacheReplicationUpdate event,
+                                   CacheConfig cacheConfig,
+                                   WanAcknowledgeType acknowledgeType) {
+        final EnterpriseCacheOperationProvider operationProvider = (EnterpriseCacheOperationProvider) cacheService
+                .getCacheOperationProvider(event.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
+        final CacheMergePolicy mergePolicy = cacheService.getCacheMergePolicyProvider()
+                                                         .getMergePolicy(event.getMergePolicy());
+        final Operation operation = operationProvider.createWanMergeOperation(ORIGIN, event.getEntryView(),
+                mergePolicy, MutableOperation.IGNORE_COMPLETION);
+        final InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
+        if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
+            future.join();
+        }
     }
 
+    /**
+     * Invokes the {@code operation} on the partition owner for the partition
+     * owning the {@code key}.
+     *
+     * @param key       the key on which partition the operation is invoked
+     * @param operation the operation to invoke
+     * @return the future representing the pending completion of the operation
+     */
     private InternalCompletableFuture invokeOnPartition(Data key, Operation operation) {
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             return nodeEngine.getOperationService()
-                    .invokeOnPartition(ICacheService.SERVICE_NAME, operation, partitionId);
+                             .invokeOnPartition(ICacheService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
             throw ExceptionUtil.rethrow(t);
         }

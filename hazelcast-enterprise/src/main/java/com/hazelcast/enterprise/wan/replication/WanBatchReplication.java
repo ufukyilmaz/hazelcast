@@ -4,9 +4,12 @@ import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
-import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.diagnostics.Diagnostics;
+import com.hazelcast.internal.diagnostics.StoreLatencyPlugin;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.util.executor.StripedRunnable;
@@ -23,6 +26,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.BATCH_MAX_DELAY_MILLIS;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.BATCH_SIZE;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.EXECUTOR_THREAD_COUNT;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.SNAPSHOT_ENABLED;
@@ -31,34 +35,45 @@ import static com.hazelcast.util.ThreadUtil.createThreadName;
 
 /**
  * WAN replication publisher that sends events in batches.
- * Basically, it publishes events either when enough events are enqueued or enqueued events have waited for enough time.
+ * Basically, it publishes events either when enough events are enqueued
+ * or enqueued events have waited for enough time.
  * <p>
- * The event count is configurable by {@link WanReplicationProperties#BATCH_SIZE} and is {@value DEFAULT_BATCH_SIZE} by default.
- * The elapsed time is configurable by {@link WanReplicationProperties#BATCH_MAX_DELAY_MILLIS} and is
+ * The event count is configurable by
+ * {@link WanReplicationProperties#BATCH_SIZE} and is
+ * {@value DEFAULT_BATCH_SIZE} by default.
+ * The elapsed time is configurable by
+ * {@link WanReplicationProperties#BATCH_MAX_DELAY_MILLIS} and is
  * {@value DEFAULT_BATCH_MAX_DELAY_MILLIS} by default.
- * The events are sent to the endpoints depending on the event key partition.
+ * The events are sent to the endpoints depending on the event key
+ * partition.
  */
 public class WanBatchReplication extends AbstractWanReplication implements Runnable {
-
     private static final int DEFAULT_BATCH_SIZE = 500;
+    private static final long DEFAULT_BATCH_MAX_DELAY_MILLIS = 1000;
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
     private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 50;
 
     private final Object mutex = new Object();
-    private final AtomicLong failureCount = new AtomicLong();
+    private final AtomicLong failedTransmitCount = new AtomicLong();
 
     private volatile StripedExecutor executor;
 
     private volatile long lastBatchSendTime = System.currentTimeMillis();
     private boolean snapshotEnabled;
     private int executorThreadCount;
+    private int batchSize;
+    private long batchMaxDelayMillis;
+    private WanBatchSender wanBatchSender;
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig wanPublisherConfig) {
         super.init(node, wanReplicationConfig, wanPublisherConfig);
+        final Map<String, Comparable> props = publisherConfig.getProperties();
         this.snapshotEnabled = getProperty(SNAPSHOT_ENABLED, wanPublisherConfig.getProperties(), false);
         this.executorThreadCount = getProperty(EXECUTOR_THREAD_COUNT, wanPublisherConfig.getProperties(), -1);
-
+        this.batchSize = getProperty(BATCH_SIZE, props, DEFAULT_BATCH_SIZE);
+        this.batchMaxDelayMillis = getProperty(BATCH_MAX_DELAY_MILLIS, props, DEFAULT_BATCH_MAX_DELAY_MILLIS);
+        this.wanBatchSender = createWanBatchSender(node, props);
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
     }
 
@@ -109,6 +124,18 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                 lastBatchSendTime = System.currentTimeMillis();
             }
         }
+    }
+
+    private WanBatchSender createWanBatchSender(Node node, Map<String, Comparable> wanPublisherProperties) {
+        final SerializationService serializationService = node.nodeEngine.getSerializationService();
+        final InternalOperationService operationService = node.nodeEngine.getOperationService();
+        final DefaultWanBatchSender sender = new DefaultWanBatchSender(
+                connectionManager, logger, serializationService, operationService, wanPublisherProperties);
+        final Diagnostics diagnostics = node.nodeEngine.getDiagnostics();
+        final StoreLatencyPlugin storeLatencyPlugin = diagnostics.getPlugin(StoreLatencyPlugin.class);
+        return storeLatencyPlugin != null
+                ? new LatencyTrackingWanBatchSender(sender, storeLatencyPlugin, targetGroupName)
+                : sender;
     }
 
     /**
@@ -209,31 +236,17 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
 
         @Override
         public void run() {
-            boolean transmitSucceed = false;
+            boolean transmitSucceed;
             do {
-                WanConnectionWrapper connectionWrapper = null;
-                try {
-                    connectionWrapper = connectionManager.getConnection(target);
-                    if (connectionWrapper != null) {
-                        boolean isTargetInvocationSuccessful = invokeOnWanTarget(
-                                connectionWrapper.getConnection().getEndPoint(), batchReplicationEvent);
-                        if (isTargetInvocationSuccessful) {
-                            for (WanReplicationEvent event : batchReplicationEvent.getEvents()) {
-                                removeReplicationEvent(event);
-                            }
-                            decrementWANQueueSize(batchReplicationEvent.getAddedEventCount());
-                        } else {
-                            failureCount.incrementAndGet();
-                        }
-                        transmitSucceed = isTargetInvocationSuccessful;
+                transmitSucceed = wanBatchSender.send(batchReplicationEvent, target);
+                if (transmitSucceed) {
+                    for (WanReplicationEvent event : batchReplicationEvent.getEvents()) {
+                        incrementEventCount(event);
+                        removeReplicationEvent(event);
                     }
-                } catch (Throwable t) {
-                    logger.warning(t);
-                    if (connectionWrapper != null) {
-                        final Address address = connectionWrapper.getTargetAddress();
-                        connectionManager.removeTargetEndpoint(address,
-                                "Error occurred when sending WAN events to " + address, t);
-                    }
+                    decrementWANQueueSize(batchReplicationEvent.getAddedEventCount());
+                } else {
+                    failedTransmitCount.incrementAndGet();
                 }
             } while (!transmitSucceed && running);
         }
@@ -254,7 +267,10 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         }
     }
 
-    public long getFailureCount() {
-        return failureCount.get();
+    /**
+     * Returns the number of failed WAN batch transmissions.
+     */
+    public long getFailedTransmitCount() {
+        return failedTransmitCount.get();
     }
 }

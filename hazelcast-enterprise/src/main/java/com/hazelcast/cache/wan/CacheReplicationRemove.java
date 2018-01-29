@@ -4,6 +4,7 @@ import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.wan.impl.WanEventCounter;
 
 import java.io.IOException;
 
@@ -50,5 +51,10 @@ public class CacheReplicationRemove extends CacheReplicationObject {
     @Override
     public int getId() {
         return EWRDataSerializerHook.CACHE_REPLICATION_REMOVE;
+    }
+
+    @Override
+    public void incrementEventCount(WanEventCounter eventCounter) {
+        eventCounter.incrementRemove(getCacheName());
     }
 }

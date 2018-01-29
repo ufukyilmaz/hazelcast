@@ -10,6 +10,15 @@ Enhancements:
 
 - Ping Failure Detector for Hazelcast Java Client: Ping Failure Detector provides a quicker and more deterministic detection of hardware and other lower level events. It has been available for Hazelcast members; now, it can also be used for Hazelcast Java clients. The related PR is [#12049]. Please see the Client Ping Failure Detector section.
 
+The following are the other improvements performed to solve the enhancement issues opened by the Hazelcast customers/team.
+
+- Allow ciphersuites and protocol configuration in the `SSLEngine` provided by the JRE. This support is already present in the OpenSSL engine. [#1884]
+- Enhancements in the WAN Diagnostics: Introduced latency tracking for WAN endpoints and 
+counters for sent and received WAN events. [#1878]
+- Introduced a system property to allow overriding the configured
+serialization byte order for better testing. [#1868]
+- Performed updates for JCache 1.1 compatibility. [#1857]
+
 
 Fixes:
 
@@ -19,7 +28,11 @@ Fixes:
 - Endianness not taken into account consistently for serializer type IDs. [#12077]
 - Hazelcast client throws "AuthenticationException: Invalid credentials after owner member left". Clients should detect when a member is gone ungracefully. [#12038]
 - Query results should be converted to OBJECT in-memory format while creating the query-result-set, if the transaction is not originated from the client. [#12050]
+- IMap's aggregate, projection, localKeySet and executeOnEntries methods throws exception when PartitionPredicate is being used. [#11962]
 - There is a race condition in the client's Near Cache: "File is already being used by this Hazelcast instance". This was caused by the a problem with the synchronization between Near Cache creation and the destroy inside the Near Cache manager. [#11648]
+- The map screen of Management Center does not show throughput info for `TransactionalMap`s. [#11640]
+- Support for multiple Principals in JAAS Subject: With this support, permission checking in DefaultPermissionPolicy is fixed to allow multiple ClusterPrincipal instances assigned to a JAAS Subject. The resulting permission set is the union of permissions mapped to all the ClusterPrincipal names in JAAS Subject. [#1879]
+- WAN replication event should be generated inside the method afterRun of the merge operation. [#1875]
 
 Behavioral Changes:
 

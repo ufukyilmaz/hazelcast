@@ -5,6 +5,7 @@ import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.wan.impl.WanEventCounter;
 
 import java.io.IOException;
 
@@ -12,11 +13,10 @@ import java.io.IOException;
  * WAN replication object for sync requests.
  */
 public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject {
-
     private EntryView<Data, Data> entryView;
     private transient int partitionId;
 
-    public EnterpriseMapReplicationSync(String mapName, EntryView entryView, int partitionId) {
+    public EnterpriseMapReplicationSync(String mapName, EntryView<Data, Data> entryView, int partitionId) {
         super(mapName, 0);
         this.entryView = entryView;
         this.partitionId = partitionId;
@@ -53,5 +53,10 @@ public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject
     @Override
     public int getId() {
         return EWRDataSerializerHook.MAP_REPLICATION_SYNC;
+    }
+
+    @Override
+    public void incrementEventCount(WanEventCounter eventCounter) {
+        eventCounter.incrementSync(getMapName());
     }
 }

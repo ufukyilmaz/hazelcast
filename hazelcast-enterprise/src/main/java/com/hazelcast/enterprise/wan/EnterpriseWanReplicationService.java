@@ -34,6 +34,8 @@ import com.hazelcast.util.MapUtil;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.util.executor.StripedRunnable;
 import com.hazelcast.util.executor.TimeoutRunnable;
+import com.hazelcast.wan.impl.WanEventCounter;
+import com.hazelcast.wan.impl.WanEventCounterContainer;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
@@ -79,6 +81,12 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      */
     private final Map<String, WanReplicationConsumer> wanConsumers
             = new ConcurrentHashMap<String, WanReplicationConsumer>(2);
+
+    /** WAN event counters for all services and only received events */
+    private final WanEventCounterContainer receivedWanEventCounters = new WanEventCounterContainer();
+
+    /** WAN event counters for all services and only sent events */
+    private final WanEventCounterContainer sentWanEventCounters = new WanEventCounterContainer();
 
     /**
      * Operations which are processed on threads other than the operation thread. We must report these operations
@@ -295,6 +303,22 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     @Override
     public WanSyncState getWanSyncState() {
         return getSyncManager().getWanSyncState();
+    }
+
+    @Override
+    public WanEventCounter getReceivedEventCounter(String serviceName) {
+        return receivedWanEventCounters.getWanEventCounter(serviceName);
+    }
+
+    @Override
+    public WanEventCounter getSentEventCounter(String serviceName) {
+        return sentWanEventCounters.getWanEventCounter(serviceName);
+    }
+
+    @Override
+    public void removeWanEventCounters(String serviceName, String dataStructureName) {
+        receivedWanEventCounters.removeCounter(serviceName, dataStructureName);
+        sentWanEventCounters.removeCounter(serviceName, dataStructureName);
     }
 
     @Override

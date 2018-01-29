@@ -12,15 +12,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Base class for {@link com.hazelcast.core.IMap} related WAN
- * replication objects.
+ * Base class for {@link com.hazelcast.core.IMap} related WAN replication
+ * objects.
  */
 public abstract class EnterpriseMapReplicationObject implements EnterpriseReplicationEventObject, IdentifiedDataSerializable {
-
-    Set<String> groupNames = new HashSet<String>();
-    String mapName;
-    int backupCount;
-    long creationTime;
+    private Set<String> groupNames = new HashSet<String>();
+    private String mapName;
+    private int backupCount;
+    private long creationTime;
 
     public EnterpriseMapReplicationObject(String mapName, int backupCount) {
         this.mapName = mapName;

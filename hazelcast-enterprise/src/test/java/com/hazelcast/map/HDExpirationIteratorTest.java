@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2008-2017, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
@@ -48,10 +32,10 @@ import static org.junit.Assert.assertFalse;
 @Category({SlowTest.class})
 public class HDExpirationIteratorTest extends HazelcastTestSupport {
 
-    private IMap map;
+    private IMap<Integer, Integer> map;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         String factoryClassName = CMECatcherLoggerFactory.class.getName();
         System.setProperty("hazelcast.logging.class", factoryClassName);
 
@@ -64,7 +48,7 @@ public class HDExpirationIteratorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void ensure_no_concurrentModificationException_thrown() throws Exception {
+    public void ensure_no_concurrentModificationException_thrown() {
         for (int i = 0; i < 1000; i++) {
             map.put(i, i, 10, TimeUnit.SECONDS);
         }
@@ -80,7 +64,7 @@ public class HDExpirationIteratorTest extends HazelcastTestSupport {
         assertFalse(CMECatcherLoggerFactory.FOUND_CME.get());
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(0, map.size());
             }
         });

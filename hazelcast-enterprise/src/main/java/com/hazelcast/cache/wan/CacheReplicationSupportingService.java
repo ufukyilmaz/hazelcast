@@ -1,8 +1,8 @@
 package com.hazelcast.cache.wan;
 
 import com.hazelcast.cache.CacheMergePolicy;
-import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.operation.CacheCreateConfigOperation;
 import com.hazelcast.cache.impl.operation.MutableOperation;
@@ -16,18 +16,16 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
-import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
+
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
  * This class handles incoming WAN replication events.
  */
 public class CacheReplicationSupportingService implements ReplicationSupportingService {
 
-    /**
-     * Event origin.
-     */
-    public static final String ORIGIN = "ENTERPRISE_WAN";
+    private static final String ORIGIN = "ENTERPRISE_WAN";
 
     private final EnterpriseCacheService cacheService;
     private final NodeEngine nodeEngine;
@@ -45,23 +43,21 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
 
         if (eventObject instanceof CacheReplicationObject) {
             CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
-            CacheConfig cacheConfig = null;
+            CacheConfig cacheConfig;
             try {
                 cacheConfig = getCacheConfig(cacheReplicationObject.getNameWithPrefix(),
-                                             cacheReplicationObject.getCacheName());
+                        cacheReplicationObject.getCacheName());
             } catch (Exception e) {
-                ExceptionUtil.rethrow(e);
+                throw rethrow(e);
             }
             CacheConfig existingCacheConfig = cacheService.putCacheConfigIfAbsent(cacheConfig);
             if (existingCacheConfig == null) {
-                CacheCreateConfigOperation op =
-                        new CacheCreateConfigOperation(cacheConfig, true);
+                CacheCreateConfigOperation op = new CacheCreateConfigOperation(cacheConfig, true);
                 // run "CacheCreateConfigOperation" on this node, the operation itself handles interaction with other nodes
                 // this operation doesn't block operation thread even "syncCreate" is specified
                 // in that case, scheduled thread is used, not the operation thread
-                InternalCompletableFuture future =
-                        nodeEngine.getOperationService()
-                                .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
+                InternalCompletableFuture future = nodeEngine.getOperationService()
+                        .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
                 future.join();
             }
 
@@ -101,28 +97,23 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
     }
 
     private InternalCompletableFuture handleCacheRemove(CacheReplicationRemove cacheReplicationRemove,
-                                   CacheConfig cacheConfig) {
+                                                        CacheConfig cacheConfig) {
         EnterpriseCacheOperationProvider operationProvider;
         operationProvider = (EnterpriseCacheOperationProvider) cacheService
-                                .getCacheOperationProvider(cacheReplicationRemove.getNameWithPrefix(),
-                                                           cacheConfig.getInMemoryFormat());
-        Operation operation =
-                operationProvider.createWanRemoveOperation(ORIGIN, cacheReplicationRemove.getKey(),
-                                                           MutableOperation.IGNORE_COMPLETION);
+                .getCacheOperationProvider(cacheReplicationRemove.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
+        Operation operation = operationProvider.createWanRemoveOperation(ORIGIN, cacheReplicationRemove.getKey(),
+                MutableOperation.IGNORE_COMPLETION);
         return invokeOnPartition(cacheReplicationRemove.getKey(), operation);
     }
 
-    private InternalCompletableFuture handleCacheUpdate(CacheReplicationUpdate cacheReplicationUpdate,
-                                   CacheConfig cacheConfig) {
+    private InternalCompletableFuture handleCacheUpdate(CacheReplicationUpdate cacheReplicationUpdate, CacheConfig cacheConfig) {
         EnterpriseCacheOperationProvider operationProvider;
         operationProvider = (EnterpriseCacheOperationProvider) cacheService
-                                .getCacheOperationProvider(cacheReplicationUpdate.getNameWithPrefix(),
-                                                           cacheConfig.getInMemoryFormat());
-        CacheMergePolicy mergePolicy = cacheService
+                .getCacheOperationProvider(cacheReplicationUpdate.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
+        CacheMergePolicy mergePolicy = (CacheMergePolicy) cacheService
                 .getCacheMergePolicyProvider().getMergePolicy(cacheReplicationUpdate.getMergePolicy());
-        Operation operation =
-                operationProvider.createWanMergeOperation(ORIGIN, cacheReplicationUpdate.getEntryView(),
-                                                          mergePolicy, MutableOperation.IGNORE_COMPLETION);
+        Operation operation = operationProvider.createWanMergeOperation(ORIGIN, cacheReplicationUpdate.getEntryView(),
+                mergePolicy, MutableOperation.IGNORE_COMPLETION);
         return invokeOnPartition(cacheReplicationUpdate.getKey(), operation);
     }
 
@@ -132,7 +123,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
             return nodeEngine.getOperationService()
                     .invokeOnPartition(ICacheService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
-            throw ExceptionUtil.rethrow(t);
+            throw rethrow(t);
         }
     }
 }

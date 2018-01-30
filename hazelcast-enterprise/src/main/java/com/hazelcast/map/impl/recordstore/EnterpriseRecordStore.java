@@ -88,7 +88,6 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     @Override
     public Storage createStorage(RecordFactory recordFactory, InMemoryFormat memoryFormat) {
-
         EnterpriseMapServiceContext mapServiceContext = (EnterpriseMapServiceContext) mapContainer.getMapServiceContext();
         if (NATIVE == inMemoryFormat) {
             EnterpriseSerializationService serializationService
@@ -118,21 +117,19 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         return createRecordInternal(value, ttlMillis, now, incrementSequence());
     }
 
+    public HDRecord createRecord(Object value, long sequence) {
+        return (HDRecord) createRecordInternal(value, DEFAULT_TTL, Clock.currentTimeMillis(), sequence);
+    }
+
     private Record createRecordInternal(Object value, long ttlMillis, long now, long sequence) {
         Record record = super.createRecord(value, ttlMillis, now);
-
         if (NATIVE == inMemoryFormat) {
             record.setSequence(sequence);
             // `lastAccessTime` is used for LRU eviction, for this reason, after creation of record,
             // `lastAccessTime` should be zero instead of `now`
             record.setLastAccessTime(NOT_AVAILABLE);
         }
-
         return record;
-    }
-
-    public HDRecord createRecord(Object value, long sequence) {
-        return (HDRecord) createRecordInternal(value, DEFAULT_TTL, Clock.currentTimeMillis(), sequence);
     }
 
     @Override
@@ -169,9 +166,6 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     /**
      * If in-memory-format is native, method is executed on partition thread.
-     *
-     * @param key
-     * @return
      */
     @Override
     public Data readBackupData(Data key) {
@@ -222,10 +216,9 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         }
 
         @Override
-        public Object call() throws Exception {
+        public Object call() {
             return EnterpriseRecordStore.super.readBackupData(key);
         }
     }
-
 }
 

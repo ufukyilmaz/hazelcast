@@ -47,7 +47,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
         this.mapServiceContext = mapServiceContext;
         this.nodeEngine = mapServiceContext.getNodeEngine();
-        this.defaultSyncMergePolicy = mapServiceContext.getMergePolicyProvider().getMergePolicy(DEFAULT_MERGE_POLICY);
+        this.defaultSyncMergePolicy = mapServiceContext.getMergePolicyProvider().getLegacyMergePolicy(DEFAULT_MERGE_POLICY);
         this.proxyService = nodeEngine.getProxyService();
         this.useDeleteWhenProcessingRemoveEvents = Boolean.getBoolean(USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS);
     }
@@ -60,7 +60,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
             EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
             String mapName = mapReplicationObject.getMapName();
 
-            /** Proxies should be created to initialize listeners, indexes, etc. and to show WAN replicated maps in mancenter.
+            /* Proxies should be created to initialize listeners, indexes, etc. and to show WAN replicated maps in mancenter.
              * Otherwise, users are forced to manually call IMap#get()
              * Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
              */

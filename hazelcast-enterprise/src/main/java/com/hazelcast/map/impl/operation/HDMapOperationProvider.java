@@ -13,6 +13,8 @@ import com.hazelcast.map.merge.MapMergePolicy;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.spi.OperationFactory;
+import com.hazelcast.spi.SplitBrainMergeEntryView;
+import com.hazelcast.spi.SplitBrainMergePolicy;
 
 import java.util.List;
 import java.util.Set;
@@ -163,7 +165,7 @@ public class HDMapOperationProvider implements MapOperationProvider {
     @Override
     public MapOperation createMergeOperation(String name, EntryView<Data, Data> entryView,
                                              MapMergePolicy policy, boolean disableWanReplicationEvent) {
-        return new HDMergeOperation(name, entryView, policy, disableWanReplicationEvent);
+        return new HDLegacyMergeOperation(name, entryView, policy, disableWanReplicationEvent);
     }
 
     @Override
@@ -235,6 +237,13 @@ public class HDMapOperationProvider implements MapOperationProvider {
     @Override
     public OperationFactory createPutAllOperationFactory(String name, int[] partitions, MapEntries[] mapEntries) {
         return new HDPutAllPartitionAwareOperationFactory(name, partitions, mapEntries);
+    }
+
+    @Override
+    public OperationFactory createMergeOperationFactory(String name, int[] partitions,
+                                                        List<SplitBrainMergeEntryView<Data, Data>>[] mergeEntries,
+                                                        SplitBrainMergePolicy policy) {
+        return new HDMergeOperationFactory(name, partitions, mergeEntries, policy);
     }
 
     @Override

@@ -49,7 +49,7 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int EVICT_ALL = 21;
     public static final int EVICT_ALL_BACKUP = 22;
     public static final int GET_ALL = 23;
-    public static final int MERGE = 24;
+    public static final int LEGACY_MERGE = 24;
     public static final int PARTITION_WIDE_ENTRY = 25;
     public static final int PARTITION_WIDE_ENTRY_BACKUP = 26;
     public static final int PARTITION_WIDE_PREDICATE_ENTRY = 27;
@@ -103,7 +103,10 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int QUERY_OP = 73;
     public static final int QUERY_PARTITION_OP = 74;
 
-    private static final int LEN = QUERY_PARTITION_OP + 1;
+    public static final int MERGE_FACTORY = 75;
+    public static final int MERGE = 76;
+
+    private static final int LEN = MERGE + 1;
 
     @Override
     public int getFactoryId() {
@@ -258,10 +261,10 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
                 return new HDGetAllOperation();
             }
         };
-        constructors[MERGE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+        constructors[LEGACY_MERGE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMergeOperation();
+                return new HDLegacyMergeOperation();
             }
         };
         constructors[PARTITION_WIDE_ENTRY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
@@ -545,6 +548,18 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new HDQueryPartitionOperation();
+            }
+        };
+        constructors[MERGE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDMergeOperationFactory();
+            }
+        };
+        constructors[MERGE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDMergeOperation();
             }
         };
 

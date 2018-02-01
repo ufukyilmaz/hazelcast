@@ -5,6 +5,8 @@ import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationFactory;
+import com.hazelcast.spi.SplitBrainMergeEntryView;
+import com.hazelcast.spi.SplitBrainMergePolicy;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -30,7 +32,6 @@ public class WANAwareCacheOperationProvider extends EnterpriseCacheOperationProv
         this.delegate = delegate;
         this.publisher = publisher;
     }
-
 
     @Override
     public Operation createPutOperation(Data key, Data value, ExpiryPolicy policy, boolean get, int completionId) {
@@ -127,9 +128,15 @@ public class WANAwareCacheOperationProvider extends EnterpriseCacheOperationProv
     }
 
     @Override
-    public Operation createWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,
-                                             CacheMergePolicy mergePolicy, int completionId) {
-        return delegate.createWanMergeOperation(origin, cacheEntryView, mergePolicy, completionId);
+    public Operation createLegacyWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,
+                                                   CacheMergePolicy mergePolicy, int completionId) {
+        return delegate.createLegacyWanMergeOperation(origin, cacheEntryView, mergePolicy, completionId);
+    }
+
+    @Override
+    public Operation createWanMergeOperation(String origin, SplitBrainMergeEntryView<Data, Data> mergeEntryView,
+                                             SplitBrainMergePolicy mergePolicy, int completionId) {
+        return delegate.createWanMergeOperation(origin, mergeEntryView, mergePolicy, completionId);
     }
 
     private void checkWANReplicationQueues() {

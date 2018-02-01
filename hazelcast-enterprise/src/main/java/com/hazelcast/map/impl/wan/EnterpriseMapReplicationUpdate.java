@@ -2,7 +2,6 @@ package com.hazelcast.map.impl.wan;
 
 import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
-import com.hazelcast.map.merge.MapMergePolicy;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -14,11 +13,11 @@ import java.io.IOException;
  */
 public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObject {
 
-    MapMergePolicy mergePolicy;
-    EntryView<Data, Data> entryView;
+    private Object mergePolicy;
+    private EntryView<Data, Data> entryView;
 
-    public EnterpriseMapReplicationUpdate(String mapName, MapMergePolicy mergePolicy,
-                                          EntryView entryView, int backupCount) {
+    public EnterpriseMapReplicationUpdate(String mapName, Object mergePolicy, EntryView<Data, Data> entryView,
+                                          int backupCount) {
         super(mapName, backupCount);
         this.mergePolicy = mergePolicy;
         this.entryView = entryView;
@@ -27,7 +26,7 @@ public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObje
     public EnterpriseMapReplicationUpdate() {
     }
 
-    public MapMergePolicy getMergePolicy() {
+    public Object getMergePolicy() {
         return mergePolicy;
     }
 

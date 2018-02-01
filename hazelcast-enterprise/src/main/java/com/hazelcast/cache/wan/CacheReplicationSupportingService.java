@@ -1,11 +1,11 @@
 package com.hazelcast.cache.wan;
 
+import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.operation.CacheCreateConfigOperation;
-import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.WanAcknowledgeType;
@@ -16,8 +16,12 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.spi.SplitBrainMergeEntryView;
+import com.hazelcast.spi.SplitBrainMergePolicy;
 import com.hazelcast.wan.WanReplicationEvent;
 
+import static com.hazelcast.cache.impl.operation.MutableOperation.IGNORE_COMPLETION;
+import static com.hazelcast.spi.merge.SplitBrainEntryViews.createSplitBrainMergeEntryView;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
@@ -45,8 +49,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
             CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
             CacheConfig cacheConfig;
             try {
-                cacheConfig = getCacheConfig(cacheReplicationObject.getNameWithPrefix(),
-                        cacheReplicationObject.getCacheName());
+                cacheConfig = getCacheConfig(cacheReplicationObject.getNameWithPrefix(), cacheReplicationObject.getCacheName());
             } catch (Exception e) {
                 throw rethrow(e);
             }
@@ -102,7 +105,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         operationProvider = (EnterpriseCacheOperationProvider) cacheService
                 .getCacheOperationProvider(cacheReplicationRemove.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
         Operation operation = operationProvider.createWanRemoveOperation(ORIGIN, cacheReplicationRemove.getKey(),
-                MutableOperation.IGNORE_COMPLETION);
+                IGNORE_COMPLETION);
         return invokeOnPartition(cacheReplicationRemove.getKey(), operation);
     }
 
@@ -110,10 +113,19 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         EnterpriseCacheOperationProvider operationProvider;
         operationProvider = (EnterpriseCacheOperationProvider) cacheService
                 .getCacheOperationProvider(cacheReplicationUpdate.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
-        CacheMergePolicy mergePolicy = (CacheMergePolicy) cacheService
-                .getCacheMergePolicyProvider().getMergePolicy(cacheReplicationUpdate.getMergePolicy());
-        Operation operation = operationProvider.createWanMergeOperation(ORIGIN, cacheReplicationUpdate.getEntryView(),
-                mergePolicy, MutableOperation.IGNORE_COMPLETION);
+        Object mergePolicy = cacheService.getCacheMergePolicyProvider().getMergePolicy(cacheReplicationUpdate.getMergePolicy());
+
+        Operation operation;
+        if (mergePolicy instanceof SplitBrainMergePolicy) {
+            SplitBrainMergeEntryView<Data, Data> entryView
+                    = createSplitBrainMergeEntryView(cacheReplicationUpdate.getEntryView());
+            operation = operationProvider.createWanMergeOperation(ORIGIN, entryView, (SplitBrainMergePolicy) mergePolicy,
+                    IGNORE_COMPLETION);
+        } else {
+            CacheEntryView<Data, Data> entryView = cacheReplicationUpdate.getEntryView();
+            operation = operationProvider.createLegacyWanMergeOperation(ORIGIN, entryView, (CacheMergePolicy) mergePolicy,
+                    IGNORE_COMPLETION);
+        }
         return invokeOnPartition(cacheReplicationUpdate.getKey(), operation);
     }
 

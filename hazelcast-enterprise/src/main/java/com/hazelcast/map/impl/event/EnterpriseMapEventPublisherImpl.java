@@ -75,7 +75,7 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      * @param entryView the updated entry
      */
     @Override
-    public void publishWanReplicationUpdate(String mapName, EntryView entryView) {
+    public void publishWanReplicationUpdate(String mapName, EntryView<Data, Data> entryView) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
                 mapContainer.getWanMergePolicy(), entryView, mapContainer.getTotalBackupCount());

@@ -11,6 +11,8 @@ import java.util.List;
 
 /**
  * Inserts the merging entries for all partitions of a member via locally invoked {@link MergeOperation}.
+ *
+ * @since 3.10
  */
 public class HDMergeOperationFactory extends MergeOperationFactory {
 
@@ -30,7 +32,7 @@ public class HDMergeOperationFactory extends MergeOperationFactory {
     public Operation createPartitionOperation(int partitionId) {
         for (int i = 0; i < partitions.length; i++) {
             if (partitions[i] == partitionId) {
-                return new HDMergeOperation(name, mergeEntries[i], policy);
+                return new HDMergeOperation(name, mergeEntries[i], policy, false);
             }
         }
         throw new IllegalArgumentException("Unknown partitionId " + partitionId + " (" + Arrays.toString(partitions) + ")");

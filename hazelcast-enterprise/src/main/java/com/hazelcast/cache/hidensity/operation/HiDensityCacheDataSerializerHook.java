@@ -34,11 +34,12 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
     public static final short LOAD_ALL_FACTORY = 21;
     public static final short ENTRY_PROCESSOR = 22;
     public static final short DESTROY = 23;
-    public static final short WAN_MERGE = 24;
+    public static final short WAN_LEGACY_MERGE = 24;
     public static final short WAN_REMOVE = 25;
     public static final short PUT_ALL = 26;
     public static final short CACHE_REPLICATION = 27;
     public static final short CACHE_SEGMENT_SHUTDOWN = 28;
+    public static final short WAN_MERGE = 29;
 
     @Override
     public int getFactoryId() {
@@ -55,7 +56,6 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
         @Override
         @SuppressWarnings({"checkstyle:methodlength", "checkstyle:cyclomaticcomplexity"})
         public IdentifiedDataSerializable create(int typeId) {
-            IdentifiedDataSerializable dataSerializable;
             switch (typeId) {
                 case GET:
                     return new CacheGetOperation();
@@ -97,8 +97,8 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
                     return new CacheLoadAllOperationFactory();
                 case ENTRY_PROCESSOR:
                     return new CacheEntryProcessorOperation();
-                case WAN_MERGE:
-                    return new WanCacheMergeOperation();
+                case WAN_LEGACY_MERGE:
+                    return new WanCacheLegacyMergeOperation();
                 case WAN_REMOVE:
                     return new WanCacheRemoveOperation();
                 case PUT_ALL:
@@ -107,6 +107,8 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
                     return new HiDensityCacheReplicationOperation();
                 case CACHE_SEGMENT_SHUTDOWN:
                     return new CacheSegmentShutdownOperation();
+                case WAN_MERGE:
+                    return new WanCacheMergeOperation();
                 default:
                     throw new IllegalArgumentException("Unknown type ID: " + typeId);
             }

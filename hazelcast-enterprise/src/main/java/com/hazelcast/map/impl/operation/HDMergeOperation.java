@@ -23,11 +23,14 @@ import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
 
 /**
  * Contains multiple merge entries for split-brain healing with with a {@link SplitBrainMergePolicy}.
+ *
+ * @since 3.10
  */
 public class HDMergeOperation extends HDMapOperation implements PartitionAwareOperation, BackupAwareOperation {
 
     private List<SplitBrainMergeEntryView<Data, Data>> mergeEntries;
     private SplitBrainMergePolicy mergePolicy;
+    private boolean disableWanReplicationEvent;
 
     private transient int size;
     private transient int currentIndex;
@@ -45,10 +48,12 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     public HDMergeOperation() {
     }
 
-    HDMergeOperation(String name, List<SplitBrainMergeEntryView<Data, Data>> mergeEntries, SplitBrainMergePolicy policy) {
+    HDMergeOperation(String name, List<SplitBrainMergeEntryView<Data, Data>> mergeEntries, SplitBrainMergePolicy policy,
+                     boolean disableWanReplicationEvent) {
         super(name);
         this.mergeEntries = mergeEntries;
         this.mergePolicy = policy;
+        this.disableWanReplicationEvent = disableWanReplicationEvent;
     }
 
     @Override
@@ -57,7 +62,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
         size = mergeEntries.size();
 
         hasMapListener = mapEventPublisher.hasEventListener(name);
-        hasWanReplication = mapContainer.getWanReplicationPublisher() != null && mapContainer.getWanMergePolicy() != null;
+        hasWanReplication = mapContainer.isWanReplicationEnabled() && !disableWanReplicationEvent;
         hasBackups = mapContainer.getTotalBackupCount() > 0;
         hasInvalidation = mapContainer.hasInvalidationListener();
 
@@ -163,6 +168,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
             out.writeObject(mergeEntry);
         }
         out.writeObject(mergePolicy);
+        out.writeBoolean(disableWanReplicationEvent);
     }
 
     @Override
@@ -175,6 +181,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
             mergeEntries.add(mergeEntry);
         }
         mergePolicy = in.readObject();
+        disableWanReplicationEvent = in.readBoolean();
     }
 
     @Override

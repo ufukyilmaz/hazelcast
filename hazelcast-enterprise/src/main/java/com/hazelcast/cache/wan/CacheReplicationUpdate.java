@@ -17,7 +17,7 @@ public class CacheReplicationUpdate extends CacheReplicationObject {
     private CacheEntryView<Data, Data> entryView;
 
     public CacheReplicationUpdate(String cacheName, String mergePolicy,
-                                  CacheEntryView entryView,
+                                  CacheEntryView<Data, Data> entryView,
                                   String managerPrefix, int backupCount) {
         super(cacheName, managerPrefix, backupCount);
         this.mergePolicy = mergePolicy;

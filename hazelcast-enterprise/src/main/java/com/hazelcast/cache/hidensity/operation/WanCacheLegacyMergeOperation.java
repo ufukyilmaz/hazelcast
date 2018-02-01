@@ -1,13 +1,14 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.SplitBrainMergeEntryView;
-import com.hazelcast.spi.SplitBrainMergePolicy;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
@@ -15,34 +16,31 @@ import java.io.IOException;
 /**
  * Operation implementation for merging entries.
  * This operation is used by WAN replication services.
- *
- * @since 3.10
  */
-public class WanCacheMergeOperation
+public class WanCacheLegacyMergeOperation
         extends BackupAwareHiDensityCacheOperation
         implements MutableOperation {
 
-    private SplitBrainMergeEntryView<Data, Data> mergeEntryView;
-    private SplitBrainMergePolicy mergePolicy;
+    private CacheEntryView<Data, Data> cacheEntryView;
+    private CacheMergePolicy mergePolicy;
     private String wanGroupName;
 
-    public WanCacheMergeOperation() {
+    public WanCacheLegacyMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, String wanGroupName,
-                                  SplitBrainMergePolicy mergePolicy,
-                                  SplitBrainMergeEntryView<Data, Data> mergeEntryView, int completionId) {
+    public WanCacheLegacyMergeOperation(String name, String wanGroupName,
+                                        CacheMergePolicy mergePolicy,
+                                        CacheEntryView<Data, Data> cacheEntryView, int completionId) {
         super(name, completionId);
-        this.mergeEntryView = mergeEntryView;
+        this.cacheEntryView = cacheEntryView;
         this.mergePolicy = mergePolicy;
         this.wanGroupName = wanGroupName;
     }
 
     @Override
     public void runInternal() {
-        if (cache.merge(mergeEntryView, mergePolicy) != null) {
-            response = true;
-        }
+        CacheRecord record = cache.merge(cacheEntryView, mergePolicy, getCallerUuid(), wanGroupName, completionId);
+        response = record != null;
     }
 
     @Override
@@ -53,18 +51,18 @@ public class WanCacheMergeOperation
     @Override
     public Operation getBackupOperation() {
         ExpiryPolicy expiryPolicy = null;
-        long expiryTime = mergeEntryView.getExpirationTime();
+        long expiryTime = cacheEntryView.getExpirationTime();
         if (expiryTime > 0) {
             long ttl = expiryTime - System.currentTimeMillis();
             expiryPolicy = new HazelcastExpiryPolicy(ttl, 0L, 0L);
         }
-        return new CachePutBackupOperation(name, mergeEntryView.getKey(), mergeEntryView.getValue(), expiryPolicy, true);
+        return new CachePutBackupOperation(name, cacheEntryView.getKey(), cacheEntryView.getValue(), expiryPolicy, true);
     }
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeObject(mergeEntryView);
+        out.writeObject(cacheEntryView);
         out.writeObject(mergePolicy);
         out.writeUTF(wanGroupName);
     }
@@ -72,14 +70,14 @@ public class WanCacheMergeOperation
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        mergeEntryView = in.readObject();
+        cacheEntryView = in.readObject();
         mergePolicy = in.readObject();
         wanGroupName = in.readUTF();
     }
 
     @Override
     public int getId() {
-        return HiDensityCacheDataSerializerHook.WAN_MERGE;
+        return HiDensityCacheDataSerializerHook.WAN_LEGACY_MERGE;
     }
 
     @Override

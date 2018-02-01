@@ -9,6 +9,8 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationFactory;
+import com.hazelcast.spi.SplitBrainMergeEntryView;
+import com.hazelcast.spi.SplitBrainMergePolicy;
 
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -97,9 +99,15 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
-    public Operation createWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,
-                                             CacheMergePolicy mergePolicy, int completionId) {
-        return new WanCacheMergeOperation(nameWithPrefix, origin, mergePolicy, cacheEntryView, completionId);
+    public Operation createLegacyWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,
+                                                   CacheMergePolicy mergePolicy, int completionId) {
+        return new WanCacheLegacyMergeOperation(nameWithPrefix, origin, mergePolicy, cacheEntryView, completionId);
+    }
+
+    @Override
+    public Operation createWanMergeOperation(String origin, SplitBrainMergeEntryView<Data, Data> mergeEntryView,
+                                             SplitBrainMergePolicy mergePolicy, int completionId) {
+        return new WanCacheMergeOperation(nameWithPrefix, origin, mergePolicy, mergeEntryView, completionId);
     }
 
     @Override

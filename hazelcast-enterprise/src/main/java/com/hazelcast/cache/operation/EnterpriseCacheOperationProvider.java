@@ -1,10 +1,12 @@
 package com.hazelcast.cache.operation;
 
-import com.hazelcast.cache.impl.DefaultOperationProvider;
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheMergePolicy;
+import com.hazelcast.cache.impl.DefaultOperationProvider;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.SplitBrainMergeEntryView;
+import com.hazelcast.spi.SplitBrainMergePolicy;
 
 /**
  * Provides enterprise cache operations.
@@ -19,8 +21,13 @@ public class EnterpriseCacheOperationProvider extends DefaultOperationProvider {
         return new WanCacheRemoveOperation(nameWithPrefix, origin, key, completionId);
     }
 
-    public Operation createWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,
-                                             CacheMergePolicy mergePolicy, int completionId) {
-        return new WanCacheMergeOperation(nameWithPrefix, origin, cacheEntryView, mergePolicy, completionId);
+    public Operation createLegacyWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,
+                                                   CacheMergePolicy mergePolicy, int completionId) {
+        return new WanCacheLegacyMergeOperation(nameWithPrefix, origin, cacheEntryView, mergePolicy, completionId);
+    }
+
+    public Operation createWanMergeOperation(String origin, SplitBrainMergeEntryView<Data, Data> mergeEntryView,
+                                             SplitBrainMergePolicy mergePolicy, int completionId) {
+        return new WanCacheMergeOperation(nameWithPrefix, origin, mergeEntryView, mergePolicy, completionId);
     }
 }

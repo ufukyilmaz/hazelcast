@@ -12,16 +12,16 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
 
     public static final int F_ID = FactoryIdHelper.getFactoryId(ENTERPRISE_CACHE_DS_FACTORY, ENTERPRISE_CACHE_DS_FACTORY_ID);
 
-    public static final int WAN_MERGE = 0;
+    public static final int WAN_LEGACY_MERGE = 0;
     public static final int WAN_REMOVE = 1;
     public static final int SEGMENT_DESTROY = 2;
+    public static final int WAN_MERGE = 3;
 
     @Override
     public int getFactoryId() {
         return F_ID;
     }
 
-    //CHECKSTYLE:OFF
     @Override
     public DataSerializableFactory createFactory() {
         return new DataSerializableFactory() {
@@ -29,16 +29,18 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
             @Override
             public IdentifiedDataSerializable create(int typeId) {
                 switch (typeId) {
-                    case WAN_MERGE:
-                        return new WanCacheMergeOperation();
+                    case WAN_LEGACY_MERGE:
+                        return new WanCacheLegacyMergeOperation();
                     case WAN_REMOVE:
                         return new WanCacheRemoveOperation();
                     case SEGMENT_DESTROY:
                         return new CacheSegmentDestroyOperation();
+                    case WAN_MERGE:
+                        return new WanCacheMergeOperation();
+                    default:
+                        throw new IllegalArgumentException("Unknown type ID: " + typeId);
                 }
-                throw new IllegalArgumentException("Unknown type ID: " + typeId);
             }
         };
     }
-    //CHECKSTYLE:ON
 }

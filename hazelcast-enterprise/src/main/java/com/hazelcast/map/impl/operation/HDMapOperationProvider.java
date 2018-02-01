@@ -19,6 +19,8 @@ import com.hazelcast.spi.SplitBrainMergePolicy;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.singletonList;
+
 /**
  * Provides {@link com.hazelcast.core.IMap IMap} operations when
  * {@link com.hazelcast.config.InMemoryFormat InMemoryFormat} is
@@ -163,9 +165,15 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createMergeOperation(String name, EntryView<Data, Data> entryView,
-                                             MapMergePolicy policy, boolean disableWanReplicationEvent) {
+    public MapOperation createLegacyMergeOperation(String name, EntryView<Data, Data> entryView,
+                                                   MapMergePolicy policy, boolean disableWanReplicationEvent) {
         return new HDLegacyMergeOperation(name, entryView, policy, disableWanReplicationEvent);
+    }
+
+    @Override
+    public MapOperation createMergeOperation(String name, SplitBrainMergeEntryView<Data, Data> entryView,
+                                             SplitBrainMergePolicy policy, boolean disableWanReplicationEvent) {
+        return new HDMergeOperation(name, singletonList(entryView), policy, disableWanReplicationEvent);
     }
 
     @Override

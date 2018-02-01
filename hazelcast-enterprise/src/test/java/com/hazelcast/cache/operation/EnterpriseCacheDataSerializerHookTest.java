@@ -19,8 +19,8 @@ public class EnterpriseCacheDataSerializerHookTest {
     @Test
     public void testExistingTypes() {
         EnterpriseCacheDataSerializerHook hook = new EnterpriseCacheDataSerializerHook();
-        IdentifiedDataSerializable merge = hook.createFactory().create(EnterpriseCacheDataSerializerHook.WAN_MERGE);
-        assertTrue(merge instanceof WanCacheMergeOperation);
+        IdentifiedDataSerializable merge = hook.createFactory().create(EnterpriseCacheDataSerializerHook.WAN_LEGACY_MERGE);
+        assertTrue(merge instanceof WanCacheLegacyMergeOperation);
         IdentifiedDataSerializable remove = hook.createFactory().create(EnterpriseCacheDataSerializerHook.WAN_REMOVE);
         assertTrue(remove instanceof WanCacheRemoveOperation);
     }

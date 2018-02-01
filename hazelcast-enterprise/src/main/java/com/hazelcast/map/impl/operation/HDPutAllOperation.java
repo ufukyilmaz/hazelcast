@@ -51,7 +51,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         super.beforeRun();
 
         this.hasMapListener = mapEventPublisher.hasEventListener(name);
-        this.hasWanReplication = hasWanReplication();
+        this.hasWanReplication = mapContainer.isWanReplicationEnabled();
         this.hasBackups = hasBackups();
         this.hasInvalidation = mapContainer.hasInvalidationListener();
 
@@ -71,10 +71,6 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
             put(mapEntries.getKey(currentIndex), mapEntries.getValue(currentIndex));
             currentIndex++;
         }
-    }
-
-    private boolean hasWanReplication() {
-        return (mapContainer.getWanReplicationPublisher() != null && mapContainer.getWanMergePolicy() != null);
     }
 
     private boolean hasBackups() {

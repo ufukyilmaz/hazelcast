@@ -11,6 +11,8 @@ import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
@@ -21,24 +23,17 @@ import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HDEntryProcessorTest extends EntryProcessorTest {
 
-    @Parameterized.Parameters(name = "{index}: {0}")
+    @Parameters(name = "format:{0}")
     public static Collection<Object[]> data() {
         return asList(new Object[][]{
-                {BINARY}, {OBJECT}, {NATIVE}
+                {BINARY},
+                {OBJECT},
+                {NATIVE},
         });
-    }
-
-    @Override
-    public Config getConfig() {
-        Config config = getHDConfig();
-        MapConfig mapConfig = new MapConfig(MAP_NAME);
-        mapConfig.setInMemoryFormat(inMemoryFormat);
-        config.addMapConfig(mapConfig);
-        return config;
     }
 
     @BeforeClass
@@ -49,5 +44,14 @@ public class HDEntryProcessorTest extends EntryProcessorTest {
     @AfterClass
     public static void tearDownClass() {
         System.setProperty(StandardMemoryManager.PROPERTY_DEBUG_ENABLED, "false");
+    }
+
+    @Override
+    public Config getConfig() {
+        MapConfig mapConfig = new MapConfig(MAP_NAME)
+                .setInMemoryFormat(inMemoryFormat);
+
+        return getHDConfig()
+                .addMapConfig(mapConfig);
     }
 }

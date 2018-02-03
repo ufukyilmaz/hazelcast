@@ -128,8 +128,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
 
     @Override
     public void onUpdate(long now) {
-        onAccess(now);
-
         setVersion(getVersion() + 1L);
         setLastUpdateTime(now);
     }

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CountingWanEndpoint implements WanReplicationEndpoint {
 
     public AtomicLong counter = new AtomicLong();
+    public AtomicLong backupCounter = new AtomicLong();
     private Node node;
 
     public CountingWanEndpoint() {
@@ -86,6 +87,7 @@ public class CountingWanEndpoint implements WanReplicationEndpoint {
 
     @Override
     public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
+        backupCounter.incrementAndGet();
     }
 
     @Override

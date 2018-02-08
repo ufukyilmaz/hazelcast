@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
 import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.nio.IOService.KILO_BYTE;
 
-public class SymmetricCipherMemberChannelInboundHandler extends MemberChannelInboundHandler {
+public class SymmetricCipherPacketDecoder extends PacketDecoder {
 
     private final ILogger logger;
     private final Cipher cipher;
@@ -22,8 +22,8 @@ public class SymmetricCipherMemberChannelInboundHandler extends MemberChannelInb
     private ByteBuffer cipherBuffer;
     private int size = -1;
 
-    public SymmetricCipherMemberChannelInboundHandler(TcpIpConnection connection, IOService ioService,
-                                                      PacketHandler packetHandler) {
+    public SymmetricCipherPacketDecoder(TcpIpConnection connection, IOService ioService,
+                                        PacketHandler packetHandler) {
         super(connection, packetHandler);
         this.logger = ioService.getLoggingService().getLogger(getClass());
         this.cipher = createSymmetricReaderCipher(ioService.getSymmetricEncryptionConfig(), connection);

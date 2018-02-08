@@ -12,16 +12,16 @@ import java.nio.ByteBuffer;
 
 import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
 
-public class SymmetricCipherMemberChannelOutboundHandler implements ChannelOutboundHandler<Packet> {
+public class SymmetricCipherPacketEncoder implements ChannelOutboundHandler<Packet> {
 
     private final Cipher cipher;
     private final PacketIOHelper packetWriter = new PacketIOHelper();
     private ByteBuffer packetBuffer;
     private boolean packetWritten;
 
-    public SymmetricCipherMemberChannelOutboundHandler(TcpIpConnection connection, IOService ioService) {
-        packetBuffer = ByteBuffer.allocate(ioService.getSocketSendBufferSize() * IOService.KILO_BYTE);
-        cipher = createSymmetricWriterCipher(ioService.getSymmetricEncryptionConfig(), connection);
+    public SymmetricCipherPacketEncoder(TcpIpConnection connection, IOService ioService) {
+        this.packetBuffer = ByteBuffer.allocate(ioService.getSocketSendBufferSize() * IOService.KILO_BYTE);
+        this.cipher = createSymmetricWriterCipher(ioService.getSymmetricEncryptionConfig(), connection);
     }
 
     @Override

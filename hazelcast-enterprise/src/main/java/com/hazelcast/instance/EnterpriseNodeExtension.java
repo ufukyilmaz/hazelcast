@@ -57,8 +57,8 @@ import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.ssl.SSLChannelFactory;
-import com.hazelcast.nio.tcp.SymmetricCipherMemberChannelInboundHandler;
-import com.hazelcast.nio.tcp.SymmetricCipherMemberChannelOutboundHandler;
+import com.hazelcast.nio.tcp.SymmetricCipherPacketDecoder;
+import com.hazelcast.nio.tcp.SymmetricCipherPacketEncoder;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
@@ -392,7 +392,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Reader started with SymmetricEncryption");
-            return new SymmetricCipherMemberChannelInboundHandler(connection, ioService, node.nodeEngine.getPacketDispatcher());
+            return new SymmetricCipherPacketDecoder(connection, ioService, node.nodeEngine.getPacketDispatcher());
         }
         return super.createInboundHandler(connection, ioService);
     }
@@ -403,7 +403,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Writer started with SymmetricEncryption");
-            return new SymmetricCipherMemberChannelOutboundHandler(connection, ioService);
+            return new SymmetricCipherPacketEncoder(connection, ioService);
         }
         return super.createOutboundHandler(connection, ioService);
     }

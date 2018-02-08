@@ -29,6 +29,7 @@ import com.hazelcast.core.LifecycleService;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.core.PartitionService;
 import com.hazelcast.core.ReplicatedMap;
+import com.hazelcast.crdt.pncounter.PNCounter;
 import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.LoggingService;
@@ -53,6 +54,7 @@ import com.hazelcast.security.permission.ListPermission;
 import com.hazelcast.security.permission.LockPermission;
 import com.hazelcast.security.permission.MapPermission;
 import com.hazelcast.security.permission.MultiMapPermission;
+import com.hazelcast.security.permission.PNCounterPermission;
 import com.hazelcast.security.permission.QueuePermission;
 import com.hazelcast.security.permission.ReplicatedMapPermission;
 import com.hazelcast.security.permission.ScheduledExecutorPermission;
@@ -360,6 +362,12 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         public CardinalityEstimator getCardinalityEstimator(String name) {
             checkPermission(new CardinalityEstimatorPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new CardinalityEstimatorHandler(instance.getCardinalityEstimator(name)));
+        }
+
+        @Override
+        public PNCounter getPNCounter(String name) {
+            checkPermission(new PNCounterPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new PNCounterHandler(instance.getPNCounter(name)));
         }
 
         @Override
@@ -915,6 +923,28 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Override
         public String getStructureName() {
             return "scheduledExecutor";
+        }
+    }
+
+    private class PNCounterHandler extends SecureInvocationHandler {
+
+        PNCounterHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        @Override
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null) {
+                return null;
+            }
+
+            return new PNCounterPermission(distributedObject.getName(), action);
+        }
+
+        @Override
+        public String getStructureName() {
+            return "PNCounter";
         }
     }
 }

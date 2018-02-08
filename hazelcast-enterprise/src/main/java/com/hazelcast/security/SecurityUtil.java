@@ -10,6 +10,7 @@ import com.hazelcast.security.permission.ClusterPermission;
 import com.hazelcast.security.permission.CountDownLatchPermission;
 import com.hazelcast.security.permission.DurableExecutorServicePermission;
 import com.hazelcast.security.permission.ExecutorServicePermission;
+import com.hazelcast.security.permission.PNCounterPermission;
 import com.hazelcast.security.permission.FlakeIdGeneratorPermission;
 import com.hazelcast.security.permission.ListPermission;
 import com.hazelcast.security.permission.LockPermission;
@@ -73,6 +74,8 @@ public final class SecurityUtil {
                 return new CardinalityEstimatorPermission(permissionConfig.getName(), actions);
             case SCHEDULED_EXECUTOR:
                 return new ScheduledExecutorPermission(permissionConfig.getName(), actions);
+            case PN_COUNTER:
+                return new PNCounterPermission(permissionConfig.getName(), actions);
             case ALL:
                 return new AllPermissions();
             case CACHE:

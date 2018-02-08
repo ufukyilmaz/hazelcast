@@ -14,6 +14,7 @@ import com.hazelcast.security.permission.ListPermission;
 import com.hazelcast.security.permission.LockPermission;
 import com.hazelcast.security.permission.MapPermission;
 import com.hazelcast.security.permission.MultiMapPermission;
+import com.hazelcast.security.permission.PNCounterPermission;
 import com.hazelcast.security.permission.QueuePermission;
 import com.hazelcast.security.permission.ScheduledExecutorPermission;
 import com.hazelcast.security.permission.SemaphorePermission;
@@ -67,6 +68,7 @@ public class SecurityUtilTest extends HazelcastTestSupport {
         testCreatePermission(PermissionType.DURABLE_EXECUTOR_SERVICE, DurableExecutorServicePermission.class);
         testCreatePermission(PermissionType.CARDINALITY_ESTIMATOR, CardinalityEstimatorPermission.class);
         testCreatePermission(PermissionType.SCHEDULED_EXECUTOR, ScheduledExecutorPermission.class);
+        testCreatePermission(PermissionType.PN_COUNTER, PNCounterPermission.class);
         testCreatePermission(PermissionType.ALL, AllPermissions.class);
         testCreatePermission(PermissionType.CACHE, CachePermission.class);
     }

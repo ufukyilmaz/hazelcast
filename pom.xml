@@ -426,7 +426,7 @@
             <properties>
                 <argLine>
                     ${extraVmArgs}
-                    -Xms1g -Xmx1g -XX:MaxPermSize=1024M
+                    -Xms1g -Xmx3g -XX:MaxPermSize=1024M
                     -Dhazelcast.hidensity.check.freememory=false
                     -Dhazelcast.phone.home.enabled=false
                     -Dhazelcast.mancenter.enabled=false

@@ -1,5 +1,6 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.CacheNotExistsException;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
@@ -179,6 +180,8 @@ abstract class AbstractHiDensityCacheOperation
         if (e instanceof NativeOutOfMemoryError) {
             Level level = this instanceof BackupOperation ? Level.FINEST : Level.WARNING;
             logger.log(level, "Cannot complete operation! -> " + e.getMessage());
+        } else if (e instanceof CacheNotExistsException) {
+            logger.finest("Error while getting a cache", e);
         } else {
             super.logError(e);
         }

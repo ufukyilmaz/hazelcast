@@ -1,8 +1,9 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.impl.EnterpriseCacheService;
+import com.hazelcast.cache.CacheNotExistsException;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -200,6 +201,18 @@ public final class HiDensityCacheReplicationOperation
     @Override
     public int getId() {
         return HiDensityCacheDataSerializerHook.CACHE_REPLICATION;
+    }
+
+    @Override
+    public void logError(Throwable e) {
+        ILogger logger = getLogger();
+        if (e instanceof NativeOutOfMemoryError) {
+            logger.warning("Cannot complete operation! -> " + e.getMessage());
+        } else if (e instanceof CacheNotExistsException) {
+            logger.finest("Error while getting a cache", e);
+        } else {
+            super.logError(e);
+        }
     }
 
     /**

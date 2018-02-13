@@ -11,9 +11,9 @@ import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({SlowTest.class})

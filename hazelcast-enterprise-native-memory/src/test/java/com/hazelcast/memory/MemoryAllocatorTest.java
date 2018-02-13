@@ -21,9 +21,8 @@ import java.util.Collection;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
-import static org.junit.Assert.assertEquals;
-
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)

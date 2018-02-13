@@ -1,23 +1,5 @@
 package com.hazelcast.nio.ssl;
 
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
-
-import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-
-import javax.net.ssl.SSLContext;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.JoinConfig;
@@ -32,6 +14,22 @@ import com.hazelcast.instance.TestUtil;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+
+import javax.net.ssl.SSLContext;
+import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)

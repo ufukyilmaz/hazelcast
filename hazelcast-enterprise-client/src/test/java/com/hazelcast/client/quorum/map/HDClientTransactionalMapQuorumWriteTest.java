@@ -3,7 +3,6 @@ package com.hazelcast.client.quorum.map;
 import com.hazelcast.client.quorum.PartitionedClusterClients;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.transaction.TransactionContext;
 import org.junit.AfterClass;

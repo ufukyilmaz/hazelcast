@@ -4,8 +4,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.CredentialsFactoryConfig;
 import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.LoginModuleConfig;
-import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
+import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.nio.serialization.PortableReader;
@@ -19,12 +19,12 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.util.Properties;
+
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_PRINCIPALS_SIMPLE;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESULT_COMMIT;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESULT_LOGIN;
 import static com.hazelcast.security.loginmodules.TestLoginModule.VALUE_ACTION_FAIL;
-
-import java.util.Properties;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})

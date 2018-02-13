@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hotrestart;
 
-import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.ICache;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;

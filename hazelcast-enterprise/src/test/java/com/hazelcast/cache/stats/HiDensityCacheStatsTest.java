@@ -9,7 +9,6 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.annotation.QuickTest;
-
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 

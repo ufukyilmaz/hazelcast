@@ -27,10 +27,11 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
  */
 public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<HDRecord> {
 
-    private final HiDensityRecordProcessor recordProcessor;
-    private final HiDensityStorageInfo storageInfo;
-    private final EntryCostEstimator<NativeMemoryData, MemoryBlock> entryCostEstimator;
     private final HDStorageSCHM map;
+    private final HiDensityStorageInfo storageInfo;
+    private final HiDensityRecordProcessor recordProcessor;
+    private final EntryCostEstimator<NativeMemoryData, MemoryBlock> entryCostEstimator;
+
     private volatile int entryCount;
 
     public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {

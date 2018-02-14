@@ -57,9 +57,8 @@ public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
                 {InMemoryFormat.OBJECT, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
                 {InMemoryFormat.BINARY, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
                 {InMemoryFormat.BINARY, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
-                // TODO: uncomment when HD cache merge is implemented
-                //{InMemoryFormat.NATIVE, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
-                //{InMemoryFormat.NATIVE, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
+                {InMemoryFormat.NATIVE, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
+                {InMemoryFormat.NATIVE, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
         });
     }
 

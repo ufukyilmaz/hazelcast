@@ -64,6 +64,14 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         this.memoryManager = memoryManager;
     }
 
+    @Override
+    public void init() {
+        super.init();
+        if (prefix != -1) {
+            this.ramStore = inMemoryFormat == NATIVE ? new RamStoreHDImpl(this, memoryManager) : new RamStoreImpl(this);
+        }
+    }
+
     public RamStore getRamStore() {
         return ramStore;
     }
@@ -130,14 +138,6 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
             record.setLastAccessTime(NOT_AVAILABLE);
         }
         return record;
-    }
-
-    @Override
-    public void init() {
-        super.init();
-        if (prefix != -1) {
-            this.ramStore = inMemoryFormat == NATIVE ? new RamStoreHDImpl(this, memoryManager) : new RamStoreImpl(this);
-        }
     }
 
     @Override

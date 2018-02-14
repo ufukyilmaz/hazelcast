@@ -40,6 +40,9 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
     public static final short CACHE_REPLICATION = 27;
     public static final short CACHE_SEGMENT_SHUTDOWN = 28;
     public static final short WAN_MERGE = 29;
+    public static final short MERGE = 30;
+    public static final short MERGE_BACKUP = 31;
+    public static final short MERGE_FACTORY = 32;
 
     @Override
     public int getFactoryId() {
@@ -109,6 +112,12 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
                     return new CacheSegmentShutdownOperation();
                 case WAN_MERGE:
                     return new WanCacheMergeOperation();
+                case MERGE:
+                    return new CacheMergeOperation();
+                case MERGE_BACKUP:
+                    return new CacheMergeBackupOperation();
+                case MERGE_FACTORY:
+                    return new CacheMergeOperationFactory();
                 default:
                     throw new IllegalArgumentException("Unknown type ID: " + typeId);
             }

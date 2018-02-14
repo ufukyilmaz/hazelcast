@@ -654,7 +654,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
         node.getJoiner().setTargetAddress(null);
 
-        clusterService.reset();
+        clusterService.reset(true);
 
         if (isAfterJoin) {
             try {

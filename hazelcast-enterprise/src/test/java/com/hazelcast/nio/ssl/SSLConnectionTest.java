@@ -126,8 +126,8 @@ public class SSLConnectionTest {
     @Test
     public void testOneCipherSuite() throws GeneralSecurityException {
         List<String> supportedCipherSuites = Arrays.asList(getSupportedCipherSuites());
-        String[] knownCs = { "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA", "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA",
-                "TLS_RSA_WITH_AES_128_CBC_SHA", "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA256", "TLS_RSA_WITH_AES_128_CBC_SHA256" };
+        String[] knownCs = {"SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA", "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA",
+                "TLS_RSA_WITH_AES_128_CBC_SHA", "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA256", "TLS_RSA_WITH_AES_128_CBC_SHA256"};
         int idx = 0;
         while (idx < knownCs.length) {
             if (supportedCipherSuites.contains(knownCs[idx])) {
@@ -195,7 +195,7 @@ public class SSLConnectionTest {
     /**
      * Tests that node doesn't start when SSL configurations contains only unsupported ciphersuite names.
      */
-    @Test(expected=ConfigurationException.class)
+    @Test(expected = ConfigurationException.class)
     public void testUnsupportedCipherSuiteNames() throws GeneralSecurityException {
         Hazelcast.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", "foo,bar"));
     }
@@ -203,7 +203,7 @@ public class SSLConnectionTest {
     /**
      * Tests that a node doesn't start if its SSL configurations contains empty ("") ciphersuites property value.
      */
-    @Test(expected=ConfigurationException.class)
+    @Test(expected = ConfigurationException.class)
     public void testEmptyCipherSuiteProperty() throws GeneralSecurityException {
         Hazelcast.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", ""));
     }

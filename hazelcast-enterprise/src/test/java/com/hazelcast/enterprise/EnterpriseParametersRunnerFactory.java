@@ -10,7 +10,7 @@ import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 
 /**
  * Enterprise extension of {@link HazelcastParametersRunnerFactory}.
- *
+ * <p>
  * Creates {@link EnterpriseParallelJUnitClassRunner} if the test class has
  * {@link com.hazelcast.test.annotation.ParallelTest} category, creates
  * {@link EnterpriseSerialJUnitClassRunner} otherwise.

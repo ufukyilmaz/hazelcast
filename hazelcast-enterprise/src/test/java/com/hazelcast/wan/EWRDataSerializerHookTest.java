@@ -15,6 +15,13 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.BATCH_WAN_REP_EVENT;
+import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.CACHE_REPLICATION_REMOVE;
+import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.CACHE_REPLICATION_UPDATE;
+import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.MAP_REPLICATION_REMOVE;
+import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.MAP_REPLICATION_UPDATE;
+import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.POST_JOIN_WAN_OPERATION;
+import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.WAN_SYNC_OPERATION;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -27,25 +34,25 @@ public class EWRDataSerializerHookTest {
     @Test
     public void testExistingTypes() {
         EWRDataSerializerHook hook = new EWRDataSerializerHook();
-        IdentifiedDataSerializable batchWanRep = hook.createFactory().create(EWRDataSerializerHook.BATCH_WAN_REP_EVENT);
+        IdentifiedDataSerializable batchWanRep = hook.createFactory().create(BATCH_WAN_REP_EVENT);
         assertTrue(batchWanRep instanceof BatchWanReplicationEvent);
 
-        IdentifiedDataSerializable cacheUpdate = hook.createFactory().create(EWRDataSerializerHook.CACHE_REPLICATION_UPDATE);
+        IdentifiedDataSerializable cacheUpdate = hook.createFactory().create(CACHE_REPLICATION_UPDATE);
         assertTrue(cacheUpdate instanceof CacheReplicationUpdate);
 
-        IdentifiedDataSerializable cacheRemove = hook.createFactory().create(EWRDataSerializerHook.CACHE_REPLICATION_REMOVE);
+        IdentifiedDataSerializable cacheRemove = hook.createFactory().create(CACHE_REPLICATION_REMOVE);
         assertTrue(cacheRemove instanceof CacheReplicationRemove);
 
-        IdentifiedDataSerializable mapUpdate = hook.createFactory().create(EWRDataSerializerHook.MAP_REPLICATION_UPDATE);
+        IdentifiedDataSerializable mapUpdate = hook.createFactory().create(MAP_REPLICATION_UPDATE);
         assertTrue(mapUpdate instanceof EnterpriseMapReplicationUpdate);
 
-        IdentifiedDataSerializable mapRemove = hook.createFactory().create(EWRDataSerializerHook.MAP_REPLICATION_REMOVE);
+        IdentifiedDataSerializable mapRemove = hook.createFactory().create(MAP_REPLICATION_REMOVE);
         assertTrue(mapRemove instanceof EnterpriseMapReplicationRemove);
 
-        IdentifiedDataSerializable wanSyncOperation = hook.createFactory().create(EWRDataSerializerHook.WAN_SYNC_OPERATION);
+        IdentifiedDataSerializable wanSyncOperation = hook.createFactory().create(WAN_SYNC_OPERATION);
         assertTrue(wanSyncOperation instanceof WanSyncOperation);
 
-        IdentifiedDataSerializable postJoinWanOperation = hook.createFactory().create(EWRDataSerializerHook.POST_JOIN_WAN_OPERATION);
+        IdentifiedDataSerializable postJoinWanOperation = hook.createFactory().create(POST_JOIN_WAN_OPERATION);
         assertTrue(postJoinWanOperation instanceof PostJoinWanOperation);
     }
 

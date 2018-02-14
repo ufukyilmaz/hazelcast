@@ -61,7 +61,8 @@ public class AtomicReferenceCompatibilityTest extends AtomicReferenceAbstractTes
             assertInstanceOfByClassName("com.hazelcast.core.HazelcastException", t);
         }
 
-        assertEquals("foo", ref.get());    }
+        assertEquals("foo", ref.get());
+    }
 
     @Override
     public void getAndAlter_whenException() {

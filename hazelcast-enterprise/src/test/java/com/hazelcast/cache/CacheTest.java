@@ -91,7 +91,7 @@ public class CacheTest extends AbstractCacheTest {
 
     /**
      * Test to reproduce issue 129 (https://github.com/hazelcast/hazelcast-enterprise/issues/129).
-     *
+     * <p>
      * The test code is originally taken from there.
      */
     @Test(expected = IllegalStateException.class)

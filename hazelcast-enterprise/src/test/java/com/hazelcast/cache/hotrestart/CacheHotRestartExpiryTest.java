@@ -31,7 +31,7 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
 
     @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return asList(new Object[][] {
+        return asList(new Object[][]{
                 {InMemoryFormat.NATIVE, KEY_COUNT, false},
                 {InMemoryFormat.BINARY, KEY_COUNT, false}
         });

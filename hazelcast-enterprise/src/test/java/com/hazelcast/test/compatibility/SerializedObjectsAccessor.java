@@ -54,7 +54,7 @@ public class SerializedObjectsAccessor implements Closeable, Iterable<Serialized
             int bytesRead = samplesFile.read(sample);
             if (bytesRead != samplePosition.getLength()) {
                 throw new RuntimeException("Could not read " + samplePosition.getLength() + " bytes from offset "
-                    + samplePosition.getOffset());
+                        + samplePosition.getOffset());
             }
             return sample;
         } catch (IOException e) {

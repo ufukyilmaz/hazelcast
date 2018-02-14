@@ -103,7 +103,8 @@ public final class SSLSimpleMapBenchmark {
             System.out.println();
         }
 
-        SSLSimpleMapBenchmark test = new SSLSimpleMapBenchmark(threadCount, entryCount, valueSize, getPercentage, putPercentage, load);
+        SSLSimpleMapBenchmark test
+                = new SSLSimpleMapBenchmark(threadCount, entryCount, valueSize, getPercentage, putPercentage, load);
         test.start();
     }
 

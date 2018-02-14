@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
- class ValueBlockAccessor extends MemoryBlock {
+class ValueBlockAccessor extends MemoryBlock {
 
     private static final int HEADER_SIZE = 4;
 

@@ -27,6 +27,7 @@ public abstract class AbstractEnterpriseBufferObjectDataInputTest extends Abstra
     }
 
     protected abstract EnterpriseBufferObjectDataInput getEnterpriseBufferObjectDataInput();
+
     protected abstract ByteOrder getByteOrder();
 
     @After

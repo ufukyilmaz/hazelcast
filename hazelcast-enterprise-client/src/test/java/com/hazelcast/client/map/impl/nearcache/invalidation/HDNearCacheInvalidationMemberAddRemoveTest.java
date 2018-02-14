@@ -25,7 +25,7 @@ public class HDNearCacheInvalidationMemberAddRemoveTest extends InvalidationMemb
         EvictionConfig evictionConfig = nearCacheConfig.getEvictionConfig();
         evictionConfig.setMaximumSizePolicy(ENTRY_COUNT);
         evictionConfig.setSize(90);
-         nearCacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+        nearCacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         nearCacheConfig.setInvalidateOnChange(true);
         nearCacheConfig.setName(mapName);
         return nearCacheConfig;

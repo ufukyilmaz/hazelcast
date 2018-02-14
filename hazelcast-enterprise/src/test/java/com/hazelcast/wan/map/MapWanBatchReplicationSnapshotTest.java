@@ -130,7 +130,7 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
                     final WanReplicationService service = getNodeEngineImpl(node).getService(WanReplicationService.SERVICE_NAME);
                     final LocalWanStats localWanStats = service.getStats().get(wanReplicationName);
                     final LocalWanPublisherStats publisherStats = localWanStats.getLocalWanPublisherStats()
-                                                                               .get(toConfig.getGroupConfig().getName());
+                            .get(toConfig.getGroupConfig().getName());
                     final int actualQueueSize = publisherStats.getOutboundQueueSize();
                     assertEquals(0, actualQueueSize);
                 }

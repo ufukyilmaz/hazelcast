@@ -141,7 +141,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_hotRestartFails_whenNodeStartsBeforeOthers_withMissingHotRestartDirectory()  {
+    public void test_hotRestartFails_whenNodeStartsBeforeOthers_withMissingHotRestartDirectory() {
         Address[] addresses = startAndTerminateInstances(4);
 
         Address randomAddress = addresses[RandomPicker.getInt(addresses.length)];

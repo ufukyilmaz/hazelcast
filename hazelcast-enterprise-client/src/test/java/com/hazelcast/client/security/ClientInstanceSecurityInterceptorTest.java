@@ -1,5 +1,3 @@
-
-
 package com.hazelcast.client.security;
 
 import com.hazelcast.core.DistributedObjectListener;

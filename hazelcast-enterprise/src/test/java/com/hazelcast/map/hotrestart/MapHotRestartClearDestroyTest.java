@@ -57,7 +57,7 @@ public class MapHotRestartClearDestroyTest extends AbstractMapHotRestartTest {
 
     private void test(MapAction action) throws Exception {
         Address address = factory.nextAddress();
-        Config hzConfig = makeConfig(address,1);
+        Config hzConfig = makeConfig(address, 1);
         HazelcastInstance hz = newHazelcastInstance(address, hzConfig);
         IMap<Integer, String> map = createMap(hz);
 

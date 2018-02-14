@@ -60,7 +60,7 @@ public abstract class HotRestartConsoleRequestTestSupport extends HazelcastTestS
         return config;
     }
 
-    public static ClusterHotRestartStatusDTO getClusterHotRestartStatus(HazelcastInstance instance){
+    public static ClusterHotRestartStatusDTO getClusterHotRestartStatus(HazelcastInstance instance) {
         InternalHotRestartService internalHotRestartService = getNode(instance).getNodeExtension().getInternalHotRestartService();
         return internalHotRestartService.getCurrentClusterHotRestartStatus();
     }

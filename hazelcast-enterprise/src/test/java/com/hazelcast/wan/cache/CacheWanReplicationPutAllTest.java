@@ -115,7 +115,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
                 "default");
         // disable WAN replication for the default cache config (it's auto-enabled by the setupReplicateFrom())
         configA.getCacheConfig("default")
-               .setWanReplicationRef(null);
+                .setWanReplicationRef(null);
 
         startClusterA();
         startClusterB();
@@ -126,7 +126,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
     @Override
     protected WanPublisherConfig targetCluster(Config config, int count) {
         return super.targetCluster(config, count)
-                    .setClassName(CountingWanEndpoint.class.getName());
+                .setClassName(CountingWanEndpoint.class.getName());
     }
 
     private void configureCacheWithWanReplication(String cacheName, String wanSetupName) {
@@ -142,7 +142,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
         EvictionConfig evictionConfig = new EvictionConfig();
         if (isNativeMemoryEnabled()) {
             evictionConfig.setSize(90)
-                          .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                    .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
             evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         }

@@ -143,7 +143,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
     @Override
     Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
-            HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+                     HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
 
         if (memberlistPublishPeriod > 0) {

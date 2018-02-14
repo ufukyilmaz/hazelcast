@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ThreadLocalMgrPointerValidationTest {
+
     private static final int BLOCK_OVERHEAD_WITH_OFFSET_STORED = MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
     private static final int BLOCK_OVERHEAD_WITHOUT_OFFSET_STORED = HEADER_SIZE;
 
@@ -51,7 +52,8 @@ public class ThreadLocalMgrPointerValidationTest {
                 new PooledNativeMemoryStats(maxNative, maxMetadata));
     }
 
-    @After public void after() {
+    @After
+    public void after() {
         mgr.dispose();
     }
 
@@ -68,7 +70,6 @@ public class ThreadLocalMgrPointerValidationTest {
         bogusAddr = toBogusAddr(legitAddr);
         bogusHeader = forgeBogusHeader(false);
     }
-
 
     @Test
     public void perfectCorruptionWithStoredOffset_goesUndetected() {

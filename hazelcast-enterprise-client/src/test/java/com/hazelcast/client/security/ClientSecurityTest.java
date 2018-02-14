@@ -140,7 +140,7 @@ public class ClientSecurityTest {
         map.destroy();
     }
 
-    @Test (expected = AccessControlException.class)
+    @Test(expected = AccessControlException.class)
     public void testNewPermissionAtRuntime() {
         final Config config = createConfig();
         PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", "dev");
@@ -192,19 +192,19 @@ public class ClientSecurityTest {
 
         String xml = HAZELCAST_START_TAG
                 + "<security enabled=\"true\">"
-                    + "<client-permissions>"
-                        + "<map-permission name=\"mySecureMap\" principal=\"role1,role2\">"
-                            + "<endpoints>"
-                                + "<endpoint>10.10.*.*</endpoint>"
-                                + "<endpoint>127.0.0.1</endpoint>"
-                            + "</endpoints>"
-                            + "<actions>"
-                                + "<action>put</action>"
-                                + "<action>read</action>"
-                                + "<action>destroy</action>"
-                          + "</actions>"
-                        + "</map-permission>"
-                    + "</client-permissions>"
+                + "    <client-permissions>"
+                + "        <map-permission name=\"mySecureMap\" principal=\"role1,role2\">"
+                + "            <endpoints>"
+                + "                <endpoint>10.10.*.*</endpoint>"
+                + "                <endpoint>127.0.0.1</endpoint>"
+                + "            </endpoints>"
+                + "            <actions>"
+                + "                <action>put</action>"
+                + "                <action>read</action>"
+                + "                <action>destroy</action>"
+                + "            </actions>"
+                + "        </map-permission>"
+                + "    </client-permissions>"
                 + "</security>"
                 + HAZELCAST_END_TAG;
         Writer writer = new PrintWriter(file, "UTF-8");
@@ -494,7 +494,6 @@ public class ClientSecurityTest {
 
     /**
      * Tests multiple principals in JAAS Subject.
-     *
      * <pre>
      * Given: Member has configured permissions for 2 Maps
      *   - "production" with permissions for "admin" and "dev" principals
@@ -728,7 +727,7 @@ public class ClientSecurityTest {
      * Creates member configuration with security enabled and custom client login module.
      *
      * @param properties properties of the {@link TestLoginModule} used for clients (see constants in {@link TestLoginModule}
-     *        for the property names)
+     *                   for the property names)
      */
     private Config createTestLoginModuleConfig(Properties properties) {
         final Config config = new Config();

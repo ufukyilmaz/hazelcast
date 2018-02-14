@@ -107,7 +107,8 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
             mm.registerThread(Thread.currentThread());
 
             NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-            NearCache<Integer, byte[]> nearCache = new HiDensityNearCache<Integer, byte[]>(DEFAULT_NEAR_CACHE_NAME, nearCacheConfig,
+            NearCache<Integer, byte[]> nearCache
+                    = new HiDensityNearCache<Integer, byte[]>(DEFAULT_NEAR_CACHE_NAME, nearCacheConfig,
                     newNearCacheManager(), ess, executionService.getGlobalTaskScheduler(), null);
             nearCache.initialize();
 

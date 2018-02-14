@@ -47,7 +47,7 @@ import static org.junit.Assume.assumeTrue;
  */
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({ QuickTest.class })
+@Category({QuickTest.class})
 public class TlsFunctionalTest {
 
     @Rule
@@ -69,7 +69,7 @@ public class TlsFunctionalTest {
 
     @Parameters(name = "mutualAuthentication:{0} openSsl:{1}")
     public static Collection<Object[]> parameters() {
-        return asList(new Object[][] { { false, false }, { false, true }, { true, false }, { true, true }, });
+        return asList(new Object[][]{{false, false}, {false, true}, {true, false}, {true, true},});
     }
 
     @AfterClass
@@ -86,7 +86,6 @@ public class TlsFunctionalTest {
 
     /**
      * Case - Valid/trusted configuration.
-     * 
      * <pre>
      * Given: TLS is enabled on members and client
      * When: members has a valid and matching keystore+trustore configured; clients have matching SSL configured
@@ -104,7 +103,6 @@ public class TlsFunctionalTest {
 
     /**
      * Case - Member with TLS, Client without TLS.
-     * 
      * <pre>
      * Given: TLS is enabled on members but not on clients
      * When: client tries to connect to a member
@@ -126,7 +124,6 @@ public class TlsFunctionalTest {
 
     /**
      * Case - Member without TLS, Client with TLS.
-     * 
      * <pre>
      * Given: TLS is enabled on clients but not on members
      * When: client tries to connect to a member
@@ -148,7 +145,6 @@ public class TlsFunctionalTest {
 
     /**
      * Case - Untrusted configuration.
-     *
      * <pre>
      * Given: TLS is enabled on members and client
      * When: certificates in member truststore doesn't cover the certificate in the keystore (I.e. member's certificate path is not validated against the truststore)
@@ -178,7 +174,6 @@ public class TlsFunctionalTest {
 
     /**
      * Case - Valid Ciphersuites.
-     * 
      * <pre>
      * Given: TLS is enabled
      * When: Ciphersuite configuration is provided with supported values
@@ -187,7 +182,9 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testSupportedCipherSuiteNames() throws IOException, GeneralSecurityException {
-        String cipherSuites = "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA";
+        String cipherSuites = "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
+                + "TLS_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,"
+                + "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA";
         Config config = createMemberConfig();
         SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("ciphersuites", cipherSuites);
@@ -202,7 +199,6 @@ public class TlsFunctionalTest {
 
     /**
      * Case - Invalid Ciphersuites.
-     * 
      * <pre>
      * Given: TLS is enabled
      * When: Ciphersuite configuration is provided with unsupported values
@@ -216,10 +212,9 @@ public class TlsFunctionalTest {
         sslConfig.setProperty("ciphersuites", "foo,bar");
         Hazelcast.newHazelcastInstance(config);
     }
-    
+
     /**
      * Case - Invalid Ciphersuites in Client.
-     * 
      * <pre>
      * Given: TLS is enabled
      * When: Ciphersuite configuration is provided in client with unsupported values
@@ -234,10 +229,9 @@ public class TlsFunctionalTest {
         sslConfig.setProperty("ciphersuites", "foo,bar");
         HazelcastClient.newHazelcastClient(clientConfig);
     }
-    
+
     /**
      * Case - Valid Protocol.
-     * 
      * <pre>
      * Given: TLS is enabled
      * When: Protocol configuration is provided with supported value
@@ -257,10 +251,9 @@ public class TlsFunctionalTest {
         sslConfig.setProperty("protocol", "TLS");
         HazelcastClient.newHazelcastClient(clientConfig).getMap("test").put("a", "b");
     }
-    
+
     /**
      * Case - Invalid Protocol.
-     * 
      * <pre>
      * Given: TLS is enabled
      * When: Protocol configuration is provided with unsupported value
@@ -274,10 +267,9 @@ public class TlsFunctionalTest {
         sslConfig.setProperty("protocol", "hazelcast");
         Hazelcast.newHazelcastInstance(config);
     }
-    
+
     /**
      * Case - Invalid Protocol in Client.
-     * 
      * <pre>
      * Given: TLS is enabled
      * When: Protocol configuration is provided in client with an unsupported value

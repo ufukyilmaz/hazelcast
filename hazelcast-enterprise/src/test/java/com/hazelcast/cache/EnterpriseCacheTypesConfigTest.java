@@ -101,7 +101,7 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(16, MemoryUnit.MEGABYTES));
         WanReplicationConfig wanReplicationConfig = new WanReplicationConfig().setName("wan-replication");
         WanPublisherConfig wanPublisherConfig = new WanPublisherConfig().setGroupName("target-cluster")
-                                                                        .setClassName(NoopWanPublisher.class.getName());
+                .setClassName(NoopWanPublisher.class.getName());
         WanConsumerConfig wanConsumerConfig = new WanConsumerConfig().setClassName(NoopWanConsumer.class.getName());
         wanPublisherConfig.getProperties().put(WanReplicationProperties.GROUP_PASSWORD.key(), "password");
         wanReplicationConfig.addWanPublisherConfig(wanPublisherConfig);
@@ -109,10 +109,10 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
         config.addWanReplicationConfig(wanReplicationConfig);
 
         config.getHotRestartPersistenceConfig().setEnabled(true)
-              .setBaseDir(new File(baseDir, "instance_" + sequenceNumber))
-              .setClusterDataRecoveryPolicy(PARTIAL_RECOVERY_MOST_RECENT)
-              .setDataLoadTimeoutSeconds(10)
-              .setValidationTimeoutSeconds(10);
+                .setBaseDir(new File(baseDir, "instance_" + sequenceNumber))
+                .setClusterDataRecoveryPolicy(PARTIAL_RECOVERY_MOST_RECENT)
+                .setDataLoadTimeoutSeconds(10)
+                .setValidationTimeoutSeconds(10);
         return config;
     }
 

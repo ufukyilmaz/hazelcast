@@ -48,15 +48,14 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test
     public void testXmlConfig() {
         String license = "HazelcastEnterprise#2Nodes#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
-
-        String xml = "<hazelcast-client xsi:schemaLocation=\"http://www.hazelcast.com/schema/client-config hazelcast-client-config-3.10.xsd\"\n"
+        String xml = "<hazelcast-client xsi:schemaLocation=\"http://www.hazelcast.com/schema/client-config"
+                + "                                          hazelcast-client-config-3.10.xsd\"\n"
                 + "           xmlns=\"http://www.hazelcast.com/schema/client-config\"\n"
                 + "           xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
-                + "<properties>"
-                + "<property name=\"hazelcast.enterprise.license.key\">" + license + "</property>"
-                + "</properties>"
+                + "    <properties>"
+                + "        <property name=\"hazelcast.enterprise.license.key\">" + license + "</property>"
+                + "    </properties>"
                 + "</hazelcast-client>";
-
 
         ClientConfig config = new XmlClientConfigBuilder(new ByteArrayInputStream(stringToBytes(xml))).build();
         assertEquals(license, config.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName()));

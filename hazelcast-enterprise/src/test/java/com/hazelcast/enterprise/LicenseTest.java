@@ -68,6 +68,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
     @Test
     public void testXmlConfig() {
+        String license = "HazelcastEnterprise#2Nodes#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
         String xml = "<hazelcast xsi:schemaLocation=\"http://www.hazelcast.com/schema/config hazelcast-config-3.10.xsd\"\n"
                 + "           xmlns=\"http://www.hazelcast.com/schema/config\"\n"
                 + "           xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n"
@@ -75,7 +76,7 @@ public class LicenseTest extends HazelcastTestSupport {
                 + "        <name>dev</name>\n"
                 + "        <password>dev-pass</password>\n"
                 + "    </group>\n"
-                + "    <license-key>HazelcastEnterprise#2Nodes#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo</license-key>\n"
+                + "    <license-key>" + license + "</license-key>\n"
                 + "    <network>\n"
                 + "        <port auto-increment=\"true\">5701</port>\n"
                 + "        <join>\n"
@@ -94,8 +95,7 @@ public class LicenseTest extends HazelcastTestSupport {
                 + "</hazelcast>";
 
         Config config = new InMemoryXmlConfig(xml);
-        assertEquals("HazelcastEnterprise#2Nodes#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo",
-                config.getLicenseKey());
+        assertEquals(license, config.getLicenseKey());
     }
 
     @Test

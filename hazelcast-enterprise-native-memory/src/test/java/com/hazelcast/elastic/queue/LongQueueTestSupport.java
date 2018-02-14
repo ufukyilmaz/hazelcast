@@ -200,7 +200,9 @@ public abstract class LongQueueTestSupport {
 
     private long newItem() {
         long item;
-        while ((item = random.nextLong()) == NULL);
+        while ((item = random.nextLong()) == NULL) {
+            // NOP
+        }
         return item;
     }
 }

@@ -68,7 +68,7 @@ public class NativeMemoryDataTest extends AbstractEnterpriseSerializationTest {
         NativeMemoryData nativeMemoryData = serializationService.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
 
         byte[] buffer = new byte[heapData.totalSize()];
-        nativeMemoryData.copyTo(buffer,0);
+        nativeMemoryData.copyTo(buffer, 0);
 
         assertArrayEquals(heapData.payload, buffer);
     }

@@ -155,7 +155,8 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
         for (HazelcastInstance instance : clusterA) {
             final NodeEngineImpl nodeEngine = getNode(instance).nodeEngine;
             final EnterpriseWanReplicationService s = nodeEngine.getService(EnterpriseWanReplicationService.SERVICE_NAME);
-            final WanReplicationPublisherDelegate atob = (WanReplicationPublisherDelegate) s.getWanReplicationPublisher(publisherName);
+            final WanReplicationPublisherDelegate atob
+                    = (WanReplicationPublisherDelegate) s.getWanReplicationPublisher(publisherName);
             int failureCount = 0;
             for (WanReplicationEndpoint endpoint : atob.getEndpoints()) {
                 final WanBatchReplication batchReplication = (WanBatchReplication) endpoint;

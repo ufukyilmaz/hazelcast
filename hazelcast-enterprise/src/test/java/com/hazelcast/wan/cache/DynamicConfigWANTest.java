@@ -55,7 +55,7 @@ public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
                 "default");
         // disable WAN replication for the default cache config (it's auto-enabled by the setupReplicateFrom())
         configA.getCacheConfig("default")
-               .setWanReplicationRef(null);
+                .setWanReplicationRef(null);
 
         startClusterA();
         startClusterB();

@@ -27,6 +27,7 @@ public abstract class AbstractEnterpriseBufferObjectDataInputFactoryTest extends
     }
 
     protected abstract InputOutputFactory getFactory();
+
     protected abstract ByteOrder getByteOrder();
 
     @After

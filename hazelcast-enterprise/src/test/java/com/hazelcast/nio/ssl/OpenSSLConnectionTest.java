@@ -64,7 +64,7 @@ public class OpenSSLConnectionTest {
     @Test(expected = HazelcastException.class)
     public void testUnknownCipherSuite() throws IOException {
         Config config = newConfig();
-        config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "ciphersuites","unknown");
+        config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "ciphersuites", "unknown");
 
         Hazelcast.newHazelcastInstance(config);
     }
@@ -72,7 +72,7 @@ public class OpenSSLConnectionTest {
     @Test
     public void testTLSProtocol() throws IOException {
         Config config = newConfig();
-        config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "protocol","TLS");
+        config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "protocol", "TLS");
 
         Hazelcast.newHazelcastInstance(config);
     }
@@ -80,7 +80,7 @@ public class OpenSSLConnectionTest {
     @Test
     public void testSSLProtocol() throws IOException {
         Config config = newConfig();
-        config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "protocol","SSL");
+        config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "protocol", "SSL");
 
         Hazelcast.newHazelcastInstance(config);
     }

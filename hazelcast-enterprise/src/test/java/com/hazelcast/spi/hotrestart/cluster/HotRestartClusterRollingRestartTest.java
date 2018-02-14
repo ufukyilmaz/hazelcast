@@ -30,7 +30,7 @@ public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClust
 
     @Parameters(name = "clusterState:{1},addressChangePolicy:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {NONE, ClusterState.FROZEN},
                 {NONE, ClusterState.PASSIVE},
                 {PARTIAL, ClusterState.FROZEN},

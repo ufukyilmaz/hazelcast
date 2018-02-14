@@ -29,7 +29,7 @@ public class EnterpriseCacheDestroyTest extends CacheDestroyTest {
 
     @Parameters(name = "{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {OBJECT},
                 {BINARY},
                 {NATIVE},

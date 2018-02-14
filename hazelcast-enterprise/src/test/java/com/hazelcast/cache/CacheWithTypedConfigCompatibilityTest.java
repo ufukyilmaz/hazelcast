@@ -55,7 +55,7 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
 
     @Test
     public void testPreviousVersionMember_joinsCurrentVersionMaster_withTypedCacheConfig() {
-        String[] versions = new String[] {getOldestKnownVersion(), getCurrentVersion(), getOldestKnownVersion()};
+        String[] versions = new String[]{getOldestKnownVersion(), getCurrentVersion(), getOldestKnownVersion()};
         factory = new CompatibilityTestHazelcastInstanceFactory(versions);
         // start previous & current instances
         instances = factory.newInstances(null, versions.length - 1);
@@ -73,7 +73,7 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
 
     @Test
     public void testCurrentVersionMember_joinsCurrentVersionMasterWithTypedCacheConfig_afterUpgrade() {
-        String[] versions = new String[] {getOldestKnownVersion(), getCurrentVersion(), getCurrentVersion()};
+        String[] versions = new String[]{getOldestKnownVersion(), getCurrentVersion(), getCurrentVersion()};
         factory = new CompatibilityTestHazelcastInstanceFactory(versions);
         // start previous & current instances
         instances = factory.newInstances(null, versions.length - 1);

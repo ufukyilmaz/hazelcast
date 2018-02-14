@@ -60,7 +60,7 @@ public class ClientSecurityUpdateTest extends HazelcastTestSupport {
 
         member.getConfig().getSecurityConfig()
                 .setClientPermissionConfigs(singleton(new PermissionConfig(PermissionType.MAP, name, "*")
-                .addAction(ACTION_PUT)));
+                        .addAction(ACTION_PUT)));
 
         // write allowed
         map.put("key", "value");

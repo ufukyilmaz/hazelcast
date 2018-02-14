@@ -23,6 +23,7 @@ public class MockStoreRegistry implements RamStoreRegistry {
     public final HotRestartStore hrStore;
     public final ConcurrentMap<Long, MockRecordStore> recordStores = new ConcurrentHashMap<Long, MockRecordStore>();
     public final boolean fsyncEnabled;
+
     private final MemoryManager memMgr;
     private final File backupDir;
 
@@ -32,7 +33,9 @@ public class MockStoreRegistry implements RamStoreRegistry {
         cfg.setRamStoreRegistry(this);
         this.backupDir = new File(cfg.homeDir().getParentFile(), "backup");
         final HazelcastProperties emptyProperties = new HazelcastProperties(new Properties());
-        this.hrStore = memMgr != null ? newOffHeapHotRestartStore(cfg, emptyProperties) : newOnHeapHotRestartStore(cfg, emptyProperties);
+        this.hrStore = memMgr != null
+                ? newOffHeapHotRestartStore(cfg, emptyProperties)
+                : newOnHeapHotRestartStore(cfg, emptyProperties);
         final RamStoreRestartLoop loop = new RamStoreRestartLoop(1, 1, this, cfg.logger());
         final Throwable[] failure = {null};
         final Thread restartIoThread = new Thread() {

@@ -69,7 +69,8 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     @Test
     public void recoversFromExceptionThrowingStrategy() {
-        final ExceptionThrowingDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(new ExceptionThrowingDiscoveryStrategyFactory());
+        final ExceptionThrowingDiscoveryStrategyFactory factory
+                = setupDiscoveryStrategyFactory(new ExceptionThrowingDiscoveryStrategyFactory());
         final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
         discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length));
         factory.strategy.throwException = true;
@@ -386,7 +387,8 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     }
 
     public static class ArrayListDiscoveryStrategyFactory implements DiscoveryStrategyFactory {
-        private ArrayListDiscoveryStrategy strategy = new ArrayListDiscoveryStrategy(null, Collections.<String, Comparable>emptyMap());
+        private ArrayListDiscoveryStrategy strategy
+                = new ArrayListDiscoveryStrategy(null, Collections.<String, Comparable>emptyMap());
 
         @Override
         public Class<? extends DiscoveryStrategy> getDiscoveryStrategyType() {

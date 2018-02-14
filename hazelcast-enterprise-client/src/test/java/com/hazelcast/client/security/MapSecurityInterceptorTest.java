@@ -546,13 +546,17 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
 
         @Override
         public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
             final DummyMapInterceptor that = (DummyMapInterceptor) o;
-
-            if (i != that.i) return false;
-
+            if (i != that.i) {
+                return false;
+            }
             return true;
         }
 
@@ -585,13 +589,17 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
 
         @Override
         public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
             final DummyEntryProcessor that = (DummyEntryProcessor) o;
-
-            if (i != that.i) return false;
-
+            if (i != that.i) {
+                return false;
+            }
             return true;
         }
 
@@ -600,6 +608,4 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
             return (int) (i ^ (i >>> 32));
         }
     }
-
-
 }

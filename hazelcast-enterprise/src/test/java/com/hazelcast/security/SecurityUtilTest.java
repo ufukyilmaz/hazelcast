@@ -46,7 +46,7 @@ public class SecurityUtilTest extends HazelcastTestSupport {
     private PermissionConfig permissionConfig = new PermissionConfig(PermissionType.ALL, "myPermission", "myPrincipal");
 
     @Test
-    public void testConstructor()  {
+    public void testConstructor() {
         assertUtilityConstructor(SecurityUtil.class);
     }
 

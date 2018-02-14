@@ -344,7 +344,7 @@ public class MemoryBlockDataInputTest extends AbstractEnterpriseSerializationTes
 
     @Test(expected = UnsupportedOperationException.class)
     public void testInit() {
-        in.init(null,0);
+        in.init(null, 0);
     }
 
     @Test(expected = UnsupportedOperationException.class)

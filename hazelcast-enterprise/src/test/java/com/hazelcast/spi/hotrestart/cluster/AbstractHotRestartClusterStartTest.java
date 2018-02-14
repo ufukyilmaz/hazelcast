@@ -69,7 +69,7 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
     }
 
     private final ILogger logger = Logger.getLogger(getClass());
-    
+
     protected final String[] mapNames = new String[]{"map0", "map1", "map2", "map3", "map4", "map5", "map6"};
     protected final String[] cacheNames = new String[]{"cache0", "cache1", "cache2", "cache3", "cache4", "cache5", "cache6"};
 
@@ -416,7 +416,8 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
             @Override
             public void run() throws Exception {
                 Collection<HazelcastInstance> allHazelcastInstances = getAllInstances();
-                HazelcastInstance[] instances = allHazelcastInstances.toArray(new HazelcastInstance[allHazelcastInstances.size()]);
+                HazelcastInstance[] instances
+                        = allHazelcastInstances.toArray(new HazelcastInstance[allHazelcastInstances.size()]);
                 assertInstancesJoined(numberOfInstances, instances, nodeState, clusterState);
             }
         });

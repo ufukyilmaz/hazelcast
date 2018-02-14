@@ -41,11 +41,11 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
     @Override
     protected Config getConfig() {
         Config config = super.getConfig()
-                             .setProperty(WANPlugin.PERIOD_SECONDS.getName(), "1")
-                             .setProperty(GroupProperty.REST_ENABLED.getName(), "true");
+                .setProperty(WANPlugin.PERIOD_SECONDS.getName(), "1")
+                .setProperty(GroupProperty.REST_ENABLED.getName(), "true");
 
         config.getMapConfig("default")
-              .setInMemoryFormat(getMemoryFormat());
+                .setInMemoryFormat(getMemoryFormat());
         return config;
     }
 

@@ -180,9 +180,10 @@ public class EnterprisePortableTest {
                         new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.RAW_DATA_PORTABLE)
                                 .addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition(1)).build())
                 .addClassDefinition(new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.NAMED_PORTABLE).addUTFField("name")
-                                .addIntField("myint").build());
+                        .addIntField("myint").build());
 
-        InternalSerializationService serializationService = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
+        InternalSerializationService serializationService
+                = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
         RawDataPortable p = new RawDataPortable(System.currentTimeMillis(), "test chars".toCharArray(),
                 new NamedPortable("named portable", 34567),
                 9876, "Testing raw portable", new ByteArrayDataSerializable("test bytes".getBytes()));

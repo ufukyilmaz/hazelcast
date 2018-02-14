@@ -60,7 +60,8 @@ public class AtomicLongCompatibilityTest extends AtomicLongAbstractTest {
             assertInstanceOfByClassName("com.hazelcast.test.ExpectedRuntimeException", expected);
         }
 
-        assertEquals(10, atomicLong.get());    }
+        assertEquals(10, atomicLong.get());
+    }
 
     @Override
     public void getAndAlter_whenException() {

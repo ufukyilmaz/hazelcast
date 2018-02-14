@@ -127,7 +127,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
      * Creates member configuration with security enabled and with custom login module for members.
      *
      * @param properties properties of the {@link TestLoginModule} used for members (see constants in {@link TestLoginModule}
-     *        for the property names)
+     *                   for the property names)
      */
     private Config createTestLoginModuleConfig(Properties properties) {
         final Config config = new Config();

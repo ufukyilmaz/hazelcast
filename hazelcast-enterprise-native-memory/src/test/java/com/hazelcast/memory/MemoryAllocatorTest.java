@@ -60,7 +60,7 @@ public class MemoryAllocatorTest {
                 break;
             case STANDARD:
                 memMgr = new MemoryManagerBean(
-                    new StandardMemoryManager(new MemorySize(1, MEGABYTES)), MEM);
+                        new StandardMemoryManager(new MemorySize(1, MEGABYTES)), MEM);
                 toDispose = memMgr;
                 break;
             case SYSTEM: {
@@ -90,7 +90,8 @@ public class MemoryAllocatorTest {
         toDispose.dispose();
     }
 
-    @Test public void testMallocFree() {
+    @Test
+    public void testMallocFree() {
         final MemoryAllocator malloc = memMgr.getAllocator();
         final MemoryAccessor mem = memMgr.getAccessor();
         long address1 = malloc.allocate(5);

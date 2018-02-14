@@ -28,7 +28,7 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
 
     @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {InMemoryFormat.NATIVE, OPERATION_COUNT, false},
                 {InMemoryFormat.BINARY, OPERATION_COUNT, false}
         });
@@ -58,14 +58,14 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
 
     @Test
     public void test_close() {
-       test(new CacheAction() {
-           @Override
-           public int run(ICache cache) {
-               final int size = cache.size();
-               cache.close();
-               return size;
-           }
-       });
+        test(new CacheAction() {
+            @Override
+            public int run(ICache cache) {
+                final int size = cache.size();
+                cache.close();
+                return size;
+            }
+        });
     }
 
     private void test(CacheAction action) {

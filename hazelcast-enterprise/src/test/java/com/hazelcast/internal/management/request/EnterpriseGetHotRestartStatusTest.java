@@ -73,7 +73,8 @@ public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestT
 
         assertEquals(PARTIAL_RECOVERY_MOST_COMPLETE, loadingClusterHotRestartStatus.getDataRecoveryPolicy());
         assertEquals(ClusterHotRestartStatus.IN_PROGRESS, loadingClusterHotRestartStatus.getHotRestartStatus());
-        Map<String, MemberHotRestartStatus> memberHotRestartStatusMap = loadingClusterHotRestartStatus.getMemberHotRestartStatusMap();
+        Map<String, MemberHotRestartStatus> memberHotRestartStatusMap
+                = loadingClusterHotRestartStatus.getMemberHotRestartStatusMap();
         assertEquals(2, memberHotRestartStatusMap.size());
         for (MemberHotRestartStatus status : memberHotRestartStatusMap.values()) {
             assertThat(status, isOneOf(PENDING, LOAD_IN_PROGRESS));
@@ -89,16 +90,15 @@ public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestT
     }
 
     private Future<HazelcastInstance> startHazelcastInstanceAsync(final String dir,
-            final GetHotRestartStatusListener listener) {
-
+                                                                  final GetHotRestartStatusListener listener) {
         return spawn(new Callable<HazelcastInstance>() {
-                @Override
-                public HazelcastInstance call() throws Exception {
-                    Config config = newConfig(dir);
-                    config.addListenerConfig(new ListenerConfig(listener));
-                    return factory.newHazelcastInstance(config);
-                }
-            });
+            @Override
+            public HazelcastInstance call() throws Exception {
+                Config config = newConfig(dir);
+                config.addListenerConfig(new ListenerConfig(listener));
+                return factory.newHazelcastInstance(config);
+            }
+        });
     }
 
     private void assertHotRestartCompleted(ClusterHotRestartStatusDTO clusterHotRestartStatus) {

@@ -111,6 +111,19 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
+    public Operation createMergeOperation(String name, List<SplitBrainMergeEntryView<Data, Data>> mergeEntries,
+                                          SplitBrainMergePolicy policy) {
+        return new CacheMergeOperation(name, mergeEntries, policy);
+    }
+
+    @Override
+    public OperationFactory createMergeOperationFactory(String name, int[] partitions,
+                                                        List<SplitBrainMergeEntryView<Data, Data>>[] mergeEntries,
+                                                        SplitBrainMergePolicy policy) {
+        return new CacheMergeOperationFactory(name, partitions, mergeEntries, policy);
+    }
+
+    @Override
     public OperationFactory createGetAllOperationFactory(Set<Data> keySet, ExpiryPolicy policy) {
         return new CacheGetAllOperationFactory(nameWithPrefix, keySet, policy);
     }

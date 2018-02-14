@@ -1,5 +1,7 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeEvictionChecker;
@@ -28,6 +30,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.SplitBrainMergeEntryView;
+import com.hazelcast.spi.SplitBrainMergePolicy;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
 
@@ -259,6 +263,18 @@ public class HiDensityNativeMemoryCacheRecordStore
         } else {
             return cacheRecordProcessor.toData(obj, DataType.HEAP);
         }
+    }
+
+    @Override
+    public CacheRecord merge(SplitBrainMergeEntryView<Data, Data> mergingEntry, SplitBrainMergePolicy mergePolicy) {
+        return toHeapCacheRecord((HiDensityNativeMemoryCacheRecord) super.merge(mergingEntry, mergePolicy));
+    }
+
+    @Override
+    public CacheRecord merge(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
+                             String caller, String origin, int completionId) {
+        return toHeapCacheRecord((HiDensityNativeMemoryCacheRecord) super.merge(cacheEntryView, mergePolicy,
+                caller, origin, completionId));
     }
 
     @Override

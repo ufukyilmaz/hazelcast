@@ -37,6 +37,7 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.spi.SplitBrainHandlerService;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.LoadedConfigurationListener;
@@ -140,6 +141,11 @@ public class EnterpriseCacheService
                 }
             });
         }
+    }
+
+    @Override
+    protected SplitBrainHandlerService newSplitBrainHandlerService(NodeEngine nodeEngine) {
+        return new EnterpriseCacheSplitBrainHandlerServiceImpl(nodeEngine, configs, segments);
     }
 
     @Override

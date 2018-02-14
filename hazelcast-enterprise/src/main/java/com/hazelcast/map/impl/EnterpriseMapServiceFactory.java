@@ -6,6 +6,7 @@ import com.hazelcast.spi.EventPublishingService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.RemoteService;
 import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.spi.SplitBrainHandlerService;
 import com.hazelcast.spi.impl.CountingMigrationAwareService;
 
 /**
@@ -48,6 +49,12 @@ class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
     RemoteService createRemoteService() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
         return new EnterpriseMapRemoteService(mapServiceContext);
+    }
+
+    @Override
+    SplitBrainHandlerService createSplitBrainHandlerService() {
+        EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
+        return new EnterpriseMapSplitBrainHandlerServiceImpl(mapServiceContext);
     }
 
     private EnterpriseMapServiceContext getEnterpriseMapServiceContext() {

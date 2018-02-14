@@ -52,9 +52,8 @@ public class MapWanSplitBrainTest extends SplitBrainTestSupport {
                 {InMemoryFormat.OBJECT, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
                 {InMemoryFormat.BINARY, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
                 {InMemoryFormat.BINARY, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
-                // TODO: uncomment when HD map merge is implemented
-                //{InMemoryFormat.NATIVE, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
-                //{InMemoryFormat.NATIVE, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
+                {InMemoryFormat.NATIVE, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
+                {InMemoryFormat.NATIVE, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
         });
     }
 

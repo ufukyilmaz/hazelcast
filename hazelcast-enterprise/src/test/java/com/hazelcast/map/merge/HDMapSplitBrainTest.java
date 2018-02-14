@@ -13,7 +13,6 @@ import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.PutIfAbsentMergePolicy;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -41,7 +40,6 @@ import static java.util.Arrays.asList;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore(value = "Split-brain healing is not yet supported for HD Maps")
 public class HDMapSplitBrainTest extends MapSplitBrainTest {
 
     @Parameters(name = "format:{0}, mergePolicy:{1}")

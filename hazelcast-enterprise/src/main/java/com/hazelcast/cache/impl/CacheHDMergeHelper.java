@@ -25,6 +25,8 @@ class CacheHDMergeHelper extends AbstractHDMergeHelper<ICacheRecordStore> {
 
     @Override
     public void collectHdStores(Map<String, ICacheRecordStore> collectedHdStores, int partitionId) {
+        assertRunningOnPartitionThread();
+
         ConcurrentMap<String, ICacheRecordStore> segmentsRecordStores = segments[partitionId].recordStores;
         Iterator<ICacheRecordStore> iterator = segmentsRecordStores.values().iterator();
         while (iterator.hasNext()) {

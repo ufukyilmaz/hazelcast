@@ -25,6 +25,8 @@ class MapHDMergeHelper extends AbstractHDMergeHelper<RecordStore> {
 
     @Override
     public void collectHdStores(Map<String, RecordStore> collectedHdStores, int partitionId) {
+        assertRunningOnPartitionThread();
+
         PartitionContainer partitionContainer = mapServiceContext.getPartitionContainer(partitionId);
         Collection<RecordStore> allRecordStores = partitionContainer.getAllRecordStores();
         Iterator<RecordStore> iterator = allRecordStores.iterator();

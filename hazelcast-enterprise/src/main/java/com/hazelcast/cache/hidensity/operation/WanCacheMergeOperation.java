@@ -6,8 +6,9 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.SplitBrainMergeEntryView;
 import com.hazelcast.spi.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.ExpirationTimeHolder;
+import com.hazelcast.spi.merge.MergingEntryHolder;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
@@ -22,25 +23,24 @@ public class WanCacheMergeOperation
         extends BackupAwareHiDensityCacheOperation
         implements MutableOperation {
 
-    private SplitBrainMergeEntryView<Data, Data> mergeEntryView;
+    private MergingEntryHolder<Data, Data> mergingEntries;
     private SplitBrainMergePolicy mergePolicy;
     private String wanGroupName;
 
     public WanCacheMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, String wanGroupName,
-                                  SplitBrainMergePolicy mergePolicy,
-                                  SplitBrainMergeEntryView<Data, Data> mergeEntryView, int completionId) {
+    public WanCacheMergeOperation(String name, String wanGroupName, SplitBrainMergePolicy mergePolicy,
+                                  MergingEntryHolder<Data, Data> mergingEntries, int completionId) {
         super(name, completionId);
-        this.mergeEntryView = mergeEntryView;
+        this.mergingEntries = mergingEntries;
         this.mergePolicy = mergePolicy;
         this.wanGroupName = wanGroupName;
     }
 
     @Override
     public void runInternal() {
-        if (cache.merge(mergeEntryView, mergePolicy) != null) {
+        if (cache.merge(mergingEntries, mergePolicy) != null) {
             response = true;
         }
     }
@@ -53,18 +53,18 @@ public class WanCacheMergeOperation
     @Override
     public Operation getBackupOperation() {
         ExpiryPolicy expiryPolicy = null;
-        long expiryTime = mergeEntryView.getExpirationTime();
+        long expiryTime = ((ExpirationTimeHolder) mergingEntries).getExpirationTime();
         if (expiryTime > 0) {
             long ttl = expiryTime - System.currentTimeMillis();
             expiryPolicy = new HazelcastExpiryPolicy(ttl, 0L, 0L);
         }
-        return new CachePutBackupOperation(name, mergeEntryView.getKey(), mergeEntryView.getValue(), expiryPolicy, true);
+        return new CachePutBackupOperation(name, mergingEntries.getKey(), mergingEntries.getValue(), expiryPolicy, true);
     }
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeObject(mergeEntryView);
+        out.writeObject(mergingEntries);
         out.writeObject(mergePolicy);
         out.writeUTF(wanGroupName);
     }
@@ -72,7 +72,7 @@ public class WanCacheMergeOperation
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        mergeEntryView = in.readObject();
+        mergingEntries = in.readObject();
         mergePolicy = in.readObject();
         wanGroupName = in.readUTF();
     }

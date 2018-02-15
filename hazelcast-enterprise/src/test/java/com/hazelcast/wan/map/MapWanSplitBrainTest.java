@@ -4,8 +4,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MergePolicyConfig;
-import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
@@ -32,6 +30,11 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.config.InMemoryFormat.BINARY;
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -44,16 +47,19 @@ import static org.junit.Assert.assertEquals;
 public class MapWanSplitBrainTest extends SplitBrainTestSupport {
 
     private static final String WAN_REPLICATION_NAME = "wanRef";
+    private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
 
     @Parameters(name = "inMemoryFormat:{0} mapMergePolicy:{1} wanMergePolicy:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.OBJECT, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
-                {InMemoryFormat.OBJECT, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
-                {InMemoryFormat.BINARY, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
-                {InMemoryFormat.BINARY, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
-                {InMemoryFormat.NATIVE, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
-                {InMemoryFormat.NATIVE, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
+                {OBJECT, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
+                {OBJECT, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
+
+                {BINARY, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
+                {BINARY, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
+
+                {NATIVE, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
+                {NATIVE, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
         });
     }
 
@@ -76,31 +82,24 @@ public class MapWanSplitBrainTest extends SplitBrainTestSupport {
         MergePolicyConfig mergePolicyConfig = new MergePolicyConfig()
                 .setPolicy(mapMergePolicy.getName());
 
-        MapConfig mapConfig = new MapConfig();
-        mapConfig.setInMemoryFormat(inMemoryFormat);
-        mapConfig.setName(mapName);
-        mapConfig.setMergePolicyConfig(mergePolicyConfig);
-        mapConfig.setInMemoryFormat(inMemoryFormat);
-        mapConfig.setWanReplicationRef(new WanReplicationRef()
+        WanReplicationRef wanReplicationRef = new WanReplicationRef()
                 .setName(WAN_REPLICATION_NAME)
-                .setMergePolicy(wanMergePolicy.getName()));
+                .setMergePolicy(wanMergePolicy.getName());
+
+        MapConfig mapConfig = new MapConfig()
+                .setInMemoryFormat(inMemoryFormat)
+                .setName(mapName)
+                .setMergePolicyConfig(mergePolicyConfig)
+                .setWanReplicationRef(wanReplicationRef);
 
         WanReplicationConfig wanConfig = new WanReplicationConfig()
                 .setName(WAN_REPLICATION_NAME)
                 .addWanPublisherConfig(new WanPublisherConfig()
                         .setClassName(CountingWanEndpoint.class.getName()));
 
-        Config config = super.config();
-        config.addMapConfig(mapConfig);
-        config.addWanReplicationConfig(wanConfig);
-        if (inMemoryFormat == InMemoryFormat.NATIVE) {
-            MemorySize memorySize = new MemorySize(128, MemoryUnit.MEGABYTES);
-            NativeMemoryConfig nativeMemoryConfig = new NativeMemoryConfig()
-                    .setAllocatorType(MemoryAllocatorType.POOLED)
-                    .setSize(memorySize).setEnabled(true);
-            config.setNativeMemoryConfig(nativeMemoryConfig);
-        }
-        return config;
+        return getHDConfig(super.config(), POOLED, MEMORY_SIZE)
+                .addMapConfig(mapConfig)
+                .addWanReplicationConfig(wanConfig);
     }
 
     @Override

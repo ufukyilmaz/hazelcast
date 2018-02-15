@@ -17,8 +17,7 @@ class CacheHDMergeHelper extends AbstractHDMergeHelper<ICacheRecordStore> {
 
     protected final CachePartitionSegment[] segments;
 
-    CacheHDMergeHelper(NodeEngine nodeEngine,
-                       CachePartitionSegment[] segments) {
+    CacheHDMergeHelper(NodeEngine nodeEngine, CachePartitionSegment[] segments) {
         super(nodeEngine);
         this.segments = segments;
     }
@@ -31,14 +30,14 @@ class CacheHDMergeHelper extends AbstractHDMergeHelper<ICacheRecordStore> {
         Iterator<ICacheRecordStore> iterator = segmentsRecordStores.values().iterator();
         while (iterator.hasNext()) {
             ICacheRecordStore recordStore = iterator.next();
-            if (hdBacked(recordStore)) {
+            if (isHdStore(recordStore)) {
                 collectedHdStores.put(recordStore.getName(), recordStore);
                 iterator.remove();
             }
         }
     }
 
-    public static boolean hdBacked(ICacheRecordStore recordStore) {
+    public static boolean isHdStore(ICacheRecordStore recordStore) {
         return recordStore.getConfig().getInMemoryFormat() == NATIVE;
     }
 

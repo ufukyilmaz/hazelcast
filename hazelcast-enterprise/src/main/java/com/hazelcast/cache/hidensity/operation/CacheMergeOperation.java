@@ -7,9 +7,9 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.SplitBrainMergeEntryView;
 import com.hazelcast.spi.SplitBrainMergePolicy;
 import com.hazelcast.spi.impl.MutatingOperation;
+import com.hazelcast.spi.merge.MergingEntryHolder;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
         implements MutableOperation, MutatingOperation {
 
     private SplitBrainMergePolicy mergePolicy;
-    private List<SplitBrainMergeEntryView<Data, Data>> mergeEntries;
+    private List<MergingEntryHolder<Data, Data>> mergingEntries;
 
     private transient CacheWanEventPublisher wanEventPublisher;
 
@@ -39,11 +39,9 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     public CacheMergeOperation() {
     }
 
-    public CacheMergeOperation(String name,
-                               List<SplitBrainMergeEntryView<Data, Data>> mergeEntries,
-                               SplitBrainMergePolicy policy) {
+    public CacheMergeOperation(String name, List<MergingEntryHolder<Data, Data>> mergingEntries, SplitBrainMergePolicy policy) {
         super(name);
-        this.mergeEntries = mergeEntries;
+        this.mergingEntries = mergingEntries;
         this.mergePolicy = policy;
     }
 
@@ -56,20 +54,20 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
 
         hasBackups = getSyncBackupCount() + getAsyncBackupCount() > 0;
         if (hasBackups) {
-            backupRecords = createHashMap(mergeEntries.size());
+            backupRecords = createHashMap(mergingEntries.size());
         }
     }
 
     @Override
     public void runInternal() {
-        for (SplitBrainMergeEntryView<Data, Data> mergingEntry : mergeEntries) {
+        for (MergingEntryHolder<Data, Data> mergingEntry : mergingEntries) {
             merge(mergingEntry);
         }
 
         response = true;
     }
 
-    private void merge(SplitBrainMergeEntryView<Data, Data> mergingEntry) {
+    private void merge(MergingEntryHolder<Data, Data> mergingEntry) {
         CacheRecord backupRecord = cache.merge(mergingEntry, mergePolicy);
 
         if (hasBackups && backupRecord != null) {
@@ -100,9 +98,9 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeInt(mergeEntries.size());
-        for (SplitBrainMergeEntryView<Data, Data> mergeEntry : mergeEntries) {
-            out.writeObject(mergeEntry);
+        out.writeInt(mergingEntries.size());
+        for (MergingEntryHolder<Data, Data> mergingEntry : mergingEntries) {
+            out.writeObject(mergingEntry);
         }
         out.writeObject(mergePolicy);
     }
@@ -111,10 +109,10 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        mergeEntries = new ArrayList<SplitBrainMergeEntryView<Data, Data>>(size);
+        mergingEntries = new ArrayList<MergingEntryHolder<Data, Data>>(size);
         for (int i = 0; i < size; i++) {
-            SplitBrainMergeEntryView<Data, Data> mergeEntry = in.readObject();
-            mergeEntries.add(mergeEntry);
+            MergingEntryHolder<Data, Data> mergingEntry = in.readObject();
+            mergingEntries.add(mergingEntry);
         }
         mergePolicy = in.readObject();
     }

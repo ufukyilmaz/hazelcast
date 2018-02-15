@@ -12,7 +12,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
-public class HdMemoryCacheWanBatchReplicationTest extends AbstractCacheWanReplicationTest {
+public class HdCacheWanBatchReplicationTest extends AbstractCacheWanReplicationTest {
 
     @BeforeClass
     public static void initJCache() {

@@ -7,8 +7,8 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.SplitBrainMergeEntryView;
 import com.hazelcast.spi.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.MergingEntryHolder;
 
 import java.io.IOException;
 
@@ -23,24 +23,24 @@ import static java.lang.Boolean.TRUE;
 public class WanCacheMergeOperation
         extends AbstractMutatingCacheOperation {
 
-    private SplitBrainMergeEntryView<Data, Data> mergeEntryView;
+    private MergingEntryHolder<Data, Data> mergingEntries;
     private SplitBrainMergePolicy mergePolicy;
     private String wanGroupName;
 
     public WanCacheMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, String wanGroupName, SplitBrainMergeEntryView<Data, Data> mergeEntryView,
+    public WanCacheMergeOperation(String name, String wanGroupName, MergingEntryHolder<Data, Data> mergingEntries,
                                   SplitBrainMergePolicy mergePolicy, int completionId) {
-        super(name, mergeEntryView.getKey(), completionId);
-        this.mergeEntryView = mergeEntryView;
+        super(name, mergingEntries.getKey(), completionId);
+        this.mergingEntries = mergingEntries;
         this.mergePolicy = mergePolicy;
         this.wanGroupName = wanGroupName;
     }
 
     @Override
     public void run() throws Exception {
-        CacheRecord record = cache.merge(mergeEntryView, mergePolicy);
+        CacheRecord record = cache.merge(mergingEntries, mergePolicy);
         if (record != null) {
             response = true;
             backupRecord = cache.getRecord(key);
@@ -60,7 +60,7 @@ public class WanCacheMergeOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeObject(mergeEntryView);
+        out.writeObject(mergingEntries);
         out.writeObject(mergePolicy);
         out.writeUTF(wanGroupName);
     }
@@ -68,7 +68,7 @@ public class WanCacheMergeOperation
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        mergeEntryView = in.readObject();
+        mergingEntries = in.readObject();
         mergePolicy = in.readObject();
         wanGroupName = in.readUTF();
     }

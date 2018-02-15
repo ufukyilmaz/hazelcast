@@ -7,8 +7,6 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
@@ -37,6 +35,11 @@ import javax.cache.CacheManager;
 import javax.cache.spi.CachingProvider;
 import java.util.Collection;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.config.InMemoryFormat.BINARY;
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -49,16 +52,17 @@ import static org.junit.Assert.assertEquals;
 public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
 
     private static final String WAN_REPLICATION_NAME = "wanRef";
+    private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
 
     @Parameters(name = "inMemoryFormat:{0} cacheMergePolicy:{1} wanMergePolicy:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.OBJECT, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
-                {InMemoryFormat.OBJECT, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
-                {InMemoryFormat.BINARY, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
-                {InMemoryFormat.BINARY, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
-                {InMemoryFormat.NATIVE, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
-                {InMemoryFormat.NATIVE, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
+                {OBJECT, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
+                {OBJECT, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
+                {BINARY, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
+                {BINARY, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
+                {NATIVE, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
+                {NATIVE, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
         });
     }
 
@@ -78,19 +82,17 @@ public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
 
     @Override
     protected Config config() {
+        WanPublisherConfig wanPublisherConfig = new WanPublisherConfig()
+                .setClassName(CountingWanEndpoint.class.getName());
+
         WanReplicationConfig wanConfig = new WanReplicationConfig()
                 .setName(WAN_REPLICATION_NAME)
-                .addWanPublisherConfig(new WanPublisherConfig()
-                        .setClassName(CountingWanEndpoint.class.getName()));
+                .addWanPublisherConfig(wanPublisherConfig);
 
         Config config = super.config();
         config.addWanReplicationConfig(wanConfig);
-        if (inMemoryFormat == InMemoryFormat.NATIVE) {
-            MemorySize memorySize = new MemorySize(128, MemoryUnit.MEGABYTES);
-            NativeMemoryConfig nativeMemoryConfig = new NativeMemoryConfig()
-                    .setAllocatorType(MemoryAllocatorType.POOLED)
-                    .setSize(memorySize).setEnabled(true);
-            config.setNativeMemoryConfig(nativeMemoryConfig);
+        if (inMemoryFormat == NATIVE) {
+            config = getHDConfig(config, POOLED, MEMORY_SIZE);
         }
         return config;
     }
@@ -149,7 +151,7 @@ public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
     private static <K, V> CacheConfig<K, V> newCacheConfig(String cacheName, InMemoryFormat inMemoryFormat,
                                                            Class cacheMergePolicy, Class wanMergePolicy) {
         EvictionConfig evictionConfig = new EvictionConfig();
-        if (inMemoryFormat == InMemoryFormat.NATIVE) {
+        if (inMemoryFormat == NATIVE) {
             evictionConfig.setSize(90);
             evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {

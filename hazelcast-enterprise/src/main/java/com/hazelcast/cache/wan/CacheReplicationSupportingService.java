@@ -16,12 +16,12 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
-import com.hazelcast.spi.SplitBrainMergeEntryView;
 import com.hazelcast.spi.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.MergingEntryHolder;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import static com.hazelcast.cache.impl.operation.MutableOperation.IGNORE_COMPLETION;
-import static com.hazelcast.spi.merge.SplitBrainEntryViews.createSplitBrainMergeEntryView;
+import static com.hazelcast.spi.impl.merge.MergingHolders.createMergeHolder;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
@@ -117,9 +117,8 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
 
         Operation operation;
         if (mergePolicy instanceof SplitBrainMergePolicy) {
-            SplitBrainMergeEntryView<Data, Data> entryView
-                    = createSplitBrainMergeEntryView(cacheReplicationUpdate.getEntryView());
-            operation = operationProvider.createWanMergeOperation(ORIGIN, entryView, (SplitBrainMergePolicy) mergePolicy,
+            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(cacheReplicationUpdate.getEntryView());
+            operation = operationProvider.createWanMergeOperation(ORIGIN, mergingEntry, (SplitBrainMergePolicy) mergePolicy,
                     IGNORE_COMPLETION);
         } else {
             CacheEntryView<Data, Data> entryView = cacheReplicationUpdate.getEntryView();

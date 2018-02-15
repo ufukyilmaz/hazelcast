@@ -10,8 +10,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
-import com.hazelcast.spi.SplitBrainMergeEntryView;
 import com.hazelcast.spi.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.MergingEntryHolder;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
  */
 public class HDMergeOperation extends HDMapOperation implements PartitionAwareOperation, BackupAwareOperation {
 
-    private List<SplitBrainMergeEntryView<Data, Data>> mergeEntries;
+    private List<MergingEntryHolder<Data, Data>> mergingEntries;
     private SplitBrainMergePolicy mergePolicy;
     private boolean disableWanReplicationEvent;
 
@@ -48,10 +48,10 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     public HDMergeOperation() {
     }
 
-    HDMergeOperation(String name, List<SplitBrainMergeEntryView<Data, Data>> mergeEntries, SplitBrainMergePolicy policy,
+    HDMergeOperation(String name, List<MergingEntryHolder<Data, Data>> mergingEntries, SplitBrainMergePolicy policy,
                      boolean disableWanReplicationEvent) {
         super(name);
-        this.mergeEntries = mergeEntries;
+        this.mergingEntries = mergingEntries;
         this.mergePolicy = policy;
         this.disableWanReplicationEvent = disableWanReplicationEvent;
     }
@@ -59,7 +59,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     @Override
     public void innerBeforeRun() throws Exception {
         super.innerBeforeRun();
-        size = mergeEntries.size();
+        size = mergingEntries.size();
 
         hasMapListener = mapEventPublisher.hasEventListener(name);
         hasWanReplication = mapContainer.isWanReplicationEnabled() && !disableWanReplicationEvent;
@@ -79,12 +79,12 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     public void runInternal() {
         // if currentIndex is not zero, this is a continuation of the operation after a NativeOOME
         while (currentIndex < size) {
-            merge(mergeEntries.get(currentIndex));
+            merge(mergingEntries.get(currentIndex));
             currentIndex++;
         }
     }
 
-    private void merge(SplitBrainMergeEntryView<Data, Data> mergingEntry) {
+    private void merge(MergingEntryHolder<Data, Data> mergingEntry) {
         Data dataKey = mergingEntry.getKey();
         Data oldValue = hasMapListener ? getValue(dataKey) : null;
 
@@ -163,9 +163,9 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeInt(mergeEntries.size());
-        for (SplitBrainMergeEntryView<Data, Data> mergeEntry : mergeEntries) {
-            out.writeObject(mergeEntry);
+        out.writeInt(mergingEntries.size());
+        for (MergingEntryHolder<Data, Data> mergingEntry : mergingEntries) {
+            out.writeObject(mergingEntry);
         }
         out.writeObject(mergePolicy);
         out.writeBoolean(disableWanReplicationEvent);
@@ -175,10 +175,10 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        mergeEntries = new ArrayList<SplitBrainMergeEntryView<Data, Data>>(size);
+        mergingEntries = new ArrayList<MergingEntryHolder<Data, Data>>(size);
         for (int i = 0; i < size; i++) {
-            SplitBrainMergeEntryView<Data, Data> mergeEntry = in.readObject();
-            mergeEntries.add(mergeEntry);
+            MergingEntryHolder<Data, Data> mergingEntry = in.readObject();
+            mergingEntries.add(mergingEntry);
         }
         mergePolicy = in.readObject();
         disableWanReplicationEvent = in.readBoolean();

@@ -47,7 +47,6 @@ public abstract class AbstractHDMergeHelper<S> {
      *
      * @param collectedHdStores collected HD backed stores of the partition
      * @param partitionId       partition id of stores to be collected
-     * @return total entry count in all stores independent of the backing storage type
      */
     protected abstract void collectHdStores(Map<String, S> collectedHdStores, int partitionId);
 

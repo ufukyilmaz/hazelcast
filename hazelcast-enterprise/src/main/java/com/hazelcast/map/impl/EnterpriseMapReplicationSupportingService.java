@@ -16,13 +16,13 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
-import com.hazelcast.spi.SplitBrainMergeEntryView;
 import com.hazelcast.spi.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.MergingEntryHolder;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import static com.hazelcast.config.WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE;
-import static com.hazelcast.spi.merge.SplitBrainEntryViews.createSplitBrainMergeEntryView;
+import static com.hazelcast.spi.impl.merge.MergingHolders.createMergeHolder;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
@@ -104,9 +104,9 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
         // RU_COMPAT_3_9
         if (nodeEngine.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V3_10)) {
-            SplitBrainMergeEntryView<Data, Data> entryView = createSplitBrainMergeEntryView(syncObject.getEntryView());
-            MapOperation operation = operationProvider.createMergeOperation(mapName, entryView, defaultSyncMergePolicy, true);
-            invokeOnPartition(entryView.getKey(), operation);
+            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(syncObject.getEntryView());
+            MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
+            invokeOnPartition(mergingEntry.getKey(), operation);
         } else {
             EntryView<Data, Data> entryView = syncObject.getEntryView();
             MapOperation operation = operationProvider.createLegacyMergeOperation(mapName, entryView,
@@ -121,8 +121,8 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         Object mergePolicy = replicationUpdate.getMergePolicy();
 
         if (mergePolicy instanceof SplitBrainMergePolicy) {
-            SplitBrainMergeEntryView<Data, Data> entryView = createSplitBrainMergeEntryView(replicationUpdate.getEntryView());
-            return invokeOnPartition(entryView.getKey(), operationProvider.createMergeOperation(mapName, entryView,
+            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(replicationUpdate.getEntryView());
+            return invokeOnPartition(mergingEntry.getKey(), operationProvider.createMergeOperation(mapName, mergingEntry,
                     (SplitBrainMergePolicy) mergePolicy, true));
         }
         EntryView<Data, Data> entryView = replicationUpdate.getEntryView();

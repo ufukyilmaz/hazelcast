@@ -2,7 +2,7 @@ package com.hazelcast.client.security;
 
 import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.MapInterceptor;
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.mock;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class MapSecurityInterceptorTest extends InterceptorTestSupport {
 

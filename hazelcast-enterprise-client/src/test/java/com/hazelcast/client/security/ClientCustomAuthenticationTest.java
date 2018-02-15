@@ -4,7 +4,7 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.LoginModuleConfig;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.ClusterLoginModule;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -17,7 +17,7 @@ import org.junit.runner.RunWith;
 import javax.security.auth.login.LoginException;
 import java.util.Properties;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
 

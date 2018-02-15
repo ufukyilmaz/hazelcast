@@ -6,7 +6,7 @@ import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.client.cache.impl.HazelcastClientCachingProvider;
 import com.hazelcast.config.CacheConfig;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.quorum.cache.CacheQuorumWriteTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
@@ -21,7 +21,7 @@ import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
 import java.util.HashMap;
 import java.util.HashSet;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class CacheSecurityInterceptorTest extends InterceptorTestSupport {
 

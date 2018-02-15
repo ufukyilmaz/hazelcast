@@ -1,6 +1,6 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.ringbuffer.OverflowPolicy;
 import com.hazelcast.ringbuffer.Ringbuffer;
 import com.hazelcast.ringbuffer.impl.RingbufferService;
@@ -13,7 +13,7 @@ import org.junit.runner.RunWith;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class RingBufferSecurityInterceptorTest extends InterceptorTestSupport {
     String objectName;

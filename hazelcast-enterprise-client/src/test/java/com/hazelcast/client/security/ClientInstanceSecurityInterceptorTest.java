@@ -2,7 +2,7 @@ package com.hazelcast.client.security;
 
 import com.hazelcast.core.DistributedObjectListener;
 import com.hazelcast.core.PartitionService;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.partition.PartitionLostListener;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
 import com.hazelcast.spi.partition.IPartitionService;
@@ -13,7 +13,7 @@ import org.junit.runner.RunWith;
 
 import static org.mockito.Mockito.mock;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class ClientInstanceSecurityInterceptorTest extends InterceptorTestSupport {
 

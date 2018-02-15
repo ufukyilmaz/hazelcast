@@ -3,7 +3,7 @@ package com.hazelcast.client.security;
 import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.ReplicatedMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.replicatedmap.impl.ReplicatedMapService;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
@@ -14,7 +14,7 @@ import org.junit.runner.RunWith;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class ReplicatedMapSecurityInterceptorTest extends InterceptorTestSupport {
 

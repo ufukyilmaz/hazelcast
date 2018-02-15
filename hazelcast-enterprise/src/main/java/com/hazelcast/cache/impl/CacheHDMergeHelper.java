@@ -41,7 +41,7 @@ class CacheHDMergeHelper extends AbstractHDMergeHelper<ICacheRecordStore> {
     }
 
     @Override
-    protected void destroyStore(ICacheRecordStore hdStore) {
+    protected void destroyHdStore(ICacheRecordStore hdStore) {
         assertRunningOnPartitionThread();
 
         hdStore.destroy();

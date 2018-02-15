@@ -25,7 +25,7 @@ import static com.hazelcast.util.MapUtil.isNullOrEmpty;
  * Contains shared helper functionality for {@link com.hazelcast.spi.SplitBrainHandlerService}
  * of HD backed data structures
  *
- * @param <S> partition store of data structure
+ * @param <S> HD backed store of a partition
  */
 public abstract class AbstractHDMergeHelper<S> {
 
@@ -54,7 +54,7 @@ public abstract class AbstractHDMergeHelper<S> {
     /**
      * Frees HD space by destroying HD backed store
      */
-    protected abstract void destroyStore(S hdStore);
+    protected abstract void destroyHdStore(S hdStore);
 
     /**
      * Call this method, if an instance of this class should be prepared for next usage
@@ -64,7 +64,7 @@ public abstract class AbstractHDMergeHelper<S> {
         collectHdStoresInternal();
     }
 
-    public final Collection<S> getStoresOf(int partitionId) {
+    public final Collection<S> getHdStoresOf(int partitionId) {
         Map<String, S> storesByName = storesByPartitionId.get(partitionId);
         if (isNullOrEmpty(storesByName)) {
             return Collections.emptyList();
@@ -73,7 +73,7 @@ public abstract class AbstractHDMergeHelper<S> {
         return storesByName.values();
     }
 
-    public final S getOrNullStore(String name, int partitionId) {
+    public final S getOrNullHdStore(String name, int partitionId) {
         Map<String, S> storesByName = storesByPartitionId.get(partitionId);
         if (isNullOrEmpty(storesByName)) {
             return null;
@@ -85,7 +85,7 @@ public abstract class AbstractHDMergeHelper<S> {
     /**
      * Frees HD space by destroying HD backed stores upon successful merge
      */
-    public void destroyCollectedHdStores() {
+    public final void destroyCollectedHdStores() {
         final Map<Integer, Map<String, S>> storesByPartitionId = this.storesByPartitionId;
         Set<Integer> partitionIds = storesByPartitionId.keySet();
         for (final Integer partitionId : partitionIds) {
@@ -102,7 +102,7 @@ public abstract class AbstractHDMergeHelper<S> {
                         Iterator<S> iterator = storesByName.values().iterator();
                         while (iterator.hasNext()) {
                             S store = iterator.next();
-                            destroyStore(store);
+                            destroyHdStore(store);
                             iterator.remove();
                         }
                     }

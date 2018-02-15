@@ -42,7 +42,7 @@ class MapHDMergeHelper extends AbstractHDMergeHelper<RecordStore> {
     }
 
     @Override
-    protected void destroyStore(RecordStore hdStore) {
+    protected void destroyHdStore(RecordStore hdStore) {
         assertRunningOnPartitionThread();
 
         hdStore.destroy();

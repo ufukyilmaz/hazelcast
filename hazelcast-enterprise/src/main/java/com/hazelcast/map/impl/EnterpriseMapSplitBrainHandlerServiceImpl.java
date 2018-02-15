@@ -26,7 +26,7 @@ class EnterpriseMapSplitBrainHandlerServiceImpl extends MapSplitBrainHandlerServ
     @Override
     protected RecordStore<Record> getOrNullRecordStore(String mapName, InMemoryFormat inMemoryFormat, int partitionId) {
         if (inMemoryFormat == NATIVE) {
-            return hdMergeHelper.getOrNullStore(mapName, partitionId);
+            return hdMergeHelper.getOrNullHdStore(mapName, partitionId);
         }
 
         return super.getOrNullRecordStore(mapName, inMemoryFormat, partitionId);

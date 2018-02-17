@@ -74,7 +74,7 @@ public class SSLEngineFactoryAdaptor implements SSLEngineFactory {
     /**
      * Finds supported protocol names for given configured protocol property.
      *
-     * @param configuredName value of configured protocol property
+     * @param configuredName     value of configured protocol property
      * @param supportedProtocols protocols supported by theSSL engine
      * @return supported protocols which match given configured name
      */

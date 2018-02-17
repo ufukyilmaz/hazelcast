@@ -100,6 +100,61 @@ public class SSLConnectionTest {
         }
     }
 
+
+    @Test(timeout = 1000 * 180)
+    public void testNodes2() throws InterruptedException {
+        Config config = new Config();
+        config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        JoinConfig join = config.getNetworkConfig().getJoin();
+        join.getMulticastConfig().setEnabled(false);
+        join.getTcpIpConfig().setEnabled(true).setConnectionTimeoutSeconds(3000);
+
+        Properties props = TestKeyStoreUtil.createSslProperties();
+        config.getNetworkConfig()
+                .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props))
+                .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+
+        HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config);
+
+        assertClusterSize(2, h1, h2);
+
+        TestUtil.warmUpPartitions(h1, h2);
+        Member owner1 = h1.getPartitionService().getPartition(0).getOwner();
+        Member owner2 = h2.getPartitionService().getPartition(0).getOwner();
+        assertEquals(owner1, owner2);
+
+        logger.info("-------------------------------------------------------------");
+        logger.info("inserting");
+        logger.info("-------------------------------------------------------------");
+
+        String name = "ssl-test";
+        int count = 5;
+        IMap<Integer, byte[]> map1 = h1.getMap(name);
+        for (int i = 1; i < count; i++) {
+            map1.put(i, new byte[1024 * i]);
+        }
+
+        logger.info("-------------------------------------------------------------");
+        logger.info("verifying");
+        logger.info("-------------------------------------------------------------");
+
+
+        IMap<Integer, byte[]> map2 = h2.getMap(name);
+        for (int i = 1; i < count; i++) {
+            byte[] bytes = map2.get(i);
+            assertEquals(i * 1024, bytes.length);
+        }
+
+        logger.info("-------------------------------------------------------------");
+        logger.info("Shutting down h1");
+        logger.info("-------------------------------------------------------------");
+        h1.shutdown();
+        //getNode(h1).connectionManager.getConnection(h2.getCluster().getLocalMember().getAddress()).close("testing", null);
+
+        Thread.sleep(30000);
+    }
+
     @Test(timeout = 1000 * 600)
     public void testPutAndGetAlwaysGoesToWire() {
         Config config = new Config();
@@ -122,6 +177,7 @@ public class SSLConnectionTest {
         Member owner1 = h1.getPartitionService().getPartition(0).getOwner();
         Member owner2 = h2.getPartitionService().getPartition(0).getOwner();
         assertEquals(owner1, owner2);
+
 
         String name = "ssl-test";
 

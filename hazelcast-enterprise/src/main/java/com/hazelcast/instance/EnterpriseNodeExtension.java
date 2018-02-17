@@ -35,8 +35,9 @@ import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.networking.ChannelFactory;
+import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.networking.ChannelInboundHandler;
+import com.hazelcast.internal.networking.ChannelInitializer;
 import com.hazelcast.internal.networking.ChannelOutboundHandler;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListener;
@@ -61,7 +62,10 @@ import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.ssl.SSLChannelFactory;
+import com.hazelcast.nio.ssl.ChannelHandlerPair;
+import com.hazelcast.nio.ssl.TLSChannelInitializer;
+import com.hazelcast.nio.tcp.ProtocolDecoder;
+import com.hazelcast.nio.tcp.ProtocolEncoder;
 import com.hazelcast.nio.tcp.SymmetricCipherPacketDecoder;
 import com.hazelcast.nio.tcp.SymmetricCipherPacketEncoder;
 import com.hazelcast.nio.tcp.TcpIpConnection;
@@ -81,6 +85,7 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.ByteArrayProcessor;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.Preconditions;
+import com.hazelcast.util.function.Function;
 import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
@@ -89,6 +94,7 @@ import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.logging.Level;
 
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
@@ -393,7 +399,34 @@ public class EnterpriseNodeExtension
     }
 
     @Override
-    public ChannelFactory getChannelFactory() {
+    public ChannelInboundHandler[] createInboundHandlers(TcpIpConnection connection, IOService ioService) {
+        SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
+
+        if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
+            logger.info("Reader started with SymmetricEncryption");
+            SymmetricCipherPacketDecoder decoder = new SymmetricCipherPacketDecoder(
+                    connection, ioService, node.nodeEngine.getPacketDispatcher());
+            return new ChannelInboundHandler[]{decoder};
+        }
+
+        return super.createInboundHandlers(connection, ioService);
+    }
+
+    @Override
+    public ChannelOutboundHandler[] createOutboundHandlers(TcpIpConnection connection, IOService ioService) {
+        SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
+
+        if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
+            logger.info("Writer started with SymmetricEncryption");
+            SymmetricCipherPacketEncoder encoder = new SymmetricCipherPacketEncoder(connection, symmetricEncryptionConfig);
+            return new ChannelOutboundHandler[]{encoder};
+        }
+
+        return super.createOutboundHandlers(connection, ioService);
+    }
+
+    @Override
+    public ChannelInitializer createChannelInitializer(final IOService ioService) {
         final NetworkConfig networkConfig = node.config.getNetworkConfig();
         SSLConfig sslConfig = networkConfig.getSSLConfig();
         if (sslConfig != null && sslConfig.isEnabled()) {
@@ -402,31 +435,20 @@ public class EnterpriseNodeExtension
                 throw new RuntimeException("SSL and SymmetricEncryption cannot be both enabled!");
             }
             logger.info("SSL is enabled");
-            return new SSLChannelFactory(sslConfig, false);
+
+            Executor executor = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();
+
+            return new TLSChannelInitializer(sslConfig, node.getProperties(), executor,
+                    new Function<Channel, ChannelHandlerPair>() {
+                        @Override
+                        public ChannelHandlerPair apply(Channel channel) {
+                            ProtocolEncoder encoder = new ProtocolEncoder(ioService);
+                            ProtocolDecoder decoder = new ProtocolDecoder(ioService, encoder);
+                            return new ChannelHandlerPair(decoder, encoder);
+                        }
+                    });
         }
-        return super.getChannelFactory();
-    }
-
-    @Override
-    public ChannelInboundHandler createInboundHandler(final TcpIpConnection connection, final IOService ioService) {
-        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
-
-        if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
-            logger.info("Reader started with SymmetricEncryption");
-            return new SymmetricCipherPacketDecoder(connection, ioService, node.nodeEngine.getPacketDispatcher());
-        }
-        return super.createInboundHandler(connection, ioService);
-    }
-
-    @Override
-    public ChannelOutboundHandler createOutboundHandler(final TcpIpConnection connection, final IOService ioService) {
-        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
-
-        if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
-            logger.info("Writer started with SymmetricEncryption");
-            return new SymmetricCipherPacketEncoder(connection, ioService);
-        }
-        return super.createOutboundHandler(connection, ioService);
+        return super.createChannelInitializer(ioService);
     }
 
     @Override

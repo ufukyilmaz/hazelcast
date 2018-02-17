@@ -8,9 +8,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestAwareInstanceFactory;
-import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -22,11 +20,10 @@ import java.util.Properties;
 
 import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 import static com.hazelcast.nio.ssl.OpenSSLEngineFactory.JAVA_NET_SSL_PREFIX;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static org.junit.Assert.assertEquals;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class})
 public class OpenSSLConnectionTest {
 
     private final TestAwareInstanceFactory factory = new TestAwareInstanceFactory();
@@ -48,14 +45,7 @@ public class OpenSSLConnectionTest {
 
         final HazelcastInstance h1 = factory.newHazelcastInstance(config);
         final HazelcastInstance h2 = factory.newHazelcastInstance(config);
-
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertEquals(2, h1.getCluster().getMembers().size());
-                assertEquals(2, h2.getCluster().getMembers().size());
-            }
-        });
+        assertClusterSize(2, h1, h2);
     }
 
     @Test(expected = HazelcastException.class)

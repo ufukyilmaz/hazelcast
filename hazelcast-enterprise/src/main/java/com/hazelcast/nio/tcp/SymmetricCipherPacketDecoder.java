@@ -1,5 +1,7 @@
 package com.hazelcast.nio.tcp;
 
+import com.hazelcast.internal.networking.ChannelOption;
+import com.hazelcast.internal.networking.HandlerStatus;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.IOService;
@@ -11,9 +13,11 @@ import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
 import java.nio.ByteBuffer;
 
+import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
-import static com.hazelcast.nio.IOService.KILO_BYTE;
+import static com.hazelcast.nio.IOUtil.compactOrClear;
 
+@SuppressWarnings("checkstyle:npathcomplexity")
 public class SymmetricCipherPacketDecoder extends PacketDecoder {
 
     private final ILogger logger;
@@ -22,60 +26,79 @@ public class SymmetricCipherPacketDecoder extends PacketDecoder {
     private ByteBuffer cipherBuffer;
     private int size = -1;
 
-    public SymmetricCipherPacketDecoder(TcpIpConnection connection, IOService ioService,
-                                        Consumer<Packet> packetConsumer) {
-        super(connection, packetConsumer);
+    public SymmetricCipherPacketDecoder(TcpIpConnection connection, IOService ioService, Consumer<Packet> dst) {
+        super(connection, dst);
         this.logger = ioService.getLoggingService().getLogger(getClass());
         this.cipher = createSymmetricReaderCipher(ioService.getSymmetricEncryptionConfig(), connection);
-        this.cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * KILO_BYTE);
     }
 
     @Override
-    @SuppressWarnings({"checkstyle:npathcomplexity"})
-    public void onRead(ByteBuffer src) throws Exception {
-        while (src.hasRemaining()) {
-            try {
-                if (size == -1) {
-                    if (src.remaining() < Bits.INT_SIZE_IN_BYTES) {
-                        return;
+    public void handlerAdded() {
+        super.handlerAdded();
+        this.cipherBuffer = ByteBuffer.allocate(channel.config().getOption(ChannelOption.SO_RCVBUF));
+    }
+
+    @Override
+    public HandlerStatus onRead() throws Exception {
+        src.flip();
+        //System.out.println(channel + "      in PacketDecoder:" + IOUtil.toDebugString("src", src));
+
+        try {
+            // System.out.println(channel + "      in PacketDecoder after flip:" + IOUtil.toDebugString("src", src));
+            while (src.hasRemaining()) {
+                try {
+                    if (size == -1) {
+                        if (src.remaining() < Bits.INT_SIZE_IN_BYTES) {
+                            return CLEAN;
+                        }
+                        size = src.getInt();
+                        if (cipherBuffer.capacity() < size) {
+                            cipherBuffer = ByteBuffer.allocate(size);
+                        }
                     }
-                    size = src.getInt();
-                    if (cipherBuffer.capacity() < size) {
-                        cipherBuffer = ByteBuffer.allocate(size);
+                    int remaining = src.remaining();
+                    if (remaining < size) {
+                        cipher.update(src, cipherBuffer);
+                        size -= remaining;
+                    } else if (remaining == size) {
+                        cipher.doFinal(src, cipherBuffer);
+                        size = -1;
+                    } else {
+                        int oldLimit = src.limit();
+                        int newLimit = src.position() + size;
+                        src.limit(newLimit);
+                        cipher.doFinal(src, cipherBuffer);
+                        src.limit(oldLimit);
+                        size = -1;
                     }
+                } catch (ShortBufferException e) {
+                    logger.warning(e);
                 }
-                int remaining = src.remaining();
-                if (remaining < size) {
-                    cipher.update(src, cipherBuffer);
-                    size -= remaining;
-                } else if (remaining == size) {
-                    cipher.doFinal(src, cipherBuffer);
-                    size = -1;
+                cipherBuffer.flip();
+                while (cipherBuffer.hasRemaining()) {
+                    Packet packet = packetReader.readFrom(cipherBuffer);
+                    if (packet == null) {
+                        break;
+                    }
+                    onPacketComplete(packet);
+                }
+
+                if (cipherBuffer.hasRemaining()) {
+                    cipherBuffer.compact();
                 } else {
-                    int oldLimit = src.limit();
-                    int newLimit = src.position() + size;
-                    src.limit(newLimit);
-                    cipher.doFinal(src, cipherBuffer);
-                    src.limit(oldLimit);
-                    size = -1;
+                    cipherBuffer.clear();
                 }
-            } catch (ShortBufferException e) {
-                logger.warning(e);
-            }
-            cipherBuffer.flip();
-            while (cipherBuffer.hasRemaining()) {
-                Packet packet = packetReader.readFrom(cipherBuffer);
-                if (packet == null) {
-                    break;
-                }
-                onPacketComplete(packet);
             }
 
-            if (cipherBuffer.hasRemaining()) {
-                cipherBuffer.compact();
-            } else {
-                cipherBuffer.clear();
-            }
+            return CLEAN;
+        } finally {
+            compactOrClear(src);
         }
     }
+
+//    @Override
+//    @SuppressWarnings({"checkstyle:npathcomplexity"})
+//    public void onRead(ByteBuffer src) throws Exception {
+
+//    }
 }

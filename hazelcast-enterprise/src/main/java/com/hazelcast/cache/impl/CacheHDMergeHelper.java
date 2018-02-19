@@ -4,8 +4,6 @@ import com.hazelcast.internal.hidensity.impl.AbstractHDMergeHelper;
 import com.hazelcast.spi.NodeEngine;
 
 import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
@@ -23,28 +21,27 @@ class CacheHDMergeHelper extends AbstractHDMergeHelper<ICacheRecordStore> {
     }
 
     @Override
-    public void collectHdStores(Map<String, ICacheRecordStore> collectedHdStores, int partitionId) {
-        assertRunningOnPartitionThread();
-
-        ConcurrentMap<String, ICacheRecordStore> segmentsRecordStores = segments[partitionId].recordStores;
-        Iterator<ICacheRecordStore> iterator = segmentsRecordStores.values().iterator();
-        while (iterator.hasNext()) {
-            ICacheRecordStore recordStore = iterator.next();
-            if (isHdStore(recordStore)) {
-                collectedHdStores.put(recordStore.getName(), recordStore);
-                iterator.remove();
-            }
-        }
-    }
-
-    public static boolean isHdStore(ICacheRecordStore recordStore) {
-        return recordStore.getConfig().getInMemoryFormat() == NATIVE;
+    protected Iterator<ICacheRecordStore> storeIterator(int partitionId) {
+        return segments[partitionId].recordStores.values().iterator();
     }
 
     @Override
-    protected void destroyHdStore(ICacheRecordStore hdStore) {
+    protected String extractHDStoreName(ICacheRecordStore store) {
+        assert isHDStore(store);
+
+        return store.getName();
+    }
+
+    @Override
+    protected void destroyHDStore(ICacheRecordStore store) {
+        assert isHDStore(store);
         assertRunningOnPartitionThread();
 
-        hdStore.destroy();
+        store.destroy();
+    }
+
+    @Override
+    protected boolean isHDStore(ICacheRecordStore store) {
+        return store.getConfig().getInMemoryFormat() == NATIVE;
     }
 }

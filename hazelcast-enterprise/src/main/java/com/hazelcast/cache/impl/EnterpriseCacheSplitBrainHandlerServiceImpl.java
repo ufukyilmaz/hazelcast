@@ -29,7 +29,7 @@ class EnterpriseCacheSplitBrainHandlerServiceImpl extends CacheSplitBrainHandler
     protected List<Iterator<ICacheRecordStore>> iteratorsOf(CachePartitionSegment segment) {
         List<Iterator<ICacheRecordStore>> iterators = new LinkedList<Iterator<ICacheRecordStore>>(super.iteratorsOf(segment));
 
-        Collection<ICacheRecordStore> recordStoresOfPartition = hdMergeHelper.getHdStoresOf(segment.partitionId);
+        Collection<ICacheRecordStore> recordStoresOfPartition = hdMergeHelper.getHDStoresOf(segment.partitionId);
         if (recordStoresOfPartition != null) {
             iterators.add(recordStoresOfPartition.iterator());
         }
@@ -40,7 +40,7 @@ class EnterpriseCacheSplitBrainHandlerServiceImpl extends CacheSplitBrainHandler
     @Override
     protected void destroySegment(CachePartitionSegment segment) {
         try {
-            hdMergeHelper.destroyCollectedHdStores();
+            hdMergeHelper.destroyCollectedHDStores();
         } finally {
             super.destroySegment(segment);
         }

@@ -1,7 +1,6 @@
 package com.hazelcast.map.impl;
 
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 
 import java.util.Collection;
@@ -14,7 +13,7 @@ class EnterpriseMapSplitBrainHandlerServiceImpl extends MapSplitBrainHandlerServ
 
     EnterpriseMapSplitBrainHandlerServiceImpl(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
-        this.hdMergeHelper = new MapHDMergeHelper(nodeEngine, mapServiceContext);
+        this.hdMergeHelper = new MapHDMergeHelper(nodeEngine, mapServiceContext.getPartitionContainers());
     }
 
     @Override
@@ -24,9 +23,10 @@ class EnterpriseMapSplitBrainHandlerServiceImpl extends MapSplitBrainHandlerServ
     }
 
     @Override
-    protected RecordStore<Record> getOrNullRecordStore(String mapName, InMemoryFormat inMemoryFormat, int partitionId) {
+    @SuppressWarnings("unchecked")
+    protected RecordStore getOrNullRecordStore(String mapName, InMemoryFormat inMemoryFormat, int partitionId) {
         if (inMemoryFormat == NATIVE) {
-            return hdMergeHelper.getOrNullHdStore(mapName, partitionId);
+            return hdMergeHelper.getOrNullHDStore(mapName, partitionId);
         }
 
         return super.getOrNullRecordStore(mapName, inMemoryFormat, partitionId);
@@ -35,10 +35,9 @@ class EnterpriseMapSplitBrainHandlerServiceImpl extends MapSplitBrainHandlerServ
     @Override
     protected void destroyRecordStores(Collection<RecordStore> recordStores) {
         try {
-            hdMergeHelper.destroyCollectedHdStores();
+            hdMergeHelper.destroyCollectedHDStores();
         } finally {
             super.destroyRecordStores(recordStores);
         }
-
     }
 }

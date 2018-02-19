@@ -4,9 +4,7 @@ import com.hazelcast.internal.hidensity.impl.AbstractHDMergeHelper;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.spi.NodeEngine;
 
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
@@ -16,38 +14,36 @@ import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
  */
 class MapHDMergeHelper extends AbstractHDMergeHelper<RecordStore> {
 
-    private final MapServiceContext mapServiceContext;
+    private final PartitionContainer[] partitionContainers;
 
-    MapHDMergeHelper(NodeEngine nodeEngine, MapServiceContext mapServiceContext) {
+    MapHDMergeHelper(NodeEngine nodeEngine, PartitionContainer[] partitionContainers) {
         super(nodeEngine);
-        this.mapServiceContext = mapServiceContext;
+        this.partitionContainers = partitionContainers;
     }
 
     @Override
-    public void collectHdStores(Map<String, RecordStore> collectedHdStores, int partitionId) {
-        assertRunningOnPartitionThread();
-
-        PartitionContainer partitionContainer = mapServiceContext.getPartitionContainer(partitionId);
-        Collection<RecordStore> allRecordStores = partitionContainer.getAllRecordStores();
-        Iterator<RecordStore> iterator = allRecordStores.iterator();
-        while (iterator.hasNext()) {
-            RecordStore recordStore = iterator.next();
-            if (hdBacked(recordStore)) {
-                collectedHdStores.put(recordStore.getName(), recordStore);
-                iterator.remove();
-            }
-        }
-    }
-
-    public static boolean hdBacked(RecordStore recordStore) {
-        return recordStore.getMapContainer().getMapConfig().getInMemoryFormat() == NATIVE;
+    protected Iterator<RecordStore> storeIterator(int partitionId) {
+        return partitionContainers[partitionId].getAllRecordStores().iterator();
     }
 
     @Override
-    protected void destroyHdStore(RecordStore hdStore) {
+    protected String extractHDStoreName(RecordStore store) {
+        assert isHDStore(store);
+
+        return store.getName();
+    }
+
+    @Override
+    protected void destroyHDStore(RecordStore store) {
+        assert isHDStore(store);
         assertRunningOnPartitionThread();
 
-        hdStore.destroy();
-        hdStore.getMapContainer().getIndexes(hdStore.getPartitionId()).clearIndexes();
+        store.destroy();
+        store.getMapContainer().getIndexes(store.getPartitionId()).clearIndexes();
+    }
+
+    @Override
+    protected boolean isHDStore(RecordStore store) {
+        return store.getMapContainer().getMapConfig().getInMemoryFormat() == NATIVE;
     }
 }

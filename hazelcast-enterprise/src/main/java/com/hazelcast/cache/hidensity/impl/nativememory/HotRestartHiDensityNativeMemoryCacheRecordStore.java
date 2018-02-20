@@ -126,8 +126,9 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    protected HiDensityNativeMemoryCacheRecord doPutRecord(Data key, HiDensityNativeMemoryCacheRecord record, String source) {
-        HiDensityNativeMemoryCacheRecord oldRecord = super.doPutRecord(key, record, source);
+    protected HiDensityNativeMemoryCacheRecord doPutRecord(Data key, HiDensityNativeMemoryCacheRecord record,
+            String source, boolean updateJournal) {
+        HiDensityNativeMemoryCacheRecord oldRecord = super.doPutRecord(key, record, source, updateJournal);
         putToHotRestart(key, record);
         return oldRecord;
     }
@@ -258,22 +259,23 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public void clear() {
-        clearInternal(true);
+    public void reset() {
+        resetInternal(true);
     }
 
-    private void clearInternal(boolean clearHotRestartStore) {
+    private void resetInternal(boolean clearHotRestartStore) {
         if (clearHotRestartStore) {
             hotRestartStore.clear(fsync, prefix);
         }
-        super.clear();
+        super.reset();
     }
 
     @Override
     public void close(boolean onShutdown) {
         if (shouldExplicitlyClear(onShutdown)) {
-            clearInternal(false);
+            resetInternal(false);
         }
+        destroyEventJournal();
         records.dispose();
         closeListeners();
     }

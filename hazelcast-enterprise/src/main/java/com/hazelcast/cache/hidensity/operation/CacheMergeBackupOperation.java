@@ -42,7 +42,7 @@ public class CacheMergeBackupOperation extends AbstractHiDensityCacheOperation
         if (cacheRecords != null) {
             for (Map.Entry<Data, CacheRecord> entry : cacheRecords.entrySet()) {
                 CacheRecord record = entry.getValue();
-                cache.putRecord(entry.getKey(), record);
+                cache.putRecord(entry.getKey(), record, true);
 
                 publishWanEvent(entry.getKey(), record);
             }

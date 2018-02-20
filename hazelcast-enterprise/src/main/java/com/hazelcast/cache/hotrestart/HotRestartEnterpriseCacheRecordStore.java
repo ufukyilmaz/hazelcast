@@ -34,8 +34,8 @@ public class HotRestartEnterpriseCacheRecordStore extends CacheRecordStore imple
     }
 
     @Override
-    protected CacheRecord doPutRecord(Data key, CacheRecord record, String source) {
-        CacheRecord oldRecord = super.doPutRecord(key, record, source);
+    protected CacheRecord doPutRecord(Data key, CacheRecord record, String source, boolean updateJournal) {
+        CacheRecord oldRecord = super.doPutRecord(key, record, source, updateJournal);
         putToHotRestart(key, record.getValue());
         return oldRecord;
     }
@@ -124,20 +124,21 @@ public class HotRestartEnterpriseCacheRecordStore extends CacheRecordStore imple
     }
 
     @Override
-    public void clear() {
-        clearInternal(true);
+    public void reset() {
+        resetInternal(true);
     }
 
-    private void clearInternal(boolean clearHotRestartStore) {
+    private void resetInternal(boolean clearHotRestartStore) {
         if (clearHotRestartStore) {
             hotRestartStore.clear(fsync, prefix);
         }
-        super.clear();
+        super.reset();
     }
 
     @Override
     public void close(boolean onShutdown) {
-        clearInternal(false);
+        resetInternal(false);
+        destroyEventJournal();
         closeListeners();
     }
 }

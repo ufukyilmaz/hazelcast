@@ -468,7 +468,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
-    private HiDensityNativeMemoryCacheRecord putRecordInternal(Data key, CacheRecord record) {
+    private HiDensityNativeMemoryCacheRecord putRecordInternal(Data key, CacheRecord record, boolean updateJournal) {
         if (!records.containsKey(key)) {
             evictIfRequired();
         }
@@ -476,7 +476,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         HiDensityNativeMemoryCacheRecord newRecord = toNativeMemoryCacheRecord(record);
         HiDensityNativeMemoryCacheRecord oldRecord;
         try {
-            oldRecord = doPutRecord(key, newRecord);
+            oldRecord = doPutRecord(key, newRecord, SOURCE_NOT_AVAILABLE, updateJournal);
         } catch (Throwable t) {
             if (newRecord != record) {
                 // if record is created at here, dispose it before throwing error
@@ -516,8 +516,8 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public void putRecord(Data key, CacheRecord record) {
-        HiDensityNativeMemoryCacheRecord oldRecord = putRecordInternal(key, record);
+    public void putRecord(Data key, CacheRecord record, boolean updateJournal) {
+        HiDensityNativeMemoryCacheRecord oldRecord = putRecordInternal(key, record, updateJournal);
         if (isMemoryBlockValid(oldRecord)) {
             cacheRecordProcessor.dispose(oldRecord);
         }
@@ -671,7 +671,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     public CacheRecord putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
         long ttl = expiryPolicyToTTL(expiryPolicy);
-        return own(key, value, ttl, false);
+        return own(key, value, ttl, false, true);
     }
 
     private long expiryPolicyToTTL(ExpiryPolicy expiryPolicy) {
@@ -693,10 +693,10 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public CacheRecord putReplica(Data key, Object value, long ttlMillis) {
-        return own(key, value, ttlMillis, true);
+        return own(key, value, ttlMillis, true, false);
     }
 
-    private CacheRecord own(Data key, Object value, long ttlMillis, boolean disableDeferredDispose) {
+    private CacheRecord own(Data key, Object value, long ttlMillis, boolean disableDeferredDispose, boolean updateJournal) {
         if (!records.containsKey(key)) {
             evictIfRequired();
         }
@@ -714,14 +714,18 @@ public class HiDensityNativeMemoryCacheRecordStore
                 record = createRecord(value, now, Long.MAX_VALUE);
                 creationTime = now;
                 records.put(key, record);
-                cacheService.getEventJournal().writeCreatedEvent(eventJournalConfig, objectNamespace, partitionId,
-                        key, recordToValue(record));
+                if (updateJournal) {
+                    cacheService.getEventJournal().writeCreatedEvent(eventJournalConfig, objectNamespace, partitionId,
+                            key, recordToValue(record));
+                }
             } else {
                 oldValueData = record.getValue();
                 creationTime = record.getCreationTime();
                 updateRecordValue(record, toNativeMemoryData(value));
-                cacheService.getEventJournal().writeUpdateEvent(eventJournalConfig, objectNamespace, partitionId,
-                        key, toHeapData(oldValueData), recordToValue(record));
+                if (updateJournal) {
+                    cacheService.getEventJournal().writeUpdateEvent(eventJournalConfig, objectNamespace, partitionId,
+                            key, toHeapData(oldValueData), recordToValue(record));
+                }
             }
 
             onAccess(now, record, creationTime);
@@ -829,7 +833,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (shouldExplicitlyClear(onShutdown)) {
             clear();
         } else {
-            cacheService.getEventJournal().destroy(objectNamespace, partitionId);
+            destroyEventJournal();
         }
         records.dispose();
         closeListeners();

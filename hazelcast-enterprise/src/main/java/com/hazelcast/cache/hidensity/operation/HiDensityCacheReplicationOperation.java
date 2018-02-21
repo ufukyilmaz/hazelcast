@@ -72,7 +72,7 @@ public final class HiDensityCacheReplicationOperation
             for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
                 HiDensityCacheRecordStore recordStore =
                         (HiDensityCacheRecordStore) service.getOrCreateRecordStore(entry.getKey(), getPartitionId());
-                recordStore.clear();
+                recordStore.reset();
 
                 Map<Data, CacheRecordHolder> map = entry.getValue();
                 Iterator<Map.Entry<Data, CacheRecordHolder>> iter = map.entrySet().iterator();

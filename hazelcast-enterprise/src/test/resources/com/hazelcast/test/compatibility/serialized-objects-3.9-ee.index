@@ -178,7 +178,6 @@ com.hazelcast.internal.partition.operation.PartitionBackupReplicaAntiEntropyOper
 java.lang.Short,724615,10
 com.hazelcast.spi.impl.eventservice.impl.operations.RegistrationOperation,724625,217,724842,217,725059,217,725276,217,725493,237
 com.hazelcast.spi.hotrestart.cluster.AskForExpectedMembersOperation,725730,45,725775,45,725820,45,725865,45,725910,45
-com.hazelcast.cache.impl.journal.CacheEventJournalReadOperation,725955,311,726266,337,726603,337,726940,335,727275,311
 com.hazelcast.map.impl.operation.RemoveBackupOperation,727586,123,727709,123,727832,123,727955,123,728078,123
 com.hazelcast.spi.hotrestart.cluster.SendClusterStartResultOperation,728201,88,728289,88,728377,88,728465,88,728553,88
 com.hazelcast.cache.hidensity.operation.CachePutOperation,728641,162,728803,162,728965,162,729127,162,729289,162
@@ -201,7 +200,6 @@ com.hazelcast.map.impl.operation.AddIndexOperation,754085,94,754179,94,754273,94
 com.hazelcast.cache.impl.operation.CacheClearOperation,754551,96,754647,96,754743,96,754839,96,754935,96
 com.hazelcast.map.impl.query.CustomObject,755031,357,755388,357
 com.hazelcast.spi.hotrestart.backup.HotRestartBackupOperation,755745,128,755873,128,756001,131,756132,131,756263,128
-com.hazelcast.map.impl.journal.MapEventJournalReadOperation,756391,299,756690,299,756989,299,757288,325,757613,325
 com.hazelcast.internal.partition.operation.FetchPartitionStateOperation,757938,45,757983,45,758028,45,758073,45,758118,45
 com.hazelcast.map.impl.operation.HDEvictOperation,758163,195,758358,195,758553,195,758748,195,758943,195
 com.hazelcast.map.impl.journal.MapEventJournalReadResultSetImpl,759138,2880,762018,2880,764898,10555,775453,475

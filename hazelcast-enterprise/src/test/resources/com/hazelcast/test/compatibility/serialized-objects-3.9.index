@@ -297,7 +297,6 @@ com.hazelcast.collection.impl.queue.operations.IteratorOperation,307884,92,30797
 com.hazelcast.concurrent.lock.operations.GetRemainingLeaseTimeOperation,308338,217,308555,217,308772,225,308997,225,309222,225
 com.hazelcast.spi.impl.eventservice.impl.operations.RegistrationOperation,309447,162,309609,162,309771,158,309929,148,310077,148
 com.hazelcast.concurrent.atomicreference.operations.ContainsOperation,310225,85,310310,100,310410,85,310495,100,310595,100
-com.hazelcast.cache.impl.journal.CacheEventJournalReadOperation,310695,311,311006,311,311317,311,311628,311,311939,311
 com.hazelcast.ringbuffer.impl.operations.AddAllOperation,312250,299,312549,764,313313,494,313807,177,313984,440
 com.hazelcast.concurrent.lock.operations.SignalOperation,314424,258,314682,258,314940,231,315171,258,315429,258
 com.hazelcast.collection.impl.queue.operations.PollOperation,315687,89,315776,89,315865,89,315954,89,316043,89
@@ -332,7 +331,6 @@ com.hazelcast.internal.cluster.impl.operations.PromoteLiteMemberOp,333480,81,333
 com.hazelcast.concurrent.atomicreference.operations.SetOperation,333885,201,334086,100,334186,100,334286,100,334386,100
 com.hazelcast.map.impl.operation.ContainsValueOperation,334486,97,334583,106,334689,106,334795,106,334901,106
 com.hazelcast.concurrent.atomicreference.operations.GetOperation,335007,81,335088,81,335169,50,335219,50,335269,50
-com.hazelcast.map.impl.journal.MapEventJournalReadOperation,335319,299,335618,299,335917,323,336240,299,336539,299
 com.hazelcast.concurrent.countdownlatch.operations.GetCountOperation,336838,49,336887,49,336936,49,336985,81,337066,81
 com.hazelcast.internal.partition.operation.FetchPartitionStateOperation,337147,45,337192,45,337237,45,337282,45,337327,45
 com.hazelcast.mapreduce.helpers.Employee,337372,149,337521,149,337670,149,337819,149,337968,149,338117,149

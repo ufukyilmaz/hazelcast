@@ -1,7 +1,7 @@
 package com.hazelcast.client.nio.ssl;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -32,7 +32,6 @@ public class HttpsRestTest extends HazelcastTestSupport {
 
     private HazelcastInstance instance;
     private HTTPCommunicator communicator;
-    private Config config;
 
     @After
     public void after() {
@@ -47,14 +46,17 @@ public class HttpsRestTest extends HazelcastTestSupport {
         serverProps.setProperty("javax.net.ssl.trustStorePassword", "password");
         serverProps.setProperty("javax.net.ssl.protocol", "TLS");
 
-        this.config = new Config();
-        config.setProperty(REST_ENABLED.getName(), "true");
-        config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
-        JoinConfig join = config.getNetworkConfig().getJoin();
-        join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).addMember("127.0.0.1").setConnectionTimeoutSeconds(3000);
-
-        config.getNetworkConfig().setSSLConfig(new SSLConfig()
+        Config config = new Config()
+                .setProperty(REST_ENABLED.getName(), "true")
+                .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        NetworkConfig networkConfig = config.getNetworkConfig();
+        networkConfig.getJoin().getMulticastConfig()
+                .setEnabled(false);
+        networkConfig.getJoin().getTcpIpConfig()
+                .setEnabled(true)
+                .addMember("127.0.0.1")
+                .setConnectionTimeoutSeconds(3000);
+        networkConfig.setSSLConfig(new SSLConfig()
                 .setEnabled(true)
                 .setProperties(serverProps));
         instance = Hazelcast.newHazelcastInstance(config);

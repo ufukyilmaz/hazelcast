@@ -3,6 +3,7 @@ package com.hazelcast.nio.ssl;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -196,7 +197,7 @@ public class SSLConnectionTest {
      * Tests that node doesn't start when SSL configurations contains only unsupported ciphersuite names.
      */
     @Test(expected = ConfigurationException.class)
-    public void testUnsupportedCipherSuiteNames() throws GeneralSecurityException {
+    public void testUnsupportedCipherSuiteNames() {
         Hazelcast.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", "foo,bar"));
     }
 
@@ -204,7 +205,7 @@ public class SSLConnectionTest {
      * Tests that a node doesn't start if its SSL configurations contains empty ("") ciphersuites property value.
      */
     @Test(expected = ConfigurationException.class)
-    public void testEmptyCipherSuiteProperty() throws GeneralSecurityException {
+    public void testEmptyCipherSuiteProperty() {
         Hazelcast.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", ""));
     }
 
@@ -212,13 +213,12 @@ public class SSLConnectionTest {
      * Tests that 2 nodes form cluster if their SSL configurations have the same protocol property value.
      */
     @Test
-    public void testTlsProtocol() throws GeneralSecurityException {
+    public void testTlsProtocol() {
         HazelcastInstance h1 = Hazelcast.newHazelcastInstance(createConfigWithSslProperty("protocol", "TLS"));
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(createConfigWithSslProperty("protocol", "TLS"));
 
         assertClusterSize(2, h1, h2);
     }
-
 
     /**
      * Tests that 2 nodes don't form cluster if their SSL configurations have different TLS versions in protocol property value.
@@ -241,15 +241,22 @@ public class SSLConnectionTest {
     }
 
     private Config createConfigWithSslProperty(String propertyName, String propertyValue) {
-        Config config = new Config();
-
-        JoinConfig join = config.getNetworkConfig().getJoin();
-        join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).addMember("127.0.0.1").setConnectionTimeoutSeconds(3);
-
         Properties props = TestKeyStoreUtil.createSslProperties();
         props.setProperty(propertyName, propertyValue);
-        config.getNetworkConfig().setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props));
+
+        SSLConfig sslConfig = new SSLConfig()
+                .setEnabled(true)
+                .setProperties(props);
+
+        Config config = new Config();
+        NetworkConfig networkConfig = config.getNetworkConfig()
+                .setSSLConfig(sslConfig);
+        networkConfig.getJoin().getMulticastConfig()
+                .setEnabled(false);
+        networkConfig.getJoin().getTcpIpConfig()
+                .setEnabled(true)
+                .addMember("127.0.0.1")
+                .setConnectionTimeoutSeconds(3);
         return config;
     }
 

@@ -12,7 +12,6 @@ import com.hazelcast.core.Partition;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.properties.GroupProperty;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -50,8 +49,8 @@ public final class SSLSimpleMapBenchmark {
         System.setProperty("java.net.preferIPv4Stack", "true");
     }
 
-    private SSLSimpleMapBenchmark(int threadCount, int entryCount, int valueSize, int getPercentage, int putPercentage, boolean load)
-            throws IOException {
+    private SSLSimpleMapBenchmark(int threadCount, int entryCount, int valueSize, int getPercentage, int putPercentage,
+                                  boolean load) {
         this.threadCount = threadCount;
         this.entryCount = entryCount;
         this.valueSize = valueSize;
@@ -72,7 +71,7 @@ public final class SSLSimpleMapBenchmark {
     /**
      * Expects the Management Center to be running.
      */
-    public static void main(String[] input) throws InterruptedException, IOException {
+    public static void main(String[] input) throws InterruptedException {
         int threadCount = 20;
         int entryCount = 300;
         int valueSize = 40000;

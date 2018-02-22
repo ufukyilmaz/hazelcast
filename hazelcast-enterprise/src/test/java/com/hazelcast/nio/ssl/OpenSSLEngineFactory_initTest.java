@@ -1,10 +1,8 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.IbmUtil;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import io.netty.handler.ssl.OpenSsl;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -12,11 +10,12 @@ import org.junit.runner.RunWith;
 
 import java.util.Properties;
 
+import static com.hazelcast.TestEnvironmentUtil.assumeThatNoIbmJvm;
+import static com.hazelcast.TestEnvironmentUtil.assumeThatNoJDK6;
+import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsAvailable;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -24,8 +23,8 @@ public class OpenSSLEngineFactory_initTest {
 
     @BeforeClass
     public static void checkOpenSsl() {
-        assumeTrue(OpenSsl.isAvailable());
-        assumeFalse(IbmUtil.ibmJvm());
+        assumeThatOpenSslIsAvailable();
+        assumeThatNoIbmJvm();
     }
 
     @Test
@@ -39,7 +38,7 @@ public class OpenSSLEngineFactory_initTest {
         // Normally a customer will never disable openssl while using the OpenSSLEngineFactory; the flag was added
         // mostly for testing purposes.
         // Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1622
-        assumeFalse(System.getProperty("java.version").startsWith("1.6."));
+        assumeThatNoJDK6();
         openssl(false);
     }
 
@@ -56,7 +55,8 @@ public class OpenSSLEngineFactory_initTest {
 
     @Test
     public void cipherSuites() throws Exception {
-        cipherSuites("TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA", "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA");
+        cipherSuites("TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA", "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+                "TLS_RSA_WITH_AES_256_CBC_SHA");
     }
 
     @Test(expected = RuntimeException.class)

@@ -2,8 +2,9 @@ package com.hazelcast.client.nio.ssl;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -27,19 +28,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import static com.hazelcast.nio.IOUtil.closeResource;
+import static java.io.File.createTempFile;
+
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class ClientAuthenticationTest {
 
-    public boolean openSsl;
+    boolean openSsl;
 
     @Before
     @After
-    public void killAllHazelcastInstances() throws IOException {
+    public void killAllHazelcastInstances() {
         HazelcastInstanceFactory.terminateAll();
         HazelcastClient.shutdownAll();
     }
-
 
     // the happy case; everything is working perfect
     @Test
@@ -171,21 +174,23 @@ public class ClientAuthenticationTest {
             serverProps.setProperty("javax.net.ssl.mutualAuthentication", settings.mutualAuthentication);
         }
 
-        Config config = new Config();
-        config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
-        JoinConfig join = config.getNetworkConfig().getJoin();
-        join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).addMember("127.0.0.1").setConnectionTimeoutSeconds(3000);
-
-        config.getNetworkConfig().setSSLConfig(new SSLConfig()
+        Config config = new Config()
+                .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        NetworkConfig networkConfig = config.getNetworkConfig();
+        networkConfig.getJoin().getMulticastConfig()
+                .setEnabled(false);
+        networkConfig.getJoin().getTcpIpConfig()
+                .setEnabled(true)
+                .addMember("127.0.0.1")
+                .setConnectionTimeoutSeconds(3000);
+        networkConfig.setSSLConfig(new SSLConfig()
                 .setEnabled(true)
                 .setProperties(serverProps));
-
         if (openSsl) {
-            config.getNetworkConfig().getSSLConfig().setFactoryImplementation(new OpenSSLEngineFactory());
+            networkConfig.getSSLConfig().setFactoryImplementation(new OpenSSLEngineFactory());
         }
 
-        HazelcastInstance hz = Hazelcast.newHazelcastInstance(config);
+        Hazelcast.newHazelcastInstance(config);
 
         Properties clientProps = new Properties();
         if (settings.clientKeystore != null) {
@@ -198,49 +203,53 @@ public class ClientAuthenticationTest {
         clientProps.setProperty("javax.net.ssl.trustStorePassword", "password");
         serverProps.setProperty("javax.net.ssl.protocol", "TLS");
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setConnectionAttemptLimit(1)
+        ClientNetworkConfig clientNetworkConfig = clientConfig.getNetworkConfig()
+                .setConnectionAttemptLimit(1)
                 .setSSLConfig(new SSLConfig()
                         .setEnabled(true)
                         .setProperties(clientProps));
-
         if (openSsl) {
-            clientConfig.getNetworkConfig().getSSLConfig().setFactoryImplementation(new OpenSSLEngineFactory());
+            clientNetworkConfig.getSSLConfig().setFactoryImplementation(new OpenSSLEngineFactory());
         }
 
         HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
         client.getAtomicLong("foo").incrementAndGet();
     }
 
-    class TestSettings {
-        String serverKeystore;
-        String serverTruststore;
-        String clientKeystore;
-        String clientTruststore;
-        String mutualAuthentication;
-    }
-
     public static String makeFile(String relativePath) throws IOException {
         String resourcePath = "com/hazelcast/nio/ssl-mutual-auth/" + relativePath;
-        //String resourcePath = "com/hazelcast/nio/ssl-mutual-auth/readme.txt";
         ClassLoader cl = TestKeyStoreUtil.class.getClassLoader();
         InputStream resourceAsStream = cl.getResourceAsStream(resourcePath);
         if (resourceAsStream == null) {
             throw new RuntimeException("Failed to locate [" + resourcePath + "]");
         }
-        InputStream in = new BufferedInputStream(resourceAsStream);
+        InputStream in = null;
+        BufferedOutputStream out = null;
+        try {
+            File file = createTempFile("hazelcast", "jks");
+            file.deleteOnExit();
 
-        File file = File.createTempFile("hazelcast", "jks");
-        BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+            in = new BufferedInputStream(resourceAsStream);
+            out = new BufferedOutputStream(new FileOutputStream(file));
 
-        int b;
-        while ((b = in.read()) > -1) {
-            out.write(b);
+            int b;
+            while ((b = in.read()) > -1) {
+                out.write(b);
+            }
+
+            out.flush();
+            return file.getAbsolutePath();
+        } finally {
+            closeResource(out);
+            closeResource(in);
         }
+    }
 
-        out.flush();
-        out.close();
-        in.close();
-        file.deleteOnExit();
-        return file.getAbsolutePath();
+    static class TestSettings {
+        String serverKeystore;
+        String serverTruststore;
+        String clientKeystore;
+        String clientTruststore;
+        String mutualAuthentication;
     }
 }

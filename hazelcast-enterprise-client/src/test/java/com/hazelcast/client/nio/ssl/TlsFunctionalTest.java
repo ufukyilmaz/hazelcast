@@ -2,11 +2,9 @@ package com.hazelcast.client.nio.ssl;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
-import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
@@ -14,7 +12,6 @@ import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.test.annotation.QuickTest;
@@ -34,11 +31,14 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.GeneralSecurityException;
 import java.util.Collection;
 
+import static com.hazelcast.TestEnvironmentUtil.assumeThatNoIbmJvm;
+import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.nio.IOUtil.copy;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -50,16 +50,16 @@ import static org.junit.Assume.assumeTrue;
 @Category({QuickTest.class})
 public class TlsFunctionalTest {
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-
     private static final String KEYSTORE_SERVER = "server.keystore";
     private static final String TRUSTSTORE_SERVER = "server.truststore";
     private static final String KEYSTORE_CLIENT = "client.keystore";
     private static final String TRUSTSTORE_CLIENT = "client.truststore";
     private static final String TRUSTSTORE_UNTRUSTED = "untrusted.truststore";
 
-    private ILogger logger = Logger.getLogger(TlsFunctionalTest.class);
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    private final ILogger logger = Logger.getLogger(TlsFunctionalTest.class);
 
     @Parameter
     public boolean mutualAuthentication;
@@ -69,7 +69,12 @@ public class TlsFunctionalTest {
 
     @Parameters(name = "mutualAuthentication:{0} openSsl:{1}")
     public static Collection<Object[]> parameters() {
-        return asList(new Object[][]{{false, false}, {false, true}, {true, false}, {true, true},});
+        return asList(new Object[][]{
+                {false, false},
+                {false, true},
+                {true, false},
+                {true, true},
+        });
     }
 
     @AfterClass
@@ -79,7 +84,7 @@ public class TlsFunctionalTest {
     }
 
     @Before
-    public void before() throws IOException {
+    public void before() {
         assumeTrue("OpenSSL enable but not available", !openSsl || OpenSsl.isAvailable());
         shutDownAll();
     }
@@ -88,12 +93,14 @@ public class TlsFunctionalTest {
      * Case - Valid/trusted configuration.
      * <pre>
      * Given: TLS is enabled on members and client
-     * When: members has a valid and matching keystore+trustore configured; clients have matching SSL configured
+     * When: members has a valid and matching keystore + truststore configured; clients have matching SSL configured
      * Then: Members start successfully and form cluster, clients can connect
      * </pre>
      */
     @Test
     public void testValidConfiguration() throws IOException {
+        assumeThatNoIbmJvm();
+
         Config config = createMemberConfig();
         HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(config);
@@ -111,13 +118,15 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testOnlyMemberHasTls() throws IOException {
+        assumeThatNoIbmJvm();
+
         Hazelcast.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();
         clientConfig.getNetworkConfig().setSSLConfig(null);
         try {
             HazelcastClient.newHazelcastClient(clientConfig);
             fail("Client should not be able to connect");
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException expected) {
             // expected
         }
     }
@@ -132,13 +141,15 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testOnlyClientHasTls() throws IOException {
+        assumeThatNoIbmJvm();
+
         Config config = createMemberConfig();
         config.getNetworkConfig().setSSLConfig(null);
         Hazelcast.newHazelcastInstance(config);
         try {
             HazelcastClient.newHazelcastClient(createClientConfig());
             fail("Client should not be able to connect");
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException expected) {
             // expected
         }
     }
@@ -147,12 +158,15 @@ public class TlsFunctionalTest {
      * Case - Untrusted configuration.
      * <pre>
      * Given: TLS is enabled on members and client
-     * When: certificates in member truststore doesn't cover the certificate in the keystore (I.e. member's certificate path is not validated against the truststore)
+     * When: certificates in member truststore doesn't cover the certificate in the keystore
+     *       (i.e. member's certificate path is not validated against the truststore)
      * Then: Members start successfully, but they don't form a cluster, clients can't connect to any member
      * </pre>
      */
     @Test
     public void testUntrustedConfiguration() throws IOException {
+        assumeThatNoIbmJvm();
+
         Config config = createMemberConfig();
         SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
         String untrustedTruststore = copyResource(TRUSTSTORE_UNTRUSTED).getAbsolutePath();
@@ -167,7 +181,7 @@ public class TlsFunctionalTest {
             sslConfig.setProperty("trustStore", untrustedTruststore);
             HazelcastClient.newHazelcastClient(clientConfig);
             fail("Client should not be able to connect");
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException expected) {
             // expected
         }
     }
@@ -181,7 +195,9 @@ public class TlsFunctionalTest {
      * </pre>
      */
     @Test
-    public void testSupportedCipherSuiteNames() throws IOException, GeneralSecurityException {
+    public void testSupportedCipherSuiteNames() throws IOException {
+        assumeThatNoIbmJvm();
+
         String cipherSuites = "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
                 + "TLS_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,"
                 + "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA";
@@ -239,16 +255,19 @@ public class TlsFunctionalTest {
      * </pre>
      */
     @Test
-    public void testSupportedProtocolName() throws IOException, GeneralSecurityException {
+    public void testSupportedProtocolName() throws IOException {
+        assumeThatNoIbmJvm();
+
         Config config = createMemberConfig();
-        SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
-        sslConfig.setProperty("protocol", "TLS");
+        config.getNetworkConfig().getSSLConfig()
+                .setProperty("protocol", "TLS");
         HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
+
         ClientConfig clientConfig = createClientConfig();
-        sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
-        sslConfig.setProperty("protocol", "TLS");
+        clientConfig.getNetworkConfig().getSSLConfig()
+                .setProperty("protocol", "TLS");
         HazelcastClient.newHazelcastClient(clientConfig).getMap("test").put("a", "b");
     }
 
@@ -286,42 +305,43 @@ public class TlsFunctionalTest {
     }
 
     private Config createMemberConfig() throws IOException {
-        Config config = new Config();
-        NetworkConfig networkConfig = config.getNetworkConfig();
-        networkConfig.getJoin().getMulticastConfig().setEnabled(false);
-        TcpIpConfig tcpIpConfig = networkConfig.getJoin().getTcpIpConfig();
-        tcpIpConfig.setEnabled(true);
-        tcpIpConfig.addMember("127.0.0.1");
-        SSLConfig sslConfig = new SSLConfig();
-        sslConfig.setEnabled(true);
-        sslConfig.setFactoryClassName((openSsl ? OpenSSLEngineFactory.class : BasicSSLContextFactory.class).getName());
-        sslConfig.setProperty("keyStore", copyResource(KEYSTORE_SERVER).getAbsolutePath());
-        sslConfig.setProperty("keyStorePassword", "123456");
-        sslConfig.setProperty("trustStore", copyResource(TRUSTSTORE_SERVER).getAbsolutePath());
-        sslConfig.setProperty("trustStorePassword", "123456");
+        SSLConfig sslConfig = new SSLConfig()
+                .setEnabled(true)
+                .setFactoryClassName((openSsl ? OpenSSLEngineFactory.class : BasicSSLContextFactory.class).getName())
+                .setProperty("keyStore", copyResource(KEYSTORE_SERVER).getAbsolutePath())
+                .setProperty("keyStorePassword", "123456")
+                .setProperty("trustStore", copyResource(TRUSTSTORE_SERVER).getAbsolutePath())
+                .setProperty("trustStorePassword", "123456");
         if (mutualAuthentication) {
             sslConfig.setProperty("mutualAuthentication", "REQUIRED");
         }
 
-        networkConfig.setSSLConfig(sslConfig);
+        Config config = new Config();
+        NetworkConfig networkConfig = config.getNetworkConfig()
+                .setSSLConfig(sslConfig);
+        networkConfig.getJoin().getMulticastConfig()
+                .setEnabled(false);
+        networkConfig.getJoin().getTcpIpConfig()
+                .setEnabled(true)
+                .addMember("127.0.0.1");
         return config;
     }
 
     private ClientConfig createClientConfig() throws IOException {
-        ClientConfig config = new ClientConfig();
-        ClientNetworkConfig networkConfig = config.getNetworkConfig();
-        networkConfig.addAddress("127.0.0.1");
-        SSLConfig sslConfig = new SSLConfig();
-        sslConfig.setEnabled(true);
-        sslConfig.setFactoryClassName((openSsl ? OpenSSLEngineFactory.class : BasicSSLContextFactory.class).getName());
-        sslConfig.setProperty("trustStore", copyResource(TRUSTSTORE_CLIENT).getAbsolutePath());
-        sslConfig.setProperty("trustStorePassword", "123456");
+        SSLConfig sslConfig = new SSLConfig()
+                .setEnabled(true)
+                .setFactoryClassName((openSsl ? OpenSSLEngineFactory.class : BasicSSLContextFactory.class).getName())
+                .setProperty("trustStore", copyResource(TRUSTSTORE_CLIENT).getAbsolutePath())
+                .setProperty("trustStorePassword", "123456");
         if (mutualAuthentication) {
             sslConfig.setProperty("keyStore", copyResource(KEYSTORE_CLIENT).getAbsolutePath());
             sslConfig.setProperty("keyStorePassword", "123456");
         }
 
-        networkConfig.setSSLConfig(sslConfig);
+        ClientConfig config = new ClientConfig();
+        config.getNetworkConfig()
+                .setSSLConfig(sslConfig)
+                .addAddress("127.0.0.1");
         return config;
     }
 
@@ -331,16 +351,16 @@ public class TlsFunctionalTest {
     private File copyResource(String resourceName) throws IOException {
         File targetFile = new File(tempFolder.getRoot(), resourceName);
         if (!targetFile.exists()) {
-            targetFile.createNewFile();
+            assertTrue(targetFile.createNewFile());
             logger.info("Copying test resource to file " + targetFile.getAbsolutePath());
-            InputStream is = TlsFunctionalTest.class.getResourceAsStream(resourceName);
+            InputStream is = null;
             try {
-                IOUtil.copy(is, targetFile);
+                is = TlsFunctionalTest.class.getResourceAsStream(resourceName);
+                copy(is, targetFile);
             } finally {
-                IOUtil.closeResource(is);
+                closeResource(is);
             }
         }
-
         return targetFile;
     }
 }

@@ -6,8 +6,7 @@ import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.TestEnvironmentUtil.assumeThatNoIbmJvm;
-import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsAvailable;
+import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -15,8 +14,7 @@ public class OpenSSL_ClientAuthenticationTest extends ClientAuthenticationTest {
 
     @BeforeClass
     public static void checkOpenSsl() {
-        assumeThatOpenSslIsAvailable();
-        assumeThatNoIbmJvm();
+        assumeThatOpenSslIsSupported();
     }
 
     public OpenSSL_ClientAuthenticationTest() {

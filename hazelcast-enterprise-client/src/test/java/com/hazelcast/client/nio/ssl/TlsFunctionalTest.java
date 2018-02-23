@@ -15,7 +15,6 @@ import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.test.annotation.QuickTest;
-import io.netty.handler.ssl.OpenSsl;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 
+import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.IOUtil.copy;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
@@ -84,7 +84,7 @@ public class TlsFunctionalTest {
 
     @Before
     public void before() {
-        assumeTrue("OpenSSL enable but not available", !openSsl || OpenSsl.isAvailable());
+        assumeTrue("OpenSSL enabled but not available", !openSsl || isOpenSslSupported());
         shutDownAll();
     }
 
@@ -187,9 +187,16 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testSupportedCipherSuiteNames() throws IOException {
-        String cipherSuites = "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
+        String cipherSuites =
+                // OpenJDK
+                "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
                 + "TLS_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,"
-                + "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA";
+                + "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA,"
+                // IBM Java
+                + "SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,"
+                + "SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA256,"
+                + "SSL_RSA_WITH_AES_128_CBC_SHA,SSL_RSA_WITH_AES_128_CBC_SHA256"
+                ;
         Config config = createMemberConfig();
         SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("ciphersuites", cipherSuites);

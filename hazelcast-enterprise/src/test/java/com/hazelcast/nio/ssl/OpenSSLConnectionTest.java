@@ -20,8 +20,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Properties;
 
-import static com.hazelcast.TestEnvironmentUtil.assumeThatNoIbmJvm;
-import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsAvailable;
+import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 import static com.hazelcast.nio.ssl.OpenSSLEngineFactory.JAVA_NET_SSL_PREFIX;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static org.junit.Assert.assertEquals;
@@ -32,8 +31,7 @@ public class OpenSSLConnectionTest {
 
     @BeforeClass
     public static void checkOpenSsl() {
-        assumeThatOpenSslIsAvailable();
-        assumeThatNoIbmJvm();
+        assumeThatOpenSslIsSupported();
     }
 
     @Before

@@ -10,9 +10,8 @@ import org.junit.runner.RunWith;
 
 import java.util.Properties;
 
-import static com.hazelcast.TestEnvironmentUtil.assumeThatNoIbmJvm;
 import static com.hazelcast.TestEnvironmentUtil.assumeThatNoJDK6;
-import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsAvailable;
+import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -23,8 +22,7 @@ public class OpenSSLEngineFactory_initTest {
 
     @BeforeClass
     public static void checkOpenSsl() {
-        assumeThatOpenSslIsAvailable();
-        assumeThatNoIbmJvm();
+        assumeThatOpenSslIsSupported();
     }
 
     @Test

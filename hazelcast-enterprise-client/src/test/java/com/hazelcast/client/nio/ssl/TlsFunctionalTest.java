@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 
-import static com.hazelcast.TestEnvironmentUtil.assumeThatNoIbmJvm;
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.IOUtil.copy;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
@@ -99,8 +98,6 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testValidConfiguration() throws IOException {
-        assumeThatNoIbmJvm();
-
         Config config = createMemberConfig();
         HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(config);
@@ -118,8 +115,6 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testOnlyMemberHasTls() throws IOException {
-        assumeThatNoIbmJvm();
-
         Hazelcast.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();
         clientConfig.getNetworkConfig().setSSLConfig(null);
@@ -141,8 +136,6 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testOnlyClientHasTls() throws IOException {
-        assumeThatNoIbmJvm();
-
         Config config = createMemberConfig();
         config.getNetworkConfig().setSSLConfig(null);
         Hazelcast.newHazelcastInstance(config);
@@ -165,8 +158,6 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testUntrustedConfiguration() throws IOException {
-        assumeThatNoIbmJvm();
-
         Config config = createMemberConfig();
         SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
         String untrustedTruststore = copyResource(TRUSTSTORE_UNTRUSTED).getAbsolutePath();
@@ -196,8 +187,6 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testSupportedCipherSuiteNames() throws IOException {
-        assumeThatNoIbmJvm();
-
         String cipherSuites = "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
                 + "TLS_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,"
                 + "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA";
@@ -256,8 +245,6 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testSupportedProtocolName() throws IOException {
-        assumeThatNoIbmJvm();
-
         Config config = createMemberConfig();
         config.getNetworkConfig().getSSLConfig()
                 .setProperty("protocol", "TLS");

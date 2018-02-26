@@ -12,6 +12,8 @@ import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.TestUtil;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
@@ -35,6 +37,8 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class SSLConnectionTest {
+
+    private final ILogger logger = Logger.getLogger(getClass());
 
     @Before
     @After
@@ -127,6 +131,7 @@ public class SSLConnectionTest {
     @Test
     public void testOneCipherSuite() throws GeneralSecurityException {
         List<String> supportedCipherSuites = Arrays.asList(getSupportedCipherSuites());
+        logger.info("Supported ciphersuites: " + supportedCipherSuites);
         String[] knownCs = {"SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA", "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA",
                 "TLS_RSA_WITH_AES_128_CBC_SHA", "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA256", "TLS_RSA_WITH_AES_128_CBC_SHA256"};
         int idx = 0;
@@ -137,7 +142,7 @@ public class SSLConnectionTest {
             idx++;
         }
         assumeTrue(idx < knownCs.length);
-
+        logger.info("Ciphersuite selected in testOneCipherSuite(): " + knownCs[idx]);
         Config config = createConfigWithSslProperty("ciphersuites", knownCs[idx]);
         HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);

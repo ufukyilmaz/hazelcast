@@ -46,4 +46,9 @@ class MapHDMergeHelper extends AbstractHDMergeHelper<RecordStore> {
     protected boolean isHDStore(RecordStore store) {
         return store.getMapContainer().getMapConfig().getInMemoryFormat() == NATIVE;
     }
+
+    @Override
+    protected int getPartitionId(RecordStore store) {
+        return store.getPartitionId();
+    }
 }

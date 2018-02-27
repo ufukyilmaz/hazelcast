@@ -51,14 +51,8 @@ public class HDLegacyCacheSplitBrainTest extends LegacyCacheSplitBrainTest {
     @Parameters(name = "inMemoryFormat:{0}, mergePolicy:{1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {NATIVE, LatestAccessCacheMergePolicy.class},
-                {NATIVE, HigherHitsCacheMergePolicy.class},
-                {NATIVE, PutIfAbsentCacheMergePolicy.class},
-                {NATIVE, PassThroughCacheMergePolicy.class},
-
                 {BINARY, CustomCacheMergePolicy.class},
                 {OBJECT, CustomCacheMergePolicy.class},
-                {NATIVE, CustomCacheMergePolicy.class},
         });
     }
 

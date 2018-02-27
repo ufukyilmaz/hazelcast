@@ -324,7 +324,7 @@ public class SSLChannel extends NioChannel {
 
     @Override
     public String toString() {
-        return "SSLChannel{" + getLocalSocketAddress() + "->" + getRemoteSocketAddress() + '}';
+        return "SSLChannel{" + localSocketAddress() + "->" + remoteSocketAddress() + '}';
     }
 
 // Useful toString implemention for debugging the handshake logic. It automatically indents so you can easily see the
@@ -332,10 +332,10 @@ public class SSLChannel extends NioChannel {
 //    @Override
 //    public String toString() {
 //        if (isClientMode()) {
-//            return "SSLChannel{" + getLocalSocketAddress() + "->" + getRemoteSocketAddress() + '}';
+//            return "SSLChannel{" + localSocketAddress() + "->" + remoteSocketAddress() + '}';
 //
 //        } else {
-//            return "       SSLChannel{" + getLocalSocketAddress() + "->" + getRemoteSocketAddress() + '}';
+//            return "       SSLChannel{" + localSocketAddress() + "->" + remoteSocketAddress() + '}';
 //        }
 //    }
 }

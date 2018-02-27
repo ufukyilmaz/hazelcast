@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 class EnterpriseCacheSplitBrainHandlerServiceImpl extends CacheSplitBrainHandlerService {
 
@@ -20,16 +21,17 @@ class EnterpriseCacheSplitBrainHandlerServiceImpl extends CacheSplitBrainHandler
     }
 
     @Override
-    public Runnable prepareMergeRunnable() {
+    protected void onPrepareMergeRunnableStart() {
+        super.onPrepareMergeRunnableStart();
+
         hdMergeHelper.prepare();
-        return super.prepareMergeRunnable();
     }
 
     @Override
-    protected List<Iterator<ICacheRecordStore>> iteratorsOf(CachePartitionSegment segment) {
-        List<Iterator<ICacheRecordStore>> iterators = new LinkedList<Iterator<ICacheRecordStore>>(super.iteratorsOf(segment));
+    protected Collection<Iterator<ICacheRecordStore>> iteratorsOf(int partitionId) {
+        List<Iterator<ICacheRecordStore>> iterators = new LinkedList<Iterator<ICacheRecordStore>>(super.iteratorsOf(partitionId));
 
-        Collection<ICacheRecordStore> recordStoresOfPartition = hdMergeHelper.getHDStoresOf(segment.partitionId);
+        Collection<ICacheRecordStore> recordStoresOfPartition = hdMergeHelper.getHDStoresOf(partitionId);
         if (recordStoresOfPartition != null) {
             iterators.add(recordStoresOfPartition.iterator());
         }
@@ -38,11 +40,18 @@ class EnterpriseCacheSplitBrainHandlerServiceImpl extends CacheSplitBrainHandler
     }
 
     @Override
-    protected void destroySegment(CachePartitionSegment segment) {
+    public void destroyStores(Collection<ICacheRecordStore> stores) {
+        ConcurrentMap<Integer, Collection<ICacheRecordStore>> storesByPartitionId = hdMergeHelper.groupByPartitionId(stores);
         try {
-            hdMergeHelper.destroyCollectedHDStores();
+            hdMergeHelper.destroyAndRemoveHDStoresFrom(storesByPartitionId);
         } finally {
-            super.destroySegment(segment);
+            destroyOnHeapStores(storesByPartitionId.values());
+        }
+    }
+
+    private void destroyOnHeapStores(Collection<Collection<ICacheRecordStore>> onHeapStores) {
+        for (Collection<ICacheRecordStore> onHeapStore : onHeapStores) {
+            super.destroyStores(onHeapStore);
         }
     }
 }

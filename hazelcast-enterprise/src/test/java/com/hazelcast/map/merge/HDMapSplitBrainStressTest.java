@@ -23,6 +23,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -42,6 +43,7 @@ public class HDMapSplitBrainStressTest extends MapSplitBrainStressTest {
 
         MapConfig mapConfig = config.getMapConfig(MAP_NAME_PREFIX + "*");
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+        mapConfig.getMergePolicyConfig().setPolicy(PassThroughMergePolicy.class.getName());
 
         return config;
     }

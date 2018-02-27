@@ -15,7 +15,6 @@ import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
-import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static java.util.Arrays.asList;
 
@@ -27,15 +26,8 @@ public class HDLegacyMapSplitBrainTest extends LegacyMapSplitBrainTest {
     @Parameters(name = "inMemoryFormat:{0}, mergePolicy:{1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {NATIVE, IgnoreMergingEntryMapMergePolicy.class},
-                {NATIVE, HigherHitsMapMergePolicy.class},
-                {NATIVE, LatestUpdateMapMergePolicy.class},
-                {NATIVE, PassThroughMergePolicy.class},
-                {NATIVE, PutIfAbsentMapMergePolicy.class},
-
                 {BINARY, CustomLegacyMergePolicy.class},
                 {OBJECT, CustomLegacyMergePolicy.class},
-                {NATIVE, CustomLegacyMergePolicy.class},
         });
     }
 

@@ -61,8 +61,8 @@ public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
                 {OBJECT, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
                 {BINARY, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
                 {BINARY, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
-                {NATIVE, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
-                {NATIVE, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
+                {NATIVE, com.hazelcast.spi.merge.PassThroughMergePolicy.class, com.hazelcast.spi.merge.PutIfAbsentMergePolicy.class},
+                {NATIVE, com.hazelcast.spi.merge.PassThroughMergePolicy.class, com.hazelcast.spi.merge.PutIfAbsentMergePolicy.class}
         });
     }
 

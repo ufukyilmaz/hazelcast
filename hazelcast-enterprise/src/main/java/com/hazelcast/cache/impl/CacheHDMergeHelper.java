@@ -44,4 +44,9 @@ class CacheHDMergeHelper extends AbstractHDMergeHelper<ICacheRecordStore> {
     protected boolean isHDStore(ICacheRecordStore store) {
         return store.getConfig().getInMemoryFormat() == NATIVE;
     }
+
+    @Override
+    protected int getPartitionId(ICacheRecordStore store) {
+        return store.getPartitionId();
+    }
 }

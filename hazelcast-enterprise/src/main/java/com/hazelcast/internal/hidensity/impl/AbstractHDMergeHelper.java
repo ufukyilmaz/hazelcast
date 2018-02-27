@@ -12,12 +12,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 
+import static com.hazelcast.util.CollectionUtil.isNotEmpty;
 import static com.hazelcast.util.MapUtil.isNullOrEmpty;
 
 /**
@@ -57,6 +59,8 @@ public abstract class AbstractHDMergeHelper<S> {
      * @return {@code true} if this is an HD store, otherwise return {@code false}
      */
     protected abstract boolean isHDStore(S store);
+
+    protected abstract int getPartitionId(S store);
 
     /**
      * Call this method, if an instance of this class should be prepared for next usage
@@ -137,10 +141,10 @@ public abstract class AbstractHDMergeHelper<S> {
     /**
      * Frees HD space by destroying collected HD stores upon finish of merge tasks
      */
-    public final void destroyCollectedHDStores() {
-        final Map<Integer, Map<String, S>> storesByPartitionId = this.storesByPartitionId;
-        Set<Integer> partitionIds = storesByPartitionId.keySet();
-        for (final Integer partitionId : partitionIds) {
+    public final void destroyAndRemoveHDStoresFrom(final ConcurrentMap<Integer, Collection<S>> storesByPartitionId) {
+        Set<Integer> partitions = storesByPartitionId.keySet();
+        final CountDownLatch latch = new CountDownLatch(partitions.size());
+        for (final Integer partitionId : partitions) {
             operationExecutor.execute(new PartitionSpecificRunnable() {
                 @Override
                 public int getPartitionId() {
@@ -149,17 +153,31 @@ public abstract class AbstractHDMergeHelper<S> {
 
                 @Override
                 public void run() {
-                    Map<String, S> storesByName = storesByPartitionId.get(partitionId);
-                    if (!isNullOrEmpty(storesByName)) {
-                        Iterator<S> iterator = storesByName.values().iterator();
+                    try {
+                        Collection<S> stores = storesByPartitionId.get(partitionId);
+                        Iterator<S> iterator = stores.iterator();
                         while (iterator.hasNext()) {
                             S store = iterator.next();
-                            destroyHDStore(store);
-                            iterator.remove();
+                            if (isHDStore(store)) {
+                                destroyHDStore(store);
+                                iterator.remove();
+                            }
                         }
+
+                        if (isNotEmpty(stores)) {
+                            storesByPartitionId.put(partitionId, stores);
+                        }
+                    } finally {
+                        latch.countDown();
                     }
                 }
             });
+        }
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            EmptyStatement.ignore(e);
         }
     }
 
@@ -172,12 +190,19 @@ public abstract class AbstractHDMergeHelper<S> {
         return storesByName.values();
     }
 
-    public final S getOrNullHDStore(String name, int partitionId) {
-        Map<String, S> storesByName = storesByPartitionId.get(partitionId);
-        if (isNullOrEmpty(storesByName)) {
-            return null;
-        }
+    public final ConcurrentMap<Integer, Collection<S>> groupByPartitionId(Collection<S> stores) {
+        ConcurrentMap<Integer, Collection<S>> storesByPartitionId
+                = new ConcurrentHashMap<Integer, Collection<S>>();
 
-        return storesByName.get(name);
+        for (S store : stores) {
+            int partitionId = getPartitionId(store);
+            Collection<S> storeCollection = storesByPartitionId.get(partitionId);
+            if (storeCollection == null) {
+                storeCollection = new LinkedList<S>();
+                storesByPartitionId.put(partitionId, storeCollection);
+            }
+            storeCollection.add(store);
+        }
+        return storesByPartitionId;
     }
 }

@@ -1,11 +1,12 @@
 package com.hazelcast.map.impl;
 
-import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 
 import java.util.Collection;
-
-import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 
 class EnterpriseMapSplitBrainHandlerServiceImpl extends MapSplitBrainHandlerService {
 
@@ -13,31 +14,42 @@ class EnterpriseMapSplitBrainHandlerServiceImpl extends MapSplitBrainHandlerServ
 
     EnterpriseMapSplitBrainHandlerServiceImpl(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
-        this.hdMergeHelper = new MapHDMergeHelper(nodeEngine, mapServiceContext.getPartitionContainers());
+        this.hdMergeHelper = new MapHDMergeHelper(mapServiceContext.getNodeEngine(),
+                mapServiceContext.getPartitionContainers());
     }
 
     @Override
-    public Runnable prepareMergeRunnable() {
+    protected void onPrepareMergeRunnableStart() {
+        super.onPrepareMergeRunnableStart();
+
         hdMergeHelper.prepare();
-        return super.prepareMergeRunnable();
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    protected RecordStore getOrNullRecordStore(String mapName, InMemoryFormat inMemoryFormat, int partitionId) {
-        if (inMemoryFormat == NATIVE) {
-            return hdMergeHelper.getOrNullHDStore(mapName, partitionId);
+    protected Collection<Iterator<RecordStore>> iteratorsOf(int partitionId) {
+        List<Iterator<RecordStore>> iterators = new LinkedList<Iterator<RecordStore>>(super.iteratorsOf(partitionId));
+
+        Collection<RecordStore> recordStoresOfPartition = hdMergeHelper.getHDStoresOf(partitionId);
+        if (recordStoresOfPartition != null) {
+            iterators.add(recordStoresOfPartition.iterator());
         }
 
-        return super.getOrNullRecordStore(mapName, inMemoryFormat, partitionId);
+        return iterators;
     }
 
     @Override
-    protected void destroyRecordStores(Collection<RecordStore> recordStores) {
+    public void destroyStores(Collection<RecordStore> stores) {
+        ConcurrentMap<Integer, Collection<RecordStore>> storesByPartitionId = hdMergeHelper.groupByPartitionId(stores);
         try {
-            hdMergeHelper.destroyCollectedHDStores();
+            hdMergeHelper.destroyAndRemoveHDStoresFrom(storesByPartitionId);
         } finally {
-            super.destroyRecordStores(recordStores);
+            destroyOnHeapStores(storesByPartitionId.values());
+        }
+    }
+
+    private void destroyOnHeapStores(Collection<Collection<RecordStore>> onHeapStores) {
+        for (Collection<RecordStore> onHeapStore : onHeapStores) {
+            super.destroyStores(onHeapStore);
         }
     }
 }

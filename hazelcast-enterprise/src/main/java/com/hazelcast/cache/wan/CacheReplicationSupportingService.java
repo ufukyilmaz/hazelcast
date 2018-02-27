@@ -117,7 +117,8 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
 
         Operation operation;
         if (mergePolicy instanceof SplitBrainMergePolicy) {
-            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(cacheReplicationUpdate.getEntryView());
+            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(nodeEngine.getSerializationService(),
+                    cacheReplicationUpdate.getEntryView());
             operation = operationProvider.createWanMergeOperation(ORIGIN, mergingEntry, (SplitBrainMergePolicy) mergePolicy,
                     IGNORE_COMPLETION);
         } else {

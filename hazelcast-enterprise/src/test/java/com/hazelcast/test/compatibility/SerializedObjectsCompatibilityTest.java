@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
+import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_ENTERPRISE;
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.Versions.PREVIOUS_CLUSTER_VERSION;
 import static com.hazelcast.test.compatibility.SamplingSerializationService.isTestClass;
@@ -80,6 +81,7 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     public void testObjectsAreDeserializedInCurrentVersion_whenOSSerializationService() {
         // OS serialization version always uses current cluster version, so override this to emulate previous cluster version
         System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, PREVIOUS_CLUSTER_VERSION.toString());
+        System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_ENTERPRISE, "false");
         try {
             currentSerializationService = new DefaultSerializationServiceBuilder()
                     .setEnableSharedObject(true)
@@ -88,6 +90,7 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
             assertObjectsAreDeserialized(serializedObjects);
         } finally {
             System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
+            System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_ENTERPRISE);
         }
     }
 

@@ -39,7 +39,7 @@ import static org.junit.Assume.assumeFalse;
  */
 public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInstanceFactory {
 
-    public static final String[] RELEASED_VERSIONS = new String[]{"3.9", "3.9"};
+    public static final String[] RELEASED_VERSIONS = new String[]{"3.9", "3.9.1", "3.9.2", "3.9.3"};
     /**
      * Refers to the latest hazelcast version.
      * Unlike other hazelcast instances, this one will not be proxied and

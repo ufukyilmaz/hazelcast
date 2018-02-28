@@ -10,7 +10,6 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.partition.IPartitionService;
-import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.wan.WanSyncStatus;
 
 import java.util.ArrayList;
@@ -21,6 +20,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import static java.lang.Thread.currentThread;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
@@ -124,7 +124,7 @@ public class WanSyncManager {
                     try {
                         Thread.sleep(RETRY_INTERVAL_MILLIS);
                     } catch (InterruptedException ignored) {
-                        EmptyStatement.ignore(ignored);
+                        currentThread().interrupt();
                     }
                 }
             }

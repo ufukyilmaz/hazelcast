@@ -66,6 +66,7 @@ final class SimpleGarbageCollector extends Thread implements GarbageCollector {
             try {
                 join(JOIN_MILLIS);
             } catch (InterruptedException e) {
+                interrupt();
                 e.printStackTrace();
             }
         }

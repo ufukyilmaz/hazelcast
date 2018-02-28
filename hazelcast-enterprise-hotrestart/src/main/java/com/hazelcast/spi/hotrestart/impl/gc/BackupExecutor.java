@@ -2,9 +2,10 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.nio.Disposable;
-import com.hazelcast.util.EmptyStatement;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+
+import static java.lang.Thread.currentThread;
 
 /**
  * Executor in charge of running backup tasks. This one runs the backup task in a separate thread and exposes its
@@ -53,7 +54,7 @@ public class BackupExecutor implements Disposable {
                 try {
                     currentBackupThread.join();
                 } catch (InterruptedException e) {
-                    EmptyStatement.ignore(e);
+                    currentThread().interrupt();
                 }
             }
         }

@@ -16,6 +16,7 @@ import java.nio.channels.SocketChannel;
 
 import static com.hazelcast.nio.IOUtil.newByteBuffer;
 import static com.hazelcast.util.EmptyStatement.ignore;
+import static java.lang.Thread.currentThread;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
@@ -83,6 +84,7 @@ public class SSLChannel extends NioChannel {
                             try {
                                 Thread.sleep(50);
                             } catch (InterruptedException e) {
+                                currentThread().interrupt();
                                 throw new IOException(e);
                             }
                         } else {
@@ -103,6 +105,7 @@ public class SSLChannel extends NioChannel {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
+                        currentThread().interrupt();
                         throw new IOException(e);
                     }
                 }

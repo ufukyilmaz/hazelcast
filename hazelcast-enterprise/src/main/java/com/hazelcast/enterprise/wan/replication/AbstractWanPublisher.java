@@ -60,6 +60,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.MapUtil.isNullOrEmpty;
+import static java.lang.Thread.currentThread;
 import static java.util.Collections.newSetFromMap;
 
 /**
@@ -462,6 +463,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
             syncRequests.put(event);
             liveOperations.add(event.getOp());
         } catch (InterruptedException e) {
+            currentThread().interrupt();
             throw rethrow(e);
         }
     }
@@ -546,7 +548,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
                     stagingQueue.put(event);
                     offered = true;
                 } catch (InterruptedException ignored) {
-                    EmptyStatement.ignore(ignored);
+                    currentThread().interrupt();
                 }
             }
             return offered;

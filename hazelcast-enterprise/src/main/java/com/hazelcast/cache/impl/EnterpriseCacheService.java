@@ -62,6 +62,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.cache.impl.AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartitionId;
+import static java.lang.Thread.currentThread;
 
 /**
  * The {@link ICacheService} implementation specified for enterprise usage.
@@ -286,6 +287,7 @@ public class EnterpriseCacheService
             try {
                 op.awaitCompletion(CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
+                currentThread().interrupt();
                 nodeEngine.getLogger(getClass()).warning(e);
             }
         }
@@ -329,6 +331,7 @@ public class EnterpriseCacheService
             try {
                 op.awaitCompletion(CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
+                currentThread().interrupt();
                 nodeEngine.getLogger(getClass()).warning(e);
             }
         }

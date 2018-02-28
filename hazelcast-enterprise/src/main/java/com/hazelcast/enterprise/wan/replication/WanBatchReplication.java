@@ -28,6 +28,7 @@ import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.SNAPSHOT_ENABLED;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.getProperty;
 import static com.hazelcast.util.ThreadUtil.createThreadName;
+import static java.lang.Thread.currentThread;
 
 /**
  * WAN replication publisher that sends events in batches.
@@ -142,7 +143,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
             try {
                 event = stagingQueue.poll(batchMaxDelayMillis, TimeUnit.MILLISECONDS);
             } catch (InterruptedException ignored) {
-                EmptyStatement.ignore(ignored);
+                currentThread().interrupt();
             }
             if (event != null) {
                 wanReplicationEventList.add(event);

@@ -57,6 +57,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static java.lang.Thread.currentThread;
 
 /**
  * Contains enterprise specific implementations of {@link MapServiceContext}
@@ -248,6 +249,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
             try {
                 operation.awaitCompletion(MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
+                currentThread().interrupt();
                 nodeEngine.getLogger(getClass()).warning(e);
             }
         }

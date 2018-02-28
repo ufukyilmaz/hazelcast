@@ -25,6 +25,7 @@ import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector.ALWAYS_FRESH;
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static java.lang.Runtime.getRuntime;
+import static java.lang.Thread.currentThread;
 
 /**
  * Segmented {@link HiDensityNearCacheRecordStore} which improves performance by using multiple
@@ -353,6 +354,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
                 }
                 return null;
             } catch (InterruptedException e) {
+                currentThread().interrupt();
                 return null;
             }
         }

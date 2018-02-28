@@ -6,7 +6,6 @@ import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.spi.partition.IPartitionService;
-import com.hazelcast.util.EmptyStatement;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -21,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.util.CollectionUtil.isNotEmpty;
 import static com.hazelcast.util.MapUtil.isNullOrEmpty;
+import static java.lang.Thread.currentThread;
 
 /**
  * Contains shared helper functionality for {@link com.hazelcast.spi.SplitBrainHandlerService}
@@ -102,7 +102,7 @@ public abstract class AbstractHDMergeHelper<S> {
         try {
             latch.await();
         } catch (InterruptedException e) {
-            EmptyStatement.ignore(e);
+            currentThread().interrupt();
         }
     }
 
@@ -177,7 +177,7 @@ public abstract class AbstractHDMergeHelper<S> {
         try {
             latch.await();
         } catch (InterruptedException e) {
-            EmptyStatement.ignore(e);
+            currentThread().interrupt();
         }
     }
 

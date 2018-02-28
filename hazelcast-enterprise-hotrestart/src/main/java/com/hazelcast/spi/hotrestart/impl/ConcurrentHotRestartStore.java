@@ -19,6 +19,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
@@ -97,6 +98,7 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
         try {
             persistenceThread.join();
         } catch (InterruptedException e) {
+            currentThread().interrupt();
             throw new HotRestartException("Interrupted while waiting for the persistence engine to shut down", e);
         }
     }

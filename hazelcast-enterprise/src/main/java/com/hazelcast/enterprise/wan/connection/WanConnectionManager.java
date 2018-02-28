@@ -35,6 +35,7 @@ import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.
 import static com.hazelcast.util.ConcurrencyUtil.getOrPutSynchronized;
 import static com.hazelcast.util.StringUtil.isNullOrEmpty;
 import static java.lang.Math.min;
+import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -221,6 +222,7 @@ public class WanConnectionManager {
         try {
             targetEndpoints.wait(RETRY_CONNECTION_SLEEP_MILLIS);
         } catch (InterruptedException e) {
+            currentThread().interrupt();
             logger.finest("WanConnectionManager wait interrupted.");
         }
         return null;
@@ -291,6 +293,7 @@ public class WanConnectionManager {
                 return authorizeConnection(conn);
             }
         } catch (InterruptedException ie) {
+            currentThread().interrupt();
             logger.finest("Sleep interrupted", ie);
         }
         return null;

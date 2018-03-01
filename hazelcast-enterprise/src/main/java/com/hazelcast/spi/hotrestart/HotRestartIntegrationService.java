@@ -708,7 +708,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         IOUtil.delete(hotRestartHome);
 
         logger.info("Resetting hot restart cluster metadata service...");
-        clusterMetadataManager.reset();
+        clusterMetadataManager.reset(isAfterJoin);
         clusterMetadataManager.writePartitionThreadCount(getOperationExecutor().getPartitionThreadCount());
         persistentConfigDescriptors.reset();
 

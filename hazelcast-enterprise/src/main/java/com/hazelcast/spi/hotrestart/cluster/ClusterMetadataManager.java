@@ -566,9 +566,11 @@ public class ClusterMetadataManager {
         writerLoop.stop(false);
     }
 
-    public void reset() {
+    public void reset(boolean isAfterJoin) {
         metadataWriterLoop = new ClusterMetadataWriterLoop(homeDir, node);
-        metadataWriterLoop.start();
+        if (isAfterJoin) {
+            metadataWriterLoop.start();
+        }
 
         hotRestartStatusLock.lock();
         try {

@@ -104,7 +104,8 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
         // RU_COMPAT_3_9
         if (nodeEngine.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V3_10)) {
-            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(syncObject.getEntryView());
+            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(nodeEngine.getSerializationService(),
+                    syncObject.getEntryView());
             MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
             invokeOnPartition(mergingEntry.getKey(), operation);
         } else {
@@ -121,7 +122,8 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         Object mergePolicy = replicationUpdate.getMergePolicy();
 
         if (mergePolicy instanceof SplitBrainMergePolicy) {
-            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(replicationUpdate.getEntryView());
+            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(nodeEngine.getSerializationService(),
+                    replicationUpdate.getEntryView());
             return invokeOnPartition(mergingEntry.getKey(), operationProvider.createMergeOperation(mapName, mergingEntry,
                     (SplitBrainMergePolicy) mergePolicy, true));
         }

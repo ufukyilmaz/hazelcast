@@ -25,6 +25,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -115,7 +116,8 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                 .setSize(MEMORY_SIZE);
 
         final Config config = new Config()
-                .setNativeMemoryConfig(memoryConfig);
+                .setNativeMemoryConfig(memoryConfig)
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);

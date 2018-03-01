@@ -9,6 +9,7 @@ import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -62,11 +63,13 @@ public class HotRestartClientNearCacheInvalidationTest extends ClientNearCacheIn
     public void setup() {
         folder = isolatedFolder(getClass(), testName);
         createFolder(folder);
+        RuntimeAvailableProcessors.override(4);
         super.setup();
     }
 
     @Override
     public void tearDown() {
+        RuntimeAvailableProcessors.resetOverride();
         super.tearDown();
         deleteQuietly(folder);
     }

@@ -10,8 +10,10 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -57,7 +59,8 @@ public class HiDensityClientNearCacheInvalidationTest extends ClientNearCacheInv
 
         return super.getConfig()
                 .setLicenseKey(UNLIMITED_LICENSE)
-                .setNativeMemoryConfig(nativeMemoryConfig);
+                .setNativeMemoryConfig(nativeMemoryConfig)
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
     }
 
     @Override
@@ -84,5 +87,17 @@ public class HiDensityClientNearCacheInvalidationTest extends ClientNearCacheInv
 
         return super.<K, V>createCacheConfig(InMemoryFormat.NATIVE)
                 .setEvictionConfig(evictionConfig);
+    }
+
+    @Override
+    public void setup() {
+        RuntimeAvailableProcessors.override(4);
+        super.setup();
+    }
+
+    @Override
+    public void tearDown() {
+        RuntimeAvailableProcessors.resetOverride();
+        super.tearDown();
     }
 }

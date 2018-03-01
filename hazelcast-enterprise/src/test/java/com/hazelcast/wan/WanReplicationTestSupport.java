@@ -15,6 +15,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.After;
@@ -60,7 +61,8 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         joinConfig.getTcpIpConfig().setEnabled(true);
         joinConfig.getTcpIpConfig().addMember("127.0.0.1");
         if (isNativeMemoryEnabled()) {
-            config.setNativeMemoryConfig(getMemoryConfig());
+            config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+                    .setNativeMemoryConfig(getMemoryConfig());
         }
         return config;
     }

@@ -5,6 +5,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -27,7 +28,10 @@ public class HDLocalMapStatsSlowTest
     @Test
     public void hdOwnedEntryCost_whenPartitionRebalanced() {
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(4);
-        HazelcastInstance[] instances = factory.newInstances(getHDConfig(new Config(), POOLED, new MemorySize(128, MEGABYTES)));
+        HazelcastInstance[] instances = factory.newInstances(
+                getHDConfig(new Config(), POOLED, new MemorySize(128, MEGABYTES))
+                        .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+        );
         waitAllForSafeState(instances);
 
         String mapName = "FooBar";
@@ -50,7 +54,10 @@ public class HDLocalMapStatsSlowTest
         // Restart one node to force partition migration and re-balancing (aka. invoking HDStorageImpl.reset())
         for (int i = 0; i < numOfNodeRestarts; i++) {
             instances[i].getLifecycleService().shutdown();
-            instances[i] = factory.newHazelcastInstance(getHDConfig(new Config(), POOLED, new MemorySize(128, MEGABYTES)));
+            instances[i] = factory.newHazelcastInstance(
+                    getHDConfig(new Config(), POOLED, new MemorySize(128, MEGABYTES))
+                            .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+            );
             waitAllForSafeState(instances);
         }
 

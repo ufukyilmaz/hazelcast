@@ -153,6 +153,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                 .setSize(MEMORY_SIZE);
 
         return new Config()
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
                 .setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
                 .addMapConfig(mapConfig)
                 .setNativeMemoryConfig(memoryConfig);

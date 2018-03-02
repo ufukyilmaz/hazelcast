@@ -21,6 +21,7 @@ import org.junit.runner.RunWith;
 import java.util.Collection;
 
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY;
+import static com.hazelcast.internal.cluster.Versions.CURRENT_CLUSTER_VERSION;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertNodesVersion;
 import static org.junit.Assert.assertEquals;
@@ -30,10 +31,26 @@ import static org.junit.Assert.assertThat;
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStartTest {
 
-    private static final MemberVersion MEMBER_VERSION = MemberVersion.of("3.9.0");
-    private static final MemberVersion NEXT_MINOR_MEMBER_VERSION = MemberVersion.of("3.10.0");
-    private static final MemberVersion PREVIOUS_MINOR_MEMBER_VERSION = MemberVersion.of("3.8.0");
-    private static final MemberVersion NEXT_MAJOR_MEMBER_VERSION = MemberVersion.of("4.0.0");
+    private static final MemberVersion MEMBER_VERSION;
+    private static final MemberVersion NEXT_MINOR_MEMBER_VERSION;
+    private static final MemberVersion PREVIOUS_MINOR_MEMBER_VERSION;
+    private static final MemberVersion NEXT_MAJOR_MEMBER_VERSION;
+
+    static {
+        MemberVersion currentVersion = MemberVersion.of(CURRENT_CLUSTER_VERSION.toString());
+        MemberVersion nextMinorVersion = MemberVersion.of(currentVersion.getMajor(),
+                currentVersion.getMinor() + 1,
+                currentVersion.getPatch());
+        MemberVersion previousMinorVersion = MemberVersion.of(currentVersion.getMajor(),
+                currentVersion.getMinor() - 1,
+                currentVersion.getPatch());
+        MemberVersion nextMajorVersion = MemberVersion.of(currentVersion.getMajor() + 1, 0, 0);
+
+        MEMBER_VERSION = currentVersion;
+        NEXT_MINOR_MEMBER_VERSION = nextMinorVersion;
+        PREVIOUS_MINOR_MEMBER_VERSION = previousMinorVersion;
+        NEXT_MAJOR_MEMBER_VERSION = nextMajorVersion;
+    }
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

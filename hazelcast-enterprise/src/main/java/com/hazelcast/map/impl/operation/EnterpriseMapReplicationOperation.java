@@ -10,7 +10,6 @@ import com.hazelcast.spi.ServiceNamespace;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Replicates all IMap-states of this partition to a replica partition.
@@ -59,7 +58,7 @@ public class EnterpriseMapReplicationOperation extends MapReplicationOperation {
     }
 
     private void disposePartition() {
-        Map<String, Set<RecordReplicationInfo>> data = mapReplicationStateHolder.data;
+        Map<String, Collection<RecordReplicationInfo>> data = mapReplicationStateHolder.data;
         for (String mapName : data.keySet()) {
             dispose(mapName);
         }

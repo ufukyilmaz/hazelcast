@@ -7,6 +7,7 @@ import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 import com.hazelcast.map.impl.proxy.EnterpriseMapProxyImpl;
 import com.hazelcast.map.impl.proxy.EnterpriseNearCachedMapProxyImpl;
 
+import static com.hazelcast.internal.config.ConfigValidator.checkMergePolicySupportsInMemoryFormat;
 import static com.hazelcast.internal.config.ConfigValidator.checkNearCacheConfig;
 
 /**
@@ -28,7 +29,14 @@ class EnterpriseMapRemoteService extends MapRemoteService {
     public DistributedObject createDistributedObject(String name) {
         Config config = nodeEngine.getConfig();
         MapConfig mapConfig = config.findMapConfig(name);
+
         hdMapConfigValidator.checkHDConfig(mapConfig, config.getNativeMemoryConfig());
+        checkMergePolicySupportsInMemoryFormat(name,
+                mapConfig.getMergePolicyConfig().getPolicy(),
+                mapConfig.getInMemoryFormat(),
+                nodeEngine.getClusterService().getClusterVersion(),
+                true,
+                nodeEngine.getLogger(getClass()));
 
         if (mapConfig.isNearCacheEnabled()) {
             checkNearCacheConfig(name, mapConfig.getNearCacheConfig(), config.getNativeMemoryConfig(), false);

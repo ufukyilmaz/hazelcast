@@ -18,6 +18,7 @@ import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_HEAP_SIZE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_SIZE;
+import static com.hazelcast.internal.config.ConfigValidator.checkMergePolicy;
 import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.util.Preconditions.checkTrue;
 import static java.lang.String.format;
@@ -52,9 +53,12 @@ public final class HDMapConfigValidator {
         checkTrue(nativeMemoryConfig.isEnabled(),
                 format("Enable native memory config to use NATIVE in-memory-format for the map [%s]", mapConfig.getName()));
 
+
         logIgnoredConfig(mapConfig);
 
         checkMaxSizePolicy(mapConfig);
+
+        checkMergePolicy(mapConfig.isStatisticsEnabled(), mapConfig.getMergePolicyConfig().getPolicy());
 
         checkHotRestartSpecificConfig(mapConfig);
     }

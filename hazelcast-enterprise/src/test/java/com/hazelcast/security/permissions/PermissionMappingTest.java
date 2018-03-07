@@ -143,7 +143,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 new String[] { "getOrDefault", "computeIfAbsent", "compute", "computeIfPresent",
                                "initialize", "putIfAbsent", "merge", "replace", "replaceAll" });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.topic.impl.TopicService.class,
-                new String[] { "initialize", "getLocalTopicStatsInternal", "getLocalTopicStats" });
+                new String[] { "initialize" });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.map.impl.MapService.class,
                 new String[] { "getOrDefault", "compute", "merge", "computeIfAbsent", "setOperationProvider",
                                "getOperationProvider", "computeIfPresent", "getPartitionStrategy", "waitUntilLoaded",

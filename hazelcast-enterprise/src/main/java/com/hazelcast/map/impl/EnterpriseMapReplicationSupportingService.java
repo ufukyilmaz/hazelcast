@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl;
 
+import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.map.impl.operation.MapOperation;
@@ -20,17 +21,15 @@ import com.hazelcast.spi.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.MergingEntryHolder;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanReplicationService;
 
-import static com.hazelcast.config.WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE;
 import static com.hazelcast.spi.impl.merge.MergingHolders.createMergeHolder;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
  * This class handles incoming map WAN replication events.
  */
-
 class EnterpriseMapReplicationSupportingService implements ReplicationSupportingService {
-
     /**
      * Uses map delete instead of map remove when processing remove events. This has the benefit
      * that the old value will not be sent from the partition owner (since this member does not use it)
@@ -52,6 +51,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     private final SplitBrainMergePolicy defaultSyncMergePolicy;
     private final ProxyService proxyService;
     private final boolean useDeleteWhenProcessingRemoveEvents;
+    private final WanReplicationService wanService;
 
     EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
         this.mapServiceContext = mapServiceContext;
@@ -62,91 +62,151 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         this.defaultSyncMergePolicy = (SplitBrainMergePolicy) mergePolicyProvider.getMergePolicy(DEFAULT_MERGE_POLICY);
         this.proxyService = nodeEngine.getProxyService();
         this.useDeleteWhenProcessingRemoveEvents = Boolean.getBoolean(USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS);
+        this.wanService = nodeEngine.getWanReplicationService();
     }
 
     @Override
     public void onReplicationEvent(WanReplicationEvent replicationEvent) {
         Object eventObject = replicationEvent.getEventObject();
-        if (eventObject instanceof EnterpriseMapReplicationObject) {
-            EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
-            String mapName = mapReplicationObject.getMapName();
+        if (!(eventObject instanceof EnterpriseMapReplicationObject)) {
+            return;
+        }
+        EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
+        String mapName = mapReplicationObject.getMapName();
 
-            /* Proxies should be created to initialize listeners, indexes, etc. and to show WAN replicated maps in mancenter.
-             * Otherwise, users are forced to manually call IMap#get()
-             * Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
-             */
-            proxyService.getDistributedObject(MapService.SERVICE_NAME, mapName);
+        /*
+          Proxies should be created to initialize listeners, indexes, etc. and to show WAN replicated maps in mancenter.
+          Otherwise, users are forced to manually call IMap#get()
+          Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
+         */
+        proxyService.getDistributedObject(MapService.SERVICE_NAME, mapName);
 
-            if (eventObject instanceof EnterpriseMapReplicationSync) {
-                handleSyncObject((EnterpriseMapReplicationSync) eventObject);
-                return;
-            }
+        if (eventObject instanceof EnterpriseMapReplicationSync) {
+            handleSyncEvent((EnterpriseMapReplicationSync) eventObject);
+            wanService.getReceivedEventCounter(MapService.SERVICE_NAME).incrementSync(mapName);
+            return;
+        }
 
-            MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
-            if (mapContainer.isWanRepublishingEnabled()) {
-                mapContainer.getWanReplicationPublisher().publishReplicationEvent(replicationEvent);
-            }
+        republishIfNecessary(replicationEvent, mapName);
 
-            InternalCompletableFuture completableFuture = null;
-            if (eventObject instanceof EnterpriseMapReplicationUpdate) {
-                completableFuture = handleUpdate((EnterpriseMapReplicationUpdate) eventObject);
-            } else if (eventObject instanceof EnterpriseMapReplicationRemove) {
-                completableFuture = handleRemove((EnterpriseMapReplicationRemove) eventObject);
-            }
-            if (completableFuture != null && replicationEvent.getAcknowledgeType() == ACK_ON_OPERATION_COMPLETE) {
-                completableFuture.join();
-            }
+        if (eventObject instanceof EnterpriseMapReplicationUpdate) {
+            handleUpdateEvent((EnterpriseMapReplicationUpdate) eventObject, replicationEvent.getAcknowledgeType());
+            wanService.getReceivedEventCounter(MapService.SERVICE_NAME).incrementUpdate(mapName);
+        } else if (eventObject instanceof EnterpriseMapReplicationRemove) {
+            handleRemoveEvent((EnterpriseMapReplicationRemove) eventObject, replicationEvent.getAcknowledgeType());
+            wanService.getReceivedEventCounter(MapService.SERVICE_NAME).incrementRemove(mapName);
         }
     }
 
-    private void handleSyncObject(EnterpriseMapReplicationSync syncObject) {
-        String mapName = syncObject.getMapName();
+    /**
+     * Republishes the WAN {@code event} if configured to do so.
+     *
+     * @param event   the WAN replication event
+     * @param mapName the event map name
+     */
+    private void republishIfNecessary(WanReplicationEvent event, String mapName) {
+        final MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
+        if (mapContainer.isWanRepublishingEnabled()) {
+            mapContainer.getWanReplicationPublisher().publishReplicationEvent(event);
+        }
+    }
+
+    /**
+     * Processes a WAN update event by forwarding it to the partition owner.
+     * Depending on the {@code acknowledgeType}, it will either return as soon
+     * as the event has been forwarded to the partition owner or block until
+     * it has been processed on the partition owner.
+     *
+     * @param event           the WAN update event
+     * @param acknowledgeType determines whether the method will wait for the
+     *                        update to be processed on the partition owner
+     */
+    private void handleUpdateEvent(EnterpriseMapReplicationUpdate event, WanAcknowledgeType acknowledgeType) {
+        final String mapName = event.getMapName();
+        final MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
+        final Object mergePolicy = event.getMergePolicy();
+        final Data key;
+        final Operation operation;
+
+        if (mergePolicy instanceof SplitBrainMergePolicy) {
+            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(nodeEngine.getSerializationService(),
+                    event.getEntryView());
+            key = mergingEntry.getKey();
+            operation = operationProvider.createMergeOperation(mapName, mergingEntry,
+                    (SplitBrainMergePolicy) mergePolicy, true);
+        } else {
+            EntryView<Data, Data> entryView = event.getEntryView();
+            key = entryView.getKey();
+            operation = operationProvider.createLegacyMergeOperation(mapName, entryView,
+                    (MapMergePolicy) mergePolicy, true);
+        }
+
+        final InternalCompletableFuture future = invokeOnPartition(key, operation);
+        if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
+            future.join();
+        }
+    }
+
+    /**
+     * Processes a WAN remove event by forwarding it to the partition owner.
+     * Depending on the {@code acknowledgeType}, it will either return as soon
+     * as the event has been forwarded to the partition owner or block until
+     * it has been processed on the partition owner.
+     *
+     * @param event           the WAN remove event
+     * @param acknowledgeType determines whether the method will wait for the
+     *                        update to be processed on the partition owner
+     */
+    private void handleRemoveEvent(EnterpriseMapReplicationRemove event, WanAcknowledgeType acknowledgeType) {
+        final String mapName = event.getMapName();
+        final MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
+
+        final MapOperation operation = useDeleteWhenProcessingRemoveEvents
+                ? operationProvider.createDeleteOperation(mapName, event.getKey(), true)
+                : operationProvider.createRemoveOperation(mapName, event.getKey(), true);
+        final InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
+        if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
+            future.join();
+        }
+    }
+
+    /**
+     * Processes a WAN sync event by forwarding it to the partition owner.
+     * The method will return as soon as the event has been forwarded to the
+     * partition owner and it does not wait for the event to be processed.
+     *
+     * @param event the WAN sync event
+     */
+    private void handleSyncEvent(EnterpriseMapReplicationSync event) {
+        String mapName = event.getMapName();
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
         // RU_COMPAT_3_9
         if (nodeEngine.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V3_10)) {
             MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(nodeEngine.getSerializationService(),
-                    syncObject.getEntryView());
+                    event.getEntryView());
             MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
             invokeOnPartition(mergingEntry.getKey(), operation);
         } else {
-            EntryView<Data, Data> entryView = syncObject.getEntryView();
+            EntryView<Data, Data> entryView = event.getEntryView();
             MapOperation operation = operationProvider.createLegacyMergeOperation(mapName, entryView,
                     defaultSyncLegacyMergePolicy, true);
             invokeOnPartition(entryView.getKey(), operation);
         }
     }
 
-    private InternalCompletableFuture handleUpdate(EnterpriseMapReplicationUpdate replicationUpdate) {
-        String mapName = replicationUpdate.getMapName();
-        MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
-        Object mergePolicy = replicationUpdate.getMergePolicy();
-
-        if (mergePolicy instanceof SplitBrainMergePolicy) {
-            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(nodeEngine.getSerializationService(),
-                    replicationUpdate.getEntryView());
-            return invokeOnPartition(mergingEntry.getKey(), operationProvider.createMergeOperation(mapName, mergingEntry,
-                    (SplitBrainMergePolicy) mergePolicy, true));
-        }
-        EntryView<Data, Data> entryView = replicationUpdate.getEntryView();
-        return invokeOnPartition(entryView.getKey(), operationProvider.createLegacyMergeOperation(mapName, entryView,
-                (MapMergePolicy) mergePolicy, true));
-    }
-
-    private InternalCompletableFuture handleRemove(EnterpriseMapReplicationRemove replicationRemove) {
-        String mapName = replicationRemove.getMapName();
-        MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
-
-        MapOperation operation = useDeleteWhenProcessingRemoveEvents
-                ? operationProvider.createDeleteOperation(mapName, replicationRemove.getKey(), true)
-                : operationProvider.createRemoveOperation(mapName, replicationRemove.getKey(), true);
-        return invokeOnPartition(replicationRemove.getKey(), operation);
-    }
-
+    /**
+     * Invokes the {@code operation} on the partition owner for the partition
+     * owning the {@code key}.
+     *
+     * @param key       the key on which partition the operation is invoked
+     * @param operation the operation to invoke
+     * @return the future representing the pending completion of the operation
+     */
     private InternalCompletableFuture invokeOnPartition(Data key, Operation operation) {
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             return nodeEngine.getOperationService()
-                    .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
+                             .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
             throw rethrow(t);
         }

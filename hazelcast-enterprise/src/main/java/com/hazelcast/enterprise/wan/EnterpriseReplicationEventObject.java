@@ -1,6 +1,5 @@
 package com.hazelcast.enterprise.wan;
 
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.wan.ReplicationEventObject;
 
@@ -19,7 +18,7 @@ public interface EnterpriseReplicationEventObject extends ReplicationEventObject
     String getObjectName();
 
     Set<String> getGroupNames();
-    Data getKey();
+
     int getBackupCount();
     long getCreationTime();
 }

@@ -1,6 +1,7 @@
 package com.hazelcast.enterprise.wan.replication;
 
 import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.wan.CacheReplicationObject;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
@@ -62,21 +63,21 @@ import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.MapUtil.isNullOrEmpty;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.newSetFromMap;
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * Abstract WAN event publisher implementation.
+ * This implementation prepares the WAN events from the WAN queues and
+ * from WAN sync events for sending to the WAN endpoints.
  */
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
 public abstract class AbstractWanPublisher implements WanReplicationPublisher, WanReplicationEndpoint, LiveOperationsTracker {
-
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
     private static final int DEFAULT_STAGING_QUEUE_SIZE = 100;
 
     protected volatile boolean running = true;
     protected volatile boolean paused;
-
     protected volatile WanPublisherConfig publisherConfig;
-
     protected String targetGroupName;
     protected String localGroupName;
     protected String wanReplicationName;
@@ -84,27 +85,26 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     protected WanSyncManager syncManager;
     protected int queueCapacity;
     protected WANQueueFullBehavior queueFullBehavior;
-
     protected volatile long lastQueueFullLogTimeMs;
-
     protected int queueLoggerTimePeriodMs = QUEUE_LOGGER_PERIOD_MILLIS;
-
     protected PublisherQueueContainer eventQueueContainer;
+    /**
+     * Queue for multiplexed map/cache partition WAN events that are about to
+     * be transmitted to the target cluster
+     */
     protected BlockingQueue<WanReplicationEvent> stagingQueue;
     protected BlockingQueue<WanSyncEvent> syncRequests = new ArrayBlockingQueue<WanSyncEvent>(DEFAULT_STAGING_QUEUE_SIZE);
     protected ILogger logger;
-
     private MapService mapService;
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
     private final Set<Operation> liveOperations = newSetFromMap(new ConcurrentHashMap<Operation, Boolean>());
-
     private final AtomicInteger currentElementCount = new AtomicInteger(0);
     private final AtomicInteger currentBackupElementCount = new AtomicInteger(0);
-
     /** The count of ongoing {@link WanReplicationEvent} sync events per partition */
     private final Map<Integer, AtomicInteger> counterMap = new ConcurrentHashMap<Integer, AtomicInteger>();
 
     private volatile boolean resetCounters;
+    private EnterpriseWanReplicationService wanService;
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
@@ -114,16 +114,17 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         this.targetGroupName = publisherConfig.getGroupName();
         this.wanReplicationName = wanReplicationConfig.getName();
         this.logger = node.getLogger(getClass());
-
         this.queueCapacity = publisherConfig.getQueueCapacity();
         this.localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
-
         this.eventQueueContainer = new PublisherQueueContainer(node);
         this.stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(getStagingQueueSize());
         this.queueFullBehavior = publisherConfig.getQueueFullBehavior();
-        EnterpriseWanReplicationService wanReplicationService
-                = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
-        this.syncManager = wanReplicationService.getSyncManager();
+        this.wanService = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
+        this.syncManager = wanService.getSyncManager();
+        this.localWanPublisherStats.setSentMapEventCounter(
+                unmodifiableMap(wanService.getSentEventCounter(MapService.SERVICE_NAME).getEventCounterMap()));
+        this.localWanPublisherStats.setSentCacheEventCounter(
+                unmodifiableMap(wanService.getSentEventCounter(ICacheService.SERVICE_NAME).getEventCounterMap()));
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller(syncManager));
     }
@@ -138,29 +139,44 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
 
     @Override
     public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
-        publishReplicationEventInternal(serviceName, eventObject, false);
+        publishReplicationEventInternal(serviceName, (EnterpriseReplicationEventObject) eventObject, false);
     }
 
     @Override
     public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
-        publishReplicationEventInternal(serviceName, eventObject, true);
+        publishReplicationEventInternal(serviceName, (EnterpriseReplicationEventObject) eventObject, true);
     }
 
-    private void publishReplicationEventInternal(String serviceName, ReplicationEventObject eventObject,
+    private void publishReplicationEventInternal(String serviceName, EnterpriseReplicationEventObject eventObject,
                                                  boolean backupEvent) {
-        boolean dropEvent = isEventDroppingNeeded(backupEvent);
-        if (!dropEvent) {
-            EnterpriseReplicationEventObject replicationEventObject = (EnterpriseReplicationEventObject) eventObject;
-            if (!replicationEventObject.getGroupNames().contains(targetGroupName)) {
-                replicationEventObject.getGroupNames().add(localGroupName);
-                WanReplicationEvent replicationEvent = new WanReplicationEvent(serviceName, eventObject);
-                int partitionId = getPartitionId(((EnterpriseReplicationEventObject) eventObject).getKey());
-                boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, dropEvent);
-                if (eventPublished) {
-                    incrementCounters(backupEvent);
-                }
+        if (isEventDroppingNeeded(backupEvent)) {
+            if (!backupEvent) {
+                wanService.getSentEventCounter(serviceName).incrementDropped(eventObject.getObjectName());
             }
+            return;
         }
+        if (eventObject.getGroupNames().contains(targetGroupName)) {
+            return;
+        }
+        eventObject.getGroupNames().add(localGroupName);
+        final WanReplicationEvent replicationEvent = new WanReplicationEvent(serviceName, eventObject);
+        final int partitionId = getPartitionId(eventObject.getKey());
+        final boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, false);
+        if (eventPublished) {
+            incrementCounters(backupEvent);
+        }
+    }
+
+    /**
+     * Increments the counter for a single map or cache and event type.
+     * The map/cache and event type is determined by the given {@code event}.
+     *
+     * @param event the WAN event
+     */
+    void incrementEventCount(WanReplicationEvent event) {
+        final String serviceName = event.getServiceName();
+        final ReplicationEventObject eventObject = event.getEventObject();
+        eventObject.incrementEventCount(wanService.getSentEventCounter(serviceName));
     }
 
     private void incrementCounters(boolean backupEvent) {
@@ -707,6 +723,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         return filteredQueues;
     }
 
+    /**
+     * Returns the count for the number of events currently in the WAN
+     * map/cache partition queues for partitions owned by this node.
+     */
     public int getCurrentElementCount() {
         return currentElementCount.get();
     }

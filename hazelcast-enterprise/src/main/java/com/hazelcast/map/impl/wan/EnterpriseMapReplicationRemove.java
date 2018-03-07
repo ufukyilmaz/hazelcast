@@ -4,6 +4,7 @@ import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.wan.impl.WanEventCounter;
 
 import java.io.IOException;
 
@@ -11,9 +12,8 @@ import java.io.IOException;
  * WAN replication object for map remove operations.
  */
 public class EnterpriseMapReplicationRemove extends EnterpriseMapReplicationObject {
-
-    Data key;
-    long removeTime;
+    private Data key;
+    private long removeTime;
 
     public EnterpriseMapReplicationRemove(String mapName, Data key, long removeTime, int backupCount) {
         super(mapName, backupCount);
@@ -50,5 +50,10 @@ public class EnterpriseMapReplicationRemove extends EnterpriseMapReplicationObje
     @Override
     public int getId() {
         return EWRDataSerializerHook.MAP_REPLICATION_REMOVE;
+    }
+
+    @Override
+    public void incrementEventCount(WanEventCounter eventCounter) {
+        eventCounter.incrementRemove(getMapName());
     }
 }

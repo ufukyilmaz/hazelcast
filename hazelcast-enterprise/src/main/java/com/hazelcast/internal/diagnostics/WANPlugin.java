@@ -1,5 +1,7 @@
 package com.hazelcast.internal.diagnostics;
 
+import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.WanSyncState;
@@ -7,11 +9,14 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.properties.HazelcastProperty;
 import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.impl.WanEventCounter;
+import com.hazelcast.wan.impl.WanEventCounter.EventCounter;
 
 import java.util.Map;
 import java.util.Map.Entry;
 
 import static com.hazelcast.internal.diagnostics.Diagnostics.PREFIX;
+import static com.hazelcast.util.MapUtil.isNullOrEmpty;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -29,6 +34,27 @@ public class WANPlugin extends DiagnosticsPlugin {
      */
     public static final HazelcastProperty PERIOD_SECONDS = new HazelcastProperty(PREFIX + ".wan.period.seconds", 0, SECONDS);
 
+    private static final String WAN_SECTION_NAME = "WAN";
+
+    private static final String CACHE_EVENT_COUNT_SECTION_PREFIX = "cache";
+    private static final String MAP_EVENT_COUNT_SECTION_PREFIX = "map";
+    private static final String SYNC_EVENT_COUNT_KEY = "syncCount";
+    private static final String UPDATE_EVENT_COUNT_KEY = "updateCount";
+    private static final String REMOVE_EVENT_COUNT_KEY = "removeCount";
+    private static final String DROPPED_EVENT_COUNT_KEY = "droppedCount";
+
+    private static final String PUBLISHER_OUTBOUND_QUEUE_SIZE_KEY = "outboundQueueSize";
+    private static final String PUBLISHER_TOTAL_PUBLISHED_EVENT_COUNT_KEY = "totalPublishedEventCount";
+    private static final String PUBLISHER_TOTAL_PUBLISH_LATENCY_KEY = "totalPublishLatency";
+    private static final String PUBLISHER_CONNECTED_KEY = "connected";
+    private static final String PUBLISHER_PAUSED_KEY = "paused";
+
+    private static final String WAN_SYNC_SECTION_NAME = "syncState";
+    private static final String WAN_SYNC_STATUS_KEY = "status";
+    private static final String WAN_SYNC_ACTIVE_WAN_CONFIG_NAME_KEY = "activeWanConfigName";
+    private static final String WAN_SYNC_ACTIVE_PUBLISHER_NAME_KEY = "activePublisherName";
+    private static final String WAN_SYNC_SYNCED_PARTITION_COUNT_KEY = "syncedPartitionCount";
+
 
     private final long periodMillis;
     private final WanReplicationService wanService;
@@ -37,7 +63,7 @@ public class WANPlugin extends DiagnosticsPlugin {
         super(nodeEngine.getLogger(WANPlugin.class));
         final HazelcastProperties props = nodeEngine.getProperties();
 
-        wanService = nodeEngine.getService(WanReplicationService.SERVICE_NAME);
+        this.wanService = nodeEngine.getWanReplicationService();
         this.periodMillis = props.getMillis(PERIOD_SECONDS);
     }
 
@@ -53,15 +79,43 @@ public class WANPlugin extends DiagnosticsPlugin {
 
     @Override
     public void run(DiagnosticsLogWriter writer) {
-        writer.startSection("WAN");
+        writer.startSection(WAN_SECTION_NAME);
+        renderReceivedEvents(MAP_EVENT_COUNT_SECTION_PREFIX, writer,
+                wanService.getReceivedEventCounter(MapService.SERVICE_NAME));
+        renderReceivedEvents(CACHE_EVENT_COUNT_SECTION_PREFIX, writer,
+                wanService.getReceivedEventCounter(CacheService.SERVICE_NAME));
 
         renderWanSyncState(writer);
         final Map<String, LocalWanStats> stats = wanService.getStats();
-        for (Entry<String, LocalWanStats> entry : stats.entrySet()) {
-            renderWanReplication(writer, entry.getKey(), entry.getValue());
+        if (stats != null) {
+            for (Entry<String, LocalWanStats> entry : stats.entrySet()) {
+                renderWanReplication(writer, entry.getKey(), entry.getValue());
+            }
         }
-
         writer.endSection();
+    }
+
+    /**
+     * Renders the diagnostics for received events for all distributed
+     * objects of a single type (map or cache).
+     *
+     * @param distributedObjectType prefix for section under which the stats are
+     *                              grouped
+     * @param writer                the diagnostics log writer
+     * @param eventCounter          the received event counts
+     */
+    private void renderReceivedEvents(String distributedObjectType,
+                                      DiagnosticsLogWriter writer,
+                                      WanEventCounter eventCounter) {
+        if (eventCounter != null && !isNullOrEmpty(eventCounter.getEventCounterMap())) {
+            for (Entry<String, EventCounter> mapCounterEntry : eventCounter.getEventCounterMap().entrySet()) {
+                writer.startSection(distributedObjectType + "ReceivedEvents-" + mapCounterEntry.getKey());
+                writer.writeKeyValueEntry(SYNC_EVENT_COUNT_KEY, mapCounterEntry.getValue().getSyncCount());
+                writer.writeKeyValueEntry(UPDATE_EVENT_COUNT_KEY, mapCounterEntry.getValue().getUpdateCount());
+                writer.writeKeyValueEntry(REMOVE_EVENT_COUNT_KEY, mapCounterEntry.getValue().getRemoveCount());
+                writer.endSection();
+            }
+        }
     }
 
     /**
@@ -94,12 +148,30 @@ public class WANPlugin extends DiagnosticsPlugin {
      */
     private void renderWanPublisher(DiagnosticsLogWriter writer, String groupName, LocalWanPublisherStats stats) {
         writer.startSection(groupName);
-        writer.writeKeyValueEntry("outboundQueueSize", stats.getOutboundQueueSize());
-        writer.writeKeyValueEntry("totalPublishedEventCount", stats.getTotalPublishedEventCount());
-        writer.writeKeyValueEntry("totalPublishLatency", stats.getTotalPublishLatency());
-        writer.writeKeyValueEntry("connected", stats.isConnected());
-        writer.writeKeyValueEntry("paused", stats.isPaused());
+        writer.writeKeyValueEntry(PUBLISHER_OUTBOUND_QUEUE_SIZE_KEY, stats.getOutboundQueueSize());
+        writer.writeKeyValueEntry(PUBLISHER_TOTAL_PUBLISHED_EVENT_COUNT_KEY, stats.getTotalPublishedEventCount());
+        writer.writeKeyValueEntry(PUBLISHER_TOTAL_PUBLISH_LATENCY_KEY, stats.getTotalPublishLatency());
+        writer.writeKeyValueEntry(PUBLISHER_CONNECTED_KEY, stats.isConnected());
+        writer.writeKeyValueEntry(PUBLISHER_PAUSED_KEY, stats.isPaused());
+        renderSentEventCounts(writer, CACHE_EVENT_COUNT_SECTION_PREFIX, stats.getSentCacheEventCounter());
+        renderSentEventCounts(writer, MAP_EVENT_COUNT_SECTION_PREFIX, stats.getSentMapEventCounter());
         writer.endSection();
+    }
+
+    private void renderSentEventCounts(DiagnosticsLogWriter writer,
+                                       String distributedObjectType,
+                                       Map<String, EventCounter> sentEventCount) {
+        if (!isNullOrEmpty(sentEventCount)) {
+            for (Entry<String, EventCounter> sentCacheEvents : sentEventCount.entrySet()) {
+                final EventCounter sentEvents = sentCacheEvents.getValue();
+                writer.startSection(distributedObjectType + "SentEvents-" + sentCacheEvents.getKey());
+                writer.writeKeyValueEntry(UPDATE_EVENT_COUNT_KEY, sentEvents.getUpdateCount());
+                writer.writeKeyValueEntry(REMOVE_EVENT_COUNT_KEY, sentEvents.getRemoveCount());
+                writer.writeKeyValueEntry(SYNC_EVENT_COUNT_KEY, sentEvents.getSyncCount());
+                writer.writeKeyValueEntry(DROPPED_EVENT_COUNT_KEY, sentEvents.getDroppedCount());
+                writer.endSection();
+            }
+        }
     }
 
     /**
@@ -112,11 +184,11 @@ public class WANPlugin extends DiagnosticsPlugin {
     private void renderWanSyncState(DiagnosticsLogWriter writer) {
         final WanSyncState syncState = wanService.getWanSyncState();
 
-        writer.startSection("syncState");
-        writer.writeKeyValueEntry("status", syncState.getStatus().toString());
-        writer.writeKeyValueEntry("activeWanConfigName", syncState.getActiveWanConfigName());
-        writer.writeKeyValueEntry("activePublisherName", syncState.getActivePublisherName());
-        writer.writeKeyValueEntry("syncedPartitionCount", syncState.getSyncedPartitionCount());
+        writer.startSection(WAN_SYNC_SECTION_NAME);
+        writer.writeKeyValueEntry(WAN_SYNC_STATUS_KEY, syncState.getStatus().toString());
+        writer.writeKeyValueEntry(WAN_SYNC_ACTIVE_WAN_CONFIG_NAME_KEY, syncState.getActiveWanConfigName());
+        writer.writeKeyValueEntry(WAN_SYNC_ACTIVE_PUBLISHER_NAME_KEY, syncState.getActivePublisherName());
+        writer.writeKeyValueEntry(WAN_SYNC_SYNCED_PARTITION_COUNT_KEY, syncState.getSyncedPartitionCount());
         writer.endSection();
     }
 }

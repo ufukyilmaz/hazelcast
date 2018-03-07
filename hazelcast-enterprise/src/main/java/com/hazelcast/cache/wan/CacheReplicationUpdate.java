@@ -5,6 +5,7 @@ import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.wan.impl.WanEventCounter;
 
 import java.io.IOException;
 
@@ -12,7 +13,6 @@ import java.io.IOException;
  * WAN replication object for cache update operations.
  */
 public class CacheReplicationUpdate extends CacheReplicationObject {
-
     private String mergePolicy;
     private CacheEntryView<Data, Data> entryView;
 
@@ -57,5 +57,10 @@ public class CacheReplicationUpdate extends CacheReplicationObject {
     @Override
     public int getId() {
         return EWRDataSerializerHook.CACHE_REPLICATION_UPDATE;
+    }
+
+    @Override
+    public void incrementEventCount(WanEventCounter eventCounter) {
+        eventCounter.incrementUpdate(getCacheName());
     }
 }

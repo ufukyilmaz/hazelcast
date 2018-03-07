@@ -160,7 +160,7 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
             int failureCount = 0;
             for (WanReplicationEndpoint endpoint : atob.getEndpoints()) {
                 final WanBatchReplication batchReplication = (WanBatchReplication) endpoint;
-                failureCount += batchReplication.getFailureCount();
+                failureCount += batchReplication.getFailedTransmissionCount();
             }
             assertEquals("Encountered failure in WAN replication", expectedFailureCount, failureCount);
         }

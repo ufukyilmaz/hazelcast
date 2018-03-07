@@ -50,33 +50,55 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
     }
 
     @Test
-    public void putAll() {
+    public void testWanDiagnosticsForActiveAndPassiveCluster() {
         final String setupName = "atob";
-        setupReplicateFrom(configA, configB, clusterB.length, setupName, PassThroughMergePolicy.class.getName());
-        startClusterA();
-        startClusterB();
+        setupReplicateFrom(configA, configB, singleNodeB.length, setupName, PassThroughMergePolicy.class.getName());
+        initCluster(singleNodeA, configA);
+        initCluster(singleNodeB, configB);
 
-        final WANPlugin wanPlugin = new WANPlugin(getNodeEngineImpl(clusterA[0]));
-        wanPlugin.onStart();
+        final WANPlugin wanPluginClusterA = new WANPlugin(getNodeEngineImpl(singleNodeA[0]));
+        final WANPlugin wanPluginClusterB = new WANPlugin(getNodeEngineImpl(singleNodeB[0]));
+        wanPluginClusterA.onStart();
+        wanPluginClusterB.onStart();
 
-        IMap<Integer, Integer> map = getMap(clusterA, MAP_NAME);
+        IMap<Integer, Integer> map = getMap(singleNodeA, MAP_NAME);
         for (int i = 0; i < EVENT_COUNTER; i++) {
             map.put(i, i);
         }
 
-        assertKeysIn(clusterB, MAP_NAME, 0, 10);
+        assertKeysIn(singleNodeB, MAP_NAME, 0, EVENT_COUNTER);
 
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() throws Exception {
-                wanPlugin.run(logWriter);
+                reset();
+                wanPluginClusterA.run(logWriter);
+                final String content = getContent();
+                assertContains(content, "WAN");
+                assertContains(content, "activeWanConfigName");
+                assertContains(content, "activePublisherName");
+                assertContains(content, "totalPublishLatency");
+                assertContains(content, "totalPublishedEventCount");
+                assertContains(content, "totalPublishLatency");
+                assertContains(content, "mapSentEvents-myMap");
+                assertContains(content, "updateCount");
+                assertContains(content, "removeCount");
+                assertContains(content, "syncCount");
+                assertContains(content, "droppedCount");
+            }
+        });
 
-                assertContains(getContent(), "WAN");
-                assertContains(getContent(), "activeWanConfigName");
-                assertContains(getContent(), "activePublisherName");
-                assertContains(getContent(), "totalPublishLatency");
-                assertContains(getContent(), "totalPublishedEventCount");
-                assertContains(getContent(), "totalPublishLatency");
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                reset();
+                wanPluginClusterB.run(logWriter);
+                final String content = getContent();
+                assertContains(content, "WAN");
+                assertContains(content, "mapReceivedEvents-myMap");
+                assertContains(content, "updateCount");
+                assertContains(content, "removeCount");
+                assertContains(content, "syncCount");
             }
         });
     }

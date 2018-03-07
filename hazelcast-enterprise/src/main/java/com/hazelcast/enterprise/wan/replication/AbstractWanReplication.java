@@ -3,21 +3,13 @@ package com.hazelcast.enterprise.wan.replication;
 import com.hazelcast.config.AwsConfig;
 import com.hazelcast.config.DiscoveryConfig;
 import com.hazelcast.config.InvalidConfigurationException;
-import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.discovery.StaticDiscoveryProperties;
 import com.hazelcast.enterprise.wan.discovery.StaticDiscoveryStrategy;
-import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.instance.Node;
 import com.hazelcast.nio.Address;
-import com.hazelcast.nio.serialization.DataSerializable;
-import com.hazelcast.spi.InternalCompletableFuture;
-import com.hazelcast.spi.InvocationBuilder;
-import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.discovery.DiscoveryStrategy;
 import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
 import com.hazelcast.spi.discovery.integration.DiscoveryService;
@@ -27,11 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ACK_TYPE;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.BATCH_MAX_DELAY_MILLIS;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.BATCH_SIZE;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.RESPONSE_TIMEOUT_MILLIS;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.getProperty;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.Preconditions.checkNotNull;
@@ -42,28 +30,14 @@ import static com.hazelcast.util.StringUtil.isNullOrEmpty;
  */
 public abstract class AbstractWanReplication extends AbstractWanPublisher {
 
-    private static final int DEFAULT_BATCH_SIZE = 500;
-    private static final long DEFAULT_BATCH_MAX_DELAY_MILLIS = 1000;
-    private static final long DEFAULT_RESPONSE_TIMEOUT_MILLIS = 60000;
-
-    protected WanAcknowledgeType acknowledgeType;
     protected WanConnectionManager connectionManager;
 
-    protected int batchSize;
-    protected long batchMaxDelayMillis;
-    protected long responseTimeoutMillis;
     private DiscoveryService discoveryService;
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
         super.init(node, wanReplicationConfig, publisherConfig);
         final Map<String, Comparable> publisherProps = publisherConfig.getProperties();
-
-        this.batchSize = getProperty(BATCH_SIZE, publisherProps, DEFAULT_BATCH_SIZE);
-        this.batchMaxDelayMillis = getProperty(BATCH_MAX_DELAY_MILLIS, publisherProps, DEFAULT_BATCH_MAX_DELAY_MILLIS);
-        this.responseTimeoutMillis = getProperty(RESPONSE_TIMEOUT_MILLIS, publisherProps, DEFAULT_RESPONSE_TIMEOUT_MILLIS);
-        this.acknowledgeType = WanAcknowledgeType.valueOf(
-                getProperty(ACK_TYPE, publisherProps, WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE.name()));
 
         this.discoveryService = checkNotNull(createDiscoveryService(publisherConfig));
         this.discoveryService.start();
@@ -130,19 +104,6 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
         properties.put(StaticDiscoveryProperties.ENDPOINTS.key(), endpoints);
         properties.put(StaticDiscoveryProperties.PORT.key(), node.getConfig().getNetworkConfig().getPort());
         return new StaticDiscoveryStrategy(logger, properties);
-    }
-
-    protected boolean invokeOnWanTarget(Address target, DataSerializable event) {
-        Operation wanOperation
-                = new WanOperation(node.nodeEngine.getSerializationService().toData(event), acknowledgeType);
-        OperationService operationService = node.nodeEngine.getOperationService();
-        String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
-        InvocationBuilder invocationBuilder
-                = operationService.createInvocationBuilder(serviceName, wanOperation, target);
-        InternalCompletableFuture<Boolean> future = invocationBuilder.setTryCount(1)
-                .setCallTimeout(responseTimeoutMillis)
-                .invoke();
-        return future.join();
     }
 
     /**

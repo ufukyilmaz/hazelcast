@@ -2,31 +2,40 @@ package com.hazelcast.client.map.impl.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.annotation.ParallelTest;
-import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Before;
+import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.config.NearCacheConfig.DEFAULT_SERIALIZE_KEYS;
+import java.util.Collection;
+
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
-import static com.hazelcast.internal.nearcache.NearCacheTestUtils.createNearCacheConfig;
+import static java.util.Arrays.asList;
 
 /**
  * Basic HiDensity Near Cache tests for {@link com.hazelcast.core.IMap} on Hazelcast clients.
  */
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
-public class ClientHDMapNearCacheBasicTest extends ClientMapNearCacheBasicTest {
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Category(SlowTest.class)
+public class ClientHDMapNearCacheBasicSlowTest extends ClientMapNearCacheBasicSlowTest {
 
-    @Before
-    public void setUp() {
-        nearCacheConfig = createNearCacheConfig(NATIVE, DEFAULT_SERIALIZE_KEYS);
+    @Parameters(name = "format:{0} serializeKeys:{1}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {InMemoryFormat.NATIVE, true},
+                {InMemoryFormat.NATIVE, false},
+
+                {InMemoryFormat.BINARY, false},
+                {InMemoryFormat.OBJECT, false},
+        });
     }
 
     @Override

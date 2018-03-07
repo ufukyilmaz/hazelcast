@@ -8,6 +8,7 @@ import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.internal.nearcache.NearCacheRecord;
 import com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector;
 import com.hazelcast.internal.nearcache.impl.preloader.NearCachePreloader;
+import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.monitor.NearCacheStats;
@@ -24,7 +25,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector.ALWAYS_FRESH;
 import static com.hazelcast.nio.IOUtil.closeResource;
-import static java.lang.Runtime.getRuntime;
 
 /**
  * Segmented {@link HiDensityNearCacheRecordStore} which improves performance by using multiple
@@ -59,7 +59,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         this.nearCacheStats = new NearCacheStatsImpl();
         this.memoryManager = getMemoryManager(serializationService);
         this.evictionDisabled = nearCacheConfig.getEvictionConfig().getEvictionPolicy() == NONE;
-        int concurrencyLevel = Math.max(16, 8 * getRuntime().availableProcessors());
+        int concurrencyLevel = Math.max(16, 8 * RuntimeAvailableProcessors.get());
         // find power-of-two sizes best matching arguments
         int segmentShift = 0;
         int segmentSize = 1;

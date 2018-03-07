@@ -5,6 +5,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -17,7 +18,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
-import static java.lang.Runtime.getRuntime;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -136,7 +136,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     @Test
     public void createEntryBiggerThanNativeMemory() {
         // given
-        int estimatedNearCacheConcurrencyLevel = nextPowerOfTwo(8 * getRuntime().availableProcessors());
+        int estimatedNearCacheConcurrencyLevel = nextPowerOfTwo(8 * RuntimeAvailableProcessors.get());
         int metaKbPerEmptyNearCacheSegment = 4;
         int metadataSizeToTotalNativeSizeFactor = 8;
         int size = estimatedNearCacheConcurrencyLevel * metaKbPerEmptyNearCacheSegment * metadataSizeToTotalNativeSizeFactor;

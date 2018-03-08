@@ -16,8 +16,11 @@
 
 package com.hazelcast.client.cache.nearcache;
 
+import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -25,6 +28,8 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
+import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
+import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
@@ -50,6 +55,18 @@ public class ClientHDCacheNearCachePreloaderSlowTest extends ClientCacheNearCach
                 {InMemoryFormat.OBJECT, true, true},
                 {InMemoryFormat.OBJECT, true, false},
         });
+    }
+
+    @Override
+    protected Config getConfig() {
+        return getNearCacheHDConfig();
+    }
+
+    @Override
+    protected ClientConfig getClientConfig() {
+        return super.getClientConfig()
+                .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
+                .setNativeMemoryConfig(createNativeMemoryConfig());
     }
 
 }

@@ -28,6 +28,7 @@ public class EnterpriseMapMigrationAwareService extends MapMigrationAwareService
 
         Operation operation = new EnterpriseMapReplicationOperation(container, partitionId, event.getReplicaIndex());
         operation.setService(mapServiceContext.getService());
+        operation.setNodeEngine(mapServiceContext.getNodeEngine());
 
         return operation;
     }
@@ -40,6 +41,7 @@ public class EnterpriseMapMigrationAwareService extends MapMigrationAwareService
 
         Operation operation = new EnterpriseMapReplicationOperation(container, namespaces, partitionId, event.getReplicaIndex());
         operation.setService(mapServiceContext.getService());
+        operation.setNodeEngine(mapServiceContext.getNodeEngine());
 
         return operation;
     }

@@ -11,7 +11,7 @@ import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.SplitBrainMergePolicy;
-import com.hazelcast.spi.merge.MergingEntryHolder;
+import com.hazelcast.spi.merge.MergingEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
  */
 public class HDMergeOperation extends HDMapOperation implements PartitionAwareOperation, BackupAwareOperation {
 
-    private List<MergingEntryHolder<Data, Data>> mergingEntries;
+    private List<MergingEntry<Data, Data>> mergingEntries;
     private SplitBrainMergePolicy mergePolicy;
     private boolean disableWanReplicationEvent;
 
@@ -48,7 +48,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     public HDMergeOperation() {
     }
 
-    HDMergeOperation(String name, List<MergingEntryHolder<Data, Data>> mergingEntries, SplitBrainMergePolicy policy,
+    HDMergeOperation(String name, List<MergingEntry<Data, Data>> mergingEntries, SplitBrainMergePolicy policy,
                      boolean disableWanReplicationEvent) {
         super(name);
         this.mergingEntries = mergingEntries;
@@ -84,7 +84,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
         }
     }
 
-    private void merge(MergingEntryHolder<Data, Data> mergingEntry) {
+    private void merge(MergingEntry<Data, Data> mergingEntry) {
         Data dataKey = mergingEntry.getKey();
         Data oldValue = hasMapListener ? getValue(dataKey) : null;
 
@@ -164,7 +164,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeInt(mergingEntries.size());
-        for (MergingEntryHolder<Data, Data> mergingEntry : mergingEntries) {
+        for (MergingEntry<Data, Data> mergingEntry : mergingEntries) {
             out.writeObject(mergingEntry);
         }
         out.writeObject(mergePolicy);
@@ -175,9 +175,9 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        mergingEntries = new ArrayList<MergingEntryHolder<Data, Data>>(size);
+        mergingEntries = new ArrayList<MergingEntry<Data, Data>>(size);
         for (int i = 0; i < size; i++) {
-            MergingEntryHolder<Data, Data> mergingEntry = in.readObject();
+            MergingEntry<Data, Data> mergingEntry = in.readObject();
             mergingEntries.add(mergingEntry);
         }
         mergePolicy = in.readObject();

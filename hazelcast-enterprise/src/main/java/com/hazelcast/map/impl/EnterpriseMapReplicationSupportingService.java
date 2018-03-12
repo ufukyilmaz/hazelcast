@@ -18,12 +18,12 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.SplitBrainMergePolicy;
-import com.hazelcast.spi.merge.MergingEntryHolder;
+import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationService;
 
-import static com.hazelcast.spi.impl.merge.MergingHolders.createMergeHolder;
+import static com.hazelcast.spi.impl.merge.MergingValueFactory.createMergingEntry;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
@@ -129,7 +129,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         final Operation operation;
 
         if (mergePolicy instanceof SplitBrainMergePolicy) {
-            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(nodeEngine.getSerializationService(),
+            MergingEntry<Data, Data> mergingEntry = createMergingEntry(nodeEngine.getSerializationService(),
                     event.getEntryView());
             key = mergingEntry.getKey();
             operation = operationProvider.createMergeOperation(mapName, mergingEntry,
@@ -182,7 +182,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
         // RU_COMPAT_3_9
         if (nodeEngine.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V3_10)) {
-            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(nodeEngine.getSerializationService(),
+            MergingEntry<Data, Data> mergingEntry = createMergingEntry(nodeEngine.getSerializationService(),
                     event.getEntryView());
             MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
             invokeOnPartition(mergingEntry.getKey(), operation);
@@ -206,7 +206,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             return nodeEngine.getOperationService()
-                             .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
+                    .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
             throw rethrow(t);
         }

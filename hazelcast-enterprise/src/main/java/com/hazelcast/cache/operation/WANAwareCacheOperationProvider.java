@@ -6,7 +6,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationFactory;
 import com.hazelcast.spi.SplitBrainMergePolicy;
-import com.hazelcast.spi.merge.MergingEntryHolder;
+import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -134,7 +134,7 @@ public class WANAwareCacheOperationProvider extends EnterpriseCacheOperationProv
     }
 
     @Override
-    public Operation createWanMergeOperation(String origin, MergingEntryHolder<Data, Data> mergingEntry,
+    public Operation createWanMergeOperation(String origin, MergingEntry<Data, Data> mergingEntry,
                                              SplitBrainMergePolicy mergePolicy, int completionId) {
         return delegate.createWanMergeOperation(origin, mergingEntry, mergePolicy, completionId);
     }

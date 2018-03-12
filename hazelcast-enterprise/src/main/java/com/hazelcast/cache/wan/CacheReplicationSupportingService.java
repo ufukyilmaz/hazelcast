@@ -17,13 +17,13 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.SplitBrainMergePolicy;
-import com.hazelcast.spi.merge.MergingEntryHolder;
+import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationService;
 
 import static com.hazelcast.cache.impl.operation.MutableOperation.IGNORE_COMPLETION;
-import static com.hazelcast.spi.impl.merge.MergingHolders.createMergeHolder;
+import static com.hazelcast.spi.impl.merge.MergingValueFactory.createMergingEntry;
 
 /**
  * This class handles incoming cache WAN replication events.
@@ -68,12 +68,12 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
             handleUpdateEvent((CacheReplicationUpdate) cacheReplicationObject,
                     cacheConfig, replicationEvent.getAcknowledgeType());
             wanService.getReceivedEventCounter(ICacheService.SERVICE_NAME)
-                      .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
+                    .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
         } else if (cacheReplicationObject instanceof CacheReplicationRemove) {
             handleRemoveEvent((CacheReplicationRemove) cacheReplicationObject,
                     cacheConfig, replicationEvent.getAcknowledgeType());
             wanService.getReceivedEventCounter(ICacheService.SERVICE_NAME)
-                      .incrementRemove(cacheReplicationObject.getNameWithPrefix());
+                    .incrementRemove(cacheReplicationObject.getNameWithPrefix());
         }
     }
 
@@ -114,7 +114,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
             // in that case, scheduled thread is used, not the operation thread
             InternalCompletableFuture future =
                     nodeEngine.getOperationService()
-                              .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
+                            .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
             future.join();
         }
         return cacheConfig;
@@ -185,11 +185,11 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         final EnterpriseCacheOperationProvider operationProvider = (EnterpriseCacheOperationProvider) cacheService
                 .getCacheOperationProvider(event.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
         final Object mergePolicy = cacheService.getCacheMergePolicyProvider()
-                                               .getMergePolicy(event.getMergePolicy());
+                .getMergePolicy(event.getMergePolicy());
 
         Operation operation;
         if (mergePolicy instanceof SplitBrainMergePolicy) {
-            MergingEntryHolder<Data, Data> mergingEntry = createMergeHolder(nodeEngine.getSerializationService(),
+            MergingEntry<Data, Data> mergingEntry = createMergingEntry(nodeEngine.getSerializationService(),
                     event.getEntryView());
             operation = operationProvider.createWanMergeOperation(ORIGIN, mergingEntry, (SplitBrainMergePolicy) mergePolicy,
                     IGNORE_COMPLETION);
@@ -216,7 +216,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             return nodeEngine.getOperationService()
-                             .invokeOnPartition(ICacheService.SERVICE_NAME, operation, partitionId);
+                    .invokeOnPartition(ICacheService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
             throw ExceptionUtil.rethrow(t);
         }

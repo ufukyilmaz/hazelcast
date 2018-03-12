@@ -3,7 +3,7 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.SplitBrainMergePolicy;
-import com.hazelcast.spi.merge.MergingEntryHolder;
+import com.hazelcast.spi.merge.MergingEntry;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Arrays;
@@ -20,7 +20,7 @@ public class HDMergeOperationFactory extends MergeOperationFactory {
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public HDMergeOperationFactory(String name, int[] partitions, List<MergingEntryHolder<Data, Data>>[] mergingEntries,
+    public HDMergeOperationFactory(String name, int[] partitions, List<MergingEntry<Data, Data>>[] mergingEntries,
                                    SplitBrainMergePolicy mergePolicy) {
         this.name = name;
         this.partitions = partitions;

@@ -8,7 +8,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.SplitBrainMergePolicy;
-import com.hazelcast.spi.merge.MergingEntryHolder;
+import com.hazelcast.spi.merge.MergingEntry;
 
 import java.io.IOException;
 
@@ -23,24 +23,24 @@ import static java.lang.Boolean.TRUE;
 public class WanCacheMergeOperation
         extends AbstractMutatingCacheOperation {
 
-    private MergingEntryHolder<Data, Data> mergingEntries;
+    private MergingEntry<Data, Data> mergingEntry;
     private SplitBrainMergePolicy mergePolicy;
     private String wanGroupName;
 
     public WanCacheMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, String wanGroupName, MergingEntryHolder<Data, Data> mergingEntries,
+    public WanCacheMergeOperation(String name, String wanGroupName, MergingEntry<Data, Data> mergingEntry,
                                   SplitBrainMergePolicy mergePolicy, int completionId) {
-        super(name, mergingEntries.getKey(), completionId);
-        this.mergingEntries = mergingEntries;
+        super(name, mergingEntry.getKey(), completionId);
+        this.mergingEntry = mergingEntry;
         this.mergePolicy = mergePolicy;
         this.wanGroupName = wanGroupName;
     }
 
     @Override
     public void run() throws Exception {
-        CacheRecord record = cache.merge(mergingEntries, mergePolicy);
+        CacheRecord record = cache.merge(mergingEntry, mergePolicy);
         if (record != null) {
             response = true;
             backupRecord = cache.getRecord(key);
@@ -60,7 +60,7 @@ public class WanCacheMergeOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeObject(mergingEntries);
+        out.writeObject(mergingEntry);
         out.writeObject(mergePolicy);
         out.writeUTF(wanGroupName);
     }
@@ -68,7 +68,7 @@ public class WanCacheMergeOperation
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        mergingEntries = in.readObject();
+        mergingEntry = in.readObject();
         mergePolicy = in.readObject();
         wanGroupName = in.readUTF();
     }

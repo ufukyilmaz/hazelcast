@@ -1,21 +1,19 @@
 package com.hazelcast.client.nio.ssl;
 
-import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,7 +44,7 @@ import static org.junit.Assume.assumeTrue;
  */
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({QuickTest.class})
+@Category({ QuickTest.class, ParallelTest.class })
 public class TlsFunctionalTest {
 
     private static final String KEYSTORE_SERVER = "server.keystore";
@@ -59,6 +57,8 @@ public class TlsFunctionalTest {
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     private final ILogger logger = Logger.getLogger(TlsFunctionalTest.class);
+
+    private final TestAwareClientFactory factory = new TestAwareClientFactory();
 
     @Parameter
     public boolean mutualAuthentication;
@@ -76,20 +76,19 @@ public class TlsFunctionalTest {
         });
     }
 
-    @AfterClass
-    public static void shutDownAll() {
-        HazelcastClient.shutdownAll();
-        HazelcastInstanceFactory.terminateAll();
+    @After
+    public void after() {
+        factory.terminateAll();
     }
 
     @Before
     public void before() {
         assumeTrue("OpenSSL enabled but not available", !openSsl || isOpenSslSupported());
-        shutDownAll();
     }
 
     /**
      * Case - Valid/trusted configuration.
+     *
      * <pre>
      * Given: TLS is enabled on members and client
      * When: members has a valid and matching keystore + truststore configured; clients have matching SSL configured
@@ -99,14 +98,15 @@ public class TlsFunctionalTest {
     @Test
     public void testValidConfiguration() throws IOException {
         Config config = createMemberConfig();
-        HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
-        HazelcastClient.newHazelcastClient(createClientConfig()).getMap("test").put("a", "b");
+        factory.newHazelcastClient(createClientConfig()).getMap("test").put("a", "b");
     }
 
     /**
      * Case - Member with TLS, Client without TLS.
+     *
      * <pre>
      * Given: TLS is enabled on members but not on clients
      * When: client tries to connect to a member
@@ -115,11 +115,11 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testOnlyMemberHasTls() throws IOException {
-        Hazelcast.newHazelcastInstance(createMemberConfig());
+        factory.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();
         clientConfig.getNetworkConfig().setSSLConfig(null);
         try {
-            HazelcastClient.newHazelcastClient(clientConfig);
+            factory.newHazelcastClient(clientConfig);
             fail("Client should not be able to connect");
         } catch (IllegalStateException expected) {
             // expected
@@ -128,6 +128,7 @@ public class TlsFunctionalTest {
 
     /**
      * Case - Member without TLS, Client with TLS.
+     *
      * <pre>
      * Given: TLS is enabled on clients but not on members
      * When: client tries to connect to a member
@@ -138,9 +139,9 @@ public class TlsFunctionalTest {
     public void testOnlyClientHasTls() throws IOException {
         Config config = createMemberConfig();
         config.getNetworkConfig().setSSLConfig(null);
-        Hazelcast.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
         try {
-            HazelcastClient.newHazelcastClient(createClientConfig());
+            factory.newHazelcastClient(createClientConfig());
             fail("Client should not be able to connect");
         } catch (IllegalStateException expected) {
             // expected
@@ -149,6 +150,7 @@ public class TlsFunctionalTest {
 
     /**
      * Case - Untrusted configuration.
+     *
      * <pre>
      * Given: TLS is enabled on members and client
      * When: certificates in member truststore doesn't cover the certificate in the keystore
@@ -163,14 +165,14 @@ public class TlsFunctionalTest {
         String untrustedTruststore = copyResource(TRUSTSTORE_UNTRUSTED).getAbsolutePath();
         sslConfig.setProperty("trustStore", untrustedTruststore);
 
-        HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(1, hz1, hz2);
         try {
             ClientConfig clientConfig = createClientConfig();
             sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
             sslConfig.setProperty("trustStore", untrustedTruststore);
-            HazelcastClient.newHazelcastClient(clientConfig);
+            factory.newHazelcastClient(clientConfig);
             fail("Client should not be able to connect");
         } catch (IllegalStateException expected) {
             // expected
@@ -179,6 +181,7 @@ public class TlsFunctionalTest {
 
     /**
      * Case - Valid Ciphersuites.
+     *
      * <pre>
      * Given: TLS is enabled
      * When: Ciphersuite configuration is provided with supported values
@@ -190,27 +193,27 @@ public class TlsFunctionalTest {
         String cipherSuites =
                 // OpenJDK
                 "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
-                + "TLS_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,"
-                + "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA,"
-                // IBM Java
-                + "SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,"
-                + "SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA256,"
-                + "SSL_RSA_WITH_AES_128_CBC_SHA,SSL_RSA_WITH_AES_128_CBC_SHA256"
-                ;
+                        + "TLS_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,"
+                        + "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA,"
+                        // IBM Java
+                        + "SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,"
+                        + "SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA256,"
+                        + "SSL_RSA_WITH_AES_128_CBC_SHA,SSL_RSA_WITH_AES_128_CBC_SHA256";
         Config config = createMemberConfig();
         SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("ciphersuites", cipherSuites);
-        HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
         ClientConfig clientConfig = createClientConfig();
         sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("ciphersuites", cipherSuites);
-        HazelcastClient.newHazelcastClient(clientConfig).getMap("test").put("a", "b");
+        factory.newHazelcastClient(clientConfig).getMap("test").put("a", "b");
     }
 
     /**
      * Case - Invalid Ciphersuites.
+     *
      * <pre>
      * Given: TLS is enabled
      * When: Ciphersuite configuration is provided with unsupported values
@@ -222,11 +225,12 @@ public class TlsFunctionalTest {
         Config config = createMemberConfig();
         SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("ciphersuites", "foo,bar");
-        Hazelcast.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
     }
 
     /**
      * Case - Invalid Ciphersuites in Client.
+     *
      * <pre>
      * Given: TLS is enabled
      * When: Ciphersuite configuration is provided in client with unsupported values
@@ -235,15 +239,16 @@ public class TlsFunctionalTest {
      */
     @Test(expected = HazelcastException.class)
     public void testUnsupportedClientCipherSuiteNames() throws IOException {
-        Hazelcast.newHazelcastInstance(createMemberConfig());
+        factory.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();
         SSLConfig sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("ciphersuites", "foo,bar");
-        HazelcastClient.newHazelcastClient(clientConfig);
+        factory.newHazelcastClient(clientConfig);
     }
 
     /**
      * Case - Valid Protocol.
+     *
      * <pre>
      * Given: TLS is enabled
      * When: Protocol configuration is provided with supported value
@@ -253,20 +258,19 @@ public class TlsFunctionalTest {
     @Test
     public void testSupportedProtocolName() throws IOException {
         Config config = createMemberConfig();
-        config.getNetworkConfig().getSSLConfig()
-                .setProperty("protocol", "TLS");
-        HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(config);
+        config.getNetworkConfig().getSSLConfig().setProperty("protocol", "TLS");
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
 
         ClientConfig clientConfig = createClientConfig();
-        clientConfig.getNetworkConfig().getSSLConfig()
-                .setProperty("protocol", "TLS");
-        HazelcastClient.newHazelcastClient(clientConfig).getMap("test").put("a", "b");
+        clientConfig.getNetworkConfig().getSSLConfig().setProperty("protocol", "TLS");
+        factory.newHazelcastClient(clientConfig).getMap("test").put("a", "b");
     }
 
     /**
      * Case - Invalid Protocol.
+     *
      * <pre>
      * Given: TLS is enabled
      * When: Protocol configuration is provided with unsupported value
@@ -278,11 +282,12 @@ public class TlsFunctionalTest {
         Config config = createMemberConfig();
         SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("protocol", "hazelcast");
-        Hazelcast.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
     }
 
     /**
      * Case - Invalid Protocol in Client.
+     *
      * <pre>
      * Given: TLS is enabled
      * When: Protocol configuration is provided in client with an unsupported value
@@ -291,16 +296,15 @@ public class TlsFunctionalTest {
      */
     @Test(expected = HazelcastException.class)
     public void testUnsupportedClientProtocolName() throws IOException {
-        Hazelcast.newHazelcastInstance(createMemberConfig());
+        factory.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();
         SSLConfig sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("protocol", "hazelcast");
-        HazelcastClient.newHazelcastClient(clientConfig);
+        factory.newHazelcastClient(clientConfig);
     }
 
     private Config createMemberConfig() throws IOException {
-        SSLConfig sslConfig = new SSLConfig()
-                .setEnabled(true)
+        SSLConfig sslConfig = new SSLConfig().setEnabled(true)
                 .setFactoryClassName((openSsl ? OpenSSLEngineFactory.class : BasicSSLContextFactory.class).getName())
                 .setProperty("keyStore", copyResource(KEYSTORE_SERVER).getAbsolutePath())
                 .setProperty("keyStorePassword", "123456")
@@ -311,19 +315,12 @@ public class TlsFunctionalTest {
         }
 
         Config config = new Config();
-        NetworkConfig networkConfig = config.getNetworkConfig()
-                .setSSLConfig(sslConfig);
-        networkConfig.getJoin().getMulticastConfig()
-                .setEnabled(false);
-        networkConfig.getJoin().getTcpIpConfig()
-                .setEnabled(true)
-                .addMember("127.0.0.1");
+        config.getNetworkConfig().setSSLConfig(sslConfig);
         return config;
     }
 
     private ClientConfig createClientConfig() throws IOException {
-        SSLConfig sslConfig = new SSLConfig()
-                .setEnabled(true)
+        SSLConfig sslConfig = new SSLConfig().setEnabled(true)
                 .setFactoryClassName((openSsl ? OpenSSLEngineFactory.class : BasicSSLContextFactory.class).getName())
                 .setProperty("trustStore", copyResource(TRUSTSTORE_CLIENT).getAbsolutePath())
                 .setProperty("trustStorePassword", "123456");
@@ -333,9 +330,7 @@ public class TlsFunctionalTest {
         }
 
         ClientConfig config = new ClientConfig();
-        config.getNetworkConfig()
-                .setSSLConfig(sslConfig)
-                .addAddress("127.0.0.1");
+        config.getNetworkConfig().setSSLConfig(sslConfig);
         return config;
     }
 

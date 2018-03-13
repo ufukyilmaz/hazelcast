@@ -5,20 +5,22 @@ import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.TestAwareInstanceFactory;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -34,15 +36,21 @@ import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class SSLConnectionTest {
 
     private final ILogger logger = Logger.getLogger(getClass());
 
-    @Before
+    private final TestAwareInstanceFactory factory = new TestAwareInstanceFactory();
+
     @After
-    public void killAllHazelcastInstances() {
+    public void after() {
+        factory.terminateAll();
+    }
+    
+    @BeforeClass @AfterClass
+    public static void killAllHazelcastInstances() {
         HazelcastInstanceFactory.terminateAll();
     }
 
@@ -52,14 +60,14 @@ public class SSLConnectionTest {
         config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).addMember("127.0.0.1").setConnectionTimeoutSeconds(3000);
+        join.getTcpIpConfig().setEnabled(true).setConnectionTimeoutSeconds(3000);
 
         Properties props = TestKeyStoreUtil.createSslProperties();
         config.getNetworkConfig().setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props));
 
-        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance h3 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config);
+        HazelcastInstance h3 = factory.newHazelcastInstance(config);
 
         assertClusterSize(3, h1, h2, h3);
 
@@ -96,13 +104,13 @@ public class SSLConnectionTest {
         config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).addMember("127.0.0.1").setConnectionTimeoutSeconds(3000);
+        join.getTcpIpConfig().setEnabled(true).setConnectionTimeoutSeconds(3000);
 
         Properties props = TestKeyStoreUtil.createSslProperties();
         config.getNetworkConfig().setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props));
 
-        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config);
 
         assertClusterSize(2, h1, h2);
 
@@ -144,8 +152,8 @@ public class SSLConnectionTest {
         assumeTrue(idx < knownCs.length);
         logger.info("Ciphersuite selected in testOneCipherSuite(): " + knownCs[idx]);
         Config config = createConfigWithSslProperty("ciphersuites", knownCs[idx]);
-        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config);
 
         assertClusterSize(2, h1, h2);
     }
@@ -157,8 +165,8 @@ public class SSLConnectionTest {
     public void testAllCipherSuites() throws GeneralSecurityException {
         String allSuites = Arrays.toString(getSupportedCipherSuites());
         Config config = createConfigWithSslProperty("ciphersuites", cropFirstAndLastChar(allSuites));
-        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config);
 
         assertClusterSize(2, h1, h2);
     }
@@ -174,9 +182,9 @@ public class SSLConnectionTest {
         String firstHalf = supportedCipherSuites.subList(0, halfIdx).toString();
         String secondHalf = supportedCipherSuites.subList(halfIdx, supportedCipherSuites.size()).toString();
 
-        HazelcastInstance h1 = Hazelcast
+        HazelcastInstance h1 = factory
                 .newHazelcastInstance(createConfigWithSslProperty("ciphersuites", cropFirstAndLastChar(firstHalf)));
-        HazelcastInstance h2 = Hazelcast
+        HazelcastInstance h2 = factory
                 .newHazelcastInstance(createConfigWithSslProperty("ciphersuites", cropFirstAndLastChar(secondHalf)));
 
         // Size 1 for both! we expect the instances won't form a cluster.
@@ -192,8 +200,8 @@ public class SSLConnectionTest {
         Config config = createConfigWithSslProperty("ciphersuites",
                 "FOO_BAR," + cropFirstAndLastChar(allSuites) + ",HAZELCAST");
 
-        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config);
 
         assertClusterSize(2, h1, h2);
     }
@@ -203,7 +211,7 @@ public class SSLConnectionTest {
      */
     @Test(expected = ConfigurationException.class)
     public void testUnsupportedCipherSuiteNames() {
-        Hazelcast.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", "foo,bar"));
+        factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", "foo,bar"));
     }
 
     /**
@@ -211,7 +219,7 @@ public class SSLConnectionTest {
      */
     @Test(expected = ConfigurationException.class)
     public void testEmptyCipherSuiteProperty() {
-        Hazelcast.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", ""));
+        factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", ""));
     }
 
     /**
@@ -219,8 +227,8 @@ public class SSLConnectionTest {
      */
     @Test
     public void testTlsProtocol() {
-        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(createConfigWithSslProperty("protocol", "TLS"));
-        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(createConfigWithSslProperty("protocol", "TLS"));
+        HazelcastInstance h1 = factory.newHazelcastInstance(createConfigWithSslProperty("protocol", "TLS"));
+        HazelcastInstance h2 = factory.newHazelcastInstance(createConfigWithSslProperty("protocol", "TLS"));
 
         assertClusterSize(2, h1, h2);
     }
@@ -238,8 +246,8 @@ public class SSLConnectionTest {
         }
         assumeTrue("At least 2 supported TLS protocol versions necessary for this test", supportedTls.size() > 1);
 
-        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(createConfigWithSslProperty("protocol", supportedTls.get(0)));
-        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(createConfigWithSslProperty("protocol", supportedTls.get(1)));
+        HazelcastInstance h1 = factory.newHazelcastInstance(createConfigWithSslProperty("protocol", supportedTls.get(0)));
+        HazelcastInstance h2 = factory.newHazelcastInstance(createConfigWithSslProperty("protocol", supportedTls.get(1)));
 
         // Size 1 for both! we expect the instances won't form a cluster.
         assertClusterSize(1, h1, h2);
@@ -260,7 +268,6 @@ public class SSLConnectionTest {
                 .setEnabled(false);
         networkConfig.getJoin().getTcpIpConfig()
                 .setEnabled(true)
-                .addMember("127.0.0.1")
                 .setConnectionTimeoutSeconds(3);
         return config;
     }

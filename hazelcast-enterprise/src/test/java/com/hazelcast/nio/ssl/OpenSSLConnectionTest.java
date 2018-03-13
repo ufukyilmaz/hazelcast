@@ -3,16 +3,16 @@ package com.hazelcast.nio.ssl;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.TestAwareInstanceFactory;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -25,18 +25,20 @@ import static com.hazelcast.nio.ssl.OpenSSLEngineFactory.JAVA_NET_SSL_PREFIX;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class OpenSSLConnectionTest {
+
+    private final TestAwareInstanceFactory factory = new TestAwareInstanceFactory();
 
     @BeforeClass
     public static void checkOpenSsl() {
         assumeThatOpenSslIsSupported();
+        killAllHazelcastInstances();
     }
 
-    @Before
-    @After
-    public void killAllHazelcastInstances() {
+    @AfterClass
+    public static void killAllHazelcastInstances() {
         HazelcastInstanceFactory.terminateAll();
     }
 
@@ -44,8 +46,8 @@ public class OpenSSLConnectionTest {
     public void test() {
         Config config = newConfig();
 
-        final HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
-        final HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
+        final HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        final HazelcastInstance h2 = factory.newHazelcastInstance(config);
 
         assertTrueEventually(new AssertTask() {
             @Override
@@ -61,7 +63,7 @@ public class OpenSSLConnectionTest {
         Config config = newConfig();
         config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "ciphersuites", "unknown");
 
-        Hazelcast.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
     }
 
     @Test
@@ -69,7 +71,7 @@ public class OpenSSLConnectionTest {
         Config config = newConfig();
         config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "protocol", "TLS");
 
-        Hazelcast.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
     }
 
     @Test
@@ -77,7 +79,7 @@ public class OpenSSLConnectionTest {
         Config config = newConfig();
         config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "protocol", "SSL");
 
-        Hazelcast.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
     }
 
     private Config newConfig() {
@@ -92,11 +94,8 @@ public class OpenSSLConnectionTest {
                 .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         NetworkConfig networkConfig = config.getNetworkConfig()
                 .setSSLConfig(sslConfig);
-        networkConfig.getJoin().getMulticastConfig()
-                .setEnabled(false);
         networkConfig.getJoin().getTcpIpConfig()
                 .setEnabled(true)
-                .addMember("127.0.0.1")
                 .setConnectionTimeoutSeconds(3000);
         return config;
     }

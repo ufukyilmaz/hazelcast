@@ -1,8 +1,10 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.core.EntryEventType;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+
+import static com.hazelcast.core.EntryEventType.ADDED;
+import static com.hazelcast.core.EntryEventType.UPDATED;
 
 public class HDSetOperation extends HDBasePutOperation implements IdentifiedDataSerializable {
 
@@ -16,15 +18,22 @@ public class HDSetOperation extends HDBasePutOperation implements IdentifiedData
     }
 
     @Override
-    public void afterRun() throws Exception {
-        eventType = newRecord ? EntryEventType.ADDED : EntryEventType.UPDATED;
-        super.afterRun();
+    protected void runInternal() {
+        Object oldValue = recordStore.set(dataKey, dataValue, ttl);
+        newRecord = oldValue == null;
+
+        if (recordStore.hasQueryCache()) {
+            dataOldValue = mapServiceContext.toData(oldValue);
+        }
     }
 
     @Override
-    protected void runInternal() {
-        newRecord = recordStore.set(dataKey, dataValue, ttl);
+    public void afterRun() throws Exception {
+        eventType = newRecord ? ADDED : UPDATED;
+
+        super.afterRun();
     }
+
 
     @Override
     public Object getResponse() {

@@ -171,7 +171,7 @@ public abstract class AbstractHDMapOperationTest {
         NativeOutOfMemoryError exception = new NativeOutOfMemoryError();
         switch (operationType) {
             case PUT_ALL:
-                OngoingStubbing<Boolean> setStub = when(recordStore.set(any(Data.class), any(), anyLong()));
+                OngoingStubbing<Boolean> setStub = when(recordStore.set(any(Data.class), any(), anyLong()) != null);
                 if (throwNativeOOME) {
                     setStub.thenReturn(true, true, true).thenThrow(exception).thenReturn(true);
                     numberOfNativeOOME = 1;

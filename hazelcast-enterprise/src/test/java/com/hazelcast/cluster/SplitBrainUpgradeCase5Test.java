@@ -7,10 +7,10 @@ import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.cluster.AbstractClusterUpgradeTest.CLUSTER_VERSION_2_2;
-import static com.hazelcast.cluster.AbstractClusterUpgradeTest.CLUSTER_VERSION_2_3;
-import static com.hazelcast.cluster.AbstractClusterUpgradeTest.VERSION_2_2_0;
-import static com.hazelcast.cluster.AbstractClusterUpgradeTest.VERSION_2_3_0;
+import static com.hazelcast.cluster.AbstractClusterUpgradeTest.CLUSTER_VERSION_NEXT_MINOR;
+import static com.hazelcast.cluster.AbstractClusterUpgradeTest.CLUSTER_VERSION_2NEXT_MINOR;
+import static com.hazelcast.cluster.AbstractClusterUpgradeTest.MEMBER_VERSION_NEXT_MINOR;
+import static com.hazelcast.cluster.AbstractClusterUpgradeTest.MEMBER_VERSION_2NEXT_MINOR;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static com.hazelcast.test.TestClusterUpgradeUtils.newHazelcastInstance;
 import static org.junit.Assert.assertEquals;
@@ -46,11 +46,11 @@ public class SplitBrainUpgradeCase5Test extends AbstractSplitBrainUpgradeTest {
     protected HazelcastInstance[] startInitialCluster(Config config, int clusterSize) {
         factory = createHazelcastInstanceFactory(clusterSize * 2);
         instances = new HazelcastInstance[clusterSize];
-        instances[0] = newHazelcastInstance(factory, VERSION_2_2_0, config);
-        instances[1] = newHazelcastInstance(factory, VERSION_2_3_0, config);
-        instances[2] = newHazelcastInstance(factory, VERSION_2_3_0, config);
-        instances[3] = newHazelcastInstance(factory, VERSION_2_3_0, config);
-        instances[4] = newHazelcastInstance(factory, VERSION_2_3_0, config);
+        instances[0] = newHazelcastInstance(factory, MEMBER_VERSION_NEXT_MINOR, config);
+        instances[1] = newHazelcastInstance(factory, MEMBER_VERSION_2NEXT_MINOR, config);
+        instances[2] = newHazelcastInstance(factory, MEMBER_VERSION_2NEXT_MINOR, config);
+        instances[3] = newHazelcastInstance(factory, MEMBER_VERSION_2NEXT_MINOR, config);
+        instances[4] = newHazelcastInstance(factory, MEMBER_VERSION_2NEXT_MINOR, config);
         return instances;
     }
 
@@ -66,26 +66,26 @@ public class SplitBrainUpgradeCase5Test extends AbstractSplitBrainUpgradeTest {
 
         // first brain is still at cluster 2.2.0 and has 2.2.0 codebase master
         // > shutdown 2.2.0 node
-        assertClusterVersion(firstBrain, CLUSTER_VERSION_2_2);
+        assertClusterVersion(firstBrain, CLUSTER_VERSION_NEXT_MINOR);
         firstBrain[0].shutdown();
         waitAllForSafeState(firstBrain);
-        assertEquals(CLUSTER_VERSION_2_2, firstBrain[1].getCluster().getClusterVersion());
+        assertEquals(CLUSTER_VERSION_NEXT_MINOR, firstBrain[1].getCluster().getClusterVersion());
         // > upgrade just the first node of first brain (single 2.2.0 node to 2.3.0)
-        instances[0] = createHazelcastInstanceInBrain(0, VERSION_2_3_0);
+        instances[0] = createHazelcastInstanceInBrain(0, MEMBER_VERSION_2NEXT_MINOR);
         firstBrain[0] = instances[0];
         // > assert first brain is still at 2.2.0 cluster version
-        assertClusterVersion(firstBrain, CLUSTER_VERSION_2_2);
+        assertClusterVersion(firstBrain, CLUSTER_VERSION_NEXT_MINOR);
         // > upgrade first brain to 2.3.0 cluster version
-        getClusterService(firstBrain[0]).changeClusterVersion(CLUSTER_VERSION_2_3);
-        assertClusterVersion(firstBrain, CLUSTER_VERSION_2_3);
+        getClusterService(firstBrain[0]).changeClusterVersion(CLUSTER_VERSION_2NEXT_MINOR);
+        assertClusterVersion(firstBrain, CLUSTER_VERSION_2NEXT_MINOR);
 
         // upgrade second brain's cluster version to 2.3.0
-        assertClusterVersion(secondBrain, CLUSTER_VERSION_2_2);
-        getClusterService(secondBrain[0]).changeClusterVersion(CLUSTER_VERSION_2_3);
+        assertClusterVersion(secondBrain, CLUSTER_VERSION_NEXT_MINOR);
+        getClusterService(secondBrain[0]).changeClusterVersion(CLUSTER_VERSION_2NEXT_MINOR);
     }
 
     @Override
     protected void onAfterSplitBrainHealed(HazelcastInstance[] instances) {
-        assertClusterVersion(instances, CLUSTER_VERSION_2_3);
+        assertClusterVersion(instances, CLUSTER_VERSION_2NEXT_MINOR);
     }
 }

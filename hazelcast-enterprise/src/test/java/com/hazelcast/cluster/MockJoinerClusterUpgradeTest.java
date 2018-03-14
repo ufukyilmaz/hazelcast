@@ -21,7 +21,6 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-@Ignore("Fails due to OS d2800fbe4cfa3a66ad1ba395385cfb9c3bcaacbf (fix is in progress)")
 public class MockJoinerClusterUpgradeTest extends AbstractClusterUpgradeTest {
 
     private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(10);

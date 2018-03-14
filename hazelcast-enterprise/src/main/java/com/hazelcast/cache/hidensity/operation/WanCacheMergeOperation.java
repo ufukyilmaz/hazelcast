@@ -6,9 +6,8 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.merge.MergingEntry;
-import com.hazelcast.spi.merge.MergingExpirationTime;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
@@ -23,15 +22,15 @@ public class WanCacheMergeOperation
         extends BackupAwareHiDensityCacheOperation
         implements MutableOperation {
 
-    private MergingEntry<Data, Data> mergingEntry;
-    private SplitBrainMergePolicy mergePolicy;
+    private CacheMergeTypes mergingEntry;
+    private SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy;
     private String wanGroupName;
 
     public WanCacheMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, String wanGroupName, SplitBrainMergePolicy mergePolicy,
-                                  MergingEntry<Data, Data> mergingEntry, int completionId) {
+    public WanCacheMergeOperation(String name, String wanGroupName, SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy,
+                                  CacheMergeTypes mergingEntry, int completionId) {
         super(name, completionId);
         this.mergingEntry = mergingEntry;
         this.mergePolicy = mergePolicy;
@@ -53,7 +52,7 @@ public class WanCacheMergeOperation
     @Override
     public Operation getBackupOperation() {
         ExpiryPolicy expiryPolicy = null;
-        long expiryTime = ((MergingExpirationTime) mergingEntry).getExpirationTime();
+        long expiryTime = mergingEntry.getExpirationTime();
         if (expiryTime > 0) {
             long ttl = expiryTime - System.currentTimeMillis();
             expiryPolicy = new HazelcastExpiryPolicy(ttl, 0L, 0L);

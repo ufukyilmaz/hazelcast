@@ -8,8 +8,8 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.MutatingOperation;
-import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,8 +27,8 @@ import static com.hazelcast.util.MapUtil.createHashMap;
 public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
         implements MutableOperation, MutatingOperation {
 
-    private SplitBrainMergePolicy mergePolicy;
-    private List<MergingEntry<Data, Data>> mergingEntries;
+    private SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy;
+    private List<CacheMergeTypes> mergingEntries;
 
     private transient CacheWanEventPublisher wanEventPublisher;
 
@@ -39,7 +39,8 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     public CacheMergeOperation() {
     }
 
-    public CacheMergeOperation(String name, List<MergingEntry<Data, Data>> mergingEntries, SplitBrainMergePolicy policy) {
+    public CacheMergeOperation(String name, List<CacheMergeTypes> mergingEntries,
+                               SplitBrainMergePolicy<Data, CacheMergeTypes> policy) {
         super(name);
         this.mergingEntries = mergingEntries;
         this.mergePolicy = policy;
@@ -60,14 +61,13 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
 
     @Override
     public void runInternal() {
-        for (MergingEntry<Data, Data> mergingEntry : mergingEntries) {
+        for (CacheMergeTypes mergingEntry : mergingEntries) {
             merge(mergingEntry);
         }
-
         response = true;
     }
 
-    private void merge(MergingEntry<Data, Data> mergingEntry) {
+    private void merge(CacheMergeTypes mergingEntry) {
         CacheRecord backupRecord = cache.merge(mergingEntry, mergePolicy);
 
         if (hasBackups && backupRecord != null) {
@@ -99,7 +99,7 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeInt(mergingEntries.size());
-        for (MergingEntry<Data, Data> mergingEntry : mergingEntries) {
+        for (CacheMergeTypes mergingEntry : mergingEntries) {
             out.writeObject(mergingEntry);
         }
         out.writeObject(mergePolicy);
@@ -109,9 +109,9 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        mergingEntries = new ArrayList<MergingEntry<Data, Data>>(size);
+        mergingEntries = new ArrayList<CacheMergeTypes>(size);
         for (int i = 0; i < size; i++) {
-            MergingEntry<Data, Data> mergingEntry = in.readObject();
+            CacheMergeTypes mergingEntry = in.readObject();
             mergingEntries.add(mergingEntry);
         }
         mergePolicy = in.readObject();

@@ -7,8 +7,8 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
 
 import java.io.IOException;
 
@@ -23,15 +23,15 @@ import static java.lang.Boolean.TRUE;
 public class WanCacheMergeOperation
         extends AbstractMutatingCacheOperation {
 
-    private MergingEntry<Data, Data> mergingEntry;
-    private SplitBrainMergePolicy mergePolicy;
+    private CacheMergeTypes mergingEntry;
+    private SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy;
     private String wanGroupName;
 
     public WanCacheMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, String wanGroupName, MergingEntry<Data, Data> mergingEntry,
-                                  SplitBrainMergePolicy mergePolicy, int completionId) {
+    public WanCacheMergeOperation(String name, String wanGroupName, CacheMergeTypes mergingEntry,
+                                  SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy, int completionId) {
         super(name, mergingEntry.getKey(), completionId);
         this.mergingEntry = mergingEntry;
         this.mergePolicy = mergePolicy;

@@ -9,8 +9,8 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationFactory;
-import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
 
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -105,21 +105,20 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
-    public Operation createWanMergeOperation(String origin, MergingEntry<Data, Data> mergingEntry,
-                                             SplitBrainMergePolicy mergePolicy, int completionId) {
+    public Operation createWanMergeOperation(String origin, CacheMergeTypes mergingEntry,
+                                             SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy, int completionId) {
         return new WanCacheMergeOperation(nameWithPrefix, origin, mergePolicy, mergingEntry, completionId);
     }
 
     @Override
-    public Operation createMergeOperation(String name, List<MergingEntry<Data, Data>> mergingEntries,
-                                          SplitBrainMergePolicy policy) {
+    public Operation createMergeOperation(String name, List<CacheMergeTypes> mergingEntries,
+                                          SplitBrainMergePolicy<Data, CacheMergeTypes> policy) {
         return new CacheMergeOperation(name, mergingEntries, policy);
     }
 
     @Override
-    public OperationFactory createMergeOperationFactory(String name, int[] partitions,
-                                                        List<MergingEntry<Data, Data>>[] mergingEntries,
-                                                        SplitBrainMergePolicy policy) {
+    public OperationFactory createMergeOperationFactory(String name, int[] partitions, List<CacheMergeTypes>[] mergingEntries,
+                                                        SplitBrainMergePolicy<Data, CacheMergeTypes> policy) {
         return new CacheMergeOperationFactory(name, partitions, mergingEntries, policy);
     }
 

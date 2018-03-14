@@ -10,8 +10,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
-import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,8 +28,8 @@ import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
  */
 public class HDMergeOperation extends HDMapOperation implements PartitionAwareOperation, BackupAwareOperation {
 
-    private List<MergingEntry<Data, Data>> mergingEntries;
-    private SplitBrainMergePolicy mergePolicy;
+    private List<MapMergeTypes> mergingEntries;
+    private SplitBrainMergePolicy<Data, MapMergeTypes> mergePolicy;
     private boolean disableWanReplicationEvent;
 
     private transient int size;
@@ -48,7 +48,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     public HDMergeOperation() {
     }
 
-    HDMergeOperation(String name, List<MergingEntry<Data, Data>> mergingEntries, SplitBrainMergePolicy policy,
+    HDMergeOperation(String name, List<MapMergeTypes> mergingEntries, SplitBrainMergePolicy<Data, MapMergeTypes> policy,
                      boolean disableWanReplicationEvent) {
         super(name);
         this.mergingEntries = mergingEntries;
@@ -84,12 +84,11 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
         }
     }
 
-    private void merge(MergingEntry<Data, Data> mergingEntry) {
+    private void merge(MapMergeTypes mergingEntry) {
         Data dataKey = mergingEntry.getKey();
         Data oldValue = hasMapListener ? getValue(dataKey) : null;
 
-        //noinspection unchecked
-        if (Boolean.TRUE.equals(recordStore.merge(mergingEntry, mergePolicy))) {
+        if (recordStore.merge(mergingEntry, mergePolicy)) {
             hasMergedValues = true;
             Data dataValue = getValueOrPostProcessedValue(dataKey, getValue(dataKey));
             mapServiceContext.interceptAfterPut(name, dataValue);
@@ -164,7 +163,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeInt(mergingEntries.size());
-        for (MergingEntry<Data, Data> mergingEntry : mergingEntries) {
+        for (MapMergeTypes mergingEntry : mergingEntries) {
             out.writeObject(mergingEntry);
         }
         out.writeObject(mergePolicy);
@@ -175,9 +174,9 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        mergingEntries = new ArrayList<MergingEntry<Data, Data>>(size);
+        mergingEntries = new ArrayList<MapMergeTypes>(size);
         for (int i = 0; i < size; i++) {
-            MergingEntry<Data, Data> mergingEntry = in.readObject();
+            MapMergeTypes mergingEntry = in.readObject();
             mergingEntries.add(mergingEntry);
         }
         mergePolicy = in.readObject();

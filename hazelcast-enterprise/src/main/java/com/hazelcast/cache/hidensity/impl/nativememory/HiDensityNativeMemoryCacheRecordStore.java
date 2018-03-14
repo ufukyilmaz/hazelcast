@@ -30,8 +30,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.MergingEntry;
+import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
 

@@ -2,8 +2,8 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.MergingEntry;
+import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Arrays;

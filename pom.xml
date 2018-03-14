@@ -455,29 +455,14 @@
                                 <configuration combine.self="override">
                                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                                     <testFailureIgnore>true</testFailureIgnore>
-                                    <excludedGroups>com.hazelcast.test.annotation.CompatibilityTest</excludedGroups>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>compatibility-test</id>
-                                <phase>test</phase>
-                                <goals>
-                                    <goal>test</goal>
-                                </goals>
-                                <configuration combine.self="override">
-                                    <argLine>
-                                        ${extraVmArgs}
-                                        -Xms128m -Xmx2G -XX:MaxPermSize=1024M
-                                        -Dhazelcast.operation.thread.count=16
-                                        -Dhazelcast.hidensity.check.freememory=false
-                                        -Dhazelcast.phone.home.enabled=false
-                                        -Dhazelcast.mancenter.enabled=false
-                                        -Dhazelcast.logging.type=none
-                                        -Dhazelcast.test.compatibility=true
-                                    </argLine>
-                                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                                    <testFailureIgnore>true</testFailureIgnore>
-                                    <groups>com.hazelcast.test.annotation.CompatibilityTest</groups>
+                                    <groups>
+                                        com.hazelcast.test.annotation.QuickTest,
+                                        com.hazelcast.test.annotation.SlowTest
+                                    </groups>
+                                    <excludedGroups>
+                                        com.hazelcast.test.annotation.NightlyTest,
+                                        com.hazelcast.test.annotation.CompatibilityTest
+                                    </excludedGroups>
                                 </configuration>
                             </execution>
                         </executions>

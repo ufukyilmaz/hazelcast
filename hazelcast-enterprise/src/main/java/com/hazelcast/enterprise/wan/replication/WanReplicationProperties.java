@@ -58,8 +58,7 @@ public final class WanReplicationProperties {
     /**
      * Group password of target cluster.
      */
-    public static final PropertyDefinition GROUP_PASSWORD
-            = property("group.password", false, PropertyTypeConverter.STRING);
+    public static final PropertyDefinition GROUP_PASSWORD = property("group.password", PropertyTypeConverter.STRING);
 
     /**
      * Comma separated list of target cluster members,
@@ -77,7 +76,7 @@ public final class WanReplicationProperties {
     /**
      * The maximum number of endpoints that WAN will connect to when
      * using a discovery mechanism to define endpoints.
-     * Default is {@link WanConnectionManager#DEFAULT_MAX_ENDPOINTS}.
+     * Default is {@link WanConfigurationContext#DEFAULT_MAX_ENDPOINTS}.
      * This property has no effect when static endpoint IPs are defined
      * using the {@link #ENDPOINTS} property.
      */

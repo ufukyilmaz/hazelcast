@@ -76,7 +76,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
 
     protected volatile boolean running = true;
     protected volatile boolean paused;
-    protected volatile WanPublisherConfig publisherConfig;
     protected String targetGroupName;
     protected String localGroupName;
     protected String wanReplicationName;
@@ -93,6 +92,8 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
      */
     protected BlockingQueue<WanReplicationEvent> stagingQueue;
     protected BlockingQueue<WanSyncEvent> syncRequests = new ArrayBlockingQueue<WanSyncEvent>(DEFAULT_STAGING_QUEUE_SIZE);
+    protected WanConfigurationContext configurationContext;
+
     protected ILogger logger;
     private MapService mapService;
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
@@ -107,9 +108,9 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
+        this.configurationContext = new WanConfigurationContext(publisherConfig.getProperties());
         this.node = node;
         this.mapService = node.nodeEngine.getService(MapService.SERVICE_NAME);
-        this.publisherConfig = publisherConfig;
         this.targetGroupName = publisherConfig.getGroupName();
         this.wanReplicationName = wanReplicationConfig.getName();
         this.logger = node.getLogger(getClass());
@@ -436,7 +437,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         try {
             int partitionId = node.nodeEngine.getPartitionService().getPartitionId(key);
             node.nodeEngine.getOperationService()
-                    .invokeOnPartition(serviceName, operation, partitionId).get();
+                           .invokeOnPartition(serviceName, operation, partitionId).get();
         } catch (Throwable t) {
             throw rethrow(t);
         }
@@ -445,7 +446,8 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     private Object invokeOp(Operation operation) {
         try {
 
-            Future future = node.nodeEngine.getOperationService()
+            Future future = node.nodeEngine
+                    .getOperationService()
                     .createInvocationBuilder(MapService.SERVICE_NAME, operation, operation.getPartitionId())
                     .setResultDeserialized(false)
                     .invoke();

@@ -40,8 +40,8 @@
         <maven.surefire.plugin.version>2.18.1</maven.surefire.plugin.version>
         <maven.checkstyle.plugin.version>2.15</maven.checkstyle.plugin.version>
         <maven.findbugs.plugin.version>3.0.1</maven.findbugs.plugin.version>
-        <maven.sonar.plugin.version>2.6</maven.sonar.plugin.version>
-        <maven.jacoco.plugin.version>0.7.4.201502262128</maven.jacoco.plugin.version>
+        <maven.sonar.plugin.version>3.3.0.603</maven.sonar.plugin.version>
+        <maven.jacoco.plugin.version>0.7.9</maven.jacoco.plugin.version>
 
         <log4j2.version>2.3</log4j2.version>
         <mockito.all.version>1.10.19</mockito.all.version>

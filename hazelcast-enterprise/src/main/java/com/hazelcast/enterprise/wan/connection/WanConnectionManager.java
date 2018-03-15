@@ -1,16 +1,14 @@
 package com.hazelcast.enterprise.wan.connection;
 
 import com.hazelcast.config.InvalidConfigurationException;
-import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.impl.operations.AuthorizationOp;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Connection;
 import com.hazelcast.nio.ConnectionManager;
-import com.hazelcast.spi.InvocationBuilder;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
 import com.hazelcast.spi.discovery.integration.DiscoveryService;
@@ -26,20 +24,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.DISCOVERY_PERIOD;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.GROUP_PASSWORD;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.MAX_ENDPOINTS;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.getProperty;
 import static com.hazelcast.util.ConcurrencyUtil.getOrPutSynchronized;
 import static com.hazelcast.util.StringUtil.isNullOrEmpty;
+import static com.hazelcast.wan.WanReplicationService.SERVICE_NAME;
 import static java.lang.Math.min;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
- * Maintains connections for WAN replication for a single {@link WanReplicationPublisher}.
+ * Maintains connections for WAN replication for a single
+ * {@link WanReplicationPublisher}.
  */
 public class WanConnectionManager {
     /**
@@ -58,10 +53,10 @@ public class WanConnectionManager {
     /**
      * Default maximum number of endpoints to connect to. This number is
      * used if the user defines the target endpoints using the
-     * {@link com.hazelcast.enterprise.wan.replication.WanReplicationProperties#ENDPOINTS}
+     * {@link WanReplicationProperties#ENDPOINTS}
      * property or if there is no explicitly configured max endpoint count.
      *
-     * @see com.hazelcast.enterprise.wan.replication.WanReplicationProperties#MAX_ENDPOINTS
+     * @see WanReplicationProperties#MAX_ENDPOINTS
      */
     private static final int DEFAULT_MAX_ENDPOINTS = Integer.MAX_VALUE;
     /**
@@ -77,7 +72,7 @@ public class WanConnectionManager {
     /**
      * The default group password if none is configured in the publisher properties.
      *
-     * @see com.hazelcast.enterprise.wan.replication.WanReplicationProperties#GROUP_PASSWORD
+     * @see WanReplicationProperties#GROUP_PASSWORD
      */
     private static final String DEFAULT_GROUP_PASS = "dev-pass";
 
@@ -93,7 +88,8 @@ public class WanConnectionManager {
                 public WanConnectionWrapper createNew(Address addr) {
                     final Connection conn = initConnection(addr);
                     if (conn == null) {
-                        throw new RuntimeException("Connection was not established in expected time or was not authorized");
+                        throw new RuntimeException(
+                                "Connection was not established in expected time or was not authorized");
                     }
                     return new WanConnectionWrapper(addr, conn);
                 }
@@ -110,22 +106,33 @@ public class WanConnectionManager {
     }
 
     /**
-     * Initialise the connection manager. This will run discovery on the supplied {@link DiscoveryService} and
-     * schedule a task to rerun discovery.
+     * Initialise the connection manager. This will run discovery on the supplied
+     * {@link DiscoveryService} and schedule a task to rerun discovery.
      *
      * @param groupName           the group name for the discovered endpoints
      * @param publisherProperties the configuration properties for the WAN publisher
      */
     public void init(String groupName, Map<String, Comparable> publisherProperties) {
         this.groupName = groupName;
-        this.password = getProperty(GROUP_PASSWORD, publisherProperties, DEFAULT_GROUP_PASS);
-        this.maxEndpoints = isNullOrEmpty(getProperty(ENDPOINTS, publisherProperties, ""))
-                ? getProperty(MAX_ENDPOINTS, publisherProperties, WanConnectionManager.DEFAULT_MAX_ENDPOINTS)
-                : WanConnectionManager.DEFAULT_MAX_ENDPOINTS;
-        this.useEndpointPrivateAddress = getProperty(DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS, publisherProperties, false);
+        this.password = getProperty(WanReplicationProperties.GROUP_PASSWORD, publisherProperties, DEFAULT_GROUP_PASS);
 
-        final Integer discoveryPeriodSeconds =
-                getProperty(DISCOVERY_PERIOD, publisherProperties, WanConnectionManager.DEFAULT_DISCOVERY_TASK_PERIOD);
+        if (isNullOrEmpty(getProperty(WanReplicationProperties.ENDPOINTS, publisherProperties, ""))) {
+            this.maxEndpoints = getProperty(
+                    WanReplicationProperties.MAX_ENDPOINTS,
+                    publisherProperties,
+                    WanConnectionManager.DEFAULT_MAX_ENDPOINTS);
+        } else {
+            this.maxEndpoints = WanConnectionManager.DEFAULT_MAX_ENDPOINTS;
+        }
+
+        this.useEndpointPrivateAddress = getProperty(
+                WanReplicationProperties.DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS,
+                publisherProperties,
+                false);
+        final Integer discoveryPeriodSeconds = getProperty(
+                WanReplicationProperties.DISCOVERY_PERIOD,
+                publisherProperties,
+                WanConnectionManager.DEFAULT_DISCOVERY_TASK_PERIOD);
 
         try {
             addToTargetEndpoints(discoverEndpointAddresses());
@@ -161,7 +168,7 @@ public class WanConnectionManager {
      * to which the connection manager can connect to.
      *
      * @return the endpoint addresses
-     * @see com.hazelcast.enterprise.wan.replication.WanReplicationProperties#DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS
+     * @see WanReplicationProperties#DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS
      */
     private List<Address> discoverEndpointAddresses() {
         final Iterable<DiscoveryNode> nodes = discoveryService.discoverNodes();
@@ -178,14 +185,17 @@ public class WanConnectionManager {
     }
 
     /**
-     * Returns either the connection wrapper for the requested {@code target} or for the first target in
-     * the endpoint list if the provided {@code target} is not in the endpoint list. The method may return null
-     * if this method fails to create a connection, either because it cannot connect in the expected time or it has
-     * failed to authorize.
-     * The method will check if the connection is alive before returning the wrapper.
+     * Returns either the connection wrapper for the requested {@code target}
+     * or for the first target in the endpoint list if the provided
+     * {@code target} is not in the endpoint list. The method may return null if
+     * this method fails to create a connection, either because it cannot
+     * connect in the expected time or it has failed to authorize.
+     * The method will check if the connection is alive before returning the
+     * wrapper.
      *
      * @param target the address for which a connection is requested
-     * @return connection to the target address, the first endpoint if the target is not in the endpoint list or null
+     * @return connection to the target address, the first endpoint if the
+     * target is not in the endpoint list or null
      */
     public WanConnectionWrapper getConnection(Address target) {
         final Address targetAddress = selectTarget(target);
@@ -207,11 +217,13 @@ public class WanConnectionManager {
     }
 
     /**
-     * Return the first target endpoint address. If the known target endpoint list is empty,
-     * wait for {@value RETRY_CONNECTION_SLEEP_MILLIS}. The method may return {@code null} if there are no known
-     * target endpoints at this time (the target endpoint list is empty).
+     * Return the first target endpoint address. If the known target endpoint
+     * list is empty, wait for {@value RETRY_CONNECTION_SLEEP_MILLIS}. The method
+     * may return {@code null} if there are no known target endpoints at this
+     * time (the target endpoint list is empty).
      *
-     * @return the target endpoint address or null if there are no target endpoints at this time
+     * @return the target endpoint address or null if there are no target
+     * endpoints at this time
      */
     private Address selectFirstTarget() {
         synchronized (targetEndpoints) {
@@ -229,10 +241,11 @@ public class WanConnectionManager {
     }
 
     /**
-     * Return the given {@code target} if it is contained in the target endpoint list for this manager, otherwise return
-     * the first target.
+     * Return the given {@code target} if it is contained in the target
+     * endpoint list for this manager, otherwise return the first target.
      *
-     * @param target the target which is checked against this managers endpoint list
+     * @param target the target which is checked against this managers endpoint
+     *               list
      * @return the provided target or the first target
      */
     private Address selectTarget(Address target) {
@@ -242,9 +255,12 @@ public class WanConnectionManager {
     }
 
     /**
-     * Return an existing connection or create a new one. The method will return null if this method fails to create a
-     * connection, either because it cannot connect in the expected time or it has failed to authorize.
-     * The method will check if the connection is alive before returning the wrapper.
+     * Return an existing connection or create a new one. The method will
+     * return {@code null} if this method fails to create a connection, either
+     * because it cannot connect in the expected time or it has failed to
+     * authorize.
+     * The method will check if the connection is alive before returning the
+     * wrapper.
      *
      * @param targetAddress the address to connect to
      * @return the connection or null if it the connection wasn't established
@@ -271,10 +287,13 @@ public class WanConnectionManager {
 
 
     /**
-     * Attempt to create the connection to the {@code targetAddress} and authenticate.
+     * Attempt to create the connection to the {@code targetAddress} and
+     * authenticate.
      * Since the connection creation is asynchronous, it will try waiting for
-     * {@value RETRY_CONNECTION_SLEEP_MILLIS} millis up to {@value RETRY_CONNECTION_MAX} times before giving up.
-     * It may return null if the connection was not established in time or if the authorization failed.
+     * {@value RETRY_CONNECTION_SLEEP_MILLIS} millis up to
+     * {@value RETRY_CONNECTION_MAX} times before giving up.
+     * It may return null if the connection was not established in time or if
+     * the authorization failed.
      *
      * @param targetAddress the address to connect to
      * @return the established connection or null if the connection was not established
@@ -299,12 +318,21 @@ public class WanConnectionManager {
         return null;
     }
 
+    /**
+     * Runs an authorization operation against the given {@code target} address
+     * with the given {@code groupName} and {@code groupPassword}.
+     *
+     * @param groupName     expected group name
+     * @param groupPassword expected password
+     * @param target        the target to validate group name and password against
+     * @return {@code true} if authorization passed, {@code false} otherwise
+     */
     private boolean checkAuthorization(String groupName, String groupPassword, Address target) {
         Operation authorizationCall = new AuthorizationOp(groupName, groupPassword);
-        OperationService operationService = node.nodeEngine.getOperationService();
-        String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
-        InvocationBuilder invocationBuilder = operationService.createInvocationBuilder(serviceName, authorizationCall, target);
-        Future<Boolean> future = invocationBuilder.setTryCount(1).invoke();
+        Future<Boolean> future = node.nodeEngine.getOperationService()
+                                                .createInvocationBuilder(SERVICE_NAME, authorizationCall, target)
+                                                .setTryCount(1)
+                                                .invoke();
         try {
             return future.get();
         } catch (Exception ignored) {
@@ -314,8 +342,8 @@ public class WanConnectionManager {
     }
 
     /**
-     * Perform authorization on the connection. If the authorization failed, close the connection and log the authorization
-     * failure.
+     * Perform authorization on the connection. If the authorization failed,
+     * close the connection and log the authorization failure.
      *
      * @param conn the connection to authorize
      * @return the authorized connection or null if the authorization failed
@@ -323,7 +351,8 @@ public class WanConnectionManager {
     private Connection authorizeConnection(Connection conn) {
         boolean authorized = checkAuthorization(groupName, password, conn.getEndPoint());
         if (!authorized) {
-            String msg = "Invalid groupName or groupPassword!";
+            final String msg = "WAN authorization failed for groupName " + groupName
+                    + " and target " + conn.getEndPoint();
             conn.close(msg, null);
             if (logger != null) {
                 logger.severe(msg);
@@ -334,8 +363,9 @@ public class WanConnectionManager {
     }
 
     /**
-     * Return a snapshot of the list of currently known target endpoints to which replication is made. Some of them can
-     * currently have dead connections and are about to be removed.
+     * Return a snapshot of the list of currently known target endpoints to
+     * which replication is made. Some of them can currently have dead
+     * connections and are about to be removed.
      *
      * @return the list of currently known target endpoints
      * @see #removeTargetEndpoint(Address, String, Throwable)
@@ -345,7 +375,8 @@ public class WanConnectionManager {
     }
 
     /**
-     * Performs runtime discovery of new WAN target endpoints. New discovered nodes are added to the target endpoint list.
+     * Performs runtime discovery of new WAN target endpoints. New discovered
+     * nodes are added to the target endpoint list.
      * The connections will be established during normal WAN operations.
      */
     private class TargetEndpointDiscoveryTask implements Runnable {

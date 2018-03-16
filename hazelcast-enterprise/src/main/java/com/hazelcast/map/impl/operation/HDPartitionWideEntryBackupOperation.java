@@ -32,7 +32,7 @@ public class HDPartitionWideEntryBackupOperation extends AbstractHDMultipleEntry
         int totalEntryCount = recordStore.size();
         responses = new MapEntries(totalEntryCount);
         Queue<Object> outComes = null;
-        EntryOperator operator = operator(this, backupProcessor, getPredicate(), true);
+        EntryOperator operator = operator(this, backupProcessor, getPredicate());
 
         Iterator<Record> iterator = recordStore.iterator(Clock.currentTimeMillis(), true);
         while (iterator.hasNext()) {

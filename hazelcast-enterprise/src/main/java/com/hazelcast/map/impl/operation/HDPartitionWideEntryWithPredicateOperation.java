@@ -34,14 +34,10 @@ public class HDPartitionWideEntryWithPredicateOperation extends HDPartitionWideE
         }
         if (keysFromIndex != null) {
             // if we used index we leverage it for the backup too
-            HDMultipleEntryBackupOperation operation = new HDMultipleEntryBackupOperation(name, keysFromIndex, backupProcessor);
-            operation.setWanEventList(operator.getWanEventList());
-            return operation;
+            return new HDMultipleEntryBackupOperation(name, keysFromIndex, backupProcessor);
         } else {
             // if no index used we will do a full partition-scan on backup too
-            HDPartitionWideEntryBackupOperation operation = new HDPartitionWideEntryBackupOperation(name, backupProcessor);
-            operation.setWanEventList(operator.getWanEventList());
-            return operation;
+            return new HDPartitionWideEntryBackupOperation(name, backupProcessor);
         }
     }
 

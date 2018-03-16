@@ -34,11 +34,7 @@ public class HDMultipleEntryWithPredicateOperation extends HDMultipleEntryOperat
     @Override
     public Operation getBackupOperation() {
         EntryBackupProcessor backupProcessor = entryProcessor.getBackupProcessor();
-        HDMultipleEntryWithPredicateBackupOperation backupOperation
-                = new HDMultipleEntryWithPredicateBackupOperation(name, keys, backupProcessor, predicate);
-        backupOperation.setWanEventList(operator.getWanEventList());
-
-        return backupOperation;
+        return new HDMultipleEntryWithPredicateBackupOperation(name, keys, backupProcessor, predicate);
     }
 
     @Override

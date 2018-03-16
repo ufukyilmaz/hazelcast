@@ -26,7 +26,7 @@ public class HDMultipleEntryBackupOperation extends AbstractHDMultipleEntryOpera
 
     @Override
     protected void runInternal() {
-        EntryOperator operator = operator(this, backupProcessor, getPredicate(), true);
+        EntryOperator operator = operator(this, backupProcessor, getPredicate());
         for (Data key : keys) {
             operator.operateOnKey(key).doPostOperateOps();
         }

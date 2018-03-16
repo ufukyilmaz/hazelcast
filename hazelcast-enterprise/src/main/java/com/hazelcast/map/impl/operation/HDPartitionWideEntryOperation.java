@@ -75,7 +75,7 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
                 responses = new MapEntries(entries.size());
 
                 // we can pass null as predicate since it's all happening on partition thread so no data-changes may occur
-                operator = operator(this, entryProcessor, null, true);
+                operator = operator(this, entryProcessor, null);
                 keysFromIndex = new HashSet<Data>(entries.size());
                 for (QueryableEntry entry : entries) {
                     keysFromIndex.add(entry.getKeyData());
@@ -95,7 +95,7 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
         int totalEntryCount = recordStore.size();
         responses = new MapEntries(totalEntryCount);
         Queue<Object> outComes = null;
-        operator = operator(this, entryProcessor, getPredicate(), true);
+        operator = operator(this, entryProcessor, getPredicate());
 
         Iterator<Record> iterator = recordStore.iterator(Clock.currentTimeMillis(), false);
         while (iterator.hasNext()) {
@@ -165,14 +165,10 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
         }
         if (keysFromIndex != null) {
             // if we used index we leverage it for the backup too
-            HDMultipleEntryBackupOperation operation = new HDMultipleEntryBackupOperation(name, keysFromIndex, backupProcessor);
-            operation.setWanEventList(operator.getWanEventList());
-            return operation;
+            return new HDMultipleEntryBackupOperation(name, keysFromIndex, backupProcessor);
         } else {
             // if no index used we will do a full partition-scan on backup too
-            HDPartitionWideEntryBackupOperation operation = new HDPartitionWideEntryBackupOperation(name, backupProcessor);
-            operation.setWanEventList(operator.getWanEventList());
-            return operation;
+            return new HDPartitionWideEntryBackupOperation(name, backupProcessor);
         }
     }
 

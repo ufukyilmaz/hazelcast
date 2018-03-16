@@ -42,7 +42,7 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
     protected void runInternal() {
         responses = new MapEntries(keys.size());
 
-        operator = operator(this, entryProcessor, getPredicate(), true);
+        operator = operator(this, entryProcessor, getPredicate());
         for (Data key : keys) {
             Data response = operator.operateOnKey(key).doPostOperateOps().getResult();
             if (response != null) {
@@ -78,9 +78,7 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
             return null;
         }
 
-        HDMultipleEntryBackupOperation operation = new HDMultipleEntryBackupOperation(name, keys, backupProcessor);
-        operation.setWanEventList(operator.getWanEventList());
-        return operation;
+        return new HDMultipleEntryBackupOperation(name, keys, backupProcessor);
     }
 
     @Override

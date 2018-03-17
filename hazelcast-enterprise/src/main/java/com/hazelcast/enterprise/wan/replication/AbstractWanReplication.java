@@ -19,8 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.getProperty;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 import static com.hazelcast.util.StringUtil.isNullOrEmpty;
@@ -37,17 +35,16 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
         super.init(node, wanReplicationConfig, publisherConfig);
-        final Map<String, Comparable> publisherProps = publisherConfig.getProperties();
 
         this.discoveryService = checkNotNull(createDiscoveryService(publisherConfig));
         this.discoveryService.start();
 
         this.connectionManager = new WanConnectionManager(node, discoveryService);
-        this.connectionManager.init(targetGroupName, publisherProps);
+        this.connectionManager.init(targetGroupName, configurationContext);
     }
 
     private DiscoveryService createDiscoveryService(WanPublisherConfig config) {
-        final String endpoints = getProperty(ENDPOINTS, config.getProperties(), "");
+        final String endpoints = configurationContext.getEndpoints();
         final AwsConfig awsConfig = config.getAwsConfig();
         final DiscoveryConfig discoveryConfig = config.getDiscoveryConfig();
         final boolean endpointsConfigured = !isNullOrEmpty(endpoints);

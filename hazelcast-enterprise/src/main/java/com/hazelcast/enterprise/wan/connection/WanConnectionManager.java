@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.connection;
 
 import com.hazelcast.config.InvalidConfigurationException;
-import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
+import com.hazelcast.enterprise.wan.replication.WanConfigurationContext;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.impl.operations.AuthorizationOp;
 import com.hazelcast.logging.ILogger;
@@ -17,16 +17,13 @@ import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.getProperty;
 import static com.hazelcast.util.ConcurrencyUtil.getOrPutSynchronized;
-import static com.hazelcast.util.StringUtil.isNullOrEmpty;
 import static com.hazelcast.wan.WanReplicationService.SERVICE_NAME;
 import static java.lang.Math.min;
 import static java.lang.Thread.currentThread;
@@ -38,27 +35,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class WanConnectionManager {
     /**
-     * Default period for running discovery for new endpoints in seconds
-     *
-     * @see TargetEndpointDiscoveryTask
-     */
-    private static final int DEFAULT_DISCOVERY_TASK_PERIOD = 10;
-    /**
      * Delay in seconds between the initialisation of the connection manager and
      * the time the discovery task is first run.
      *
      * @see TargetEndpointDiscoveryTask
      */
     private static final int DISCOVERY_TASK_START_DELAY = 10;
-    /**
-     * Default maximum number of endpoints to connect to. This number is
-     * used if the user defines the target endpoints using the
-     * {@link WanReplicationProperties#ENDPOINTS}
-     * property or if there is no explicitly configured max endpoint count.
-     *
-     * @see WanReplicationProperties#MAX_ENDPOINTS
-     */
-    private static final int DEFAULT_MAX_ENDPOINTS = Integer.MAX_VALUE;
+
     /**
      * Number of times the connection manager will attempt to retrieve a connection which
      * is being initialised asynchronously
@@ -69,12 +52,6 @@ public class WanConnectionManager {
      * consecutive checks whether a connection to an endpoint has been established.
      */
     private static final int RETRY_CONNECTION_SLEEP_MILLIS = 1000;
-    /**
-     * The default group password if none is configured in the publisher properties.
-     *
-     * @see WanReplicationProperties#GROUP_PASSWORD
-     */
-    private static final String DEFAULT_GROUP_PASS = "dev-pass";
 
     private final Node node;
     private final ILogger logger;
@@ -95,9 +72,7 @@ public class WanConnectionManager {
                 }
             };
     private String groupName;
-    private String password;
-    private Integer maxEndpoints;
-    private boolean useEndpointPrivateAddress;
+    private WanConfigurationContext configurationContext;
 
     public WanConnectionManager(Node node, DiscoveryService discoveryService) {
         this.node = node;
@@ -109,30 +84,12 @@ public class WanConnectionManager {
      * Initialise the connection manager. This will run discovery on the supplied
      * {@link DiscoveryService} and schedule a task to rerun discovery.
      *
-     * @param groupName           the group name for the discovered endpoints
-     * @param publisherProperties the configuration properties for the WAN publisher
+     * @param groupName            the group name for the discovered endpoints
+     * @param configurationContext the configuration context for the WAN publisher
      */
-    public void init(String groupName, Map<String, Comparable> publisherProperties) {
+    public void init(String groupName, WanConfigurationContext configurationContext) {
         this.groupName = groupName;
-        this.password = getProperty(WanReplicationProperties.GROUP_PASSWORD, publisherProperties, DEFAULT_GROUP_PASS);
-
-        if (isNullOrEmpty(getProperty(WanReplicationProperties.ENDPOINTS, publisherProperties, ""))) {
-            this.maxEndpoints = getProperty(
-                    WanReplicationProperties.MAX_ENDPOINTS,
-                    publisherProperties,
-                    WanConnectionManager.DEFAULT_MAX_ENDPOINTS);
-        } else {
-            this.maxEndpoints = WanConnectionManager.DEFAULT_MAX_ENDPOINTS;
-        }
-
-        this.useEndpointPrivateAddress = getProperty(
-                WanReplicationProperties.DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS,
-                publisherProperties,
-                false);
-        final Integer discoveryPeriodSeconds = getProperty(
-                WanReplicationProperties.DISCOVERY_PERIOD,
-                publisherProperties,
-                WanConnectionManager.DEFAULT_DISCOVERY_TASK_PERIOD);
+        this.configurationContext = configurationContext;
 
         try {
             addToTargetEndpoints(discoverEndpointAddresses());
@@ -155,12 +112,16 @@ public class WanConnectionManager {
         }
 
         node.nodeEngine.getExecutionService().scheduleWithRepetition(new TargetEndpointDiscoveryTask(),
-                DISCOVERY_TASK_START_DELAY, discoveryPeriodSeconds, TimeUnit.SECONDS);
+                DISCOVERY_TASK_START_DELAY, configurationContext.getDiscoveryPeriodSeconds(), TimeUnit.SECONDS);
     }
 
-    /** Add endpoints to the target endpoint list, respecting the {@link #maxEndpoints} property */
+    /**
+     * Adds endpoints to the target endpoint list, respecting the
+     * {@link WanConfigurationContext#getMaxEndpoints()} property.
+     */
     private void addToTargetEndpoints(List<Address> addresses) {
-        targetEndpoints.addAll(addresses.subList(0, min(maxEndpoints - targetEndpoints.size(), addresses.size())));
+        final int endpointCount = min(configurationContext.getMaxEndpoints() - targetEndpoints.size(), addresses.size());
+        targetEndpoints.addAll(addresses.subList(0, endpointCount));
     }
 
     /**
@@ -168,13 +129,15 @@ public class WanConnectionManager {
      * to which the connection manager can connect to.
      *
      * @return the endpoint addresses
-     * @see WanReplicationProperties#DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS
+     * @see com.hazelcast.enterprise.wan.replication.WanReplicationProperties#DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS
      */
     private List<Address> discoverEndpointAddresses() {
         final Iterable<DiscoveryNode> nodes = discoveryService.discoverNodes();
         final ArrayList<Address> addresses = new ArrayList<Address>();
         for (DiscoveryNode node : nodes) {
-            final Address address = useEndpointPrivateAddress ? node.getPrivateAddress() : node.getPublicAddress();
+            final Address address = configurationContext.isUseEndpointPrivateAddress()
+                    ? node.getPrivateAddress()
+                    : node.getPublicAddress();
             if (address != null) {
                 addresses.add(address);
             } else {
@@ -349,7 +312,7 @@ public class WanConnectionManager {
      * @return the authorized connection or null if the authorization failed
      */
     private Connection authorizeConnection(Connection conn) {
-        boolean authorized = checkAuthorization(groupName, password, conn.getEndPoint());
+        boolean authorized = checkAuthorization(groupName, configurationContext.getPassword(), conn.getEndPoint());
         if (!authorized) {
             final String msg = "WAN authorization failed for groupName " + groupName
                     + " and target " + conn.getEndPoint();

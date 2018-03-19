@@ -262,13 +262,7 @@ public class SSLConnectionTest {
                 .setProperties(props);
 
         Config config = new Config();
-        NetworkConfig networkConfig = config.getNetworkConfig()
-                .setSSLConfig(sslConfig);
-        networkConfig.getJoin().getMulticastConfig()
-                .setEnabled(false);
-        networkConfig.getJoin().getTcpIpConfig()
-                .setEnabled(true)
-                .setConnectionTimeoutSeconds(3);
+        config.getNetworkConfig().setSSLConfig(sslConfig);
         return config;
     }
 

@@ -205,12 +205,6 @@
             <artifactId>hazelcast-license-extractor</artifactId>
             <version>${license.extractor.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.hdrhistogram</groupId>
-            <artifactId>HdrHistogram</artifactId>
-            <version>1.2.1</version>
-            <scope>test</scope>
-        </dependency>
 
         <!-- netty dependencies for OpenSSL integration -->
         <dependency>

@@ -67,7 +67,7 @@ public class SplitBrainUpgradeCaseMergePolicyTest extends AbstractSplitBrainUpgr
     @Parameters(name = "isLegacyCluster:{0}")
     public static Collection<Object> parameters() {
         return asList(new Object[]{
-                true,
+                // true, commented out because of an issue https://github.com/hazelcast/hazelcast-enterprise/issues/1997
                 false,
         });
     }

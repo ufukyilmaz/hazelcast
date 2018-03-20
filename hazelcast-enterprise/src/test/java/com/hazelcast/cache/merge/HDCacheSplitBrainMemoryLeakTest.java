@@ -6,11 +6,13 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.SplitBrainTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -73,6 +75,7 @@ public class HDCacheSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
         }
 
         Config config = getHDConfig(super.config(), POOLED, MEMORY_SIZE);
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
         config.getCacheConfig(cacheNameA)
                 .setInMemoryFormat(inMemoryFormat)
                 .setEvictionConfig(evictionConfig)
@@ -112,6 +115,18 @@ public class HDCacheSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
 
         // after destroy, expect all HD memory is empty
         assertEmptyHDMemory(instances);
+    }
+
+    @Override
+    protected void onBeforeSetup() {
+        RuntimeAvailableProcessors.override(4);
+        super.onBeforeSetup();
+    }
+
+    @Override
+    protected void onTearDown() {
+        super.onTearDown();
+        RuntimeAvailableProcessors.resetOverride();
     }
 
     private void assertEmptyHDMemory(final HazelcastInstance[] instances) {

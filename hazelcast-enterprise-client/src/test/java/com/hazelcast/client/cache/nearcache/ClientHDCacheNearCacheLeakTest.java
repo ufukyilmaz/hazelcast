@@ -27,6 +27,7 @@ import com.hazelcast.internal.nearcache.NearCacheManager;
 import com.hazelcast.internal.nearcache.NearCacheTestContext;
 import com.hazelcast.internal.nearcache.NearCacheTestContextBuilder;
 import com.hazelcast.internal.nearcache.impl.invalidation.RepairingTask;
+import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.QuickTest;
@@ -70,6 +71,8 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractEnterpriseNearCacheL
 
     @Before
     public void setUp() {
+        RuntimeAvailableProcessors.override(4);
+
         NearCachePreloaderConfig nearCachePreloaderConfig = new NearCachePreloaderConfig()
                 .setEnabled(enableNearCachePreloader);
 
@@ -81,6 +84,7 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractEnterpriseNearCacheL
     @After
     public void tearDown() {
         hazelcastFactory.terminateAll();
+        RuntimeAvailableProcessors.resetOverride();
     }
 
     @Override
@@ -142,6 +146,7 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractEnterpriseNearCacheL
 
         return new Config()
                 .setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
                 .setNativeMemoryConfig(memoryConfig);
     }
 

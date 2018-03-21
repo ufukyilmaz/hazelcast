@@ -65,6 +65,13 @@ public class SemaphoreSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
+    public void increasePermits() {
+        final int permit = randomInt(100) + 1;
+        interceptor.setExpectation(getObjectType(), objectName, "increasePermits", permit);
+        semaphore.increasePermits(permit);
+    }
+
+    @Test
     public void test1_release() {
         interceptor.setExpectation(getObjectType(), objectName, "release", 1);
         semaphore.release();

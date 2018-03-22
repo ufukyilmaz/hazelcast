@@ -15,8 +15,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.compatibility.SerializedObjectsAccessor.SerializedObject;
 import com.hazelcast.version.Version;
 import org.junit.Before;
@@ -49,7 +49,7 @@ import static org.junit.Assert.fail;
  */
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
-@Category({NightlyTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelTest.class})
 public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
 
     private static final String CLASSPATH_RESOURCE_PATTERN = "com/hazelcast/test/compatibility/serialized-objects-%s";

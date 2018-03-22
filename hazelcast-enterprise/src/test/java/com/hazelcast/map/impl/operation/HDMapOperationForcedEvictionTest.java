@@ -58,7 +58,25 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * Triggers a single forced eviction on the RecordStore of the operation.
      */
     @Test
-    public void testTryForceEviction() throws Exception {
+    public void testRun_noForcedEvictions() throws Exception {
+        Operation op = new NativeOutOfMemoryOperation(0);
+
+        try {
+            executeOperation(op, PARTITION_ID);
+        } finally {
+            verifyForcedEviction(recordStore, 0);
+            verifyForcedEviction(otherRecordStore, 0);
+            verifyForcedEvictAll(recordStore, 0);
+            verifyForcedEvictAll(otherRecordStore, 0);
+            verifyForcedEvictionSucceeded();
+        }
+    }
+
+    /**
+     * Triggers a single forced eviction on the RecordStore of the operation.
+     */
+    @Test
+    public void testRun_singleForcedEviction() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(1);
 
         try {
@@ -76,7 +94,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * Triggers multiple forced evictions on the RecordStore of the operation.
      */
     @Test
-    public void testRunWithForcedEviction_withRetries() throws Exception {
+    public void testRun_multipleForcedEvictions() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(2);
 
         try {
@@ -94,7 +112,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * Triggers a single forced eviction on the other RecordStore.
      */
     @Test
-    public void testRunWithForcedEviction_forceEvictionOnOthers() throws Exception {
+    public void testRun_forcedEvictionOnOthers() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(FORCED_EVICTION_RETRY_COUNT + 1);
 
         try {
@@ -112,7 +130,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * Triggers a single evictAll() call on the RecordStore of the operation.
      */
     @Test
-    public void testRunWithForcedEviction_evictAll() throws Exception {
+    public void testRun_singleEvictAll() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(2 * FORCED_EVICTION_RETRY_COUNT + 1);
 
         try {
@@ -130,7 +148,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * Triggers a single evictAll() call on both RecordStores.
      */
     @Test
-    public void testRunWithForcedEviction_evictAllOnOthers() throws Exception {
+    public void testRun_evictAllOnOthers() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(2 * FORCED_EVICTION_RETRY_COUNT + 2);
 
         try {
@@ -148,7 +166,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * Triggers a single evictAll() call on the RecordStore of the operation.
      */
     @Test
-    public void testRunWithForcedEviction_evictAllOnOthers_whenOtherRecordStoreHasNoEviction() throws Exception {
+    public void testRun_evictAllOnOthers_whenOtherRecordStoreHasNoEviction() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(2 * FORCED_EVICTION_RETRY_COUNT + 2);
         otherMapConfig.setEvictionPolicy(EvictionPolicy.NONE);
 
@@ -167,7 +185,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * Triggers a single evictAll() call on both RecordStores, but still fails.
      */
     @Test(expected = NativeOutOfMemoryError.class)
-    public void testRunWithForcedEviction_withFailedForcedEviction() throws Exception {
+    public void testRun_failedForcedEviction() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(2 * FORCED_EVICTION_RETRY_COUNT + 3);
 
         try {
@@ -185,8 +203,8 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * Triggers a single evictAll() call on the RecordStore of the operation.
      */
     @Test(expected = NativeOutOfMemoryError.class)
-    public void testRunWithForcedEviction_withFailedForcedEviction_whenOtherRecordStoreHasNoEviction() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(2 * FORCED_EVICTION_RETRY_COUNT + 3);
+    public void testRun_failedForcedEviction_whenOtherRecordStoreHasNoEviction() throws Exception {
+        Operation op = new NativeOutOfMemoryOperation(Integer.MAX_VALUE);
         otherMapConfig.setEvictionPolicy(EvictionPolicy.NONE);
 
         try {
@@ -204,7 +222,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * Triggers no forced eviction on the other RecordStore, only on the local (which is always NATIVE).
      */
     @Test(expected = NativeOutOfMemoryError.class)
-    public void testRunWithForcedEviction_whenOtherRecordStoreIsNotNativeInMemoryFormat() throws Exception {
+    public void testRun_failedForcedEviction_whenOtherRecordStoreIsNotNativeInMemoryFormat() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(Integer.MAX_VALUE);
         otherMapConfig.setInMemoryFormat(InMemoryFormat.BINARY);
 
@@ -224,7 +242,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * and {@link MapOperation#createRecordStoreOnDemand} is {@code false}.
      */
     @Test(expected = NativeOutOfMemoryError.class)
-    public void testRunWithForcedEviction_whenRecordStoreIsNull() throws Exception {
+    public void testRun_failedForcedEviction_whenRecordStoreIsNull() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(Integer.MAX_VALUE, false);
 
         try {

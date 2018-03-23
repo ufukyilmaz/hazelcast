@@ -33,6 +33,8 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.util.InvocationUtil;
+import com.hazelcast.internal.util.LocalRetryableExecution;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
@@ -267,8 +269,23 @@ public class EnterpriseCacheService
         }
 
         String cacheNameWithPrefix = cacheConfig.getNameWithPrefix();
+        destroySegmentsInternal(cacheNameWithPrefix);
+        HiDensityStorageInfo storageInfo = hiDensityCacheInfoMap.remove(cacheNameWithPrefix);
+        if (storageInfo != null) {
+            deregisterCacheProbes(storageInfo);
+        }
+    }
+
+    /**
+     * Destroys the cache segments on local partition threads and waits for
+     * {@value #CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS} seconds
+     * for each cache segment destruction to complete.
+     *
+     * @param cacheNameWithPrefix the name of the cache (including manager prefix)
+     */
+    private void destroySegmentsInternal(String cacheNameWithPrefix) {
         InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
-        List<CacheSegmentDestroyOperation> ops = new ArrayList<CacheSegmentDestroyOperation>();
+        List<LocalRetryableExecution> executions = new ArrayList<LocalRetryableExecution>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasRecordStore(cacheNameWithPrefix)) {
                 CacheSegmentDestroyOperation op = new CacheSegmentDestroyOperation(cacheNameWithPrefix);
@@ -277,22 +294,20 @@ public class EnterpriseCacheService
                 if (operationService.isRunAllowed(op)) {
                     operationService.run(op);
                 } else {
-                    operationService.execute(op);
-                    ops.add(op);
+                    executions.add(InvocationUtil.executeLocallyWithRetry(nodeEngine, op));
                 }
             }
         }
-        for (CacheSegmentDestroyOperation op : ops) {
+        for (LocalRetryableExecution execution : executions) {
             try {
-                op.awaitCompletion(CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS);
+                if (!execution.awaitCompletion(
+                        CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS)) {
+                    logger.warning("Cache segment was not destroyed in expected time, possible leak");
+                }
             } catch (InterruptedException e) {
                 currentThread().interrupt();
                 nodeEngine.getLogger(getClass()).warning(e);
             }
-        }
-        HiDensityStorageInfo storageInfo = hiDensityCacheInfoMap.remove(cacheNameWithPrefix);
-        if (storageInfo != null) {
-            deregisterCacheProbes(storageInfo);
         }
     }
 

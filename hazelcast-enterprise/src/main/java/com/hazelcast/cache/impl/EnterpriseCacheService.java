@@ -132,9 +132,7 @@ public class EnterpriseCacheService
                 @Override
                 public void onConfigurationLoaded(String serviceName, String name, Object config) {
                     if (SERVICE_NAME.equals(serviceName)) {
-                        if (config instanceof PreJoinCacheConfig) {
-                            putCacheConfigIfAbsent(((PreJoinCacheConfig) config).asCacheConfig());
-                        } else if (config instanceof CacheConfig) {
+                        if (config instanceof CacheConfig) {
                             putCacheConfigIfAbsent((CacheConfig) config);
                         } else {
                             logger.warning("Configuration " + config + " has an unknown type " + config.getClass());

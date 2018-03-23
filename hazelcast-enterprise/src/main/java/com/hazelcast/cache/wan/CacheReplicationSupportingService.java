@@ -5,6 +5,7 @@ import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
+import com.hazelcast.cache.impl.PreJoinCacheConfig;
 import com.hazelcast.cache.impl.operation.CacheCreateConfigOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.CacheConfig;
@@ -108,14 +109,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         }
         CacheConfig existingCacheConfig = cacheService.putCacheConfigIfAbsent(cacheConfig);
         if (existingCacheConfig == null) {
-            CacheCreateConfigOperation op = new CacheCreateConfigOperation(cacheConfig, true);
-            // run "CacheCreateConfigOperation" on this node, the operation itself handles interaction with other nodes
-            // this operation doesn't block operation thread even "syncCreate" is specified
-            // in that case, scheduled thread is used, not the operation thread
-            InternalCompletableFuture future =
-                    nodeEngine.getOperationService()
-                            .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
-            future.join();
+            cacheService.createCacheConfigOnAllMembers(PreJoinCacheConfig.of(cacheConfig));
         }
         return cacheConfig;
     }

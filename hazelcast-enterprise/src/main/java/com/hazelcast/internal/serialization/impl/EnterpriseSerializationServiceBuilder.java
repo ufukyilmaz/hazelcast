@@ -135,10 +135,25 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
                                                                           Supplier<RuntimeException> notActiveExceptionSupplier) {
         switch (version) {
             case 1:
-                EnterpriseSerializationServiceV1 serializationServiceV1 = new EnterpriseSerializationServiceV1(inputOutputFactory,
-                        version, portableVersion, classLoader, dataSerializableFactories, portableFactories, managedContext,
-                        partitioningStrategy, initialOutputBufferSize, bufferPoolFactory, memoryManager, enableCompression,
-                        enableSharedObject, clusterVersionAware, versionedSerializationEnabled, notActiveExceptionSupplier);
+                EnterpriseSerializationServiceV1 serializationServiceV1 = EnterpriseSerializationServiceV1.enterpriseBuilder()
+                .withInputOutputFactory(inputOutputFactory)
+                .withVersion(version)
+                .withPortableVersion(portableVersion)
+                .withClassLoader(classLoader)
+                .withDataSerializableFactories(dataSerializableFactories)
+                .withPortableFactories(portableFactories)
+                .withManagedContext(managedContext)
+                .withGlobalPartitionStrategy(partitioningStrategy)
+                .withInitialOutputBufferSize(initialOutputBufferSize)
+                .withBufferPoolFactory(bufferPoolFactory)
+                .withMemoryManager(memoryManager)
+                .withEnableCompression(enableCompression)
+                .withEnableSharedObject(enableSharedObject)
+                .withClusterVersionAware(clusterVersionAware)
+                .withVersionedSerializationEnabled(versionedSerializationEnabled)
+                .withNotActiveExceptionSupplier(notActiveExceptionSupplier)
+                .withClassNameFilter(classNameFilter)
+                .build();
                 serializationServiceV1.registerClassDefinitions(classDefinitions, checkClassDefErrors);
                 return serializationServiceV1;
 
@@ -167,5 +182,4 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
 
         return new EnterpriseByteArrayInputOutputFactory(byteOrder);
     }
-
 }

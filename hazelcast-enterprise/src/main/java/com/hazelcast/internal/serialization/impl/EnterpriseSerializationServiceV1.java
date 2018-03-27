@@ -1,11 +1,8 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.InputOutputFactory;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPool;
-import com.hazelcast.internal.serialization.impl.bufferpool.BufferPoolFactory;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.ObjectDataInput;
@@ -15,8 +12,6 @@ import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
-import com.hazelcast.nio.serialization.PortableFactory;
-import com.hazelcast.util.function.Supplier;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -38,22 +33,12 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     private final HazelcastMemoryManager memoryManager;
     private final ThreadLocal<MemoryAllocator> mallocThreadLocal = new ThreadLocal<MemoryAllocator>();
 
-    @SuppressWarnings("checkstyle:parameternumber")
-    EnterpriseSerializationServiceV1(InputOutputFactory inputOutputFactory, byte version, int portableVersion,
-                                     ClassLoader classLoader,
-                                     Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
-                                     Map<Integer, ? extends PortableFactory> portableFactories, ManagedContext managedContext,
-                                     PartitioningStrategy partitionStrategy, int initialOutputBufferSize,
-                                     BufferPoolFactory bufferPoolFactory, HazelcastMemoryManager memoryManager,
-                                     boolean enableCompression, boolean enableSharedObject,
-                                     EnterpriseClusterVersionAware clusterVersionAware, boolean versionedSerializationEnabled,
-                                     Supplier<RuntimeException> notActiveExceptionSupplier) {
-        super(inputOutputFactory, version, portableVersion, classLoader, dataSerializableFactories, portableFactories,
-                managedContext, partitionStrategy, initialOutputBufferSize, bufferPoolFactory, enableCompression,
-                enableSharedObject, notActiveExceptionSupplier);
+    EnterpriseSerializationServiceV1(Builder builder) {
+        super(builder);
 
-        this.memoryManager = memoryManager;
-        overrideConstantSerializers(classLoader, clusterVersionAware, dataSerializableFactories, versionedSerializationEnabled);
+        this.memoryManager = builder.memoryManager;
+        overrideConstantSerializers(builder.getClassLoader(), builder.clusterVersionAware, builder.getDataSerializableFactories(),
+                builder.versionedSerializationEnabled);
     }
 
     private void overrideConstantSerializers(ClassLoader classLoader, EnterpriseClusterVersionAware clusterVersionAware,
@@ -256,4 +241,42 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             throw new HazelcastSerializationException("Malformed serialization format");
         }
     }
+
+    public static Builder enterpriseBuilder() {
+        return new Builder();
+    }
+
+    public static final class Builder extends SerializationServiceV1.AbstractBuilder<Builder> {
+        private HazelcastMemoryManager memoryManager;
+        private EnterpriseClusterVersionAware clusterVersionAware;
+        private boolean versionedSerializationEnabled;
+
+        private Builder() {
+        }
+
+        public Builder withMemoryManager(HazelcastMemoryManager memoryManager) {
+            this.memoryManager = memoryManager;
+            return self();
+        }
+
+        public Builder withClusterVersionAware(EnterpriseClusterVersionAware clusterVersionAware) {
+            this.clusterVersionAware = clusterVersionAware;
+            return self();
+        }
+
+        public Builder withVersionedSerializationEnabled(boolean versionedSerializationEnabled) {
+            this.versionedSerializationEnabled = versionedSerializationEnabled;
+            return self();
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public EnterpriseSerializationServiceV1 build() {
+            return new EnterpriseSerializationServiceV1(this);
+        }
+    }
+
 }

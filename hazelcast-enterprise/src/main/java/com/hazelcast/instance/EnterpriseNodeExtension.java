@@ -311,6 +311,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                     .setMemoryManager(memoryManager)
                     .setClassLoader(configClassLoader)
                     .setConfig(serializationConfig)
+                    .setProperties(node.getProperties())
                     .setManagedContext(hazelcastInstance.managedContext)
                     .setPartitioningStrategy(partitioningStrategy)
                     .setClusterVersionAware(listener)

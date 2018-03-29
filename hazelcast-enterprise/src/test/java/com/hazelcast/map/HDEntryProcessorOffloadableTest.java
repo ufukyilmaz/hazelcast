@@ -8,7 +8,6 @@ import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -37,19 +36,13 @@ public class HDEntryProcessorOffloadableTest extends EntryProcessorOffloadableTe
 
     @Override
     public Config getConfig() {
-        Config config = getHDConfig();
+        Config config = getHDConfig(super.getConfig());
         MapConfig mapConfig = new MapConfig(MAP_NAME);
         mapConfig.setInMemoryFormat(inMemoryFormat);
         mapConfig.setAsyncBackupCount(asyncBackupCount);
         mapConfig.setBackupCount(syncBackupCount);
         config.addMapConfig(mapConfig);
         return config;
-    }
-
-    @Override
-    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2012")
-    public void testHeartBeatsComingWhenEntryPropcessorOffloaded() throws Exception {
-
     }
 
     @BeforeClass

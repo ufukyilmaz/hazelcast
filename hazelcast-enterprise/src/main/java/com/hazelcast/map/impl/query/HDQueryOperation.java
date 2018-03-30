@@ -65,8 +65,14 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
                     @Override
                     public void onResponse(Object response) {
                         try {
-                            Result modifiableResult = queryRunner.populateEmptyResult(query, Collections.<Integer>emptyList());
-                            populateResult((List) response, modifiableResult);
+                            Result modifiableResult;
+                            try {
+                                modifiableResult = queryRunner.populateEmptyResult(query, Collections.<Integer>emptyList());
+                                populateResult((List) response, modifiableResult);
+                            } catch (Throwable throwable) {
+                                HDQueryOperation.this.sendResponse(throwable);
+                                return;
+                            }
                             HDQueryOperation.this.sendResponse(modifiableResult);
                         } finally {
                             ops.onCompletionAsyncOperation(HDQueryOperation.this);

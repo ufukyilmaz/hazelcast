@@ -2,13 +2,13 @@ package com.hazelcast.map.impl.query;
 
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
-import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.InvocationBuilder;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.util.IterationType;
 import com.hazelcast.util.executor.CompletedFuture;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,7 +49,9 @@ public class HDPartitionScanExecutorTest {
         HDPartitionScanExecutor executor = executor(runner);
         Predicate predicate = Predicates.equal("attribute", 1);
 
-        Collection<QueryableEntry> result = executor.execute("Map", predicate, singletonList(1));
+        QueryResult queryResult = new QueryResult(IterationType.ENTRY, null, null, Long.MAX_VALUE, false);
+        executor.execute("Map", predicate, singletonList(1), queryResult);
+        Collection<QueryResultRow> result = queryResult.getRows();
         assertEquals(0, result.size());
     }
 }

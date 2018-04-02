@@ -2,6 +2,7 @@ package com.hazelcast.cluster;
 
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cardinality.CardinalityEstimator;
+import com.hazelcast.cluster.oldmembersupport.MapDataSerializerHookWithPostJoinMapOperation39;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MergePolicyConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -15,6 +16,7 @@ import com.hazelcast.core.MultiMap;
 import com.hazelcast.core.ReplicatedMap;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.internal.cluster.Versions;
+import com.hazelcast.map.impl.MapDataSerializerHook;
 import com.hazelcast.ringbuffer.Ringbuffer;
 import com.hazelcast.scheduledexecutor.IScheduledExecutorService;
 import com.hazelcast.scheduledexecutor.IScheduledFuture;
@@ -67,7 +69,7 @@ public class SplitBrainUpgradeCaseMergePolicyTest extends AbstractSplitBrainUpgr
     @Parameters(name = "isLegacyCluster:{0}")
     public static Collection<Object> parameters() {
         return asList(new Object[]{
-                // true, commented out because of an issue https://github.com/hazelcast/hazelcast-enterprise/issues/1997
+                true,
                 false,
         });
     }
@@ -123,12 +125,29 @@ public class SplitBrainUpgradeCaseMergePolicyTest extends AbstractSplitBrainUpgr
         return config;
     }
 
+    private Config configWithOverloadedClassLoader() {
+        return config().setClassLoader(new ClassLoader() {
+            @Override
+            protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                if (name.equals(MapDataSerializerHook.class.getName())) {
+                    return super.loadClass(MapDataSerializerHookWithPostJoinMapOperation39.class.getName());
+                }
+                return super.loadClass(name, resolve);
+            }
+        });
+    }
+
     @Override
     protected HazelcastInstance[] startInitialCluster(Config config, int clusterSize) {
         factory = createHazelcastInstanceFactory(clusterSize);
         HazelcastInstance[] instances = new HazelcastInstance[clusterSize];
-        instances[0] = newHazelcastInstance(factory, isLegacyCluster ? LEGACY_VERSION : NEW_VERSION, config);
-        instances[1] = newHazelcastInstance(factory, isLegacyCluster ? LEGACY_VERSION : NEW_VERSION, config);
+        if (isLegacyCluster) {
+            instances[0] = newHazelcastInstance(factory, LEGACY_VERSION, configWithOverloadedClassLoader());
+            instances[1] = newHazelcastInstance(factory,  LEGACY_VERSION, configWithOverloadedClassLoader());
+        } else {
+            instances[0] = newHazelcastInstance(factory, NEW_VERSION, config);
+            instances[1] = newHazelcastInstance(factory,  NEW_VERSION, config);
+        }
         instances[2] = newHazelcastInstance(factory, NEW_VERSION, config);
         return instances;
     }

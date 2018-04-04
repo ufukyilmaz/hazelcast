@@ -3,7 +3,6 @@ package com.hazelcast.nio.ssl;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -63,7 +62,9 @@ public class SSLConnectionTest {
         join.getTcpIpConfig().setEnabled(true).setConnectionTimeoutSeconds(3000);
 
         Properties props = TestKeyStoreUtil.createSslProperties();
-        config.getNetworkConfig().setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props));
+        config.getNetworkConfig()
+            .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props))
+            .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -107,7 +108,9 @@ public class SSLConnectionTest {
         join.getTcpIpConfig().setEnabled(true).setConnectionTimeoutSeconds(3000);
 
         Properties props = TestKeyStoreUtil.createSslProperties();
-        config.getNetworkConfig().setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props));
+        config.getNetworkConfig()
+            .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props))
+            .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -262,7 +265,10 @@ public class SSLConnectionTest {
                 .setProperties(props);
 
         Config config = new Config();
-        config.getNetworkConfig().setSSLConfig(sslConfig);
+        config.getNetworkConfig()
+            .setSSLConfig(sslConfig)
+            .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+
         return config;
     }
 

@@ -9,7 +9,6 @@ import com.hazelcast.core.Cluster;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.DistributedObjectListener;
 import com.hazelcast.core.Endpoint;
-import com.hazelcast.flakeidgen.FlakeIdGenerator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IAtomicLong;
@@ -31,6 +30,7 @@ import com.hazelcast.core.PartitionService;
 import com.hazelcast.core.ReplicatedMap;
 import com.hazelcast.crdt.pncounter.PNCounter;
 import com.hazelcast.durableexecutor.DurableExecutorService;
+import com.hazelcast.flakeidgen.FlakeIdGenerator;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.mapreduce.JobTracker;
@@ -75,9 +75,11 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.security.AccessControlException;
 import java.security.Permission;
 import java.security.Principal;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -128,6 +130,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     private transient Node node;
     private Subject subject;
     private Callable<V> callable;
+    private boolean blockUnmappedActions;
 
     public SecureCallableImpl() {
     }
@@ -196,6 +199,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     @Override
     public void setNode(Node node) {
         this.node = node;
+        this.blockUnmappedActions =  node.getConfig().getSecurityConfig().getClientBlockUnmappedActions();
     }
 
     private <T> T getProxy(SecureInvocationHandler handler) {
@@ -488,7 +492,9 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
 
         SecureInvocationHandler(DistributedObject distributedObject) {
             this.distributedObject = distributedObject;
-            methodMap = SERVICE_TO_METHODMAP.get(getStructureName());
+            methodMap = SERVICE_TO_METHODMAP.containsKey(getStructureName())
+                    ? SERVICE_TO_METHODMAP.get(getStructureName())
+                    : Collections.<String, String>emptyMap();
         }
 
         public DistributedObject getDistributedObject() {
@@ -500,6 +506,9 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             final Permission permission = getPermission(method, args);
             if (permission != null) {
                 checkPermission(permission);
+            } else if (blockUnmappedActions) {
+                throw new AccessControlException("Missing permission-mapping for `" + getStructureName()
+                        + "." + method.getName() + "()`. Action blocked!");
             }
             return method.invoke(distributedObject, args);
         }

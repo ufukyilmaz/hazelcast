@@ -393,7 +393,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        assertEquals(new Integer(12), client.getExecutorService("test").submit(new DummyCallable()).get());
+        assertEquals(new Integer(11), client.getExecutorService("test").submit(new DummyCallable()).get());
     }
 
     @Test(expected = ExecutionException.class)
@@ -594,9 +594,6 @@ public class ClientSecurityTest {
 
             hz.getSet("set").add("value");
             result += hz.getSet("set").size(); // +1
-
-            hz.getIdGenerator("id_generator").init(0);
-            result += hz.getIdGenerator("id_generator").newId(); // +1
 
             hz.getFlakeIdGenerator("flake_id_generator").newId();
             result++; // +1

@@ -15,7 +15,6 @@ import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
 import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
 import com.hazelcast.cache.impl.merge.entry.LazyCacheEntryView;
-import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
 import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
 import com.hazelcast.cache.impl.wan.CacheFilterProvider;
 import com.hazelcast.cache.operation.CacheSegmentDestroyOperation;
@@ -112,7 +111,6 @@ public class EnterpriseCacheService
             };
 
     private ReplicationSupportingService replicationSupportingService;
-    private CacheMergePolicyProvider cacheMergePolicyProvider;
     private CacheFilterProvider cacheFilterProvider;
     private CacheWanEventPublisher cacheWanEventPublisher;
     private HotRestartIntegrationService hotRestartService;
@@ -121,7 +119,6 @@ public class EnterpriseCacheService
     protected void postInit(NodeEngine nodeEngine, Properties properties) {
         super.postInit(nodeEngine, properties);
         replicationSupportingService = new CacheReplicationSupportingService(this);
-        cacheMergePolicyProvider = new CacheMergePolicyProvider(nodeEngine);
         cacheFilterProvider = new CacheFilterProvider(nodeEngine);
         cacheWanEventPublisher = new CacheWanEventPublisherImpl(this);
 
@@ -141,11 +138,6 @@ public class EnterpriseCacheService
                 }
             });
         }
-    }
-
-    @Override
-    protected CacheSplitBrainHandlerService newSplitBrainHandlerService(NodeEngine nodeEngine) {
-        return new EnterpriseCacheSplitBrainHandlerServiceImpl(nodeEngine, configs, segments);
     }
 
     @Override
@@ -559,10 +551,6 @@ public class EnterpriseCacheService
     public CacheConfig deleteCacheConfig(String cacheNameWithPrefix) {
         wanReplicationPublishers.remove(cacheNameWithPrefix);
         return super.deleteCacheConfig(cacheNameWithPrefix);
-    }
-
-    public CacheMergePolicyProvider getCacheMergePolicyProvider() {
-        return cacheMergePolicyProvider;
     }
 
     @Override

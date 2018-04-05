@@ -51,7 +51,7 @@ public class MissingPermissionsCallTest
 
     @Parameterized.Parameters(name = "policy:{0}")
     public static Collection<Boolean> parameters() {
-        return Arrays.asList(true);
+        return Arrays.asList(true, false);
     }
 
     @Parameterized.Parameter

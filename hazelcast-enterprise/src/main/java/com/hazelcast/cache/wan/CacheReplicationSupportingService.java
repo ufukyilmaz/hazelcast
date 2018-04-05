@@ -17,8 +17,8 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
-import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationService;
@@ -173,26 +173,23 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
      * @param acknowledgeType determines whether the method will wait for the
      *                        update to be processed on the partition owner
      */
-    private void handleUpdateEvent(CacheReplicationUpdate event,
-                                   CacheConfig cacheConfig,
-                                   WanAcknowledgeType acknowledgeType) {
-        final EnterpriseCacheOperationProvider operationProvider = (EnterpriseCacheOperationProvider) cacheService
+    private void handleUpdateEvent(CacheReplicationUpdate event, CacheConfig cacheConfig, WanAcknowledgeType acknowledgeType) {
+        EnterpriseCacheOperationProvider operationProvider = (EnterpriseCacheOperationProvider) cacheService
                 .getCacheOperationProvider(event.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
-        final Object mergePolicy = cacheService.getCacheMergePolicyProvider()
-                .getMergePolicy(event.getMergePolicy());
+        Object mergePolicy = cacheService.getCacheMergePolicyProvider().getMergePolicy(event.getMergePolicy());
 
         Operation operation;
         if (mergePolicy instanceof SplitBrainMergePolicy) {
-            MergingEntry<Data, Data> mergingEntry = createMergingEntry(nodeEngine.getSerializationService(),
-                    event.getEntryView());
-            operation = operationProvider.createWanMergeOperation(ORIGIN, mergingEntry, (SplitBrainMergePolicy) mergePolicy,
-                    IGNORE_COMPLETION);
+            CacheMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
+            //noinspection unchecked
+            operation = operationProvider.createWanMergeOperation(ORIGIN, mergingEntry,
+                    (SplitBrainMergePolicy<Data, CacheMergeTypes>) mergePolicy, IGNORE_COMPLETION);
         } else {
             CacheEntryView<Data, Data> entryView = event.getEntryView();
             operation = operationProvider.createLegacyWanMergeOperation(ORIGIN, entryView, (CacheMergePolicy) mergePolicy,
                     IGNORE_COMPLETION);
         }
-        final InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
+        InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
         if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
             future.join();
         }

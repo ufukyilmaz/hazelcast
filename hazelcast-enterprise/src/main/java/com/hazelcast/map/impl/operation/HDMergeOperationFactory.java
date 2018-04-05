@@ -2,8 +2,8 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Arrays;
@@ -20,8 +20,8 @@ public class HDMergeOperationFactory extends MergeOperationFactory {
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public HDMergeOperationFactory(String name, int[] partitions, List<MergingEntry<Data, Data>>[] mergingEntries,
-                                   SplitBrainMergePolicy mergePolicy) {
+    public HDMergeOperationFactory(String name, int[] partitions, List<MapMergeTypes>[] mergingEntries,
+                                   SplitBrainMergePolicy<Data, MapMergeTypes> mergePolicy) {
         this.name = name;
         this.partitions = partitions;
         this.mergingEntries = mergingEntries;

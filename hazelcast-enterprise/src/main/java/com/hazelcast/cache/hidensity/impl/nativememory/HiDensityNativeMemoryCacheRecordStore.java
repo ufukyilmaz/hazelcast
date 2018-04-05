@@ -30,8 +30,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
 
@@ -266,7 +266,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public CacheRecord merge(MergingEntry<Data, Data> mergingEntry, SplitBrainMergePolicy mergePolicy) {
+    public CacheRecord merge(CacheMergeTypes mergingEntry, SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy) {
         return toHeapCacheRecord((HiDensityNativeMemoryCacheRecord) super.merge(mergingEntry, mergePolicy));
     }
 

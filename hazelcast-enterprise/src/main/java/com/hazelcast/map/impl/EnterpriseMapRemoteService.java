@@ -9,8 +9,9 @@ import com.hazelcast.map.impl.proxy.EnterpriseMapProxyImpl;
 import com.hazelcast.map.impl.proxy.EnterpriseNearCachedMapProxyImpl;
 import com.hazelcast.map.merge.MergePolicyProvider;
 
-import static com.hazelcast.internal.config.ConfigValidator.checkMergePolicySupportsInMemoryFormat;
+import static com.hazelcast.internal.config.ConfigValidator.checkMapConfig;
 import static com.hazelcast.internal.config.ConfigValidator.checkNearCacheConfig;
+import static com.hazelcast.internal.config.MergePolicyValidator.checkMergePolicySupportsInMemoryFormat;
 
 /**
  * Defines enterprise only remote service behavior for {@link MapService}.
@@ -33,9 +34,11 @@ class EnterpriseMapRemoteService extends MapRemoteService {
         MapConfig mapConfig = config.findMapConfig(name);
         NativeMemoryConfig nativeMemoryConfig = config.getNativeMemoryConfig();
 
+        MergePolicyProvider mergePolicyProvider = mapServiceContext.getMergePolicyProvider();
+
+        checkMapConfig(mapConfig, mergePolicyProvider);
         hdMapConfigValidator.checkHDConfig(mapConfig, nativeMemoryConfig);
 
-        MergePolicyProvider mergePolicyProvider = mapServiceContext.getMergePolicyProvider();
         Object mergePolicy = mergePolicyProvider.getMergePolicy(mapConfig.getMergePolicyConfig().getPolicy());
         checkMergePolicySupportsInMemoryFormat(name, mergePolicy, mapConfig.getInMemoryFormat(),
                 nodeEngine.getClusterService().getClusterVersion(), true, nodeEngine.getLogger(getClass()));

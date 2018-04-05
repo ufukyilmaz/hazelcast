@@ -17,9 +17,9 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
-import com.hazelcast.spi.merge.MergingEntry;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationService;
 
@@ -48,7 +48,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     private final NodeEngine nodeEngine;
     // RU_COMPAT_3_9
     private final MapMergePolicy defaultSyncLegacyMergePolicy;
-    private final SplitBrainMergePolicy defaultSyncMergePolicy;
+    private final SplitBrainMergePolicy<Data, MapMergeTypes> defaultSyncMergePolicy;
     private final ProxyService proxyService;
     private final boolean useDeleteWhenProcessingRemoveEvents;
     private final WanReplicationService wanService;
@@ -59,7 +59,9 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         // RU_COMPAT_3_9
         MergePolicyProvider mergePolicyProvider = mapServiceContext.getMergePolicyProvider();
         this.defaultSyncLegacyMergePolicy = (MapMergePolicy) mergePolicyProvider.getMergePolicy(DEFAULT_LEGACY_MERGE_POLICY);
-        this.defaultSyncMergePolicy = (SplitBrainMergePolicy) mergePolicyProvider.getMergePolicy(DEFAULT_MERGE_POLICY);
+        //noinspection unchecked
+        this.defaultSyncMergePolicy
+                = (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicyProvider.getMergePolicy(DEFAULT_MERGE_POLICY);
         this.proxyService = nodeEngine.getProxyService();
         this.useDeleteWhenProcessingRemoveEvents = Boolean.getBoolean(USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS);
         this.wanService = nodeEngine.getWanReplicationService();
@@ -129,11 +131,11 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         final Operation operation;
 
         if (mergePolicy instanceof SplitBrainMergePolicy) {
-            MergingEntry<Data, Data> mergingEntry = createMergingEntry(nodeEngine.getSerializationService(),
-                    event.getEntryView());
+            MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
             key = mergingEntry.getKey();
+            //noinspection unchecked
             operation = operationProvider.createMergeOperation(mapName, mergingEntry,
-                    (SplitBrainMergePolicy) mergePolicy, true);
+                    (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicy, true);
         } else {
             EntryView<Data, Data> entryView = event.getEntryView();
             key = entryView.getKey();
@@ -182,8 +184,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
         // RU_COMPAT_3_9
         if (nodeEngine.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V3_10)) {
-            MergingEntry<Data, Data> mergingEntry = createMergingEntry(nodeEngine.getSerializationService(),
-                    event.getEntryView());
+            MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
             MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
             invokeOnPartition(mergingEntry.getKey(), operation);
         } else {

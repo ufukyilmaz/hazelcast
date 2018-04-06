@@ -216,7 +216,6 @@ public class ClusterMetadataManager {
             currentThread().interrupt();
             throw new HotRestartException("Cluster metadata manager interrupted during startup");
         }
-
         setInitialPartitionTable();
         logger.info("Starting hot restart local data load.");
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
@@ -256,7 +255,6 @@ public class ClusterMetadataManager {
             repairPartitionTable(addressMapping);
         }
         callAfterExpectedMembersJoinListener();
-
         // THIS IS DONE HERE TO BE ABLE TO INVOKE LISTENERS
         Address thisAddress = node.getThisAddress();
         String thisUuid = node.getThisUuid();
@@ -272,7 +270,6 @@ public class ClusterMetadataManager {
         if (hotRestartEventListeners.isEmpty()) {
             return;
         }
-
         Collection<MemberImpl> members = new ArrayList<MemberImpl>();
         Map<String, Address> expectedMembers = expectedMembersRef.get();
         if (expectedMembers != null) {
@@ -296,7 +293,6 @@ public class ClusterMetadataManager {
                 logger.fine("Completing cluster start ping...");
                 return false;
             }
-
             if (node.isMaster()) {
                 askForClusterStartResult();
             } else {
@@ -316,7 +312,6 @@ public class ClusterMetadataManager {
         } else {
             logger.warning("Local Hot Restart procedure completed with failure.", failure);
         }
-
         hotRestartStatusLock.lock();
         try {
             if (startWithHotRestart) {
@@ -334,7 +329,6 @@ public class ClusterMetadataManager {
         } finally {
             hotRestartStatusLock.unlock();
         }
-
         try {
             waitForDataLoadTimeoutOrFinalClusterStartStatus();
             processFinalClusterStartStatus(failure);
@@ -381,7 +375,6 @@ public class ClusterMetadataManager {
             throw new IllegalStateException("cannot complete force start with " + hotRestartStatus
                     + " and excluded member uuids: " + excludedMemberUuids);
         }
-
         startCompleted = true;
         logger.info("Force start completed.");
     }
@@ -391,9 +384,7 @@ public class ClusterMetadataManager {
         if (hotRestartStatus != CLUSTER_START_SUCCEEDED) {
             throw new IllegalStateException("Cannot wait for excluded uuids to leave because in " + hotRestartStatus + " status");
         }
-
         long deadline = Clock.currentTimeMillis() + EXCLUDED_MEMBERS_LEAVE_WAIT_IN_MILLIS;
-
         while (isExcludedMemberPresentInCluster()) {
             sleep(SECONDS.toMillis(1));
             if (logger.isFineEnabled()) {
@@ -413,9 +404,7 @@ public class ClusterMetadataManager {
         } finally {
             hotRestartStatusLock.unlock();
         }
-
         notifyClusterServiceForExcludedMembers();
-
         logger.info("Completed hot restart with final cluster state: " + clusterState);
     }
 
@@ -425,7 +414,6 @@ public class ClusterMetadataManager {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -491,7 +479,6 @@ public class ClusterMetadataManager {
             logger.warning("Force start attempt received but this node is not master!");
             return false;
         }
-
         hotRestartStatusLock.lock();
         try {
             if (hotRestartStatus != CLUSTER_START_IN_PROGRESS) {
@@ -597,7 +584,6 @@ public class ClusterMetadataManager {
         if (logger.isFineEnabled()) {
             logger.fine("Received partition table from " + sender);
         }
-
         hotRestartStatusLock.lock();
         try {
             if (hotRestartStatus == CLUSTER_START_FAILED) {
@@ -624,10 +610,8 @@ public class ClusterMetadataManager {
             logger.info("Will not answer " + sender + "'s cluster start info since this member is excluded in start.");
             return;
         }
-
         PartitionTableView senderPartitionTable = senderClusterStartInfo.getPartitionTable();
         DataLoadStatus senderDataLoadStatus = senderClusterStartInfo.getDataLoadStatus();
-
         PartitionTableView localPartitionTable;
         MemberClusterStartInfo thisMemberClusterStartInfo = memberClusterStartInfos.get(node.getThisAddress());
         if (thisMemberClusterStartInfo != null) {
@@ -637,9 +621,7 @@ public class ClusterMetadataManager {
         }
 
         boolean partitionTableValidated = localPartitionTable.equals(senderPartitionTable);
-
         notifyListeners(sender, partitionTableValidated, senderDataLoadStatus);
-
         if (partitionTableValidated && senderDataLoadStatus == LOAD_SUCCESSFUL) {
             logger.info("Sender: " + sender + " succeeded after cluster is started");
             Operation op = new SendClusterStartResultOperation(CLUSTER_START_SUCCEEDED,
@@ -1402,6 +1384,13 @@ public class ClusterMetadataManager {
     }
 
     private void broadcast(Operation operation) {
+        Map<String, Address> expectedMembers = expectedMembersRef.get();
+        if (expectedMembers != null) {
+            for (Address member : expectedMembers.values()) {
+                sendIfNotThisMember(operation, member);
+            }
+            return;
+        }
         for (Member member : restoredMembersRef.get()) {
             sendIfNotThisMember(operation, member.getAddress());
         }

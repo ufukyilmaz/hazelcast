@@ -1390,6 +1390,14 @@ public class ClusterMetadataManager {
     }
 
     private void broadcast(Operation operation) {
+        Map<String, Address> expectedMembers = expectedMembersRef.get();
+        if (expectedMembers != null) {
+            for (Address member : expectedMembers.values()) {
+                sendIfNotThisMember(operation, member);
+            }
+            return;
+        }
+
         for (Member member : restoredMembersRef.get()) {
             sendIfNotThisMember(operation, member.getAddress());
         }

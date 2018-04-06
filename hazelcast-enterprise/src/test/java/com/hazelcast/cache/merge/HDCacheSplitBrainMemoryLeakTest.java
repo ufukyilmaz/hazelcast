@@ -57,7 +57,6 @@ public class HDCacheSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
     public Class<? extends SplitBrainMergePolicy> mergePolicyClass;
 
     protected String cacheNameA = "cacheA";
-    protected String cacheNameB = "cacheB";
     protected ICache<Object, Object> cacheA1;
     protected ICache<Object, Object> cacheA2;
     protected MergeLifecycleListener mergeLifecycleListener;
@@ -77,13 +76,6 @@ public class HDCacheSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
         Config config = getHDConfig(super.config(), POOLED, MEMORY_SIZE);
         config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
         config.getCacheConfig(cacheNameA)
-                .setInMemoryFormat(inMemoryFormat)
-                .setEvictionConfig(evictionConfig)
-                .setBackupCount(1)
-                .setAsyncBackupCount(0)
-                .setStatisticsEnabled(true)
-                .setMergePolicy(mergePolicyClass.getName());
-        config.getCacheConfig(cacheNameB)
                 .setInMemoryFormat(inMemoryFormat)
                 .setEvictionConfig(evictionConfig)
                 .setBackupCount(1)
@@ -111,6 +103,9 @@ public class HDCacheSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
 
     @Override
     protected void onAfterSplitBrainHealed(final HazelcastInstance[] instances) {
+        // wait until merge completes
+        mergeLifecycleListener.await();
+
         instances[0].getCacheManager().getCache(cacheNameA).destroy();
 
         // after destroy, expect all HD memory is empty

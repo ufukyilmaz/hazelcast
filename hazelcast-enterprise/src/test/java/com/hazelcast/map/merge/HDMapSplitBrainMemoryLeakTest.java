@@ -2,13 +2,16 @@ package com.hazelcast.map.merge;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.MergePolicyConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.internal.util.RuntimeAvailableProcessors;
+import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
+import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.SplitBrainTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -24,6 +27,7 @@ import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static com.hazelcast.instance.TestUtil.getHazelcastInstanceImpl;
 import static com.hazelcast.memory.MemorySize.toPrettyString;
 import static java.util.Arrays.asList;
@@ -35,6 +39,7 @@ import static org.junit.Assert.assertEquals;
 public class HDMapSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
 
     private static final int[] BRAINS = new int[]{3, 3};
+    private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
 
     @Parameters(name = "format:{0}, mergePolicy:{1}")
     public static Collection<Object[]> parameters() {
@@ -49,31 +54,39 @@ public class HDMapSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
     @Parameter(value = 1)
     public Class<? extends SplitBrainMergePolicy> mergePolicyClass;
 
-    protected String mapNameA = "mapA-";
-
+    protected String mapNameA = "mapA";
     private IMap<Object, Object> mapA1;
     private IMap<Object, Object> mapA2;
     private MergeLifecycleListener mergeLifecycleListener;
 
     @Override
-    protected Config config() {
-        MergePolicyConfig mergePolicyConfig = new MergePolicyConfig()
-                .setPolicy(mergePolicyClass.getName())
-                .setBatchSize(10);
+    protected void onBeforeSetup() {
+        RuntimeAvailableProcessors.override(4);
+        super.onBeforeSetup();
+    }
 
-        Config config = getHDConfig(super.config());
-        config.getMapConfig(mapNameA)
-                .setInMemoryFormat(inMemoryFormat)
-                .setMergePolicyConfig(mergePolicyConfig)
-                .setBackupCount(1)
-                .setAsyncBackupCount(0)
-                .setStatisticsEnabled(true);
-        return config;
+    @Override
+    protected void onTearDown() {
+        super.onTearDown();
+        RuntimeAvailableProcessors.resetOverride();
     }
 
     @Override
     protected int[] brains() {
         return BRAINS;
+    }
+
+    @Override
+    protected Config config() {
+        Config config = getHDConfig(super.config(), POOLED, MEMORY_SIZE);
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+        config.getMapConfig(mapNameA)
+                .setInMemoryFormat(inMemoryFormat)
+                .setBackupCount(1)
+                .setAsyncBackupCount(0)
+                .setStatisticsEnabled(true)
+                .setMergePolicy(mergePolicyClass.getName());
+        return config;
     }
 
     @Override

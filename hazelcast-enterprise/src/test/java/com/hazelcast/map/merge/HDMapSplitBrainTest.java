@@ -5,6 +5,8 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MergePolicyConfig;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.merge.DiscardMergePolicy;
 import com.hazelcast.spi.merge.HigherHitsMergePolicy;
 import com.hazelcast.spi.merge.LatestAccessMergePolicy;
@@ -25,6 +27,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static java.util.Arrays.asList;
 
 /**
@@ -41,6 +44,8 @@ import static java.util.Arrays.asList;
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HDMapSplitBrainTest extends MapSplitBrainTest {
+
+    private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
 
     @Parameters(name = "format:{0}, mergePolicy:{1}")
     public static Collection<Object[]> parameters() {
@@ -64,7 +69,7 @@ public class HDMapSplitBrainTest extends MapSplitBrainTest {
                 .setPolicy(mergePolicyClass.getName())
                 .setBatchSize(10);
 
-        Config config = getHDConfig(super.config());
+        Config config = getHDConfig(super.config(), POOLED, MEMORY_SIZE);
         config.getMapConfig(mapNameA)
                 .setInMemoryFormat(inMemoryFormat)
                 .setMergePolicyConfig(mergePolicyConfig)

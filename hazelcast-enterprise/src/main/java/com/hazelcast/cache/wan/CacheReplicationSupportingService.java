@@ -176,8 +176,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
     private void handleUpdateEvent(CacheReplicationUpdate event, CacheConfig cacheConfig, WanAcknowledgeType acknowledgeType) {
         EnterpriseCacheOperationProvider operationProvider = (EnterpriseCacheOperationProvider) cacheService
                 .getCacheOperationProvider(event.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
-        Object mergePolicy = cacheService.getCacheMergePolicyProvider().getMergePolicy(event.getMergePolicy());
-
+        Object mergePolicy = cacheService.getMergePolicyProvider().getMergePolicy(event.getMergePolicy());
         Operation operation;
         if (mergePolicy instanceof SplitBrainMergePolicy) {
             CacheMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());

@@ -124,6 +124,39 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
+    public void test_multipleRestartsWithSingleNode_whenClusterState_PASSIVE() {
+        testMultipleRestartsWhenClusterPASSIVE(1);
+    }
+
+    @Test
+    public void test_multipleRestartsWithMultipleNodes_whenClusterState_PASSIVE() {
+        testMultipleRestartsWhenClusterPASSIVE(4);
+    }
+
+    private void testMultipleRestartsWhenClusterPASSIVE(int nodeCount) {
+        HazelcastInstance[] instances = startNewInstances(nodeCount);
+
+        assertInstancesJoined(nodeCount, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
+
+        warmUpPartitions(instances);
+        changeClusterStateEventually(instances[0], ClusterState.PASSIVE);
+
+        Address[] addresses = getAddresses(instances);
+        terminateInstances();
+
+        instances = restartInstances(addresses);
+        assertInstancesJoined(nodeCount, instances, NodeState.PASSIVE, ClusterState.PASSIVE);
+        invokeDummyOperationOnAllPartitions(instances);
+
+        addresses = getAddresses(instances);
+        terminateInstances();
+
+        instances = restartInstances(addresses);
+        assertInstancesJoined(nodeCount, instances, NodeState.PASSIVE, ClusterState.PASSIVE);
+        invokeDummyOperationOnAllPartitions(instances);
+    }
+
+    @Test
     public void test_hotRestartFails_withMissingHotRestartDirectory_forOneNode() {
         Address[] addresses = startAndTerminateInstances(4);
 

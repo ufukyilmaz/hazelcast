@@ -280,6 +280,11 @@ public class HiDensityNativeMemoryCacheRecordStore
         return cacheRecord;
     }
 
+    @Override
+    public void disposeDeferredBlocks() {
+        getRecordProcessor().disposeDeferredBlocks();
+    }
+
     private HiDensityNativeMemoryCacheRecord toNativeMemoryCacheRecord(CacheRecord record) {
         if (record instanceof HiDensityNativeMemoryCacheRecord) {
             return (HiDensityNativeMemoryCacheRecord) record;

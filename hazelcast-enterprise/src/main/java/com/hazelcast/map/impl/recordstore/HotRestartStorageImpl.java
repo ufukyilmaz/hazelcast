@@ -145,7 +145,7 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     }
 
     @Override
-    public final void disposeDeferredBlocks() {
+    public void disposeDeferredBlocks() {
         storage.disposeDeferredBlocks();
     }
 

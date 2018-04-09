@@ -131,4 +131,9 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return the heap based {@link CacheRecord} converted from the given {@link HiDensityCacheRecord}
      */
     CacheRecord toHeapCacheRecord(R record);
+
+    /**
+     * Used to release HD memory.
+     */
+    void disposeDeferredBlocks();
 }

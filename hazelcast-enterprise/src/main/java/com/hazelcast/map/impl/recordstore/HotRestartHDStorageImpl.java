@@ -89,6 +89,13 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> imp
     }
 
     @Override
+    public void disposeDeferredBlocks() {
+        synchronized (mutex) {
+            super.disposeDeferredBlocks();
+        }
+    }
+
+    @Override
     public HotRestartKey createHotRestartKey(HDRecord record) {
         NativeMemoryData key = (NativeMemoryData) record.getKey();
         return new KeyOffHeap(prefix, key.toByteArray(), key.address(), record.getSequence());

@@ -86,8 +86,7 @@ final class ValEvacuator {
                 final KeyHandle kh = sortedCursor.asKeyHandle();
                 final RamStore ramStore;
                 if ((ramStore = ramStoreRegistry.ramStoreForPrefix(r.keyPrefix(kh))) != null
-                        && ramStore.copyEntry(kh, r.payloadSize(), holder)
-                ) {
+                        && ramStore.copyEntry(kh, r.payloadSize(), holder)) {
                     // Invariant at this point: r.isAlive() and we have its data. Maintain this invariant by
                     // not catching up with mutator until all metadata are updated. The first catchup can happen
                     // within the writeValueRecord() call (which is called from dest.add()).

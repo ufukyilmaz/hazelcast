@@ -221,7 +221,7 @@ public abstract class AbstractHDCacheOperationTest {
         }
 
         verify(recordStore, atLeastOnce()).isWanReplicationEnabled();
-        verify(recordStore, atLeastOnce()).getRecordProcessor();
+        verify(recordStore, atLeastOnce()).disposeDeferredBlocks();
 
         verifyNoMoreInteractions(recordStore);
     }

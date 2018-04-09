@@ -50,7 +50,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     /**
      * See {@link HotRestartHiDensityNativeMemoryCacheRecordMap#mutex}
      */
-    private final Object recordMapMutex;
+    private final Object mutex;
 
     public HotRestartHiDensityNativeMemoryCacheRecordStore(
             int partitionId, String cacheNameWithPrefix, EnterpriseCacheService cacheService,
@@ -64,7 +64,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
         HotRestartHiDensityNativeMemoryCacheRecordMap recordMap =
                 (HotRestartHiDensityNativeMemoryCacheRecordMap) records;
-        recordMapMutex = recordMap.getMutex();
+        mutex = recordMap.getMutex();
         initMap(recordMap);
     }
 
@@ -135,7 +135,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected void updateRecordValue(HiDensityNativeMemoryCacheRecord record, Object recordValue) {
-        synchronized (recordMapMutex) {
+        synchronized (mutex) {
             record.setValue((NativeMemoryData) recordValue);
         }
     }
@@ -172,6 +172,13 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         super.onOwn(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose);
     }
 
+    @Override
+    public void disposeDeferredBlocks() {
+        synchronized (mutex) {
+            super.disposeDeferredBlocks();
+        }
+    }
+
     private void putToHotRestart(Data key, HiDensityNativeMemoryCacheRecord record) {
         NativeMemoryData value = record.getValue();
         assert value != null : "Value should not be null! -> " + record;
@@ -198,7 +205,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         KeyHandleOffHeap kh = (KeyHandleOffHeap) keyHandle;
         assert kh.address() != NULL_PTR;
 
-        synchronized (recordMapMutex) {
+        synchronized (mutex) {
             NativeMemoryData key = RamStoreHelper.validateAndGetKey(kh, memoryManager);
             if (key == null) {
                 return false;

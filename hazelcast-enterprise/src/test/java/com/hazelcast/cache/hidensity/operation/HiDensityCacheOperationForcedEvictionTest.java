@@ -159,7 +159,7 @@ public class HiDensityCacheOperationForcedEvictionTest extends AbstractHDCacheOp
     }
 
     private void verifyDisposeDeferredBlocks(int expectedTimes) {
-        verify(recordProcessor, times(expectedTimes)).disposeDeferredBlocks();
+        verify(recordStore, times(expectedTimes)).disposeDeferredBlocks();
     }
 
     private class NativeOutOfMemoryOperation extends AbstractHiDensityCacheOperation {

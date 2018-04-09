@@ -6,7 +6,6 @@ import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.operation.MutableOperation;
-import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
@@ -301,10 +300,9 @@ abstract class AbstractHiDensityCacheOperation
     private void disposeDeferredBlocks() {
         try {
             EnterpriseCacheService service = getService();
-            HiDensityCacheRecordStore cache = (HiDensityCacheRecordStore) service.getRecordStore(name, getPartitionId());
-            if (cache != null) {
-                HiDensityRecordProcessor recordProcessor = cache.getRecordProcessor();
-                recordProcessor.disposeDeferredBlocks();
+            HiDensityCacheRecordStore recordStore = (HiDensityCacheRecordStore) service.getRecordStore(name, getPartitionId());
+            if (recordStore != null) {
+                recordStore.disposeDeferredBlocks();
             }
         } catch (Throwable e) {
             getLogger().warning("Error while freeing deferred memory blocks...", e);

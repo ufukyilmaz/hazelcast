@@ -16,7 +16,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class})
-public class HDClientMapQuorumWriteTest extends ClientCacheQuorumWriteTest {
+public class HDClientCacheQuorumWriteTest extends ClientCacheQuorumWriteTest {
 
     private static PartitionedClusterClients clients;
 

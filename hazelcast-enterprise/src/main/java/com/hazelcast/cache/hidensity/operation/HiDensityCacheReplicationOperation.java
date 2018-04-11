@@ -27,9 +27,9 @@ import java.util.Map;
 public final class HiDensityCacheReplicationOperation
         extends CacheReplicationOperation implements IdentifiedDataSerializable {
 
-    private final Map<String, Map<Data, HiDensityCacheRecord>> offHeapSource
+    private final Map<String, Map<Data, HiDensityCacheRecord>> source
             = new HashMap<String, Map<Data, HiDensityCacheRecord>>();
-    private final Map<String, Map<Data, CacheRecordHolder>> offHeapDestination
+    private final Map<String, Map<Data, CacheRecordHolder>> destination
             = new HashMap<String, Map<Data, CacheRecordHolder>>();
 
     private transient NativeOutOfMemoryError oome;
@@ -40,7 +40,7 @@ public final class HiDensityCacheReplicationOperation
     @Override
     protected void storeRecordsToReplicate(ICacheRecordStore recordStore) {
         if (recordStore instanceof HiDensityCacheRecordStore) {
-            offHeapSource.put(recordStore.getName(), (Map) recordStore.getReadOnlyRecords());
+            source.put(recordStore.getName(), (Map) recordStore.getReadOnlyRecords());
         } else {
             super.storeRecordsToReplicate(recordStore);
         }
@@ -48,7 +48,7 @@ public final class HiDensityCacheReplicationOperation
 
     private void dispose() {
         EnterpriseSerializationService ss = (EnterpriseSerializationService) getNodeEngine().getSerializationService();
-        for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
+        for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : destination.entrySet()) {
             Map<Data, CacheRecordHolder> value = entry.getValue();
             for (Map.Entry<Data, CacheRecordHolder> e : value.entrySet()) {
                 ss.disposeData(e.getKey());
@@ -59,17 +59,17 @@ public final class HiDensityCacheReplicationOperation
             }
             value.clear();
         }
-        offHeapDestination.clear();
+        destination.clear();
     }
 
     @Override
-    public void run() throws Exception {
+    public void run() {
         try {
             super.run();
 
             EnterpriseCacheService service = getService();
 
-            for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
+            for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : destination.entrySet()) {
                 HiDensityCacheRecordStore recordStore =
                         (HiDensityCacheRecordStore) service.getOrCreateRecordStore(entry.getKey(), getPartitionId());
                 recordStore.reset();
@@ -81,19 +81,26 @@ public final class HiDensityCacheReplicationOperation
                     Data key = next.getKey();
                     CacheRecordHolder holder = next.getValue();
                     recordStore.putReplica(key, holder.value, holder.ttl);
+
                     iter.remove();
+                    if (recordStore.evictIfRequired()) {
+                        // No need to continue replicating records anymore.
+                        // We are already over eviction threshold, each put record will cause another eviction.
+                        break;
+                    }
+
                 }
             }
         } catch (Throwable e) {
-            dispose();
             if (e instanceof NativeOutOfMemoryError) {
                 oome = (NativeOutOfMemoryError) e;
             } else {
                 getLogger().severe("While replicating cache! partition: " + getPartitionId()
                         + ", replica: " + getReplicaIndex(), e);
             }
+        } finally {
+            dispose();
         }
-        offHeapDestination.clear();
     }
 
     @Override
@@ -128,12 +135,12 @@ public final class HiDensityCacheReplicationOperation
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        int count = offHeapSource.size();
+        int count = source.size();
         out.writeInt(count);
 
         NativeMemoryData valueData = new NativeMemoryData();
         long now = Clock.currentTimeMillis();
-        for (Map.Entry<String, Map<Data, HiDensityCacheRecord>> entry : offHeapSource.entrySet()) {
+        for (Map.Entry<String, Map<Data, HiDensityCacheRecord>> entry : source.entrySet()) {
             Map<Data, HiDensityCacheRecord> value = entry.getValue();
             int subCount = value.size();
             out.writeInt(subCount);
@@ -174,7 +181,7 @@ public final class HiDensityCacheReplicationOperation
             int subCount = in.readInt();
             String name = in.readUTF();
             Map<Data, CacheRecordHolder> m = new HashMap<Data, CacheRecordHolder>(subCount);
-            offHeapDestination.put(name, m);
+            destination.put(name, m);
 
             for (int j = 0; j < subCount; j++) {
                 Data key = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
@@ -190,7 +197,7 @@ public final class HiDensityCacheReplicationOperation
 
     @Override
     public boolean isEmpty() {
-        return offHeapSource.isEmpty() && super.isEmpty();
+        return source.isEmpty() && super.isEmpty();
     }
 
     @Override

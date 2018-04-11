@@ -676,6 +676,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     public CacheRecord putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
         long ttl = expiryPolicyToTTL(expiryPolicy);
+        evictIfRequired();
         return own(key, value, ttl, false, true);
     }
 
@@ -702,10 +703,6 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     private CacheRecord own(Data key, Object value, long ttlMillis, boolean disableDeferredDispose, boolean updateJournal) {
-        if (!records.containsKey(key)) {
-            evictIfRequired();
-        }
-
         long now = Clock.currentTimeMillis();
         long creationTime;
         HiDensityNativeMemoryCacheRecord record = null;

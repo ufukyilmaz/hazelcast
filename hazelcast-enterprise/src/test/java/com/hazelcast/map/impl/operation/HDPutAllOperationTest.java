@@ -64,7 +64,7 @@ public class HDPutAllOperationTest extends AbstractHDMapOperationTest {
         configureRecordStore(PUT_ALL);
 
         // HDPutAllOperation
-        HDPutAllOperation operation = new HDPutAllOperation(MAP_NAME, mapEntries);
+        TestHDPutAllOperation operation = new TestHDPutAllOperation(MAP_NAME, mapEntries);
         executeOperation(operation, PARTITION_ID);
         assertBackupConfiguration(operation);
 
@@ -85,5 +85,20 @@ public class HDPutAllOperationTest extends AbstractHDMapOperationTest {
     @Override
     String getMapName() {
         return MAP_NAME;
+    }
+
+    public class TestHDPutAllOperation extends HDPutAllOperation {
+
+        public TestHDPutAllOperation() {
+        }
+
+        public TestHDPutAllOperation(String name, MapEntries mapEntries) {
+            super(name, mapEntries);
+        }
+
+        @Override
+        protected int getRetryCount() {
+            return HDMapOperation.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
+        }
     }
 }

@@ -354,33 +354,28 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         }
     }
 
-    private static BackupTaskStatus getBackupTaskStatus(HotRestartStore[] stores) {
-        BackupTaskState state = null;
-        int completed = 0;
+    static BackupTaskStatus getBackupTaskStatus(HotRestartStore[] stores) {
         if (stores == null) {
             return new BackupTaskStatus(NO_TASK, 0, 0);
         }
+        int failed = 0;
+        int succeeded = 0;
+        int inprogress = 0;
         for (HotRestartStore store : stores) {
-            final BackupTaskState taskState = store.getBackupTaskState();
-            switch (taskState) {
-                case NO_TASK:
-                    break;
+            final BackupTaskState state = store.getBackupTaskState();
+            switch (state) {
+                case NO_TASK: break;
                 case NOT_STARTED:
-                case IN_PROGRESS:
-                    state = IN_PROGRESS;
-                    break;
-                case FAILURE:
-                case SUCCESS:
-                    if (state == null) {
-                        state = taskState;
-                    }
-                    completed++;
-                    break;
+                case IN_PROGRESS: inprogress++; break;
+                case FAILURE: failed++; break;
+                case SUCCESS: succeeded++; break;
                 default:
-                    throw new IllegalStateException("Unsupported hot backup task state : " + taskState);
+                    throw new IllegalStateException("Unsupported hot backup task state : " + state);
             }
         }
-        return new BackupTaskStatus(state != null ? state : NO_TASK, completed, stores.length);
+        BackupTaskState overall = inprogress > 0 ? BackupTaskState.IN_PROGRESS
+                : failed > 0 ? FAILURE : succeeded > 0 ? SUCCESS : NO_TASK;
+        return new BackupTaskStatus(overall, failed + succeeded, stores.length);
     }
 
     private void backup(File backupDir, HotRestartStore[] stores, boolean onHeap) {

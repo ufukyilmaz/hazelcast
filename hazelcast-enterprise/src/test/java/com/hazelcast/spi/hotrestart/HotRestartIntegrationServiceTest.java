@@ -1,5 +1,14 @@
 package com.hazelcast.spi.hotrestart;
 
+import com.hazelcast.hotrestart.BackupTaskState;
+import com.hazelcast.hotrestart.BackupTaskStatus;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import java.util.Arrays;
+
 import static com.hazelcast.hotrestart.BackupTaskState.FAILURE;
 import static com.hazelcast.hotrestart.BackupTaskState.IN_PROGRESS;
 import static com.hazelcast.hotrestart.BackupTaskState.NOT_STARTED;
@@ -9,16 +18,6 @@ import static com.hazelcast.spi.hotrestart.HotRestartIntegrationService.getBacku
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
-
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
-import com.hazelcast.hotrestart.BackupTaskState;
-import com.hazelcast.hotrestart.BackupTaskStatus;
-import com.hazelcast.test.annotation.ParallelTest;
-import com.hazelcast.test.annotation.QuickTest;
 
 @Category({ QuickTest.class, ParallelTest.class })
 public class HotRestartIntegrationServiceTest {

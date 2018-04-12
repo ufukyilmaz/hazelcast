@@ -3,8 +3,6 @@ package com.hazelcast.enterprise.wan.replication;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
-import com.hazelcast.enterprise.wan.replication.LatencyTrackingWanBatchSender;
-import com.hazelcast.enterprise.wan.replication.WanBatchSender;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin;
 import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastTestSupport;

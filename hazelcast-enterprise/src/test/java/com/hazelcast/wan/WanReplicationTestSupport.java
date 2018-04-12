@@ -45,6 +45,10 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         HazelcastInstanceFactory.shutdownAll();
     }
 
+    protected void givenSizeOfClusterB(int sizeOfCluster) {
+        clusterB = new HazelcastInstance[sizeOfCluster];
+    }
+
     public abstract String getReplicationImpl();
 
     public abstract InMemoryFormat getMemoryFormat();

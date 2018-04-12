@@ -70,23 +70,55 @@ class WanReplicationMigrationAwareService implements FragmentedMigrationAwareSer
 
     @Override
     public void beforeMigration(PartitionMigrationEvent event) {
+        for (WanReplicationPublisherDelegate wanReplication : getWanReplications().values()) {
+            for (WanReplicationEndpoint endpoint : wanReplication.getEndpoints()) {
+                if (endpoint instanceof WanEventQueueMigrationListener) {
+                    ((WanEventQueueMigrationListener) endpoint).onMigrationStart(event.getPartitionId(), event
+                            .getCurrentReplicaIndex(), event.getNewReplicaIndex());
+                }
+            }
+        }
     }
 
     @Override
     public void commitMigration(PartitionMigrationEvent event) {
-        if (event.getMigrationEndpoint() == MigrationEndpoint.SOURCE) {
-            clearMigrationData(event.getPartitionId());
+        // TODO clearing the WAN queues ignore the backupCount of the replicated datastructures, see EE GH issue #2091
+        if (event.getMigrationEndpoint() == MigrationEndpoint.SOURCE
+                && (event.getNewReplicaIndex() == -1 || event.getNewReplicaIndex() > 1)) {
+            clearMigrationData(event.getPartitionId(), event.getCurrentReplicaIndex());
+        }
+
+        final ConcurrentHashMap<String, WanReplicationPublisherDelegate> wanReplications = getWanReplications();
+        for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
+            for (WanReplicationEndpoint endpoint : wanReplication.getEndpoints()) {
+                if (endpoint instanceof WanEventQueueMigrationListener) {
+                    ((WanEventQueueMigrationListener) endpoint)
+                            .onMigrationCommit(event.getPartitionId(), event.getCurrentReplicaIndex(),
+                                    event.getNewReplicaIndex());
+                }
+            }
         }
     }
 
     @Override
     public void rollbackMigration(PartitionMigrationEvent event) {
         if (event.getMigrationEndpoint() == MigrationEndpoint.DESTINATION) {
-            clearMigrationData(event.getPartitionId());
+            clearMigrationData(event.getPartitionId(), event.getCurrentReplicaIndex());
+        }
+
+        final ConcurrentHashMap<String, WanReplicationPublisherDelegate> wanReplications = getWanReplications();
+        for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
+            for (WanReplicationEndpoint endpoint : wanReplication.getEndpoints()) {
+                if (endpoint instanceof WanEventQueueMigrationListener) {
+                    ((WanEventQueueMigrationListener) endpoint)
+                            .onMigrationRollback(event.getPartitionId(), event.getCurrentReplicaIndex(),
+                                    event.getNewReplicaIndex());
+                }
+            }
         }
     }
 
-    private void clearMigrationData(int partitionId) {
+    private void clearMigrationData(int partitionId, int currentReplicaIndex) {
         final ConcurrentHashMap<String, WanReplicationPublisherDelegate> wanReplications = getWanReplications();
         for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
             for (WanReplicationEndpoint endpoint : wanReplication.getEndpoints()) {
@@ -95,7 +127,17 @@ class WanReplicationMigrationAwareService implements FragmentedMigrationAwareSer
                             = endpoint.getPublisherQueueContainer();
                     final PartitionWanEventContainer eventQueueContainer
                             = publisherQueueContainer.getPublisherEventQueueMap().get(partitionId);
+
+                    // queue depth cannot change between invocations of the size() and the clear() methods, since
+                    // 1) we are on a partition operation thread -> no operations can emit WAN events
+                    // 2) polling the queue is disabled for the time of the migration
+                    int sizeBeforeClear = eventQueueContainer.size();
                     eventQueueContainer.clear();
+
+                    if (endpoint instanceof WanEventQueueMigrationListener) {
+                        ((WanEventQueueMigrationListener) endpoint)
+                                .onWanQueueClearedDuringMigration(partitionId, currentReplicaIndex, sizeBeforeClear);
+                    }
                 }
             }
         }

@@ -246,7 +246,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                         incrementEventCount(event);
                         removeReplicationEvent(event);
                     }
-                    decrementWANQueueSize(batchReplicationEvent.getAddedEventCount());
+                    wanCounter.decrementPrimaryElementCounter(batchReplicationEvent.getAddedEventCount());
                 } else {
                     failedTransmitCount.incrementAndGet();
                 }

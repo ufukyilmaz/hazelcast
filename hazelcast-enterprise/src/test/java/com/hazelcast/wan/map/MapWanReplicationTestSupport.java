@@ -9,6 +9,8 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.WanReplicationTestSupport;
 import org.junit.Before;
 
+import java.util.concurrent.CountDownLatch;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -60,10 +62,17 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
 
     // should be protected, used by hazelcast-solace
     protected void createDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
+        createDataIn(cluster, mapName, start, end, (CountDownLatch) null);
+    }
+
+    protected void createDataIn(HazelcastInstance[] cluster, String mapName, int start, int end, CountDownLatch latch) {
         HazelcastInstance node = getNode(cluster);
         IMap<Integer, String> m = node.getMap(mapName);
         for (; start < end; start++) {
             m.put(start, node.getConfig().getGroupConfig().getName() + start);
+            if (latch != null) {
+                latch.countDown();
+            }
         }
     }
 

@@ -10,6 +10,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.wan.WanReplicationEvent;
 
 import java.io.IOException;
 import java.util.Map;
@@ -31,8 +32,8 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
 
     @Override
     public void run() throws Exception {
-        handleMapEventQueues();
-        handleCacheEventQueues();
+        handleEventQueues(ewrMigrationContainer.getMapMigrationContainer());
+        handleEventQueues(ewrMigrationContainer.getCacheMigrationContainer());
     }
 
     @Override
@@ -59,8 +60,7 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
         return (EnterpriseWanReplicationService) getNodeEngine().getWanReplicationService();
     }
 
-    private void handleMapEventQueues() {
-        Map<String, Map<String, PartitionWanEventQueueMap>> migrationContainer = ewrMigrationContainer.getMapMigrationContainer();
+    private void handleEventQueues(Map<String, Map<String, PartitionWanEventQueueMap>> migrationContainer) {
         for (Map.Entry<String, Map<String, PartitionWanEventQueueMap>> wanRepEntry : migrationContainer.entrySet()) {
             String wanRepName = wanRepEntry.getKey();
             for (Map.Entry<String, PartitionWanEventQueueMap> publisherEntry : wanRepEntry.getValue().entrySet()) {
@@ -68,25 +68,23 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
                 PartitionWanEventQueueMap eventQueueMap = publisherEntry.getValue();
                 WanReplicationEndpoint publisher = getEWRService().getEndpoint(wanRepName, publisherName);
                 for (Map.Entry<String, WanReplicationEventQueue> entry : eventQueueMap.entrySet()) {
-                    publisher.addMapQueue(entry.getKey(), getPartitionId(), entry.getValue());
+                    publishReplicationEventQueue(getReplicaIndex(), entry.getValue(), publisher);
                 }
             }
         }
     }
 
-    private void handleCacheEventQueues() {
-        Map<String, Map<String, PartitionWanEventQueueMap>> migrationContainer =
-                ewrMigrationContainer.getCacheMigrationContainer();
-        for (Map.Entry<String, Map<String, PartitionWanEventQueueMap>> wanRepEntry : migrationContainer.entrySet()) {
-            String wanRepName = wanRepEntry.getKey();
-            for (Map.Entry<String, PartitionWanEventQueueMap> publisherEntry : wanRepEntry.getValue().entrySet()) {
-                String publisherName = publisherEntry.getKey();
-                PartitionWanEventQueueMap eventQueueMap = publisherEntry.getValue();
-                WanReplicationEndpoint publisher = getEWRService().getEndpoint(wanRepName, publisherName);
-                for (Map.Entry<String, WanReplicationEventQueue> entry : eventQueueMap.entrySet()) {
-                    publisher.addCacheQueue(entry.getKey(), getPartitionId(), entry.getValue());
-                }
+    private void publishReplicationEventQueue(int replicaIndex, WanReplicationEventQueue eventQueue,
+                                              WanReplicationEndpoint publisher) {
+        WanReplicationEvent event = eventQueue.poll();
+        while (event != null) {
+            if (replicaIndex == 0) {
+                publisher.publishReplicationEvent(event.getServiceName(), event.getEventObject());
+            } else {
+                publisher.publishReplicationEventBackup(event.getServiceName(), event.getEventObject());
             }
+            event = eventQueue.poll();
         }
     }
+
 }

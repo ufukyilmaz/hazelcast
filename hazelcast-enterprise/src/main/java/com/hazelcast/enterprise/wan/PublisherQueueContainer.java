@@ -2,6 +2,7 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.instance.Node;
 import com.hazelcast.spi.partition.IPartition;
+import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.Map;
@@ -110,12 +111,6 @@ public class PublisherQueueContainer {
         return publisherEventQueueMap.get(partitionId);
     }
 
-    public void clearQueues() {
-        for (PartitionWanEventContainer partitionWanEventContainer : publisherEventQueueMap.values()) {
-            partitionWanEventContainer.clear();
-        }
-    }
-
     /**
      * Returns the size of all WAN queues for the given {@code partitionId}.
      * @param partitionId the partition ID
@@ -123,5 +118,23 @@ public class PublisherQueueContainer {
      */
     public int size(int partitionId) {
         return publisherEventQueueMap.get(partitionId).size();
+    }
+
+    /**
+     * Drains all the queues stored in this container and returns the
+     * total of the drained elements in a map, per partition.
+     *
+     * @return the number of drained elements per partition
+     */
+    public Map<Integer, Integer> drainQueues() {
+        Map<Integer, Integer> partitionDrainsMap = MapUtil.createHashMap(publisherEventQueueMap.size());
+        for (Map.Entry<Integer, PartitionWanEventContainer> partitionEntry : publisherEventQueueMap.entrySet()) {
+            Integer partitionId = partitionEntry.getKey();
+            PartitionWanEventContainer partitionWanEventContainer = partitionEntry.getValue();
+            int drained = partitionWanEventContainer.drain();
+            partitionDrainsMap.put(partitionId, drained);
+        }
+
+        return partitionDrainsMap;
     }
 }

@@ -12,6 +12,7 @@ import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.PartitionWanEventContainer;
 import com.hazelcast.enterprise.wan.PartitionWanEventQueueMap;
 import com.hazelcast.enterprise.wan.PublisherQueueContainer;
+import com.hazelcast.enterprise.wan.WanEventQueueMigrationListener;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
@@ -22,6 +23,7 @@ import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncResult;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.SimpleEntryView;
@@ -42,6 +44,7 @@ import com.hazelcast.spi.ServiceNamespace;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.EmptyStatement;
+import com.hazelcast.util.QueueUtil;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -71,9 +74,11 @@ import static java.util.Collections.unmodifiableMap;
  * from WAN sync events for sending to the WAN endpoints.
  */
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
-public abstract class AbstractWanPublisher implements WanReplicationPublisher, WanReplicationEndpoint, LiveOperationsTracker {
+public abstract class AbstractWanPublisher implements WanReplicationPublisher, WanReplicationEndpoint, LiveOperationsTracker,
+                                                      WanEventQueueMigrationListener {
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
     private static final int DEFAULT_STAGING_QUEUE_SIZE = 100;
+    protected final WanElementCounter wanCounter = new WanElementCounter();
 
     protected volatile boolean running = true;
     protected volatile boolean paused;
@@ -86,7 +91,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     protected WANQueueFullBehavior queueFullBehavior;
     protected volatile long lastQueueFullLogTimeMs;
     protected int queueLoggerTimePeriodMs = QUEUE_LOGGER_PERIOD_MILLIS;
-    protected PublisherQueueContainer eventQueueContainer;
+    protected PollSynchronizerPublisherQueueContainer eventQueueContainer;
     /**
      * Queue for multiplexed map/cache partition WAN events that are about to
      * be transmitted to the target cluster
@@ -99,13 +104,12 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     private MapService mapService;
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
     private final Set<Operation> liveOperations = newSetFromMap(new ConcurrentHashMap<Operation, Boolean>());
-    private final AtomicInteger currentElementCount = new AtomicInteger(0);
-    private final AtomicInteger currentBackupElementCount = new AtomicInteger(0);
+
     /** The count of ongoing {@link WanReplicationEvent} sync events per partition */
     private final Map<Integer, AtomicInteger> counterMap = new ConcurrentHashMap<Integer, AtomicInteger>();
 
-    private volatile boolean resetCounters;
     private EnterpriseWanReplicationService wanService;
+    private WanQueueMigrationSupport wanQueueMigrationSupport;
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
@@ -117,7 +121,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         this.logger = node.getLogger(getClass());
         this.queueCapacity = publisherConfig.getQueueCapacity();
         this.localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
-        this.eventQueueContainer = new PublisherQueueContainer(node);
+        this.eventQueueContainer = new PollSynchronizerPublisherQueueContainer(node);
         this.stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(getStagingQueueSize());
         this.queueFullBehavior = publisherConfig.getQueueFullBehavior();
         this.wanService = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
@@ -126,6 +130,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
                 unmodifiableMap(wanService.getSentEventCounter(MapService.SERVICE_NAME).getEventCounterMap()));
         this.localWanPublisherStats.setSentCacheEventCounter(
                 unmodifiableMap(wanService.getSentEventCounter(ICacheService.SERVICE_NAME).getEventCounterMap()));
+        this.wanQueueMigrationSupport = new WanQueueMigrationSupport(eventQueueContainer, wanCounter);
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller(syncManager));
     }
@@ -182,7 +187,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         final int partitionId = getPartitionId(eventObject.getKey());
         final boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, false);
         if (eventPublished) {
-            incrementCounters(backupEvent);
+            wanCounter.incrementCounters(backupEvent);
         }
     }
 
@@ -196,20 +201,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         final String serviceName = event.getServiceName();
         final ReplicationEventObject eventObject = event.getEventObject();
         eventObject.incrementEventCount(wanService.getSentEventCounter(serviceName));
-    }
-
-    /**
-     * Increments the backup or primary event counter
-     *
-     * @param backupEvent {@code true} if the backup event counter should be
-     *                    incremented, otherwise the primary event counter is incremented
-     */
-    private void incrementCounters(boolean backupEvent) {
-        if (backupEvent) {
-            currentBackupElementCount.incrementAndGet();
-        } else {
-            currentElementCount.incrementAndGet();
-        }
     }
 
     /**
@@ -248,14 +239,16 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
      */
     private boolean isEventDroppingNeeded(boolean isBackup) {
         if (isBackup) {
-            if (currentBackupElementCount.get() >= queueCapacity) {
+            if (wanCounter.getBackupElementCount() >= queueCapacity) {
                 return true;
             }
-        } else if (currentElementCount.get() >= queueCapacity && queueFullBehavior != WANQueueFullBehavior.THROW_EXCEPTION) {
+        } else if (wanCounter.getPrimaryElementCount() >= queueCapacity
+                && queueFullBehavior != WANQueueFullBehavior.THROW_EXCEPTION) {
             long curTime = System.currentTimeMillis();
             if (curTime > lastQueueFullLogTimeMs + queueLoggerTimePeriodMs) {
                 lastQueueFullLogTimeMs = curTime;
-                logger.severe("Wan replication event queue is full. Dropping events. Queue size : " + currentElementCount.get());
+                logger.severe("Wan replication event queue is full. Dropping events. Queue size : " + wanCounter
+                        .getPrimaryElementCount());
             } else {
                 logger.finest("Wan replication event queue is full. An event will be dropped.");
             }
@@ -318,12 +311,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         localWanPublisherStats.incrementPublishedEventCount(latency < 0 ? 0 : latency);
     }
 
-    protected void decrementWANQueueSize(int delta) {
-        if (currentElementCount.get() > 0) {
-            currentElementCount.addAndGet(-delta);
-        }
-    }
-
     @Override
     public void removeBackup(WanReplicationEvent wanReplicationEvent) {
         final ReplicationEventObject eventObject = wanReplicationEvent.getEventObject();
@@ -342,7 +329,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         }
 
         if (wanEvent != null) {
-            currentBackupElementCount.decrementAndGet();
+            wanCounter.decrementBackupElementCounter();
         }
     }
 
@@ -360,20 +347,12 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
 
     @Override
     public void addMapQueue(String name, int partitionId, WanReplicationEventQueue eventQueue) {
-        WanReplicationEvent event = eventQueue.poll();
-        while (event != null) {
-            publishReplicationEvent(event.getServiceName(), event.getEventObject());
-            event = eventQueue.poll();
-        }
+        // nothing to do here, this method is not invoked
     }
 
     @Override
     public void addCacheQueue(String name, int partitionId, WanReplicationEventQueue eventQueue) {
-        WanReplicationEvent event = eventQueue.poll();
-        while (event != null) {
-            publishReplicationEvent(event.getServiceName(), event.getEventObject());
-            event = eventQueue.poll();
-        }
+        // nothing to do here, this method is not invoked
     }
 
     @Override
@@ -394,21 +373,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     @Override
     public void resume() {
         paused = false;
-        if (resetCounters) {
-            int backupCount = 0;
-            int primaryCount = 0;
-            for (IPartition partition : node.getPartitionService().getPartitions()) {
-                int size = eventQueueContainer.size(partition.getPartitionId());
-                if (!partition.isLocal()) {
-                    backupCount += size;
-                } else {
-                    primaryCount += size;
-                }
-            }
-            currentElementCount.set(primaryCount);
-            currentBackupElementCount.set(backupCount);
-            resetCounters = false;
-        }
         logger.info("WAN replication resumed.");
     }
 
@@ -416,7 +380,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     public LocalWanPublisherStats getStats() {
         localWanPublisherStats.setPaused(paused);
         localWanPublisherStats.setConnected(isConnected());
-        localWanPublisherStats.setOutboundQueueSize(currentElementCount.get());
+        localWanPublisherStats.setOutboundQueueSize(wanCounter.getPrimaryElementCount());
         return localWanPublisherStats;
     }
 
@@ -430,7 +394,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
 
     @Override
     public void checkWanReplicationQueues() {
-        if (isThrowExceptionBehavior(queueFullBehavior) && currentElementCount.get() >= queueCapacity) {
+        if (isThrowExceptionBehavior(queueFullBehavior) && wanCounter.getPrimaryElementCount() >= queueCapacity) {
             throw new WANReplicationQueueFullException(
                     String.format("WAN replication for target cluster %s is full. Queue capacity is %d",
                             targetGroupName, queueCapacity));
@@ -517,14 +481,72 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
 
     @Override
     public void clearQueues() {
-        resetCounters = true;
         boolean alreadyPaused = paused;
         if (!alreadyPaused) {
             pause();
         }
-        stagingQueue.clear();
-        eventQueueContainer.clearQueues();
-        resume();
+
+        clearQueuesInternal();
+
+        if (!alreadyPaused) {
+            resume();
+        }
+    }
+
+    private void clearQueuesInternal() {
+        final int drainedFromStagingQueue = QueueUtil.drainQueue(stagingQueue);
+        // the elements in the staging queue were polled from queues
+        // belong to owned partitions, therefore we should decrement the
+        // primary counter
+        wanCounter.decrementPrimaryElementCounter(drainedFromStagingQueue);
+        int totalDrained = drainedFromStagingQueue;
+
+        Map<Integer, Integer> drainedPerPartition = eventQueueContainer.drainQueues();
+        for (Map.Entry<Integer, Integer> entry : drainedPerPartition.entrySet()) {
+            Integer partitionId = entry.getKey();
+            int drainedElements = entry.getValue();
+            totalDrained += drainedElements;
+
+            InternalPartition partition = node.getPartitionService().getPartition(partitionId);
+
+            if (partition.isLocal()) {
+                wanCounter.decrementPrimaryElementCounter(drainedElements);
+            } else {
+                wanCounter.decrementBackupElementCounter(drainedElements);
+            }
+        }
+
+        logger.info("Cleared " + totalDrained + " elements from the WAN queues. Current element counts:"
+                + " primary=" + wanCounter.getPrimaryElementCount()
+                + " backup=" + wanCounter.getBackupElementCount());
+    }
+
+    @Override
+    public void onMigrationStart(int partitionId, int currentReplicaIndex, int newReplicaIndex) {
+        wanQueueMigrationSupport.onMigrationStart(partitionId, currentReplicaIndex, newReplicaIndex);
+    }
+
+    @Override
+    public void onMigrationCommit(int partitionId, int currentReplicaIndex, int newReplicaIndex) {
+        wanQueueMigrationSupport.onMigrationCommit(partitionId, currentReplicaIndex, newReplicaIndex);
+    }
+
+    @Override
+    public void onMigrationRollback(int partitionId, int currentReplicaIndex, int newReplicaIndex) {
+        wanQueueMigrationSupport.onMigrationRollback(partitionId, currentReplicaIndex, newReplicaIndex);
+    }
+
+    @Override
+    public void onWanQueueClearedDuringMigration(int partitionId, int currentReplicaIndex, int clearedQueueDepth) {
+        wanQueueMigrationSupport.onWanQueueClearedDuringMigration(partitionId, currentReplicaIndex, clearedQueueDepth);
+    }
+
+    /**
+     * Returns the count for the number of events currently in the WAN
+     * map/cache partition queues for partitions owned by this node.
+     */
+    public int getCurrentElementCount() {
+        return wanCounter.getPrimaryElementCount();
     }
 
     /**
@@ -533,7 +555,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
      * a backup replica.
      */
     public int getCurrentBackupElementCount() {
-        return currentBackupElementCount.get();
+        return wanCounter.getBackupElementCount();
     }
 
     @Override
@@ -611,14 +633,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     }
 
     /**
-     * Returns the count for the number of events currently in the WAN
-     * map/cache partition queues for partitions owned by this node.
-     */
-    public int getCurrentElementCount() {
-        return currentElementCount.get();
-    }
-
-    /**
      * This runnable is responsible for multiplexing the WAN events from the
      * WAN replication queues with WAN events triggered by a
      * {@link WanSyncEvent}. It then fills the staging queue with WAN events
@@ -686,10 +700,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
                 }
 
                 WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
-                if (event == null) {
-                    continue;
+
+                if (event != null) {
+                    offered |= offerToStagingQueue(event);
                 }
-                offered |= offerToStagingQueue(event);
             }
             return offered;
         }

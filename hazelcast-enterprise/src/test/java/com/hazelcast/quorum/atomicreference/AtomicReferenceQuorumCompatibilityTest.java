@@ -4,11 +4,17 @@ import com.hazelcast.config.AtomicReferenceConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
-import com.hazelcast.quorum.QuorumCompatibilityTest;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.quorum.AbstractQuorumCompatibilityTest;
+import com.hazelcast.test.annotation.CompatibilityTest;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertTrue;
 
-public class AtomicReferenceQuorumCompatibilityTest extends QuorumCompatibilityTest {
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(CompatibilityTest.class)
+public class AtomicReferenceQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
 
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {

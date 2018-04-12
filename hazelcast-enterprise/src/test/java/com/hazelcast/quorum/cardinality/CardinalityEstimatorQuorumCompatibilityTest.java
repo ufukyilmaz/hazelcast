@@ -4,9 +4,15 @@ import com.hazelcast.cardinality.CardinalityEstimator;
 import com.hazelcast.config.CardinalityEstimatorConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.quorum.QuorumCompatibilityTest;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.quorum.AbstractQuorumCompatibilityTest;
+import com.hazelcast.test.annotation.CompatibilityTest;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
-public class CardinalityEstimatorQuorumCompatibilityTest extends QuorumCompatibilityTest {
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(CompatibilityTest.class)
+public class CardinalityEstimatorQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
 
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {

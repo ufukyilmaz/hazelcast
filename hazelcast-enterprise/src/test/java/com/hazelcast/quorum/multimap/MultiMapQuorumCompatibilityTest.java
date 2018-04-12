@@ -4,11 +4,18 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.MultiMapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MultiMap;
-import com.hazelcast.quorum.QuorumCompatibilityTest;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.quorum.AbstractQuorumCompatibilityTest;
+import com.hazelcast.test.annotation.CompatibilityTest;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
-public class MultiMapQuorumCompatibilityTest extends QuorumCompatibilityTest {
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(CompatibilityTest.class)
+public class MultiMapQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
+
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {
         MultiMap<String, String> map = previousVersionMember.getMultiMap(name);

@@ -2,10 +2,12 @@ package com.hazelcast.spi.hotrestart;
 
 import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.hotrestart.BackupTaskStatus;
+import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 
@@ -19,7 +21,8 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Category({ QuickTest.class, ParallelTest.class })
+@RunWith(HazelcastParallelClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class HotRestartIntegrationServiceTest {
 
     @Test
@@ -29,7 +32,7 @@ public class HotRestartIntegrationServiceTest {
         assertOverallState(NO_TASK, NO_TASK, NO_TASK);
         assertOverallState(NO_TASK, NO_TASK, NO_TASK, NO_TASK);
     }
-    
+
     @Test
     public void getBackupTaskStatus_AllSuccessIsSuccess() {
         assertOverallState(SUCCESS, SUCCESS);
@@ -70,7 +73,7 @@ public class HotRestartIntegrationServiceTest {
         assertOverallState(IN_PROGRESS, NOT_STARTED, SUCCESS, FAILURE);
     }
 
-    private static void assertOverallState(BackupTaskState expected, BackupTaskState...actual) {
+    private static void assertOverallState(BackupTaskState expected, BackupTaskState... actual) {
         HotRestartStore[] stores = new HotRestartStore[actual.length];
         int expectedCompleted = 0;
         for (int i = 0; i < stores.length; i++) {

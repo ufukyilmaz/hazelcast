@@ -4,11 +4,17 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.ListConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IList;
-import com.hazelcast.quorum.QuorumCompatibilityTest;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.quorum.AbstractQuorumCompatibilityTest;
+import com.hazelcast.test.annotation.CompatibilityTest;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
-public class ListQuorumCompatibilityTest extends QuorumCompatibilityTest {
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(CompatibilityTest.class)
+public class ListQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
 
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {

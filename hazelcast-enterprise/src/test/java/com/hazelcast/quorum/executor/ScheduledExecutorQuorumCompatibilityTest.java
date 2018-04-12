@@ -3,9 +3,13 @@ package com.hazelcast.quorum.executor;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ScheduledExecutorConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.quorum.QuorumCompatibilityTest;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.quorum.AbstractQuorumCompatibilityTest;
 import com.hazelcast.scheduledexecutor.IScheduledExecutorService;
 import com.hazelcast.scheduledexecutor.IScheduledFuture;
+import com.hazelcast.test.annotation.CompatibilityTest;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -14,7 +18,9 @@ import static com.hazelcast.quorum.executor.CompatibilityTestCallable.RESPONSE;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static org.junit.Assert.assertEquals;
 
-public class ScheduledExecutorQuorumCompatibilityTest extends QuorumCompatibilityTest {
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(CompatibilityTest.class)
+public class ScheduledExecutorQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
 
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {

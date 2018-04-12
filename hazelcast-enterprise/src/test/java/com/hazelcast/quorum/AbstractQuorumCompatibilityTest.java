@@ -3,17 +3,13 @@ package com.hazelcast.quorum;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.QuorumConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.CompatibilityTest;
 import com.hazelcast.transaction.TransactionContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
 
 import static com.hazelcast.internal.cluster.Versions.CURRENT_CLUSTER_VERSION;
 import static com.hazelcast.internal.cluster.Versions.PREVIOUS_CLUSTER_VERSION;
@@ -23,9 +19,7 @@ import static org.junit.Assert.fail;
 // Ensures a data structure which was not previously protected by quorum (in 3.9)
 // becomes protected once cluster is upgraded to 3.10 (member codebase & cluster version),
 // assuming 3.10 members configure these structures with split-brain protection.
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({CompatibilityTest.class})
-public abstract class QuorumCompatibilityTest extends HazelcastTestSupport {
+public abstract class AbstractQuorumCompatibilityTest extends HazelcastTestSupport {
 
     private static final String[] VERSIONS = new String[] {
             PREVIOUS_CLUSTER_VERSION.toString(),

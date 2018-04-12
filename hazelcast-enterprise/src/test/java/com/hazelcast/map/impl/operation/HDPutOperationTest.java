@@ -64,7 +64,7 @@ public class HDPutOperationTest extends AbstractHDMapOperationTest {
         // HDPutOperation
         List<Operation> list = new ArrayList<Operation>(ENTRY_COUNT);
         for (int i = 0; i < ENTRY_COUNT; i++) {
-            HDPutOperation operation = new HDPutOperation(MAP_NAME, dataKey, dataValue, 0);
+            TestHDPutOperation operation = new TestHDPutOperation(MAP_NAME, dataKey, dataValue, 0);
             executeOperation(operation, PARTITION_ID);
 
             if (syncBackupCount > 0) {
@@ -87,5 +87,20 @@ public class HDPutOperationTest extends AbstractHDMapOperationTest {
     @Override
     String getMapName() {
         return MAP_NAME;
+    }
+
+    public class TestHDPutOperation extends HDPutOperation {
+
+        public TestHDPutOperation() {
+        }
+
+        public TestHDPutOperation(String name, Data dataKey, Data value, long ttl) {
+            super(name, dataKey, value, ttl);
+        }
+
+        @Override
+        protected int getRetryCount() {
+            return HDMapOperation.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
+        }
     }
 }

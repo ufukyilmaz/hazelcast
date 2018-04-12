@@ -21,7 +21,9 @@ import java.io.IOException;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionPolicy.LFU;
+import static com.hazelcast.map.impl.operation.HDMapOperation.FORCED_EVICTION_RETRY_COUNT;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
+import static java.lang.String.valueOf;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -35,11 +37,21 @@ public class HDEvictionTest extends EvictionTest {
 
     @Test
     public void testForceEviction() {
+        testForcedEvictionWithRetryCount(5);
+    }
+
+    @Test
+    public void testForceEviction_with_no_retry() {
+        testForcedEvictionWithRetryCount(0);
+    }
+
+    private void testForcedEvictionWithRetryCount(int forcedEvictionRetryCount) {
         // never run an explicit eviction -> rely on forced eviction instead
         int mapMaxSize = Integer.MAX_VALUE;
         String mapName = randomMapName();
 
         Config config = getConfig();
+        config.setProperty(FORCED_EVICTION_RETRY_COUNT.getName(), valueOf(forcedEvictionRetryCount));
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "101");
 
         MapConfig mapConfig = config.getMapConfig(mapName);

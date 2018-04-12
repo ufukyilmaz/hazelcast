@@ -12,6 +12,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.properties.HazelcastProperties;
+import com.hazelcast.spi.properties.HazelcastProperty;
 
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -39,7 +41,10 @@ import static java.lang.String.format;
  */
 public abstract class HDMapOperation extends MapOperation {
 
-    static final int FORCED_EVICTION_RETRY_COUNT = 5;
+    public static final String PROP_FORCED_EVICTION_RETRY_COUNT = "hazelcast.internal.forced.eviction.retry.count";
+    public static final int DEFAULT_FORCED_EVICTION_RETRY_COUNT = 5;
+    public static final HazelcastProperty FORCED_EVICTION_RETRY_COUNT
+            = new HazelcastProperty(PROP_FORCED_EVICTION_RETRY_COUNT, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
 
     public HDMapOperation() {
     }
@@ -86,8 +91,10 @@ public abstract class HDMapOperation extends MapOperation {
                 ignore(e);
             }
 
+            int forcedEvictionRetryCount = getRetryCount();
+
             // first attempt failed, so lets try to evict the current record store and then try again
-            for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
+            for (int i = 0; i < forcedEvictionRetryCount; i++) {
                 try {
                     if (logger.isFineEnabled()) {
                         logger.fine(format("Applying forced eviction on current RecordStore (map %s, partitionId: %d)!",
@@ -103,7 +110,7 @@ public abstract class HDMapOperation extends MapOperation {
             }
 
             // cleaning up the current record stores didn't help, so lets try to clean the other record stores and try again
-            for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
+            for (int i = 0; i < forcedEvictionRetryCount; i++) {
                 try {
                     if (logger.isFineEnabled()) {
                         logger.fine(format("Applying forced eviction on other RecordStores owned by the same partition thread"
@@ -123,6 +130,12 @@ public abstract class HDMapOperation extends MapOperation {
             disposeDeferredBlocks();
             throw e;
         }
+    }
+
+    // protected for testing purposes
+    protected int getRetryCount() {
+        HazelcastProperties properties = getNodeEngine().getProperties();
+        return properties.getInteger(FORCED_EVICTION_RETRY_COUNT);
     }
 
     @Override
@@ -195,7 +208,7 @@ public abstract class HDMapOperation extends MapOperation {
                     logger.info("Evicting all entries in current RecordStores because forced eviction was not enough!");
                 }
                 // if there is still NOOME, clear the current RecordStore and try again
-                recordStore.evictAll(isBackup);
+                evictAllThenDispose(recordStore, isBackup);
                 runInternal();
                 return;
             } catch (NativeOutOfMemoryError e) {
@@ -265,10 +278,15 @@ public abstract class HDMapOperation extends MapOperation {
                 for (RecordStore recordStore : maps.values()) {
                     MapConfig mapConfig = recordStore.getMapContainer().getMapConfig();
                     if (mapConfig.getEvictionPolicy() != NONE && mapConfig.getInMemoryFormat() == NATIVE) {
-                        recordStore.evictAll(isBackup);
+                        evictAllThenDispose(recordStore, isBackup);
                     }
                 }
             }
         }
+    }
+
+    private void evictAllThenDispose(RecordStore recordStore, boolean isBackup) {
+        recordStore.evictAll(isBackup);
+        recordStore.disposeDeferredBlocks();
     }
 }

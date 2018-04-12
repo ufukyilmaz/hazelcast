@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.map.impl.operation.HDMapOperation.FORCED_EVICTION_RETRY_COUNT;
+import static com.hazelcast.map.impl.operation.HDMapOperation.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
 import static java.util.Collections.singletonMap;
 import static org.mockito.AdditionalMatchers.geq;
 import static org.mockito.Matchers.eq;
@@ -68,7 +68,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             verifyForcedEviction(otherRecordStore, 0);
             verifyForcedEvictAll(recordStore, 0);
             verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEvictionSucceeded();
+            verifyForcedEviction(0, 0);
         }
     }
 
@@ -86,7 +86,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             verifyForcedEviction(otherRecordStore, 0);
             verifyForcedEvictAll(recordStore, 0);
             verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEvictionSucceeded();
+            verifyForcedEviction(0, 0);
         }
     }
 
@@ -104,7 +104,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             verifyForcedEviction(otherRecordStore, 0);
             verifyForcedEvictAll(recordStore, 0);
             verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEvictionSucceeded();
+            verifyForcedEviction(0, 0);
         }
     }
 
@@ -113,16 +113,16 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      */
     @Test
     public void testRun_forcedEvictionOnOthers() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(FORCED_EVICTION_RETRY_COUNT + 1);
+        Operation op = new NativeOutOfMemoryOperation(DEFAULT_FORCED_EVICTION_RETRY_COUNT + 1);
 
         try {
             executeOperation(op, PARTITION_ID);
         } finally {
-            verifyForcedEviction(recordStore, FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
             verifyForcedEviction(otherRecordStore, 1);
             verifyForcedEvictAll(recordStore, 0);
             verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEvictionSucceeded();
+            verifyForcedEviction(0, 0);
         }
     }
 
@@ -131,16 +131,16 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      */
     @Test
     public void testRun_singleEvictAll() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(2 * FORCED_EVICTION_RETRY_COUNT + 1);
+        Operation op = new NativeOutOfMemoryOperation(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 1);
 
         try {
             executeOperation(op, PARTITION_ID);
         } finally {
-            verifyForcedEviction(recordStore, FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
             verifyForcedEvictAll(recordStore, 1);
             verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEvictionSucceeded();
+            verifyForcedEviction(1, 0);
         }
     }
 
@@ -149,16 +149,16 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      */
     @Test
     public void testRun_evictAllOnOthers() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(2 * FORCED_EVICTION_RETRY_COUNT + 2);
+        Operation op = new NativeOutOfMemoryOperation(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 2);
 
         try {
             executeOperation(op, PARTITION_ID);
         } finally {
-            verifyForcedEviction(recordStore, FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
             verifyForcedEvictAll(recordStore, 1);
             verifyForcedEvictAll(otherRecordStore, 1);
-            verifyForcedEvictionSucceeded();
+            verifyForcedEviction(1, 1);
         }
     }
 
@@ -167,17 +167,17 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      */
     @Test
     public void testRun_evictAllOnOthers_whenOtherRecordStoreHasNoEviction() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(2 * FORCED_EVICTION_RETRY_COUNT + 2);
+        Operation op = new NativeOutOfMemoryOperation(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 2);
         otherMapConfig.setEvictionPolicy(EvictionPolicy.NONE);
 
         try {
             executeOperation(op, PARTITION_ID);
         } finally {
-            verifyForcedEviction(recordStore, FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
             verifyForcedEvictAll(recordStore, 1);
             verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEvictionSucceeded();
+            verifyForcedEviction(1, 0);
         }
     }
 
@@ -186,16 +186,16 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      */
     @Test(expected = NativeOutOfMemoryError.class)
     public void testRun_failedForcedEviction() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(2 * FORCED_EVICTION_RETRY_COUNT + 3);
+        Operation op = new NativeOutOfMemoryOperation(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 3);
 
         try {
             executeOperation(op, PARTITION_ID);
         } finally {
-            verifyForcedEviction(recordStore, FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
             verifyForcedEvictAll(recordStore, 1);
             verifyForcedEvictAll(otherRecordStore, 1);
-            verifyForcedEvictionFailed();
+            verifyForcedEviction(2, 1);
         }
     }
 
@@ -210,11 +210,11 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
         try {
             executeOperation(op, PARTITION_ID);
         } finally {
-            verifyForcedEviction(recordStore, FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
             verifyForcedEvictAll(recordStore, 1);
             verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEvictionFailed();
+            verifyForcedEviction(2, 0);
         }
     }
 
@@ -229,11 +229,11 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
         try {
             executeOperation(op, PARTITION_ID);
         } finally {
-            verifyForcedEviction(recordStore, FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
             verifyForcedEviction(otherRecordStore, 0);
             verifyForcedEvictAll(recordStore, 1);
             verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEvictionFailed();
+            verifyForcedEviction(2, 0);
         }
     }
 
@@ -249,10 +249,10 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             executeOperation(op, PARTITION_ID);
         } finally {
             verifyForcedEviction(recordStore, 0);
-            verifyForcedEviction(otherRecordStore, FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
             verifyForcedEvictAll(recordStore, 0);
             verifyForcedEvictAll(otherRecordStore, 1);
-            verifyForcedEvictionFailed();
+            verifyForcedEviction(1, 1);
         }
     }
 
@@ -264,14 +264,9 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
         verify(recordStore, times(expectedTimes)).evictAll(false);
     }
 
-    private void verifyForcedEvictionSucceeded() {
-        verifyDisposeDeferredBlocks(recordStore, 0);
-        verifyDisposeDeferredBlocks(otherRecordStore, 0);
-    }
-
-    private void verifyForcedEvictionFailed() {
-        verifyDisposeDeferredBlocks(recordStore, 1);
-        verifyDisposeDeferredBlocks(otherRecordStore, 0);
+    private void verifyForcedEviction(int onMain, int onOthers) {
+        verifyDisposeDeferredBlocks(recordStore, onMain);
+        verifyDisposeDeferredBlocks(otherRecordStore, onOthers);
     }
 
     private void verifyDisposeDeferredBlocks(RecordStore recordStore, int expectedTimes) {
@@ -308,6 +303,11 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             if (throwExceptionCounter-- > 0) {
                 throw new NativeOutOfMemoryError("Expected NativeOutOfMemoryError");
             }
+        }
+
+        @Override
+        protected int getRetryCount() {
+            return HDMapOperation.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
         }
 
         @Override

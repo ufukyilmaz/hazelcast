@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
+import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup.CatchupRunnable;

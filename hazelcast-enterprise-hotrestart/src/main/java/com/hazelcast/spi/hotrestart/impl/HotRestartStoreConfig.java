@@ -1,9 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggingService;
-import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 

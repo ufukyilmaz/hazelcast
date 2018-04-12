@@ -34,9 +34,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
+import static com.hazelcast.internal.util.concurrent.ConcurrentConveyor.SUBMIT_IDLER;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.nio.IOUtil.readFullyOrNothing;
-import static com.hazelcast.internal.util.concurrent.ConcurrentConveyor.SUBMIT_IDLER;
 import static com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop.DRAIN_IDLER;
 import static com.hazelcast.spi.hotrestart.impl.RestartItem.clearedItem;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.BUCKET_DIRNAME_DIGITS;

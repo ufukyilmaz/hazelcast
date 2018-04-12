@@ -1,19 +1,18 @@
 package com.hazelcast.nio.ssl;
 
-import static com.hazelcast.util.StringUtil.intersection;
-import static com.hazelcast.util.StringUtil.splitByComma;
+import com.hazelcast.config.ConfigurationException;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-
-import com.hazelcast.config.ConfigurationException;
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.logging.Logger;
+import static com.hazelcast.util.StringUtil.intersection;
+import static com.hazelcast.util.StringUtil.splitByComma;
 
 /**
  * An {@link SSLEngineFactory} that adapts a {@link SSLContextFactory} to act like a {@link SSLEngineFactory}.

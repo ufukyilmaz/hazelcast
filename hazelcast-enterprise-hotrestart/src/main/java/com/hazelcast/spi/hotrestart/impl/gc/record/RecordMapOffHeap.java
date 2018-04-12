@@ -2,8 +2,8 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.elastic.LongArray;
 import com.hazelcast.internal.memory.MemoryManager;
-import com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl;
 import com.hazelcast.internal.util.hashslot.HashSlotCursor16byteKey;
+import com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
@@ -11,8 +11,8 @@ import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
-import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.valueAddr2slotBase;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.valueAddr2slotBase;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.toRawSizeValue;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordOffHeap.TOMBSTONE_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordOffHeap.VALUE_RECORD_SIZE;

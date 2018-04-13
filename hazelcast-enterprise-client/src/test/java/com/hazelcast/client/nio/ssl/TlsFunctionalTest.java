@@ -1,8 +1,10 @@
 package com.hazelcast.client.nio.ssl;
 
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
@@ -315,7 +317,9 @@ public class TlsFunctionalTest {
         }
 
         Config config = new Config();
-        config.getNetworkConfig().setSSLConfig(sslConfig);
+        NetworkConfig networkConfig = config.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
         return config;
     }
 
@@ -330,7 +334,9 @@ public class TlsFunctionalTest {
         }
 
         ClientConfig config = new ClientConfig();
-        config.getNetworkConfig().setSSLConfig(sslConfig);
+        ClientNetworkConfig networkConfig = config.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.setConnectionTimeout(30000);
         return config;
     }
 

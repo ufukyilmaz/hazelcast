@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.hazelcast.spi.ExceptionAction.THROW_EXCEPTION;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
  * Query operation that runs a query for the HD memory.
@@ -69,9 +70,9 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
                             try {
                                 modifiableResult = queryRunner.populateEmptyResult(query, Collections.<Integer>emptyList());
                                 populateResult((List) response, modifiableResult);
-                            } catch (Throwable throwable) {
-                                HDQueryOperation.this.sendResponse(throwable);
-                                return;
+                            } catch (Exception e) {
+                                HDQueryOperation.this.sendResponse(e);
+                                throw rethrow(e);
                             }
                             HDQueryOperation.this.sendResponse(modifiableResult);
                         } finally {

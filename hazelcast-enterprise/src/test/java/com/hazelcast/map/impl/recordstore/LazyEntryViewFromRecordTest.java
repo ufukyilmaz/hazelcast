@@ -7,8 +7,8 @@ import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.operationexecutor.OperationRunner;
-import com.hazelcast.spi.impl.operationexecutor.impl.DefaultOperationQueue;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationQueue;
+import com.hazelcast.spi.impl.operationexecutor.impl.OperationQueueImpl;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -36,7 +36,7 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
 
     private static final ILogger LOGGER = Logger.getLogger(LazyEntryViewFromRecordTest.class);
 
-    private OperationQueue queue = new DefaultOperationQueue();
+    private OperationQueue queue = new OperationQueueImpl();
     private PartitionOperationThread thread = getPartitionOperationThread(queue);
 
     private HDRecord record;

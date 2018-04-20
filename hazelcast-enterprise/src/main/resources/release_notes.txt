@@ -2,23 +2,14 @@ This document lists the new features, enhancements, fixed issues and, removed or
 
 1. Enhancements
 
-==== 3.10-BETA-2 ====
-
-- Added ID count to flake ID generators statistics. [#12612]
-- It is still required to provide a group and password while configuring with Spring: the attribute required should be removed from the tag group both for name and password elements. [#12462]
-- A SEVERE error is thrown when a source cluster attempts a connection to a destination cluster and the groupUsername or groupPassword are incorrect in the WAN configuration. The error message should be improved. [#1925]
-- The entries dropped on each WAN replication endpoint should be monitored.[#1853]
-
-
-==== 3.10-BETA-1 ====
-
 - Split-Brain Healing for Hazelcast Data Structures with High-Density (HD) Memory Store: Added implementations to allow the merging of HD Memory Store backed data structures.
 - Multiple Users/Roles in a Single Security Mapping: Added support for allowing multiple principals, i.e., users or roles/groups, to be attributed to a security realm. Please see the Authorization section for more information.
 - Extended Split-Brain Protection: Split-Brain protection has been implemented for all the Hazelcast data structures (it was only for IMap, ICache, IQueue and ILock before 3.10). Please see the Distributed Data Structures chapter.
 - Shorter Split-Brain Detection Window: In addition to the current quorum function, which uses the list of members to determine whether a minimum number of members is available in the cluster, a new quorum implementation has been introduced to shorten the time between the occurrence of a network partitioning and its detection: it takes advantage of information about the cluster health (heartbeats and ICMP pings).
 - Extended Merge Policies: Merge policies applied after a Split-Brain syndrome has been implemented for more Hazelcast data structures (it was for IMap, ICache and Replicated Map before 3.10).
 - Flake ID Generator: Introduced to overcome the duplicate ID generation in case of a network split, by the deprecated IdGenerator data structure. Please see the FlakeIdGenerator section.
-- PN-Counter: Introduced CRDT PN-Counter (Positive-Negative Counter), which allows incrementing and decrementing a counter value and propagating the results to all cluster members. Please see the PN-Counter section.
+- PN Counter: Introduced CRDT PN Counter (Positive-Negative Counter), which allows incrementing and decrementing a counter value and propagating the results to all cluster members. Please see the PN-Counter section.
+- Health Check Script: Introduced a command line tool to check the health of your Hazelcast cluster. Please see the Health Check Script section.
 
 The following are the other improvements performed to solve the enhancement issues opened by the Hazelcast customers/team.
 
@@ -44,6 +35,23 @@ The following are the other improvements performed to solve the enhancement issu
 
 
 2. Fixes
+
+- Split-brain merge policy configuration validation is not properly working: The merge policy checks in `ConfigValidator` are based on false assumptions regarding `SomeConfig.isStatisticsEnabled()` and valid split-brain merge types. [#12722]
+- `XmlConfigBuilder` wrongly uses Locale dependent number format for `nativeMemory.metadataSpacePercentage`. [#12656]
+- `NullPointerException` is thrown when the method `QueryCache#getAll` is called. [#12656]
+- Query cache is not consistent with its IMap: After the construction of a continuous query cache, all changes on the underlying IMap are immediately reflected to this cache as a stream of events. Therefore, this cache will be an always up-to-date view of the IMap. This is not always true. [#12599]
+- When minority of members have network delays, there occurs transactional exceptions on the client. [#12252]
+- Delayed resolutions for other types in `CacheConfig` should be implemented: In addition to key and value types, the following need to be deferred:
+`cacheLoaderFactory`, `cacheWriterFactory`, `expiryPolicyFactory` and `listenerConfiguration`s. [#11905]
+- Rolling upgrade compatibility for some High-Density operations should be checked. [#1996]
+- The WAN plugin for Hazelcast diagnostics is not documented in 3.9.3's Reference Manual. [#1988]
+- A client exception is received when the initial WAN setup fails. [#1936]
+- AWS WAN Discovery does not perform retries when the initial attempt fails. [#1935]
+- A `NativeOutOfMemoryError` occurred after sequent Split-Brain merge events. [#1902]
+- The WAN replication property `discovery.useEndpointPrivateAddress` is not documented. [#1834]
+- The WAN Replication queue size statistics is not correct when `snapshot.enabled` is set to  `true`. [#1798]
+- Behavior of the WAN replication when serialization compression is enabled on both clusters must be investigated. [#1750]
+- After a single entry processing, it is possible that the backup and primary WAN events are different. [#1441]
 
 ==== 3.10-BETA-2 ====
 
@@ -122,12 +130,14 @@ The following are the other improvements performed to solve the enhancement issu
 
 4. Behavioral Changes
 
-Up to 3.9.x, the method Config.findCacheConfig looks up a CacheSimpleConfig: if none is found, then null is returned. This behavior has been not like all the other findXXConfig methods in the following ways:
+* Up to 3.9.x, the method Config.findCacheConfig looks up a CacheSimpleConfig: if none is found, then null is returned. This behavior has been not like all the other findXXConfig methods in the following ways:
 
 - findXXConfig never returns null, it falls back to defaults, creates the missing data structure configuration and stores it in Config.
 - findXXConfig returns a read-only copy of the actual configuration, while findCacheConfig returns the found configuration object itself.
 
 With 3.10, the method Config.findCacheConfig is aligned to behave like the other findXXConfig methods; it now returns a read-only copy and does fallback to defaults. If you who want the old behavior for this method in 3.10.x, you should use the method Config.findCacheConfigOrNull.
+
+* Starting with 3.10, any unknown property of Discovery SPI in the Hazelcast configuration will result in an exception blocking the Hazelcast member from starting. This approach restricts the configuration (both XML and Object-based) and prevents typos.
 
 5. Known Problems
 

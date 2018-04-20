@@ -5,7 +5,8 @@ import com.hazelcast.map.impl.MapDataSerializerHook;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.impl.VersionedDataSerializableFactory;
 
-public final class MapDataSerializerHookWithPostJoinMapOperation39 implements DataSerializerHook {
+public final class MapDataSerializerHookWith39Chunks
+        implements DataSerializerHook {
 
     @Override
     public int getFactoryId() {
@@ -16,6 +17,6 @@ public final class MapDataSerializerHookWithPostJoinMapOperation39 implements Da
     public DataSerializableFactory createFactory() {
         MapDataSerializerHook hook = new MapDataSerializerHook();
         VersionedDataSerializableFactory delegate = (VersionedDataSerializableFactory) hook.createFactory();
-        return new VersionedDataSerializableFactoryWithPostJoinMapOperation39(delegate);
+        return new VersionedDataSerializableFactoryWith39Chunks(delegate);
     }
 }

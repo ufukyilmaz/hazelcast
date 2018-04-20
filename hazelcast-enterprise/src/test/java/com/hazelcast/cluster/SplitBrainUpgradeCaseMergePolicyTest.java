@@ -2,7 +2,8 @@ package com.hazelcast.cluster;
 
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cardinality.CardinalityEstimator;
-import com.hazelcast.cluster.oldmembersupport.MapDataSerializerHookWithPostJoinMapOperation39;
+import com.hazelcast.cluster.oldmembersupport.EnterpriseMapDataSerializerHookWith39Chunks;
+import com.hazelcast.cluster.oldmembersupport.MapDataSerializerHookWith39Chunks;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MergePolicyConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -17,6 +18,7 @@ import com.hazelcast.core.ReplicatedMap;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.map.impl.MapDataSerializerHook;
+import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
 import com.hazelcast.ringbuffer.Ringbuffer;
 import com.hazelcast.scheduledexecutor.IScheduledExecutorService;
 import com.hazelcast.scheduledexecutor.IScheduledFuture;
@@ -130,8 +132,13 @@ public class SplitBrainUpgradeCaseMergePolicyTest extends AbstractSplitBrainUpgr
             @Override
             protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
                 if (name.equals(MapDataSerializerHook.class.getName())) {
-                    return super.loadClass(MapDataSerializerHookWithPostJoinMapOperation39.class.getName());
+                    return super.loadClass(MapDataSerializerHookWith39Chunks.class.getName());
                 }
+
+                if (name.equals(EnterpriseMapDataSerializerHook.class.getName())) {
+                    return super.loadClass(EnterpriseMapDataSerializerHookWith39Chunks.class.getName());
+                }
+
                 return super.loadClass(name, resolve);
             }
         });

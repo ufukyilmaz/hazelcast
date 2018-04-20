@@ -1,6 +1,6 @@
 package com.hazelcast.internal.cluster.impl;
 
-import com.hazelcast.cluster.oldmembersupport.MapDataSerializerHookWithPostJoinMapOperation39;
+import com.hazelcast.cluster.oldmembersupport.MapDataSerializerHookWith39Chunks;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -69,7 +69,7 @@ public class EnterpriseMemberListJoinVersionTest extends HazelcastTestSupport {
             @Override
             protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
                 if (name.equals(MapDataSerializerHook.class.getName())) {
-                    return super.loadClass(MapDataSerializerHookWithPostJoinMapOperation39.class.getName());
+                    return super.loadClass(MapDataSerializerHookWith39Chunks.class.getName());
                 }
                 return super.loadClass(name, resolve);
             }

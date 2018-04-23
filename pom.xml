@@ -433,6 +433,8 @@
                     -Dhazelcast.mancenter.enabled=false
                     -Dhazelcast.logging.type=none
                     -Dhazelcast.test.use.network=false
+                    -Dhazelcast.operation.call.timeout.millis=120000
+                    -Dhazelcast.graceful.shutdown.max.wait=240
                 </argLine>
             </properties>
             <build>

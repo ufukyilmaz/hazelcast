@@ -2,10 +2,21 @@ package com.hazelcast;
 
 import io.netty.handler.ssl.OpenSsl;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 public class TestEnvironmentUtil {
+
+    public static final String JAVA_VERSION = System.getProperty("java.version");
+    public static final int JAVA_VERSION_MAJOR;
+
+    static {
+        String[] versionParts = JAVA_VERSION.split("\\.");
+        String majorStr = versionParts[0];
+        if ("1".equals(majorStr)) {
+            majorStr = versionParts[1];
+        }
+        JAVA_VERSION_MAJOR = Integer.parseInt(majorStr);
+    }
 
     /**
      * Assumption check, that it's possible to run Hazelcast with OpenSSL on this platform and JVM.
@@ -15,8 +26,11 @@ public class TestEnvironmentUtil {
     }
 
     public static void assumeThatNoJDK6() {
-        String javaVersion = System.getProperty("java.version");
-        assumeFalse("Java 6 used", javaVersion.startsWith("1.6."));
+        assumeTrue("Test skipped for Java version 6", JAVA_VERSION_MAJOR != 6);
+    }
+
+    public static void assumeJdk8OrNewer() {
+        assumeTrue("Test skipped for Java versions lower than 8", JAVA_VERSION_MAJOR >= 8);
     }
 
     /**

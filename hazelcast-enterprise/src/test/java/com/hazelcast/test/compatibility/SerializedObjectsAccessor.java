@@ -81,8 +81,12 @@ public class SerializedObjectsAccessor implements Closeable, Iterable<Serialized
         try {
             FileReader reader = new FileReader(samplesPath + INDEX_FILE_SUFFIX);
             BufferedReader lineReader = new BufferedReader(reader);
-            String nextLine = lineReader.readLine();
-            while (nextLine != null) {
+            String nextLine;
+            while ((nextLine = lineReader.readLine()) != null) {
+                if (nextLine.startsWith("#") || nextLine.isEmpty()) {
+                    // ignore the line
+                    continue;
+                }
                 String[] tokens = nextLine.split(",");
                 String className = tokens[0];
                 List<SamplePosition> samplePositions = new ArrayList<SamplePosition>();
@@ -97,7 +101,6 @@ public class SerializedObjectsAccessor implements Closeable, Iterable<Serialized
                     }
                 }
                 index.put(className, samplePositions.toArray(new SamplePosition[0]));
-                nextLine = lineReader.readLine();
             }
             lineReader.close();
         } catch (FileNotFoundException e) {

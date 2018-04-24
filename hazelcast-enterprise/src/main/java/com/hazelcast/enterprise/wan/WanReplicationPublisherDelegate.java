@@ -15,8 +15,9 @@ import java.util.Set;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
- * Delegating WAN replication publisher implementation. This implementation is a container for multiple WAN publisher
- * endpoints. When publishing an event on this delegate, all endpoints are notified.
+ * Delegating WAN replication publisher implementation. This implementation
+ * is a container for multiple WAN publisher endpoints.
+ * When publishing an event on this delegate, all endpoints are notified.
  */
 public final class WanReplicationPublisherDelegate implements WanReplicationPublisher {
     /** Non-null WAN replication name */
@@ -47,7 +48,8 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
 
     /**
      * {@inheritDoc}
-     * Publishes a replication event to all endpoints to which this publisher delegates.
+     * Publishes a replication event to all endpoints to which this publisher
+     * delegates.
      */
     @Override
     public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
@@ -58,7 +60,8 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
 
     /**
      * {@inheritDoc}
-     * Publishes a backup replication event to all endpoints to which this publisher delegates.
+     * Publishes a backup replication event to all endpoints to which this
+     * publisher delegates.
      */
     @Override
     public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
@@ -69,7 +72,8 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
 
     /**
      * {@inheritDoc}
-     * Publishes a replication event to all endpoints to which this publisher delegates.
+     * Publishes a replication event to all endpoints to which this publisher
+     * delegates.
      */
     @Override
     public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
@@ -79,11 +83,11 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
     }
 
     public Map<String, LocalWanPublisherStats> getStats() {
-        Map<String, LocalWanPublisherStats> statsMap = MapUtil.createHashMap(endpoints.size());
+        final Map<String, LocalWanPublisherStats> statsMap = MapUtil.createHashMap(endpoints.size());
         for (Map.Entry<String, WanReplicationEndpoint> endpointEntry : endpoints.entrySet()) {
-            String endpointName = endpointEntry.getKey();
-            LocalWanPublisherStats wanPublisherStats = endpointEntry.getValue().getStats();
-            statsMap.put(endpointName, wanPublisherStats);
+            final String endpointName = endpointEntry.getKey();
+            final WanReplicationEndpoint endpoint = endpointEntry.getValue();
+            statsMap.put(endpointName, endpoint.getStats());
         }
         return statsMap;
     }
@@ -96,7 +100,8 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
     }
 
     /**
-     * Collect all replication data matching the replication event and collection of namespaces being replicated.
+     * Collect all replication data matching the replication event and collection
+     * of namespaces being replicated.
      *
      * @param event                  the replication event
      * @param namespaces             the object namespaces which are being replicated
@@ -111,7 +116,8 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
     }
 
     /**
-     * Collect the namespaces of all queues that should be replicated by the replication event.
+     * Collect the namespaces of all queues that should be replicated by the
+     * replication event.
      *
      * @param event      the replication event
      * @param namespaces the set in which namespaces should be added

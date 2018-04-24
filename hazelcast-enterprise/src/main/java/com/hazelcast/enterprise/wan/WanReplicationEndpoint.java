@@ -14,8 +14,9 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Implementations of this interface represent a replication endpoint, normally another
- * Hazelcast cluster only reachable over a Wide Area Network (WAN).
+ * Implementations of this interface represent a replication endpoint,
+ * normally another Hazelcast cluster only reachable over a Wide Area
+ * Network (WAN).
  */
 public interface WanReplicationEndpoint extends WanReplicationPublisher {
 
@@ -23,48 +24,85 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
      * Initializes the endpoint using the given arguments.
      *
      * @param node                 the current node that tries to connect
-     * @param wanReplicationConfig {@link com.hazelcast.config.WanReplicationConfig} config
-     * @param wanPublisherConfig   this endpoint will be initialized using this {@link WanPublisherConfig} instance
+     * @param wanReplicationConfig the replication config
+     * @param wanPublisherConfig   this endpoint will be initialized using
+     *                             this {@link WanPublisherConfig} instance
      */
     void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig wanPublisherConfig);
 
     /**
-     * Closes the endpoint and its internal connections and shuts down other internal states.
+     * Signals the publisher to shut down and clean up its resources. The
+     * method does not necessarily block until the endpoint has shut down.
      */
     void shutdown();
 
     /**
-     * Remove the oldest replication event from the replication queue and decrease the
-     * backup event count. The replication queue chosen has the same map/cache name
-     * and partition ID as the provided {@code wanReplicationEvent}.
+     * Remove the oldest replication event from the replication queue and
+     * decrease the backup event count. The replication queue chosen has the
+     * same map/cache name and partition ID as the provided
+     * {@code wanReplicationEvent}.
      *
      * @param wanReplicationEvent the completed wan event
      */
     void removeBackup(WanReplicationEvent wanReplicationEvent);
 
+    /**
+     * Puts the given {@code wanReplicationEvent} in the corresponding WAN backup
+     * queue.
+     *
+     * @param wanReplicationEvent the WAN event
+     */
     void putBackup(WanReplicationEvent wanReplicationEvent);
 
+    /**
+     * Returns the WAN event queue container for this publisher.
+     */
     PublisherQueueContainer getPublisherQueueContainer();
 
-    void addMapQueue(String key, int partitionId, WanReplicationEventQueue value);
-
-    void addCacheQueue(String key, int partitionId, WanReplicationEventQueue value);
+    /**
+     * Publishes all events from the {@code eventQueue} to the WAN queue for
+     * the given partition ID and map name.
+     *
+     * @param name        the name of the map to which to publish to
+     * @param partitionId the partition to which to publish to
+     * @param eventQueue  the event queue from which events are published
+     */
+    void addMapQueue(String name, int partitionId, WanReplicationEventQueue eventQueue);
 
     /**
-     * Calls to this method will pause WAN event queue polling. Effectively, pauses WAN replication for
-     * its {@link WanReplicationEndpoint} instance.
+     * Publishes all events from the {@code eventQueue} to the WAN queue for
+     * the given partition ID and cache name.
      *
-     * WAN events will still be offered to WAN replication
-     * queues but they won't be polled.
+     * @param name        the name of the cache to which to publish to
+     * @param partitionId the partition to which to publish to
+     * @param eventQueue  the event queue from which events are published
+     */
+    void addCacheQueue(String name, int partitionId, WanReplicationEventQueue eventQueue);
+
+    /**
+     * Calls to this method will pause WAN event queue polling. Effectively,
+     * pauses WAN replication for its {@link WanReplicationEndpoint} instance.
+     * <p>
+     * WAN events will still be offered to WAN replication queues but they
+     * won't be polled.
+     * <p>
+     * Calling this method on already paused {@link WanReplicationEndpoint}
+     * instances will have no effect.
+     * <p></p>
+     * There is no synchronization with the thread polling the WAN
+     * queues and trasmitting the events to the target cluster. This means
+     * that the queues may be polled even after this method returns.
      *
-     * Calling this method on already paused {@link WanReplicationEndpoint} instances will have no effect.
+     * @see #resume()
      */
     void pause();
 
     /**
-     * This method re-enables WAN event queue polling for a paused {@link WanReplicationEndpoint} instance.
-     *
-     * Calling this method on already running {@link WanReplicationEndpoint} instances will have no effect.
+     * This method re-enables WAN event queue polling for a paused
+     * {@link WanReplicationEndpoint} instance.
+     * <p>
+     * Calling this method on already running {@link WanReplicationEndpoint}
+     * instances will have no effect.
      *
      * @see #pause()
      */
@@ -78,24 +116,28 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
      */
     LocalWanPublisherStats getStats();
 
-    @Override
-    void checkWanReplicationQueues();
-
     /**
-     * Publishes a wan sync event for all or a specific map and for all or some partitions.
+     * Publishes a WAN sync event for all or a specific map and for all or
+     * some partitions.
      *
-     * @param syncRequest the wan sync request
+     * @param syncRequest the WAN sync request
      */
     void publishSyncEvent(WanSyncEvent syncRequest);
 
+    /**
+     * Clears the WAN queues and recalculates the WAN queue sizes.
+     */
     void clearQueues();
 
     /**
-     * Collect all replication data for the specific replication event and collection of namespaces being replicated.
+     * Collect all replication data for the specific replication event and
+     * collection of namespaces being replicated.
      *
-     * @param wanReplicationName     the WAN replication name in the hazelcast configuration for this endpoint
+     * @param wanReplicationName     the WAN replication name in the hazelcast
+     *                               configuration for this endpoint
      * @param event                  the replication event
-     * @param namespaces             the object namespaces which are being replicated
+     * @param namespaces             the object namespaces which are being
+     *                               replicated
      * @param migrationDataContainer the container for the migration data
      */
     void collectReplicationData(String wanReplicationName,

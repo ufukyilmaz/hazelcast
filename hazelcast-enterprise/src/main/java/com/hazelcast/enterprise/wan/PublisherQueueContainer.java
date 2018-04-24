@@ -8,12 +8,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * WAN event queue container for WAN replication publishers. Each WAN queue container is
- * responsible for a specific partition. Provides methods to push/pull WAN events to/from queues.
+ * WAN event queue container for WAN replication publishers. Each WAN queue
+ * container is responsible for a specific partition. Provides methods to
+ * push/pull WAN events to/from queues.
  */
 public class PublisherQueueContainer {
-
-    /** Partition ID to event container map */
+    /**
+     * Partition ID to event container map
+     */
     private Map<Integer, PartitionWanEventContainer> publisherEventQueueMap
             = new ConcurrentHashMap<Integer, PartitionWanEventContainer>();
 
@@ -24,7 +26,8 @@ public class PublisherQueueContainer {
     }
 
     /**
-     * Poll the wan event queue for the cache with the name {@code nameWithPrefix} on partition {@code partitionId}.
+     * Polls the wan event queue for the cache with the name
+     * {@code nameWithPrefix} on partition {@code partitionId}.
      *
      * @param nameWithPrefix the cache name
      * @param partitionId    the partition of the wan event
@@ -36,8 +39,8 @@ public class PublisherQueueContainer {
     }
 
     /**
-     * Publishes the {@code replicationEvent} for the cache with the name {@code nameWithPrefix} on the
-     * partition {@code partitionId}.
+     * Publishes the {@code replicationEvent} for the cache with the name
+     * {@code nameWithPrefix} on the partition {@code partitionId}.
      *
      * @param nameWithPrefix   the cache name
      * @param partitionId      the partition ID for the published event
@@ -50,7 +53,8 @@ public class PublisherQueueContainer {
     }
 
     /**
-     * Poll the wan event queue for the map with the name {@code mapName} on partition {@code partitionId}.
+     * Polls the wan event queue for the map with the name {@code mapName} on
+     * partition {@code partitionId}.
      *
      * @param mapName     the map name
      * @param partitionId the partition of the wan event
@@ -62,12 +66,15 @@ public class PublisherQueueContainer {
     }
 
     /**
-     * Publishes the {@code replicationEvent} for the given {@code mapName} map on the partition {@code partitionId}
+     * Publishes the {@code replicationEvent} for the given {@code mapName}
+     * map on the partition {@code partitionId}
      *
-     * @param mapName          the name of the map for which the event is published
+     * @param mapName          the name of the map for which the event is
+     *                         published
      * @param partitionId      the partition ID for the published event
      * @param replicationEvent the published replication event
-     * @return {@code true} if the element was added to this queue, else {@code false}
+     * @return {@code true} if the element was added to this queue, else
+     * {@code false}
      */
     public boolean publishMapWanEvent(String mapName, int partitionId, WanReplicationEvent replicationEvent) {
         PartitionWanEventContainer wanEventContainer = publisherEventQueueMap.get(partitionId);
@@ -75,23 +82,26 @@ public class PublisherQueueContainer {
     }
 
     /**
-     * Return a random replication event for the {@code partitionId}.
+     * Returns a random replication event for the {@code partitionId}.
      *
      * @param partitionId the partition ID for the replication event
      * @return a random replication event for the given partition ID
      */
     public WanReplicationEvent pollRandomWanEvent(int partitionId) {
-        PartitionWanEventContainer wanEventContainer = publisherEventQueueMap.get(partitionId);
-        return wanEventContainer.pollRandomWanEvent();
+        return publisherEventQueueMap.get(partitionId).pollRandomWanEvent();
     }
 
-    /** Returns the map of partition ID to {@link PartitionWanEventContainer} for the specific partition */
+    /**
+     * Returns the map of partition ID to {@link PartitionWanEventContainer}
+     * for the specific partition
+     */
     public Map<Integer, PartitionWanEventContainer> getPublisherEventQueueMap() {
         return publisherEventQueueMap;
     }
 
     /**
-     * Return the {@link PartitionWanEventContainer} for the specified {@code partitionId}
+     * Returns the {@link PartitionWanEventContainer} for the specified
+     * {@code partitionId}.
      *
      * @param partitionId the partition ID for the WAN event container
      * @return the WAN event container
@@ -106,8 +116,12 @@ public class PublisherQueueContainer {
         }
     }
 
+    /**
+     * Returns the size of all WAN queues for the given {@code partitionId}.
+     * @param partitionId the partition ID
+     * @return the size of the WAN queue
+     */
     public int size(int partitionId) {
-        PartitionWanEventContainer wanEventContainer = publisherEventQueueMap.get(partitionId);
-        return wanEventContainer.size();
+        return publisherEventQueueMap.get(partitionId).size();
     }
 }

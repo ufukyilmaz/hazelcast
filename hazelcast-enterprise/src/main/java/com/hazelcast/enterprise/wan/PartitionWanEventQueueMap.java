@@ -18,32 +18,60 @@ import static com.hazelcast.nio.serialization.SerializableByConvention.Reason.PU
  */
 @SerializableByConvention(PUBLIC_API)
 public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanReplicationEventQueue> implements DataSerializable {
-
     private static final long serialVersionUID = 1L;
 
-    private transient Object mutex = new Object();
+    /** The mutex for concurrently creating new instances of WAN queues */
+    private final transient Object mutex = new Object();
 
-    public boolean offerEvent(WanReplicationEvent wanReplicationEvent, String dataStructure, int backupCount) {
-        WanReplicationEventQueue wanReplicationEventQueue = getOrCreateEventQueue(dataStructure, backupCount);
-        return wanReplicationEventQueue.offer(wanReplicationEvent);
+    /**
+     * Publishes the {@code replicationEvent}
+     *
+     * @param distributedObjectName the name of the distributed object for
+     *                              which this event is published
+     * @param backupCount           the number of backup replicas on which this WAN
+     *                              event is stored
+     * @param wanReplicationEvent   the published replication event
+     * @return {@code true} if the element was added to this queue, else
+     * {@code false}
+     */
+    public boolean offerEvent(WanReplicationEvent wanReplicationEvent, String distributedObjectName, int backupCount) {
+        return getOrCreateEventQueue(distributedObjectName, backupCount)
+                .offer(wanReplicationEvent);
     }
 
-    public WanReplicationEvent pollEvent(String dataStructureName) {
-        WanReplicationEventQueue eventQueue = get(dataStructureName);
+    /**
+     * Returns a WAN event for the given distributed object or {@code null} if
+     * there is none.
+     *
+     * @param distributedObjectName the name of the distributed object
+     * @return the WAN event
+     */
+    public WanReplicationEvent pollEvent(String distributedObjectName) {
+        WanReplicationEventQueue eventQueue = get(distributedObjectName);
         if (eventQueue != null) {
             return eventQueue.poll();
         }
         return null;
     }
 
-    private WanReplicationEventQueue getOrCreateEventQueue(String dataStructureName, int backupCount) {
-        WanReplicationEventQueue eventQueue = get(dataStructureName);
+    /**
+     * Gets a WAN event queue for the distributed object or creates one if it
+     * does not exist.
+     * This method may be called concurrently.
+     *
+     * @param distributedObjectName the name of the distributed object
+     * @param backupCount           the number of backup replicas on which
+     *                              events from this queue are stored
+     * @return the WAN event queue
+     */
+    private WanReplicationEventQueue getOrCreateEventQueue(String distributedObjectName, int backupCount) {
+        WanReplicationEventQueue eventQueue = get(distributedObjectName);
         if (eventQueue == null) {
             synchronized (mutex) {
-                eventQueue = get(dataStructureName);
+                eventQueue = get(distributedObjectName);
                 if (eventQueue == null) {
                     eventQueue = new WanReplicationEventQueue(backupCount);
-                    put(dataStructureName, eventQueue);
+                    put(distributedObjectName, eventQueue);
                 }
             }
         }

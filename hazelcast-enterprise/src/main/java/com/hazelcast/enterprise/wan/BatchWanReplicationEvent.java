@@ -18,8 +18,10 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
  * Container to gather batch of {@link WanReplicationEvent} objects.
- * If {@link com.hazelcast.enterprise.wan.replication.WanReplicationProperties#SNAPSHOT_ENABLED} is true, only the
- * latest event for a key will be sent.
+ * If {@link com.hazelcast.enterprise.wan.replication.WanReplicationProperties#SNAPSHOT_ENABLED}
+ * is {@code true}, only the latest event for a key will be sent.
+ *
+ * @see com.hazelcast.enterprise.wan.replication.WanBatchReplication
  */
 public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
     private boolean snapshotEnabled;
@@ -39,6 +41,15 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
         }
     }
 
+
+    /**
+     * Adds a WAN event to the batch. Depending on the whether snapshot is
+     * enabled, the event may be coalesced with an another event with the same
+     * key or not.
+     *
+     * @param event a WAN replication event
+     * @see com.hazelcast.enterprise.wan.replication.WanReplicationProperties#SNAPSHOT_ENABLED
+     */
     public void addEvent(WanReplicationEvent event) {
         if (snapshotEnabled) {
             final EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event.getEventObject();

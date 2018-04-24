@@ -3,7 +3,6 @@ package com.hazelcast.enterprise.wan.replication;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
-import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.diagnostics.Diagnostics;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin;
@@ -95,9 +94,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
             if (!events.isEmpty()) {
                 checkExecutorInitialized(liveEndpoints.size());
                 for (WanReplicationEvent event : events) {
-                    final EnterpriseReplicationEventObject eventObject
-                            = (EnterpriseReplicationEventObject) event.getEventObject();
-                    final int partitionId = getPartitionId(eventObject.getKey());
+                    final int partitionId = getPartitionId(event.getEventObject().getKey());
                     final Address target = liveEndpoints.get(partitionId % liveEndpoints.size());
                     batchReplicationEventMap.get(target).addEvent(event);
                 }

@@ -2,13 +2,13 @@ package com.hazelcast.enterprise.wan.sync;
 
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.WanSyncStateImpl;
-import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
+import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.wan.WanSyncStatus;
 
@@ -27,7 +27,6 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * Manages the initiation of WAN sync requests
  */
 public class WanSyncManager {
-
     private static final int RETRY_INTERVAL_MILLIS = 5000;
     private static final int MAX_RETRY_COUNT = 5;
     private static final AtomicReferenceFieldUpdater<WanSyncManager, WanSyncStatus> SYNC_STATUS
@@ -37,10 +36,9 @@ public class WanSyncManager {
 
     private final IPartitionService partitionService;
     private final ClusterService clusterService;
-    private final OperationService operationService;
     private final EnterpriseWanReplicationService wanReplicationService;
-    private final NodeEngine nodeEngine;
     private final ILogger logger;
+    private final Node node;
 
     private volatile WanSyncStatus syncStatus = WanSyncStatus.READY;
     /** The processed {@link WanSyncEvent}s count */
@@ -50,13 +48,12 @@ public class WanSyncManager {
     private volatile String activeWanConfig;
     private volatile String activePublisher;
 
-    public WanSyncManager(NodeEngine nodeEngine) {
-        partitionService = nodeEngine.getPartitionService();
-        clusterService = nodeEngine.getClusterService();
-        operationService = nodeEngine.getOperationService();
-        wanReplicationService = (EnterpriseWanReplicationService) nodeEngine.getWanReplicationService();
-        this.nodeEngine = nodeEngine;
-        logger = nodeEngine.getLogger(getClass());
+    public WanSyncManager(EnterpriseWanReplicationService wanReplicationService, Node node) {
+        this.node = node;
+        this.wanReplicationService = wanReplicationService;
+        this.logger = node.getLogger(getClass());
+        this.partitionService = node.getPartitionService();
+        this.clusterService = node.getClusterService();
     }
 
     public void shutdown() {
@@ -73,11 +70,11 @@ public class WanSyncManager {
         }
         activeWanConfig = wanReplicationName;
         activePublisher = targetGroupName;
-        nodeEngine.getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
+        node.nodeEngine.getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
             @Override
             public void run() {
                 Operation operation = new WanSyncStarterOperation(wanReplicationName, targetGroupName, syncEvent);
-                operationService.invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
+                getOperationService().invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
                         operation, clusterService.getThisAddress());
             }
         });
@@ -96,8 +93,8 @@ public class WanSyncManager {
             for (Member member : clusterService.getMembers()) {
                 WanSyncEvent wanSyncEvent = new WanSyncEvent(syncEvent.getType(), syncEvent.getName());
                 Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName, wanSyncEvent);
-                Future<WanSyncResult> future = operationService.invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
-                        operation, member.getAddress());
+                Future<WanSyncResult> future = getOperationService()
+                        .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, operation, member.getAddress());
                 futures.add(future);
             }
 
@@ -111,8 +108,8 @@ public class WanSyncManager {
                     WanSyncEvent wanSyncEvent = new WanSyncEvent(syncEvent.getType(), syncEvent.getName());
                     wanSyncEvent.setPartitionSet(partitionIds);
                     Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName, wanSyncEvent);
-                    Future<WanSyncResult> future = operationService.invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
-                            operation, member.getAddress());
+                    Future<WanSyncResult> future = getOperationService()
+                            .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, operation, member.getAddress());
                     futures.add(future);
                 }
                 addResultOfOps(futures, partitionIds);
@@ -131,6 +128,10 @@ public class WanSyncManager {
         } finally {
             SYNC_STATUS.set(this, retryCount == MAX_RETRY_COUNT ? WanSyncStatus.FAILED : WanSyncStatus.READY);
         }
+    }
+
+    private InternalOperationService getOperationService() {
+        return node.nodeEngine.getOperationService();
     }
 
     public void incrementSyncedPartitionCount() {

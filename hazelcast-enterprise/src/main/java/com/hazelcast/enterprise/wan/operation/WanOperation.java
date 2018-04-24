@@ -13,9 +13,11 @@ import com.hazelcast.spi.Operation;
 import java.io.IOException;
 
 /**
- * Operation sent from the source WAN endpoint to the target endpoint. This operation contains the changes in the source
- * endpoint (source cluster) and the acknowledge type. The acknowledge type defines when the response for this operation
- * will be sent to the source endpoint so that it knows in which stage is the operation (accepted or completed).
+ * Operation sent from the source WAN endpoint to the target endpoint.
+ * This operation contains the changes in the source endpoint (source
+ * cluster) and the acknowledge type. The acknowledge type defines when
+ * the response for this operation will be sent to the source endpoint so
+ * that it knows in which stage is the operation (accepted or completed).
  */
 public class WanOperation extends Operation implements WanReplicationOperation, IdentifiedDataSerializable {
 

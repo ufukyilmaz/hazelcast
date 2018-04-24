@@ -12,11 +12,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import static com.hazelcast.nio.serialization.SerializableByConvention.Reason.PUBLIC_API;
 
 /**
- * WAN replication event queue wrapper.
+ * Serializable WAN replication event queue wrapper containing the number
+ * of backup replicas for the events in this queue.
  */
 @SerializableByConvention(PUBLIC_API)
 public class WanReplicationEventQueue extends ConcurrentLinkedQueue<WanReplicationEvent> implements DataSerializable {
 
+    /**
+     * The number of backup replicas on which WAN events from this queue are
+     * stored
+     */
     private int backupCount;
 
     public WanReplicationEventQueue() {
@@ -34,10 +39,10 @@ public class WanReplicationEventQueue extends ConcurrentLinkedQueue<WanReplicati
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeInt(backupCount);
-        WanReplicationEvent[] event = toArray(new WanReplicationEvent[0]);
-        out.writeInt(event.length);
-        for (int i = 0; i < event.length; i++) {
-            event[i].writeData(out);
+        WanReplicationEvent[] events = toArray(new WanReplicationEvent[0]);
+        out.writeInt(events.length);
+        for (WanReplicationEvent event : events) {
+            event.writeData(out);
         }
     }
 

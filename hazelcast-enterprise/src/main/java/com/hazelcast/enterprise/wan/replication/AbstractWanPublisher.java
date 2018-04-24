@@ -130,10 +130,18 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller(syncManager));
     }
 
+    /**
+     * Returns the capacity of the WAN staging queue. The staging queue is a
+     * queue for multiplexed map/cache partition WAN events that are about to
+     * be transmitted to the target cluster.
+     *
+     * @see AbstractWanPublisher#stagingQueue
+     */
     public int getStagingQueueSize() {
         return DEFAULT_STAGING_QUEUE_SIZE;
     }
 
+    /** Returns the partition ID for the partition owning the {@code key} */
     protected int getPartitionId(Object key) {
         return node.nodeEngine.getPartitionService().getPartitionId(key);
     }
@@ -148,6 +156,16 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         publishReplicationEventInternal(serviceName, (EnterpriseReplicationEventObject) eventObject, true);
     }
 
+    /**
+     * Publish the {@code eventObject} WAN replication event backup. The event
+     * may be dropped if queue capacity has been reached.
+     * The event will be published to the target endpoints of this publisher
+     * if the publisher has not already processed this event.
+     *
+     * @param serviceName the service publishing the event
+     * @param eventObject the replication backup event
+     * @param backupEvent if this is an event of a backup entry
+     */
     private void publishReplicationEventInternal(String serviceName, EnterpriseReplicationEventObject eventObject,
                                                  boolean backupEvent) {
         if (isEventDroppingNeeded(backupEvent)) {
@@ -180,6 +198,12 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         eventObject.incrementEventCount(wanService.getSentEventCounter(serviceName));
     }
 
+    /**
+     * Increments the backup or primary event counter
+     *
+     * @param backupEvent {@code true} if the backup event counter should be
+     *                    incremented, otherwise the primary event counter is incremented
+     */
     private void incrementCounters(boolean backupEvent) {
         if (backupEvent) {
             currentBackupElementCount.incrementAndGet();
@@ -199,28 +223,29 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
      */
     private boolean publishEventInternal(ReplicationEventObject eventObject, WanReplicationEvent replicationEvent,
                                          int partitionId, boolean dropEvent) {
-        boolean eventPublished = false;
         if (eventObject instanceof CacheReplicationObject) {
             CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
             String cacheName = cacheReplicationObject.getNameWithPrefix();
             if (dropEvent) {
                 eventQueueContainer.pollCacheWanEvent(cacheName, partitionId);
             }
-            eventPublished = eventQueueContainer.publishCacheWanEvent(cacheName, partitionId, replicationEvent);
+            return eventQueueContainer.publishCacheWanEvent(cacheName, partitionId, replicationEvent);
         } else if (eventObject instanceof EnterpriseMapReplicationObject) {
             EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
             String mapName = mapReplicationObject.getMapName();
             if (dropEvent) {
                 eventQueueContainer.pollMapWanEvent(mapName, partitionId);
             }
-            eventPublished = eventQueueContainer.publishMapWanEvent(mapName, partitionId, replicationEvent);
-        } else {
-            logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
+            return eventQueueContainer.publishMapWanEvent(mapName, partitionId, replicationEvent);
         }
-        return eventPublished;
+        logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
+        return false;
     }
 
-    /** Determine if queue capacity has been reached and if the event should be dropped */
+    /**
+     * Determine if queue capacity has been reached and if the event should be
+     * dropped
+     */
     private boolean isEventDroppingNeeded(boolean isBackup) {
         if (isBackup) {
             if (currentBackupElementCount.get() >= queueCapacity) {
@@ -301,9 +326,8 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
 
     @Override
     public void removeBackup(WanReplicationEvent wanReplicationEvent) {
-        EnterpriseReplicationEventObject eventObject
-                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
-        int partitionId = getPartitionId(eventObject.getKey());
+        final ReplicationEventObject eventObject = wanReplicationEvent.getEventObject();
+        final int partitionId = getPartitionId(eventObject.getKey());
         WanReplicationEvent wanEvent = null;
         if (eventObject instanceof CacheReplicationObject) {
             CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
@@ -400,8 +424,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
 
     @Override
     public void checkWanReplicationQueues() {
-        if (isThrowExceptionBehavior(queueFullBehavior)
-                && currentElementCount.get() >= queueCapacity) {
+        if (isThrowExceptionBehavior(queueFullBehavior) && currentElementCount.get() >= queueCapacity) {
             throw new WANReplicationQueueFullException(
                     String.format("WAN replication for target cluster %s is full. Queue capacity is %d",
                             targetGroupName, queueCapacity));
@@ -499,156 +522,12 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
     }
 
     /**
-     * This class is responsible for polling the WAN replication queues and checking for {@link WanSyncEvent} and
-     * filling the staging queue for events on specific entries.
-     * If this publisher is {@link #pause()}'d it will backoff by sleeping the poller thread.
+     * Returns the count for the number of events currently in the WAN
+     * map/cache partition queues for partitions for which this node is
+     * a backup replica.
      */
-    private class QueuePoller implements Runnable {
-
-        private static final int MAX_SLEEP_MS = 2000;
-        private static final int SLEEP_INTERVAL_MS = 200;
-        private int emptyIterationCount;
-        private WanSyncManager syncManager;
-
-        QueuePoller(WanSyncManager syncManager) {
-            this.syncManager = syncManager;
-        }
-
-        @Override
-        public void run() {
-            while (running) {
-
-                WanSyncEvent syncEvent = syncRequests.poll();
-                if (syncEvent != null) {
-                    sync(syncEvent);
-                    continue;
-                }
-
-                boolean offered = false;
-                if (!paused) {
-                    offered = tryWanReplicationQueues();
-                    emptyIterationCount = 0;
-                }
-
-                if (!offered && running) {
-                    int sleepMs = ++emptyIterationCount * SLEEP_INTERVAL_MS;
-                    try {
-                        Thread.sleep(Math.min(sleepMs, MAX_SLEEP_MS));
-                    } catch (InterruptedException ignored) {
-                        EmptyStatement.ignore(ignored);
-                    }
-                }
-            }
-        }
-
-        /** Poll a random replication event for every owned partition and offer it to the staging queue */
-        private boolean tryWanReplicationQueues() {
-            boolean offered = false;
-            for (IPartition partition : node.getPartitionService().getPartitions()) {
-                if (!partition.isLocal()) {
-                    continue;
-                }
-
-                WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
-                if (event == null) {
-                    continue;
-                }
-                offered = offerToStagingQueue(event);
-            }
-            return offered;
-        }
-
-        /** Offer a single event to the staging queue, blocking if necessary */
-        private boolean offerToStagingQueue(WanReplicationEvent event) {
-            boolean offered = false;
-            while (!offered && running) {
-                try {
-                    stagingQueue.put(event);
-                    offered = true;
-                } catch (InterruptedException ignored) {
-                    currentThread().interrupt();
-                }
-            }
-            return offered;
-        }
-
-        /**
-         * Syncs only {@link WanSyncEvent#getPartitionSet()} partitions or all partitions if the set is empty.
-         *
-         * @param syncEvent the partition sync event
-         */
-        private void sync(WanSyncEvent syncEvent) {
-            syncManager.resetSyncedPartitionCount();
-            WanSyncResult result = new WanSyncResult();
-            try {
-                Set<Integer> syncedPartitions = result.getSyncedPartitions();
-                if (syncEvent.getPartitionSet().isEmpty()) {
-                    for (IPartition partition : node.getPartitionService().getPartitions()) {
-                        syncPartition(syncEvent, syncedPartitions, partition);
-                    }
-                } else {
-                    for (Integer partitionIds : syncEvent.getPartitionSet()) {
-                        IPartition partition = node.getPartitionService().getPartition(partitionIds);
-                        syncPartition(syncEvent, syncedPartitions, partition);
-                    }
-                }
-            } catch (Exception ex) {
-                logger.warning(ex);
-            } finally {
-                sendResponse(syncEvent, result);
-                liveOperations.remove(syncEvent.getOp());
-            }
-        }
-
-        /** Syncs the given {@code partition} if this node is the owner and adds the partition to the {@code syncedPartitions} */
-        private void syncPartition(WanSyncEvent syncEvent, Set<Integer> syncedPartitions, IPartition partition) {
-            if (partition.isLocal()) {
-                syncPartition(syncEvent, partition);
-                syncedPartitions.add(partition.getPartitionId());
-            }
-        }
-
-        /** Sends a response to the {@link WanSyncEvent#getOp()} */
-        private void sendResponse(WanSyncEvent syncEvent, WanSyncResult result) {
-            try {
-                syncEvent.getOp().sendResponse(result);
-            } catch (Exception ex) {
-                logger.warning(ex);
-            }
-        }
-
-        /** Syncs the {@code partition} for all maps or a specific map, depending on {@link WanSyncEvent#getType()} */
-        private void syncPartition(WanSyncEvent syncEvent, IPartition partition) {
-            int partitionEventCount = 0;
-            counterMap.put(partition.getPartitionId(), new AtomicInteger());
-            if (syncEvent.getType() == WanSyncType.ALL_MAPS) {
-                for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
-                    partitionEventCount += syncPartitionForMap(mapName, partition);
-                }
-            } else {
-                partitionEventCount += syncPartitionForMap(syncEvent.getName(), partition);
-            }
-            if (partitionEventCount == 0) {
-                syncManager.incrementSyncedPartitionCount();
-            }
-        }
-
-        /** Gets all map partition data and offers it to the staging queue, blocking until all entries have been offered */
-        @SuppressWarnings("unchecked")
-        private int syncPartitionForMap(String mapName, IPartition partition) {
-            GetMapPartitionDataOperation op = new GetMapPartitionDataOperation(mapName);
-            op.setPartitionId(partition.getPartitionId());
-            Set<SimpleEntryView> set = (Set<SimpleEntryView>) invokeOp(op);
-            counterMap.get(partition.getPartitionId()).addAndGet(set.size());
-
-            for (SimpleEntryView simpleEntryView : set) {
-                EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(
-                        mapName, simpleEntryView, partition.getPartitionId());
-                WanReplicationEvent event = new WanReplicationEvent(MapService.SERVICE_NAME, sync);
-                offerToStagingQueue(event);
-            }
-            return set.size();
-        }
+    public int getCurrentBackupElementCount() {
+        return currentBackupElementCount.get();
     }
 
     @Override
@@ -733,7 +612,183 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         return currentElementCount.get();
     }
 
-    public int getCurrentBackupElementCount() {
-        return currentBackupElementCount.get();
+    /**
+     * This runnable is responsible for multiplexing the WAN events from the
+     * WAN replication queues with WAN events triggered by a
+     * {@link WanSyncEvent}. It then fills the staging queue with WAN events
+     * on specific entries.
+     * If this publisher is {@link #pause()}'d or if there are no events in the
+     * WAN queues, it will backoff by sleeping the poller thread up to
+     * {@link QueuePoller#MAX_SLEEP_MS}
+     */
+    private class QueuePoller implements Runnable {
+        /**
+         * The maximum time to sleep the queue poller thread if there are no
+         * events or the publisher is paused
+         */
+        private static final int MAX_SLEEP_MS = 2000;
+        private static final int SLEEP_INTERVAL_MS = 200;
+        private int emptyIterationCount;
+        private WanSyncManager syncManager;
+
+        QueuePoller(WanSyncManager syncManager) {
+            this.syncManager = syncManager;
+        }
+
+        @Override
+        public void run() {
+            while (running) {
+                final WanSyncEvent syncEvent = syncRequests.poll();
+                if (syncEvent != null) {
+                    sync(syncEvent);
+                    continue;
+                }
+
+                boolean offered = false;
+                if (!paused) {
+                    offered = tryWanReplicationQueues();
+                    emptyIterationCount = 0;
+                }
+
+                if (!offered && running) {
+                    int sleepMsSuggestion = ++emptyIterationCount * SLEEP_INTERVAL_MS;
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(Math.min(sleepMsSuggestion, MAX_SLEEP_MS));
+                    } catch (InterruptedException ignored) {
+                        EmptyStatement.ignore(ignored);
+                    }
+                }
+            }
+        }
+
+        /**
+         * Polls a random replication event for every owned partition and adds it
+         * to the staging queue.
+         * If there is an event polled from a partition, it will be added to the
+         * staging queue, blocking if necessary.
+         *
+         * @return {@code true} if any event was offered to the staging queue. This
+         * may be {@code false} if there were no events or if the publisher is
+         * shutting down
+         * @see #stagingQueue
+         */
+        private boolean tryWanReplicationQueues() {
+            boolean offered = false;
+            for (IPartition partition : node.getPartitionService().getPartitions()) {
+                if (!partition.isLocal()) {
+                    continue;
+                }
+
+                WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
+                if (event == null) {
+                    continue;
+                }
+                offered |= offerToStagingQueue(event);
+            }
+            return offered;
+        }
+
+        /**
+         * Offer a single event to the staging queue, blocking if necessary
+         *
+         * @return {@code true} if the event was accepted by the queue. This will
+         * always be {@code true} unless the WAN publisher is shutting down.
+         */
+        private boolean offerToStagingQueue(WanReplicationEvent event) {
+            while (running) {
+                try {
+                    stagingQueue.put(event);
+                    return true;
+                } catch (InterruptedException ignored) {
+                    currentThread().interrupt();
+                }
+            }
+            return false;
+        }
+
+        /**
+         * Syncs only {@link WanSyncEvent#getPartitionSet()} partitions or all
+         * partitions if the set is empty.
+         *
+         * @param syncEvent the partition sync event
+         */
+        private void sync(WanSyncEvent syncEvent) {
+            syncManager.resetSyncedPartitionCount();
+            WanSyncResult result = new WanSyncResult();
+            try {
+                Set<Integer> syncedPartitions = result.getSyncedPartitions();
+                if (syncEvent.getPartitionSet().isEmpty()) {
+                    for (IPartition partition : node.getPartitionService().getPartitions()) {
+                        syncPartition(syncEvent, syncedPartitions, partition);
+                    }
+                } else {
+                    for (Integer partitionIds : syncEvent.getPartitionSet()) {
+                        IPartition partition = node.getPartitionService().getPartition(partitionIds);
+                        syncPartition(syncEvent, syncedPartitions, partition);
+                    }
+                }
+            } catch (Exception ex) {
+                logger.warning(ex);
+            } finally {
+                sendResponse(syncEvent, result);
+                liveOperations.remove(syncEvent.getOp());
+            }
+        }
+
+        /**
+         * Syncs the given {@code partition} if this node is the owner and adds
+         * the partition to the {@code syncedPartitions}
+         */
+        private void syncPartition(WanSyncEvent syncEvent, Set<Integer> syncedPartitions, IPartition partition) {
+            if (partition.isLocal()) {
+                syncPartition(syncEvent, partition);
+                syncedPartitions.add(partition.getPartitionId());
+            }
+        }
+
+        /** Sends a response to the {@link WanSyncEvent#getOp()} */
+        private void sendResponse(WanSyncEvent syncEvent, WanSyncResult result) {
+            try {
+                syncEvent.getOp().sendResponse(result);
+            } catch (Exception ex) {
+                logger.warning(ex);
+            }
+        }
+
+        /**
+         * Syncs the {@code partition} for all maps or a specific map, depending
+         * on {@link WanSyncEvent#getType()}
+         */
+        private void syncPartition(WanSyncEvent syncEvent, IPartition partition) {
+            int partitionEventCount = 0;
+            counterMap.put(partition.getPartitionId(), new AtomicInteger());
+            if (syncEvent.getType() == WanSyncType.ALL_MAPS) {
+                for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
+                    partitionEventCount += syncPartitionForMap(mapName, partition);
+                }
+            } else {
+                partitionEventCount += syncPartitionForMap(syncEvent.getName(), partition);
+            }
+            if (partitionEventCount == 0) {
+                syncManager.incrementSyncedPartitionCount();
+            }
+        }
+
+        /** Gets all map partition data and offers it to the staging queue, blocking until all entries have been offered */
+        @SuppressWarnings("unchecked")
+        private int syncPartitionForMap(String mapName, IPartition partition) {
+            GetMapPartitionDataOperation op = new GetMapPartitionDataOperation(mapName);
+            op.setPartitionId(partition.getPartitionId());
+            Set<SimpleEntryView> set = (Set<SimpleEntryView>) invokeOp(op);
+            counterMap.get(partition.getPartitionId()).addAndGet(set.size());
+
+            for (SimpleEntryView simpleEntryView : set) {
+                EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(
+                        mapName, simpleEntryView, partition.getPartitionId());
+                WanReplicationEvent event = new WanReplicationEvent(MapService.SERVICE_NAME, sync);
+                offerToStagingQueue(event);
+            }
+            return set.size();
+        }
     }
 }

@@ -34,8 +34,6 @@ public class WanSyncManager {
     private static final AtomicIntegerFieldUpdater<WanSyncManager> SYNCED_PARTITION_COUNT
             = AtomicIntegerFieldUpdater.newUpdater(WanSyncManager.class, "syncedPartitionCount");
 
-    private final IPartitionService partitionService;
-    private final ClusterService clusterService;
     private final EnterpriseWanReplicationService wanReplicationService;
     private final ILogger logger;
     private final Node node;
@@ -52,8 +50,6 @@ public class WanSyncManager {
         this.node = node;
         this.wanReplicationService = wanReplicationService;
         this.logger = node.getLogger(getClass());
-        this.partitionService = node.getPartitionService();
-        this.clusterService = node.getClusterService();
     }
 
     public void shutdown() {
@@ -75,7 +71,7 @@ public class WanSyncManager {
             public void run() {
                 Operation operation = new WanSyncStarterOperation(wanReplicationName, targetGroupName, syncEvent);
                 getOperationService().invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
-                        operation, clusterService.getThisAddress());
+                        operation, getClusterService().getThisAddress());
             }
         });
         logger.info("WAN sync request has been sent");
@@ -88,9 +84,9 @@ public class WanSyncManager {
     public void populateSyncRequestOnMembers(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {
         int retryCount = 0;
         try {
-            Set<Member> members = clusterService.getMembers();
+            Set<Member> members = getClusterService().getMembers();
             List<Future<WanSyncResult>> futures = new ArrayList<Future<WanSyncResult>>(members.size());
-            for (Member member : clusterService.getMembers()) {
+            for (Member member : getClusterService().getMembers()) {
                 WanSyncEvent wanSyncEvent = new WanSyncEvent(syncEvent.getType(), syncEvent.getName());
                 Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName, wanSyncEvent);
                 Future<WanSyncResult> future = getOperationService()
@@ -104,7 +100,7 @@ public class WanSyncManager {
                 futures.clear();
                 logger.info("WAN sync will retry missing partitions - " + partitionIds);
 
-                for (Member member : clusterService.getMembers()) {
+                for (Member member : getClusterService().getMembers()) {
                     WanSyncEvent wanSyncEvent = new WanSyncEvent(syncEvent.getType(), syncEvent.getName());
                     wanSyncEvent.setPartitionSet(partitionIds);
                     Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName, wanSyncEvent);
@@ -158,7 +154,7 @@ public class WanSyncManager {
     }
 
     private Set<Integer> getAllPartitionIds() {
-        int partitionCount = partitionService.getPartitionCount();
+        int partitionCount = getPartitionService().getPartitionCount();
         return createSetWithPopulatedPartitionIds(partitionCount);
     }
 
@@ -168,5 +164,19 @@ public class WanSyncManager {
             partitionIds.add(i);
         }
         return partitionIds;
+    }
+
+    /**
+     * Returns this node's partition service
+     */
+    private IPartitionService getPartitionService() {
+        return node.getPartitionService();
+    }
+
+    /**
+     * Returns this node's cluster service
+     */
+    private ClusterService getClusterService() {
+        return node.getClusterService();
     }
 }

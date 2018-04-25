@@ -68,26 +68,34 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      * Returns a WAN replication configured under a WAN replication config with
      * the name {@code wanReplicationName} and with a group name of
      * {@code target}.
-     * It may return {@code null} if there is a WAN replication config but
-     * there is no endpoint by the name {@code groupName}.
      *
      * @param wanReplicationName the name of the {@link WanReplicationConfig}
      * @param groupName          the group name of the publisher
-     * @return the WAN endpoint or {@code null} if there is a WAN replication
-     * config but there is no endpoint by the name {@code groupName}
+     * @return the WAN endpoint
      * @throws InvalidConfigurationException if there is no replication config
      *                                       with the name {@code wanReplicationName}
+     *                                       and group name {@code groupName}
      * @see WanReplicationConfig#getName
      * @see WanPublisherConfig#getGroupName
      */
     public WanReplicationEndpoint getEndpoint(String wanReplicationName, String groupName) {
         final WanReplicationPublisherDelegate publisherDelegate
                 = (WanReplicationPublisherDelegate) getWanReplicationPublisher(wanReplicationName);
-        if (publisherDelegate == null) {
+        final WanReplicationEndpoint endpoint = getEndpointFromDelegate(publisherDelegate, groupName);
+
+        if (publisherDelegate == null || endpoint == null) {
             throw new InvalidConfigurationException("WAN Replication Config doesn't exist with WAN configuration name "
                     + wanReplicationName + " and publisher target group name " + groupName);
         }
-        return publisherDelegate.getEndpoint(groupName);
+
+        return endpoint;
+    }
+
+    private WanReplicationEndpoint getEndpointFromDelegate(WanReplicationPublisherDelegate publisherDelegate, String groupName) {
+        if (publisherDelegate != null) {
+            return publisherDelegate.getEndpoint(groupName);
+        }
+        return null;
     }
 
     /**

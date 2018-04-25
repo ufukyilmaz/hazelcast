@@ -34,11 +34,11 @@ import com.hazelcast.util.MapUtil;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.util.executor.StripedRunnable;
 import com.hazelcast.util.executor.TimeoutRunnable;
-import com.hazelcast.wan.impl.WanEventCounter;
-import com.hazelcast.wan.impl.WanEventCounterContainer;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.impl.WanEventCounter;
+import com.hazelcast.wan.impl.WanEventCounterContainer;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -204,23 +204,37 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     /**
-     * Return a WAN replication configured under a WAN replication config with the name {@code wanReplicationName}
-     * and with a group name of {@code target}.
+     * Returns a WAN replication configured under a WAN replication config with
+     * the name {@code wanReplicationName} and with a group name of
+     * {@code target}.
      *
      * @param wanReplicationName the name of the {@link WanReplicationConfig}
      * @param groupName          the group name of the publisher
-     * @return the wan endpoint
+     * @return the WAN endpoint
+     * @throws InvalidConfigurationException if there is no replication config
+     *                                       with the name {@code wanReplicationName}
+     *                                       and group name {@code groupName}
      * @see WanReplicationConfig#getName
      * @see WanPublisherConfig#getGroupName
      */
     public WanReplicationEndpoint getEndpoint(String wanReplicationName, String groupName) {
         final WanReplicationPublisherDelegate publisherDelegate
                 = (WanReplicationPublisherDelegate) getWanReplicationPublisher(wanReplicationName);
-        if (publisherDelegate == null) {
+        final WanReplicationEndpoint endpoint = getEndpointFromDelegate(publisherDelegate, groupName);
+
+        if (publisherDelegate == null || endpoint == null) {
             throw new InvalidConfigurationException("WAN Replication Config doesn't exist with WAN configuration name "
                     + wanReplicationName + " and publisher target group name " + groupName);
         }
-        return publisherDelegate.getEndpoint(groupName);
+
+        return endpoint;
+    }
+
+    private WanReplicationEndpoint getEndpointFromDelegate(WanReplicationPublisherDelegate publisherDelegate, String groupName) {
+        if (publisherDelegate != null) {
+            return publisherDelegate.getEndpoint(groupName);
+        }
+        return null;
     }
 
     /**

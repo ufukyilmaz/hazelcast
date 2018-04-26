@@ -3,8 +3,6 @@ package com.hazelcast.cluster;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.test.annotation.NightlyTest;
-import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.cluster.AbstractClusterUpgradeTest.CLUSTER_VERSION_2NEXT_MINOR;
@@ -36,7 +34,6 @@ import static com.hazelcast.test.TestClusterUpgradeUtils.newHazelcastInstance;
  * 2.3.0, operating at 2.2 cluster version.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(NightlyTest.class)
 public class SplitBrainUpgradeCase3Test extends AbstractSplitBrainUpgradeTest {
 
     @Override

@@ -4,6 +4,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.annotation.SerializationSamplesExcluded;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
 import org.junit.Test;
@@ -16,7 +17,7 @@ import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRI
  * Extends SystemLogPluginTest including test for logging of cluster version change.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, SerializationSamplesExcluded.class})
 public class EnterpriseSystemLogPluginTest extends SystemLogPluginTest {
 
     @Test

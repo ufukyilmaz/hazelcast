@@ -730,13 +730,14 @@
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false
                                 -Dhazelcast.tomcat.shutdown_hazelcast_instance=false
-                                -Dhazelcast.test.sample.serialized.objects=${target.dir}/serialized-objects-ee-${project.version}-
+                                -Dhazelcast.test.sample.serialized.objects=${target.dir}/serialized-objects-${project.version}-ee-
                                 ${extraVmArgs}
                             </argLine>
                             <excludedGroups>
                                 com.hazelcast.test.annotation.SlowTest,
                                 com.hazelcast.test.annotation.NightlyTest,
-                                com.hazelcast.test.annotation.CompatibilityTest
+                                com.hazelcast.test.annotation.CompatibilityTest,
+                                com.hazelcast.test.annotation.SerializationSamplesExcluded
                             </excludedGroups>
                         </configuration>
                         <dependencies>

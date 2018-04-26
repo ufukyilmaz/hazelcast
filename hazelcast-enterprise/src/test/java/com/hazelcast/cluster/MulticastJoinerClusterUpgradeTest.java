@@ -5,6 +5,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
+import com.hazelcast.test.annotation.SerializationSamplesExcluded;
 import com.hazelcast.version.MemberVersion;
 import org.junit.After;
 import org.junit.experimental.categories.Category;
@@ -17,7 +18,7 @@ import static org.junit.Assert.assertEquals;
  * Creates a cluster configured with multicast joiner, then change cluster version.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({NightlyTest.class})
+@Category({NightlyTest.class, SerializationSamplesExcluded.class})
 public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTest {
 
     @Override

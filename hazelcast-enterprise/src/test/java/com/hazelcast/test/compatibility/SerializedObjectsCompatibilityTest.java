@@ -56,16 +56,21 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     private static final String EE_CLASSPATH_RESOURCE_PATTERN = "com/hazelcast/test/compatibility/serialized-objects-%s-ee";
     private static final ILogger LOGGER = Logger.getLogger(SerializedObjectsCompatibilityTest.class);
 
-    @Parameters(name = "version: {0}")
+    @Parameters(name = "samplesVersion: {0} testDeserializerVersion={1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {"3.9"},
-                {"3.9.1"},
+                {"3.9", "3.9"},
+                {"3.9.1", "3.9"},
+                {"3.9.4", "3.9"},
+                {"3.10", "3.10"},
         });
     }
 
-    @Parameter
-    public String version;
+    @Parameter(0)
+    public String samplesVersion;
+
+    @Parameter(1)
+    public String testDeserializerVersion;
 
     private InternalSerializationService currentSerializationService;
     private String serializedObjectsResource;
@@ -73,14 +78,14 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
 
     @Before
     public void setup() {
-        serializedObjectsResource = format(CLASSPATH_RESOURCE_PATTERN, version);
-        eeSerializedObjectsResource = format(EE_CLASSPATH_RESOURCE_PATTERN, version);
+        serializedObjectsResource = format(CLASSPATH_RESOURCE_PATTERN, samplesVersion);
+        eeSerializedObjectsResource = format(EE_CLASSPATH_RESOURCE_PATTERN, samplesVersion);
     }
 
     @Test
     public void testObjectsAreDeserializedInCurrentVersion_whenOSSerializationService() {
-        // OS serialization version always uses current cluster version, so override this to emulate previous cluster version
-        System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, PREVIOUS_CLUSTER_VERSION.toString());
+        // OS serialization version always uses current cluster version, so override this to emulate sample serialization version
+        System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, testDeserializerVersion);
         System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_ENTERPRISE, "false");
         try {
             currentSerializationService = new DefaultSerializationServiceBuilder()

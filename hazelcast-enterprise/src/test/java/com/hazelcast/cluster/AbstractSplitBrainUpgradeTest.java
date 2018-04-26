@@ -3,14 +3,18 @@ package com.hazelcast.cluster;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.SplitBrainTestSupport;
+import com.hazelcast.test.annotation.NightlyTest;
+import com.hazelcast.test.annotation.SerializationSamplesExcluded;
 import com.hazelcast.version.MemberVersion;
 import org.junit.After;
+import org.junit.experimental.categories.Category;
 
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 
 /**
  * Abstract class for split-brain cluster upgrade tests.
  */
+@Category({NightlyTest.class, SerializationSamplesExcluded.class})
 public abstract class AbstractSplitBrainUpgradeTest extends SplitBrainTestSupport {
 
     private String groupName;

@@ -5,6 +5,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.annotation.SerializationSamplesExcluded;
 import com.hazelcast.version.MemberVersion;
 import org.junit.After;
 import org.junit.experimental.categories.Category;
@@ -19,7 +20,7 @@ import static org.junit.Assert.assertEquals;
  * Creates a cluster, then change cluster version.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, SerializationSamplesExcluded.class})
 public class MockJoinerClusterUpgradeTest extends AbstractClusterUpgradeTest {
 
     private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(10);

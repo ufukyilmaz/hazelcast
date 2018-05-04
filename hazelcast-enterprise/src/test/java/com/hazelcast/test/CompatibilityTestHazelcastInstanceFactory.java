@@ -39,13 +39,14 @@ import static org.junit.Assume.assumeFalse;
  */
 public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInstanceFactory {
 
-    public static final String[] RELEASED_VERSIONS = new String[]{"3.9", "3.9.1", "3.9.2", "3.9.3"};
+    // some tests require a 3-member cluster, so when a new release is made, repeat the same version twice
+    public static final String[] RELEASED_VERSIONS = new String[]{"3.10", "3.10"};
     /**
      * Refers to the latest hazelcast version.
      * Unlike other hazelcast instances, this one will not be proxied and
      * you can inspect the internal state by getting the node engine.
      */
-    public static final String CURRENT_VERSION = "3.10";
+    public static final String CURRENT_VERSION = "3.11";
 
     // to override the versions to be used by any compatibility test, set this system property to a comma-separated
     // list of versions e.g. "-Dhazelcast.test.compatibility.versions=3.8,3.8.1"

@@ -15,6 +15,7 @@ import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 import com.hazelcast.spi.partition.IPartition;
 
 import java.io.IOException;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -25,7 +26,6 @@ import static com.hazelcast.spi.CallStatus.DONE_RESPONSE;
 import static com.hazelcast.spi.CallStatus.OFFLOADED;
 import static com.hazelcast.spi.ExceptionAction.THROW_EXCEPTION;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
-import static java.util.Arrays.copyOfRange;
 
 /**
  * Query operation that runs a query for the HD memory.
@@ -56,17 +56,18 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
     public CallStatus call() {
         QueryRunner queryRunner = mapServiceContext.getMapQueryRunner(getName());
 
-        int[] localPartitions = localPartitions();
-        if (localPartitions.length == 0) {
+        BitSet localPartitions = localPartitions();
+        int localPartitionCount = localPartitions.cardinality();
+        if (localPartitionCount == 0) {
             // important to deal with situation of not having any
             this.result = queryRunner.populateEmptyResult(query, Collections.<Integer>emptyList());
             return DONE_RESPONSE;
         }
 
-        QueryFuture future = new QueryFuture(localPartitions.length);
+        QueryFuture future = new QueryFuture(localPartitionCount);
         OperationServiceImpl operationService = getOperationService();
         operationService.onStartAsyncOperation(this);
-        operationService.execute(new QueryTaskFactory(query, future), localPartitions);
+        operationService.executeOnPartitions(new QueryTaskFactory(query, future), localPartitions);
         future.andThen(new ExecutionCallbackImpl(queryRunner, query));
         return OFFLOADED;
     }
@@ -84,17 +85,15 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
         return (OperationServiceImpl) getNodeEngine().getOperationService();
     }
 
-    private int[] localPartitions() {
-        int[] partitions = new int[partitionCount()];
-        int index = 0;
+    private BitSet localPartitions() {
+        BitSet partitions = new BitSet(partitionCount());
         for (IPartition partition : getNodeEngine().getPartitionService().getPartitions()) {
             if (partition.isLocal()) {
-                partitions[index] = partition.getPartitionId();
-                index++;
+                partitions.set(partition.getPartitionId());
             }
         }
 
-        return copyOfRange(partitions, 0, index);
+        return partitions;
     }
 
     @Override

@@ -15,32 +15,27 @@ import static org.junit.Assert.assertEquals;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
 public class RingbufferQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
+    private int count;
 
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {
         Ringbuffer<String> ringbuffer = previousVersionMember.getRingbuffer(name);
         ringbuffer.add("1");
         assertEquals(1, ringbuffer.size());
+        count = 1;
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
-        Ringbuffer<String> ringbuffer = member.getRingbuffer(name);
-        ringbuffer.add("2");
-        assertEquals(2, ringbuffer.size());
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
         Ringbuffer<String> ringbuffer = member.getRingbuffer(name);
         ringbuffer.add("3");
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
         Ringbuffer<String> ringbuffer = member.getRingbuffer(name);
-        ringbuffer.add("4");
-        assertEquals(3, ringbuffer.size());
+        ringbuffer.add(Integer.toString(++count));
+        assertEquals(count, ringbuffer.size());
     }
 
     @Override

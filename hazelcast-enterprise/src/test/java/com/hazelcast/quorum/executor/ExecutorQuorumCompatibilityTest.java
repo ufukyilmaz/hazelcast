@@ -26,17 +26,12 @@ public class ExecutorQuorumCompatibilityTest extends AbstractQuorumCompatibility
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
         submitCallable(member);
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
-        submitCallable(member);
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
         submitCallable(member);
     }
 

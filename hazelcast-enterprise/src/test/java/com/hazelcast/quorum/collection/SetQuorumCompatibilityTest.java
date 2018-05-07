@@ -25,29 +25,19 @@ public class SetQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest 
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
-        ISet<String> setOnCurrentVersion = member.getSet(name);
-        // no quorum applies while operating in 3.9 cluster version
-        assertEquals(3, setOnCurrentVersion.size());
-        for (int i = 10; i < 20; i++) {
-            setOnCurrentVersion.add(Integer.toString(i));
-        }
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
         ISet<String> setOnCurrentVersion = member.getSet(name);
         setOnCurrentVersion.add("20");
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
         ISet<String> setOnCurrentVersion = member.getSet(name);
         for (int i = 20; i < 30; i++) {
             setOnCurrentVersion.add(Integer.toString(i));
         }
 
-        assertEquals(23, setOnCurrentVersion.size());
+        assertEquals(13, setOnCurrentVersion.size());
     }
 
     @Override

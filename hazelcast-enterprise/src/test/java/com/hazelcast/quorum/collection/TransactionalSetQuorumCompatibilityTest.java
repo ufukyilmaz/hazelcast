@@ -17,6 +17,8 @@ import static org.junit.Assert.assertEquals;
 @Category(CompatibilityTest.class)
 public class TransactionalSetQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
 
+    private int count;
+
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {
         TransactionContext context = getTransactionalContext(previousVersionMember);
@@ -25,44 +27,30 @@ public class TransactionalSetQuorumCompatibilityTest extends AbstractQuorumCompa
         set.add("1");
         set.add("2");
         set.add("3");
+        count = 3;
         context.commitTransaction();
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
         TransactionContext context = getTransactionalContext(member);
         context.beginTransaction();
         TransactionalSet<String> set = context.getSet(name);
-        // no quorum applies while operating in 3.9 cluster version
-        assertEquals(3, set.size());
-        for (int i = 10; i < 20; i++) {
-            set.add(Integer.toString(i));
-        }
-        context.commitTransaction();
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
-        TransactionContext context = getTransactionalContext(member);
-        context.beginTransaction();
-        TransactionalSet<String> setOnCurrentVersion = context.getSet(name);
         try {
-            setOnCurrentVersion.add("20");
+            set.add("20");
         } finally {
             context.rollbackTransaction();
         }
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
         TransactionContext context = getTransactionalContext(member);
         context.beginTransaction();
-        TransactionalSet<String> setOnCurrentVersion = context.getSet(name);
-        for (int i = 20; i < 30; i++) {
-            setOnCurrentVersion.add(Integer.toString(i));
-        }
+        TransactionalSet<String> set = context.getSet(name);
+        set.add(Integer.toString(++count));
 
-        assertEquals(23, setOnCurrentVersion.size());
+        assertEquals(count, set.size());
         context.commitTransaction();
     }
 

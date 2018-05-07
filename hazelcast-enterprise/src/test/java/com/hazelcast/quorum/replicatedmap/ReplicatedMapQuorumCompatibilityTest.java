@@ -16,33 +16,29 @@ import static org.junit.Assert.assertEquals;
 @Category(CompatibilityTest.class)
 public class ReplicatedMapQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
 
+    private int count;
+
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {
         ReplicatedMap<String, String> map = previousVersionMember.getReplicatedMap(name);
         map.put("1", "a");
         map.put("2", "b");
         map.put("3", "c");
-        assertEquals(3, map.size());
+        count = 3;
+        assertEquals(count, map.size());
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
-        ReplicatedMap<String, String> map = member.getReplicatedMap(name);
-        map.put("4", "d");
-        assertEquals(4, map.size());
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
         ReplicatedMap<String, String> map = member.getReplicatedMap(name);
         map.put("5", "e");
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
         ReplicatedMap<String, String> map = member.getReplicatedMap(name);
-        map.put("6", "f");
-        assertEquals(5, map.size());
+        map.put(Integer.toString(++count), "f");
+        assertEquals(count, map.size());
     }
 
     @Override

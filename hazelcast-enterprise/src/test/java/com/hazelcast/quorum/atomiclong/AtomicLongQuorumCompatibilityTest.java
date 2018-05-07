@@ -16,28 +16,24 @@ import static org.junit.Assert.assertEquals;
 @Category(CompatibilityTest.class)
 public class AtomicLongQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
 
+    private int count;
+
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {
         IAtomicLong atomicLong = previousVersionMember.getAtomicLong(name);
-        assertEquals(1, atomicLong.incrementAndGet());
+        assertEquals(++count, atomicLong.incrementAndGet());
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
-        IAtomicLong atomicLong = member.getAtomicLong(name);
-        assertEquals(2, atomicLong.incrementAndGet());
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
         IAtomicLong atomicLong = member.getAtomicLong(name);
         atomicLong.incrementAndGet();
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
         IAtomicLong atomicLong = member.getAtomicLong(name);
-        assertEquals(3, atomicLong.incrementAndGet());
+        assertEquals(++count, atomicLong.incrementAndGet());
     }
 
     @Override

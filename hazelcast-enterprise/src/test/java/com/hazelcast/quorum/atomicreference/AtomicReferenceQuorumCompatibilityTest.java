@@ -23,21 +23,16 @@ public class AtomicReferenceQuorumCompatibilityTest extends AbstractQuorumCompat
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
-        IAtomicReference<String> atomicString = member.getAtomicReference(name);
-        assertTrue(atomicString.compareAndSet("1", "2"));
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
         IAtomicReference<String> atomicString = member.getAtomicReference(name);
         atomicString.set("3");
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
         IAtomicReference<String> atomicString = member.getAtomicReference(name);
-        assertTrue(atomicString.compareAndSet("2", "3"));
+        assertTrue(atomicString.compareAndSet("1", "3"));
+        atomicString.set("1");
     }
 
     @Override

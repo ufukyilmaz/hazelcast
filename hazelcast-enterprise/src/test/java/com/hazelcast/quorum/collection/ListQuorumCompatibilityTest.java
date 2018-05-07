@@ -15,6 +15,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
 public class ListQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
+    private int count;
 
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {
@@ -22,32 +23,24 @@ public class ListQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest
         set.add("1");
         set.add("2");
         set.add("3");
+        count = 3;
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
-        IList<String> setOnCurrentVersion = member.getList(name);
-        // no quorum applies while operating in 3.9 cluster version
-        assertEquals(3, setOnCurrentVersion.size());
-        for (int i = 10; i < 20; i++) {
-            setOnCurrentVersion.add(Integer.toString(i));
-        }
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
+        IList<String> listOnCurrentVersion = member.getList(name);
+        listOnCurrentVersion.add("20");
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
-        IList<String> setOnCurrentVersion = member.getList(name);
-        setOnCurrentVersion.add("20");
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
-        IList<String> setOnCurrentVersion = member.getList(name);
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
+        IList<String> listOnCurrentVersion = member.getList(name);
         for (int i = 20; i < 30; i++) {
-            setOnCurrentVersion.add(Integer.toString(i));
+            listOnCurrentVersion.add(Integer.toString(i));
+            count++;
         }
 
-        assertEquals(23, setOnCurrentVersion.size());
+        assertEquals(count, listOnCurrentVersion.size());
     }
 
     @Override

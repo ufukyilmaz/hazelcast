@@ -21,19 +21,13 @@ public class CardinalityEstimatorQuorumCompatibilityTest extends AbstractQuorumC
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
-        CardinalityEstimator estimator = member.getCardinalityEstimator(name);
-        estimator.add("2");
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
         CardinalityEstimator estimator = member.getCardinalityEstimator(name);
         estimator.add("3");
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
         CardinalityEstimator estimator = member.getCardinalityEstimator(name);
         estimator.add("4");
     }

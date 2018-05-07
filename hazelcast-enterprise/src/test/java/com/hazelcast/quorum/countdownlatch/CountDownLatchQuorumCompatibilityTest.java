@@ -17,30 +17,27 @@ import static org.junit.Assert.assertTrue;
 @Category(CompatibilityTest.class)
 public class CountDownLatchQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
 
+    private int count;
+
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {
         ICountDownLatch latch = previousVersionMember.getCountDownLatch(name);
         assertTrue(latch.trySetCount(2));
+        count = 2;
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
-        ICountDownLatch latch = member.getCountDownLatch(name);
-        latch.countDown();
-        assertEquals(1, latch.getCount());
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
         ICountDownLatch latch = member.getCountDownLatch(name);
         latch.countDown();
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
         ICountDownLatch latch = member.getCountDownLatch(name);
         latch.countDown();
-        assertOpenEventually(latch);
+        count--;
+        assertEquals(count, latch.getCount());
     }
 
     @Override

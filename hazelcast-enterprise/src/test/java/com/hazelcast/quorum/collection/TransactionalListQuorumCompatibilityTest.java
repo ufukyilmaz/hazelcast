@@ -17,52 +17,43 @@ import static org.junit.Assert.assertEquals;
 @Category(CompatibilityTest.class)
 public class TransactionalListQuorumCompatibilityTest extends AbstractQuorumCompatibilityTest {
 
+    private int count;
+
     @Override
     protected void prepareDataStructure(HazelcastInstance previousVersionMember) {
         TransactionContext context = getTransactionalContext(previousVersionMember);
         context.beginTransaction();
-        TransactionalList<String> set = context.getList(name);
-        set.add("1");
-        set.add("2");
-        set.add("3");
+        TransactionalList<String> list = context.getList(name);
+        list.add("1");
+        list.add("2");
+        list.add("3");
         context.commitTransaction();
+        count = 3;
     }
 
     @Override
-    protected void assertOnCurrentMembers_whilePreviousClusterVersion(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumAbsent(HazelcastInstance member) {
         TransactionContext context = getTransactionalContext(member);
         context.beginTransaction();
-        TransactionalList<String> set = context.getList(name);
-        // no quorum applies while operating in 3.9 cluster version
-        assertEquals(3, set.size());
-        for (int i = 10; i < 20; i++) {
-            set.add(Integer.toString(i));
-        }
-        context.commitTransaction();
-    }
-
-    @Override
-    protected void assertOnCurrent_whileQuorumAbsent(HazelcastInstance member) {
-        TransactionContext context = getTransactionalContext(member);
-        context.beginTransaction();
-        TransactionalList<String> setOnCurrentVersion = context.getList(name);
+        TransactionalList<String> listOnCurrentVersion = context.getList(name);
         try {
-            setOnCurrentVersion.add("20");
+            listOnCurrentVersion.add("20");
         } finally {
             context.rollbackTransaction();
         }
     }
 
     @Override
-    protected void assertOnCurrent_whileQuorumPresent(HazelcastInstance member) {
+    protected void assertOperations_whileQuorumPresent(HazelcastInstance member) {
         TransactionContext context = getTransactionalContext(member);
         context.beginTransaction();
-        TransactionalList<String> setOnCurrentVersion = context.getList(name);
+        TransactionalList<String> listOnCurrentVersion = context.getList(name);
         for (int i = 20; i < 30; i++) {
-            setOnCurrentVersion.add(Integer.toString(i));
+            listOnCurrentVersion.add(Integer.toString(i));
+            count++;
         }
 
-        assertEquals(23, setOnCurrentVersion.size());
+        assertEquals(count, listOnCurrentVersion.size());
         context.commitTransaction();
     }
 

@@ -48,10 +48,10 @@ public class CompatibilityTestHazelcastFactory extends TestHazelcastFactory {
         }
     }
 
-
     /**
      * Shutdown all instances started by this factory.
      */
+    @Override
     public void shutdownAll() {
         for (HazelcastInstance hz : instances) {
             hz.shutdown();
@@ -61,11 +61,10 @@ public class CompatibilityTestHazelcastFactory extends TestHazelcastFactory {
     /**
      * Terminate all instances started by this factory.
      */
+    @Override
     public void terminateAll() {
         for (HazelcastInstance hz : instances) {
             hz.getLifecycleService().terminate();
         }
     }
-
-
 }

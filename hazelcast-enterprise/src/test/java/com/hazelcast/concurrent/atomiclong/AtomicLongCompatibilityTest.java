@@ -6,7 +6,7 @@ import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.test.starter.Utils.assertInstanceOfByClassName;
+import static com.hazelcast.test.starter.HazelcastStarterUtils.assertInstanceOfByClassName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 

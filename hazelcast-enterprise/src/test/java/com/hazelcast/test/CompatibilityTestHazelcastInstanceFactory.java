@@ -37,23 +37,40 @@ import static org.junit.Assume.assumeFalse;
  * The minimum number of members to have in a cluster in order to test compatibility across all previously released
  * version and current one is {@link #getKnownPreviousVersionsCount()} + 1.
  */
+@SuppressWarnings("WeakerAccess")
 public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInstanceFactory {
 
-    // some tests require a 3-member cluster, so when a new release is made, repeat the same version twice
-    public static final String[] RELEASED_VERSIONS = new String[]{"3.10", "3.10"};
     /**
-     * Refers to the latest hazelcast version.
-     * Unlike other hazelcast instances, this one will not be proxied and
-     * you can inspect the internal state by getting the node engine.
+     * Refers to the current Hazelcast version.
+     * <p>
+     * Unlike other Hazelcast instances, this one will not be proxied and
+     * you can inspect the internal state, e.g. by getting the NodeEngine.
      */
     public static final String CURRENT_VERSION = "3.11";
 
-    // to override the versions to be used by any compatibility test, set this system property to a comma-separated
-    // list of versions e.g. "-Dhazelcast.test.compatibility.versions=3.8,3.8.1"
+    /**
+     * Refers to compatible released Hazelcast versions.
+     * <p>
+     * These Hazelcast instances will be proxies, so internal classes like
+     * NodeEngine etc. cannot be accessed.
+     * <p>
+     * <b>Note:</b> Some tests require cluster with 3 members,
+     * so when a new release is made, repeat the same version twice.
+     */
+    public static final String[] RELEASED_VERSIONS = new String[]{"3.10", "3.10"};
+
+    /**
+     * System property to override the versions to be used by any compatibility test.
+     * <p>
+     * Set this system property to a comma-separated list of versions,
+     * e.g. {@code -Dhazelcast.test.compatibility.versions=3.8,3.8.1}.
+     */
     public static final String COMPATIBILITY_TEST_VERSIONS = "hazelcast.test.compatibility.versions";
+
     // actual member versions to be used in round-robin when creating new Hazelcast instances
     private final String[] versions;
-    // keep track of number of created instances
+
+    // keeps track of number of created instances
     private final AtomicInteger instancesCreated = new AtomicInteger();
     private final ArrayList<HazelcastInstance> instances = new ArrayList<HazelcastInstance>();
 
@@ -88,7 +105,7 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
     }
 
     /**
-     * @return an array of {@code String}s including all known previously released versions and current version.
+     * @return an array of {@code String}s including all known previously released versions and current version
      */
     public static String[] getKnownReleasedAndCurrentVersions() {
         String[] allReleasedAndCurrentVersion = new String[RELEASED_VERSIONS.length + 1];
@@ -154,7 +171,7 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
     }
 
     /**
-     * Terminate all instances started by this factory.
+     * Terminates all instances started by this factory.
      */
     @Override
     public void terminateAll() {
@@ -163,6 +180,9 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
         }
     }
 
+    /**
+     * Returns all created Hazelcast instances.
+     */
     @Override
     public Collection<HazelcastInstance> getAllHazelcastInstances() {
         return new LinkedList<HazelcastInstance>(instances);

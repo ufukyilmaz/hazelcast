@@ -21,6 +21,7 @@ import static java.lang.Integer.parseInt;
 /**
  * Random access to a file containing serialized object samples captured by {@link SamplingSerializationService}
  */
+@SuppressWarnings("WeakerAccess")
 public class SerializedObjectsAccessor implements Closeable, Iterable<SerializedObjectsAccessor.SerializedObject> {
 
     // filesystem path to index/samples file excluding suffix
@@ -111,30 +112,33 @@ public class SerializedObjectsAccessor implements Closeable, Iterable<Serialized
     }
 
     private static class SamplePosition {
+
         private final int offset;
         private final int length;
 
-        public SamplePosition(int offset, int length) {
+        SamplePosition(int offset, int length) {
             this.offset = offset;
             this.length = length;
         }
 
-        public int getOffset() {
+        int getOffset() {
             return offset;
         }
 
-        public int getLength() {
+        int getLength() {
             return length;
         }
     }
 
     public class SerializedObjectIterator implements Iterator<SerializedObject> {
+
         private final Iterator<String> classNamesIterator;
+
         // state of iteration: current class name, current sample index
         private String className;
         private int sampleIndex;
 
-        public SerializedObjectIterator(Iterator<String> classNamesIterator) {
+        SerializedObjectIterator(Iterator<String> classNamesIterator) {
             this.classNamesIterator = classNamesIterator;
         }
 
@@ -180,26 +184,27 @@ public class SerializedObjectsAccessor implements Closeable, Iterable<Serialized
         }
     }
 
-    public static class SerializedObject {
+    static class SerializedObject {
+
         private final String className;
         private final int index;
         private final byte[] bytes;
 
-        public SerializedObject(String className, int index, byte[] bytes) {
+        SerializedObject(String className, int index, byte[] bytes) {
             this.className = className;
             this.index = index;
             this.bytes = bytes;
         }
 
-        public String getClassName() {
+        String getClassName() {
             return className;
         }
 
-        public int getIndex() {
+        int getIndex() {
             return index;
         }
 
-        public byte[] getBytes() {
+        byte[] getBytes() {
             return bytes;
         }
     }

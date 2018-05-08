@@ -9,6 +9,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
  * Used by reflection in MockNodeContext, for properly setting up the serialization service to sample
  * objects serialized during test suite execution.
  */
+@SuppressWarnings("unused")
 public class SamplingEnterpriseNodeExtension extends EnterpriseNodeExtension {
 
     public SamplingEnterpriseNodeExtension(Node node) {

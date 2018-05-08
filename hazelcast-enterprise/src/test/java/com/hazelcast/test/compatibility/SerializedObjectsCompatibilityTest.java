@@ -63,7 +63,7 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
         });
     }
 
-    @Parameter(0)
+    @Parameter
     public String samplesVersion;
 
     @Parameter(1)
@@ -129,8 +129,8 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
                     // check whether the serializable that failed deserialization is a test class
                     InvalidClassException invalidClassException = (InvalidClassException) e.getCause();
                     if (isTestClass(invalidClassException.classname)) {
-                        LOGGER.fine(object.getClassName() + " failed deserialization due to failure deserializing "
-                                + "a test class and may be ignored", invalidClassException);
+                        LOGGER.fine(object.getClassName() + " failed deserialization due to failure deserializing"
+                                + " a test class and may be ignored", invalidClassException);
                         continue;
                     }
                 }

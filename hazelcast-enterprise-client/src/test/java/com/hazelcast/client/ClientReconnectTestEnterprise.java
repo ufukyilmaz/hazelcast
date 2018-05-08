@@ -10,5 +10,3 @@ import org.junit.runner.RunWith;
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientReconnectTestEnterprise extends ClientReconnectTest {
 }
-
-

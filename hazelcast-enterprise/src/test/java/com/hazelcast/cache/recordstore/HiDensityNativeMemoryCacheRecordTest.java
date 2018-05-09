@@ -26,19 +26,19 @@ public class HiDensityNativeMemoryCacheRecordTest {
     private long address;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         address = MALLOC.malloc(HiDensityNativeMemoryCacheRecord.SIZE);
         record = new HiDensityNativeMemoryCacheRecord(address);
         record.zero();
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         MALLOC.free(address);
     }
 
     @Test
-    public void testFields() throws Exception {
+    public void testFields() {
         long creationTime = System.currentTimeMillis();
         record.setCreationTime(creationTime);
 
@@ -65,7 +65,7 @@ public class HiDensityNativeMemoryCacheRecordTest {
     }
 
     @Test
-    public void testTTL() throws Exception {
+    public void testTTL() {
         long creationTime = System.currentTimeMillis();
         record.setCreationTime(creationTime);
 
@@ -79,7 +79,7 @@ public class HiDensityNativeMemoryCacheRecordTest {
     }
 
     @Test
-    public void testExpirationTime() throws Exception {
+    public void testExpirationTime() {
         long creationTime = System.currentTimeMillis();
         record.setCreationTime(creationTime);
 
@@ -93,7 +93,7 @@ public class HiDensityNativeMemoryCacheRecordTest {
     }
 
     @Test
-    public void testAccessHit() throws Exception {
+    public void testAccessHit() {
         for (int i = 0; i < 111; i++) {
             record.incrementAccessHit();
         }

@@ -3,18 +3,17 @@ package com.hazelcast.client.map.impl.nearcache;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.NearCacheConfig.DEFAULT_SERIALIZE_KEYS;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
-import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
 import static com.hazelcast.internal.nearcache.NearCacheTestUtils.createNearCacheConfig;
 
 /**
@@ -25,19 +24,20 @@ import static com.hazelcast.internal.nearcache.NearCacheTestUtils.createNearCach
 public class ClientHDMapNearCacheBasicTest extends ClientMapNearCacheBasicTest {
 
     @Before
+    @Override
     public void setUp() {
         nearCacheConfig = createNearCacheConfig(NATIVE, DEFAULT_SERIALIZE_KEYS);
     }
 
     @Override
     protected Config getConfig() {
-        return getNearCacheHDConfig();
+        return getHDConfig(super.getConfig());
     }
 
     @Override
-    protected ClientConfig createClientConfig() {
-        return super.createClientConfig()
-                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
+    protected ClientConfig getClientConfig() {
+        return super.getClientConfig()
+                .setLicenseKey(UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
     }
 }

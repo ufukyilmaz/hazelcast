@@ -15,13 +15,13 @@ import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsZero;
 import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
 import static com.hazelcast.NativeMemoryTestUtil.dumpNativeMemory;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
+import static com.hazelcast.internal.nearcache.NearCacheTestUtils.assertNearCacheSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractEnterpriseNearCacheLeakTest<NK, NV> extends AbstractNearCacheLeakTest<NK, NV> {
 
-    protected static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
-    protected static final int PARTITION_COUNT = 271;
+    protected static final MemorySize MEMORY_SIZE = new MemorySize(64, MemoryUnit.MEGABYTES);
 
     @Parameter
     public MemoryAllocatorType memoryAllocatorType;
@@ -48,11 +48,12 @@ public abstract class AbstractEnterpriseNearCacheLeakTest<NK, NV> extends Abstra
         // the in-memory-format has to be NATIVE, since we check for used Native memory
         assertEquals(InMemoryFormat.NATIVE, nearCacheConfig.getInMemoryFormat());
 
-        NearCacheTestContext<Integer, Integer, NK, NV> context = createContext(1000);
+        NearCacheTestContext<Integer, Integer, NK, NV> context = createContext();
 
-        populateNearCache(context, 1000);
-        assertTrue("The Near Cache should be filled (" + context.stats + ")", context.stats.getOwnedEntryCount() > 0);
+        populateDataAdapter(context, DEFAULT_RECORD_COUNT);
+        populateNearCache(context, DEFAULT_RECORD_COUNT);
 
+        assertNearCacheSize(context, DEFAULT_RECORD_COUNT);
         assertMemoryStatsNotZero("dataInstance", dataInstanceMemoryStats);
         assertMemoryStatsNotZero("nearCacheInstance", nearCacheInstanceMemoryStats);
         assertNearCacheManager(context, 1);
@@ -60,6 +61,7 @@ public abstract class AbstractEnterpriseNearCacheLeakTest<NK, NV> extends Abstra
 
         context.nearCacheAdapter.destroy();
 
+        assertNearCacheSize(context, 0);
         assertNearCacheManager(context, 0);
         assertRepairingTask(context, 0);
 

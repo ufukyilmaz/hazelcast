@@ -29,7 +29,7 @@ import com.hazelcast.internal.nearcache.NearCacheTestContextBuilder;
 import com.hazelcast.internal.nearcache.impl.invalidation.RepairingTask;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -43,15 +43,15 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import javax.cache.spi.CachingProvider;
 import java.util.Collection;
 
-import static com.hazelcast.client.cache.nearcache.ClientCacheInvalidationListener.createInvalidationEventHandler;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.internal.nearcache.NearCacheTestUtils.createNearCacheConfig;
+import static com.hazelcast.internal.nearcache.NearCacheTestUtils.getBaseConfig;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class ClientHDCacheNearCacheLeakTest extends AbstractEnterpriseNearCacheLeakTest<Data, String> {
 
     @Parameters(name = "MemoryAllocatorType:{0} NearCachePreloader:{1}")
@@ -67,7 +67,7 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractEnterpriseNearCacheL
     @Parameter(value = 1)
     public boolean enableNearCachePreloader;
 
-    private final TestHazelcastFactory hazelcastFactory = new TestHazelcastFactory();
+    private final TestHazelcastFactory factory = new TestHazelcastFactory();
 
     @Before
     public void setUp() {
@@ -83,25 +83,23 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractEnterpriseNearCacheL
 
     @After
     public void tearDown() {
-        hazelcastFactory.terminateAll();
+        factory.terminateAll();
         RuntimeAvailableProcessors.resetOverride();
     }
 
     @Override
-    protected <K, V> NearCacheTestContext<K, V, Data, String> createContext(int size) {
-        Config config = createConfig();
+    protected <K, V> NearCacheTestContext<K, V, Data, String> createContext() {
+        Config config = getConfig();
 
-        CacheConfig<K, V> cacheConfig = createCacheConfig();
+        CacheConfig<K, V> cacheConfig = getCacheConfig();
 
-        HazelcastInstance member = hazelcastFactory.newHazelcastInstance(config);
+        HazelcastInstance member = factory.newHazelcastInstance(config);
         CachingProvider memberProvider = HazelcastServerCachingProvider.createCachingProvider(member);
         HazelcastServerCacheManager memberCacheManager = (HazelcastServerCacheManager) memberProvider.getCacheManager();
         ICache<K, V> memberCache = memberCacheManager.createCache(DEFAULT_NEAR_CACHE_NAME, cacheConfig);
         ICacheDataStructureAdapter<K, V> dataAdapter = new ICacheDataStructureAdapter<K, V>(memberCache);
 
         dataInstanceMemoryStats = getNode(member).hazelcastInstance.getMemoryStats();
-
-        populateDataAdapter(dataAdapter, size);
 
         NearCacheTestContextBuilder<K, V, Data, String> builder = createNearCacheContextBuilder(cacheConfig);
         return builder
@@ -112,9 +110,9 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractEnterpriseNearCacheL
     }
 
     private <K, V> NearCacheTestContextBuilder<K, V, Data, String> createNearCacheContextBuilder(CacheConfig<K, V> cacheConfig) {
-        ClientConfig clientConfig = createClientConfig();
+        ClientConfig clientConfig = getClientConfig();
 
-        HazelcastClientProxy client = (HazelcastClientProxy) hazelcastFactory.newHazelcastClient(clientConfig);
+        HazelcastClientProxy client = (HazelcastClientProxy) factory.newHazelcastClient(clientConfig);
         CachingProvider provider = HazelcastClientCachingProvider.createCachingProvider(client);
         HazelcastClientCacheManager cacheManager = (HazelcastClientCacheManager) provider.getCacheManager();
         ICache<K, V> clientCache = cacheManager.createCache(DEFAULT_NEAR_CACHE_NAME, cacheConfig);
@@ -134,23 +132,21 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractEnterpriseNearCacheL
                 .setNearCache(nearCache)
                 .setNearCacheManager(nearCacheManager)
                 .setCacheManager(cacheManager)
-                .setInvalidationListener(createInvalidationEventHandler(clientCache))
                 .setRepairingTask(repairingTask);
     }
 
-    private Config createConfig() {
+    @Override
+    protected Config getConfig() {
         NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
                 .setAllocatorType(memoryAllocatorType)
                 .setSize(MEMORY_SIZE);
 
-        return new Config()
-                .setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
-                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+        return getBaseConfig()
                 .setNativeMemoryConfig(memoryConfig);
     }
 
-    private ClientConfig createClientConfig() {
+    private ClientConfig getClientConfig() {
         NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
                 .setAllocatorType(memoryAllocatorType)
@@ -161,7 +157,7 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractEnterpriseNearCacheL
                 .setNativeMemoryConfig(memoryConfig);
     }
 
-    private <K, V> CacheConfig<K, V> createCacheConfig() {
+    private <K, V> CacheConfig<K, V> getCacheConfig() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setEvictionPolicy(LRU)
                 .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)

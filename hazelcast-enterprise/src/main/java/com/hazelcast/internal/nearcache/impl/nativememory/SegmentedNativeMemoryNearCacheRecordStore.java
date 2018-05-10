@@ -153,6 +153,12 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         return segment.remove(key);
     }
 
+    @Override
+    public boolean invalidate(K key) {
+        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        return segment.invalidate(key);
+    }
+
     private NativeMemoryNearCacheRecordStore<K, V> segmentFor(K key) {
         int hash = hash(key);
         return segments[(hash >>> segmentShift) & segmentMask];

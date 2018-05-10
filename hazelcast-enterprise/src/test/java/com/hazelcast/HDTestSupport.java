@@ -14,6 +14,7 @@ import com.hazelcast.memory.MemoryUnit;
 import javax.cache.CacheManager;
 
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
+import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 
 /**
  * Support class to provide hd specific configuration for map tests
@@ -50,7 +51,8 @@ public final class HDTestSupport {
 
         return config
                 .addMapConfig(mapConfig)
-                .setNativeMemoryConfig(memoryConfig);
+                .setNativeMemoryConfig(memoryConfig)
+                .setLicenseKey(UNLIMITED_LICENSE);
     }
 
     public static <K, V> IEnterpriseMap<K, V> getEnterpriseMap(HazelcastInstance instance, String mapName) {

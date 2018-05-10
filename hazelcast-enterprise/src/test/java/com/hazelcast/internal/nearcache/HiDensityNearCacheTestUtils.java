@@ -6,10 +6,10 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
+import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 
 /**
  * Provides utility methods for unified HiDensity Near Cache tests.
@@ -20,13 +20,12 @@ public final class HiDensityNearCacheTestUtils {
     }
 
     public static Config getNearCacheHDConfig() {
-        MapConfig mapConfig = new MapConfig()
-                .setName("default")
-                .setEvictionPolicy(EvictionPolicy.LRU)
-                .setInMemoryFormat(NATIVE);
+        MapConfig mapConfig = new MapConfig("default")
+                .setInMemoryFormat(NATIVE)
+                .setEvictionPolicy(EvictionPolicy.LRU);
 
-        return new Config()
-                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
+        return smallInstanceConfig()
+                .setLicenseKey(UNLIMITED_LICENSE)
                 .addMapConfig(mapConfig)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
     }

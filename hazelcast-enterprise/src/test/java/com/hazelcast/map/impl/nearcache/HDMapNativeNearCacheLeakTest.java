@@ -20,8 +20,8 @@ import com.hazelcast.internal.nearcache.NearCacheTestContextBuilder;
 import com.hazelcast.internal.nearcache.impl.invalidation.RepairingTask;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -34,13 +34,13 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.Collection;
 
 import static com.hazelcast.internal.nearcache.NearCacheTestUtils.createNearCacheConfig;
+import static com.hazelcast.internal.nearcache.NearCacheTestUtils.getBaseConfig;
 import static com.hazelcast.internal.nearcache.NearCacheTestUtils.getMapNearCacheManager;
-import static com.hazelcast.map.impl.nearcache.MapInvalidationListener.createInvalidationEventHandler;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class HDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCacheLeakTest<Data, String> {
 
     @Parameters(name = "MemoryAllocatorType:{0}")
@@ -57,25 +57,25 @@ public class HDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCacheLea
     public void setUp() {
         RuntimeAvailableProcessors.override(4);
         nearCacheConfig = createNearCacheConfig(InMemoryFormat.NATIVE, true)
+                .setCacheLocalEntries(true)
                 .setInvalidateOnChange(true);
     }
 
     @After
     public void tearDown() {
+        factory.terminateAll();
         RuntimeAvailableProcessors.resetOverride();
     }
 
     @Override
-    protected <K, V> NearCacheTestContext<K, V, Data, String> createContext(int size) {
-        Config config = createConfig(false);
+    protected <K, V> NearCacheTestContext<K, V, Data, String> createContext() {
+        Config config = getConfig(false);
 
         HazelcastInstance dataInstance = factory.newHazelcastInstance(config);
         IMap<K, V> dataMap = dataInstance.getMap(DEFAULT_NEAR_CACHE_NAME);
         IMapDataStructureAdapter<K, V> dataAdapter = new IMapDataStructureAdapter<K, V>(dataMap);
 
         dataInstanceMemoryStats = getNode(dataInstance).hazelcastInstance.getMemoryStats();
-
-        populateDataAdapter(dataAdapter, size);
 
         NearCacheTestContextBuilder<K, V, Data, String> builder = createNearCacheContextBuilder();
         return builder
@@ -85,7 +85,7 @@ public class HDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCacheLea
     }
 
     private <K, V> NearCacheTestContextBuilder<K, V, Data, String> createNearCacheContextBuilder() {
-        Config configWithNearCache = createConfig(true);
+        Config configWithNearCache = getConfig(true);
 
         HazelcastInstance nearCacheInstance = factory.newHazelcastInstance(configWithNearCache);
         IMap<K, V> nearCacheMap = nearCacheInstance.getMap(DEFAULT_NEAR_CACHE_NAME);
@@ -103,11 +103,10 @@ public class HDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCacheLea
                 .setNearCache(nearCache)
                 .setNearCacheManager(nearCacheManager)
                 .setHasLocalData(true)
-                .setInvalidationListener(createInvalidationEventHandler(nearCacheMap))
                 .setRepairingTask(repairingTask);
     }
 
-    private Config createConfig(boolean withNearCache) {
+    private Config getConfig(boolean withNearCache) {
         MaxSizeConfig maxSizeConfig = new MaxSizeConfig()
                 .setSize(99)
                 .setMaxSizePolicy(MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
@@ -129,9 +128,7 @@ public class HDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCacheLea
                 .setAllocatorType(memoryAllocatorType)
                 .setSize(MEMORY_SIZE);
 
-        return new Config()
-                .setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
-                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+        return getBaseConfig()
                 .addMapConfig(mapConfig)
                 .setNativeMemoryConfig(memoryConfig);
     }

@@ -27,7 +27,7 @@ import com.hazelcast.internal.nearcache.impl.invalidation.RepairingTask;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -40,14 +40,14 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
-import static com.hazelcast.client.map.impl.nearcache.ClientMapInvalidationListener.createInvalidationEventHandler;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.internal.nearcache.NearCacheTestUtils.createNearCacheConfig;
+import static com.hazelcast.internal.nearcache.NearCacheTestUtils.getBaseConfig;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class ClientHDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCacheLeakTest<Data, String> {
 
     @Parameters(name = "MemoryAllocatorType:{0} NearCachePreloader:{1}")
@@ -66,7 +66,7 @@ public class ClientHDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCa
     @Parameter(value = 1)
     public boolean enableNearCachePreloader;
 
-    private final TestHazelcastFactory hazelcastFactory = new TestHazelcastFactory();
+    private final TestHazelcastFactory factory = new TestHazelcastFactory();
 
     @Before
     public void setUp() {
@@ -82,21 +82,19 @@ public class ClientHDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCa
 
     @After
     public void tearDown() {
-        hazelcastFactory.terminateAll();
+        factory.terminateAll();
         RuntimeAvailableProcessors.resetOverride();
     }
 
     @Override
-    protected <K, V> NearCacheTestContext<K, V, Data, String> createContext(int size) {
-        Config config = createConfig();
+    protected <K, V> NearCacheTestContext<K, V, Data, String> createContext() {
+        Config config = getConfig();
 
-        HazelcastInstance member = hazelcastFactory.newHazelcastInstance(config);
+        HazelcastInstance member = factory.newHazelcastInstance(config);
         IMap<K, V> memberMap = member.getMap(DEFAULT_NEAR_CACHE_NAME);
         IMapDataStructureAdapter<K, V> dataAdapter = new IMapDataStructureAdapter<K, V>(memberMap);
 
         dataInstanceMemoryStats = getNode(member).hazelcastInstance.getMemoryStats();
-
-        populateDataAdapter(dataAdapter, size);
 
         NearCacheTestContextBuilder<K, V, Data, String> builder = createNearCacheContextBuilder();
         return builder
@@ -106,9 +104,9 @@ public class ClientHDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCa
     }
 
     private <K, V> NearCacheTestContextBuilder<K, V, Data, String> createNearCacheContextBuilder() {
-        ClientConfig clientConfig = createClientConfig();
+        ClientConfig clientConfig = getClientConfig();
 
-        HazelcastClientProxy client = (HazelcastClientProxy) hazelcastFactory.newHazelcastClient(clientConfig);
+        HazelcastClientProxy client = (HazelcastClientProxy) factory.newHazelcastClient(clientConfig);
         IMap<K, V> clientMap = client.getMap(DEFAULT_NEAR_CACHE_NAME);
 
         NearCacheManager nearCacheManager = client.client.getNearCacheManager();
@@ -124,11 +122,11 @@ public class ClientHDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCa
                 .setNearCacheAdapter(new IMapDataStructureAdapter<K, V>(clientMap))
                 .setNearCache(nearCache)
                 .setNearCacheManager(nearCacheManager)
-                .setInvalidationListener(createInvalidationEventHandler(clientMap))
                 .setRepairingTask(repairingTask);
     }
 
-    private Config createConfig() {
+    @Override
+    protected Config getConfig() {
         MaxSizeConfig maxSizeConfig = new MaxSizeConfig()
                 .setSize(99)
                 .setMaxSizePolicy(MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
@@ -146,14 +144,12 @@ public class ClientHDMapNativeNearCacheLeakTest extends AbstractEnterpriseNearCa
                 .setAllocatorType(memoryAllocatorType)
                 .setSize(MEMORY_SIZE);
 
-        return new Config()
-                .setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
-                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+        return getBaseConfig()
                 .addMapConfig(mapConfig)
                 .setNativeMemoryConfig(memoryConfig);
     }
 
-    private ClientConfig createClientConfig() {
+    private ClientConfig getClientConfig() {
         NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
                 .setAllocatorType(memoryAllocatorType)

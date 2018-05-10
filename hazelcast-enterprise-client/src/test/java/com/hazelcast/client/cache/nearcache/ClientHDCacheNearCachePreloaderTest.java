@@ -10,25 +10,26 @@ import org.junit.Before;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.NearCacheConfig.DEFAULT_INVALIDATE_ON_CHANGE;
 import static com.hazelcast.config.NearCacheConfig.DEFAULT_SERIALIZE_KEYS;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
-import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientHDCacheNearCachePreloaderTest extends ClientCacheNearCachePreloaderTest {
 
     @Before
+    @Override
     public void setUp() {
-        nearCacheConfig = getNearCacheConfig(NATIVE, DEFAULT_SERIALIZE_KEYS,
-                DEFAULT_INVALIDATE_ON_CHANGE, KEY_COUNT, storeFile.getParent());
+        nearCacheConfig = getNearCacheConfig(NATIVE, DEFAULT_SERIALIZE_KEYS, DEFAULT_INVALIDATE_ON_CHANGE, KEY_COUNT,
+                storeFile.getParent());
     }
 
     @Override
     protected Config getConfig() {
-        return getNearCacheHDConfig();
+        return getHDConfig(super.getConfig());
     }
 
     @Override

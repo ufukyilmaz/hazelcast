@@ -2,7 +2,6 @@ package com.hazelcast.client.cache.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -14,6 +13,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
@@ -22,7 +22,6 @@ import static com.hazelcast.config.NearCacheConfig.LocalUpdatePolicy.INVALIDATE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.internal.adapter.DataStructureAdapter.DataStructureMethods.GET;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
-import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
 import static java.util.Arrays.asList;
 
 /**
@@ -94,13 +93,13 @@ public class ClientHDCacheNearCacheSerializationCountTest extends ClientCacheNea
 
     @Override
     protected Config getConfig() {
-        return getNearCacheHDConfig();
+        return getHDConfig(super.getConfig());
     }
 
     @Override
     protected ClientConfig getClientConfig() {
         return new ClientConfig()
-                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
+                .setLicenseKey(UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
     }
 }

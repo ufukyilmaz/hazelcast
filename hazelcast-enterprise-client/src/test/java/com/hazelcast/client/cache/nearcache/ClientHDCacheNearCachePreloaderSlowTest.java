@@ -14,13 +14,13 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
-import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({SlowTest.class})
+@Category(SlowTest.class)
 public class ClientHDCacheNearCachePreloaderSlowTest extends ClientCacheNearCachePreloaderSlowTest {
 
     @Parameters(name = "format:{0} invalidationOnChange:{1} serializeKeys:{2}")
@@ -45,7 +45,7 @@ public class ClientHDCacheNearCachePreloaderSlowTest extends ClientCacheNearCach
 
     @Override
     protected Config getConfig() {
-        return getNearCacheHDConfig();
+        return getHDConfig(super.getConfig());
     }
 
     @Override

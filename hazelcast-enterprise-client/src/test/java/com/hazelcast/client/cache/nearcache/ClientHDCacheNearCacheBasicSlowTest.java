@@ -5,7 +5,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig.LocalUpdatePolicy;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -15,9 +15,9 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
+import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
-import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.getNearCacheHDConfig;
 import static java.util.Arrays.asList;
 
 /**
@@ -25,7 +25,7 @@ import static java.util.Arrays.asList;
  */
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category(SlowTest.class)
+@Category({SlowTest.class, ParallelTest.class})
 public class ClientHDCacheNearCacheBasicSlowTest extends ClientCacheNearCacheBasicSlowTest {
 
     @Parameters(name = "format:{0} serializeKeys:{1} localUpdatePolicy:{2}")
@@ -45,13 +45,13 @@ public class ClientHDCacheNearCacheBasicSlowTest extends ClientCacheNearCacheBas
 
     @Override
     protected Config getConfig() {
-        return getNearCacheHDConfig();
+        return getHDConfig(super.getConfig());
     }
 
     @Override
-    protected ClientConfig createClientConfig() {
-        return super.createClientConfig()
-                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
+    protected ClientConfig getClientConfig() {
+        return super.getClientConfig()
+                .setLicenseKey(UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
     }
 }

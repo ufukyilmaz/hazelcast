@@ -4,6 +4,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 
@@ -22,6 +23,7 @@ public final class CacheIterationResult implements IdentifiedDataSerializable {
     public CacheIterationResult() {
     }
 
+    @SuppressFBWarnings("EI_EXPOSE_REP2")
     public CacheIterationResult(Data[] keys, Data[] values, int partitionId, int slot, int count) {
         this.keys = keys;
         this.values = values;

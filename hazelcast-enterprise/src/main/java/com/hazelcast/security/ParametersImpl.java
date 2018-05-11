@@ -1,6 +1,7 @@
 package com.hazelcast.security;
 
 import com.hazelcast.spi.serialization.SerializationService;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,6 +25,7 @@ public class ParametersImpl implements Parameters {
         this.serializationService = serializationService;
     }
 
+    @SuppressFBWarnings("EI_EXPOSE_REP2")
     public void setArgs(final Object[] args) {
         this.args = args;
     }

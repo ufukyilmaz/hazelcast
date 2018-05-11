@@ -1,5 +1,7 @@
 package com.hazelcast.security;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import java.util.Iterator;
 
 
@@ -24,6 +26,8 @@ final class EmptyParametersImpl implements Parameters {
             }
 
             @Override
+            @SuppressFBWarnings(value = "IT_NO_SUCH_ELEMENT",
+                    justification = "is properly fixed in 3.11, but we cannot fix it in a 3.10 patch version")
             public Object next() {
                 return null;
             }

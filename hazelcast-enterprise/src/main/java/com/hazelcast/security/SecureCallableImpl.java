@@ -68,6 +68,7 @@ import com.hazelcast.transaction.TransactionException;
 import com.hazelcast.transaction.TransactionOptions;
 import com.hazelcast.transaction.TransactionalTask;
 import com.hazelcast.util.ExceptionUtil;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import javax.security.auth.Subject;
 import java.io.IOException;
@@ -94,6 +95,7 @@ import static com.hazelcast.nio.IOUtil.closeResource;
         "checkstyle:methodcount",
         "checkstyle:classdataabstractioncoupling",
         "checkstyle:classfanoutcomplexity"})
+@SuppressFBWarnings("SE_NO_SERIALVERSIONID")
 public final class SecureCallableImpl<V> implements SecureCallable<V>, IdentifiedDataSerializable {
 
     private static final Map<String, Map<String, String>> SERVICE_TO_METHODMAP = new HashMap<String, Map<String, String>>();

@@ -3,6 +3,7 @@ package com.hazelcast.nio.ssl;
 import com.hazelcast.internal.networking.nio.NioChannel;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -64,6 +65,8 @@ public class SSLChannel extends NioChannel {
             "checkstyle:methodlength",
             "checkstyle:magicnumber"
     })
+    // FIXME: this looks like a bad performance issue
+    @SuppressFBWarnings("SWL_SLEEP_WITH_LOCK_HELD")
     private void handshake() throws IOException {
         synchronized (lock) {
             if (handshakeCompleted) {

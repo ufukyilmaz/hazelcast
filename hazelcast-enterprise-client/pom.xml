@@ -17,7 +17,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>1.6</jdk.version>
         <target.dir>target</target.dir>
-        <!-- needed for checkstyle/findbugs -->
+        <!-- needed for checkstyle/spotbugs -->
         <main.basedir>${project.parent.basedir}</main.basedir>
         <jsr107.api.version>1.1.0</jsr107.api.version>
     </properties>

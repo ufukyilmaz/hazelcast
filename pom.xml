@@ -23,6 +23,7 @@
         <maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
         <timestamp>${maven.build.timestamp}</timestamp>
         <extraVmArgs/>
+        <vmHeapSettings>-Xms1g -Xmx1g -XX:MaxPermSize=1024M</vmHeapSettings>
 
         <hazelcast.distribution>Hazelcast Enterprise</hazelcast.distribution>
         <hazelcast.serialization.version>1</hazelcast.serialization.version>
@@ -236,7 +237,7 @@
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>
-                        -Xms1g -Xmx1g -XX:MaxPermSize=1024M
+                        ${vmHeapSettings}
                         -Dhazelcast.hidensity.check.freememory=false
                         -Dhazelcast.phone.home.enabled=false
                         -Dhazelcast.mancenter.enabled=false
@@ -434,9 +435,10 @@
         <profile>
             <id>test-coverage</id>
             <properties>
+                <vmHeapSettings>-Xms1g -Xmx3g -XX:MaxPermSize=1024M</vmHeapSettings>
                 <argLine>
                     ${extraVmArgs}
-                    -Xms1g -Xmx3g -XX:MaxPermSize=1024M
+                    ${vmHeapSettings}
                     -Dhazelcast.hidensity.check.freememory=false
                     -Dhazelcast.phone.home.enabled=false
                     -Dhazelcast.mancenter.enabled=false
@@ -513,7 +515,8 @@
                                     <!-- the argLine variable is needed for JaCoco -->
                                     <argLine>
                                         ${extraVmArgs}
-                                        -Xms1g -Xmx1g -XX:MaxPermSize=1024M -ea
+                                        ${vmHeapSettings}
+                                        -ea
                                         -Dhazelcast.operation.thread.count=16
                                         -Dhazelcast.hidensity.check.freememory=false
                                         -Dhazelcast.phone.home.enabled=false
@@ -528,8 +531,9 @@
                                     <excludes>
                                         <exclude>**/jsr/**.java</exclude>
                                     </excludes>
-                                    <groups>com.hazelcast.test.annotation.QuickTest
-                                        AND com.hazelcast.test.annotation.ParallelTest
+                                    <groups>
+                                        com.hazelcast.test.annotation.QuickTest AND
+                                        com.hazelcast.test.annotation.ParallelTest
                                     </groups>
                                     <excludedGroups>
                                         com.hazelcast.test.annotation.SlowTest,
@@ -591,9 +595,10 @@
         <profile>
             <id>nightly-build</id>
             <properties>
+                <vmHeapsettings>-Xms2g -Xmx2g -XX:MaxPermSize=1024M</vmHeapsettings>
                 <argLine>
                     ${extraVmArgs}
-                    -Xms2g -Xmx2g -XX:MaxPermSize=1024M
+                    ${vmHeapSettings}
                     -Dhazelcast.hidensity.check.freememory=false
                     -Dhazelcast.phone.home.enabled=false
                     -Dhazelcast.mancenter.enabled=false
@@ -609,14 +614,6 @@
                         <version>${maven.surefire.plugin.version}</version>
                         <configuration combine.self="override">
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                            <argLine>
-                                ${extraVmArgs}
-                                -Xms2g -Xmx2g -XX:MaxPermSize=1024M
-                                -Dhazelcast.hidensity.check.freememory=false
-                                -Dhazelcast.phone.home.enabled=false
-                                -Dhazelcast.mancenter.enabled=false
-                                -Dhazelcast.test.use.network=false
-                            </argLine>
                             <testFailureIgnore>true</testFailureIgnore>
                             <groups>
                                 com.hazelcast.test.annotation.SlowTest,
@@ -650,7 +647,7 @@
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <argLine>
                                 ${extraVmArgs}
-                                -Xms1g -Xmx1g
+                                ${vmHeapSettings}
                                 -Dhazelcast.hidensity.check.freememory=false
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false
@@ -681,6 +678,9 @@
 
         <profile>
             <id>compatibility-tests</id>
+            <properties>
+                <vmHeapSettings>-Xms512m -Xmx2G -XX:MaxPermSize=256M</vmHeapSettings>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -692,7 +692,7 @@
                             <parallel>none</parallel>
                             <argLine>
                                 ${extraVmArgs}
-                                -Xms512m -Xmx2G -XX:MaxPermSize=256M
+                                ${vmHeapSettings}
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false
                                 -Dhazelcast.logging.type=log4j2
@@ -734,7 +734,7 @@
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <runOrder>failedfirst</runOrder>
                             <argLine>
-                                -Xms1g -Xmx1g -XX:MaxPermSize=1024M
+                                ${vmHeapSettings}
                                 -Dhazelcast.hidensity.check.freememory=false
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false

@@ -5,6 +5,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.SampleLicense;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -20,7 +21,7 @@ import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category(SlowTest.class)
+@Category({SlowTest.class, ParallelTest.class})
 public class ClientHDCacheNearCachePreloaderSlowTest extends ClientCacheNearCachePreloaderSlowTest {
 
     @Parameters(name = "format:{0} invalidationOnChange:{1} serializeKeys:{2}")

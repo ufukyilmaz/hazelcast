@@ -3,7 +3,7 @@ package com.hazelcast.client.map.impl.nearcache;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.SlowTest;
@@ -20,7 +20,7 @@ import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.creat
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({SlowTest.class, ParallelTest.class})
 public class ClientHDMapNearCachePreloaderSlowTest extends ClientMapNearCachePreloaderSlowTest {
 

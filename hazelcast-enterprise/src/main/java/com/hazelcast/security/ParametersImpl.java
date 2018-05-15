@@ -1,6 +1,7 @@
 package com.hazelcast.security;
 
 import com.hazelcast.spi.serialization.SerializationService;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,6 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -16,15 +18,16 @@ import java.util.Set;
  */
 public class ParametersImpl implements Parameters {
 
-    final SerializationService serializationService;
+    private final SerializationService serializationService;
 
-    Object[] args;
+    private Object[] args;
 
-    public ParametersImpl(final SerializationService serializationService) {
+    public ParametersImpl(SerializationService serializationService) {
         this.serializationService = serializationService;
     }
 
-    public void setArgs(final Object[] args) {
+    @SuppressFBWarnings("EI_EXPOSE_REP2")
+    public void setArgs(Object[] args) {
         this.args = args;
     }
 
@@ -34,7 +37,7 @@ public class ParametersImpl implements Parameters {
     }
 
     @Override
-    public Object get(final int index) {
+    public Object get(int index) {
         args[index] = serializationService.toObject(args[index]);
         checkCollection(index);
         return args[index];
@@ -53,27 +56,31 @@ public class ParametersImpl implements Parameters {
 
             @Override
             public Object next() {
-                return get(++index);
+                index++;
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                return get(index);
             }
 
             @Override
             public void remove() {
-                throw new UnsupportedOperationException("Arguments are read-only!!!");
+                throw new UnsupportedOperationException("Arguments are read-only!");
             }
         };
     }
 
     private void checkCollection(int index) {
-        final Object arg = args[index];
+        Object arg = args[index];
         if (!(arg instanceof Collection)) {
             checkMap(index);
             return;
         }
-        Collection collection;
+        Collection<Object> collection;
         if (arg instanceof Set) {
-            collection = new HashSet();
+            collection = new HashSet<Object>();
         } else if (arg instanceof List) {
-            collection = new ArrayList(((List) arg).size());
+            collection = new ArrayList<Object>(((List) arg).size());
         } else {
             throw new IllegalArgumentException("Collection[" + arg + "] is unknown!!!");
         }
@@ -84,13 +91,13 @@ public class ParametersImpl implements Parameters {
     }
 
     private void checkMap(int index) {
-        final Object arg = args[index];
+        Object arg = args[index];
         if (arg instanceof Map) {
-            Map<Object, Object> argMap = (Map) arg;
-            Map objectMap = new HashMap();
+            Map<Object, Object> argMap = (Map<Object, Object>) arg;
+            Map<Object, Object> objectMap = new HashMap<Object, Object>();
             for (Map.Entry entry : argMap.entrySet()) {
-                final Object key = serializationService.toObject(entry.getKey());
-                final Object val = serializationService.toObject(entry.getValue());
+                Object key = serializationService.toObject(entry.getKey());
+                Object val = serializationService.toObject(entry.getValue());
                 objectMap.put(key, val);
             }
             args[index] = objectMap;

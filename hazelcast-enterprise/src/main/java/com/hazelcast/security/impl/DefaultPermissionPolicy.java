@@ -52,8 +52,9 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     final ConcurrentMap<String, PrincipalPermissionsHolder> principalPermissions
             = new ConcurrentHashMap<String, PrincipalPermissionsHolder>();
 
-    volatile ConfigPatternMatcher configPatternMatcher;
     final Object configUpdateMutex = new Object();
+
+    volatile ConfigPatternMatcher configPatternMatcher;
 
     @Override
     public void configure(Config config, Properties properties) {

@@ -2,6 +2,7 @@ package com.hazelcast.security;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.LoginModuleConfig;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
@@ -14,6 +15,7 @@ public final class LoginConfigurationDelegate extends Configuration {
     private final Config config;
     private final LoginModuleConfig[] loginModuleConfigs;
 
+    @SuppressFBWarnings("EI_EXPOSE_REP2")
     public LoginConfigurationDelegate(Config config, LoginModuleConfig[] loginModuleConfigs) {
         super();
         this.loginModuleConfigs = loginModuleConfigs;
@@ -28,8 +30,7 @@ public final class LoginConfigurationDelegate extends Configuration {
             LoginModuleControlFlag flag = getFlag(module);
             final Map options = new HashMap(module.getProperties());
             options.put(SecurityConstants.ATTRIBUTE_CONFIG, config);
-            entries[i] = new AppConfigurationEntry(module.getClassName(),
-                    flag, options);
+            entries[i] = new AppConfigurationEntry(module.getClassName(), flag, options);
         }
         return entries;
     }
@@ -56,5 +57,4 @@ public final class LoginConfigurationDelegate extends Configuration {
     @Override
     public void refresh() {
     }
-
 }

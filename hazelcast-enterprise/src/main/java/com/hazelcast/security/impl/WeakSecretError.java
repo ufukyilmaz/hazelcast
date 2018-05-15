@@ -40,5 +40,4 @@ public enum WeakSecretError {
      * Secret is a dictionary word
      */
     DICT_WORD
-
 }

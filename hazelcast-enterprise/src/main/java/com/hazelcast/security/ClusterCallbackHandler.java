@@ -3,7 +3,6 @@ package com.hazelcast.security;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
-import java.io.IOException;
 
 /**
  * ClusterCallbackHandler is responsible for handling {@link CredentialsCallback}s.
@@ -18,9 +17,8 @@ public class ClusterCallbackHandler implements CallbackHandler {
     }
 
     @Override
-    public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-        for (int i = 0; i < callbacks.length; i++) {
-            final Callback cb = callbacks[i];
+    public void handle(Callback[] callbacks) throws UnsupportedCallbackException {
+        for (Callback cb : callbacks) {
             if (cb instanceof CredentialsCallback) {
                 ((CredentialsCallback) cb).setCredentials(credentials);
             } else {

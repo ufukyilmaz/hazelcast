@@ -22,5 +22,4 @@ public class CredentialsCallback implements Callback {
     public Credentials getCredentials() {
         return credentials;
     }
-
 }

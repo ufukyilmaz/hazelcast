@@ -8,7 +8,6 @@ import com.hazelcast.security.SecurityService;
 import com.hazelcast.spi.CoreService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PreJoinAwareService;
-import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.Version;
 
@@ -17,6 +16,7 @@ import java.util.Set;
 
 import static com.hazelcast.internal.cluster.Versions.V3_9;
 import static com.hazelcast.internal.util.InvocationUtil.invokeOnStableClusterSerial;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 public class SecurityServiceImpl implements SecurityService, CoreService, PreJoinAwareService {
 
@@ -46,7 +46,7 @@ public class SecurityServiceImpl implements SecurityService, CoreService, PreJoi
         try {
             future.get();
         } catch (Exception e) {
-            throw ExceptionUtil.rethrow(e);
+            throw rethrow(e);
         }
     }
 

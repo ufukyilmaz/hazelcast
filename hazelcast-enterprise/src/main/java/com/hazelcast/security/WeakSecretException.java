@@ -23,14 +23,14 @@ import static java.lang.System.getProperty;
  * Exception thrown when a weak secret is detected.
  * Contains the collection of weakness types, and a beautified human readable message.
  */
-public final class WeakSecretException
-        extends HazelcastException {
+public final class WeakSecretException extends HazelcastException {
 
     public static final boolean ENFORCED = parseBoolean(getProperty(SECRET_STRENGTH_POLICY_ENFORCED, "false"));
 
     private static final String LINE_SEP = getProperty("line.separator");
 
     private static final Map<WeakSecretError, String> WEAKNESS_DESCRIPTIONS = new HashMap<WeakSecretError, String>();
+
     static {
         WEAKNESS_DESCRIPTIONS.put(DEFAULT, "*Must not be set to the default.");
         WEAKNESS_DESCRIPTIONS.put(MIN_LEN, "*Must contain " + MIN_ALLOWED_SECRET_LENGTH + " or more characters.");
@@ -74,8 +74,6 @@ public final class WeakSecretException
                 details.append(LINE_SEP);
             }
         }
-
         return details.toString();
     }
-
 }

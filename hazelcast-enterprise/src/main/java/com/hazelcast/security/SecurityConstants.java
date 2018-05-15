@@ -1,6 +1,5 @@
 package com.hazelcast.security;
 
-
 public final class SecurityConstants {
 
     public static final String ATTRIBUTE_CONFIG = "com.hazelcast.config";

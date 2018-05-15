@@ -5,7 +5,6 @@ import com.hazelcast.security.ClusterLoginModule;
 import com.hazelcast.security.SecurityConstants;
 import com.hazelcast.security.UsernamePasswordCredentials;
 
-import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
 /**
@@ -17,7 +16,7 @@ import javax.security.auth.spi.LoginModule;
 public class DefaultLoginModule extends ClusterLoginModule implements LoginModule {
 
     @Override
-    public boolean onLogin() throws LoginException {
+    public boolean onLogin() {
         if (credentials instanceof UsernamePasswordCredentials) {
             final UsernamePasswordCredentials usernamePasswordCredentials = (UsernamePasswordCredentials) credentials;
             final Config cfg = (Config) options.get(SecurityConstants.ATTRIBUTE_CONFIG);
@@ -27,27 +26,23 @@ public class DefaultLoginModule extends ClusterLoginModule implements LoginModul
             if (!group.equals(usernamePasswordCredentials.getUsername())) {
                 return false;
             }
-
-            if (!pass.equals(usernamePasswordCredentials.getPassword())) {
-                return false;
-            }
-            return true;
+            return pass.equals(usernamePasswordCredentials.getPassword());
         }
         return false;
     }
 
     @Override
-    public boolean onCommit() throws LoginException {
+    public boolean onCommit() {
         return loginSucceeded;
     }
 
     @Override
-    protected boolean onAbort() throws LoginException {
+    protected boolean onAbort() {
         return true;
     }
 
     @Override
-    protected boolean onLogout() throws LoginException {
+    protected boolean onLogout() {
         return true;
     }
 }

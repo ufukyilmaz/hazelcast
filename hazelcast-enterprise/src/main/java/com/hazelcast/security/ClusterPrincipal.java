@@ -8,7 +8,6 @@ import com.hazelcast.security.impl.SecurityDataSerializerHook;
 import java.io.IOException;
 import java.security.Principal;
 
-
 public final class ClusterPrincipal implements Principal, IdentifiedDataSerializable {
 
     private Credentials credentials;

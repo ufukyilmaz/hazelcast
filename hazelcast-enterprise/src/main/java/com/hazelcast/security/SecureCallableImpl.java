@@ -67,7 +67,7 @@ import com.hazelcast.transaction.TransactionContext;
 import com.hazelcast.transaction.TransactionException;
 import com.hazelcast.transaction.TransactionOptions;
 import com.hazelcast.transaction.TransactionalTask;
-import com.hazelcast.util.ExceptionUtil;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import javax.security.auth.Subject;
 import java.io.IOException;
@@ -89,35 +89,38 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 @SuppressWarnings({
         "checkstyle:methodcount",
         "checkstyle:classdataabstractioncoupling",
         "checkstyle:classfanoutcomplexity"})
+@SuppressFBWarnings(value = "SE_NO_SERIALVERSIONID",
+        justification = "we implement IdentifiedDataSerializable, so Serializable is not used")
 public final class SecureCallableImpl<V> implements SecureCallable<V>, IdentifiedDataSerializable {
 
     private static final Map<String, Map<String, String>> SERVICE_TO_METHODMAP = new HashMap<String, Map<String, String>>();
 
     static {
-        final Properties properties = new Properties();
-        final ClassLoader cl = SecureCallableImpl.class.getClassLoader();
-        final InputStream stream = cl.getResourceAsStream("permission-mapping.properties");
+        Properties properties = new Properties();
+        ClassLoader cl = SecureCallableImpl.class.getClassLoader();
+        InputStream stream = cl.getResourceAsStream("permission-mapping.properties");
         try {
             properties.load(stream);
         } catch (IOException e) {
-            ExceptionUtil.rethrow(e);
+            throw rethrow(e);
         } finally {
             closeResource(stream);
         }
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            final String key = (String) entry.getKey();
-            final String action = (String) entry.getValue();
-            final int dotIndex = key.indexOf('.');
+            String key = (String) entry.getKey();
+            String action = (String) entry.getValue();
+            int dotIndex = key.indexOf('.');
             if (dotIndex == -1) {
                 continue;
             }
-            final String structure = key.substring(0, dotIndex);
-            final String method = key.substring(dotIndex + 1);
+            String structure = key.substring(0, dotIndex);
+            String method = key.substring(dotIndex + 1);
             Map<String, String> methodMap = SERVICE_TO_METHODMAP.get(structure);
             if (methodMap == null) {
                 methodMap = new HashMap<String, String>();
@@ -127,10 +130,11 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
     }
 
-    private transient Node node;
     private Subject subject;
     private Callable<V> callable;
     private boolean blockUnmappedActions;
+
+    private transient Node node;
 
     public SecureCallableImpl() {
     }
@@ -166,7 +170,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         boolean hasSubject = subject != null;
         out.writeBoolean(hasSubject);
         if (hasSubject) {
-            final Set<Principal> principals = subject.getPrincipals();
+            Set<Principal> principals = subject.getPrincipals();
             out.writeInt(principals.size());
             for (Principal principal : principals) {
                 out.writeObject(principal);
@@ -181,7 +185,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         if (hasSubject) {
             subject = new Subject();
             int size = in.readInt();
-            final Set<Principal> principals = subject.getPrincipals();
+            Set<Principal> principals = subject.getPrincipals();
             for (int i = 0; i < size; i++) {
                 Principal principal = in.readObject();
                 principals.add(principal);
@@ -199,33 +203,31 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     @Override
     public void setNode(Node node) {
         this.node = node;
-        this.blockUnmappedActions =  node.getConfig().getSecurityConfig().getClientBlockUnmappedActions();
+        this.blockUnmappedActions = node.getConfig().getSecurityConfig().getClientBlockUnmappedActions();
     }
 
     private <T> T getProxy(SecureInvocationHandler handler) {
-        final DistributedObject distributedObject = handler.getDistributedObject();
-        final Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), getAllInterfaces(distributedObject), handler);
+        DistributedObject distributedObject = handler.getDistributedObject();
+        Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), getAllInterfaces(distributedObject), handler);
         return (T) proxy;
     }
 
-    public void checkPermission(Permission permission) {
+    private void checkPermission(Permission permission) {
         node.securityContext.checkPermission(subject, permission);
     }
 
-    public static Class[] getAllInterfaces(Object instance) {
+    private static Class[] getAllInterfaces(Object instance) {
         Class clazz = instance.getClass();
         Set<Class> all = new HashSet<Class>();
         while (clazz != null) {
-            final Class[] interfaces = clazz.getInterfaces();
-            for (int i = 0; i < interfaces.length; i++) {
-                all.add(interfaces[i]);
-            }
+            Collections.addAll(all, clazz.getInterfaces());
             clazz = clazz.getSuperclass();
         }
         return all.toArray(new Class[all.size()]);
     }
 
     private class HazelcastInstanceDelegate implements HazelcastInstance {
+
         private final HazelcastInstance instance;
 
         HazelcastInstanceDelegate(HazelcastInstance instance) {
@@ -273,31 +275,31 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public <E> IQueue<E> getQueue(final String name) {
+        public <E> IQueue<E> getQueue(String name) {
             checkPermission(new QueuePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IQueueInvocationHandler(instance.getQueue(name)));
         }
 
         @Override
-        public <E> ITopic<E> getTopic(final String name) {
+        public <E> ITopic<E> getTopic(String name) {
             checkPermission(new TopicPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ITopicInvocationHandler(instance.getTopic(name)));
         }
 
         @Override
-        public <E> ISet<E> getSet(final String name) {
+        public <E> ISet<E> getSet(String name) {
             checkPermission(new SetPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ISetInvocationHandler(instance.getSet(name)));
         }
 
         @Override
-        public <E> IList<E> getList(final String name) {
+        public <E> IList<E> getList(String name) {
             checkPermission(new ListPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IListInvocationHandler(instance.getList(name)));
         }
 
         @Override
-        public <K, V> IMap<K, V> getMap(final String name) {
+        public <K, V> IMap<K, V> getMap(String name) {
             checkPermission(new MapPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IMapInvocationHandler(instance.getMap(name)));
         }
@@ -309,25 +311,25 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public <K, V> MultiMap<K, V> getMultiMap(final String name) {
+        public <K, V> MultiMap<K, V> getMultiMap(String name) {
             checkPermission(new MultiMapPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new MultiMapInvocationHandler(instance.getMultiMap(name)));
         }
 
         @Override
-        public IExecutorService getExecutorService(final String name) {
+        public IExecutorService getExecutorService(String name) {
             checkPermission(new ExecutorServicePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ExecutorServiceInvocationHandler(instance.getExecutorService(name)));
         }
 
         @Override
-        public DurableExecutorService getDurableExecutorService(final String name) {
+        public DurableExecutorService getDurableExecutorService(String name) {
             checkPermission(new DurableExecutorServicePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new DurableExecutorServiceInvocationHandler(instance.getDurableExecutorService(name)));
         }
 
         @Override
-        public IdGenerator getIdGenerator(final String name) {
+        public IdGenerator getIdGenerator(String name) {
             checkPermission(new AtomicLongPermission(IdGeneratorService.ATOMIC_LONG_NAME + name, ActionConstants.ACTION_CREATE));
             return getProxy(new IdGeneratorInvocationHandler(instance.getIdGenerator(name)));
         }
@@ -339,25 +341,25 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public IAtomicLong getAtomicLong(final String name) {
+        public IAtomicLong getAtomicLong(String name) {
             checkPermission(new AtomicLongPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IAtomicLongInvocationHandler(instance.getAtomicLong(name)));
         }
 
         @Override
-        public <E> IAtomicReference<E> getAtomicReference(final String name) {
+        public <E> IAtomicReference<E> getAtomicReference(String name) {
             checkPermission(new AtomicReferencePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IAtomicReferenceInvocationHandler(instance.getAtomicReference(name)));
         }
 
         @Override
-        public ICountDownLatch getCountDownLatch(final String name) {
+        public ICountDownLatch getCountDownLatch(String name) {
             checkPermission(new CountDownLatchPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ICountDownLatchInvocationHandler(instance.getCountDownLatch(name)));
         }
 
         @Override
-        public ISemaphore getSemaphore(final String name) {
+        public ISemaphore getSemaphore(String name) {
             checkPermission(new SemaphorePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ISemaphoreInvocationHandler(instance.getSemaphore(name)));
         }
@@ -472,6 +474,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     }
 
     private class CacheManagerDelegate implements ICacheManager {
+
         private final ICacheManager cacheManager;
 
         CacheManagerDelegate(ICacheManager cacheManager) {
@@ -487,7 +490,8 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
 
     private abstract class SecureInvocationHandler implements InvocationHandler {
 
-        protected final DistributedObject distributedObject;
+        final DistributedObject distributedObject;
+
         private final Map<String, String> methodMap;
 
         SecureInvocationHandler(DistributedObject distributedObject) {
@@ -497,13 +501,9 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
                     : Collections.<String, String>emptyMap();
         }
 
-        public DistributedObject getDistributedObject() {
-            return distributedObject;
-        }
-
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            final Permission permission = getPermission(method, args);
+            Permission permission = getPermission(method, args);
             if (permission != null) {
                 checkPermission(permission);
             } else if (blockUnmappedActions) {
@@ -513,11 +513,15 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             return method.invoke(distributedObject, args);
         }
 
-        public abstract Permission getPermission(Method method, Object[] args);
+        DistributedObject getDistributedObject() {
+            return distributedObject;
+        }
 
-        public abstract String getStructureName();
+        abstract Permission getPermission(Method method, Object[] args);
 
-        public String getAction(String methodName) {
+        abstract String getStructureName();
+
+        String getAction(String methodName) {
             return methodMap.get(methodName);
         }
     }
@@ -884,8 +888,8 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             if (action == null) {
                 return null;
             }
-            // TODO Should we use full name (with prefixes)?
-            // We are using simple name (without any prefix), not full name.
+            // TODO: should we use full name (with prefixes)?
+            // we are using simple name (without any prefix), not full name
             return new CachePermission(distributedObject.getName(), action);
         }
 
@@ -907,7 +911,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             if (action == null) {
                 return null;
             }
-
             return new CardinalityEstimatorPermission(distributedObject.getName(), action);
         }
 
@@ -918,17 +921,20 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     }
 
     private class ScheduledExecutorHandler extends SecureInvocationHandler {
+
         ScheduledExecutorHandler(DistributedObject distributedObject) {
             super(distributedObject);
         }
+
         @Override
         public Permission getPermission(Method method, Object[] args) {
-            final String action = getAction(method.getName());
+            String action = getAction(method.getName());
             if (action == null) {
                 return null;
             }
             return new ScheduledExecutorPermission(distributedObject.getName(), action);
         }
+
         @Override
         public String getStructureName() {
             return "scheduledExecutor";
@@ -947,7 +953,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             if (action == null) {
                 return null;
             }
-
             return new PNCounterPermission(distributedObject.getName(), action);
         }
 

@@ -129,7 +129,7 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
         query = in.readObject();
     }
 
-    private class OffloadedImpl extends Offload {
+    private final class OffloadedImpl extends Offload {
         private final BitSet localPartitions;
         private final QueryRunner queryRunner;
 

@@ -7,6 +7,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.CallStatus;
 import com.hazelcast.spi.ExceptionAction;
+import com.hazelcast.spi.Offload;
 import com.hazelcast.spi.ReadonlyOperation;
 import com.hazelcast.spi.exception.TargetNotMemberException;
 import com.hazelcast.spi.impl.AbstractCompletableFuture;
@@ -23,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import static com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook.F_ID;
 import static com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook.QUERY_OP;
 import static com.hazelcast.spi.CallStatus.DONE_RESPONSE;
-import static com.hazelcast.spi.CallStatus.OFFLOADED;
 import static com.hazelcast.spi.ExceptionAction.THROW_EXCEPTION;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
@@ -57,19 +57,13 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
         QueryRunner queryRunner = mapServiceContext.getMapQueryRunner(getName());
 
         BitSet localPartitions = localPartitions();
-        int localPartitionCount = localPartitions.cardinality();
-        if (localPartitionCount == 0) {
-            // important to deal with situation of not having any
+        if (localPartitions.cardinality() == 0) {
+            // important to deal with situation of not having any partitions
             this.result = queryRunner.populateEmptyResult(query, Collections.<Integer>emptyList());
             return DONE_RESPONSE;
         }
 
-        QueryFuture future = new QueryFuture(localPartitionCount);
-        OperationServiceImpl operationService = getOperationService();
-        operationService.onStartAsyncOperation(this);
-        operationService.executeOnPartitions(new QueryTaskFactory(query, future), localPartitions);
-        future.andThen(new ExecutionCallbackImpl(queryRunner, query));
-        return OFFLOADED;
+        return new OffloadedImpl(queryRunner, localPartitions);
     }
 
     @Override
@@ -133,6 +127,24 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         query = in.readObject();
+    }
+
+    private class OffloadedImpl extends Offload {
+        private final BitSet localPartitions;
+        private final QueryRunner queryRunner;
+
+        private OffloadedImpl(QueryRunner queryRunner, BitSet localParitions) {
+            super(HDQueryOperation.this);
+            this.localPartitions = localParitions;
+            this.queryRunner = queryRunner;
+        }
+
+        @Override
+        public void start() {
+            QueryFuture future = new QueryFuture(localPartitions.cardinality());
+            getOperationService().executeOnPartitions(new QueryTaskFactory(query, future), localPartitions);
+            future.andThen(new ExecutionCallbackImpl(queryRunner, query));
+        }
     }
 
     private class QueryFuture extends AbstractCompletableFuture {
@@ -221,8 +233,6 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
             } catch (Exception e) {
                 HDQueryOperation.this.sendResponse(e);
                 throw rethrow(e);
-            } finally {
-                getOperationService().onCompletionAsyncOperation(HDQueryOperation.this);
             }
         }
 
@@ -237,11 +247,7 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
 
         @Override
         public void onFailure(Throwable t) {
-            try {
-                HDQueryOperation.this.sendResponse(t);
-            } finally {
-                getOperationService().onCompletionAsyncOperation(HDQueryOperation.this);
-            }
+            HDQueryOperation.this.sendResponse(t);
         }
     }
 }

@@ -1,16 +1,18 @@
 This document lists the new features, enhancements, fixed issues and, removed or deprecated features for 3.10.x releases. Note that all the Hazelcast IMDG Open Source features and enhancements are also included in this Hazelcast IMDG Enterprise release notes. The numbers in the square brackets refer to the issues in Hazelcast's GitHub repositories.
 
+==== 3.10.1 ====
+
+1. Fixes:
+
+- The method `readManyAsync()` throws different exceptions when there is no quorum: The client fails with `QuorumException`, and member fails with `ExecutionException`. [#13065]
+- It is expected to get `HazelcastSerializationException` from the method `future.get()`, however, it hangs when the response is not serializable. [#12956]
+- `CachePutBackupOperation`: When an entry is evicted on the primary member, it is also evicted on the backup members. This causes the method `LocalCacheStats.getCacheEvictions()` to return incorrect numbers. [#12931]
+- The connections to the members after they are removed from the cluster should be closed. [#12926]
+- More descriptive exception must be thrown when the WAN endpoint cannot be found by `groupName`. [#2085]
+
+==== 3.10 ====
+
 1. Enhancements
-
-==== 3.10-BETA-2 ====
-
-- Added ID count to flake ID generators statistics. [#12612]
-- It is still required to provide a group and password while configuring with Spring: the attribute required should be removed from the tag group both for name and password elements. [#12462]
-- A SEVERE error is thrown when a source cluster attempts a connection to a destination cluster and the groupUsername or groupPassword are incorrect in the WAN configuration. The error message should be improved. [#1925]
-- The entries dropped on each WAN replication endpoint should be monitored.[#1853]
-
-
-==== 3.10-BETA-1 ====
 
 - Split-Brain Healing for Hazelcast Data Structures with High-Density (HD) Memory Store: Added implementations to allow the merging of HD Memory Store backed data structures.
 - Multiple Users/Roles in a Single Security Mapping: Added support for allowing multiple principals, i.e., users or roles/groups, to be attributed to a security realm. Please see the Authorization section for more information.
@@ -18,10 +20,16 @@ This document lists the new features, enhancements, fixed issues and, removed or
 - Shorter Split-Brain Detection Window: In addition to the current quorum function, which uses the list of members to determine whether a minimum number of members is available in the cluster, a new quorum implementation has been introduced to shorten the time between the occurrence of a network partitioning and its detection: it takes advantage of information about the cluster health (heartbeats and ICMP pings).
 - Extended Merge Policies: Merge policies applied after a Split-Brain syndrome has been implemented for more Hazelcast data structures (it was for IMap, ICache and Replicated Map before 3.10).
 - Flake ID Generator: Introduced to overcome the duplicate ID generation in case of a network split, by the deprecated IdGenerator data structure. Please see the FlakeIdGenerator section.
-- PN-Counter: Introduced CRDT PN-Counter (Positive-Negative Counter), which allows incrementing and decrementing a counter value and propagating the results to all cluster members. Please see the PN-Counter section.
+- PN Counter: Introduced CRDT PN Counter (Positive-Negative Counter), which allows incrementing and decrementing a counter value and propagating the results to all cluster members. Please see the PN-Counter section.
+- Health Check Script: Introduced a command line tool to check the health of your Hazelcast cluster. Please see the Health Check Script section.
+
 
 The following are the other improvements performed to solve the enhancement issues opened by the Hazelcast customers/team.
 
+- Split-brain merge policy design issues: the SPI design requires downcasting in the merge policy classes. It is also unclear which merge policy is compatible with which data structure. [#12721]
+- Added ID count to flake ID generators statistics. [#12612]
+- MemberMap.SINGLETON_MEMBER_LIST_VERSION value should be configurable. [#12528]
+- It is still required to provide a group and password while configuring with Spring: the attribute required should be removed from the tag group both for name and password elements. [#12462]
 - Group passwords should not be serialized in ConfigCheck. [#12303]
 - Code comments for Hazelcast.shutdownAll() should be improved: it talks about shutting down all running Hazelcast instances in the JVM. However, native clients, which are also Hazelcast instances, are not shut down when this method is called. [#12217]
 - An initialization exception should be thrown when Symmetric Encryption is configured on Hazelcast Open Source edition. [#12203]
@@ -36,17 +44,16 @@ The following are the other improvements performed to solve the enhancement issu
 - IMap contract should describe how it interacts with Map{Loader/Store}. [#10969]
 - New HTTP connections should be logged with DEBUG or a lower level. [#10924]
 - Out-of-the-box Hazelcast on Docker experience should be improved due to the "This node is not requested endpoint" errors. [#9219]
-- WAN synchronization does not work if no endpoint is preset; therefore it is incompatible with endpoint discovery. If a publisher exists, it should be considered useable even if it has no endpoints. [#1534]
-- Assertions should be added to methods which are supposed to be accessed by partition threads only. [#1262]
-- There should be a flag to allocate all configured High-Density memory eagerly during Hazelcast startup. [#953]
-- High-Density Memory Store backed near cache should be sizeable based on entry count. [#950]
-- IMap: Fail-fast when eviction-percentage option is used in combination with High-Density Store. [#665]
 
 
 2. Fixes
 
-==== 3.10-BETA-2 ====
-
+- Split-brain merge policy configuration validation is not properly working: The merge policy checks in ConfigValidator are based on false assumptions regarding SomeConfig.isStatisticsEnabled() and valid split-brain merge types. [#12722]
+- XmlConfigBuilder wrongly uses Locale dependent number format for nativeMemory.metadataSpacePercentage. [#12656]
+- NullPointerException is thrown when the method QueryCache#getAll is called. [#12656]
+- Query cache is not consistent with its IMap: After the construction of a continuous query cache, all changes on the underlying IMap are immediately reflected to this cache as a stream of events. Therefore, this cache will be an always up-to-date view of the IMap. This is not always true. [#12599]
+- When minority of members have network delays, there occurs transactional exceptions on the client. [#12252]
+- Delayed resolutions for other types in CacheConfig should be implemented: In addition to key and value types, the following need to be deferred: cacheLoaderFactory, cacheWriterFactory, expiryPolicyFactory and `listenerConfiguration`s. [#11905]
 - ReplicatedMapConfig must not be mutated while constructing read-only variant. [#12620]
 - Exception in Node constructor doesn't shutdown services properly. [#12587]
 - CacheNotExistsException must be thrown when cache configuration does not exist. [#12593]
@@ -74,16 +81,6 @@ The following are the other improvements performed to solve the enhancement issu
 - JCache fails to initialize when the type of a key or value is not available on a remote member. [#8972]
 - In Hazelcast 3.7, PollOperation invocation is failing to complete due to operation-heartbeat-timeout. [#8831]
 - Custom LoggerFactory is instantiating two times. [#5641]
-- Threads leak when Hazelcast fails to start due to an exception in the method SSLChannelFactory.create(). [#1978]
-- Client exception is received when the initial WAN setup fails: A client makes a connection to a newly-started running cluster. The initial IMap.set call from the client causes the IMap to be created on server side, which also triggers the WAN initialization. However, when WAN initialization fails, the client receives an exception. [#1936]
-- Rolling upgrade compatibility is broken in PostJoinMapOperation. [#1898]
-- WAN replication: when an IMap existed in the source, it does not get created in the target; it must be created in the target first. [#1866]
-- The WAN replication property discovery.useEndpointPrivateAddress is not documented. [#1834]
-- Missing permission mappings allows read/modify actions regardless of the configuration. [#1059]
-
-
-==== 3.10-BETA-1 ====
-
 - Health Monitor reports load statistics incorrectly. [#12190]
 - Time-to-live for IMap is not working as documented: outdated warnings should be removed from the code comments. [#12144]
 - There are multiple top-level types missing in HazelcastNamespaceHandler, for example serializer. [#12121]
@@ -109,9 +106,6 @@ The following are the other improvements performed to solve the enhancement issu
 - JCache fails to initialize when the type of a key or value is not available on a remote member. [#8972]
 - There is no way to set the HazelcastClient name and/or InstanceName programmatically. So, the method HazelcastClient.getHazelcastClientByName(String name) does not work. [#7289]
 - IMap JMX statistics are evicted together with the map entry: When system starts and caches are populated, and get the hits, the statistics presents the relevant values for localHits and localGetOperationCount attributes. But after 1 hour of idle and some entries are evicted, these attributes become less and less, till 0. Looks like these statistics are stored together with the entry itself and they are evicted together with the entry. [#4321]
-- NativeOutOfMemoryError is thrown after sequent Split-Brain/Merge events. [#1902]
-- WAN replication queue size statistics is not correct when snapshot.enabled=true. [#1798]
-- Behavior of WAN replication when serialization compression is enabled on both clusters is not as expected: WAN serialization format when compression is enabled should be fixe. [#1750]
 
 
 3. Coverity Fixes
@@ -122,23 +116,17 @@ The following are the other improvements performed to solve the enhancement issu
 
 4. Behavioral Changes
 
-Up to 3.9.x, the method Config.findCacheConfig looks up a CacheSimpleConfig: if none is found, then null is returned. This behavior has been not like all the other findXXConfig methods in the following ways:
+* Up to 3.9.x, the method Config.findCacheConfig looks up a CacheSimpleConfig: if none is found, then null is returned. This behavior has been not like all the other findXXConfig methods in the following ways:
 
 - findXXConfig never returns null, it falls back to defaults, creates the missing data structure configuration and stores it in Config.
 - findXXConfig returns a read-only copy of the actual configuration, while findCacheConfig returns the found configuration object itself.
 
 With 3.10, the method Config.findCacheConfig is aligned to behave like the other findXXConfig methods; it now returns a read-only copy and does fallback to defaults. If you who want the old behavior for this method in 3.10.x, you should use the method Config.findCacheConfigOrNull.
 
+* Starting with 3.10, any unknown property of Discovery SPI in the Hazelcast configuration will result in an exception blocking the Hazelcast member from starting. This approach restricts the configuration (both XML and Object-based) and prevents typos.
+
 5. Known Problems
 
 - PartitionPredicates only works if you upgrade all of your members to 3.9.3. It may not work
   - when running a mixed cluster having members from 3.9.0, 3.9.1, 3.9.2 and 3.9.3, and
   - when rolling up from 3.8.x to 3.9.x.
-
-
-6. Removed/Deprecated Features
-- The data structure IdGenerator is deprecated. It could produce duplicate IDs in case of a network split, even with split-brain protection being enabled. Use Flake ID Generator for an alternative implementation which does not suffer from the mentioned issue.
-- Following system properties are deprecated:
-  - hazelcast.master.confirmation.interval.seconds
-  - hazelcast.max.no.master.confirmation.seconds
-  - hazelcast.mc.max.visible.instance.count

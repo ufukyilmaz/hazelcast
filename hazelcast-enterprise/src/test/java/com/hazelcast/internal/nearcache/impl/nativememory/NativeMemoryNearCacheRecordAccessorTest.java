@@ -16,6 +16,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.test.HazelcastTestSupport.assertInstanceOf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -32,7 +33,9 @@ public class NativeMemoryNearCacheRecordAccessorTest {
         MemorySize memorySize = new MemorySize(4, MemoryUnit.MEGABYTES);
         memoryManager = new PoolingMemoryManager(memorySize);
         memoryManager.registerThread(Thread.currentThread());
-        serializationService = new EnterpriseSerializationServiceBuilder().setMemoryManager(memoryManager).build();
+        serializationService = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
+                .build();
         accessor = new NativeMemoryNearCacheRecordAccessor(serializationService, memoryManager);
     }
 
@@ -43,7 +46,7 @@ public class NativeMemoryNearCacheRecordAccessorTest {
 
     @Test
     public void test_createRecord() {
-        assertTrue(accessor.createRecord() instanceof NativeMemoryNearCacheRecord);
+        assertInstanceOf(NativeMemoryNearCacheRecord.class, accessor.createRecord());
     }
 
     @Test
@@ -95,5 +98,4 @@ public class NativeMemoryNearCacheRecordAccessorTest {
 
         assertFalse(accessor.isEqual(record1.address(), record2.address()));
     }
-
 }

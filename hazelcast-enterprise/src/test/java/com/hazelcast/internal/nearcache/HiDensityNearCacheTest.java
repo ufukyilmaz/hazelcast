@@ -1,6 +1,7 @@
 package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -51,14 +52,12 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
 
     @Override
     protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        evictionConfig.setSize(99);
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(99);
 
-        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
-        nearCacheConfig.setEvictionConfig(evictionConfig);
-
-        return nearCacheConfig;
+        return super.createNearCacheConfig(name, inMemoryFormat)
+                .setEvictionConfig(evictionConfig);
     }
 
     @Override
@@ -144,10 +143,8 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
         NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
         PoolingMemoryManager mm = new PoolingMemoryManager(memorySize);
         try {
-            NearCache<Integer, byte[]> nearCache = new HiDensityNearCache<Integer, byte[]>(
-                    DEFAULT_NEAR_CACHE_NAME,
-                    nearCacheConfig, newNearCacheManager(),
-                    ess, executionService.getGlobalTaskScheduler(), null);
+            NearCache<Integer, byte[]> nearCache = new HiDensityNearCache<Integer, byte[]>(DEFAULT_NEAR_CACHE_NAME,
+                    nearCacheConfig, newNearCacheManager(), ess, executionService.getGlobalTaskScheduler(), null);
             nearCache.initialize();
 
             byte[] value = new byte[(int) (2 * memorySize.bytes())];

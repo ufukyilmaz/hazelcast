@@ -62,27 +62,21 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
     }
 
     @Override
-    protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        evictionConfig.setSize(99);
+    NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(99);
 
-        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
-        nearCacheConfig.setEvictionConfig(evictionConfig);
-
-        return nearCacheConfig;
+        return super.createNearCacheConfig(name, inMemoryFormat)
+                .setEvictionConfig(evictionConfig);
     }
 
     @Override
-    protected <K, V> NearCacheRecordStore<K, V> createNearCacheRecordStore(NearCacheConfig nearCacheConfig, InMemoryFormat inMemoryFormat) {
-        NearCacheRecordStore recordStore;
-        switch (inMemoryFormat) {
-            case NATIVE:
-                recordStore = new NativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess, null);
-                break;
-            default:
-                recordStore = super.createNearCacheRecordStore(nearCacheConfig, inMemoryFormat);
+    <K, V> NearCacheRecordStore<K, V> createNearCacheRecordStore(NearCacheConfig nearCacheConfig, InMemoryFormat inMemoryFormat) {
+        if (inMemoryFormat != NATIVE) {
+            return super.createNearCacheRecordStore(nearCacheConfig, inMemoryFormat);
         }
+        NearCacheRecordStore<K, V> recordStore = new NativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess, null);
         recordStore.initialize();
         return recordStore;
     }
@@ -158,7 +152,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
         try {
             future.get(2, TimeUnit.MINUTES);
         } catch (Exception e1) {
-            // Worker couldn't finish its job in time so terminate it forcefully
+            // worker couldn't finish its job in time so terminate it forcefully
             shutdown.set(true);
             try {
                 future.get(10, TimeUnit.SECONDS);
@@ -170,32 +164,28 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
 
     private class NearCacheTestWorker implements Runnable {
 
-        private AtomicBoolean shutdown;
-        private EvictionPolicy evictionPolicy;
-        private MaxSizePolicy maxSizePolicy;
-        private int percentage;
+        private final AtomicBoolean shutdown;
+        private final EvictionPolicy evictionPolicy;
+        private final MaxSizePolicy maxSizePolicy;
+        private final int percentage;
 
         private NearCacheTestWorker(AtomicBoolean shutdown, EvictionPolicy evictionPolicy, MaxSizePolicy maxSizePolicy,
                                     int percentage) {
             this.shutdown = shutdown;
-            this.evictionPolicy = evictionPolicy;
+            this.evictionPolicy = evictionPolicy == null ? EvictionConfig.DEFAULT_EVICTION_POLICY : evictionPolicy;
             this.maxSizePolicy = maxSizePolicy;
             this.percentage = percentage;
         }
 
         @Override
         public void run() {
-            final int hugeRecordCount = 1000000;
-            final int defaultSize = DEFAULT_MEMORY_SIZE_IN_MEGABYTES / 2;
-            final int defaultPercentage = percentage;
+            int hugeRecordCount = 1000000;
+            int defaultSize = DEFAULT_MEMORY_SIZE_IN_MEGABYTES / 2;
+            int defaultPercentage = percentage;
 
-            NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, NATIVE);
-
-            if (evictionPolicy == null) {
-                evictionPolicy = EvictionConfig.DEFAULT_EVICTION_POLICY;
-            }
-            EvictionConfig evictionConfig = new EvictionConfig();
-            evictionConfig.setMaximumSizePolicy(maxSizePolicy);
+            EvictionConfig evictionConfig = new EvictionConfig()
+                    .setEvictionPolicy(evictionPolicy)
+                    .setMaximumSizePolicy(maxSizePolicy);
             if (maxSizePolicy == MaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {
                 evictionConfig.setSize(defaultSize);
             } else if (maxSizePolicy == MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE) {
@@ -205,8 +195,9 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
             } else if (maxSizePolicy == MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE) {
                 evictionConfig.setSize(defaultPercentage);
             }
-            evictionConfig.setEvictionPolicy(evictionPolicy);
-            nearCacheConfig.setEvictionConfig(evictionConfig);
+
+            NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, NATIVE)
+                    .setEvictionConfig(evictionConfig);
 
             HazelcastMemoryManager memoryManager = ess.getMemoryManager();
 

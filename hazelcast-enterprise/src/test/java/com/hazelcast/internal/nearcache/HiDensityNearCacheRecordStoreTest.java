@@ -50,20 +50,18 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
 
     @Override
     protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE);
-        evictionConfig.setSize(99);
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(99);
 
-        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
-        nearCacheConfig.setEvictionConfig(evictionConfig);
-
-        return nearCacheConfig;
+        return super.createNearCacheConfig(name, inMemoryFormat)
+                .setEvictionConfig(evictionConfig);
     }
 
     @Override
     protected <K, V> NearCacheRecordStore<K, V> createNearCacheRecordStore(NearCacheConfig nearCacheConfig,
                                                                            InMemoryFormat inMemoryFormat) {
-        NearCacheRecordStore recordStore;
+        NearCacheRecordStore<K, V> recordStore;
         switch (inMemoryFormat) {
             case NATIVE:
                 recordStore = new NativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess, null);

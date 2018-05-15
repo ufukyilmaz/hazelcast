@@ -1,6 +1,7 @@
 package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
@@ -49,14 +50,12 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
 
     @Override
     protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        evictionConfig.setSize(99);
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(99);
 
-        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
-        nearCacheConfig.setEvictionConfig(evictionConfig);
-
-        return nearCacheConfig;
+        return super.createNearCacheConfig(name, inMemoryFormat)
+                .setEvictionConfig(evictionConfig);
     }
 
     private NearCacheConfig createNearCacheConfig(String name) {

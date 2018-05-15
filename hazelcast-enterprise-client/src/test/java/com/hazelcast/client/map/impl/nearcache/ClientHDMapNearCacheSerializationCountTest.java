@@ -2,7 +2,7 @@ package com.hazelcast.client.map.impl.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.test.HazelcastParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
@@ -26,7 +26,7 @@ import static java.util.Arrays.asList;
  * HiDensity Near Cache serialization count tests for {@link com.hazelcast.core.IMap} on Hazelcast clients.
  */
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientHDMapNearCacheSerializationCountTest extends ClientMapNearCacheSerializationCountTest {
 
@@ -72,7 +72,7 @@ public class ClientHDMapNearCacheSerializationCountTest extends ClientMapNearCac
 
     @Override
     protected ClientConfig getClientConfig() {
-        return new ClientConfig()
+        return super.getClientConfig()
                 .setLicenseKey(UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
     }

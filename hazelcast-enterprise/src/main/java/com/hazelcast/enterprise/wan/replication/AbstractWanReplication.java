@@ -103,20 +103,9 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
         return new StaticDiscoveryStrategy(logger, properties);
     }
 
-    /**
-     * Return {@code true} if this publisher is aware of at least one target endpoint. This means that the endpoint
-     * was discovered at some point (initially or afterwards) but doesn't necessarily mean that WAN has ever connected
-     * to that endpoint or if that endpoint is still <i>live</i>. If the endpoint is dead, this will be discovered on
-     * the next event sent to that endpoint at which point the endpoint is removed from the discovered endpoint list.
-     * <p>
-     * NOTE : Previously this method returned if the failed endpoint list was empty. This could mean that this publisher
-     * hasn't yet connected to an endpoint or that all endpoints are considered <i>live</i>
-     *
-     * @return if this publisher is aware of at least one endpoint (has discovered it)
-     */
     @Override
     public boolean isConnected() {
-        return getTargetEndpoints().size() > 0;
+        return connectionManager.isConnected();
     }
 
     /**

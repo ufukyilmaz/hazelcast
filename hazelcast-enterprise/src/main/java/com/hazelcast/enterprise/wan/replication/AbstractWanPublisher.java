@@ -396,6 +396,12 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher, W
         return localWanPublisherStats;
     }
 
+    /**
+     * Tests is there is at least one alive connection to a configured
+     * target cluster member over WAN.
+     *
+     * @return {@code true} if there is at least one alive connection, {@code false} otherwise
+     */
     public abstract boolean isConnected();
 
     @Override

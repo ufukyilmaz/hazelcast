@@ -165,6 +165,23 @@ public class WanConnectionManager {
         return getConnectionByTargetAddress(targetAddress);
     }
 
+    /**
+     * Tests if connected to a configured target cluster endpoint
+     * over WAN. This method iterates over the target endpoints until an
+     * alive connection is found or no endpoint is left to test.
+     *
+     * @return {@code true} if there is at least one alive connection, {@code false} otherwise
+     */
+    public boolean isConnected() {
+        for (Address target : targetEndpoints) {
+            final WanConnectionWrapper wrapper = connectionPool.get(target);
+            if (wrapper != null && wrapper.getConnection().isAlive()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void removeTargetEndpoint(Address targetAddress, String reason, Throwable cause) {
         synchronized (targetEndpoints) {
             targetEndpoints.remove(targetAddress);

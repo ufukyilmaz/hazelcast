@@ -129,6 +129,7 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         targetClusterConfig.setQueueCapacity(1000);
         targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION);
         initCluster(singleNodeA, configA, factory);
+        pauseWanReplication(singleNodeA, "atob", configB.getGroupConfig().getName());
         createDataIn(singleNodeA, "map", 0, 1000);
         EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(singleNodeA[0]);
         final WanReplicationEndpoint endpoint = wanReplicationService.getEndpoint("atob", configB.getGroupConfig().getName());

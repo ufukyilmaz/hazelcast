@@ -1,6 +1,7 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -17,8 +18,6 @@ import java.util.Collection;
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class BasicEnterpriseSerializationTest extends AbstractSerializationServiceTest {
-
-    private static Version V3_8 = Version.of("3.8");
 
     private boolean versionedSerializationEnabled;
 
@@ -38,7 +37,7 @@ public class BasicEnterpriseSerializationTest extends AbstractSerializationServi
     private class TestVersionAware implements EnterpriseClusterVersionAware {
         @Override
         public Version getClusterVersion() {
-            return V3_8;
+            return Versions.V3_9;
         }
     }
 

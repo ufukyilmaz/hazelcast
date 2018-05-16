@@ -2,6 +2,7 @@ package com.hazelcast.client.map.impl.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
@@ -17,25 +18,12 @@ import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
-import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
-
-    @Override
-    protected NearCacheConfig newNearCacheConfig() {
-        NearCacheConfig nearCacheConfig = super.newNearCacheConfig();
-        nearCacheConfig.setInMemoryFormat(NATIVE);
-        nearCacheConfig.getEvictionConfig()
-                .setEvictionPolicy(LRU)
-                .setMaximumSizePolicy(ENTRY_COUNT)
-                .setSize(MAX_CACHE_SIZE);
-
-        return nearCacheConfig;
-    }
 
     @Override
     protected ClientConfig newClientConfig() {
@@ -58,14 +46,20 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
     }
 
     @Override
+    protected NearCacheConfig newNearCacheConfig() {
+        return super.newNearCacheConfig()
+                .setInMemoryFormat(NATIVE);
+    }
+
+    @Override
     protected NearCacheConfig newNearCacheConfigWithEntryCountEviction(EvictionPolicy evictionPolicy, int size) {
-        NearCacheConfig nearCacheConfig = newNearCacheConfig();
-        nearCacheConfig.getEvictionConfig()
+        EvictionConfig evictionConfig = new EvictionConfig()
                 .setEvictionPolicy(evictionPolicy)
                 .setMaximumSizePolicy(ENTRY_COUNT)
                 .setSize(size);
 
-        return nearCacheConfig;
+        return newNearCacheConfig()
+                .setEvictionConfig(evictionConfig);
     }
 
     @Test

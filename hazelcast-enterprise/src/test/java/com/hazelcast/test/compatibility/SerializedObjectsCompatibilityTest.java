@@ -29,6 +29,7 @@ import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.InvalidClassException;
+import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Properties;
@@ -43,6 +44,7 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests compatibility of objects serialized in previous, compatible Hazelcast versions with current.
@@ -88,6 +90,7 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
             currentSerializationService = new DefaultSerializationServiceBuilder()
                     .setEnableSharedObject(true)
                     .build();
+            assumeBigEndianSerialization(currentSerializationService);
             SerializedObjectsAccessor serializedObjects = new SerializedObjectsAccessor(serializedObjectsResource);
             assertObjectsAreDeserialized(serializedObjects);
         } finally {
@@ -108,6 +111,7 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
                 .setVersionedSerializationEnabled(true)
                 .setEnableSharedObject(true)
                 .build();
+        assumeBigEndianSerialization(currentSerializationService);
         SerializedObjectsAccessor serializedObjects = new SerializedObjectsAccessor(eeSerializedObjectsResource);
         assertObjectsAreDeserialized(serializedObjects);
     }
@@ -158,5 +162,9 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
         public Version getClusterVersion() {
             return PREVIOUS_CLUSTER_VERSION;
         }
+    }
+
+    private static void assumeBigEndianSerialization(InternalSerializationService internalSerializationService) {
+        assumeTrue(internalSerializationService.equals(ByteOrder.BIG_ENDIAN));
     }
 }

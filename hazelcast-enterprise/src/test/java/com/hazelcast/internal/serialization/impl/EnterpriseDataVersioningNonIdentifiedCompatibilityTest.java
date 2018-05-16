@@ -21,6 +21,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static org.junit.Assert.assertEquals;
@@ -44,7 +45,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
     private EnterpriseSerializationService oldSS = ss(false);
     private EnterpriseSerializationService newSS = ss(true);
 
-    private SerializationService ossSS = ossSS();
+    private InternalSerializationService ossSS = ossSS();
 
     @Test
     public void oldNew_Unversioned() {
@@ -149,7 +150,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         // we're just tricking the system since we're on one JVM and we can't have a class with the same name twice (one annotated and one not).
         // In the byte stream we're changing className from `TestDataSerializable` to `TestVersionedDataSerializable`.
         // so that the class annotated with @Versioned is deserialized using a identical class but without the @Versioned annotation.
-        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data);
+        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data, oldSS.getByteOrder());
 
         TestVersionedDataSerializable deserialized = newSS.toObject(data);
 
@@ -165,7 +166,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         // we're just tricking the system since we're on one JVM and we can't have a class with the same name twice (one annotated and one not).
         // In the byte stream we're changing className from `TestDataSerializable` to `TestVersionedDataSerializable`.
         // so that the class annotated with @Versioned is deserialized using a identical class but without the @Versioned annotation.
-        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data);
+        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data, newSS.getByteOrder());
 
         TestVersionedDataSerializable deserialized = oldSS.toObject(data);
 
@@ -181,7 +182,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         // we're just tricking the system since we're on one JVM and we can't have a class with the same name twice (one annotated and one not).
         // In the byte stream we're changing className from `TestDataSerializable` to `TestVersionedDataSerializable`.
         // so that the class annotated with @Versioned is deserialized using a identical class but without the @Versioned annotation.
-        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data);
+        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data, newSS.getByteOrder());
 
         TestVersionedDataSerializable deserialized = ossSS.toObject(data);
 
@@ -197,7 +198,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         // we're just tricking the system since we're on one JVM and we can't have a class with the same name twice (one annotated and one not).
         // In the byte stream we're changing className from `TestDataSerializable` to `TestVersionedDataSerializable`.
         // so that the class annotated with @Versioned is deserialized using a identical class but without the @Versioned annotation.
-        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data);
+        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data, ossSS.getByteOrder());
 
         TestVersionedDataSerializable deserialized = newSS.toObject(data);
 
@@ -259,7 +260,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
     public void newNew_UnversionedToVersioned() {
         TestDataSerializable original = new TestDataSerializable(123);
         Data data = newSS.toData(original);
-        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data);
+        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data, newSS.getByteOrder());
 
         TestVersionedDataSerializable deserialized = newSS.toObject(data);
 
@@ -272,7 +273,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
     public void oldNew_VersionedToUnversioned() {
         TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
         Data data = oldSS.toData(original);
-        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data);
+        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data, oldSS.getByteOrder());
 
         TestDataSerializable deserialized = newSS.toObject(data);
 
@@ -285,7 +286,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
     public void ossNew_VersionedToUnversioned() {
         TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
         Data data = ossSS.toData(original);
-        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data);
+        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data, ossSS.getByteOrder());
 
         TestDataSerializable deserialized = newSS.toObject(data);
 
@@ -298,7 +299,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
     public void newOld_VersionedToUnversioned() {
         TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
         Data data = newSS.toData(original);
-        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data);
+        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data, newSS.getByteOrder());
 
         TestDataSerializable deserialized = oldSS.toObject(data);
 
@@ -311,7 +312,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
     public void newOss_VersionedToUnversioned() {
         TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
         Data data = newSS.toData(original);
-        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data);
+        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data, newSS.getByteOrder());
 
         TestDataSerializable deserialized = ossSS.toObject(data);
 
@@ -324,7 +325,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
     public void newNew_VersionedToUnversioned() {
         TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
         Data data = newSS.toData(original);
-        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data);
+        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data, newSS.getByteOrder());
 
         TestDataSerializable deserialized = newSS.toObject(data);
 
@@ -333,7 +334,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         assertEquals(V3_8, deserialized.deserializationVersion);
     }
 
-    private static Data adjustClassNameOfDSInData(Class oldClass, Class newClass, Data data) {
+    private static Data adjustClassNameOfDSInData(Class oldClass, Class newClass, Data data, ByteOrder byteOrder) {
         String oldClassName = oldClass.getName();
         String newClassName = newClass.getName();
 
@@ -347,7 +348,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
             adjustedBytes[i++] = dataBytes[k];
         }
 
-        Bits.writeInt(adjustedBytes, i, newClassName.length(), true);
+        Bits.writeInt(adjustedBytes, i, newClassName.length(), byteOrder == ByteOrder.BIG_ENDIAN);
         i += INT_SIZE_IN_BYTES;
         for (int k = 0; k < newClassName.length(); k++) {
             i += Bits.writeUtf8Char(adjustedBytes, i, newClassName.charAt(k));
@@ -367,7 +368,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         return builder.build();
     }
 
-    private SerializationService ossSS() {
+    private InternalSerializationService ossSS() {
         return new DefaultSerializationServiceBuilder()
                 .setVersion(InternalSerializationService.VERSION_1).build();
     }

@@ -20,7 +20,6 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
-import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 
@@ -28,18 +27,6 @@ import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({SlowTest.class, ParallelTest.class})
 public class ClientMapHDNearCacheSlowTest extends ClientMapNearCacheSlowTest {
-
-    @Override
-    protected NearCacheConfig newNearCacheConfig() {
-        EvictionConfig evictionConfig = new EvictionConfig()
-                .setEvictionPolicy(LRU)
-                .setMaximumSizePolicy(ENTRY_COUNT)
-                .setSize(MAX_CACHE_SIZE);
-
-        return super.newNearCacheConfig()
-                .setInMemoryFormat(NATIVE)
-                .setEvictionConfig(evictionConfig);
-    }
 
     @Override
     protected Config newConfig() {
@@ -60,6 +47,12 @@ public class ClientMapHDNearCacheSlowTest extends ClientMapNearCacheSlowTest {
         return super.newClientConfig()
                 .setLicenseKey(UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(nativeMemoryConfig);
+    }
+
+    @Override
+    protected NearCacheConfig newNearCacheConfig() {
+        return super.newNearCacheConfig()
+                .setInMemoryFormat(NATIVE);
     }
 
     @Override

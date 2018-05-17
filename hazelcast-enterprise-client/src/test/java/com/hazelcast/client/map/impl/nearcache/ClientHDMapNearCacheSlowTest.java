@@ -26,7 +26,7 @@ import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({SlowTest.class, ParallelTest.class})
-public class ClientMapHDNearCacheSlowTest extends ClientMapNearCacheSlowTest {
+public class ClientHDMapNearCacheSlowTest extends ClientMapNearCacheSlowTest {
 
     @Override
     protected Config newConfig() {

@@ -23,7 +23,7 @@ import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
+public class ClientHDMapNearCacheTest extends ClientMapNearCacheTest {
 
     @Override
     protected ClientConfig newClientConfig() {

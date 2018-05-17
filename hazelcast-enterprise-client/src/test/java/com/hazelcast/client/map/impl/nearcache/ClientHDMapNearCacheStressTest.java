@@ -37,9 +37,9 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
-public class ClientMapHDNearCacheStressTest extends HazelcastTestSupport {
+public class ClientHDMapNearCacheStressTest extends HazelcastTestSupport {
 
-    private static final String MAP_NAME = ClientMapHDNearCacheStressTest.class.getName();
+    private static final String MAP_NAME = ClientHDMapNearCacheStressTest.class.getName();
     private static final long NEAR_CACHE_NATIVE_MEMORY_MEGABYTES = 64;
     private static final int NEAR_CACHE_PUT_COUNT = 5000000;
     private static final long TEST_TIMEOUT_TEN_MINUTES = 10 * 60 * 1000;

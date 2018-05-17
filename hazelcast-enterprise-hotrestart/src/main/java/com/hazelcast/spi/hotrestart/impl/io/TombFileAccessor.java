@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
+import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 
@@ -25,13 +26,15 @@ public class TombFileAccessor implements Closeable {
     private int recordSize;
 
     public TombFileAccessor(File tombFile) {
+        FileChannel chan = null;
         try {
-            final FileChannel chan = new FileInputStream(tombFile).getChannel();
+            chan = new FileInputStream(tombFile).getChannel();
             long size = chan.size();
             this.buf = size > 0 ? chan.map(READ_ONLY, 0, size) : null;
-            chan.close();
         } catch (IOException e) {
             throw new HotRestartException("Failed to create tombstone file accessor", e);
+        } finally {
+            IOUtil.closeResource(chan);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.internal.util.BufferingInputStream;
+import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -141,15 +142,17 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         if (!isActiveChunkFile(chunkFile)) {
             return false;
         }
+        RandomAccessFile raf = null;
         try {
             in.close();
-            final RandomAccessFile raf = new RandomAccessFile(chunkFile, "rw");
+            raf = new RandomAccessFile(chunkFile, "rw");
             raf.setLength(truncationPoint);
             raf.getFD().sync();
-            raf.close();
             return true;
         } catch (IOException e) {
             throw new HotRestartException(e);
+        } finally {
+            IOUtil.closeResource(raf);
         }
     }
 

@@ -70,7 +70,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
 
     private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS = 10;
 
-    private final ConstructorFunction<String, MapContainer> mapConstructor = new ConstructorFunction<String, MapContainer>() {
+    private final ConstructorFunction<String, MapContainer> constructorFunction = new ConstructorFunction<String, MapContainer>() {
         @Override
         public MapContainer createNew(String mapName) {
             MapServiceContext mapServiceContext = getService().getMapServiceContext();
@@ -151,7 +151,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
 
     @Override
     public MapContainer getMapContainer(String mapName) {
-        return ConcurrencyUtil.getOrPutSynchronized(mapContainers, mapName, contextMutexFactory, mapConstructor);
+        return ConcurrencyUtil.getOrPutSynchronized(mapContainers, mapName, contextMutexFactory, constructorFunction);
     }
 
     @Override

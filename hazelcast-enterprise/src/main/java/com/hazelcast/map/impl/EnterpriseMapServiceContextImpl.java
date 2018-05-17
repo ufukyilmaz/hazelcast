@@ -70,14 +70,15 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
 
     private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS = 10;
 
-    private final ConstructorFunction<String, MapContainer> constructorFunction = new ConstructorFunction<String, MapContainer>() {
-        @Override
-        public MapContainer createNew(String mapName) {
-            MapServiceContext mapServiceContext = getService().getMapServiceContext();
-            Config config = mapServiceContext.getNodeEngine().getConfig();
-            return new EnterpriseMapContainer(mapName, config, mapServiceContext);
-        }
-    };
+    private final ConstructorFunction<String, MapContainer> constructorFunction =
+            new ConstructorFunction<String, MapContainer>() {
+                @Override
+                public MapContainer createNew(String mapName) {
+                    MapServiceContext mapServiceContext = getService().getMapServiceContext();
+                    Config config = mapServiceContext.getNodeEngine().getConfig();
+                    return new EnterpriseMapContainer(mapName, config, mapServiceContext);
+                }
+            };
 
     private final QueryRunner hdMapQueryRunner;
     private final HDPartitionScanRunner hdPartitionScanRunner;

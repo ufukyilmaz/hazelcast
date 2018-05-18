@@ -5,8 +5,7 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -14,29 +13,24 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
-public class HDNearCacheBatchInvalidationTest extends MapNearCacheInvalidationTest {
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
+public class HDMapNearCacheLocalImmediateInvalidationTest extends AbstractMapNearCacheLocalInvalidationTest {
 
     @Override
-    protected Config getConfig(String mapName) {
-        return getHDConfig(super.getConfig(mapName));
-    }
-
-    @Override
-    protected MapConfig getMapConfig(String mapName) {
-        return super.getMapConfig(mapName)
-                .setInMemoryFormat(InMemoryFormat.NATIVE);
-    }
-
-    @Override
-    protected NearCacheConfig getNearCacheConfig(String mapName) {
+    protected Config createConfig() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(90);
 
-        return super.getNearCacheConfig(mapName)
+        NearCacheConfig nearCacheConfig = new NearCacheConfig()
                 .setInMemoryFormat(InMemoryFormat.NATIVE)
                 .setEvictionConfig(evictionConfig);
+
+        MapConfig mapConfig = new MapConfig(MAP_NAME + "*")
+                .setNearCacheConfig(nearCacheConfig);
+
+        return getHDConfig(smallInstanceConfig())
+                .addMapConfig(mapConfig);
     }
 }

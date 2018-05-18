@@ -1,56 +1,61 @@
 package com.hazelcast.client.cache.nearcache;
 
-import com.hazelcast.client.cache.impl.nearcache.ClientNearCacheInvalidationTest;
+import com.hazelcast.client.cache.impl.nearcache.ClientCacheNearCacheInvalidationTest;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.HotRestartConfig;
+import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.getBaseDir;
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.nio.IOUtil.deleteQuietly;
+import static java.util.Arrays.asList;
 
 /**
  * Test publishing of Near Cache invalidation events, when the cache is configured with NATIVE in-memory format and
  * with hot restart enabled.
  */
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({SlowTest.class})
-public class HotRestartClientNearCacheInvalidationTest extends ClientNearCacheInvalidationTest {
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Category(NightlyTest.class)
+public class HotRestartClientHDNearCacheInvalidationTest extends ClientCacheNearCacheInvalidationTest {
 
     private static final MemorySize SERVER_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
     private static final MemorySize CLIENT_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
 
-    @Parameters(name = "fromMember:{0}, format:{1}")
+    @Parameters(name = "format:{0}, fromMember:{1}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
-                {false, InMemoryFormat.BINARY},
-                {false, InMemoryFormat.OBJECT},
-                {false, InMemoryFormat.NATIVE},
-                {true, InMemoryFormat.BINARY},
-                {true, InMemoryFormat.OBJECT},
-                {true, InMemoryFormat.NATIVE},
+        return asList(new Object[][]{
+                {InMemoryFormat.BINARY, true},
+                {InMemoryFormat.BINARY, false},
+
+                {InMemoryFormat.OBJECT, true},
+                {InMemoryFormat.OBJECT, false},
+
+                {InMemoryFormat.NATIVE, true},
+                {InMemoryFormat.NATIVE, false},
         });
     }
 
@@ -69,56 +74,52 @@ public class HotRestartClientNearCacheInvalidationTest extends ClientNearCacheIn
 
     @Override
     public void tearDown() {
-        RuntimeAvailableProcessors.resetOverride();
-        super.tearDown();
-        deleteQuietly(folder);
+        try {
+            super.tearDown();
+            RuntimeAvailableProcessors.resetOverride();
+        } finally {
+            deleteQuietly(folder);
+        }
     }
 
     @Override
     protected Config getConfig() {
-        Config config = super.getConfig();
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
-
-        config.getNativeMemoryConfig()
+        NativeMemoryConfig nativeMemoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
                 .setSize(SERVER_NATIVE_MEMORY_SIZE);
 
-        config.getHotRestartPersistenceConfig()
+        HotRestartPersistenceConfig hotRestartPersistenceConfig = new HotRestartPersistenceConfig()
                 .setEnabled(true)
                 .setBaseDir(getBaseDir(folder));
 
-        return config;
+        return super.getConfig()
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+                .setNativeMemoryConfig(nativeMemoryConfig)
+                .setHotRestartPersistenceConfig(hotRestartPersistenceConfig);
     }
 
     @Override
-    protected ClientConfig createClientConfig() {
-        ClientConfig clientConfig = super.createClientConfig();
-
-        clientConfig.getNativeMemoryConfig()
+    protected ClientConfig getClientConfig() {
+        NativeMemoryConfig nativeMemoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
                 .setSize(CLIENT_NATIVE_MEMORY_SIZE);
 
-        return clientConfig;
+        return super.getClientConfig()
+                .setNativeMemoryConfig(nativeMemoryConfig);
     }
 
     @Override
-    protected NearCacheConfig createNearCacheConfig(InMemoryFormat inMemoryFormat) {
-        return super.createNearCacheConfig(inMemoryFormat);
-    }
+    protected <K, V> CacheConfig<K, V> getCacheConfig(InMemoryFormat inMemoryFormat) {
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(99);
 
-    @Override
-    protected CacheConfig createCacheConfig(InMemoryFormat inMemoryFormat) {
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        evictionConfig.setSize(99);
+        HotRestartConfig hotRestartConfig = new HotRestartConfig()
+                .setEnabled(true);
 
-        CacheConfig cacheConfig = super.createCacheConfig(InMemoryFormat.NATIVE);
+        CacheConfig<K, V> cacheConfig = super.getCacheConfig(InMemoryFormat.NATIVE);
         cacheConfig.setEvictionConfig(evictionConfig);
-
-        // enable hot restart
-        HotRestartConfig hrConfig = new HotRestartConfig().setEnabled(true);
-        cacheConfig.setHotRestartConfig(hrConfig);
-
+        cacheConfig.setHotRestartConfig(hotRestartConfig);
         return cacheConfig;
     }
 }

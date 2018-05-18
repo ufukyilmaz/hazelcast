@@ -31,14 +31,14 @@ public class SymmetricCipherPacketEncoder implements ChannelOutboundHandler<Pack
             if (dst.remaining() < Bits.INT_SIZE_IN_BYTES) {
                 return false;
             }
-            int size = cipher.getOutputSize(packet.packetSize());
+            int size = cipher.getOutputSize(packet.getFrameLength());
             dst.putInt(size);
 
-            if (packetBuffer.capacity() < packet.packetSize()) {
-                packetBuffer = ByteBuffer.allocate(packet.packetSize());
+            if (packetBuffer.capacity() < packet.getFrameLength()) {
+                packetBuffer = ByteBuffer.allocate(packet.getFrameLength());
             }
             if (!packetWriter.writeTo(packet, packetBuffer)) {
-                throw new HazelcastException("Packet didn't fit into the buffer! " + packet.packetSize()
+                throw new HazelcastException("Packet didn't fit into the buffer! " + packet.getFrameLength()
                         + " VS " + packetBuffer);
             }
             packetBuffer.flip();

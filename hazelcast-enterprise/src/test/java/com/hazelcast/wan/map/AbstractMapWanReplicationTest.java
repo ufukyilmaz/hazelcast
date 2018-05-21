@@ -469,7 +469,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
                 serializationService.toData(10), new UpdatingEntryProcessor());
         operationService.invokeOnPartition(MapService.SERVICE_NAME, updatingEntryOperation, partitionService.getPartitionId(10));
 
-        checkDataInFrom(clusterB, "map", 10, 11, "EP");
+        assertDataInFrom(clusterB, "map", 10, 11, "EP");
 
         MapOperation deletingEntryOperation = operationProvider.createEntryOperation(mapProxy.getName(),
                 serializationService.toData(10), new DeletingEntryProcessor());

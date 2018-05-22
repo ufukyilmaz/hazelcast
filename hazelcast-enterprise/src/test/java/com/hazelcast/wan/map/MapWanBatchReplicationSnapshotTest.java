@@ -60,8 +60,8 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
             m2.put(i, value);
         }
 
-        assertKeysIn(singleNodeB, mapName1, 0, end);
-        assertKeysIn(singleNodeB, mapName2, 0, end);
+        assertKeysInEventually(singleNodeB, mapName1, 0, end);
+        assertKeysInEventually(singleNodeB, mapName2, 0, end);
 
         assertWanQueuesEventuallyEmpty(singleNodeA, replicaName, configB);
     }
@@ -77,14 +77,14 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         createDataIn(clusterA, mapName, 0, 100, "dummy");
         createDataIn(clusterA, mapName, 0, 100);
 
-        assertKeysIn(clusterB, mapName, 0, 100);
-        assertKeysIn(clusterC, mapName, 0, 100);
+        assertKeysInEventually(clusterB, mapName, 0, 100);
+        assertKeysInEventually(clusterC, mapName, 0, 100);
 
         createDataIn(clusterA, mapName, 0, 100, "dummy");
         removeDataIn(clusterA, mapName, 0, 100);
 
-        assertKeysNotIn(clusterB, mapName, 0, 100);
-        assertKeysNotIn(clusterC, mapName, 0, 100);
+        assertKeysNotInEventually(clusterB, mapName, 0, 100);
+        assertKeysNotInEventually(clusterC, mapName, 0, 100);
 
         assertDataSizeEventually(clusterB, mapName, 0);
         assertDataSizeEventually(clusterC, mapName, 0);
@@ -108,11 +108,11 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         createDataIn(clusterB, mapName, 100, 200, "dummy");
         createDataIn(clusterB, mapName, 100, 200);
 
-        assertDataInFrom(clusterC, mapName, 0, 100, clusterA);
-        assertDataInFrom(clusterC, mapName, 100, 200, clusterB);
+        assertDataInFromEventually(clusterC, mapName, 0, 100, clusterA);
+        assertDataInFromEventually(clusterC, mapName, 100, 200, clusterB);
 
         createDataIn(clusterB, mapName, 0, 100);
-        assertDataInFrom(clusterC, mapName, 0, 100, clusterA);
+        assertDataInFromEventually(clusterC, mapName, 0, 100, clusterA);
 
         assertDataSizeEventually(clusterC, mapName, 200);
 

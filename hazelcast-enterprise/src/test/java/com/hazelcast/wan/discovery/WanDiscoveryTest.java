@@ -90,8 +90,8 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         });
 
         createDataIn(clusterA, "map2", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
-        assertDataInFrom(clusterB, "map2", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map2", 0, 1000, clusterA);
     }
 
     @Test
@@ -115,8 +115,8 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         });
 
         createDataIn(clusterA, "map2", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
-        assertDataInFrom(clusterB, "map2", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map2", 0, 1000, clusterA);
     }
 
     @Test
@@ -158,7 +158,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
 
         assertAllEndpointsDiscovered(discoveryEndpoints, 1);
 
@@ -171,7 +171,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         });
 
         createDataIn(clusterA, "map2", 0, 1000);
-        assertDataInFrom(clusterB, "map2", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map2", 0, 1000, clusterA);
     }
 
     @Test
@@ -184,7 +184,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
 
         assertAllEndpointsDiscovered(discoveryEndpoints, 2);
 
@@ -199,7 +199,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         });
 
         createDataIn(clusterA, "map2", 0, 1000);
-        assertDataInFrom(clusterB, "map2", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map2", 0, 1000, clusterA);
     }
 
     @Test
@@ -212,14 +212,14 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
 
         assertAllEndpointsDiscovered(discoveryEndpoints, 2);
 
         clusterB[1].shutdown();
 
         createDataIn(clusterA, "map2", 0, 1000);
-        assertDataInFrom(new HazelcastInstance[]{clusterB[0]}, "map2", 0, 1000, clusterA);
+        assertDataInFromEventually(new HazelcastInstance[]{clusterB[0]}, "map2", 0, 1000, clusterA);
 
         assertTrueEventually(new AssertTask() {
             @Override
@@ -238,7 +238,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         });
 
         createDataIn(clusterA, "map3", 0, 1000);
-        assertDataInFrom(clusterB, "map3", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map3", 0, 1000, clusterA);
     }
 
     @Test
@@ -255,7 +255,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
 
         assertTargetEndpointSize(1);
         assertEquals(2, discoveryEndpoints.size());
@@ -281,7 +281,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
 
         assertAllEndpointsDiscovered(discoveryEndpoints, 2);
     }

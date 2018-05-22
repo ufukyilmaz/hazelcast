@@ -49,7 +49,7 @@ public class MapCustomWanReplicationQuickTest extends MapWanReplicationTestSuppo
         initCluster(targetCluster, configB);
 
         createDataIn(sourceCluster, "map", 0, 100);
-        assertDataInFrom(targetCluster, "map", 0, 100, configA.getGroupConfig().getName());
+        assertDataInFromEventually(targetCluster, "map", 0, 100, configA.getGroupConfig().getName());
     }
 
     private void initializeConsumerConfig(Config config) {

@@ -66,7 +66,7 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
             map.put(i, i);
         }
 
-        assertKeysIn(singleNodeB, MAP_NAME, 0, EVENT_COUNTER);
+        assertKeysInEventually(singleNodeB, MAP_NAME, 0, EVENT_COUNTER);
 
         assertTrueEventually(new AssertTask() {
             @Override

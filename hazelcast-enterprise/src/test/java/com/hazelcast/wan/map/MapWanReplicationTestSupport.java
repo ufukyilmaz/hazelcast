@@ -100,32 +100,30 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         }
     }
 
-    boolean checkKeysIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
+    void assertKeysIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
         IMap m = getMap(cluster, mapName);
         for (; start < end; start++) {
-            if (!m.containsKey(start)) {
-                return false;
-            }
+            assertContainsKey(m, start);
         }
-        return true;
     }
 
-    boolean checkDataInFrom(HazelcastInstance[] targetCluster, String mapName, int start, int end, HazelcastInstance[] sourceCluster) {
+    <T> void assertContainsKey(IMap<T, ?> map, T key) {
+        assertTrue("Map '" + map + "' does not contain key '" + key + "' ", map.containsKey(key));
+    }
+
+    void assertDataInFrom(HazelcastInstance[] targetCluster, String mapName, int start, int end, HazelcastInstance[] sourceCluster) {
         String sourceGroupName = getNode(sourceCluster).getConfig().getGroupConfig().getName();
-        return checkDataInFrom(targetCluster, mapName, start, end, sourceGroupName);
+        assertDataInFrom(targetCluster, mapName, start, end, sourceGroupName);
     }
 
-    boolean checkDataInFrom(HazelcastInstance[] targetCluster, String mapName, int start, int end, String sourceGroupName) {
+    void assertDataInFrom(HazelcastInstance[] targetCluster, String mapName, int start, int end, String sourceGroupName) {
         HazelcastInstance node = getNode(targetCluster);
 
         IMap m = node.getMap(mapName);
         for (; start < end; start++) {
             Object v = m.get(start);
-            if (v == null || !v.equals(sourceGroupName + start)) {
-                return false;
-            }
+            assertEquals(sourceGroupName + start, v);
         }
-        return true;
     }
 
     boolean checkKeysNotIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
@@ -148,35 +146,34 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         });
     }
 
-    void assertKeysIn(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
+    void assertKeysInEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                assertTrue(checkKeysIn(cluster, mapName, start, end));
+                assertKeysIn(cluster, mapName, start, end);
             }
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    // should be protected, used by hazelcast-solace
-    protected void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
+    protected void assertDataInFromEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceGroupName));
+                assertDataInFrom(cluster, mapName, start, end, sourceGroupName);
             }
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    protected void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
+    protected void assertDataInFromEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceCluster));
+                assertDataInFrom(cluster, mapName, start, end, sourceCluster);
             }
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    void assertKeysNotIn(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
+    void assertKeysNotInEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {

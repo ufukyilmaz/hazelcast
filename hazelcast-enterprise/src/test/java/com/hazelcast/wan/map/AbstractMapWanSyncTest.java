@@ -42,18 +42,18 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
 
         clusterB[0].getCluster().shutdown();
 
         startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
 
         EnterpriseWanReplicationService wanReplicationService
                 = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
         wanReplicationService.syncMap("atob", "B", "map");
 
-        assertKeysIn(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
     }
 
     @Test
@@ -63,17 +63,17 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
 
         clusterB[0].getCluster().shutdown();
 
         startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
 
         HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
         communicator.syncMapOverWAN("atob", "B", "map");
 
-        assertKeysIn(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
     }
 
     @Test
@@ -86,23 +86,23 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         createDataIn(clusterA, "map2", 0, 2000);
         createDataIn(clusterA, "map3", 0, 3000);
 
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
-        assertDataInFrom(clusterB, "map2", 0, 2000, clusterA);
-        assertDataInFrom(clusterB, "map3", 0, 3000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map2", 0, 2000, clusterA);
+        assertDataInFromEventually(clusterB, "map3", 0, 3000, clusterA);
 
         clusterB[0].getCluster().shutdown();
         startClusterB();
 
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-        assertKeysNotIn(clusterB, "map2", 0, 2000);
-        assertKeysNotIn(clusterB, "map3", 0, 3000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
+        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
 
         EnterpriseWanReplicationService wanReplicationService
                 = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
         wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
-        assertKeysIn(clusterB, "map", 0, 1000);
-        assertKeysIn(clusterB, "map2", 0, 2000);
-        assertKeysIn(clusterB, "map3", 0, 3000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map2", 0, 2000);
+        assertKeysInEventually(clusterB, "map3", 0, 3000);
     }
 
     @Test
@@ -115,22 +115,22 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         createDataIn(clusterA, "map2", 0, 2000);
         createDataIn(clusterA, "map3", 0, 3000);
 
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
-        assertDataInFrom(clusterB, "map2", 0, 2000, clusterA);
-        assertDataInFrom(clusterB, "map3", 0, 3000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map2", 0, 2000, clusterA);
+        assertDataInFromEventually(clusterB, "map3", 0, 3000, clusterA);
 
         clusterB[0].getCluster().shutdown();
         startClusterB();
 
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-        assertKeysNotIn(clusterB, "map2", 0, 2000);
-        assertKeysNotIn(clusterB, "map3", 0, 3000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
+        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
 
         HTTPCommunicator communicator = new HTTPCommunicator(getNode(clusterA));
         communicator.syncMapsOverWAN("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
-        assertKeysIn(clusterB, "map", 0, 1000);
-        assertKeysIn(clusterB, "map2", 0, 2000);
-        assertKeysIn(clusterB, "map3", 0, 3000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map2", 0, 2000);
+        assertKeysInEventually(clusterB, "map3", 0, 3000);
     }
 
     @Test
@@ -142,7 +142,7 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         createDataIn(clusterA, "map", 0, 1000);
         createDataIn(clusterA, "map2", 0, 2000);
         sleepSeconds(5);
-        assertKeysNotIn(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
 
         WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
         wanReplicationConfig.setName("newWRConfig");
@@ -155,14 +155,14 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         communicator.addWanConfig(dto.toJson().toString());
 
         createDataIn(clusterA, "map3", 0, 3000);
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-        assertKeysNotIn(clusterB, "map2", 0, 2000);
-        assertKeysNotIn(clusterB, "map3", 0, 3000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
+        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
         communicator = new HTTPCommunicator(clusterA[0]);
         communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
-        assertKeysIn(clusterB, "map", 0, 1000);
-        assertKeysIn(clusterB, "map2", 0, 2000);
-        assertKeysIn(clusterB, "map3", 0, 3000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map2", 0, 2000);
+        assertKeysInEventually(clusterB, "map3", 0, 3000);
     }
 
     @Test
@@ -177,7 +177,7 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         createDataIn(instance1, "map", 0, 1000);
         createDataIn(instance1, "map2", 0, 2000);
         sleepSeconds(5);
-        assertKeysNotIn(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
 
         WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
         wanReplicationConfig.setName("newWRConfig");
@@ -194,16 +194,16 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         assert instance2[0].getConfig().getWanReplicationConfig("newWRConfig") != null;
 
         createDataIn(instance1, "map3", 0, 3000);
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-        assertKeysNotIn(clusterB, "map2", 0, 2000);
-        assertKeysNotIn(clusterB, "map3", 0, 3000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
+        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
 
         communicator = new HTTPCommunicator(instance2[0]);
         communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
 
-        assertKeysIn(clusterB, "map", 0, 1000);
-        assertKeysIn(clusterB, "map2", 0, 2000);
-        assertKeysIn(clusterB, "map3", 0, 3000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map2", 0, 2000);
+        assertKeysInEventually(clusterB, "map3", 0, 3000);
     }
 
     @Test
@@ -240,19 +240,19 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         startClusterA();
         startClusterB();
         createDataIn(clusterA, "map", 0, 1000);
-        assertKeysIn(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
 
         clusterB[0].getCluster().shutdown();
 
         startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
 
         final EnterpriseWanReplicationService service = getWanReplicationService(clusterA[0]);
         service.syncMap("atob", configB.getGroupConfig().getName(), "map");
 
         assertEquals(WanSyncStatus.IN_PROGRESS, service.getWanSyncState().getStatus());
 
-        assertKeysIn(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
         assertEqualsEventually(new Callable<WanSyncStatus>() {
             @Override
             public WanSyncStatus call() {

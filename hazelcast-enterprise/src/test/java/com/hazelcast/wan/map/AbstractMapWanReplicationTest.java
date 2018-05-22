@@ -68,24 +68,24 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         createDataIn(clusterA, "map", 0, 1000);
         createDataIn(clusterB, "map", 1000, 2000);
 
-        assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
-        assertDataInFrom(clusterC, "map", 1000, 2000, clusterB);
+        assertDataInFromEventually(clusterC, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterC, "map", 1000, 2000, clusterB);
 
         createDataIn(clusterB, "map", 0, 1);
-        assertDataInFrom(clusterC, "map", 0, 1, clusterB);
+        assertDataInFromEventually(clusterC, "map", 0, 1, clusterB);
 
         removeDataIn(clusterA, "map", 0, 500);
         removeDataIn(clusterB, "map", 1500, 2000);
 
-        assertKeysNotIn(clusterC, "map", 0, 500);
-        assertKeysNotIn(clusterC, "map", 1500, 2000);
+        assertKeysNotInEventually(clusterC, "map", 0, 500);
+        assertKeysNotInEventually(clusterC, "map", 1500, 2000);
 
-        assertKeysIn(clusterC, "map", 500, 1500);
+        assertKeysInEventually(clusterC, "map", 500, 1500);
 
         removeDataIn(clusterA, "map", 500, 1000);
         removeDataIn(clusterB, "map", 1000, 1500);
 
-        assertKeysNotIn(clusterC, "map", 0, 2000);
+        assertKeysNotInEventually(clusterC, "map", 0, 2000);
         assertDataSizeEventually(clusterC, "map", 0);
     }
 
@@ -101,15 +101,15 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startAllClusters();
 
         createDataIn(clusterA, "map", 0, 10);
-        assertDataInFrom(clusterC, "map", 0, 10, clusterA);
+        assertDataInFromEventually(clusterC, "map", 0, 10, clusterA);
 
         createDataIn(clusterB, "map", 10, 20);
-        assertDataInFrom(clusterC, "map", 10, 20, clusterB);
+        assertDataInFromEventually(clusterC, "map", 10, 20, clusterB);
 
         sleepSeconds(20);
-        assertKeysNotIn(clusterA, "map", 0, 10);
-        assertKeysNotIn(clusterB, "map", 10, 20);
-        assertKeysNotIn(clusterC, "map", 0, 20);
+        assertKeysNotInEventually(clusterA, "map", 0, 10);
+        assertKeysNotInEventually(clusterB, "map", 10, 20);
+        assertKeysNotInEventually(clusterC, "map", 0, 20);
     }
 
     /**
@@ -130,11 +130,11 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         createDataIn(clusterA, "map", 0, 100);
         createDataIn(clusterB, "map", 100, 200);
 
-        assertDataInFrom(clusterC, "map", 0, 100, clusterA);
-        assertDataInFrom(clusterC, "map", 100, 200, clusterB);
+        assertDataInFromEventually(clusterC, "map", 0, 100, clusterA);
+        assertDataInFromEventually(clusterC, "map", 100, 200, clusterB);
 
-        assertDataInFrom(clusterA, "map", 100, 200, clusterB);
-        assertDataInFrom(clusterB, "map", 0, 100, clusterA);
+        assertDataInFromEventually(clusterA, "map", 100, 200, clusterB);
+        assertDataInFromEventually(clusterB, "map", 0, 100, clusterA);
     }
 
     @Test
@@ -146,11 +146,11 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         createDataIn(clusterA, "map", 0, 100);
         createDataIn(clusterB, "map", 100, 200);
 
-        assertDataInFrom(clusterC, "map", 0, 100, clusterA);
-        assertDataInFrom(clusterC, "map", 100, 200, clusterB);
+        assertDataInFromEventually(clusterC, "map", 0, 100, clusterA);
+        assertDataInFromEventually(clusterC, "map", 100, 200, clusterB);
 
         createDataIn(clusterB, "map", 0, 100);
-        assertDataInFrom(clusterC, "map", 0, 100, clusterA);
+        assertDataInFromEventually(clusterC, "map", 0, 100, clusterA);
 
         assertDataSizeEventually(clusterC, "map", 200);
     }
@@ -162,18 +162,18 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startAllClusters();
 
         createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterC, "map", 0, 1000, clusterA);
 
         createDataIn(clusterB, "map", 0, 1000);
-        assertDataInFrom(clusterC, "map", 0, 1000, clusterB);
+        assertDataInFromEventually(clusterC, "map", 0, 1000, clusterB);
 
         assertDataSizeEventually(clusterC, "map", 1000);
 
         removeDataIn(clusterA, "map", 0, 500);
-        assertKeysNotIn(clusterC, "map", 0, 500);
+        assertKeysNotInEventually(clusterC, "map", 0, 500);
 
         removeDataIn(clusterB, "map", 500, 1000);
-        assertKeysNotIn(clusterC, "map", 500, 1000);
+        assertKeysNotInEventually(clusterC, "map", 500, 1000);
 
         assertDataSizeEventually(clusterC, "map", 0);
     }
@@ -185,16 +185,16 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startAllClusters();
 
         createDataIn(clusterA, "map", 0, 10);
-        assertDataInFrom(clusterC, "map", 0, 10, clusterA);
+        assertDataInFromEventually(clusterC, "map", 0, 10, clusterA);
 
         createDataIn(clusterB, "map", 0, 10);
 
-        assertDataInFrom(clusterC, "map", 0, 10, clusterA);
+        assertDataInFromEventually(clusterC, "map", 0, 10, clusterA);
 
         increaseHitCount(clusterB, "map", 0, 10, 100);
         createDataIn(clusterB, "map", 0, 10);
 
-        assertDataInFrom(clusterC, "map", 0, 10, clusterB);
+        assertDataInFromEventually(clusterC, "map", 0, 10, clusterB);
     }
 
     /**
@@ -209,13 +209,13 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         createDataIn(clusterA, "map", 0, 1000);
 
-        assertKeysIn(clusterB, "map", 0, 1000);
-        assertKeysIn(clusterC, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterC, "map", 0, 1000);
 
         removeDataIn(clusterA, "map", 0, 1000);
 
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-        assertKeysNotIn(clusterC, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterC, "map", 0, 1000);
 
         assertDataSizeEventually(clusterB, "map", 0);
         assertDataSizeEventually(clusterC, "map", 0);
@@ -234,7 +234,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterB();
 
         createDataIn(clusterA4Node, "map", 0, 1000);
-        assertKeysIn(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
         for (final HazelcastInstance instance : clusterA4Node) {
             assertTrueEventually(new AssertTask() {
                 @Override
@@ -258,19 +258,19 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
 
         createDataIn(clusterB, "map", 1000, 2000);
-        assertDataInFrom(clusterA, "map", 1000, 2000, clusterB);
+        assertDataInFromEventually(clusterA, "map", 1000, 2000, clusterB);
 
         removeDataIn(clusterA, "map", 1500, 2000);
-        assertKeysNotIn(clusterB, "map", 1500, 2000);
+        assertKeysNotInEventually(clusterB, "map", 1500, 2000);
 
         removeDataIn(clusterB, "map", 0, 500);
-        assertKeysNotIn(clusterA, "map", 0, 500);
+        assertKeysNotInEventually(clusterA, "map", 0, 500);
 
-        assertKeysIn(clusterA, "map", 500, 1500);
-        assertKeysIn(clusterB, "map", 500, 1500);
+        assertKeysInEventually(clusterA, "map", 500, 1500);
+        assertKeysInEventually(clusterB, "map", 500, 1500);
 
         assertDataSizeEventually(clusterA, "map", 1000);
         assertDataSizeEventually(clusterB, "map", 1000);
@@ -284,11 +284,11 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 10);
-        assertDataInFrom(clusterB, "map", 0, 10, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 10, clusterA);
 
         increaseHitCount(clusterB, "map", 0, 5, 100);
         createDataIn(clusterB, "map", 0, 5);
-        assertDataInFrom(clusterA, "map", 0, 5, clusterB);
+        assertDataInFromEventually(clusterA, "map", 0, 5, clusterB);
         sleepSeconds(10);
     }
 
@@ -301,10 +301,10 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         createDataIn(clusterA, "map", 0, 1000);
 
-        assertKeysIn(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
         assertDataSizeEventually(clusterB, "map", 1000);
 
-        assertKeysIn(clusterC, "map", 0, 1000);
+        assertKeysInEventually(clusterC, "map", 0, 1000);
         assertDataSizeEventually(clusterC, "map", 1000);
     }
 
@@ -317,7 +317,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         createDataIn(clusterA, "map", 0, 10);
         removeAndCreateDataIn(clusterA, "map", 0, 10);
 
-        assertKeysIn(clusterB, "map", 0, 10);
+        assertKeysInEventually(clusterB, "map", 0, 10);
         assertDataSizeEventually(clusterB, "map", 10);
         sleepSeconds(10);
     }
@@ -331,10 +331,10 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         createDataIn(clusterA, "map", 0, 10);
 
-        assertKeysIn(clusterB, "map", 0, 10);
+        assertKeysInEventually(clusterB, "map", 0, 10);
         assertDataSizeEventually(clusterB, "map", 10);
 
-        assertKeysIn(clusterC, "map", 0, 10);
+        assertKeysInEventually(clusterC, "map", 0, 10);
         assertDataSizeEventually(clusterC, "map", 10);
     }
 
@@ -360,9 +360,9 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         });
         gate.await();
 
-        assertDataInFrom(clusterB, "map", 0, 500, clusterA);
-        assertDataInFrom(clusterA, "map", 1000, 1500, clusterB);
-        assertKeysIn(clusterA, "map", 500, 1000);
+        assertDataInFromEventually(clusterB, "map", 0, 500, clusterA);
+        assertDataInFromEventually(clusterA, "map", 1000, 1500, clusterB);
+        assertKeysInEventually(clusterA, "map", 500, 1000);
 
         gate = new CyclicBarrier(3);
         startGatedThread(new GatedThread(gate) {
@@ -379,8 +379,8 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         });
         gate.await();
 
-        assertKeysNotIn(clusterA, "map", 0, 1500);
-        assertKeysNotIn(clusterB, "map", 0, 1500);
+        assertKeysNotInEventually(clusterA, "map", 0, 1500);
+        assertKeysNotInEventually(clusterB, "map", 0, 1500);
 
         assertDataSizeEventually(clusterA, "map", 0);
         assertDataSizeEventually(clusterB, "map", 0);
@@ -396,7 +396,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterB();
         createDataIn(clusterA, "map", 0, 10);
         sleepSeconds(10);
-        assertKeysNotIn(clusterB, "map", 0, 10);
+        assertKeysNotInEventually(clusterB, "map", 0, 10);
     }
 
     @Test
@@ -407,7 +407,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         createDataIn(clusterB, "map", 0, 100);
         createDataIn(clusterA, "map", 0, 100);
-        assertKeysNotIn(clusterB, "map", 0, 100);
+        assertKeysNotInEventually(clusterB, "map", 0, 100);
     }
 
     @Test
@@ -423,7 +423,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         IMap<Integer, Integer> map = getMap(clusterA, "map");
         map.putAll(inputMap);
 
-        assertKeysIn(clusterB, "map", 0, 10);
+        assertKeysInEventually(clusterB, "map", 0, 10);
     }
 
     @Test
@@ -454,13 +454,13 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         InternalOperationService operationService = getOperationService(clusterA[0]);
         operationService.invokeOnAllPartitions(MapService.SERVICE_NAME, operationFactory);
 
-        assertDataInFrom(clusterB, "map", 0, 10, "EP");
+        assertDataInFromEventually(clusterB, "map", 0, 10, "EP");
 
         OperationFactory deletingOperationFactory
                 = operationProvider.createMultipleEntryOperationFactory(mapProxy.getName(), keySet, new DeletingEntryProcessor());
         operationService.invokeOnAllPartitions(MapService.SERVICE_NAME, deletingOperationFactory);
 
-        assertKeysNotIn(clusterB, "map", 0, 10);
+        assertKeysNotInEventually(clusterB, "map", 0, 10);
 
         // entry operations
         IPartitionService partitionService = getPartitionService(clusterA[0]);
@@ -469,13 +469,13 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
                 serializationService.toData(10), new UpdatingEntryProcessor());
         operationService.invokeOnPartition(MapService.SERVICE_NAME, updatingEntryOperation, partitionService.getPartitionId(10));
 
-        assertDataInFrom(clusterB, "map", 10, 11, "EP");
+        assertDataInFromEventually(clusterB, "map", 10, 11, "EP");
 
         MapOperation deletingEntryOperation = operationProvider.createEntryOperation(mapProxy.getName(),
                 serializationService.toData(10), new DeletingEntryProcessor());
         operationService.invokeOnPartition(MapService.SERVICE_NAME, deletingEntryOperation, partitionService.getPartitionId(10));
 
-        assertKeysNotIn(clusterB, "map", 10, 11);
+        assertKeysNotInEventually(clusterB, "map", 10, 11);
     }
 
     @Test
@@ -494,15 +494,15 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterB();
 
         createDataIn(clusterA, "stored-map", 0, 10);
-        assertKeysIn(clusterB, "stored-map", 0, 10);
+        assertKeysInEventually(clusterB, "stored-map", 0, 10);
 
         getMap(clusterB, "stored-map").evictAll();
-        assertKeysNotIn(clusterB, "store-map", 0, 10);
+        assertKeysNotInEventually(clusterB, "store-map", 0, 10);
 
         IMap storedMap = getMap(clusterA, "stored-map");
         storedMap.loadAll(true);
 
-        assertKeysIn(clusterB, "stored-map", 0, 10);
+        assertKeysInEventually(clusterB, "stored-map", 0, 10);
     }
 
     @Test
@@ -528,7 +528,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         assertWanQueueSizesOnAllInstances(clusterA, setupName, configB.getGroupConfig().getName(), 10);
 
         startClusterB();
-        assertKeysIn(clusterB, "stored-map", startKey, endKey);
+        assertKeysInEventually(clusterB, "stored-map", startKey, endKey);
         assertWanQueueSizesOnAllInstances(clusterA, setupName, configB.getGroupConfig().getName(), 0);
     }
 
@@ -540,7 +540,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 10);
-        assertDataInFrom(clusterB, "map", 0, 10, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 10, clusterA);
 
         assertTrueEventually(new AssertTask() {
             @Override
@@ -565,7 +565,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
                 assertEquals(1, distributedObjects.size());
             }
         }, 10);
-        assertDataInFrom(clusterB, "map", 0, 10, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 10, clusterA);
     }
 
     private static class UpdatingEntryProcessor implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {

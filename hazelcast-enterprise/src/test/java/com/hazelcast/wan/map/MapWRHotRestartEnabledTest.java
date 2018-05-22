@@ -61,18 +61,18 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
 
         clusterB[0].getCluster().shutdown();
 
         startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
 
         EnterpriseWanReplicationService wanReplicationService
                 = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
         wanReplicationService.syncMap("atob", "B", "map");
 
-        assertKeysIn(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map", 0, 1000);
     }
 
     @Override

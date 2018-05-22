@@ -185,7 +185,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startAllClusters();
 
         createDataIn(clusterA, "map", 0, 10);
-        assertDataInFromWithSleep(clusterC, "map", 0, 10, clusterA);
+        assertDataInFrom(clusterC, "map", 0, 10, clusterA);
 
         createDataIn(clusterB, "map", 0, 10);
 
@@ -194,7 +194,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         increaseHitCount(clusterB, "map", 0, 10, 100);
         createDataIn(clusterB, "map", 0, 10);
 
-        assertDataInFromWithSleep(clusterC, "map", 0, 10, clusterB);
+        assertDataInFrom(clusterC, "map", 0, 10, clusterB);
     }
 
     /**
@@ -284,11 +284,11 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 10);
-        assertDataInFromWithSleep(clusterB, "map", 0, 10, clusterA);
+        assertDataInFrom(clusterB, "map", 0, 10, clusterA);
 
         increaseHitCount(clusterB, "map", 0, 5, 100);
         createDataIn(clusterB, "map", 0, 5);
-        assertDataInFromWithSleep(clusterA, "map", 0, 5, clusterB);
+        assertDataInFrom(clusterA, "map", 0, 5, clusterB);
         sleepSeconds(10);
     }
 

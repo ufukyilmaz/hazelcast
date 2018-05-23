@@ -49,7 +49,7 @@ public class LicenseTest extends HazelcastTestSupport {
     public void testXmlConfig() {
         String license = "HazelcastEnterprise#2Nodes#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
         String xml = "<hazelcast-client xsi:schemaLocation=\"http://www.hazelcast.com/schema/client-config"
-                + "                                          hazelcast-client-config-3.10.xsd\"\n"
+                + "                                          hazelcast-client-config-3.11.xsd\"\n"
                 + "           xmlns=\"http://www.hazelcast.com/schema/client-config\"\n"
                 + "           xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
                 + "    <properties>"

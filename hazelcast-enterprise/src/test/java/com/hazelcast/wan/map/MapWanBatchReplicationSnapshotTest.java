@@ -103,21 +103,59 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         startAllClusters();
 
         createDataIn(clusterA, mapName, 0, 100, "dummy");
-        createDataIn(clusterA, mapName, 0, 100);
 
+        //`dummy` value eventually makes it into the target map
+        IMap<Integer, String> mapC = getMap(clusterC, mapName);
+        assertKeyRangeMappedToValueEventually("dummy", 0, 100, mapC);
+
+        // override the `dummy` value with different (generated) values in the source. these new values should not
+        // make it into the target source.
+        // this might sound counter-intuitive, but we are testing the PutIfAbsentMapMergePolicy here -> if the value
+        // is already there then it won't be overwritten by a new value in the source cluster
+        createDataIn(clusterB, mapName, 0, 100);
+
+        // now run the same scenario, but use the 2nd source cluster and use different key range.
+        // I am not very sure what is the reason for running the same scenario just with a different source cluster,
+        // but I don't want to change it.
         createDataIn(clusterB, mapName, 100, 200, "dummy");
+        assertKeyRangeMappedToValueEventually("dummy", 100, 200, mapC);
         createDataIn(clusterB, mapName, 100, 200);
 
-        assertDataInFromEventually(clusterC, mapName, 0, 100, clusterA);
-        assertDataInFromEventually(clusterC, mapName, 100, 200, clusterB);
-
-        createDataIn(clusterB, mapName, 0, 100);
-        assertDataInFromEventually(clusterC, mapName, 0, 100, clusterA);
-
-        assertDataSizeEventually(clusterC, mapName, 200);
+        // ok, we now know both source clusters have the key-range 0..200 set to a generated value, but the target
+        // cluster should still should have the keys mapped to 'dummy' as we have the Put-If-Absent policy
+        assertKeyRangeMappedToValueAllTheTime("dummy", 0, 200, mapC, 10);
 
         assertWanQueuesEventuallyEmpty(clusterA, atocReplicationName, configC);
         assertWanQueuesEventuallyEmpty(clusterB, btocReplicationName, configC);
+    }
+
+    private static <V> void assertKeyRangeMappedToValue(V expectedValue, int rangeFromInclusive, int rangeToExclusive,
+                                                        IMap<Integer, V> map) {
+        for (int i = rangeFromInclusive; i < rangeToExclusive; i++) {
+            V actualValue = map.get(i);
+            assertEquals("Key '" + i + "' does not map to the expected value '" + expectedValue
+                    + "' in the map '" + map +"'", expectedValue, actualValue);
+        }
+    }
+
+    private static <V> void assertKeyRangeMappedToValueAllTheTime(final V expectedValue, final int rangeFromInclusive, final int rangeToExclusive,
+                                                                     final IMap<Integer, V> map, int durationSeconds) {
+        assertTrueAllTheTime(new AssertTask() {
+            @Override
+            public void run() {
+                assertKeyRangeMappedToValue(expectedValue, rangeFromInclusive, rangeToExclusive, map);
+            }
+        }, durationSeconds);
+    }
+
+    private static <V> void assertKeyRangeMappedToValueEventually(final V expectedValue, final int rangeFromInclusive, final int rangeToExclusive,
+                                                                     final IMap<Integer, V> map) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                assertKeyRangeMappedToValue(expectedValue, rangeFromInclusive, rangeToExclusive, map);
+            }
+        });
     }
 
     private void assertWanQueuesEventuallyEmpty(final HazelcastInstance[] nodes,

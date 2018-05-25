@@ -182,7 +182,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         }
     }
 
-    IMap<Integer, Integer> getMap(HazelcastInstance[] cluster, String mapName) {
+    <K, V> IMap<K, V> getMap(HazelcastInstance[] cluster, String mapName) {
         HazelcastInstance node = getNode(cluster);
         return node.getMap(mapName);
     }

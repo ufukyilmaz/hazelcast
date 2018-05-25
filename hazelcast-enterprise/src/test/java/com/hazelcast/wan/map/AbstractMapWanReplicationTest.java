@@ -106,7 +106,6 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         createDataIn(clusterB, "map", 10, 20);
         assertDataInFromEventually(clusterC, "map", 10, 20, clusterB);
 
-        sleepSeconds(20);
         assertKeysNotInEventually(clusterA, "map", 0, 10);
         assertKeysNotInEventually(clusterB, "map", 10, 20);
         assertKeysNotInEventually(clusterC, "map", 0, 20);
@@ -289,7 +288,6 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         increaseHitCount(clusterB, "map", 0, 5, 100);
         createDataIn(clusterB, "map", 0, 5);
         assertDataInFromEventually(clusterA, "map", 0, 5, clusterB);
-        sleepSeconds(10);
     }
 
     @Test
@@ -319,7 +317,6 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         assertKeysInEventually(clusterB, "map", 0, 10);
         assertDataSizeEventually(clusterB, "map", 10);
-        sleepSeconds(10);
     }
 
     @Test
@@ -395,7 +392,6 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterA();
         startClusterB();
         createDataIn(clusterA, "map", 0, 10);
-        sleepSeconds(10);
         assertKeysNotInEventually(clusterB, "map", 0, 10);
     }
 

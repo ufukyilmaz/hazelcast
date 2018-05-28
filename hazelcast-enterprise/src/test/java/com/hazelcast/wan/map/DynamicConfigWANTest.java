@@ -61,6 +61,6 @@ public class DynamicConfigWANTest extends MapWanReplicationTestSupport {
         IMap<Integer, Integer> map = getMap(clusterA, mapName);
         map.putAll(inputMap);
 
-        assertKeysIn(clusterB, mapName, 0, 10);
+        assertKeysInEventually(clusterB, mapName, 0, 10);
     }
 }

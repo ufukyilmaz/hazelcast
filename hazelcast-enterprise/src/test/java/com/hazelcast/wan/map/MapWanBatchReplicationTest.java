@@ -94,7 +94,7 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
         clusterA[0].shutdown();
         sleepSeconds(10);
         startClusterB();
-        assertDataInFrom(clusterB, "map", 0, 1000, getNode(clusterA[1]).getConfig().getGroupConfig().getName());
+        assertDataInFromEventually(clusterB, "map", 0, 1000, getNode(clusterA[1]).getConfig().getGroupConfig().getName());
     }
 
     @Test
@@ -104,8 +104,8 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
         startClusterA();
         startClusterB();
         createDataIn(clusterA, "map", 1, 10);
-        assertKeysIn(clusterB, "map", 1, 2);
-        assertKeysNotIn(clusterB, "map", 2, 10);
+        assertKeysInEventually(clusterB, "map", 1, 2);
+        assertKeysNotInEventually(clusterB, "map", 2, 10);
     }
 
     @Test
@@ -118,7 +118,7 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
 
         initCluster(clusterB, configB);
 
-        assertDataInFrom(clusterB, "map", 0, 1000, singleNodeC[0].getConfig().getGroupConfig().getName());
+        assertDataInFromEventually(clusterB, "map", 0, 1000, singleNodeC[0].getConfig().getGroupConfig().getName());
     }
 
     private void testClassNotFoundExceptionTargetCluster(int expectedFailureCount) throws InstantiationException, IllegalAccessException {

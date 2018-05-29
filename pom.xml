@@ -238,11 +238,13 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>
                         ${vmHeapSettings}
+                        ${extraVmArgs}
+                        -ea
                         -Dhazelcast.hidensity.check.freememory=false
                         -Dhazelcast.phone.home.enabled=false
                         -Dhazelcast.mancenter.enabled=false
                         -Dhazelcast.tomcat.shutdown_hazelcast_instance=false
-                        ${extraVmArgs}
+                        -Dlog4j.skipJansi=true
                     </argLine>
                     <excludedGroups>
                         com.hazelcast.test.annotation.SlowTest,
@@ -437,8 +439,9 @@
             <properties>
                 <vmHeapSettings>-Xms1g -Xmx3g -XX:MaxPermSize=1024M</vmHeapSettings>
                 <argLine>
-                    ${extraVmArgs}
                     ${vmHeapSettings}
+                    ${extraVmArgs}
+                    -ea
                     -Dhazelcast.hidensity.check.freememory=false
                     -Dhazelcast.phone.home.enabled=false
                     -Dhazelcast.mancenter.enabled=false
@@ -446,6 +449,7 @@
                     -Dhazelcast.test.use.network=false
                     -Dhazelcast.operation.call.timeout.millis=120000
                     -Dhazelcast.graceful.shutdown.max.wait=240
+                    -Dlog4j.skipJansi=true
                 </argLine>
             </properties>
             <build>
@@ -514,8 +518,8 @@
                                     <reuseForks>true</reuseForks>
                                     <!-- the argLine variable is needed for JaCoco -->
                                     <argLine>
-                                        ${extraVmArgs}
                                         ${vmHeapSettings}
+                                        ${extraVmArgs}
                                         -ea
                                         -Dhazelcast.operation.thread.count=16
                                         -Dhazelcast.hidensity.check.freememory=false
@@ -524,6 +528,7 @@
                                         -Dhazelcast.logging.type=none
                                         -Dhazelcast.test.use.network=false
                                         -Dhazelcast.test.multiple.jvm=true
+                                        -Dlog4j.skipJansi=true
                                     </argLine>
                                     <includes>
                                         <include>**/**.java</include>
@@ -551,17 +556,22 @@
                                     <goal>test</goal>
                                 </goals>
                                 <configuration combine.self="override">
+                                    <properties>
+                                        <vmHeapSettings>-Xms128m -Xmx1G -XX:MaxPermSize=128M</vmHeapSettings>
+                                    </properties>
                                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                                     <!-- the argLine variable is needed for JaCoco -->
                                     <argLine>
+                                        ${vmHeapSettings}
                                         ${extraVmArgs}
-                                        -Xms128m -Xmx1G -XX:MaxPermSize=128M
+                                        -ea
                                         -Dhazelcast.operation.thread.count=16
                                         -Dhazelcast.hidensity.check.freememory=false
                                         -Dhazelcast.phone.home.enabled=false
                                         -Dhazelcast.mancenter.enabled=false
                                         -Dhazelcast.logging.type=none
                                         -Dhazelcast.test.use.network=false
+                                        -Dlog4j.skipJansi=true
                                     </argLine>
                                     <includes>
                                         <include>**/**.java</include>
@@ -597,13 +607,15 @@
             <properties>
                 <vmHeapsettings>-Xms2g -Xmx2g -XX:MaxPermSize=1024M</vmHeapsettings>
                 <argLine>
-                    ${extraVmArgs}
                     ${vmHeapSettings}
+                    ${extraVmArgs}
+                    -ea
                     -Dhazelcast.hidensity.check.freememory=false
                     -Dhazelcast.phone.home.enabled=false
                     -Dhazelcast.mancenter.enabled=false
                     -Dhazelcast.logging.type=none
                     -Dhazelcast.test.use.network=false
+                    -Dlog4j.skipJansi=true
                 </argLine>
             </properties>
             <build>
@@ -646,12 +658,14 @@
                         <configuration>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <argLine>
-                                ${extraVmArgs}
                                 ${vmHeapSettings}
+                                ${extraVmArgs}
+                                -ea
                                 -Dhazelcast.hidensity.check.freememory=false
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false
                                 -Dhazelcast.test.use.network=false
+                                -Dlog4j.skipJansi=true
                             </argLine>
                             <includes>
                                 <include>**/**.java</include>
@@ -691,8 +705,9 @@
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <parallel>none</parallel>
                             <argLine>
-                                ${extraVmArgs}
                                 ${vmHeapSettings}
+                                ${extraVmArgs}
+                                -ea
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false
                                 -Dhazelcast.logging.type=log4j2
@@ -735,12 +750,14 @@
                             <runOrder>failedfirst</runOrder>
                             <argLine>
                                 ${vmHeapSettings}
+                                ${extraVmArgs}
+                                -ea
                                 -Dhazelcast.hidensity.check.freememory=false
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false
                                 -Dhazelcast.tomcat.shutdown_hazelcast_instance=false
                                 -Dhazelcast.test.sample.serialized.objects=${target.dir}/serialized-objects-${project.version}-ee-
-                                ${extraVmArgs}
+                                -Dlog4j.skipJansi=true
                             </argLine>
                             <excludedGroups>
                                 com.hazelcast.test.annotation.SlowTest,
@@ -759,7 +776,6 @@
                 </plugins>
             </build>
         </profile>
-
     </profiles>
 
     <dependencies>

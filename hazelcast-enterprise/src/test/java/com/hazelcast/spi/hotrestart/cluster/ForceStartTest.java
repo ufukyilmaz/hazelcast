@@ -33,6 +33,7 @@ import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.function.Supplier;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -72,6 +73,12 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
     }
 
     private final int nodeCount = 3;
+
+    @Before
+    public void init() {
+        validationTimeoutInSeconds = 30;
+        dataLoadTimeoutInSeconds = 30;
+    }
 
     @Test
     public void testForceStart_onMissingNode() {

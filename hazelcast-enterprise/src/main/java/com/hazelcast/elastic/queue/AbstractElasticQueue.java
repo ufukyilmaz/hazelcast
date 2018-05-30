@@ -3,7 +3,6 @@ package com.hazelcast.elastic.queue;
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
@@ -11,6 +10,8 @@ import java.util.AbstractQueue;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
+
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
  * @param <E> entry type
@@ -32,12 +33,12 @@ abstract class AbstractElasticQueue<E> extends AbstractQueue<E> implements Elast
         if (data == null) {
             return;
         }
-        data.reset(HazelcastMemoryManager.NULL_ADDRESS);
+        data.reset(NULL_ADDRESS);
         localBinaryQ.offer(data);
     }
 
     private NativeMemoryData addressToBinary(long address) {
-        if (address > 0L) {
+        if (address != NULL_ADDRESS) {
             NativeMemoryData binary = localBinaryQ.poll();
             if (binary == null) {
                 binary = new NativeMemoryData();

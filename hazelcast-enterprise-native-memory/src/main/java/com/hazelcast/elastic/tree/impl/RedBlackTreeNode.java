@@ -204,7 +204,7 @@ class RedBlackTreeNode
     private void disposeEntry(boolean releasePayLoad, boolean releaseValue) {
         MemoryBlock key = entry().getKey();
 
-        if ((key.address() > NULL_ADDRESS) && (releasePayLoad)) {
+        if ((key.address() != NULL_ADDRESS) && (releasePayLoad)) {
             malloc.free(key.address(), key.size());
         }
 
@@ -233,7 +233,7 @@ class RedBlackTreeNode
 
     private void disposeValuePayload(EntryValueNode node) {
         MemoryBlock value = node.value();
-        if (value.address() > NULL_ADDRESS) {
+        if (value.address() != NULL_ADDRESS) {
             malloc.free(value.address(), value.size());
         }
     }

@@ -26,9 +26,9 @@ class ValueBlockAccessor extends MemoryBlock {
     }
 
     final void reset(long vSlotAddr) {
-        assert vSlotAddr > NULL_ADDRESS : "Attempt to reset to invalid address: " + vSlotAddr;
+        assert vSlotAddr != NULL_ADDRESS : "Attempt to reset to invalid address: " + vSlotAddr;
         final long address = mem.getLong(vSlotAddr);
-        assert address > NULL_ADDRESS : "Read an invalid address from value slot: " + address;
+        assert address != NULL_ADDRESS : "Read an invalid address from value slot: " + address;
         setAddress(address);
         final int sizeFromHeader = readInt(0);
         updateLocalState(sizeFromHeader);

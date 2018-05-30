@@ -6,6 +6,7 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -19,11 +20,17 @@ import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRI
 @Category(QuickTest.class)
 public class EnterpriseSystemLogPluginTest extends SystemLogPluginTest {
 
+    @After
+    public void tearDown() {
+        System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
+    }
+
     @Test
     public void testClusterVersionChange() {
         MemberVersion currentVersion = getNode(hz).getVersion();
         Version nextMinorVersion = Version.of(currentVersion.getMajor(), currentVersion.getMinor() + 1);
         System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, nextMinorVersion.toString());
+
         HazelcastInstance instance = hzFactory.newHazelcastInstance(config);
         assertClusterSizeEventually(2, instance);
         waitAllForSafeState(hz, instance);
@@ -33,11 +40,10 @@ public class EnterpriseSystemLogPluginTest extends SystemLogPluginTest {
         getClusterService(instance).changeClusterVersion(nextMinorVersion);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 plugin.run(logWriter);
                 assertContains("ClusterVersionChanged");
             }
         });
-        System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
     }
 }

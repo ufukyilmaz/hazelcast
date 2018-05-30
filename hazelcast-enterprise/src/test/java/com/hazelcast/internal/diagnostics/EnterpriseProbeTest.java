@@ -6,12 +6,11 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 
@@ -31,13 +30,20 @@ public class EnterpriseProbeTest extends AbstractDiagnosticsPluginTest {
                 .setProperty(Diagnostics.ENABLED.getName(), "true")
                 .setProperty(MetricsPlugin.PERIOD_SECONDS.getName(), "1");
         hz = createHazelcastInstance(config);
+
         NodeEngineImpl nodeEngineImpl = getNodeEngineImpl(hz);
         plugin = new MetricsPlugin(nodeEngineImpl);
         plugin.onStart();
     }
 
+    @After
+    public void tearDown() {
+        Diagnostics diagnostics = getDiagnostics(hz);
+        cleanupDiagnosticFiles(diagnostics);
+    }
+
     @Test
-    public void testHDStorageProbes() throws IOException {
+    public void testHDStorageProbes() {
         IMap<String, String> map = hz.getMap("default");
 
         map.put("key", "value");

@@ -1,7 +1,6 @@
 package com.hazelcast.client.enterprise;
 
 import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.client.impl.ClientTestUtil;
 import com.hazelcast.client.impl.HazelcastClientInstanceImpl;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.NativeMemoryConfig;
@@ -21,30 +20,32 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Set;
 
+import static com.hazelcast.client.impl.ClientTestUtil.getHazelcastClientInstanceImpl;
+import static java.util.Arrays.asList;
+
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
 
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-    @Parameterized.Parameter
-    public NativeMemoryConfig.MemoryAllocatorType allocatorType;
-
-    @Parameterized.Parameters(
-            name = "allocatorType:{0}"
-    )
+    @Parameters(name = "allocatorType:{0}")
     public static Iterable<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {NativeMemoryConfig.MemoryAllocatorType.POOLED},
                 {NativeMemoryConfig.MemoryAllocatorType.STANDARD}});
     }
+
+    @Parameter
+    public NativeMemoryConfig.MemoryAllocatorType allocatorType;
+
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     private final TestHazelcastFactory hazelcastFactory = new TestHazelcastFactory();
 
@@ -59,10 +60,10 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
     }
 
     @Test
-    public void assertMemoryMetricsRegisteredWhenNativeMemoryIsEnabled() throws IOException {
+    public void assertMemoryMetricsRegisteredWhenNativeMemoryIsEnabled() throws Exception {
         ClientConfig clientConfig = makeClientConfig(true);
         HazelcastInstance client = hazelcastFactory.newHazelcastClient(clientConfig);
-        HazelcastClientInstanceImpl clientImpl = ClientTestUtil.getHazelcastClientInstanceImpl(client);
+        HazelcastClientInstanceImpl clientImpl = getHazelcastClientInstanceImpl(client);
 
         MetricsRegistryImpl metricsRegistry = clientImpl.getMetricsRegistry();
         Set<String> metrics = metricsRegistry.getNames();
@@ -76,10 +77,10 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
     }
 
     @Test
-    public void assertMemoryMetricsNotRegisteredWhenNativeMemoryIsDisabled() throws IOException {
+    public void assertMemoryMetricsNotRegisteredWhenNativeMemoryIsDisabled() throws Exception {
         ClientConfig clientConfig = makeClientConfig(false);
         HazelcastInstance client = hazelcastFactory.newHazelcastClient(clientConfig);
-        HazelcastClientInstanceImpl clientImpl = ClientTestUtil.getHazelcastClientInstanceImpl(client);
+        HazelcastClientInstanceImpl clientImpl = getHazelcastClientInstanceImpl(client);
 
         MetricsRegistryImpl metricsRegistry = clientImpl.getMetricsRegistry();
         Set<String> metrics = metricsRegistry.getNames();
@@ -92,18 +93,18 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
         assertNotContains(metrics, "memorymanager.stats.usedNative");
     }
 
-    private ClientConfig makeClientConfig(boolean enableNativeMemory) throws IOException {
-        ClientConfig clientConfig = new ClientConfig();
+    private ClientConfig makeClientConfig(boolean enableNativeMemory) throws Exception {
+        ClientConfig clientConfig = new ClientConfig()
+                .setProperty("hazelcast.diagnostics.enabled", "true")
+                .setProperty("hazelcast.diagnostics.metric.level", "INFO")
+                .setProperty("hazelcast.diagnostics.directory", temporaryFolder.newFolder().getAbsolutePath());
         if (enableNativeMemory) {
             clientConfig.setNativeMemoryConfig(makeNativeMemoryConfig());
         }
-        clientConfig.setProperty("hazelcast.diagnostics.enabled", "true");
-        clientConfig.setProperty("hazelcast.diagnostics.metric.level", "INFO");
-        clientConfig.setProperty("hazelcast.diagnostics.directory", temporaryFolder.newFolder().getAbsolutePath());
         return clientConfig;
     }
 
-    public NativeMemoryConfig makeNativeMemoryConfig() {
+    private NativeMemoryConfig makeNativeMemoryConfig() {
         return new NativeMemoryConfig()
                 .setEnabled(true)
                 .setSize(new MemorySize(16, MemoryUnit.MEGABYTES))

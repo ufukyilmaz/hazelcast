@@ -1,4 +1,4 @@
-package com.hazelcast.client.impl;
+package com.hazelcast.client.impl.clientside;
 
 import com.hazelcast.client.HazelcastClientNotActiveException;
 import com.hazelcast.client.config.ClientConfig;

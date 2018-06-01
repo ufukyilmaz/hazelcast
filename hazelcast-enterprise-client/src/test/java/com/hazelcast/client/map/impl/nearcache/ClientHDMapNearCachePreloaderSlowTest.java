@@ -4,7 +4,6 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -51,7 +50,6 @@ public class ClientHDMapNearCachePreloaderSlowTest extends ClientMapNearCachePre
     @Override
     protected ClientConfig getClientConfig() {
         return super.getClientConfig()
-                .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
     }
 }

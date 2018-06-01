@@ -3,7 +3,6 @@ package com.hazelcast.client.cache.nearcache;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
@@ -34,7 +33,6 @@ public class ClientHDCacheNearCachePreloaderTest extends ClientCacheNearCachePre
     @Override
     protected ClientConfig getClientConfig() {
         return super.getClientConfig()
-                .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
     }
 }

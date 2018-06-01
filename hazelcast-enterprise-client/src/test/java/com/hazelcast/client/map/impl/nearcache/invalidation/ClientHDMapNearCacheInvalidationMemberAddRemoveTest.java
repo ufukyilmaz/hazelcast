@@ -6,7 +6,6 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -27,7 +26,6 @@ public class ClientHDMapNearCacheInvalidationMemberAddRemoveTest extends ClientM
     @Override
     protected ClientConfig createClientConfig() {
         return super.createClientConfig()
-                .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
     }
 

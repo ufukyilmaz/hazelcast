@@ -59,7 +59,6 @@ public class ClientHDMapNearCacheInvalidationTest extends ClientMapNearCacheInva
                 .setSize(CLIENT_NATIVE_MEMORY_SIZE);
 
         return super.getClientConfig(mapName)
-                .setLicenseKey(UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(nativeMemoryConfig);
     }
 

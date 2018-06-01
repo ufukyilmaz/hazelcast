@@ -25,10 +25,8 @@ import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMO
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
-import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.internal.nearcache.NearCacheRecord.NOT_RESERVED;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
-import static com.hazelcast.spi.properties.GroupProperty.ENTERPRISE_LICENSE_KEY;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static org.junit.Assert.assertTrue;
 
@@ -104,7 +102,6 @@ public class ClientHDMapNearCacheStressTest extends HazelcastTestSupport {
                 .setAllocatorType(POOLED).setMetadataSpacePercentage(40);
 
         return new ClientConfig()
-                .setProperty(ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(nativeMemoryConfig);
     }
 }

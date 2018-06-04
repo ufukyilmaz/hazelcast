@@ -6,90 +6,94 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.query.Predicates;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
-import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.CompatibilityTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.Serializable;
 import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.config.InMemoryFormat.BINARY;
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION;
+import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.RELEASED_VERSIONS;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
+import static com.hazelcast.test.HazelcastTestSupport.randomMapName;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(CompatibilityTest.class)
-public class HDQueryCompatibilityTest extends HazelcastTestSupport {
+public class HDQueryCompatibilityTest {
 
-    @Test
-    public void assert_compat_38_and_39_NATIVE_noIndex() {
-        assert_compat_38_and_39(InMemoryFormat.NATIVE);
+    @Parameter
+    public InMemoryFormat inMemoryFormat;
+
+    @Parameter(1)
+    public MapIndexConfig mapIndexConfig;
+
+    private TestHazelcastInstanceFactory factory;
+    private String[] versions;
+    private HazelcastInstance[] instances;
+    private String mapName = randomMapName();
+
+    @Parameters(name = "inMemoryFormat:{0}, index:{1}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {NATIVE, null},
+                {NATIVE, new MapIndexConfig("power", false)},
+                {NATIVE, new MapIndexConfig("power", true)},
+                {BINARY, null},
+                {BINARY, new MapIndexConfig("power", false)},
+                {BINARY, new MapIndexConfig("power", true)},
+                {OBJECT, null},
+                {OBJECT, new MapIndexConfig("power", false)},
+                {OBJECT, new MapIndexConfig("power", true)},
+                });
     }
 
-    @Test
-    public void assert_compat_38_and_39_BINARY_noIndex() {
-        assert_compat_38_and_39(InMemoryFormat.BINARY);
-    }
-
-    @Test
-    public void assert_compat_38_and_39_OBJECT_noIndex() {
-        assert_compat_38_and_39(InMemoryFormat.OBJECT);
-    }
-
-    @Test
-    public void assert_compat_38_and_39_NATIVE_withIndex() {
-        assert_compat_38_and_39(InMemoryFormat.NATIVE, new MapIndexConfig("power", false));
-    }
-
-    @Test
-    public void assert_compat_38_and_39_BINARY_withIndex() {
-        assert_compat_38_and_39(InMemoryFormat.BINARY, new MapIndexConfig("power", false));
-    }
-
-    @Test
-    public void assert_compat_38_and_39_OBJECT_withIndex() {
-        assert_compat_38_and_39(InMemoryFormat.OBJECT, new MapIndexConfig("power", false));
-    }
-
-    @Test
-    public void assert_compat_38_and_39_NATIVE_withIndex_ordered() {
-        assert_compat_38_and_39(InMemoryFormat.NATIVE, new MapIndexConfig("power", true));
-    }
-
-    @Test
-    public void assert_compat_38_and_39_BINARY_withIndex_ordered() {
-        assert_compat_38_and_39(InMemoryFormat.BINARY, new MapIndexConfig("power", true));
-    }
-
-    @Test
-    public void assert_compat_38_and_39_OBJECT_withIndex_ordered() {
-        assert_compat_38_and_39(InMemoryFormat.OBJECT, new MapIndexConfig("power", true));
-    }
-
-
-    public void assert_compat_38_and_39(InMemoryFormat inMemoryFormat, MapIndexConfig... indexConfigs) {
+    @Before
+    public void setup() {
         // GIVEN CONFIG
-        String[] versions = new String[]{"3.8", "3.9"};
-        TestHazelcastInstanceFactory factory = new CompatibilityTestHazelcastInstanceFactory(versions);
+        versions = new String[]{RELEASED_VERSIONS[0],
+                                CURRENT_VERSION};
+        factory = new CompatibilityTestHazelcastInstanceFactory(versions);
 
         Config config = getHDConfig();
-        MapConfig mapConfig = config.getMapConfig("default");
+        MapConfig mapConfig = config.getMapConfig(mapName);
         mapConfig.setInMemoryFormat(inMemoryFormat);
-        for (MapIndexConfig mic : indexConfigs) {
-            mapConfig.addMapIndexConfig(mic);
+        if (mapIndexConfig != null) {
+            mapConfig.addMapIndexConfig(mapIndexConfig);
         }
         config.addMapConfig(mapConfig);
 
-        HazelcastInstance[] instances = factory.newInstances(getConfig());
+        instances = factory.newInstances(config);
+    }
+
+    @After
+    public void tearDown() {
+        factory.terminateAll();
+    }
+
+    @Test
+    public void testQueryCompatible_whenPreviousAndCurrentMembers() {
         assertClusterSizeEventually(versions.length, instances[0]);
 
         // GIVEN VALUES
-        IMap<Integer, Car> map = instances[0].getMap("default");
+        IMap<Integer, Car> map = instances[0].getMap(mapName);
         for (int i = 0; i < 100; i++) {
             map.put(i, new Car(i));
         }
@@ -98,14 +102,9 @@ public class HDQueryCompatibilityTest extends HazelcastTestSupport {
         Collection result = map.values(Predicates.greaterEqual("power", 50));
         assertEquals(50, result.size());
 
-        map = instances[1].getMap("default");
+        map = instances[1].getMap(mapName);
         result = map.values(Predicates.greaterEqual("power", 50));
         assertEquals(50, result.size());
-
-        // TEAR-DOWN
-        for (HazelcastInstance instance : instances) {
-            instance.shutdown();
-        }
     }
 
     public static class Car implements ICar, Serializable {

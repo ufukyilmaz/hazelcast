@@ -66,12 +66,13 @@ import static org.mockito.Mockito.mock;
 
 public class HotRestartTestUtil {
 
-    public static final String LOGGER_NAME = "com.hazelcast.spi.hotrestart";
     public static ILogger logger;
 
+    private static final String LOGGER_NAME = "com.hazelcast.spi.hotrestart";
+
     public static void fillStore(MockStoreRegistry reg, TestProfile profile) {
-        final int totalPutCount = profile.keysetSize * profile.prefixCount;
-        final int mask = (nextPowerOfTwo(totalPutCount) >> 5) - 1;
+        int totalPutCount = profile.keysetSize * profile.prefixCount;
+        int mask = (nextPowerOfTwo(totalPutCount) >> 5) - 1;
         int putCount = 0;
         for (int i = 0; i < profile.keysetSize; i++) {
             for (int prefix = 1; prefix <= profile.prefixCount; prefix++) {
@@ -84,49 +85,56 @@ public class HotRestartTestUtil {
     }
 
     public static void exercise(MockStoreRegistry reg, HotRestartStoreConfig cfg, TestProfile profile) {
-        final Histogram hist = new Histogram(3);
+        Histogram hist = new Histogram(3);
         FileOutputStream out = null;
+        PrintStream printStream = null;
         try {
-            File file = new File(cfg.homeDir(), "../latency-histogram.txt");
-            out = new FileOutputStream(file);
+            try {
+                File file = new File(cfg.homeDir(), "../latency-histogram.txt");
+                out = new FileOutputStream(file);
 
-            logger.info("Updating db");
-            final long testStart = System.nanoTime();
-            final long outlierThresholdNanos = MILLISECONDS.toNanos(15);
-            final long outlierCutoffNanos = MILLISECONDS.toNanos(1500);
-            long lastCleared = testStart;
-            long iterCount = 0;
-            final long deadline = testStart + SECONDS.toNanos(profile.exerciseTimeSeconds);
-            for (long iterStart; (iterStart = System.nanoTime()) < deadline; iterCount++) {
-                profile.performOp(reg);
-                final long[] prefixesToClear = profile.prefixesToClear(lastCleared);
-                if (prefixesToClear.length > 0) {
-                    logger.info(String.format("%n%nCLEAR %s%n", Arrays.toString(prefixesToClear)));
-                    reg.clear(prefixesToClear);
-                    lastCleared = iterStart;
+                logger.info("Updating db");
+                long testStart = System.nanoTime();
+                long outlierThresholdNanos = MILLISECONDS.toNanos(15);
+                long outlierCutoffNanos = MILLISECONDS.toNanos(1500);
+                long lastCleared = testStart;
+                long iterCount = 0;
+                long deadline = testStart + SECONDS.toNanos(profile.exerciseTimeSeconds);
+                for (long iterStart; (iterStart = System.nanoTime()) < deadline; iterCount++) {
+                    profile.performOp(reg);
+                    long[] prefixesToClear = profile.prefixesToClear(lastCleared);
+                    if (prefixesToClear.length > 0) {
+                        logger.info(String.format("%n%nCLEAR %s%n", Arrays.toString(prefixesToClear)));
+                        reg.clear(prefixesToClear);
+                        lastCleared = iterStart;
+                    }
+                    long took = System.nanoTime() - iterStart;
+                    if (took > outlierThresholdNanos && took < outlierCutoffNanos) {
+                        logger.info(String.format("Recording outlier: %d ms", NANOSECONDS.toMillis(took)));
+                    }
+                    if (iterCount % 3 == 0) {
+                        LockSupport.parkNanos(1);
+                    }
+                    hist.recordValue(took);
                 }
-                final long took = System.nanoTime() - iterStart;
-                if (took > outlierThresholdNanos && took < outlierCutoffNanos) {
-                    logger.info(String.format("Recording outlier: %d ms", NANOSECONDS.toMillis(took)));
+                float runtimeSeconds = (float) (System.nanoTime() - testStart) / SECONDS.toNanos(1);
+                if (runtimeSeconds > 1) {
+                    logger.info(String.format("Throughput was %,.0f ops/second%n", iterCount / runtimeSeconds));
                 }
-                if (iterCount % 3 == 0) {
-                    LockSupport.parkNanos(1);
+            } catch (Exception e) {
+                reg.closeHotRestartStore();
+                reg.disposeRecordStores();
+                logger.severe("Error while exercising Hot Restart store", e);
+                throw new RuntimeException("Error while exercising Hot Restart store", e);
+            } finally {
+                if (out != null) {
+                    printStream = new PrintStream(out);
+                    hist.outputPercentileDistribution(printStream, 1e3);
                 }
-                hist.recordValue(took);
             }
-            final float runtimeSeconds = (float) (System.nanoTime() - testStart) / SECONDS.toNanos(1);
-            if (runtimeSeconds > 1) {
-                logger.info(String.format("Throughput was %,.0f ops/second%n", iterCount / runtimeSeconds));
-            }
-        } catch (Exception e) {
-            reg.closeHotRestartStore();
-            reg.disposeRecordStores();
-            logger.severe("Error while exercising Hot Restart store", e);
-            throw new RuntimeException("Error while exercising Hot Restart store", e);
         } finally {
-            if (out != null) {
-                hist.outputPercentileDistribution(new PrintStream(out), 1e3);
-            }
+            closeResource(printStream);
+            closeResource(out);
         }
     }
 
@@ -144,11 +152,11 @@ public class HotRestartTestUtil {
         return summary[0];
     }
 
-    static Map<Long, Long2LongHashMap> summarize0(MockStoreRegistry reg) {
-        final Map<Long, Long2LongHashMap> storeSummaries = new HashMap<Long, Long2LongHashMap>();
+    private static Map<Long, Long2LongHashMap> summarize0(MockStoreRegistry reg) {
+        Map<Long, Long2LongHashMap> storeSummaries = new HashMap<Long, Long2LongHashMap>();
         for (Entry<Long, MockRecordStore> storeEntry : reg.recordStores.entrySet()) {
-            final long prefix = storeEntry.getKey();
-            final Long2LongHashMap storeSummary = new Long2LongHashMap(-1);
+            long prefix = storeEntry.getKey();
+            Long2LongHashMap storeSummary = new Long2LongHashMap(-1);
             storeSummaries.put(prefix, storeSummary);
             for (L2bCursor cursor = storeEntry.getValue().ramStore().cursor(); cursor.advance(); ) {
                 storeSummary.put(cursor.key(), cursor.valueSize());
@@ -169,9 +177,9 @@ public class HotRestartTestUtil {
         logger.info("Hot restart verification complete");
     }
 
-    static void verify0(Map<Long, Long2LongHashMap> summaries, Map<Long, MockRecordStore> recordStores) {
-        final StringWriter sw = new StringWriter();
-        final PrintWriter problems = new PrintWriter(sw);
+    private static void verify0(Map<Long, Long2LongHashMap> summaries, Map<Long, MockRecordStore> recordStores) {
+        StringWriter sw = new StringWriter();
+        PrintWriter problems = new PrintWriter(sw);
         boolean hadIssues = false;
         for (Entry<Long, Long2LongHashMap> e : summaries.entrySet()) {
             if (!e.getValue().isEmpty() && recordStores.get(e.getKey()) == null) {
@@ -180,15 +188,15 @@ public class HotRestartTestUtil {
             }
         }
         for (Entry<Long, MockRecordStore> storeEntry : recordStores.entrySet()) {
-            final long prefix = storeEntry.getKey();
+            long prefix = storeEntry.getKey();
             problems.format("Prefix %d:%n", prefix);
-            final Long2bytesMap ramStore = storeEntry.getValue().ramStore();
-            final Set<Long> reloadedKeys = ramStore.keySet();
+            Long2bytesMap ramStore = storeEntry.getValue().ramStore();
+            Set<Long> reloadedKeys = ramStore.keySet();
             int missingEntryCount = 0;
             int mismatchedEntryCount = 0;
-            final Long2LongHashMap prefixSummary = summaries.get(prefix);
+            Long2LongHashMap prefixSummary = summaries.get(prefix);
             for (LongLongCursor cursor = prefixSummary.cursor(); cursor.advance(); ) {
-                final int reloadedRecordSize = ramStore.valueSize(cursor.key());
+                int reloadedRecordSize = ramStore.valueSize(cursor.key());
                 if (reloadedRecordSize < 0) {
                     missingEntryCount++;
                     hadIssues = true;
@@ -208,7 +216,7 @@ public class HotRestartTestUtil {
             }
             int extraRecords = 0;
             for (long key : reloadedKeys) {
-                final int valueSize = ramStore.valueSize(key);
+                int valueSize = ramStore.valueSize(key);
                 if (valueSize != -1) {
                     //problems.format("%s -> %s ", key, valueSize);
                     extraRecords++;
@@ -236,7 +244,7 @@ public class HotRestartTestUtil {
     }
 
     public static HotRestartStoreConfig hrStoreConfig(File testingHome) {
-        final LoggingService loggingService = createLoggingService();
+        LoggingService loggingService = createLoggingService();
         logger = loggingService.getLogger(LOGGER_NAME);
         return new HotRestartStoreConfig()
                 .setStoreName("hr-store")
@@ -247,9 +255,9 @@ public class HotRestartTestUtil {
 
     public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) {
         logger.info("Creating mock store registry");
-        final long start = System.nanoTime();
-        final MemoryManagerBean memMgr = malloc != null ? new MemoryManagerBean(malloc, AMEM) : null;
-        final MockStoreRegistry cs = new MockStoreRegistry(cfg, memMgr, false);
+        long start = System.nanoTime();
+        MemoryManagerBean memMgr = malloc != null ? new MemoryManagerBean(malloc, AMEM) : null;
+        MockStoreRegistry cs = new MockStoreRegistry(cfg, memMgr, false);
         logger.info("Started in " + NANOSECONDS.toMillis(System.nanoTime() - start) + " ms");
         return cs;
     }
@@ -294,7 +302,8 @@ public class HotRestartTestUtil {
         ((ConcurrentHotRestartStore) reg.hrStore).getDi().get(GcExecutor.class).runWhileGcPaused(task);
     }
 
-    public static void assertRecordEquals(TestRecord expected, DataInputStream actual, boolean valueChunk) throws Exception {
+    public static void assertRecordEquals(TestRecord expected, DataInputStream actual, boolean valueChunk)
+            throws Exception {
         assertRecordEquals("", expected, actual, valueChunk);
     }
 
@@ -334,7 +343,7 @@ public class HotRestartTestUtil {
         ChunkFileOut out = null;
         try {
             out = new ChunkFileOut(file, createMutatorCatchup());
-            final ActiveChunk chunk = wantValueChunk
+            ActiveChunk chunk = wantValueChunk
                     ? new ActiveValChunk(0, null, out, mock(GcHelper.class))
                     : new WriteThroughTombChunk(0, ACTIVE_FNAME_SUFFIX, null, out, mock(GcHelper.class));
             for (TestRecord record : records) {

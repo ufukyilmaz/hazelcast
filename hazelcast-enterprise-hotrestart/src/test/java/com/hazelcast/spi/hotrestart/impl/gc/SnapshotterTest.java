@@ -25,6 +25,8 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.Snapshotter.CHUNK_SNAPSHOT_FNAME;
@@ -49,6 +51,7 @@ public class SnapshotterTest {
     private ChunkManager chunkMgr;
     private GcHelper gcHelper;
 
+    private final List<WriteThroughChunk> testChunks = new ArrayList<WriteThroughChunk>();
     private final long keyPrefix = 13;
     private final byte[] keyBytes = new byte[4];
     private final byte[] valueBytes = new byte[1024];
@@ -75,20 +78,34 @@ public class SnapshotterTest {
 
     @After
     public void after() {
+        for (WriteThroughChunk testChunk : testChunks) {
+            testChunk.out.close();
+        }
         delete(testingHome);
     }
 
     @Test
     public void testTakeChunkSnapshotAsNeeded() throws Exception {
         chunkMgr.activeValChunk = setupValChunk();
+        testChunks.add(chunkMgr.activeValChunk);
+
         chunkMgr.activeTombChunk = setupTombChunk();
-        final StableValChunk stableValChunk = setupValChunk().toStableChunk();
+        testChunks.add(chunkMgr.activeTombChunk);
+
+        ActiveValChunk chunk = setupValChunk();
+        testChunks.add(chunk);
+        StableValChunk stableValChunk = chunk.toStableChunk();
         chunkMgr.chunks.put(stableValChunk.seq, stableValChunk);
         snapshotter.initSrcChunkSeqs(chunkMgr.chunks.values());
+
+        WriteThroughTombChunk survivor = setupTombChunk();
+        testChunks.add(survivor);
         chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
-        chunkMgr.survivors.put(chunkSeq++, setupTombChunk());
+        chunkMgr.survivors.put(chunkSeq++, survivor);
+
         snapshotter.takeChunkSnapshotAsNeeded();
-        final DataInputStream in = new DataInputStream(new FileInputStream(new File(testingHome, CHUNK_SNAPSHOT_FNAME)));
+
+        DataInputStream in = new DataInputStream(new FileInputStream(new File(testingHome, CHUNK_SNAPSHOT_FNAME)));
         try {
             assertTrue(in.readLong() > 0);
             assertEquals(4, in.readInt());
@@ -102,20 +119,20 @@ public class SnapshotterTest {
     }
 
     private void forceEnableSnapshotter() throws Exception {
-        final Field enabledField = snapshotter.getClass().getDeclaredField("enabled");
+        Field enabledField = snapshotter.getClass().getDeclaredField("enabled");
         enabledField.setAccessible(true);
         enabledField.set(snapshotter, true);
     }
 
     private ActiveValChunk setupValChunk() {
-        final ActiveValChunk avChunk = gcHelper.newActiveValChunk();
+        ActiveValChunk avChunk = gcHelper.newActiveValChunk();
         avChunk.addStep1(recordSeq++, keyPrefix, keyBytes, valueBytes);
         avChunk.garbage = 5 << 8;
         return avChunk;
     }
 
     private WriteThroughTombChunk setupTombChunk() {
-        final WriteThroughTombChunk tombChunk = gcHelper.newWriteThroughTombChunk(Chunk.ACTIVE_FNAME_SUFFIX);
+        WriteThroughTombChunk tombChunk = gcHelper.newWriteThroughTombChunk(Chunk.ACTIVE_FNAME_SUFFIX);
         tombChunk.addStep1(recordSeq++, keyPrefix, keyBytes, null);
         tombChunk.garbage = 3 << 8;
         return tombChunk;
@@ -145,7 +162,7 @@ public class SnapshotterTest {
             this.seq = in.readLong();
             this.size = in.readChar() << 8;
             this.garbage = in.readChar() << 8;
-            final byte flags = in.readByte();
+            byte flags = in.readByte();
             this.isSrcChunk = (flags & SOURCE_CHUNK_FLAG_MASK) != 0;
             this.isSurvivor = (flags & SURVIVOR_FLAG_MASK) != 0;
         }

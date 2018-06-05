@@ -127,7 +127,6 @@
                                 <includes>
                                     <include>com.hazelcast:hazelcast-client</include>
                                     <include>com.hazelcast:hazelcast-enterprise-client</include>
-                                    <include>com.hazelcast.marketing:hazelcast-license-extractor</include>
                                 </includes>
                             </artifactSet>
                             <filters>
@@ -199,11 +198,6 @@
             <version>${jsr107.api.version}</version>
             <scope>provided</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.hazelcast.marketing</groupId>
-            <artifactId>hazelcast-license-extractor</artifactId>
-            <version>${license.extractor.version}</version>
         </dependency>
 
         <!-- netty dependencies for OpenSSL integration -->

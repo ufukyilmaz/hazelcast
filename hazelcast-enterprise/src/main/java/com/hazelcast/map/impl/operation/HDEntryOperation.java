@@ -104,7 +104,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
             throw new HazelcastException("EntryProcessor.getBackupProcessor() should return null if ReadOnly implemented");
         }
 
-        Object value = recordStore.get(dataKey, false);
+        Object value = recordStore.get(dataKey, false, getCallerAddress());
         value = value == null ? null : toHeapData((Data) value);
 
         String executorName = ((Offloadable) entryProcessor).getExecutorName();

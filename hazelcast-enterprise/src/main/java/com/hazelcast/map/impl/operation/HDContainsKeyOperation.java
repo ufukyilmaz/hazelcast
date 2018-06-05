@@ -23,7 +23,7 @@ public class HDContainsKeyOperation extends HDKeyBasedMapOperation implements Re
 
     @Override
     protected void runInternal() {
-        containsKey = recordStore.containsKey(dataKey);
+        containsKey = recordStore.containsKey(dataKey, getCallerAddress());
     }
 
     @Override

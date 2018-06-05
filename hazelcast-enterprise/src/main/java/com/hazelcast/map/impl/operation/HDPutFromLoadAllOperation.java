@@ -53,7 +53,7 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
 
             // here object conversion is for interceptors.
             Object value = hasInterceptor ? mapServiceContext.toObject(dataValue) : dataValue;
-            Object previousValue = recordStore.putFromLoad(key, value);
+            Object previousValue = recordStore.putFromLoad(key, value, getCallerAddress());
             // the following check is for the case when the putFromLoad does not put the data due to various reasons
             // one of the reasons may be size eviction threshold has been reached
             if (value != null && !recordStore.existInMemory(key)) {
@@ -69,7 +69,6 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
                 checkNotNull(record, "Value loaded by a MapLoader cannot be null.");
                 value = record.getValue();
             }
-            publishEntryEvent(key, previousValue, value);
             publishWanReplicationEvent(key, value, record);
 
             addInvalidation(key);

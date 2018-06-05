@@ -40,7 +40,7 @@ public class HDTxnLockAndGetOperation extends HDLockAwareOperation implements Mu
         }
         Record record = recordStore.getRecordOrNull(dataKey);
         if (record == null && shouldLoad) {
-            record = recordStore.loadRecordOrNull(dataKey, false);
+            record = recordStore.loadRecordOrNull(dataKey, false, getCallerAddress());
         }
         Data value = record == null ? null : mapService.getMapServiceContext().toData(record.getValue());
         response = new VersionedValue(value, record == null ? 0 : record.getVersion());

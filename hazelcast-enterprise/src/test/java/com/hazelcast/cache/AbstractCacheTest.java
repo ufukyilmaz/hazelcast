@@ -113,6 +113,10 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         return getICache(cacheManager, cacheConfig, CACHE_NAME);
     }
 
+    protected <K, V> ICache<K, V> createCache(CacheConfig<K, V> config) {
+        return getICache(cacheManager, config, CACHE_NAME);
+    }
+
     @Before
     public void setup() {
         onSetup();

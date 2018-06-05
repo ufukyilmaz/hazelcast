@@ -21,10 +21,12 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
  * +--------------------+------------------+
  * | Value Address      |   8 bytes (long) |
  * +--------------------+------------------+
+ * | ExpiryPolicy Addres|   8 bytes (long) |
+ * +--------------------+------------------+
  * | Hit Count          |   4 bytes (int)  |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
- * Total size = 44 bytes
+ * Total size = 52 bytes
  * All fields are aligned.
  *
  * PS: In current buddy memory allocator design,
@@ -46,11 +48,13 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     private static final int ACCESS_TIME_OFFSET = LONG_SIZE_IN_BYTES;
     private static final int TTL_OFFSET = ACCESS_TIME_OFFSET + LONG_SIZE_IN_BYTES;
     private static final int SEQUENCE_OFFSET = TTL_OFFSET + LONG_SIZE_IN_BYTES;
+    private static final int EXPIRY_POLICY_OFFSET;
     private static final int ACCESS_HIT_OFFSET;
 
     static {
         VALUE_OFFSET = SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
-        ACCESS_HIT_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
+        EXPIRY_POLICY_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
+        ACCESS_HIT_OFFSET = EXPIRY_POLICY_OFFSET + LONG_SIZE_IN_BYTES;
         SIZE = ACCESS_HIT_OFFSET + INT_SIZE_IN_BYTES;
     }
 
@@ -134,6 +138,16 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     }
 
     @Override
+    public void setExpiryPolicyAddress(long policyAddress) {
+        writeLong(EXPIRY_POLICY_OFFSET, policyAddress);
+    }
+
+    @Override
+    public long getExpiryPolicyAddress() {
+        return readLong(EXPIRY_POLICY_OFFSET);
+    }
+
+    @Override
     public HiDensityNativeMemoryCacheRecord reset(long address) {
         setAddress(address);
         setSize(SIZE);
@@ -168,6 +182,32 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
             setValueAddress(value.address());
         } else {
             setValueAddress(NULL_PTR);
+        }
+    }
+
+    @Override
+    public void setExpiryPolicy(NativeMemoryData expiryPolicy) {
+        if (expiryPolicy == null) {
+            setExpiryPolicyAddress(NULL_PTR);
+        } else {
+            setExpiryPolicyAddress(expiryPolicy.address());
+        }
+    }
+
+    @Override
+    public NativeMemoryData getExpiryPolicy() {
+        if (address == NULL_PTR) {
+            return null;
+        } else {
+            long policyAddress = getExpiryPolicyAddress();
+            if (policyAddress == NULL_PTR) {
+                return null;
+            }
+            if (recordAccessor != null) {
+                return recordAccessor.readData(policyAddress);
+            } else {
+                return new NativeMemoryData().reset(policyAddress);
+            }
         }
     }
 

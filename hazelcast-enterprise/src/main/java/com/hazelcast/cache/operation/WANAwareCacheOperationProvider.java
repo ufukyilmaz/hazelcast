@@ -98,6 +98,11 @@ public class WANAwareCacheOperationProvider extends EnterpriseCacheOperationProv
     }
 
     @Override
+    public Operation createSetExpiryPolicyOperation(List<Data> keys, Data expiryPolicy) {
+        return delegate.createSetExpiryPolicyOperation(keys, expiryPolicy);
+    }
+
+    @Override
     public OperationFactory createGetAllOperationFactory(Set<Data> keySet, ExpiryPolicy policy) {
         return delegate.createGetAllOperationFactory(keySet, policy);
     }

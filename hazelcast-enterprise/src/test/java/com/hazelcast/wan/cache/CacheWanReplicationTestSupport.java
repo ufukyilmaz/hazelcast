@@ -132,6 +132,14 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         return myCache.size();
     }
 
+    protected void setExpiryPolicyDataIn(HazelcastInstance[] cluster, ClassLoader classLoader, String cacheManager,
+                                         String cacheName, InMemoryFormat format, int start, int end, ExpiryPolicy expiryPolicy) {
+        ICache<Integer, String> myCache = getOrCreateCache(cluster, cacheManager, cacheName, format, classLoader);
+        for (; start < end; start++) {
+            myCache.setExpiryPolicy(start, expiryPolicy);
+        }
+    }
+
     protected boolean checkCacheDataInFrom(HazelcastInstance[] targetCluster, ClassLoader classLoader,
                                            String cacheManager, final String cacheName, final int start, final int end,
                                            HazelcastInstance[] sourceCluster) {

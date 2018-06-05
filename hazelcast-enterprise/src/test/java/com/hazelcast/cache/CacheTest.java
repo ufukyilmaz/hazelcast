@@ -41,6 +41,7 @@ import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
+import javax.cache.expiry.TouchedExpiryPolicy;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CompletionListener;
@@ -206,6 +207,54 @@ public class CacheTest extends AbstractCacheTest {
         }
         cache.removeAll();
         assertEquals(0, cache.size());
+    }
+
+
+    @Test
+    public void testRecordExpiryPolicyTakesPrecedenceOverCachePolicy() {
+        final int UPDATED_TTL = 1000;
+
+        Duration generalDuration = new Duration(TimeUnit.DAYS, 1);
+        Duration modifiedDuration = new Duration(TimeUnit.MILLISECONDS, UPDATED_TTL);
+        CacheConfig<Integer, String> cacheConfig = new CacheConfig<Integer, String>();
+        cacheConfig.setExpiryPolicyFactory(TouchedExpiryPolicy.factoryOf(generalDuration));
+
+        ICache<Integer, String> cache = createCache(cacheConfig);
+        cache.put(1, "value");
+        cache.setExpiryPolicy(1, new TouchedExpiryPolicy(modifiedDuration));
+
+        sleepAtLeastMillis(UPDATED_TTL + 1);
+
+        assertNull(cache.get(1));
+    }
+
+    @Test
+    public void testRecordExpiryPolicyTakesPrecedence() {
+        final int TTL = 1000;
+
+        Duration modifiedDuration = new Duration(TimeUnit.MILLISECONDS, TTL);
+
+        ICache<Integer, String> cache = createCache();
+        cache.put(1, "value");
+        cache.setExpiryPolicy(1, new TouchedExpiryPolicy(modifiedDuration));
+
+        sleepAtLeastMillis(TTL + 1);
+
+        assertNull(cache.get(1));
+    }
+
+    @Test
+    public void test_whenExpiryPolicyIsOverriden_thenNewPolicyIsInEffect() {
+        final int TTL = 1000;
+        ICache<Integer, String> cache = createCache();
+        cache.put(1, "value");
+        Duration expiryDuration = new Duration(TimeUnit.MILLISECONDS, TTL);
+        cache.setExpiryPolicy(1, new TouchedExpiryPolicy(expiryDuration));
+        cache.setExpiryPolicy(1, new TouchedExpiryPolicy(Duration.ETERNAL));
+
+        sleepAtLeastMillis(TTL + 1);
+
+        assertEquals("value", cache.get(1));
     }
 
     @Test

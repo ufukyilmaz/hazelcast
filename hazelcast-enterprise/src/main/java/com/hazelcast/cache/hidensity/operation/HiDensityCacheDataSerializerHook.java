@@ -43,6 +43,8 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
     public static final short MERGE = 30;
     public static final short MERGE_BACKUP = 31;
     public static final short MERGE_FACTORY = 32;
+    public static final short SET_EXPIRY_POLICY = 33;
+    public static final short SET_EXPIRY_POLICY_BACKUP = 34;
 
     @Override
     public int getFactoryId() {
@@ -118,6 +120,10 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
                     return new CacheMergeBackupOperation();
                 case MERGE_FACTORY:
                     return new CacheMergeOperationFactory();
+                case SET_EXPIRY_POLICY:
+                    return new CacheSetExpiryPolicyOperation();
+                case SET_EXPIRY_POLICY_BACKUP:
+                    return new CacheSetExpiryPolicyBackupOperation();
                 default:
                     throw new IllegalArgumentException("Unknown type ID: " + typeId);
             }

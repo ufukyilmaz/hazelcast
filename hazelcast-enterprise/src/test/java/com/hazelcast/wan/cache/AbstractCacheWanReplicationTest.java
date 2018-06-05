@@ -160,6 +160,40 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     }
 
     @Test
+    public void setExpiryPolicyPropagatesTTLChangeToPassiveCluster() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+                DEFAULT_CACHE_NAME);
+        startClusterA();
+        startClusterB();
+        ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1000, 1000, 1000);
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        setExpiryPolicyDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, expiryPolicy);
+        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50);
+    }
+
+    @Test
+    public void setExpiryPolicyPropagatesTTLBothWays() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+                DEFAULT_CACHE_NAME);
+        setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughCacheMergePolicy.class.getName(),
+                DEFAULT_CACHE_NAME);
+        startClusterA();
+        startClusterB();
+        ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1000, 1000, 1000);
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 100, false);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 100, clusterA);
+        setExpiryPolicyDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, expiryPolicy);
+        setExpiryPolicyDataIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 50, 100, expiryPolicy);
+        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50);
+        checkKeysNotIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100);
+    }
+
+    @Test
     public void testPauseResume() {
         initConfigA();
         initConfigB();

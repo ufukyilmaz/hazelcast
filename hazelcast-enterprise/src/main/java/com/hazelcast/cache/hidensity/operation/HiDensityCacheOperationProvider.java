@@ -48,6 +48,11 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
+    public Operation createSetExpiryPolicyOperation(List<Data> keys, Data expiryPolicy) {
+        return new CacheSetExpiryPolicyOperation(nameWithPrefix, keys, expiryPolicy);
+    }
+
+    @Override
     public Operation createContainsKeyOperation(Data key) {
         return new CacheContainsKeyOperation(nameWithPrefix, key);
     }

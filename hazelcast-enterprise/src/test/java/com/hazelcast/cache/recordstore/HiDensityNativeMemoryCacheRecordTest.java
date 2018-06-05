@@ -55,6 +55,7 @@ public class HiDensityNativeMemoryCacheRecordTest {
         record.setTtlMillis(ttl);
 
         record.setValueAddress(address);
+        record.setExpiryPolicyAddress(address);
 
         assertEquals(creationTime, record.getCreationTime());
         assertEquals(accessTime, record.getLastAccessTime());
@@ -62,6 +63,7 @@ public class HiDensityNativeMemoryCacheRecordTest {
         assertEquals(seq, record.getSequence());
         assertEquals(ttl, record.getTtlMillis());
         assertEquals(address, record.getValueAddress());
+        assertEquals(address, record.getExpiryPolicyAddress());
     }
 
     @Test

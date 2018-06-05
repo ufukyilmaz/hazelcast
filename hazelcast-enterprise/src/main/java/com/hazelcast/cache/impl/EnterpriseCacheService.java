@@ -590,7 +590,8 @@ public class EnterpriseCacheService
                                         cacheEventContext.getCreationTime(),
                                         cacheEventContext.getExpirationTime(),
                                         cacheEventContext.getLastAccessTime(),
-                                        cacheEventContext.getAccessHit()),
+                                        cacheEventContext.getAccessHit(),
+                                        cacheEventContext.getExpiryPolicy()),
                                 config.getManagerPrefix(), config.getTotalBackupCount());
                 if (backup) {
                     wanReplicationPublisher.publishReplicationEventBackup(SERVICE_NAME, update);

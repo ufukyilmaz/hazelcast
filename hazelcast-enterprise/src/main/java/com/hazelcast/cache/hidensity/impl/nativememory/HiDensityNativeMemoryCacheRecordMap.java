@@ -13,6 +13,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.util.Clock;
 
+import javax.cache.expiry.ExpiryPolicy;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -120,6 +121,10 @@ public class HiDensityNativeMemoryCacheRecordMap
             return getEntryValue().getExpirationTime();
         }
 
+        @Override
+        public ExpiryPolicy getExpiryPolicy() {
+            return (ExpiryPolicy) recordProcessor.toObject(getEntryValue().getExpiryPolicy());
+        }
     }
 
     @Override

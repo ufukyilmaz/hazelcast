@@ -60,4 +60,10 @@ public class HiDensityNativeMemoryCacheRecordStoreTest extends CacheRecordStoreT
         ICacheRecordStore cacheRecordStore = createCacheRecordStore(InMemoryFormat.NATIVE);
         putAndGetFromCacheRecordStore(cacheRecordStore, InMemoryFormat.NATIVE);
     }
+
+    @Test
+    public void putObjectAndGetNativeDataExpiryPolicyFromCacheRecordStore() {
+        ICacheRecordStore cacheRecordStore = createCacheRecordStore(InMemoryFormat.NATIVE);
+        putAndSetExpiryPolicyFromRecordStore(cacheRecordStore, InMemoryFormat.NATIVE);
+    }
 }

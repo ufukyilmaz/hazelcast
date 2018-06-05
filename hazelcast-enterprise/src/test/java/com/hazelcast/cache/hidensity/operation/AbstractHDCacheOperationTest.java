@@ -19,15 +19,18 @@ import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import org.junit.Before;
+import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.OngoingStubbing;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import static com.hazelcast.cache.hidensity.operation.AbstractHDCacheOperationTest.OperationType.PUT;
 import static com.hazelcast.cache.hidensity.operation.AbstractHDCacheOperationTest.OperationType.PUT_ALL;
+import static com.hazelcast.cache.hidensity.operation.AbstractHDCacheOperationTest.OperationType.SET_EXPIRY_POLICY;
 import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,6 +42,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -52,7 +56,8 @@ public abstract class AbstractHDCacheOperationTest {
 
     enum OperationType {
         PUT,
-        PUT_ALL
+        PUT_ALL,
+        SET_EXPIRY_POLICY
     }
 
     int syncBackupCount;
@@ -150,6 +155,19 @@ public abstract class AbstractHDCacheOperationTest {
                     numberOfNativeOOME = 0;
                 }
                 return;
+            case SET_EXPIRY_POLICY:
+                if (throwNativeOOME) {
+                    doNothing().doNothing().doNothing()
+                            .doThrow(exception).doThrow(exception)
+                            .doThrow(exception).doThrow(exception)
+                            .doThrow(exception).doThrow(exception)
+                            .doNothing().when(recordStore).setExpiryPolicy(ArgumentMatchers.<Data>anyCollection(), any(), anyString());
+                    numberOfNativeOOME = 6;
+                } else {
+                    doNothing().when(recordStore).setExpiryPolicy(ArgumentMatchers.<Data>anyCollection(), any(), anyString());
+                    numberOfNativeOOME = 0;
+                }
+                return;
             default:
                 numberOfNativeOOME = 0;
         }
@@ -214,6 +232,14 @@ public abstract class AbstractHDCacheOperationTest {
             // RecordStore.getAndPut() is called again for each entry which threw a NativeOOME
             verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).getAndPut(any(Data.class), any(Data.class),
                     any(ExpiryPolicy.class), anyString(), anyInt());
+        } else if (operationType == SET_EXPIRY_POLICY) {
+            if (verifyBackups) {
+                verify(recordStore, times((syncBackupCount + 1) * ENTRY_COUNT + numberOfNativeOOME))
+                        .setExpiryPolicy(any(Collection.class), any(), anyString());
+            } else {
+                verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME))
+                        .setExpiryPolicy(any(Collection.class), any(), anyString());
+            }
         }
 
         if (verifyBackups) {

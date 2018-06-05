@@ -14,7 +14,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
  */
 public abstract class HiDensityCacheRecord
         extends HiDensityRecord
-        implements CacheRecord<NativeMemoryData> {
+        implements CacheRecord<NativeMemoryData, NativeMemoryData> {
 
     protected HiDensityCacheRecord() {
     }
@@ -36,4 +36,9 @@ public abstract class HiDensityCacheRecord
      * @param ttl the TTL value for this {@link HiDensityCacheRecord} in milliseconds.
      */
     public abstract void setTtlMillis(long ttl);
+
+
+    public abstract long getExpiryPolicyAddress();
+
+    public abstract void setExpiryPolicyAddress(long address);
 }

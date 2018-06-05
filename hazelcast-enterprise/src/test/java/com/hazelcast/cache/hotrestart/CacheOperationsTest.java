@@ -18,7 +18,9 @@ import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
@@ -203,6 +205,36 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
+                assertNull(cache.get(0));
+            }
+        });
+    }
+
+    @Test
+    public void testSetExpiryPolicySingle() {
+        ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1, 1, 1, TimeUnit.MILLISECONDS);
+        cache.put(0, randomString());
+        cache.setExpiryPolicy(0, expiryPolicy);
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                assertNull(cache.get(0));
+            }
+        });
+    }
+
+    @Test
+    public void testSetExpiryPolicyMultiple() {
+        ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1, 1, 1, TimeUnit.MILLISECONDS);
+        Set<Integer> keys = new HashSet<Integer>();
+        for (int i = 0; i < 50; i++) {
+            cache.put(i, randomString());
+            keys.add(i);
+        }
+        cache.setExpiryPolicy(keys, expiryPolicy);
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
                 assertNull(cache.get(0));
             }
         });

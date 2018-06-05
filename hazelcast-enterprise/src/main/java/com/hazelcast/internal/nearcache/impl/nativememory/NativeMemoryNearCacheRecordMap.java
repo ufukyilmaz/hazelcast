@@ -32,6 +32,11 @@ public class NativeMemoryNearCacheRecordMap
         public long getExpirationTime() {
             return getEntryValue().getExpirationTime();
         }
+
+        @Override
+        public Object getExpiryPolicy() {
+            return null;
+        }
     }
 
     @Override

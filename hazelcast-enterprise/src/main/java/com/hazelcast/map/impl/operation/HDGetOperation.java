@@ -23,7 +23,7 @@ public final class HDGetOperation extends HDKeyBasedMapOperation
 
     @Override
     protected void runInternal() {
-        Object record = recordStore.get(dataKey, false);
+        Object record = recordStore.get(dataKey, false, getCallerAddress());
         if (!executedLocally() && record instanceof Data) {
             // in case of a 'remote' call (e..g a client call) we prevent making an onheap copy of the offheap data
             result = (Data) record;

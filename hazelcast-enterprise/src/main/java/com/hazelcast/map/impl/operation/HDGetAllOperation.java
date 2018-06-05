@@ -38,7 +38,7 @@ public class HDGetAllOperation extends HDMapOperation implements ReadonlyOperati
                 partitionKeySet.add(key);
             }
         }
-        entries = recordStore.getAll(partitionKeySet);
+        entries = recordStore.getAll(partitionKeySet, getCallerAddress());
     }
 
     @Override

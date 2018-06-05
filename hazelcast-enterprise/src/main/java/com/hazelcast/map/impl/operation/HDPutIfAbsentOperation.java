@@ -16,7 +16,7 @@ public class HDPutIfAbsentOperation extends HDBasePutOperation implements Mutati
 
     @Override
     protected void runInternal() {
-        final Object oldValue = recordStore.putIfAbsent(dataKey, dataValue, ttl);
+        final Object oldValue = recordStore.putIfAbsent(dataKey, dataValue, ttl, getCallerAddress());
         dataOldValue = mapService.getMapServiceContext().toData(oldValue);
         successful = dataOldValue == null;
     }

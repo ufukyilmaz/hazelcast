@@ -221,10 +221,13 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         createDataIn(clusterA, "map2", 0, 1000);
         assertDataInFromEventually(new HazelcastInstance[]{clusterB[0]}, "map2", 0, 1000, clusterA);
 
+        // faulty address must have been removed because we could not replicate to it
+        // but it will be readded as a result of periodic WAN discovery implementation
+        // returning two endpoints
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                assertTargetEndpointSize(1);
+                assertTargetEndpointSize(2);
             }
         });
 

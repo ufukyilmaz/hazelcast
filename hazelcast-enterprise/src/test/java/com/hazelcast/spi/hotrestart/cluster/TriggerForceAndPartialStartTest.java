@@ -3,7 +3,6 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
-import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.Member;
@@ -77,9 +76,9 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
     private void checkStartResult(boolean partialStart, HazelcastInstance instance) {
         InternalPartitionService partitionService = getNodeEngineImpl(instance).getPartitionService();
         if (partialStart) {
-            assertThat(partitionService.getPartitionStateVersion(), greaterThan(0));
+            assertThat("Expected partition state version to be > 0", partitionService.getPartitionStateVersion(), greaterThan(0));
         } else {
-            assertEquals(0, partitionService.getPartitionStateVersion());
+            assertEquals("Expected partition state version to be 0", 0, partitionService.getPartitionStateVersion());
         }
     }
 
@@ -87,14 +86,14 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
     protected Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
                                HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
-        HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
-        // tests don't depend on validation timeout, we explicitly trigger force & partial start
-        hotRestartPersistenceConfig.setValidationTimeoutSeconds(Integer.MAX_VALUE);
+        config.getHotRestartPersistenceConfig()
+                // tests don't depend on validation timeout, we explicitly trigger force & partial start
+                .setValidationTimeoutSeconds(Integer.MAX_VALUE);
         return config;
     }
 
     private static void shutdownCluster(HazelcastInstance... instances) {
-        assertThat(instances, not(emptyArray()));
+        assertThat("Expected instances to be not empty", instances, not(emptyArray()));
         waitAllForSafeState(instances);
         instances[0].getCluster().shutdown();
     }
@@ -130,11 +129,9 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
             if (currentMembers.size() < expectedMemberCount) {
                 return;
             }
-
             if ((onMaster && !node.isMaster()) || (!onMaster && node.isMaster())) {
                 return;
             }
-
             if (!flag.compareAndSet(false, true)) {
                 return;
             }

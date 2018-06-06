@@ -9,6 +9,7 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
+import com.hazelcast.instance.NodeExtension;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.Address;
@@ -40,7 +41,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,6 +57,7 @@ import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.chang
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -68,7 +69,11 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
     @Parameters(name = "addressChangePolicy:{0}")
     public static Collection<Object> parameters() {
-        return Arrays.asList(new Object[]{NONE, PARTIAL, ALL});
+        return asList(new Object[]{
+                NONE,
+                PARTIAL,
+                ALL
+        });
     }
 
     private final int nodeCount = 3;
@@ -77,9 +82,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
     public void testForceStart_onMissingNode() {
         final AtomicBoolean crashNode = new AtomicBoolean();
         final AtomicBoolean forceStartFlag = new AtomicBoolean();
-
         Supplier<ClusterHotRestartEventListener> supplier = new Supplier<ClusterHotRestartEventListener>() {
-
             @Override
             public ClusterHotRestartEventListener get() {
                 return new FailOnPrepareComplete(crashNode, forceStartFlag);
@@ -93,7 +96,6 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
     public void testForceStart_afterJoin_forceStartMaster() {
         final AtomicBoolean forceStartFlag = new AtomicBoolean();
         Supplier<ClusterHotRestartEventListener> supplier = new Supplier<ClusterHotRestartEventListener>() {
-
             @Override
             public ClusterHotRestartEventListener get() {
                 return new TriggerForceStartOnAllMembersJoin(forceStartFlag);
@@ -107,7 +109,6 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
     public void testForceStart_afterPartitionTableValidation() {
         final AtomicBoolean forceStartFlag = new AtomicBoolean();
         Supplier<ClusterHotRestartEventListener> supplier = new Supplier<ClusterHotRestartEventListener>() {
-
             @Override
             public ClusterHotRestartEventListener get() {
                 return new TriggerForceStartOnPartitionTableValidationSuccessful(forceStartFlag, nodeCount);
@@ -121,7 +122,6 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
     public void testForceStart_duringPartitionTableValidation() {
         final AtomicBoolean forceStartFlag = new AtomicBoolean();
         Supplier<ClusterHotRestartEventListener> supplier = new Supplier<ClusterHotRestartEventListener>() {
-
             @Override
             public ClusterHotRestartEventListener get() {
                 return new TriggerForceStartOnMasterOnPartitionTableReceived(forceStartFlag);
@@ -135,7 +135,6 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
     public void testForceStart_onDataLoadResult() {
         final AtomicBoolean forceStartFlag = new AtomicBoolean();
         Supplier<ClusterHotRestartEventListener> supplier = new Supplier<ClusterHotRestartEventListener>() {
-
             @Override
             public ClusterHotRestartEventListener get() {
                 return new TriggerForceStartOnMasterOnDataLoadResult(forceStartFlag);
@@ -163,8 +162,8 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         assertInstancesJoined(expectedNodeCount, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
-                assertTrue(forceStartFlag.get());
+            public void run() {
+                assertTrue("Expected forceStartFlag to become true", forceStartFlag.get());
             }
         });
     }
@@ -222,7 +221,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
             }
         }
 
-        assertNotNull(instanceToRestart);
+        assertNotNull("instanceToRestart should not be null", instanceToRestart);
 
         changeClusterStateEventually(instanceToRestart, ClusterState.FROZEN);
         Address address = getAddress(instanceToRestart);
@@ -234,7 +233,6 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
     public void testForceStart_thenGracefulRestart_dataIsPreserved() {
         final AtomicBoolean forceStartFlag = new AtomicBoolean();
         Supplier<ClusterHotRestartEventListener> supplier = new Supplier<ClusterHotRestartEventListener>() {
-
             @Override
             public ClusterHotRestartEventListener get() {
                 return new TriggerForceStartOnAllMembersJoin(forceStartFlag);
@@ -242,7 +240,6 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         };
 
         testForceStart(supplier, nodeCount, forceStartFlag);
-
 
         HazelcastInstance instanceToRestart = null;
         for (HazelcastInstance instance : getAllInstances()) {
@@ -252,10 +249,11 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
             }
         }
 
-        assertNotNull(instanceToRestart);
+        assertNotNull("instanceToRestart should not be null", instanceToRestart);
 
-        final String key = generateKeyOwnedBy(instanceToRestart);
-        instanceToRestart.getMap(mapNames[0]).put(key, key);
+        String key = generateKeyOwnedBy(instanceToRestart);
+        String value = randomString();
+        instanceToRestart.getMap(mapNames[0]).put(key, value);
 
         // since partition table is persisted async by now, just make sure it is persisted to disk before termination
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instanceToRestart).getNodeExtension();
@@ -266,18 +264,20 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         instanceToRestart.getLifecycleService().shutdown();
         instanceToRestart = restartInstance(address);
 
-        assertEquals(key, instanceToRestart.getMap(mapNames[0]).get(key));
+        assertEquals("Expected same value for key owned by instanceToRestart",
+                value, instanceToRestart.getMap(mapNames[0]).get(key));
     }
 
     @Override
     protected Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
                                HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
-        final Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
-        config.getServicesConfig().addServiceConfig(
-                new ServiceConfig().setEnabled(true)
-                        .setName(MockHotRestartService.NAME)
-                        .setClassName(MockHotRestartService.class.getName())
-        );
+        ServiceConfig serviceConfig = new ServiceConfig()
+                .setEnabled(true)
+                .setName(MockHotRestartService.NAME)
+                .setClassName(MockHotRestartService.class.getName());
+
+        Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
+        config.getServicesConfig().addServiceConfig(serviceConfig);
         return config;
     }
 
@@ -285,15 +285,16 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
         private static final String NAME = "_MockHotRestartService_";
 
+        private final CountDownLatch loadStarted = new CountDownLatch(1);
+
         private volatile NodeEngineImpl nodeEngineImpl;
         private volatile HotRestartIntegrationService hotRestartService;
-        private final CountDownLatch loadStarted = new CountDownLatch(1);
 
         @Override
         public void init(NodeEngine nodeEngine, Properties properties) {
             nodeEngineImpl = (NodeEngineImpl) nodeEngine;
-            hotRestartService =
-                    (HotRestartIntegrationService) nodeEngineImpl.getNode().getNodeExtension().getInternalHotRestartService();
+            NodeExtension nodeExtension = nodeEngineImpl.getNode().getNodeExtension();
+            hotRestartService = (HotRestartIntegrationService) nodeExtension.getInternalHotRestartService();
             hotRestartService.registerRamStoreRegistry(NAME, this);
         }
 
@@ -385,7 +386,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
         private final AtomicBoolean forceStartFlag;
 
-        private Node node;
+        private volatile Node node;
 
         TriggerForceStartOnAllMembersJoin(AtomicBoolean forceStartFlag) {
             this.forceStartFlag = forceStartFlag;
@@ -406,9 +407,9 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
     private class TriggerForceStartOnMasterOnPartitionTableReceived extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
-        private AtomicBoolean forceStartFlag;
+        private final AtomicBoolean forceStartFlag;
 
-        private Node node;
+        private volatile Node node;
 
         TriggerForceStartOnMasterOnPartitionTableReceived(AtomicBoolean forceStartFlag) {
             this.forceStartFlag = forceStartFlag;
@@ -430,14 +431,13 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         public void setHazelcastInstance(HazelcastInstance instance) {
             this.node = getNode(instance);
         }
-
     }
 
     private class TriggerForceStartOnMasterOnDataLoadResult extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
-        private AtomicBoolean forceStartFlag;
+        private final AtomicBoolean forceStartFlag;
 
-        private Node node;
+        private volatile Node node;
 
         TriggerForceStartOnMasterOnDataLoadResult(AtomicBoolean forceStartFlag) {
             this.forceStartFlag = forceStartFlag;
@@ -458,7 +458,6 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         public void setHazelcastInstance(HazelcastInstance instance) {
             this.node = getNode(instance);
         }
-
     }
 
     // MUST BE USED WITH MASTER
@@ -466,14 +465,12 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
             extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final CountDownLatch latch = new CountDownLatch(1);
-
-        private final AtomicBoolean forceStart;
-
-        private final int expectedNodeCount;
-
         private final Set<Address> addresses = Collections.newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
 
-        private HazelcastInstance instance;
+        private final AtomicBoolean forceStart;
+        private final int expectedNodeCount;
+
+        private volatile Node node;
 
         TriggerForceStartOnPartitionTableValidationSuccessful(AtomicBoolean forceStart, final int expectedNodeCount) {
             this.forceStart = forceStart;
@@ -481,13 +478,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         }
 
         @Override
-        public void setHazelcastInstance(HazelcastInstance instance) {
-            this.instance = instance;
-        }
-
-        @Override
         public void onDataLoadStart(Address address) {
-            final Node node = getNode(instance);
             if (!node.isMaster()) {
                 return;
             }
@@ -496,11 +487,9 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
         @Override
         public void onPartitionTableValidationResult(Address sender, boolean success) {
-            final Node node = getNode(instance);
             if (!node.isMaster()) {
                 return;
             }
-
             if (success) {
                 addresses.add(sender);
                 if (addresses.size() == expectedNodeCount && forceStart.compareAndSet(false, true)) {
@@ -511,15 +500,19 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
                 System.err.println("Invalid ptable from " + sender);
             }
         }
+
+        @Override
+        public void setHazelcastInstance(HazelcastInstance instance) {
+            this.node = getNode(instance);
+        }
     }
 
     private class FailOnPrepareComplete extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final AtomicBoolean crashNode;
-
         private final AtomicBoolean forceStart;
 
-        private Node node;
+        private volatile Node node;
 
         FailOnPrepareComplete(AtomicBoolean crashNode, AtomicBoolean forceStart) {
             this.crashNode = crashNode;
@@ -550,7 +543,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
     private class TriggerForceStartDuringDataLoad extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
-        private Node node;
+        private volatile Node node;
 
         @Override
         public void onDataLoadStart(final Address address) {

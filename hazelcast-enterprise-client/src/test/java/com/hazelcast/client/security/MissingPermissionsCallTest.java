@@ -38,8 +38,7 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class})
-public class MissingPermissionsCallTest
-        extends HazelcastTestSupport {
+public class MissingPermissionsCallTest extends HazelcastTestSupport {
 
     private final TestHazelcastFactory factory = new TestHazelcastFactory();
 
@@ -96,13 +95,13 @@ public class MissingPermissionsCallTest
         DurableExecutorService executor = client.getDurableExecutorService(DURABLE_EXEC_NAME);
         executor.submit(new SampleTask()).andThen(new ExecutionCallback<Long>() {
             @Override
-            public void onResponse (Long response){
+            public void onResponse(Long response) {
                 MissingPermissionsCallTest.this.response = response;
                 lock.countDown();
             }
 
             @Override
-            public void onFailure (Throwable t){
+            public void onFailure(Throwable t) {
                 MissingPermissionsCallTest.this.error = t;
                 lock.countDown();
             }
@@ -139,5 +138,4 @@ public class MissingPermissionsCallTest
             return atomicLong.get();
         }
     }
-
 }

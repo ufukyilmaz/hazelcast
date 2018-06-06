@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class LatencyTrackingWanBatchSenderTest extends HazelcastTestSupport {
+
     private static final String GROUP_NAME = "groupName";
 
     private StoreLatencyPlugin plugin;

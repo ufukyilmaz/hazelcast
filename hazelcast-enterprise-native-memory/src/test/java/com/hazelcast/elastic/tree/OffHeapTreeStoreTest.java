@@ -23,14 +23,12 @@ public class OffHeapTreeStoreTest extends OffHeapTreeTestSupport {
     private OffHeapTreeStore tree;
 
     @Before
-    public void setUp()
-            throws Exception {
+    public void setUp() {
         tree = new RedBlackTreeStore(malloc, new DataComparator(GlobalMemoryAccessorRegistry.MEM));
     }
 
     @Test
-    public void entries()
-            throws Exception {
+    public void entries() {
         MemoryBlock key = createBlob(1);
         MemoryBlock value = createBlob(-1);
 
@@ -49,8 +47,7 @@ public class OffHeapTreeStoreTest extends OffHeapTreeTestSupport {
     }
 
     @Test
-    public void entries_withDirection()
-            throws Exception {
+    public void entries_withDirection() {
         MemoryBlock key = createBlob(1);
         MemoryBlock key2 = createBlob(2);
         MemoryBlock key3 = createBlob(3);
@@ -98,20 +95,17 @@ public class OffHeapTreeStoreTest extends OffHeapTreeTestSupport {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void put_whenNullKey()
-            throws Exception {
+    public void put_whenNullKey() {
         tree.put(null, null);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void put_whenNilKey()
-            throws Exception {
+    public void put_whenNilKey() {
         tree.put(new MemoryBlock(), new MemoryBlock());
     }
 
     @Test
-    public void getEntry()
-            throws Exception {
+    public void getEntry() {
         MemoryBlock key = createBlob(1);
         MemoryBlock value = createBlob(2);
 
@@ -122,8 +116,7 @@ public class OffHeapTreeStoreTest extends OffHeapTreeTestSupport {
     }
 
     @Test
-    public void searchEntry()
-            throws Exception {
+    public void searchEntry() {
 
         MemoryBlock value = createBlob(2);
 
@@ -138,8 +131,7 @@ public class OffHeapTreeStoreTest extends OffHeapTreeTestSupport {
     }
 
     @Test
-    public void dispose()
-            throws Exception {
+    public void dispose() {
         for (int i = 0; i < 10; i++) {
             tree.put(createBlob(i + 1), createBlob(i + 1000));
         }
@@ -148,9 +140,7 @@ public class OffHeapTreeStoreTest extends OffHeapTreeTestSupport {
     }
 
     @Test
-    public void remove()
-            throws Exception {
-
+    public void remove() {
         for (int i = 0; i < 100; i++) {
             tree.put(createBlob(i + 1), createBlob(i + 1000));
         }

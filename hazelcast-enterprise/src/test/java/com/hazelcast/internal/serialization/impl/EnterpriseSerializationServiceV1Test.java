@@ -8,18 +8,16 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
-
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseSerializationServiceV1Test {
 
-    private static Version V3_8 = Version.of(3, 8);
+    private static final Version V3_8 = Version.of(3, 8);
 
     @Test
-    public void checkIfProperSerializerUsed_withRollingUpgrades() throws IOException {
+    public void checkIfProperSerializerUsed_withRollingUpgrades() {
         AbstractSerializationService ss = (AbstractSerializationService) new EnterpriseSerializationServiceBuilder()
                 .setClusterVersionAware(new TestClusterVersionAware())
                 .setVersionedSerializationEnabled(true)
@@ -29,7 +27,7 @@ public class EnterpriseSerializationServiceV1Test {
     }
 
     @Test
-    public void checkIfProperSerializerUsed_withoutRollingUpgrades() throws IOException {
+    public void checkIfProperSerializerUsed_withoutRollingUpgrades() {
         AbstractSerializationService ss = (AbstractSerializationService) new EnterpriseSerializationServiceBuilder()
                 .setVersionedSerializationEnabled(false)
                 .build();

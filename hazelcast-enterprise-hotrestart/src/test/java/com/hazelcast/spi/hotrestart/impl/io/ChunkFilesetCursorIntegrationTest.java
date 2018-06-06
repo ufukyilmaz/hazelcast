@@ -95,7 +95,8 @@ public class ChunkFilesetCursorIntegrationTest {
 
     private void assertFilesetCursorIteratesOverAllFilesCorrectly(boolean createValueChunks) throws Exception {
         // GIVEN records
-        int recordSizeFirst = 8, recordSizeSecond = 4;
+        int recordSizeFirst = 8;
+        int recordSizeSecond = 4;
         List<TestRecord> recordsFirst = generateRandomRecords(counter, recordSizeFirst);
         List<TestRecord> recordsSecond = generateRandomRecords(counter, recordSizeSecond);
 

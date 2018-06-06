@@ -43,7 +43,7 @@ public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {BATCH_IMPL, NATIVE},
-                {BATCH_IMPL, BINARY}
+                {BATCH_IMPL, BINARY},
         });
     }
 

@@ -62,14 +62,16 @@ public class HDQueryCompatibilityTest {
                 {OBJECT, null},
                 {OBJECT, new MapIndexConfig("power", false)},
                 {OBJECT, new MapIndexConfig("power", true)},
-                });
+        });
     }
 
     @Before
     public void setup() {
         // GIVEN CONFIG
-        versions = new String[]{RELEASED_VERSIONS[0],
-                                CURRENT_VERSION};
+        versions = new String[]{
+                RELEASED_VERSIONS[0],
+                CURRENT_VERSION,
+        };
         factory = new CompatibilityTestHazelcastInstanceFactory(versions);
 
         Config config = getHDConfig();

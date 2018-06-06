@@ -77,7 +77,7 @@ public class LockSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Test
     public void test1_tryLock() {
-        interceptor.setExpectation(getObjectType(), objectName, "tryLock", 0l, TimeUnit.MILLISECONDS);
+        interceptor.setExpectation(getObjectType(), objectName, "tryLock", 0L, TimeUnit.MILLISECONDS);
         // lock.tryLock() == lock.tryLock(0,,TimeUnit.MILLISECONDS) so i pass those parameters into setExpectation
         lock.tryLock();
     }
@@ -93,7 +93,7 @@ public class LockSecurityInterceptorTest extends InterceptorTestSupport {
     public void test_condition_await() throws InterruptedException {
         ICondition iCondition = lock.newCondition(randomString());
         lock.lock();
-        interceptor.setExpectation(getObjectType(), objectName, "await", 1l, TimeUnit.MILLISECONDS);
+        interceptor.setExpectation(getObjectType(), objectName, "await", 1L, TimeUnit.MILLISECONDS);
         iCondition.await(1, TimeUnit.MILLISECONDS);
     }
 

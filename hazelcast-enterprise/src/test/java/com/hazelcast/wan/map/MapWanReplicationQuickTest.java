@@ -45,7 +45,7 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
                 {BATCH_IMPL, NATIVE},
-                {BATCH_IMPL, BINARY}
+                {BATCH_IMPL, BINARY},
         });
     }
 

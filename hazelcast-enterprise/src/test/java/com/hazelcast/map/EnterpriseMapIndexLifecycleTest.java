@@ -27,8 +27,10 @@ public class EnterpriseMapIndexLifecycleTest extends MapIndexLifecycleTest {
 
     @Parameters(name = "{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
-                {BINARY}, {OBJECT}, {NATIVE}
+        return Arrays.asList(new Object[][]{
+                {BINARY},
+                {OBJECT},
+                {NATIVE},
         });
     }
 

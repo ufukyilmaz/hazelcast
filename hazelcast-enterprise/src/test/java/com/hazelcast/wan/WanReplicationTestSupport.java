@@ -201,6 +201,6 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
             }
         }
 
-        abstract public void go();
+        public abstract void go();
     }
 }

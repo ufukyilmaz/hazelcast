@@ -35,7 +35,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
         LockableTestSegment firstSegment = new LockableTestSegment(FIRST_DATA, false);
         LockableTestSegment secondSegment = new LockableTestSegment(SECOND_DATA, false);
         iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
-                firstSegment, secondSegment
+                firstSegment, secondSegment,
         });
 
         // in the beginning no segment is locked
@@ -71,7 +71,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     public void testIterator_whenUnlockFails_thenCloseThrowsIOException() throws Exception {
         LockableTestSegment segment = new LockableTestSegment(FIRST_DATA, true);
         iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
-                segment
+                segment,
         });
 
         // in the beginning the segment is not locked
@@ -100,7 +100,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     public void test_whenNextIsCalledWithoutHasNext_thenSegmentIsInitializedAndLocked() {
         LockableTestSegment segment = new LockableTestSegment(FIRST_DATA, false);
         iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
-                segment
+                segment,
         });
 
         assertEquals(FIRST_DATA, iterator.next());
@@ -115,7 +115,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
         LockableTestSegment firstSegment = new LockableTestSegment(FIRST_DATA, false);
         LockableTestSegment secondSegment = new LockableTestSegment(SECOND_DATA, false);
         iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
-                firstSegment, secondSegment
+                firstSegment, secondSegment,
         });
 
         assertTrue(iterator.hasNext());
@@ -134,7 +134,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     public void test_whenNextIsCalledAfterLastElement_thenNoSuchElementExceptionIsThrown() {
         LockableTestSegment segment = new LockableTestSegment(FIRST_DATA, false);
         iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
-                segment
+                segment,
         });
 
         assertTrue(iterator.hasNext());
@@ -162,7 +162,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
         iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
                 firstEmptySegment,
                 secondEmptySegment,
-                segment
+                segment,
         });
 
         // check that the empty segments are skipped correctly
@@ -196,7 +196,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
     public void testThreadSafety_whenLockingIsCalledFromOtherThread_thenThrowException() throws Exception {
         LockableTestSegment segment = new LockableTestSegment(FIRST_DATA, false);
         iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
-                segment
+                segment,
         });
 
         // try to lock the segment from another thread
@@ -231,7 +231,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
         LockableTestSegment firstSegment = new LockableTestSegment(FIRST_DATA, false);
         LockableTestSegment secondSegment = new LockableTestSegment();
         iterator = new LockableNearCacheRecordStoreSegmentIterator(new NativeMemoryNearCacheRecordStore[]{
-                firstSegment, secondSegment
+                firstSegment, secondSegment,
         });
 
         // the actual thread locks the first segment

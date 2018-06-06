@@ -17,5 +17,4 @@ public class HDClientQueryCacheUpdateTest extends ClientQueryCacheUpdateTest {
     protected Config getConfig() {
         return getHDConfig();
     }
-
 }

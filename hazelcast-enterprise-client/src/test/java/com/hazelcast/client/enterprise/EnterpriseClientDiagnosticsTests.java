@@ -39,7 +39,8 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
     public static Iterable<Object[]> parameters() {
         return asList(new Object[][]{
                 {NativeMemoryConfig.MemoryAllocatorType.POOLED},
-                {NativeMemoryConfig.MemoryAllocatorType.STANDARD}});
+                {NativeMemoryConfig.MemoryAllocatorType.STANDARD},
+        });
     }
 
     @Parameter

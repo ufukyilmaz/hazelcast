@@ -47,8 +47,9 @@ public class SSLConnectionTest {
     public void after() {
         factory.terminateAll();
     }
-    
-    @BeforeClass @AfterClass
+
+    @BeforeClass
+    @AfterClass
     public static void killAllHazelcastInstances() {
         HazelcastInstanceFactory.terminateAll();
     }
@@ -63,8 +64,8 @@ public class SSLConnectionTest {
 
         Properties props = TestKeyStoreUtil.createSslProperties();
         config.getNetworkConfig()
-            .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props))
-            .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+                .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props))
+                .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -109,8 +110,8 @@ public class SSLConnectionTest {
 
         Properties props = TestKeyStoreUtil.createSslProperties();
         config.getNetworkConfig()
-            .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props))
-            .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+                .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props))
+                .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -144,7 +145,8 @@ public class SSLConnectionTest {
         List<String> supportedCipherSuites = Arrays.asList(getSupportedCipherSuites());
         logger.info("Supported ciphersuites: " + supportedCipherSuites);
         String[] knownCs = {"SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA", "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA",
-                "TLS_RSA_WITH_AES_128_CBC_SHA", "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA256", "TLS_RSA_WITH_AES_128_CBC_SHA256"};
+                "TLS_RSA_WITH_AES_128_CBC_SHA", "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA256", "TLS_RSA_WITH_AES_128_CBC_SHA256",
+        };
         int idx = 0;
         while (idx < knownCs.length) {
             if (supportedCipherSuites.contains(knownCs[idx])) {
@@ -266,8 +268,8 @@ public class SSLConnectionTest {
 
         Config config = new Config();
         config.getNetworkConfig()
-            .setSSLConfig(sslConfig)
-            .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+                .setSSLConfig(sslConfig)
+                .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
 
         return config;
     }

@@ -49,17 +49,17 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     private static final String HD_PREFIX = "hd-";
 
     @Parameters(name = "{0}")
-    public static Collection parameters() {
-        return asList(
-                new Object[]{"Map", new DataStructureValidator[]{mapValidator(), mapHDValidator(), mapLockValidator(),
-                        mapHDLockValidator()}},
-                new Object[]{"Cache", new DataStructureValidator[]{cacheValidator(), cacheHDValidator()}},
-                new Object[]{"MultiMap", new DataStructureValidator[]{multiMapValidator(), multiMapLockValidator()}},
-                new Object[]{"Queue", new DataStructureValidator[]{queueValidator()}},
-                new Object[]{"Lock", new DataStructureValidator[]{lockValidator()}},
-                new Object[]{"All", new DataStructureValidator[]{mapValidator(), mapHDValidator(), mapLockValidator(),
-                        cacheValidator(), cacheHDValidator(), multiMapValidator(), queueValidator(), lockValidator()}}
-        );
+    @SuppressWarnings("checkstyle:arraytrailingcomma")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {"Map", newValidators(mapValidator(), mapHDValidator(), mapLockValidator(), mapHDLockValidator())},
+                {"Cache", newValidators(cacheValidator(), cacheHDValidator())},
+                {"MultiMap", newValidators(multiMapValidator(), multiMapLockValidator())},
+                {"Queue", newValidators(queueValidator())},
+                {"Lock", newValidators(lockValidator())},
+                {"All", newValidators(mapValidator(), mapHDValidator(), mapLockValidator(), cacheValidator(), cacheHDValidator(),
+                        multiMapValidator(), queueValidator(), lockValidator())},
+        });
     }
 
     @Parameter
@@ -588,6 +588,10 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
                 map.unlock(key);
             }
         }
+    }
+
+    private static DataStructureValidator[] newValidators(DataStructureValidator... validators) {
+        return validators;
     }
 
     private static String toValue(int i) {

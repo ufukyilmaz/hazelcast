@@ -85,12 +85,14 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         return createCacheDataIn(cluster, classLoader, cacheManager, cacheName, format, start, end, removeBeforePut, null, false);
     }
 
+    @SuppressWarnings("checkstyle:parameternumber")
     protected int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
                                     String cacheManager, String cacheName, InMemoryFormat format,
                                     int start, int end, boolean removeBeforePut, ExpiryPolicy expiryPolicy) {
         return createCacheDataIn(cluster, classLoader, cacheManager, cacheName, format, start, end, removeBeforePut, expiryPolicy, false);
     }
 
+    @SuppressWarnings("checkstyle:parameternumber")
     protected int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
                                     String cacheManager, String cacheName, InMemoryFormat format,
                                     int start, int end, boolean removeBeforePut, ExpiryPolicy expiryPolicy,

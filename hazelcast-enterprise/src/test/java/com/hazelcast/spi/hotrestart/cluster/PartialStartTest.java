@@ -63,7 +63,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         return asList(new Object[]{
                 NONE,
                 PARTIAL,
-                ALL
+                ALL,
         });
     }
 

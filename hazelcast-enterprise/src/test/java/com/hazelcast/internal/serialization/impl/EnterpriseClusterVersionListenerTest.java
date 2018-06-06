@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseClusterVersionListenerTest {
 
-    private static Version V3_6 = Version.of(3, 6);
+    private static final Version V3_6 = Version.of(3, 6);
 
     private EnterpriseClusterVersionListener listener = new EnterpriseClusterVersionListener();
 

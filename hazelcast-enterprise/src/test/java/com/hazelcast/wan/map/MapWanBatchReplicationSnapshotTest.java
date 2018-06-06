@@ -134,12 +134,12 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         for (int i = rangeFromInclusive; i < rangeToExclusive; i++) {
             V actualValue = map.get(i);
             assertEquals("Key '" + i + "' does not map to the expected value '" + expectedValue
-                    + "' in the map '" + map +"'", expectedValue, actualValue);
+                    + "' in the map '" + map + "'", expectedValue, actualValue);
         }
     }
 
     private static <V> void assertKeyRangeMappedToValueAllTheTime(final V expectedValue, final int rangeFromInclusive, final int rangeToExclusive,
-                                                                     final IMap<Integer, V> map, int durationSeconds) {
+                                                                  final IMap<Integer, V> map, int durationSeconds) {
         assertTrueAllTheTime(new AssertTask() {
             @Override
             public void run() {
@@ -149,7 +149,7 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
     }
 
     private static <V> void assertKeyRangeMappedToValueEventually(final V expectedValue, final int rangeFromInclusive, final int rangeToExclusive,
-                                                                     final IMap<Integer, V> map) {
+                                                                  final IMap<Integer, V> map) {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {

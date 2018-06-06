@@ -30,7 +30,7 @@ public class HDEntryProcessorOffloadableTest extends EntryProcessorOffloadableTe
         return asList(new Object[][]{
                 {BINARY, 0, 0}, {OBJECT, 0, 0}, {NATIVE, 0, 0},
                 {BINARY, 1, 0}, {OBJECT, 1, 0}, {NATIVE, 1, 0},
-                {BINARY, 0, 1}, {OBJECT, 0, 1}, {NATIVE, 0, 1}
+                {BINARY, 0, 1}, {OBJECT, 0, 1}, {NATIVE, 0, 1},
         });
     }
 

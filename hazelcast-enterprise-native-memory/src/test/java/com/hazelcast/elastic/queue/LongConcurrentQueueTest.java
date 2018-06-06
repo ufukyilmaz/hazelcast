@@ -34,12 +34,12 @@ public class LongConcurrentQueueTest {
     private LongQueue queue;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         malloc = new StandardMemoryManager(new MemorySize(128, MemoryUnit.MEGABYTES));
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         if (queue != null) {
             queue.dispose();
         }
@@ -94,7 +94,8 @@ public class LongConcurrentQueueTest {
         return s.toString();
     }
 
-    private static abstract class QueueWorker extends Thread {
+    private abstract static class QueueWorker extends Thread {
+
         static final int ITERATIONS = 50000;
 
         final LongQueue queue;
@@ -182,13 +183,13 @@ public class LongConcurrentQueueTest {
     }
 
     @Test
-    public void testArrayBlockingQueueDestroy() throws InterruptedException {
+    public void testArrayBlockingQueueDestroy() {
         queue = new LongArrayBlockingQueue(malloc, 10000, NULL);
         testDestroy();
     }
 
     @Test
-    public void testLinkedBlockingQueueDestroy() throws InterruptedException {
+    public void testLinkedBlockingQueueDestroy() {
         queue = new LongLinkedBlockingQueue(malloc, 10000, NULL);
         testDestroy();
     }
@@ -209,13 +210,13 @@ public class LongConcurrentQueueTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testArrayBlockingQueueDestroyDuringProduce() throws InterruptedException {
+    public void testArrayBlockingQueueDestroyDuringProduce() {
         queue = new LongArrayBlockingQueue(malloc, 10000, NULL);
         testDestroyDuringProduce();
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testLinkedBlockingQueueDestroyDuringProduce() throws InterruptedException {
+    public void testLinkedBlockingQueueDestroyDuringProduce() {
         queue = new LongLinkedBlockingQueue(malloc, 10000, NULL);
         testDestroyDuringProduce();
     }
@@ -223,6 +224,7 @@ public class LongConcurrentQueueTest {
     private void testDestroyDuringProduce() {
         final CountDownLatch latch = new CountDownLatch(1);
         new Thread() {
+            @Override
             public void run() {
                 try {
                     latch.await();
@@ -260,9 +262,10 @@ public class LongConcurrentQueueTest {
         testDestroyDuringConsume();
     }
 
-    private void testDestroyDuringConsume() throws InterruptedException {
+    private void testDestroyDuringConsume() {
         final CountDownLatch latch = new CountDownLatch(1);
         new Thread() {
+            @Override
             public void run() {
                 try {
                     latch.await();

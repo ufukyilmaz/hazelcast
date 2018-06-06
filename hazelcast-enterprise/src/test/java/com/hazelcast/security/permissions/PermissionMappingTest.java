@@ -39,6 +39,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
 
     // Insecurely accessed services
     private static final Set<Class> INSECURE_SERVICES = new HashSet<Class>();
+
     static {
         INSECURE_SERVICES.add(com.hazelcast.cache.impl.EnterpriseCacheService.class);
         INSECURE_SERVICES.add(com.hazelcast.serviceprovider.TestRemoteService.class);
@@ -51,6 +52,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
 
     // Common methods that don't require security
     private static final Set<String> UNIVERSAL_METHOD_SKIP_LIST = new HashSet<String>();
+
     static {
         UNIVERSAL_METHOD_SKIP_LIST.addAll(
                 asList("toString", "getName", "getServiceName", "getService", "getPartitionId", "invalidate",
@@ -59,6 +61,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
 
     // Common methods that don't require security
     private static final Set<Class> INHERITED_METHOD_SKIP_LIST = new HashSet<Class>();
+
     static {
         INHERITED_METHOD_SKIP_LIST.add(Object.class);
         INHERITED_METHOD_SKIP_LIST.add(Iterable.class);
@@ -70,6 +73,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
      * implementation.
      */
     private static final Map<Class, String> SERVICE_TO_PERMSTRUCT_MAPPING = new HashMap<Class, String>();
+
     static {
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.concurrent.atomiclong.AtomicLongService.class,
                 "atomicLong");
@@ -114,41 +118,51 @@ public class PermissionMappingTest extends HazelcastTestSupport {
     }
 
     private static final Map<Class, String[]> PER_SERVICE_SKIP_LIST = new HashMap<Class, String[]>();
+
     static {
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.multimap.impl.MultiMapService.class,
-                new String[] { "initialize" });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.list.ListService.class,
-                new String[] { "initialize", "removeIf", "stream", "parallelStream", "replaceAll", "sort" });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.queue.QueueService.class,
-                new String[] { "initialize", "removeIf", "stream", "parallelStream" });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.set.SetService.class,
-                new String[] { "initialize", "removeIf", "stream", "parallelStream" });
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.multimap.impl.MultiMapService.class, new String[]{"initialize"});
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.list.ListService.class, new String[]{
+                "initialize", "removeIf", "stream", "parallelStream", "replaceAll", "sort",
+        });
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.queue.QueueService.class, new String[]{
+                "initialize", "removeIf", "stream", "parallelStream",
+        });
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.set.SetService.class, new String[]{
+                "initialize", "removeIf", "stream", "parallelStream",
+        });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.scheduledexecutor.impl.DistributedScheduledExecutorService.class,
-                new String[] { "scheduleOnMemberAtFixedRate", "scheduleAtFixedRate", "scheduleOnKeyOwner",
-                               "scheduleOnAllMembers", "scheduleOnKeyOwnerAtFixedRate", "schedule", "scheduleOnMember",
-                               "scheduleOnAllMembersAtFixedRate", "getScheduledFuture", "scheduleOnMembers",
-                               "scheduleOnMembersAtFixedRate", "getAllScheduledFutures", "shutdown", "destroy"});
+                new String[]{
+                        "scheduleOnMemberAtFixedRate", "scheduleAtFixedRate", "scheduleOnKeyOwner",
+                        "scheduleOnAllMembers", "scheduleOnKeyOwnerAtFixedRate", "schedule", "scheduleOnMember",
+                        "scheduleOnAllMembersAtFixedRate", "getScheduledFuture", "scheduleOnMembers",
+                        "scheduleOnMembersAtFixedRate", "getAllScheduledFutures", "shutdown", "destroy",
+                });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.durableexecutor.impl.DistributedDurableExecutorService.class,
-                new String[] { "retrieveResult", "submit", "isTerminated", "invokeAll", "executeOnKeyOwner",
-                               "retrieveAndDisposeResult", "execute", "disposeResult", "awaitTermination",
-                               "shutdownNow", "invokeAny", "submitToKeyOwner", "shutdown", "isShutdown", "destroy"});
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.executor.impl.DistributedExecutorService.class,
-                new String[] { "getLocalExecutorStats", "executeOnMembers", "executeOnMember", "submit", "isTerminated",
-                               "invokeAll", "submitToAllMembers", "executeOnKeyOwner", "submitToMember",
-                               "submitToMembers", "execute", "executeOnAllMembers", "awaitTermination", "shutdownNow",
-                               "invokeAny", "submitToKeyOwner", "shutdown", "isShutdown", "destroy"});
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.crdt.pncounter.PNCounterService.class,
-                new String[] { 	"getCurrentTargetReplicaAddress", "setOperationTryCount", "reset" });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.replicatedmap.impl.ReplicatedMapService.class,
-                new String[] { "getOrDefault", "computeIfAbsent", "compute", "computeIfPresent",
-                               "initialize", "putIfAbsent", "merge", "replace", "replaceAll" });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.topic.impl.TopicService.class,
-                new String[] { "initialize" });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.map.impl.MapService.class,
-                new String[] { "getOrDefault", "compute", "merge", "computeIfAbsent", "setOperationProvider",
-                               "getOperationProvider", "computeIfPresent", "getPartitionStrategy", "waitUntilLoaded",
-                               "initialize", "getQueryCache", "getTotalBackupCount", "subscribeToEventJournal",
-                               "replace", "replaceAll"  });
+                new String[]{
+                        "retrieveResult", "submit", "isTerminated", "invokeAll", "executeOnKeyOwner",
+                        "retrieveAndDisposeResult", "execute", "disposeResult", "awaitTermination",
+                        "shutdownNow", "invokeAny", "submitToKeyOwner", "shutdown", "isShutdown", "destroy",
+                });
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.executor.impl.DistributedExecutorService.class, new String[]{
+                "getLocalExecutorStats", "executeOnMembers", "executeOnMember", "submit", "isTerminated",
+                "invokeAll", "submitToAllMembers", "executeOnKeyOwner", "submitToMember",
+                "submitToMembers", "execute", "executeOnAllMembers", "awaitTermination", "shutdownNow",
+                "invokeAny", "submitToKeyOwner", "shutdown", "isShutdown", "destroy",
+        });
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.crdt.pncounter.PNCounterService.class, new String[]{
+                "getCurrentTargetReplicaAddress", "setOperationTryCount", "reset",
+        });
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.replicatedmap.impl.ReplicatedMapService.class, new String[]{
+                "getOrDefault", "computeIfAbsent", "compute", "computeIfPresent",
+                "initialize", "putIfAbsent", "merge", "replace", "replaceAll",
+        });
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.topic.impl.TopicService.class, new String[]{"initialize"});
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.map.impl.MapService.class, new String[]{
+                "getOrDefault", "compute", "merge", "computeIfAbsent", "setOperationProvider",
+                "getOperationProvider", "computeIfPresent", "getPartitionStrategy", "waitUntilLoaded",
+                "initialize", "getQueryCache", "getTotalBackupCount", "subscribeToEventJournal",
+                "replace", "replaceAll",
+        });
     }
 
     @Test
@@ -180,7 +194,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 boolean isPublicAPI = Modifier.isPublic(m.getModifiers());
                 boolean shouldSkip = UNIVERSAL_METHOD_SKIP_LIST.contains(m.getName())
                         || (PER_SERVICE_SKIP_LIST.get(service.getClass()) != null
-                            && asList(PER_SERVICE_SKIP_LIST.get(service.getClass())).contains(m.getName()));
+                        && asList(PER_SERVICE_SKIP_LIST.get(service.getClass())).contains(m.getName()));
 
                 // Check if methods is inherited from a skipped super-class
                 for (Class c : INHERITED_METHOD_SKIP_LIST) {
@@ -246,21 +260,21 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 Method match = null;
                 Method[] api = proxy.getClass().getMethods();
 
-               for (Method apiMethod : api) {
-                   if (apiMethod.getName().equals(mappedMethod)) {
-                       match = apiMethod;
-                       break;
-                   }
-               }
+                for (Method apiMethod : api) {
+                    if (apiMethod.getName().equals(mappedMethod)) {
+                        match = apiMethod;
+                        break;
+                    }
+                }
 
-               assertNotNull("Obsolete permission mapping " + serviceAlias + ":" + mappedMethod, match);
-               assertTrue("Obsolete permission mapping for private API " + serviceAlias + ":"
-                       + mappedMethod, Modifier.isPublic(match.getModifiers()));
+                assertNotNull("Obsolete permission mapping " + serviceAlias + ":" + mappedMethod, match);
+                assertTrue("Obsolete permission mapping for private API " + serviceAlias + ":"
+                        + mappedMethod, Modifier.isPublic(match.getModifiers()));
 
-               String[] serviceSkipList = PER_SERVICE_SKIP_LIST.get(serviceClass);
-               if (serviceSkipList != null) {
-                   assertNotContains(asList(serviceSkipList), mappedMethod);
-               }
+                String[] serviceSkipList = PER_SERVICE_SKIP_LIST.get(serviceClass);
+                if (serviceSkipList != null) {
+                    assertNotContains(asList(serviceSkipList), mappedMethod);
+                }
             }
         }
     }
@@ -278,9 +292,10 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         }
 
         builder.append("\n");
-        builder.append("Note: there are cases where direct support for a client operation is not provided, eg. a client can't call "
-                + "an API (not available or not implemented), however, clients can still execute code within an executor,"
-                + "therefore **all** relevant calls must have a permission type.");
+        builder.append(
+                "Note: there are cases where direct support for a client operation is not provided, eg. a client can't call "
+                        + "an API (not available or not implemented), however, clients can still execute code within an executor,"
+                        + "therefore **all** relevant calls must have a permission type.");
         builder.append("\n");
 
         return builder.toString();

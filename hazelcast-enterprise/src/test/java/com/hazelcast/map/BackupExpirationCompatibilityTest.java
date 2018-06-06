@@ -51,7 +51,9 @@ public class BackupExpirationCompatibilityTest extends HazelcastTestSupport {
     @Parameters(name = "inMemoryFormat:{0}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {BINARY}, {OBJECT}, {NATIVE}
+                {BINARY},
+                {OBJECT},
+                {NATIVE},
         });
     }
 

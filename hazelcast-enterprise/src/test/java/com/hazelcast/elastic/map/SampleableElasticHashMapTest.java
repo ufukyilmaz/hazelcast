@@ -37,6 +37,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
+@SuppressWarnings("checkstyle:genericwhitespace")
 public class SampleableElasticHashMapTest extends HazelcastTestSupport {
 
     private HazelcastMemoryManager memoryManager;
@@ -76,13 +77,12 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
             map.put(key, simpleNativeMemoryData);
         }
 
-        Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples
-                = map.getRandomSamples(sampleCount);
+        Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples = map.getRandomSamples(sampleCount);
         assertNotNull(samples);
 
         int actualSampleCount = 0;
         Map<Data, SimpleNativeMemoryData> map = new HashMap<Data, SimpleNativeMemoryData>();
-        for (SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry sample : samples) {
+        for (SampleableElasticHashMap.SamplingEntry sample : samples) {
             // because of Maven compile error, explicit casting was added
             map.put((Data) sample.getEntryKey(), (SimpleNativeMemoryData) sample.getEntryValue());
             actualSampleCount++;
@@ -119,8 +119,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
             }
         };
 
-        Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples
-                = map.getRandomSamples(sampleCount);
+        Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples = map.getRandomSamples(sampleCount);
 
         assertFalse("Not expecting any sample!", samples.iterator().hasNext());
     }
@@ -138,8 +137,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
         SimpleNativeMemoryData record = memoryBlockAccessor.newRecord();
         map.put(key, record);
 
-        Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples
-                = map.getRandomSamples(sampleCount);
+        Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples = map.getRandomSamples(sampleCount);
 
         Iterator<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> iterator = samples.iterator();
         assertTrue(iterator.hasNext());
@@ -236,10 +234,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
             if (address != record.address) {
                 return false;
             }
-            if (size != record.size) {
-                return false;
-            }
-            return true;
+            return size == record.size;
         }
 
         @Override
@@ -248,7 +243,6 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
             result = 31 * result + size;
             return result;
         }
-
     }
 
     static class SimpleNativeMemoryDataAccessor implements MemoryBlockAccessor<SimpleNativeMemoryData> {
@@ -334,17 +328,11 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
             return size;
         }
 
-        long disposeData(NativeMemoryData value) {
-            long size = getSize(value);
-            ss.disposeData(value);
-            dataQ.offer(value);
-            return size;
-        }
-
         long disposeData(long address) {
             NativeMemoryData data = readData(address);
             long size = getSize(data);
-            disposeData(data);
+            ss.disposeData(data);
+            dataQ.offer(data);
             return size;
         }
 

@@ -84,7 +84,7 @@ public class EnterpriseDataTest {
                     "abcdefghijklmnopqrstuvwxyz 0123456789 !?@#$%&*()[]{}|/<>",
                     person,
                     portablePerson,
-                    new PartitionAwareDummyObject(System.nanoTime())
+                    new PartitionAwareDummyObject(System.nanoTime()),
             };
 
             for (Object object : objects) {

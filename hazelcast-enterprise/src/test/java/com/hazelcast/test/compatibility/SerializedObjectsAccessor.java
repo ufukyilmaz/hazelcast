@@ -91,7 +91,8 @@ public class SerializedObjectsAccessor implements Closeable, Iterable<Serialized
                 String[] tokens = nextLine.split(",");
                 String className = tokens[0];
                 List<SamplePosition> samplePositions = new ArrayList<SamplePosition>();
-                int offset = 0, length;
+                int offset = 0;
+                int length;
                 for (int i = 1; i < tokens.length; i++) {
                     // even index is position, odd index is length
                     if (i % 2 == 0) {

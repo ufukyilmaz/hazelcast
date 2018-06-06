@@ -23,7 +23,7 @@ public abstract class AbstractQuorumCompatibilityTest extends HazelcastTestSuppo
             PREVIOUS_CLUSTER_VERSION.toString(),
             PREVIOUS_CLUSTER_VERSION.toString(),
             CURRENT_CLUSTER_VERSION.toString(),
-            CURRENT_CLUSTER_VERSION.toString()
+            CURRENT_CLUSTER_VERSION.toString(),
     };
 
     protected String name;

@@ -42,7 +42,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {NATIVE},
-                {BINARY}
+                {BINARY},
         });
     }
 

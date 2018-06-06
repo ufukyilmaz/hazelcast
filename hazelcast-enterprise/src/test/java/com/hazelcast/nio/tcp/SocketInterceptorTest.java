@@ -158,13 +158,13 @@ public class SocketInterceptorTest extends HazelcastTestSupport {
 
         @Override
         public String toString() {
-            return "MySocketInterceptor{" +
-                    "initCallCount=" + initCallCount +
-                    ", acceptCallCount=" + acceptCallCount +
-                    ", connectCallCount=" + connectCallCount +
-                    ", acceptFailureCount=" + acceptFailureCount +
-                    ", connectFailureCount=" + connectFailureCount +
-                    '}';
+            return "MySocketInterceptor{"
+                    + "initCallCount=" + initCallCount
+                    + ", acceptCallCount=" + acceptCallCount
+                    + ", connectCallCount=" + connectCallCount
+                    + ", acceptFailureCount=" + acceptFailureCount
+                    + ", connectFailureCount=" + connectFailureCount
+                    + '}';
         }
     }
 }

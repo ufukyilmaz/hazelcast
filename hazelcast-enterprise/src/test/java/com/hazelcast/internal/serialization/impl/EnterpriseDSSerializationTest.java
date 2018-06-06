@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseDSSerializationTest {
 
-    private static Version V3_8 = Version.of("3.8");
+    private static final Version V3_8 = Version.of("3.8");
 
     private boolean versionedSerializationEnabled;
 
@@ -178,9 +178,8 @@ public class EnterpriseDSSerializationTest {
     @Parameterized.Parameters(name = "{index}: versionedSerializationEnabled = {0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
-                {false}, {true}
+                {false},
+                {true},
         });
     }
-
-
 }

@@ -72,7 +72,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         return asList(new Object[]{
                 NONE,
                 PARTIAL,
-                ALL
+                ALL,
         });
     }
 

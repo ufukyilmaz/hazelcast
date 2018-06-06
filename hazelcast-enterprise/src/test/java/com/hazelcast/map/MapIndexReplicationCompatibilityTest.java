@@ -48,7 +48,8 @@ public class MapIndexReplicationCompatibilityTest extends HazelcastTestSupport {
     public void test_indexCreatedOnCurrentMember_whenPreviousClusterVersion() {
         factory = new CompatibilityTestHazelcastInstanceFactory(new String[] {
                 PREVIOUS_CLUSTER_VERSION.toString(),
-                CURRENT_CLUSTER_VERSION.toString()});
+                CURRENT_CLUSTER_VERSION.toString(),
+        });
         HazelcastInstance[] instances = new HazelcastInstance[2];
         // start previous member
         instances[0] = factory.newHazelcastInstance();
@@ -81,7 +82,8 @@ public class MapIndexReplicationCompatibilityTest extends HazelcastTestSupport {
         factory = new CompatibilityTestHazelcastInstanceFactory(new String[] {
                 PREVIOUS_CLUSTER_VERSION.toString(),
                 CURRENT_CLUSTER_VERSION.toString(),
-                PREVIOUS_CLUSTER_VERSION.toString()});
+                PREVIOUS_CLUSTER_VERSION.toString(),
+        });
         HazelcastInstance[] instances = new HazelcastInstance[3];
         // start previous member
         instances[0] = factory.newHazelcastInstance();
@@ -118,7 +120,8 @@ public class MapIndexReplicationCompatibilityTest extends HazelcastTestSupport {
         factory = new CompatibilityTestHazelcastInstanceFactory(new String[] {
                 PREVIOUS_CLUSTER_VERSION.toString(),
                 CURRENT_CLUSTER_VERSION.toString(),
-                CURRENT_CLUSTER_VERSION.toString()});
+                CURRENT_CLUSTER_VERSION.toString(),
+        });
         HazelcastInstance[] instances = new HazelcastInstance[3];
         // start previous member
         instances[0] = factory.newHazelcastInstance();

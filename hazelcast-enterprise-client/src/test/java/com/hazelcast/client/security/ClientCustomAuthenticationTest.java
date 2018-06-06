@@ -128,26 +128,26 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
                 return false;
             }
             CustomCredentials cc = (CustomCredentials) credentials;
-            if (cc.getPrincipal().equals(options.get("username")) &&
-                    cc.getKey1().equals(options.get("key1")) &&
-                    cc.getKey2().equals(options.get("key2"))) {
+            if (cc.getPrincipal().equals(options.get("username"))
+                    && cc.getKey1().equals(options.get("key1"))
+                    && cc.getKey2().equals(options.get("key2"))) {
                 return true;
             }
             throw new LoginException("Invalid credentials");
         }
 
         @Override
-        protected boolean onCommit() throws LoginException {
+        protected boolean onCommit() {
             return loginSucceeded;
         }
 
         @Override
-        protected boolean onAbort() throws LoginException {
+        protected boolean onAbort() {
             return false;
         }
 
         @Override
-        protected boolean onLogout() throws LoginException {
+        protected boolean onLogout() {
             return true;
         }
     }

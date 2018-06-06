@@ -23,7 +23,6 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
@@ -63,26 +62,26 @@ public class MemoryAllocatorTest {
                         new StandardMemoryManager(new MemorySize(1, MEGABYTES)), MEM);
                 toDispose = memMgr;
                 break;
-            case SYSTEM: {
-                final PoolingMemoryManager malloc = new PoolingMemoryManager(new MemorySize(8, MEGABYTES), 16, 1 << 20);
+            case SYSTEM:
+                PoolingMemoryManager malloc = getMalloc();
                 memMgr = new MemoryManagerBean(malloc.getSystemAllocator(), MEM);
                 toDispose = malloc;
                 break;
-            }
             case POOLED_GLOBAL:
-                memMgr = new MemoryManagerBean(
-                        new PoolingMemoryManager(new MemorySize(8, MEGABYTES), 16, 1 << 20),
-                        MEM);
+                memMgr = new MemoryManagerBean(getMalloc(), MEM);
                 toDispose = memMgr;
                 break;
-            case POOLED_THREADLOCAL: {
-                final PoolingMemoryManager malloc = new PoolingMemoryManager(new MemorySize(8, MEGABYTES), 16, 1 << 20);
-                malloc.registerThread(Thread.currentThread());
-                memMgr = new MemoryManagerBean(malloc, MEM);
+            case POOLED_THREADLOCAL:
+                PoolingMemoryManager pooledThreadLocalMalloc = getMalloc();
+                pooledThreadLocalMalloc.registerThread(Thread.currentThread());
+                memMgr = new MemoryManagerBean(pooledThreadLocalMalloc, MEM);
                 toDispose = memMgr;
                 break;
-            }
         }
+    }
+
+    private PoolingMemoryManager getMalloc() {
+        return new PoolingMemoryManager(new MemorySize(8, MEGABYTES), 16, 1 << 20);
     }
 
     @After
@@ -142,7 +141,7 @@ public class MemoryAllocatorTest {
     private void testMalloc_8bytes_Aligned(int size) {
         final MemoryAllocator malloc = memMgr.getAllocator();
         long address = malloc.allocate(size);
-        assertTrue("Address: " + address + " is not aligned!", modPowerOfTwo(address, 8) == 0);
+        assertEquals("Address: " + address + " is not aligned!", 0, modPowerOfTwo(address, 8));
         malloc.free(address, size);
     }
 

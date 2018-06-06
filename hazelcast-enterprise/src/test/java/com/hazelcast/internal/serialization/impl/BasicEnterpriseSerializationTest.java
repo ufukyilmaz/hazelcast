@@ -13,7 +13,6 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 
-
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -44,9 +43,8 @@ public class BasicEnterpriseSerializationTest extends AbstractSerializationServi
     @Parameterized.Parameters(name = "{index}: versionedSerializationEnabled = {0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
-                {false}, {true}
+                {false},
+                {true},
         });
     }
-
-
 }

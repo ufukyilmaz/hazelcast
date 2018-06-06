@@ -14,7 +14,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
@@ -44,7 +43,7 @@ public class EnterpriseSerializationNativeCompatibilityTest {
         SerializationV1DataSerializable testData = SerializationV1DataSerializable.createInstanceWithNonNullFields();
         Data data = serializationService.toData(testData, DataType.NATIVE);
         SerializationV1DataSerializable testDataFromSerializer = serializationService.toObject(data);
-        assertTrue(testData.equals(testDataFromSerializer));
+        assertEquals(testData, testDataFromSerializer);
     }
 
     @Test
@@ -60,7 +59,7 @@ public class EnterpriseSerializationNativeCompatibilityTest {
         SerializationV1Portable testData = SerializationV1Portable.createInstanceWithNonNullFields();
         Data data = serializationService.toData(testData, DataType.NATIVE);
         SerializationV1Portable testDataFromSerializer = serializationService.toObject(data);
-        assertTrue(testData.equals(testDataFromSerializer));
+        assertEquals(testData, testDataFromSerializer);
     }
 
     @Test

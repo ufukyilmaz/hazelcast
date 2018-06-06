@@ -91,10 +91,10 @@ public class SplitBrainUpgradeCase4Test extends AbstractSplitBrainUpgradeTest {
         // - nodes 3,4 & 5 are in a single cluster at 2.3.0
         // - nodes 1 & 2 are in another cluster at 2.2.0
         HazelcastInstance[] instancesAtClusterVersion_2_3_0 = new HazelcastInstance[]{
-                instances[3], instances[4], instances[5]
+                instances[3], instances[4], instances[5],
         };
         HazelcastInstance[] instancesAtClusterVersion_2_2_0 = new HazelcastInstance[]{
-                instances[1], instances[2]
+                instances[1], instances[2],
         };
         assertClusterVersion(instancesAtClusterVersion_2_3_0, CLUSTER_VERSION_2NEXT_MINOR);
         assertClusterSize(3, instances[3]);

@@ -52,15 +52,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 @Category(QuickTest.class)
 public class EnterpriseSerializationTest extends HazelcastTestSupport {
 
-    private static Version V3_8 = Version.of("3.8");
-    private static Version CURRENT_VERSION = Version.of(BuildInfoProvider.getBuildInfo().getVersion());
+    private static final Version V3_8 = Version.of("3.8");
+    private static final Version CURRENT_VERSION = Version.of(BuildInfoProvider.getBuildInfo().getVersion());
 
     private boolean versionedSerializationEnabled;
 
@@ -138,15 +140,10 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
             }
 
             DummyValue that = (DummyValue) o;
-
             if (k != that.k) {
                 return false;
             }
-            if (s != null ? !s.equals(that.s) : that.s != null) {
-                return false;
-            }
-
-            return true;
+            return s != null ? s.equals(that.s) : that.s == null;
         }
 
         @Override
@@ -163,11 +160,11 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
                 new SerializerConfig().setTypeClass(SingletonValue.class)
                         .setImplementation(new StreamSerializer<SingletonValue>() {
                             @Override
-                            public void write(ObjectDataOutput out, SingletonValue v) throws IOException {
+                            public void write(ObjectDataOutput out, SingletonValue v) {
                             }
 
                             @Override
-                            public SingletonValue read(ObjectDataInput in) throws IOException {
+                            public SingletonValue read(ObjectDataInput in) {
                                 return new SingletonValue();
                             }
 
@@ -214,9 +211,9 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         InternalSerializationService ss = builder().setEnableSharedObject(true)
                 .setClusterVersionAware(new TestVersionAware()).build();
         Data data = ss.toData(new Foo());
-        Foo foo = (Foo) ss.toObject(data);
+        Foo foo = ss.toObject(data);
 
-        assertTrue("Objects are not identical!", foo == foo.getBar().getFoo());
+        assertSame("Objects are not identical!", foo, foo.getBar().getFoo());
     }
 
     @Test
@@ -228,7 +225,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         linkedList.add(new Person(12, 120, 60, "Osman", null));
         Data data = ss.toData(linkedList);
         LinkedList deserialized = ss.toObject(data);
-        assertTrue("Objects are not identical!", linkedList.equals(deserialized));
+        assertEquals("Objects are not identical!", linkedList, deserialized);
     }
 
     @Test
@@ -240,7 +237,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         arrayList.add(new Person(12, 120, 60, "Osman", null));
         Data data = ss.toData(arrayList);
         ArrayList deserialized = ss.toObject(data);
-        assertTrue("Objects are not identical!", arrayList.equals(deserialized));
+        assertEquals("Objects are not identical!", arrayList, deserialized);
     }
 
     @Test
@@ -299,7 +296,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         Data data = ss.toData(new Foo());
         Foo foo = ss.toObject(data);
 
-        assertFalse("Objects should not be identical!", foo == foo.getBar().getFoo());
+        assertNotSame("Objects should not be identical!", foo, foo.getBar().getFoo());
     }
 
     private static class Foo implements Serializable {
@@ -439,7 +436,8 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
     @Parameterized.Parameters(name = "{index}: versionedSerializationEnabled = {0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
-                {false}, {true}
+                {false},
+                {true},
         });
     }
 

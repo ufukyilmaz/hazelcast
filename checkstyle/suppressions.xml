@@ -14,7 +14,8 @@
     <suppress checks="Javadoc(Package|Type|Method|Variable)" files="/impl/"/>
     <suppress checks="Javadoc(Package|Type|Method|Variable)" files="Hook\.java$"/>
     <suppress checks="Javadoc(Package|Type|Method|Variable)" files="com/hazelcast/security/"/>
-    <suppress checks="Javadoc(Package|Type|Method|Variable)" files="com/hazelcast/instance/GeneratedEnterpriseBuildProperties.java"/>
+    <suppress checks="Javadoc(Package|Type|Method|Variable)"
+              files="com/hazelcast/instance/GeneratedEnterpriseBuildProperties.java"/>
     <suppress checks="Javadoc(Type|Method|Variable)" files="com/hazelcast/map/"/>
     <suppress checks="JavadocType" files="com/hazelcast/memory"/>
     <suppress checks="Javadoc(Type|Method)" files="com/hazelcast/elasticmemory/"/>
@@ -23,7 +24,7 @@
     <suppress checks="Javadoc(Type|Method|Variable)" files="com/hazelcast/instance/GeneratedEnterpriseBuildProperties.java"/>
 
     <!-- Hot restart module -->
-    <suppress checks="VisibilityModifier|InnerAssignment" files="com/hazelcast/spi/hotrestart/impl" />
+    <suppress checks="VisibilityModifier|InnerAssignment" files="com/hazelcast/spi/hotrestart/impl"/>
     <suppress checks="OuterTypeNumber" files="com/hazelcast/internal/util/collection/AbstractConcurrentArrayQueue\.java"/>
 
     <!-- SerializerHook -->
@@ -31,4 +32,25 @@
     <suppress checks="CyclomaticComplexityCheck|ClassFanOutComplexityCheck|ClassDataAbstractionCoupling"
               files="SerializerHook\.java$"/>
 
+    <!-- Test suppressions -->
+    <suppress
+            checks="FileLength|MethodLength|LineLength|AnonInnerLength|MethodCount|ReturnCount|ExecutableStatementCount"
+            files="[\\/]src[\\/]test[\\/]"/>
+    <suppress
+            checks="Javadoc|MagicNumber|ClassDataAbstractionCoupling|ClassFanOutComplexityCheck|IllegalImport|IllegalType"
+            files="[\\/]src[\\/]test[\\/]"/>
+    <suppress
+            checks="NPathComplexity|CyclomaticComplexity|BooleanExpressionComplexity|RegexpSinglelineJava"
+            files="[\\/]src[\\/]test[\\/]"/>
+    <suppress
+            checks="TypeName|MemberName|ConstantName|LocalVariableName|LocalFinalVariableName|MethodName"
+            files="[\\/]src[\\/]test[\\/]"/>
+    <suppress
+            checks="FinalClass|HideUtilityClassConstructor|InnerAssignment|EmptyBlock|DeclarationOrder|VisibilityModifier"
+            files="[\\/]src[\\/]test[\\/]"/>
+    <suppress
+            checks="ExplicitInitialization|EqualsHashCode|MissingSwitchDefault|TrailingComment"
+            files="[\\/]src[\\/]test[\\/]"/>
+    <suppress checks="OuterTypeNumber"
+              files="src[\\/]test[\\/]java[\\/]com[\\/]hazelcast[\\/]spi[\\/]hotrestart[\\/]impl[\\/]di[\\/]DiContainerTest"/>
 </suppressions>

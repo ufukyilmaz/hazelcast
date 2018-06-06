@@ -17,7 +17,6 @@ import com.hazelcast.internal.partition.operation.SafeStateCheckOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.Address;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.ManagedService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
@@ -60,6 +59,8 @@ import static com.hazelcast.hotrestart.BackupTaskState.NO_TASK;
 import static com.hazelcast.hotrestart.BackupTaskState.SUCCESS;
 import static com.hazelcast.hotrestart.HotRestartService.BACKUP_DIR_PREFIX;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
+import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
@@ -90,8 +91,8 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private static final String STORE_NAME_PATTERN = STORE_PREFIX + "\\d+" + ONHEAP_SUFFIX;
     private static final String LOCK_FILE_NAME = "lock";
 
-    private final Map<String, RamStoreRegistry> ramStoreRegistryMap = new ConcurrentHashMap<String, RamStoreRegistry>();
-    private final Map<Long, RamStoreDescriptor> ramStoreDescriptors = new ConcurrentHashMap<Long, RamStoreDescriptor>();
+    private final Map<String, RamStoreRegistry> ramStoreRegistryServiceMap = new ConcurrentHashMap<String, RamStoreRegistry>();
+    private final Map<Long, RamStoreRegistry> ramStoreRegistryPrefixMap = new ConcurrentHashMap<Long, RamStoreRegistry>();
     private final File hotRestartHome;
     private final File hotRestartBackupDir;
     private final Node node;
@@ -129,12 +130,12 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
     @Override
     public RamStore ramStoreForPrefix(long prefix) {
-        return ramStoreDescriptor(prefix).registry.ramStoreForPrefix(prefix);
+        return ramStoreRegistryForPrefix(prefix).ramStoreForPrefix(prefix);
     }
 
     @Override
     public RamStore restartingRamStoreForPrefix(long prefix) {
-        return ramStoreDescriptor(prefix).registry.restartingRamStoreForPrefix(prefix);
+        return ramStoreRegistryForPrefix(prefix).restartingRamStoreForPrefix(prefix);
     }
 
     @Override
@@ -162,12 +163,12 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
      */
     public long registerRamStore(RamStoreRegistry ramStoreRegistry, String serviceName, String name, int partitionId) {
         long prefix = persistentConfigDescriptors.getPrefix(serviceName, name, partitionId);
-        ramStoreDescriptors.put(prefix, new RamStoreDescriptor(ramStoreRegistry, name, partitionId));
+        ramStoreRegistryPrefixMap.put(prefix, ramStoreRegistry);
         return prefix;
     }
 
     public void registerRamStoreRegistry(String serviceName, RamStoreRegistry registry) {
-        ramStoreRegistryMap.put(serviceName, registry);
+        ramStoreRegistryServiceMap.put(serviceName, registry);
     }
 
     /**
@@ -189,7 +190,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
      * @throws IllegalArgumentException if there is no descriptor found for this prefix
      */
     public String getCacheName(long prefix) {
-        final ConfigDescriptor descriptor = persistentConfigDescriptors.getDescriptor(prefix);
+        ConfigDescriptor descriptor = persistentConfigDescriptors.getDescriptor(prefix);
         if (descriptor == null) {
             throw new IllegalArgumentException("No descriptor found for prefix: " + prefix);
         }
@@ -317,7 +318,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             return false;
         }
         logger.info("Starting new hot backup with sequence " + sequence);
-        final File backupDir = new File(hotRestartBackupDir, BACKUP_DIR_PREFIX + sequence);
+        File backupDir = new File(hotRestartBackupDir, BACKUP_DIR_PREFIX + sequence);
         ensureDir(backupDir);
         persistentConfigDescriptors.backup(backupDir);
         clusterMetadataManager.backup(backupDir);
@@ -362,13 +363,20 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         int succeeded = 0;
         int inprogress = 0;
         for (HotRestartStore store : stores) {
-            final BackupTaskState state = store.getBackupTaskState();
+            BackupTaskState state = store.getBackupTaskState();
             switch (state) {
-                case NO_TASK: break;
+                case NO_TASK:
+                    break;
                 case NOT_STARTED:
-                case IN_PROGRESS: inprogress++; break;
-                case FAILURE: failed++; break;
-                case SUCCESS: succeeded++; break;
+                case IN_PROGRESS:
+                    inprogress++;
+                    break;
+                case FAILURE:
+                    failed++;
+                    break;
+                case SUCCESS:
+                    succeeded++;
+                    break;
                 default:
                     throw new IllegalStateException("Unsupported hot backup task state : " + state);
             }
@@ -381,8 +389,8 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private void backup(File backupDir, HotRestartStore[] stores, boolean onHeap) {
         if (stores != null) {
             for (int i = 0; i < storeCount; i++) {
-                final File storeDir = storeDir(i, onHeap);
-                final File targetStoreDir = new File(backupDir, storeDir.getName());
+                File storeDir = storeDir(i, onHeap);
+                File targetStoreDir = new File(backupDir, storeDir.getName());
                 ensureDir(targetStoreDir);
                 stores[i].backup(targetStoreDir);
             }
@@ -391,7 +399,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
     private static void ensureDir(File dir) {
         try {
-            final File canonicalDir = dir.getCanonicalFile();
+            File canonicalDir = dir.getCanonicalFile();
             if (canonicalDir.exists()) {
                 throw new HotRestartException("Path already exists : " + canonicalDir);
             }
@@ -461,7 +469,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         if (!hotRestartHome.exists()) {
             return 0;
         }
-        final File[] stores = hotRestartHome.listFiles(new FileFilter() {
+        File[] stores = hotRestartHome.listFiles(new FileFilter() {
             @Override
             public boolean accept(File f) {
                 return f.isDirectory() && f.getName().matches(STORE_NAME_PATTERN);
@@ -470,31 +478,21 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         return stores != null ? stores.length : 0;
     }
 
-    private RamStoreDescriptor ramStoreDescriptor(long prefix) {
-        RamStoreDescriptor descriptor = ramStoreDescriptors.get(prefix);
-        if (descriptor == null) {
-            descriptor = cacheDescriptorToRamStoreDescriptor(prefix);
-        }
-        if (descriptor == null) {
-            throw new IllegalArgumentException("No RamStore registered under prefix " + prefix);
-        }
-        return descriptor;
-    }
-
-    private RamStoreDescriptor cacheDescriptorToRamStoreDescriptor(long prefix) {
-        final ConfigDescriptor configDescriptor = persistentConfigDescriptors.getDescriptor(prefix);
-        if (configDescriptor != null) {
-            final String serviceName = configDescriptor.getServiceName();
-            final RamStoreRegistry registry = ramStoreRegistryMap.get(serviceName);
-            if (registry != null) {
-                final String name = configDescriptor.getName();
-                final int partitionId = toPartitionId(prefix);
-                final RamStoreDescriptor descriptor = new RamStoreDescriptor(registry, name, partitionId);
-                ramStoreDescriptors.put(prefix, descriptor);
-                return descriptor;
+    private RamStoreRegistry ramStoreRegistryForPrefix(long prefix) {
+        RamStoreRegistry registry = ramStoreRegistryPrefixMap.get(prefix);
+        if (registry == null) {
+            ConfigDescriptor configDescriptor = persistentConfigDescriptors.getDescriptor(prefix);
+            if (configDescriptor != null) {
+                registry = ramStoreRegistryServiceMap.get(configDescriptor.getServiceName());
+                if (registry != null) {
+                    ramStoreRegistryPrefixMap.put(prefix, registry);
+                }
             }
         }
-        return null;
+        if (registry == null) {
+            throw new IllegalArgumentException("No RamStore registered under prefix " + prefix);
+        }
+        return registry;
     }
 
     /**
@@ -538,7 +536,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             return;
         }
         assert stores.length == storeCount;
-        final long deadline = cappedSum(currentTimeMillis(), dataLoadTimeoutMillis);
+        long deadline = cappedSum(currentTimeMillis(), dataLoadTimeoutMillis);
         final RamStoreRestartLoop loop = new RamStoreRestartLoop(stores.length, partitionThreadCount, this, logger);
         final AtomicReference<Throwable> failure = new AtomicReference<Throwable>();
         Thread[] restartThreads = new Thread[stores.length];
@@ -617,7 +615,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             throw new HotRestartException("cannot reset hot restart data since node has already started!");
         }
 
-        final Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
+        Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
         if (!excludedMemberUuids.contains(node.getThisUuid())) {
             throw new HotRestartException("cannot reset hot restart data since this node is not excluded! excluded member UUIDs: "
                     + excludedMemberUuids);
@@ -700,7 +698,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         clusterMetadataManager.stopPersistence();
 
         logger.info("Deleting Hot Restart base-dir " + hotRestartHome);
-        IOUtil.delete(hotRestartHome);
+        delete(hotRestartHome);
 
         logger.info("Resetting hot restart cluster metadata service...");
         clusterMetadataManager.reset(isAfterJoin);
@@ -750,14 +748,14 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private static long cappedSum(long a, long b) {
         assert a >= 0 : "a is negative";
         assert b >= 0 : "b is negative";
-        final long sum = a + b;
+        long sum = a + b;
         return sum >= 0 ? sum : Long.MAX_VALUE;
     }
 
     /**
      * Interrupts the backup task if one is currently running. The contents of the target backup directory will be left as-is
      */
-    public void interruptBackupTask() {
+    void interruptBackupTask() {
         logger.info("Interrupting hot backup tasks");
         interruptBackupTask(offHeapStores);
         interruptBackupTask(onHeapStores);
@@ -768,17 +766,16 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
      * {@link BackupTaskState#IN_PROGRESS} if any hot restart store is currently being in progress and
      * {@link BackupTaskState#FAILURE} if any hot restart store failed to complete backup.
      */
-    public BackupTaskStatus getBackupTaskStatus() {
-        final BackupTaskStatus offHeapStatus = getBackupTaskStatus(offHeapStores);
-        final BackupTaskStatus onHeapStatus = getBackupTaskStatus(onHeapStores);
-        final BackupTaskState offHeapState = offHeapStatus.getState();
-        final BackupTaskState onHeapState = onHeapStatus.getState();
+    BackupTaskStatus getBackupTaskStatus() {
+        BackupTaskStatus offHeapStatus = getBackupTaskStatus(offHeapStores);
+        BackupTaskStatus onHeapStatus = getBackupTaskStatus(onHeapStores);
+        BackupTaskState offHeapState = offHeapStatus.getState();
+        BackupTaskState onHeapState = onHeapStatus.getState();
 
-        final BackupTaskState state =
-                offHeapState.inProgress() || onHeapState.inProgress() ? IN_PROGRESS
-                        : offHeapState == FAILURE || onHeapState == FAILURE ? FAILURE
-                        : (offHeapState == NO_TASK && onHeapState == NO_TASK) ? NO_TASK
-                        : SUCCESS;
+        BackupTaskState state = offHeapState.inProgress() || onHeapState.inProgress() ? IN_PROGRESS
+                : offHeapState == FAILURE || onHeapState == FAILURE ? FAILURE
+                : (offHeapState == NO_TASK && onHeapState == NO_TASK) ? NO_TASK
+                : SUCCESS;
 
         return new BackupTaskStatus(state,
                 offHeapStatus.getCompleted() + onHeapStatus.getCompleted(),
@@ -824,8 +821,8 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         if (clusterState != ClusterState.PASSIVE) {
             throw new IllegalStateException("Cluster should be in PASSIVE state! Current state is " + clusterState);
         }
-        final long timeoutNanos = unit.toNanos(timeout);
-        final long startTimeNanos = System.nanoTime();
+        long timeoutNanos = unit.toNanos(timeout);
+        long startTimeNanos = System.nanoTime();
 
         int success = 0;
         Collection<Member> members = clusterService.getMembers(DATA_MEMBER_SELECTOR);
@@ -853,21 +850,10 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         }
     }
 
-    private static class RamStoreDescriptor {
-        final RamStoreRegistry registry;
-        final String name;
-        final int partitionId;
-
-        RamStoreDescriptor(RamStoreRegistry registry, String name, int partitionId) {
-            this.registry = registry;
-            this.name = name;
-            this.partitionId = partitionId;
-        }
-    }
-
     private final class DirectoryLock {
-        final FileChannel channel;
-        final FileLock lock;
+
+        private final FileChannel channel;
+        private final FileLock lock;
 
         private DirectoryLock() {
             File lockFile = getFile();
@@ -894,7 +880,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
                 throw new HotRestartException("Unknown failure while acquiring lock on " + lockFile.getAbsolutePath(), e);
             } finally {
                 if (fileLock == null) {
-                    IOUtil.closeResource(channel);
+                    closeResource(channel);
                 }
             }
         }
@@ -907,7 +893,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             }
         }
 
-        void release() {
+        private void release() {
             if (logger.isFineEnabled()) {
                 logger.fine("Releasing lock on " + getFile().getAbsolutePath());
             }

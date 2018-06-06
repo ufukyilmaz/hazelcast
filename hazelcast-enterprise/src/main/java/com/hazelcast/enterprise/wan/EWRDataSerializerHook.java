@@ -60,7 +60,6 @@ public class EWRDataSerializerHook implements DataSerializerHook {
         return F_ID;
     }
 
-    //CHECKSTYLE:OFF
     @Override
     public DataSerializableFactory createFactory() {
         return new DataSerializableFactory() {
@@ -104,10 +103,10 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                         return new WanSyncResult();
                     case WAN_SYNC_STARTER_OPERATION:
                         return new WanSyncStarterOperation();
+                    default:
+                        throw new IllegalArgumentException("Unknown type ID: " + typeId);
                 }
-                throw new IllegalArgumentException("Unknown type ID: " + typeId);
             }
         };
     }
-    //CHECKSTYLE:ON
 }

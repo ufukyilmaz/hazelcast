@@ -96,7 +96,6 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         return doEvictExpiredRecords(evictionListener, expirationChecker);
     }
 
-    //CHECKSTYLE:OFF
     protected <C extends EvictionCandidate<Data, R>> int doEvictExpiredRecords(
             EvictionListener<Data, R> evictionListener, ExpirationChecker<R> expirationChecker) {
         final long now = Clock.currentTimeMillis();
@@ -145,7 +144,6 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         }
         return evictedEntryCount;
     }
-    //CHECKSTYLE:ON
 
     @Override
     public <C extends EvictionCandidate<Data, R>> boolean tryEvict(C evictionCandidate,

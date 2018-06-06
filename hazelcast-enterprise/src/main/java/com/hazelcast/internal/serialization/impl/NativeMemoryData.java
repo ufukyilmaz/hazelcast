@@ -98,8 +98,8 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
         return SerializationConstants.CONSTANT_TYPE_PORTABLE == getType();
     }
 
-    //CHECKSTYLE:OFF
     @Override
+    @SuppressWarnings("checkstyle:npathcomplexity")
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -123,14 +123,12 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
         if (dataSize == 0) {
             return true;
         }
-
         if (data instanceof NativeMemoryData) {
             return NativeMemoryDataUtil.equals(address(), ((NativeMemoryData) data).address(), dataSize);
         }
         byte[] bytes = data.toByteArray();
         return NativeMemoryDataUtil.equals(address(), dataSize, bytes);
     }
-    //CHECKSTYLE:ON
 
     @Override
     public int hashCode() {

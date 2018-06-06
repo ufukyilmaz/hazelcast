@@ -107,7 +107,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private volatile int partitionThreadCount;
     private final List<LoadedConfigurationListener> loadedConfigurationListeners;
 
-    private final DirectoryLock directoryLock;
+    private volatile DirectoryLock directoryLock;
 
     public HotRestartIntegrationService(Node node) {
         this.node = node;
@@ -698,7 +698,12 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         clusterMetadataManager.stopPersistence();
 
         logger.info("Deleting Hot Restart base-dir " + hotRestartHome);
+        directoryLock.release();
         delete(hotRestartHome);
+        if (!hotRestartHome.mkdir()) {
+            throw new HotRestartException("Could not re-create base-dir " + hotRestartHome);
+        }
+        directoryLock = new DirectoryLock();
 
         logger.info("Resetting hot restart cluster metadata service...");
         clusterMetadataManager.reset(isAfterJoin);

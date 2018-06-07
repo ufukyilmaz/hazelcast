@@ -70,7 +70,6 @@ public class HiDensityClientNearCacheInvalidationTest extends ClientNearCacheInv
                 .setSize(CLIENT_NATIVE_MEMORY_SIZE);
 
         return super.createClientConfig()
-                .setLicenseKey(UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(nativeMemoryConfig);
     }
 

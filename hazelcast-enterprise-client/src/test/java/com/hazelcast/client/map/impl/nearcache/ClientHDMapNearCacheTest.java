@@ -33,7 +33,6 @@ public class ClientHDMapNearCacheTest extends ClientMapNearCacheTest {
                 .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
 
         return super.newClientConfig()
-                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(nativeMemoryConfig);
     }
 

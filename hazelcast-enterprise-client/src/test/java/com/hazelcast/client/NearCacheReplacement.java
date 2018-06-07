@@ -90,7 +90,6 @@ public class NearCacheReplacement implements Serializable {
         queryCacheConfig.setPredicateConfig(predicateConfig);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setLicenseKey(licenseKey);
         clientConfig.addQueryCacheConfig(mapName, queryCacheConfig);
 
         return HazelcastClient.newHazelcastClient(clientConfig);

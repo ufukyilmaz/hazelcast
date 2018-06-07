@@ -18,7 +18,6 @@ import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
-import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -38,7 +37,6 @@ public class ClientHDCacheMetaDataGeneratorTest extends ClientCacheMetaDataGener
                 .setSize(CLIENT_NATIVE_MEMORY_SIZE);
 
         return super.getClientConfig()
-                .setLicenseKey(ENTERPRISE_HD_LICENSE)
                 .setNativeMemoryConfig(nativeMemoryConfig);
     }
 

@@ -21,10 +21,6 @@ import com.hazelcast.internal.networking.ChannelFactory;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionAware;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.license.domain.Feature;
-import com.hazelcast.license.domain.License;
-import com.hazelcast.license.domain.LicenseVersion;
-import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.FreeMemoryChecker;
 import com.hazelcast.memory.HazelcastMemoryManager;
@@ -41,8 +37,6 @@ import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.Version;
 
-import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature;
-
 /**
  * Enterprise implementation of {@code ClientExtension}.
  */
@@ -54,7 +48,6 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     private HazelcastMemoryManager memoryManager;
 
     private volatile SocketInterceptor socketInterceptor;
-    private volatile License license;
 
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
@@ -66,7 +59,10 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
         if (licenseKey == null) {
             licenseKey = clientConfig.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName());
         }
-        license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
+        if (licenseKey != null) {
+            EnterpriseClientExtension.LOGGER.info("As of Hazelcast 3.10.3, "
+                    + "enterprise license keys are required only for members, and not for clients.");
+        }
     }
 
     @Override
@@ -108,9 +104,6 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
         final NativeMemoryConfig memoryConfig = client.getClientConfig().getNativeMemoryConfig();
 
         if (memoryConfig.isEnabled()) {
-            if (license.getVersion() == LicenseVersion.V4) {
-                checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(), Feature.HD_MEMORY);
-            }
             MemorySize size = memoryConfig.getSize();
             NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
             final FreeMemoryChecker freeMemoryChecker = new FreeMemoryChecker(client.getProperties());

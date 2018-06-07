@@ -45,7 +45,6 @@ public class ClientRollingUpgradeCompatibilityTest extends HazelcastTestSupport 
 
     private SerializationService getClientSerializationService() {
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
         HazelcastClientProxy client = (HazelcastClientProxy) factory.newHazelcastClient(clientConfig);
         return client.getSerializationService();
     }

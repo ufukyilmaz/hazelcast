@@ -84,7 +84,6 @@ public class ClientHDCacheNearCacheInvalidationTest extends ClientCacheNearCache
                 .setSize(CLIENT_NATIVE_MEMORY_SIZE);
 
         return super.getClientConfig()
-                .setLicenseKey(UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(nativeMemoryConfig);
     }
 

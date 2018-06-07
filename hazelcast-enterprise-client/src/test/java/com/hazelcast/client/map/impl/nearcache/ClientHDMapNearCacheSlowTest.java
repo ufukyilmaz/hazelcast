@@ -45,7 +45,6 @@ public class ClientHDMapNearCacheSlowTest extends ClientMapNearCacheSlowTest {
                 .setAllocatorType(MemoryAllocatorType.STANDARD);
 
         return super.newClientConfig()
-                .setLicenseKey(UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(nativeMemoryConfig);
     }
 

@@ -48,6 +48,8 @@ public class HDEvictBackupOperation extends HDKeyBasedMapOperation implements Ba
             mapService.getMapServiceContext()
                     .getMapEventPublisher().publishWanReplicationRemoveBackup(name, dataKey, Clock.currentTimeMillis());
         }
+
+        disposeDeferredBlocks();
     }
 
     @Override

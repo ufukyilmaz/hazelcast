@@ -42,7 +42,7 @@ public class CacheRemoveOperation
         if (Boolean.TRUE.equals(response)) {
             if (cache.isWanReplicationEnabled()) {
                 CacheWanEventPublisher publisher = cacheService.getCacheWanEventPublisher();
-                publisher.publishWanReplicationRemoveBackup(name, cache.toEventData(key));
+                publisher.publishWanReplicationRemove(name, cache.toEventData(key));
             }
         }
         super.afterRun();

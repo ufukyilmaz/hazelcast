@@ -31,7 +31,6 @@ import javax.cache.CacheManager;
 import javax.cache.configuration.Configuration;
 import java.io.File;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
@@ -59,15 +58,18 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     public int keyRange;
 
     @Parameter(2)
+    public boolean fsyncEnabled;
+
+    @Parameter(3)
     public boolean evictionEnabled;
 
-    TestHazelcastInstanceFactory factory;
     String cacheName;
+    TestHazelcastInstanceFactory factory;
 
     private File baseDir;
 
     @BeforeClass
-    public static void setupClass() throws UnknownHostException {
+    public static void setupClass() throws Exception {
         localAddress = InetAddress.getLocalHost();
     }
 
@@ -233,7 +235,8 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
                 .setEvictionConfig(evictionConfig);
         cacheConfig.setStatisticsEnabled(true);
         cacheConfig.getHotRestartConfig()
-                .setEnabled(true);
+                .setEnabled(true)
+                .setFsync(fsyncEnabled);
         if (memoryFormat == InMemoryFormat.NATIVE) {
             cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         }

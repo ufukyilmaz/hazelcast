@@ -38,6 +38,8 @@ import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
 
+    protected static final int KEY_COUNT = 1000;
+
     private static InetAddress localAddress;
 
     @Rule
@@ -50,10 +52,13 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
     public int keyRange;
 
     @Parameter(2)
+    public boolean fsyncEnabled;
+
+    @Parameter(3)
     public boolean evictionEnabled;
 
-    protected String mapName;
-    protected TestHazelcastInstanceFactory factory;
+    String mapName;
+    TestHazelcastInstanceFactory factory;
 
     private File baseDir;
 
@@ -187,7 +192,9 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
             MapConfig mapConfig = new MapConfig(mapName)
                     .setInMemoryFormat(memoryFormat)
                     .setBackupCount(backupCount);
-            mapConfig.getHotRestartConfig().setEnabled(true);
+            mapConfig.getHotRestartConfig()
+                    .setEnabled(true)
+                    .setFsync(fsyncEnabled);
             setEvictionConfig(mapConfig);
             config.addMapConfig(mapConfig);
         }

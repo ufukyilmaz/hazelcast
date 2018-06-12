@@ -14,7 +14,7 @@ import com.hazelcast.query.TruePredicate;
 import com.hazelcast.spi.impl.proxyservice.InternalProxyService;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
-import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.annotation.SlowTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -37,16 +37,16 @@ import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelTest.class})
-public class MapHotRestartTest extends AbstractMapHotRestartTest {
+@Category({SlowTest.class, ParallelTest.class})
+public class MapHotRestartSlowTest extends AbstractMapHotRestartTest {
 
     @Parameters(name = "memoryFormat:{0} fsync:{2} clusterSize:{4}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY, KEY_COUNT, false, false, 1},
-                {InMemoryFormat.BINARY, KEY_COUNT, false, false, 3},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, 1},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, 3},
+                {InMemoryFormat.BINARY, KEY_COUNT, true, false, 1},
+                {InMemoryFormat.BINARY, KEY_COUNT, true, false, 3},
+                {InMemoryFormat.NATIVE, KEY_COUNT, true, false, 1},
+                {InMemoryFormat.NATIVE, KEY_COUNT, true, false, 3},
         });
     }
 

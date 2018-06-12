@@ -60,14 +60,25 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
     private static final int INSTANCE_COUNT = 4;
     private static final int THREAD_COUNT = 4;
 
-    @Rule
-    public TestName testName = new TestName();
+    @Parameters(name = "memoryFormat:{0} fsync:{2}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {InMemoryFormat.BINARY, 1000, false},
+                {InMemoryFormat.NATIVE, 1000, false},
+        });
+    }
 
     @Parameter
     public InMemoryFormat memoryFormat;
 
     @Parameter(1)
     public int keyRange;
+
+    @Parameter(2)
+    public boolean fsyncEnabled;
+
+    @Rule
+    public TestName testName = new TestName();
 
     private File baseDir;
     private ConcurrentMap<Integer, Integer> localMap;
@@ -76,14 +87,6 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
     private String name;
 
     private volatile boolean running = true;
-
-    @Parameters(name = "memoryFormat:{0}")
-    public static Collection<Object[]> parameters() {
-        return asList(new Object[][]{
-                {InMemoryFormat.NATIVE, 1000},
-                {InMemoryFormat.BINARY, 1000},
-        });
-    }
 
     @Before
     public void setUp() {
@@ -176,7 +179,8 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
                 .setEvictionPolicy(LFU)
                 .setMaxSizeConfig(maxSizeConfig);
         mapConfig.getHotRestartConfig()
-                .setEnabled(true);
+                .setEnabled(true)
+                .setFsync(fsyncEnabled);
 
         return config;
     }

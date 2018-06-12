@@ -42,16 +42,21 @@ public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
     private static final int MIN_VALUE_SIZE = 32;
     private static final int MAX_VALUE_SIZE = 4096;
 
-    @Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2}")
     public static Collection<Object[]> parameters() {
-        return asList(new Object[][] {
-                {InMemoryFormat.NATIVE, 100000, true},
-                {InMemoryFormat.BINARY, 100000, true},
+        return asList(new Object[][]{
+                {InMemoryFormat.NATIVE, 100000, false, true},
+                {InMemoryFormat.BINARY, 100000, false, true},
         });
     }
 
+    @Override
+    MemorySize getNativeMemorySize() {
+        return new MemorySize(256, MemoryUnit.MEGABYTES);
+    }
+
     @Test
-    public void test() {
+    public void testEviction() {
         Address address = factory.nextAddress();
         Config hzConfig = makeConfig(address, 1);
         HazelcastInstance hz = newHazelcastInstance(address, hzConfig);
@@ -102,18 +107,6 @@ public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
         }
     }
 
-    private static byte[] randomValue(Random random) {
-        int valueSize = random.nextInt(MAX_VALUE_SIZE - MIN_VALUE_SIZE) + MIN_VALUE_SIZE;
-        byte[] value = new byte[valueSize];
-        random.nextBytes(value);
-        return value;
-    }
-
-    @Override
-    MemorySize getNativeMemorySize() {
-        return new MemorySize(256, MemoryUnit.MEGABYTES);
-    }
-
     private static class MapTask implements Runnable {
 
         private final List<Throwable> failures;
@@ -146,6 +139,13 @@ public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
             } finally {
                 latch.countDown();
             }
+        }
+
+        private static byte[] randomValue(Random random) {
+            int valueSize = random.nextInt(MAX_VALUE_SIZE - MIN_VALUE_SIZE) + MIN_VALUE_SIZE;
+            byte[] value = new byte[valueSize];
+            random.nextBytes(value);
+            return value;
         }
     }
 }

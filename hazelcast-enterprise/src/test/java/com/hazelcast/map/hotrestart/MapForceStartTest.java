@@ -32,13 +32,12 @@ import static org.junit.Assert.assertEquals;
 public class MapForceStartTest extends AbstractMapHotRestartTest {
 
     private static final int CLUSTER_SIZE = 3;
-    private static final int KEY_COUNT = 1000;
 
-    @Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.NATIVE, KEY_COUNT, false},
-                {InMemoryFormat.BINARY, KEY_COUNT, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false},
         });
     }
 

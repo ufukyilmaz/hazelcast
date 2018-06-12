@@ -26,7 +26,6 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class MapHotRestartBackupTest extends AbstractMapHotRestartTest {
 
-    private static final int KEY_COUNT = 1000;
     private static final int CLUSTER_SIZE = 3;
     private static final int BACKUP_COUNT = CLUSTER_SIZE - 1;
 
@@ -35,11 +34,11 @@ public class MapHotRestartBackupTest extends AbstractMapHotRestartTest {
     private IMap<Integer, String>[] maps;
     private IMap<Integer, String> map;
 
-    @Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY, KEY_COUNT, false},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false},
         });
     }
 

@@ -28,13 +28,11 @@ import static org.junit.Assert.assertNull;
 @Category({QuickTest.class, ParallelTest.class})
 public class MapHotRestartExpiryTest extends AbstractMapHotRestartTest {
 
-    private static final int OPERATION_COUNT = 1000;
-
-    @Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.NATIVE, OPERATION_COUNT, false},
-                {InMemoryFormat.BINARY, OPERATION_COUNT, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false},
         });
     }
 
@@ -46,7 +44,7 @@ public class MapHotRestartExpiryTest extends AbstractMapHotRestartTest {
         HazelcastInstance hz = newHazelcastInstance(address, hzConfig);
         IMap<Integer, String> map = createMap(hz);
 
-        for (int key = 0; key < OPERATION_COUNT; key++) {
+        for (int key = 0; key < KEY_COUNT; key++) {
             map.put(key, randomString(), ttl, TimeUnit.MILLISECONDS);
         }
 
@@ -55,7 +53,7 @@ public class MapHotRestartExpiryTest extends AbstractMapHotRestartTest {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                for (int key = 0; key < OPERATION_COUNT; key++) {
+                for (int key = 0; key < KEY_COUNT; key++) {
                     assertNull(finalMap.get(key));
                 }
             }

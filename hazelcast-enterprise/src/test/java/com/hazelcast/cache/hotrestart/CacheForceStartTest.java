@@ -32,11 +32,11 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
 
     private static final int CLUSTER_SIZE = 3;
 
-    @Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY, KEY_COUNT, false},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false},
         });
     }
 
@@ -71,6 +71,15 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
         assertEquals(KEY_COUNT, cache.size());
     }
 
+    @Override
+    Config makeConfig(Address address) {
+        Config config = super.makeConfig(address);
+        if (triggerForceStart) {
+            config.addListenerConfig(new ListenerConfig(new TriggerForceStart()));
+        }
+        return config;
+    }
+
     private class TriggerForceStart extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private Node node;
@@ -85,14 +94,5 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
             this.node = getNode(instance);
         }
 
-    }
-
-    @Override
-    Config makeConfig(Address address) {
-        Config config = super.makeConfig(address);
-        if (triggerForceStart) {
-            config.addListenerConfig(new ListenerConfig(new TriggerForceStart()));
-        }
-        return config;
     }
 }

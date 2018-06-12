@@ -33,16 +33,16 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelTest.class})
 public class CacheOperationsTest extends AbstractCacheHotRestartTest {
 
-    private ICache<Integer, String> cache;
-
-    @Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY, KEY_COUNT, false},
-                {InMemoryFormat.OBJECT, KEY_COUNT, false},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false},
+                {InMemoryFormat.OBJECT, KEY_COUNT, false, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false},
         });
     }
+
+    private ICache<Integer, String> cache;
 
     @Override
     void setupInternal() {

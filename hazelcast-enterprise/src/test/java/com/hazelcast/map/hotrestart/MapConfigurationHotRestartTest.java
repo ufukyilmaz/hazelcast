@@ -1,6 +1,5 @@
 package com.hazelcast.map.hotrestart;
 
-import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -26,13 +25,13 @@ public class MapConfigurationHotRestartTest extends AbstractMapHotRestartTest {
         int clusterSize = 3;
 
         HazelcastInstance[] instances = newInstances(clusterSize);
-        HazelcastInstance i1 = instances[0];
+        HazelcastInstance hz = instances[0];
 
         MapConfig mapConfig = new MapConfig(mapName);
-        mapConfig.getHotRestartConfig().setEnabled(true);
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        Config config = i1.getConfig();
-        config.addMapConfig(mapConfig);
+        mapConfig.getHotRestartConfig().setEnabled(true);
+        hz.getConfig()
+                .addMapConfig(mapConfig);
 
         instances = restartInstances(clusterSize);
 
@@ -48,13 +47,13 @@ public class MapConfigurationHotRestartTest extends AbstractMapHotRestartTest {
         int clusterSize = 3;
 
         HazelcastInstance[] instances = newInstances(clusterSize);
-        HazelcastInstance i1 = instances[0];
+        HazelcastInstance hz = instances[0];
 
         MapConfig mapConfig = new MapConfig(mapName);
-        mapConfig.getHotRestartConfig().setEnabled(false);
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        Config config = i1.getConfig();
-        config.addMapConfig(mapConfig);
+        mapConfig.getHotRestartConfig().setEnabled(false);
+        hz.getConfig()
+                .addMapConfig(mapConfig);
 
         // DynamicConfigurationAwareConfig initializes the partition table
         waitAllForSafeState(instances);
@@ -67,5 +66,4 @@ public class MapConfigurationHotRestartTest extends AbstractMapHotRestartTest {
             assertEquals(DEFAULT_IN_MEMORY_FORMAT, dynamicMapConfig.getInMemoryFormat());
         }
     }
-
 }

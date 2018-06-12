@@ -32,18 +32,16 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelTest.class})
 public class MapOperationsTest extends AbstractMapHotRestartTest {
 
-    private static final int KEY_COUNT = 1000;
-
-    private IMap<Integer, String> map;
-
-    @Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.NATIVE, KEY_COUNT, false},
-                {InMemoryFormat.BINARY, KEY_COUNT, false},
-                {InMemoryFormat.OBJECT, KEY_COUNT, false},
+                {InMemoryFormat.OBJECT, KEY_COUNT, false, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false},
         });
     }
+
+    private IMap<Integer, String> map;
 
     @Override
     void setupInternal() {

@@ -5,7 +5,6 @@ import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.Node;
@@ -36,12 +35,15 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.EvictionPolicy.LRU;
 import static java.util.Arrays.asList;
 import static java.util.Collections.synchronizedList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
@@ -52,11 +54,11 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     private static final int MIN_VALUE_SIZE = 32;
     private static final int MAX_VALUE_SIZE = 4096;
 
-    @Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.NATIVE, 25000, true},
-                {InMemoryFormat.BINARY, 25000, true},
+                {InMemoryFormat.NATIVE, 25000, false, true},
+                {InMemoryFormat.BINARY, 25000, false, true},
         });
     }
 
@@ -66,7 +68,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     }
 
     @Test
-    public void test() {
+    public void testEviction() {
         Config hzConfig = makeConfig(factory.nextAddress());
         HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, byte[]> cache = createCache(hz);
@@ -116,87 +118,76 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
         }
     }
 
-    private static byte[] randomValue(Random random) {
-        int valueSize = random.nextInt(MAX_VALUE_SIZE - MIN_VALUE_SIZE) + MIN_VALUE_SIZE;
-        byte[] value = new byte[valueSize];
-        random.nextBytes(value);
-        return value;
-    }
-
     @Test
     public void freeNativeMemoryPercentageCannotBeLessThanItsMinimumLimit() {
-        if (memoryFormat == InMemoryFormat.NATIVE) {
-            HazelcastInstance hz = newHazelcastInstance();
-            HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(getNode(hz).getProperties());
-            int freeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
-            EvictionConfig evictionConfig =
-                    new EvictionConfig(freeNativeMemoryPercentage / 2,
-                            EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE,
-                            EvictionPolicy.LRU);
-            ICache<Integer, byte[]> cache = createCache(hz, evictionConfig);
-            try {
-                // Config is checked while creating cache record store, so to trigger it we are putting to cache.
-                cache.put(1, new byte[1]);
-                fail("Free native memory percentage cannot be less than " + freeNativeMemoryPercentage);
-            } catch (IllegalArgumentException expected) {
-                expected.printStackTrace();
-            }
+        assumeTrue("This test is just for NATIVE in-memory configuration", memoryFormat == InMemoryFormat.NATIVE);
+
+        HazelcastInstance hz = newHazelcastInstance();
+        HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(getNode(hz).getProperties());
+        int freeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
+        EvictionConfig evictionConfig = new EvictionConfig(freeNativeMemoryPercentage / 2, FREE_NATIVE_MEMORY_PERCENTAGE, LRU);
+        ICache<Integer, byte[]> cache = createCache(hz, evictionConfig);
+        try {
+            // config is checked while creating cache record store, so to trigger it we are putting to cache
+            cache.put(1, new byte[1]);
+            fail("Free native memory percentage cannot be less than " + freeNativeMemoryPercentage);
+        } catch (IllegalArgumentException expected) {
         }
     }
 
     @Test
     public void evictionShouldBeTriggeredWhenFreeNativeMemoryPercentageIsReached() {
-        if (memoryFormat == InMemoryFormat.NATIVE) {
-            HazelcastInstance hz = newHazelcastInstance();
-            Node node = getNode(hz);
-            HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(node.getProperties());
-            int freeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
-            ICache<String, byte[]> cache = createCache(hz);
+        assumeTrue("This test is just for NATIVE in-memory configuration", memoryFormat == InMemoryFormat.NATIVE);
 
-            int partitionCount = node.getPartitionService().getPartitionCount();
-            EnterpriseSerializationService ss = (EnterpriseSerializationService) node.getSerializationService();
-            MemoryStats memoryStats = ss.getMemoryManager().getMemoryStats();
-            EnterpriseCacheService cacheService = node.nodeEngine.getService(ICacheService.SERVICE_NAME);
-            HiDensityStorageInfo cacheInfo = cacheService.getOrCreateHiDensityCacheInfo("/hz/" + cache.getName());
+        HazelcastInstance hz = newHazelcastInstance();
+        Node node = getNode(hz);
+        HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(node.getProperties());
+        int freeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
+        ICache<String, byte[]> cache = createCache(hz);
 
-            long maxNativeMemory = memoryStats.getMaxNative();
-            long minFreeNativeMemory = (long) (maxNativeMemory * freeNativeMemoryPercentage / 100f);
-            int entrySize = 1024 * 1024; // 1MB
-            long entryCountToFillUpMemory = maxNativeMemory / entrySize; // In fact, it is less than this
+        int partitionCount = node.getPartitionService().getPartitionCount();
+        EnterpriseSerializationService ss = (EnterpriseSerializationService) node.getSerializationService();
+        MemoryStats memoryStats = ss.getMemoryManager().getMemoryStats();
+        EnterpriseCacheService cacheService = node.nodeEngine.getService(ICacheService.SERVICE_NAME);
+        HiDensityStorageInfo cacheInfo = cacheService.getOrCreateHiDensityCacheInfo("/hz/" + cache.getName());
 
-            byte[] smallValue = new byte[1];
-            for (int i = 0; i < partitionCount; i++) {
-                cache.put(generateKeyForPartition(hz, i), smallValue);
+        long maxNativeMemory = memoryStats.getMaxNative();
+        long minFreeNativeMemory = (long) (maxNativeMemory * freeNativeMemoryPercentage / 100f);
+        // entrySize is 1 MB
+        int entrySize = 1024 * 1024;
+        // the entryCount is in fact less than this
+        long entryCountToFillUpMemory = maxNativeMemory / entrySize;
+
+        byte[] smallValue = new byte[1];
+        for (int i = 0; i < partitionCount; i++) {
+            cache.put(generateKeyForPartition(hz, i), smallValue);
+        }
+        // now there is at least one element in each partition, so there is always an evictable element in each partition
+
+        byte[] value = new byte[entrySize];
+        for (int i = 0; i < entryCountToFillUpMemory; i++) {
+            long forceEvictionCountBefore = cacheInfo.getForceEvictionCount();
+            int sizeBefore = cache.size();
+
+            long actualMinFreeNativeMemory = memoryStats.getFreeNative();
+            boolean evictionShouldBeTriggeredBecauseOfMinFreeMemory = actualMinFreeNativeMemory < minFreeNativeMemory;
+
+            int j = i % partitionCount;
+            cache.put(generateKeyForPartition(hz, j), value);
+
+            long forceEvictionCountAfter = cacheInfo.getForceEvictionCount();
+            int sizeAfter = cache.size();
+
+            if (forceEvictionCountBefore == forceEvictionCountAfter) {
+                // Forced eviction might be applied to other partitions owned by same thread
+                // so these partitions might be totally empty.
+                // In this case, no eviction is applied to that partition based record store since there is no entry.
+                // At the moment, we simply finish the test but we can improve this test later.
+                break;
             }
-            // Now there is at last one element in each partition,
-            // so there is always evictable element in each partition.
 
-            byte[] value = new byte[entrySize];
-            for (int i = 0; i < entryCountToFillUpMemory; i++) {
-                long forceEvictionCountBefore = cacheInfo.getForceEvictionCount();
-                int sizeBefore = cache.size();
-
-                long actualMinFreeNativeMemory = memoryStats.getFreeNative();
-                boolean evictionShouldBeTriggeredBecauseOfMinFreeMemory = actualMinFreeNativeMemory < minFreeNativeMemory;
-
-                int j = i % partitionCount;
-                cache.put(generateKeyForPartition(hz, j), value);
-
-                long forceEvictionCountAfter = cacheInfo.getForceEvictionCount();
-                int sizeAfter = cache.size();
-
-                if (forceEvictionCountBefore == forceEvictionCountAfter) {
-                    // Forced eviction might be applied to other partitions owned by same thread
-                    // so these partitions might be totally empty.
-                    // In this case, no eviction is applied to that partition based record store since there is no entry.
-                    // At the moment, we simply finish the test but we can improve this test later.
-                    break;
-                }
-
-                if (evictionShouldBeTriggeredBecauseOfMinFreeMemory) {
-                    assertEquals("When eviction is triggered, size after put cannot be more than before put",
-                            sizeAfter, sizeBefore);
-                }
+            if (evictionShouldBeTriggeredBecauseOfMinFreeMemory) {
+                assertEquals("When eviction is triggered, size after put cannot be more than before put", sizeAfter, sizeBefore);
             }
         }
     }
@@ -233,6 +224,13 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
             } finally {
                 latch.countDown();
             }
+        }
+
+        private static byte[] randomValue(Random random) {
+            int valueSize = random.nextInt(MAX_VALUE_SIZE - MIN_VALUE_SIZE) + MIN_VALUE_SIZE;
+            byte[] value = new byte[valueSize];
+            random.nextBytes(value);
+            return value;
         }
     }
 }

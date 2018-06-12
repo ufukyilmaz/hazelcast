@@ -19,33 +19,38 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapHotRestartTest extends AbstractMapHotRestartTest {
 
     private static final int KEY_COUNT = 1000;
-    @Parameterized.Parameter(3)
+
+    @Parameter(3)
     public int clusterSize;
+
     private IMap<Integer, String> map;
     private boolean addIndex;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0},clusterSize:{3}")
+    @Parameters(name = "memoryFormat:{0},clusterSize:{3}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {InMemoryFormat.NATIVE, KEY_COUNT, false, 1},
                 {InMemoryFormat.NATIVE, KEY_COUNT, false, 3},
                 {InMemoryFormat.BINARY, KEY_COUNT, false, 1},
@@ -54,7 +59,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     }
 
     @Test
-    public void testPut() throws Exception {
+    public void testPut() {
         resetFixture();
 
         Map<Integer, String> expectedMap = new HashMap<Integer, String>();
@@ -73,7 +78,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     }
 
     @Test
-    public void testRemove() throws Exception {
+    public void testRemove() {
         resetFixture();
 
         Map<Integer, String> expectedMap = new HashMap<Integer, String>();
@@ -81,7 +86,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
 
         Random random = new Random();
         for (int i = 0; i < KEY_COUNT / 10; i++) {
-            final int key = random.nextInt(KEY_COUNT);
+            int key = random.nextInt(KEY_COUNT);
             if (map.remove(key) != null) {
                 expectedMap.remove(key);
             }
@@ -103,7 +108,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     }
 
     @Test
-    public void testPutRemove() throws Exception {
+    public void testPutRemove() {
         resetFixture();
 
         Map<Integer, String> expectedMap = new HashMap<Integer, String>(KEY_COUNT);
@@ -129,7 +134,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     }
 
     @Test
-    public void mapProxy_shouldBeCreated_afterHotRestart() throws Exception {
+    public void mapProxy_shouldBeCreated_afterHotRestart() {
         newInstances(clusterSize);
         map = createMap();
         fillMap(new HashMap<Integer, String>());
@@ -146,13 +151,13 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     }
 
     @Test
-    public void mapProxy_shouldBeCreated_afterHotRestart_withIndex() throws Exception {
+    public void mapProxy_shouldBeCreated_afterHotRestart_withIndex() {
         addIndex = true;
         mapProxy_shouldBeCreated_afterHotRestart();
     }
 
     @Test
-    public void testKeySet_emptyMap_issue1270() throws Exception {
+    public void testKeySet_emptyMap_issue1270() {
         resetFixture();
 
         // hr-store created on non-partition thread
@@ -167,7 +172,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     }
 
     @Test
-    public void testQuery_emptyMap_issue1270() throws Exception {
+    public void testQuery_emptyMap_issue1270() {
         resetFixture();
 
         // hr-store created on non-partition thread
@@ -182,7 +187,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     }
 
     @Test
-    public void testAggregation_emptyMap_issue1270() throws Exception {
+    public void testAggregation_emptyMap_issue1270() {
         resetFixture();
 
         // hr-store created on non-partition thread
@@ -200,7 +205,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
         fillMap(expectedMap);
 
         for (int i = 0; i < KEY_COUNT / 10; i++) {
-            final int key = random.nextInt(KEY_COUNT);
+            int key = random.nextInt(KEY_COUNT);
             if (map.remove(key) != null) {
                 expectedMap.remove(key);
             }
@@ -217,7 +222,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
         }
     }
 
-    private void resetFixture() throws Exception {
+    private void resetFixture() {
         restartInstances(clusterSize);
         map = createMap();
     }

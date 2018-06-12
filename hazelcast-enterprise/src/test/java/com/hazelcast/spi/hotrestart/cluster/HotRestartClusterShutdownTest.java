@@ -42,7 +42,7 @@ public class HotRestartClusterShutdownTest extends AbstractHotRestartClusterStar
                 {PARTIAL, ClusterState.PASSIVE, NodeState.PASSIVE},
                 {ALL, ClusterState.ACTIVE, NodeState.ACTIVE},
                 {ALL, ClusterState.FROZEN, NodeState.ACTIVE},
-                {ALL, ClusterState.PASSIVE, NodeState.PASSIVE}
+                {ALL, ClusterState.PASSIVE, NodeState.PASSIVE},
         });
     }
 

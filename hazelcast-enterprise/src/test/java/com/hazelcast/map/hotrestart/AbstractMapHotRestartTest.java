@@ -3,7 +3,6 @@ package com.hazelcast.map.hotrestart;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
-import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
@@ -22,59 +21,61 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
-import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 import java.io.File;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
+import static java.util.Arrays.fill;
 import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
 
     private static InetAddress localAddress;
+
     @Rule
     public TestName testName = new TestName();
-    @Parameterized.Parameter(0)
+
+    @Parameter
     public InMemoryFormat memoryFormat;
-    @Parameterized.Parameter(1)
+
+    @Parameter(1)
     public int keyRange;
-    @Parameterized.Parameter(2)
+
+    @Parameter(2)
     public boolean evictionEnabled;
+
     protected String mapName;
-    protected File baseDir;
     protected TestHazelcastInstanceFactory factory;
 
+    private File baseDir;
+
     @BeforeClass
-    public static void setupClass() throws UnknownHostException {
+    public static void setupClass() throws Exception {
         localAddress = InetAddress.getLocalHost();
     }
 
     @Before
-    public final void setup() throws UnknownHostException {
-        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(baseDir);
-        if (!baseDir.mkdir() && !baseDir.exists()) {
-            throw new AssertionError("Unable to create test folder: " + baseDir.getAbsolutePath());
-        }
-
+    public final void setup() {
         mapName = randomString();
-
         factory = createFactory();
+
+        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
+        createFolder(baseDir);
 
         setupInternal();
     }
 
     private TestHazelcastInstanceFactory createFactory() {
         String[] addresses = new String[10];
-        Arrays.fill(addresses, "127.0.0.1");
+        fill(addresses, "127.0.0.1");
         return new TestHazelcastInstanceFactory(5000, addresses);
     }
 
@@ -83,18 +84,12 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
 
     @After
     public final void tearDown() {
-        tearDownInternal();
-
         if (factory != null) {
             factory.terminateAll();
         }
-
         if (baseDir != null) {
             delete(baseDir);
         }
-    }
-
-    void tearDownInternal() {
     }
 
     HazelcastInstance newHazelcastInstance() {
@@ -143,19 +138,17 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         factory = createFactory();
 
         final CountDownLatch latch = new CountDownLatch(clusterSize);
-
         for (int i = 0; i < clusterSize; i++) {
             final Address address = new Address("127.0.0.1", localAddress, 5000 + i);
-            new Thread() {
+            spawn(new Runnable() {
                 @Override
                 public void run() {
                     Config config = makeConfig(address, backupCount);
                     factory.newHazelcastInstance(address, config);
                     latch.countDown();
                 }
-            }.start();
+            });
         }
-
         assertOpenEventually(latch);
 
         Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
@@ -173,28 +166,28 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
     }
 
     Config makeConfig(Address address, int backupCount) {
-        Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE);
-        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100");
+        Config config = new Config()
+                .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
+                .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
+                // to reduce used native memory size
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
-        // to reduce used native memory size
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
-
-        HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
-        hotRestartPersistenceConfig.setEnabled(true);
-        hotRestartPersistenceConfig.setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())));
+        config.getHotRestartPersistenceConfig()
+                .setEnabled(true)
+                .setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())));
 
         if (memoryFormat == InMemoryFormat.NATIVE) {
-            config.getNativeMemoryConfig().setEnabled(true)
+            config.getNativeMemoryConfig()
+                    .setEnabled(true)
                     .setSize(getNativeMemorySize())
                     .setMetadataSpacePercentage(20);
         }
 
         if (memoryFormat != null) {
-            MapConfig mapConfig = new MapConfig(mapName);
+            MapConfig mapConfig = new MapConfig(mapName)
+                    .setInMemoryFormat(memoryFormat)
+                    .setBackupCount(backupCount);
             mapConfig.getHotRestartConfig().setEnabled(true);
-            mapConfig.setInMemoryFormat(memoryFormat);
-            mapConfig.setBackupCount(backupCount);
             setEvictionConfig(mapConfig);
             config.addMapConfig(mapConfig);
         }

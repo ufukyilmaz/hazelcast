@@ -4,6 +4,7 @@ import com.hazelcast.cache.ICache;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -14,10 +15,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
+import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
@@ -28,9 +28,9 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
 
     @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {InMemoryFormat.NATIVE, OPERATION_COUNT, false},
-                {InMemoryFormat.BINARY, OPERATION_COUNT, false}
+                {InMemoryFormat.BINARY, OPERATION_COUNT, false},
         });
     }
 
@@ -61,7 +61,7 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
         test(new CacheAction() {
             @Override
             public int run(ICache cache) {
-                final int size = cache.size();
+                int size = cache.size();
                 cache.close();
                 return size;
             }
@@ -69,8 +69,9 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
     }
 
     private void test(CacheAction action) {
-        Config hzConfig = makeConfig(factory.nextAddress());
-        HazelcastInstance hz = newHazelcastInstance(hzConfig);
+        Address address = factory.nextAddress();
+        Config config = makeConfig(address);
+        HazelcastInstance hz = newHazelcastInstance(address, config);
         ICache<Integer, String> cache = createCache(hz);
 
         for (int key = 0; key < OPERATION_COUNT; key++) {
@@ -79,11 +80,10 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
 
         int expectedSize = action.run(cache);
 
-        hz = restartHazelcastInstance(hz, hzConfig);
-
+        hz = restartHazelcastInstance(hz, config);
         cache = createCache(hz);
 
-        assertEquals(expectedSize, cache.size());
+        assertEqualsStringFormat("Expected %s cache entries, but found %d", expectedSize, cache.size());
     }
 
     private interface CacheAction {

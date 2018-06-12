@@ -20,6 +20,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
 
@@ -35,9 +36,25 @@ public class HotRestartNativeCacheClearTest extends CacheClearTest {
     public TestName testName = new TestName();
 
     @Override
+    protected void onSetup() {
+        folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
+        createFolder(folder);
+
+        super.onSetup();
+    }
+
+    @Override
+    protected void onTearDown() {
+        super.onTearDown();
+        if (folder != null) {
+            delete(folder);
+        }
+    }
+
+    @Override
     protected Config createConfig() {
         Config config = new Config()
-                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE)
+                .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
                 .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
                 // to reduce used native memory size
                 .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
@@ -68,24 +85,5 @@ public class HotRestartNativeCacheClearTest extends CacheClearTest {
                 .setHotRestartConfig(hrConfig);
 
         return cacheConfig;
-    }
-
-    @Override
-    protected void onSetup() {
-        folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(folder);
-        if (!folder.mkdir() && !folder.exists()) {
-            throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
-        }
-
-        super.onSetup();
-    }
-
-    @Override
-    protected void onTearDown() {
-        super.onTearDown();
-        if (folder != null) {
-            delete(folder);
-        }
     }
 }

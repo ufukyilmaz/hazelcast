@@ -40,7 +40,7 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
                 {InMemoryFormat.BINARY, KEY_COUNT, false, 1},
                 {InMemoryFormat.BINARY, KEY_COUNT, false, 3},
                 {InMemoryFormat.NATIVE, KEY_COUNT, false, 1},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false, 3}
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, 3},
         });
     }
 
@@ -48,7 +48,7 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
     public int clusterSize;
 
     @Test
-    public void testPut() throws Exception {
+    public void testPut() {
         resetFixture();
 
         Map<Integer, String> expectedMap = new HashMap<Integer, String>();
@@ -67,7 +67,7 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
     }
 
     @Test
-    public void testRemove() throws Exception {
+    public void testRemove() {
         resetFixture();
 
         Map<Integer, String> expectedMap = new HashMap<Integer, String>();
@@ -75,7 +75,7 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
 
         Random random = new Random();
         for (int i = 0; i < KEY_COUNT / 10; i++) {
-            final int key = random.nextInt(KEY_COUNT);
+            int key = random.nextInt(KEY_COUNT);
             if (cache.remove(key)) {
                 expectedMap.remove(key);
             }
@@ -97,7 +97,7 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
     }
 
     @Test
-    public void testPutRemove() throws Exception {
+    public void testPutRemove() {
         resetFixture();
 
         Map<Integer, String> expectedMap = new HashMap<Integer, String>(KEY_COUNT);
@@ -141,7 +141,7 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
         fillCache(expectedMap);
 
         for (int i = 0; i < KEY_COUNT / 10; i++) {
-            final int key = random.nextInt(KEY_COUNT);
+            int key = random.nextInt(KEY_COUNT);
             if (cache.remove(key)) {
                 expectedMap.remove(key);
             }

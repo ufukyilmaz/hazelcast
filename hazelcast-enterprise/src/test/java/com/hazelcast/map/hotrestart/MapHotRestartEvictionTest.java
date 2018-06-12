@@ -15,11 +15,11 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,12 +27,14 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.synchronizedList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
 
@@ -40,29 +42,28 @@ public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
     private static final int MIN_VALUE_SIZE = 32;
     private static final int MAX_VALUE_SIZE = 4096;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][] {
                 {InMemoryFormat.NATIVE, 100000, true},
                 {InMemoryFormat.BINARY, 100000, true},
         });
     }
 
     @Test
-    public void test() throws Exception {
+    public void test() {
         Address address = factory.nextAddress();
         Config hzConfig = makeConfig(address, 1);
         HazelcastInstance hz = newHazelcastInstance(address, hzConfig);
         IMap<Integer, byte[]> map = createMap(hz);
 
-        final int threadCount = 4;
-        final CountDownLatch latch = new CountDownLatch(threadCount);
-        final List<Throwable> failures = Collections.synchronizedList(new ArrayList<Throwable>());
+        int threadCount = 4;
+        CountDownLatch latch = new CountDownLatch(threadCount);
+        List<Throwable> failures = synchronizedList(new ArrayList<Throwable>());
 
         for (int i = 0; i < threadCount; i++) {
-            new Thread(new MapTask(keyRange, map, latch, failures)).start();
+            spawn(new MapTask(keyRange, map, latch, failures));
         }
-
         assertOpenEventually(latch, TimeUnit.MINUTES.toSeconds(10));
 
         if (!failures.isEmpty()) {
@@ -78,7 +79,7 @@ public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
         assertEquals(expectedSize, iterated);
 
         // acquire some samples
-        final int samples = 5000;
+        int samples = 5000;
         Random random = new Random();
         Map<Integer, byte[]> expected = new HashMap<Integer, byte[]>(samples);
         for (int i = 0; i < samples; i++) {
@@ -103,7 +104,7 @@ public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
 
     private static byte[] randomValue(Random random) {
         int valueSize = random.nextInt(MAX_VALUE_SIZE - MIN_VALUE_SIZE) + MIN_VALUE_SIZE;
-        final byte[] value = new byte[valueSize];
+        byte[] value = new byte[valueSize];
         random.nextBytes(value);
         return value;
     }
@@ -114,12 +115,13 @@ public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
     }
 
     private static class MapTask implements Runnable {
+
         private final List<Throwable> failures;
         private final CountDownLatch latch;
         private final int operationCount;
-        private final IMap map;
+        private final IMap<Integer, byte[]> map;
 
-        public MapTask(int operationCount, IMap map, CountDownLatch latch, List<Throwable> failures) {
+        MapTask(int operationCount, IMap<Integer, byte[]> map, CountDownLatch latch, List<Throwable> failures) {
             this.operationCount = operationCount;
             this.map = map;
             this.failures = failures;

@@ -7,7 +7,6 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.Member;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.instance.Node;
-import com.hazelcast.instance.NodeExtension;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
@@ -15,7 +14,6 @@ import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.nio.Address;
 import com.hazelcast.partition.PartitionLostEvent;
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.SlowTest;
@@ -277,7 +275,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         Address[] addresses = getAddresses(instances);
         warmUpPartitions(instances);
 
-        HazelcastInstance survivingInstances[] = new HazelcastInstance[instances.length - 1];
+        HazelcastInstance[] survivingInstances = new HazelcastInstance[instances.length - 1];
         arraycopy(instances, 1, survivingInstances, 0, survivingInstances.length);
         int[] survivingInstanceReplicaIndices = getSurvivingReplicaIndices(survivingInstances);
 

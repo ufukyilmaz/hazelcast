@@ -15,11 +15,11 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -34,11 +34,11 @@ public class AbstractMetadataReaderWriterTest extends MetadataReaderWriterTestBa
 
     @Parameters(name = "dataSize: {0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {BUFFER_SIZE / 2},
                 {BUFFER_SIZE - INT_SIZE_IN_BYTES},
                 {BUFFER_SIZE},
-                {BUFFER_SIZE * 2}
+                {BUFFER_SIZE * 2},
         });
     }
 

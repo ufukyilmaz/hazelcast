@@ -39,7 +39,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {InMemoryFormat.BINARY, KEY_COUNT, false},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false}
+                {InMemoryFormat.NATIVE, KEY_COUNT, false},
         });
     }
 
@@ -67,7 +67,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
 
         waitAllForSafeState(instances);
 
-        CacheConfig config = cache.getConfiguration(CacheConfig.class);
+        CacheConfig<Integer, String> config = getConfiguration(cache);
         assertExpectedTotalCacheSize(instances, config.getNameWithPrefix());
     }
 
@@ -88,7 +88,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
             createCache(instance, backupCount);
         }
 
-        CacheConfig config = cache.getConfiguration(CacheConfig.class);
+        CacheConfig<Integer, String> config = getConfiguration(cache);
         assertExpectedTotalCacheSize(instances, config.getNameWithPrefix());
     }
 
@@ -109,11 +109,11 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
         instances = restartInstances(clusterSize);
         cache = createCache(instances[0], backupCount);
 
-        CacheConfig config = cache.getConfiguration(CacheConfig.class);
+        CacheConfig<Integer, String> config = getConfiguration(cache);
         assertExpectedTotalCacheSize(instances, config.getNameWithPrefix());
     }
 
-    private void assertExpectedTotalCacheSize(final HazelcastInstance[] instances, final String nameWithPrefix) {
+    private void assertExpectedTotalCacheSize(HazelcastInstance[] instances, String nameWithPrefix) {
         int expectedSize = cache.size() * clusterSize;
         assertTrueEventually(new CacheOwnedEntryAssertTask(instances, nameWithPrefix, expectedSize));
     }
@@ -125,7 +125,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
         }
         cache.remove(0);
         for (int i = 0; i < KEY_COUNT / 10; i++) {
-            final int key = random.nextInt(KEY_COUNT);
+            int key = random.nextInt(KEY_COUNT);
             cache.remove(key);
         }
         cache.put(0, randomString());
@@ -145,10 +145,10 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
 
         @Override
         public void run() throws Exception {
-            final AtomicInteger actualSize = new AtomicInteger();
-            final int partitionCount = getNode(instances[0]).getPartitionService().getPartitionCount();
+            AtomicInteger actualSize = new AtomicInteger();
+            int partitionCount = getNode(instances[0]).getPartitionService().getPartitionCount();
 
-            final CountDownLatch latch = new CountDownLatch(instances.length * partitionCount);
+            CountDownLatch latch = new CountDownLatch(instances.length * partitionCount);
 
             for (HazelcastInstance instance : instances) {
                 NodeEngineImpl nodeEngine = getNodeEngineImpl(instance);

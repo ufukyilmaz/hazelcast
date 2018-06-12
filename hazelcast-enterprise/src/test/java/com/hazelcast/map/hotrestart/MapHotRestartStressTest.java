@@ -32,7 +32,6 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +47,8 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;
 import static com.hazelcast.nio.IOUtil.deleteQuietly;
 import static com.hazelcast.util.FutureUtil.waitWithDeadline;
+import static java.util.Arrays.asList;
+import static java.util.Arrays.fill;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -62,7 +63,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
     @Rule
     public TestName testName = new TestName();
 
-    @Parameter(0)
+    @Parameter
     public InMemoryFormat memoryFormat;
 
     @Parameter(1)
@@ -78,7 +79,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
 
     @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {InMemoryFormat.NATIVE, 1000},
                 {InMemoryFormat.BINARY, 1000},
         });
@@ -102,7 +103,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
 
     @Test(timeout = 10 * 60 * 1000)
     public void test() throws Exception {
-        resetFixture(INSTANCE_COUNT);
+        resetFixture();
         ArrayList<Future> futures = new ArrayList<Future>();
         for (int i = 0; i < THREAD_COUNT; i++) {
             Future future = spawn(new Runnable() {
@@ -135,7 +136,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
         }
         assertEquals(localMap.size(), map.size());
 
-        resetFixture(INSTANCE_COUNT);
+        resetFixture();
         for (int i = 0; i < keyRange; i++) {
             Integer localValue = localMap.get(i);
             Integer value = map.get(i);
@@ -180,7 +181,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
         return config;
     }
 
-    private void resetFixture(int clusterSize) throws Exception {
+    private void resetFixture() throws Exception {
         ClusterState state = ClusterState.ACTIVE;
         if (testFactory != null) {
             Collection<HazelcastInstance> instances = testFactory.getAllHazelcastInstances();
@@ -195,21 +196,22 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
             sleepAtLeastSeconds(2);
         }
 
-        String[] addresses = new String[clusterSize];
-        Arrays.fill(addresses, "127.0.0.1");
+        String[] addresses = new String[INSTANCE_COUNT];
+        fill(addresses, "127.0.0.1");
         testFactory = new TestHazelcastInstanceFactory(5000, addresses);
 
-        final CountDownLatch latch = new CountDownLatch(clusterSize);
-        for (int i = 0; i < clusterSize; i++) {
+        final CountDownLatch latch = new CountDownLatch(INSTANCE_COUNT);
+        for (int i = 0; i < INSTANCE_COUNT; i++) {
             final Address address = new Address("127.0.0.1", 5000 + i);
             final Config config = makeConfig(i);
-            new Thread() {
+            spawn(new Runnable() {
                 @Override
                 public void run() {
                     testFactory.newHazelcastInstance(address, config);
                     latch.countDown();
+
                 }
-            }.start();
+            });
         }
 
         assertOpenEventually(latch);

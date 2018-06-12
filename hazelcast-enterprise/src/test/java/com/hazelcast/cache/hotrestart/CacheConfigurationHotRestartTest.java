@@ -37,7 +37,7 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {InMemoryFormat.BINARY, KEY_COUNT, false},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false}
+                {InMemoryFormat.NATIVE, KEY_COUNT, false},
         });
     }
 
@@ -46,7 +46,7 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
         Config hzConfig = makeConfig(factory.nextAddress());
         HazelcastInstance hz = factory.newHazelcastInstance(hzConfig);
         ICache<Integer, Object> cache = createCache(hz);
-        CacheConfig<Integer, Object> originalConfig = cache.getConfiguration(CacheConfig.class);
+        CacheConfig<Integer, Object> originalConfig = getConfiguration(cache);
 
         hz = restartHazelcastInstance(hz, hzConfig);
 
@@ -60,7 +60,7 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
         Config hzConfig = makeConfig().addCacheConfig(createSimpleCacheConfig());
         HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, Object> cache = hz.getCacheManager().getCache(cacheName);
-        CacheConfig<Integer, Object> originalConfig = cache.getConfiguration(CacheConfig.class);
+        CacheConfig<Integer, Object> originalConfig = getConfiguration(cache);
 
         hz = restartHazelcastInstance(hz, hzConfig);
 
@@ -76,7 +76,7 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
         Config hzConfig = createConfigWithWAN(wanConfigName);
         HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, Object> cache = hz.getCacheManager().getCache(cacheName);
-        CacheConfig<Integer, Object> originalConfig = cache.getConfiguration(CacheConfig.class);
+        CacheConfig<Integer, Object> originalConfig = getConfiguration(cache);
         String cacheNameWithPrefix = originalConfig.getNameWithPrefix();
 
         hz = restartHazelcastInstance(hz, hzConfig);

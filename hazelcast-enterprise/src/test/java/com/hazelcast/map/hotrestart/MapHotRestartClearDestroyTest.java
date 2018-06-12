@@ -12,29 +12,30 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
+import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapHotRestartClearDestroyTest extends AbstractMapHotRestartTest {
 
     private static final int OPERATION_COUNT = 10000;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {InMemoryFormat.NATIVE, OPERATION_COUNT, false},
                 {InMemoryFormat.BINARY, OPERATION_COUNT, false},
         });
     }
 
     @Test
-    public void test_clear() throws Exception {
+    public void test_clear() {
         test(new MapAction() {
             @Override
             public int run(IMap map) {
@@ -45,7 +46,7 @@ public class MapHotRestartClearDestroyTest extends AbstractMapHotRestartTest {
     }
 
     @Test
-    public void test_destroy() throws Exception {
+    public void test_destroy() {
         test(new MapAction() {
             @Override
             public int run(IMap map) {
@@ -55,10 +56,10 @@ public class MapHotRestartClearDestroyTest extends AbstractMapHotRestartTest {
         });
     }
 
-    private void test(MapAction action) throws Exception {
+    private void test(MapAction action) {
         Address address = factory.nextAddress();
-        Config hzConfig = makeConfig(address, 1);
-        HazelcastInstance hz = newHazelcastInstance(address, hzConfig);
+        Config config = makeConfig(address, 1);
+        HazelcastInstance hz = newHazelcastInstance(address, config);
         IMap<Integer, String> map = createMap(hz);
 
         for (int key = 0; key < OPERATION_COUNT; key++) {
@@ -67,11 +68,10 @@ public class MapHotRestartClearDestroyTest extends AbstractMapHotRestartTest {
 
         int expectedSize = action.run(map);
 
-        hz = restartHazelcastInstance(hz, hzConfig);
-
+        hz = restartHazelcastInstance(hz, config);
         map = createMap(hz);
 
-        assertEquals(expectedSize, map.size());
+        assertEqualsStringFormat("Expected %s map entries, but found %d", expectedSize, map.size());
     }
 
     private interface MapAction {

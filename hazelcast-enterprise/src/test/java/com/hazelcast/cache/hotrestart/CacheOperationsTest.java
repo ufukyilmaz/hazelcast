@@ -40,7 +40,7 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
         return asList(new Object[][]{
                 {InMemoryFormat.BINARY, KEY_COUNT, false},
                 {InMemoryFormat.OBJECT, KEY_COUNT, false},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false}
+                {InMemoryFormat.NATIVE, KEY_COUNT, false},
         });
     }
 
@@ -202,7 +202,7 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertNull(cache.get(0));
             }
         });
@@ -222,7 +222,7 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
 
     @Test
     public void testSize() {
-        final int mod = 10;
+        int mod = 10;
         for (int key = 0; key < KEY_COUNT; key += mod) {
             cache.remove(key);
         }

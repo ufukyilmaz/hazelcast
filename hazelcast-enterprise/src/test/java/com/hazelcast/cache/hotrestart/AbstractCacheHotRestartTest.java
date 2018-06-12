@@ -28,17 +28,19 @@ import org.junit.rules.TestName;
 import org.junit.runners.Parameterized.Parameter;
 
 import javax.cache.CacheManager;
+import javax.cache.configuration.Configuration;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.HDTestSupport.getICache;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
 import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
+import static java.util.Arrays.fill;
 import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
@@ -50,7 +52,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     @Rule
     public TestName testName = new TestName();
 
-    @Parameter(0)
+    @Parameter
     public InMemoryFormat memoryFormat;
 
     @Parameter(1)
@@ -71,22 +73,18 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
     @Before
     public final void setup() {
-        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(baseDir);
-        if (!baseDir.mkdir() && !baseDir.exists()) {
-            throw new AssertionError("Unable to create test folder: " + baseDir.getAbsolutePath());
-        }
-
         cacheName = randomName();
-
         factory = createFactory();
+
+        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
+        createFolder(baseDir);
 
         setupInternal();
     }
 
     private TestHazelcastInstanceFactory createFactory() {
         String[] addresses = new String[10];
-        Arrays.fill(addresses, "127.0.0.1");
+        fill(addresses, "127.0.0.1");
         return new TestHazelcastInstanceFactory(5000, addresses);
     }
 
@@ -95,18 +93,12 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
     @After
     public final void tearDown() {
-        tearDownInternal();
-
         if (factory != null) {
             factory.terminateAll();
         }
-
         if (baseDir != null) {
             delete(baseDir);
         }
-    }
-
-    void tearDownInternal() {
     }
 
     HazelcastInstance newHazelcastInstance() {
@@ -117,6 +109,10 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     HazelcastInstance newHazelcastInstance(Config config) {
         Address address = factory.nextAddress();
         return factory.newHazelcastInstance(address, withHotRestart(address, config));
+    }
+
+    HazelcastInstance newHazelcastInstance(Address address, Config config) {
+        return factory.newHazelcastInstance(address, config);
     }
 
     HazelcastInstance[] newInstances(int clusterSize) {
@@ -143,19 +139,17 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         factory = createFactory();
 
         final CountDownLatch latch = new CountDownLatch(clusterSize);
-
         for (int i = 0; i < clusterSize; i++) {
             final Address address = new Address("127.0.0.1", localAddress, 5000 + i);
-            new Thread() {
+            spawn(new Runnable() {
                 @Override
                 public void run() {
                     Config config = makeConfig(address);
                     factory.newHazelcastInstance(address, config);
                     latch.countDown();
                 }
-            }.start();
+            });
         }
-
         assertOpenEventually(latch);
 
         HazelcastInstance[] instances = factory.getAllHazelcastInstances().toArray(new HazelcastInstance[0]);
@@ -188,12 +182,11 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     }
 
     Config makeConfig() {
-        Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE);
-        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100");
-
-        // to reduce used native memory size
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+        Config config = new Config()
+                .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
+                .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
+                // to reduce used native memory size
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         if (memoryFormat == InMemoryFormat.NATIVE) {
             config.getNativeMemoryConfig()
@@ -252,5 +245,10 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     EnterpriseCacheService getCacheService(HazelcastInstance hz) {
         NodeEngineImpl nodeEngine = getNodeEngineImpl(hz);
         return nodeEngine.getService("hz:impl:cacheService");
+    }
+
+    @SuppressWarnings("unchecked")
+    static <K, V, C extends Configuration<K, V>> C getConfiguration(ICache<K, V> cache) {
+        return (C) cache.getConfiguration(CacheConfig.class);
     }
 }

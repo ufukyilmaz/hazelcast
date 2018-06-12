@@ -78,7 +78,8 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
 
     protected final EventCollectingPartitionLostListener partitionLostListener = new EventCollectingPartitionLostListener();
 
-    protected int validationTimeoutInSeconds = 10, dataLoadTimeoutInSeconds = 10;
+    protected int validationTimeoutInSeconds = 10;
+    protected int dataLoadTimeoutInSeconds = 10;
 
     private Future startNodeFuture;
 

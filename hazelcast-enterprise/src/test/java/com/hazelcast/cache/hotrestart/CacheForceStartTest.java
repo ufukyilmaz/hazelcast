@@ -36,7 +36,7 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {InMemoryFormat.BINARY, KEY_COUNT, false},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false}
+                {InMemoryFormat.NATIVE, KEY_COUNT, false},
         });
     }
 

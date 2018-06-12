@@ -13,31 +13,33 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapHotRestartExpiryTest extends AbstractMapHotRestartTest {
 
     private static final int OPERATION_COUNT = 1000;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {InMemoryFormat.NATIVE, OPERATION_COUNT, false},
                 {InMemoryFormat.BINARY, OPERATION_COUNT, false},
         });
     }
 
     @Test
-    public void test() throws Exception {
+    public void test() {
         int ttl = 10;
         Address address = factory.nextAddress();
         Config hzConfig = makeConfig(address, 1);
@@ -52,7 +54,7 @@ public class MapHotRestartExpiryTest extends AbstractMapHotRestartTest {
         final IMap<Integer, String> finalMap = map;
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 for (int key = 0; key < OPERATION_COUNT; key++) {
                     assertNull(finalMap.get(key));
                 }
@@ -61,7 +63,6 @@ public class MapHotRestartExpiryTest extends AbstractMapHotRestartTest {
         assertEquals(0, map.size());
 
         hz = restartHazelcastInstance(hz, hzConfig);
-
         map = createMap(hz);
 
         assertEquals(0, map.size());

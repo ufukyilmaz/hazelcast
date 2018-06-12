@@ -29,7 +29,6 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import javax.cache.Cache;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.synchronizedList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -56,7 +56,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {InMemoryFormat.NATIVE, 25000, true},
-                {InMemoryFormat.BINARY, 25000, true}
+                {InMemoryFormat.BINARY, 25000, true},
         });
     }
 
@@ -71,14 +71,13 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
         HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, byte[]> cache = createCache(hz);
 
-        final int threadCount = 4;
-        final CountDownLatch latch = new CountDownLatch(threadCount);
-        final List<Throwable> failures = Collections.synchronizedList(new ArrayList<Throwable>());
+        int threadCount = 4;
+        CountDownLatch latch = new CountDownLatch(threadCount);
+        List<Throwable> failures = synchronizedList(new ArrayList<Throwable>());
 
         for (int i = 0; i < threadCount; i++) {
-            new Thread(new CacheTask(keyRange, cache, latch, failures)).start();
+            spawn(new CacheTask(keyRange, cache, latch, failures));
         }
-
         assertOpenEventually(latch, TimeUnit.MINUTES.toSeconds(10));
 
         if (!failures.isEmpty()) {
@@ -94,7 +93,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
         assertEquals(expectedSize, iterated);
 
         // acquire some samples
-        final int samples = 5000;
+        int samples = 5000;
         Random random = new Random();
         Map<Integer, byte[]> expected = new HashMap<Integer, byte[]>(samples);
         for (int i = 0; i < samples; i++) {
@@ -119,7 +118,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
 
     private static byte[] randomValue(Random random) {
         int valueSize = random.nextInt(MAX_VALUE_SIZE - MIN_VALUE_SIZE) + MIN_VALUE_SIZE;
-        final byte[] value = new byte[valueSize];
+        byte[] value = new byte[valueSize];
         random.nextBytes(value);
         return value;
     }
@@ -149,21 +148,19 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     public void evictionShouldBeTriggeredWhenFreeNativeMemoryPercentageIsReached() {
         if (memoryFormat == InMemoryFormat.NATIVE) {
             HazelcastInstance hz = newHazelcastInstance();
-            final Node node = getNode(hz);
-            final HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(node.getProperties());
-            final int freeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
+            Node node = getNode(hz);
+            HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(node.getProperties());
+            int freeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
             ICache<String, byte[]> cache = createCache(hz);
 
             int partitionCount = node.getPartitionService().getPartitionCount();
-            EnterpriseSerializationService ss =
-                    (EnterpriseSerializationService) node.getSerializationService();
+            EnterpriseSerializationService ss = (EnterpriseSerializationService) node.getSerializationService();
             MemoryStats memoryStats = ss.getMemoryManager().getMemoryStats();
             EnterpriseCacheService cacheService = node.nodeEngine.getService(ICacheService.SERVICE_NAME);
             HiDensityStorageInfo cacheInfo = cacheService.getOrCreateHiDensityCacheInfo("/hz/" + cache.getName());
 
             long maxNativeMemory = memoryStats.getMaxNative();
-            long minFreeNativeMemory = (long) (maxNativeMemory
-                    * freeNativeMemoryPercentage / 100f);
+            long minFreeNativeMemory = (long) (maxNativeMemory * freeNativeMemoryPercentage / 100f);
             int entrySize = 1024 * 1024; // 1MB
             long entryCountToFillUpMemory = maxNativeMemory / entrySize; // In fact, it is less than this
 

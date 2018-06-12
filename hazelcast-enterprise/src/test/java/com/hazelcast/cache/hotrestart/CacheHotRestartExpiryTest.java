@@ -33,13 +33,13 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {InMemoryFormat.NATIVE, KEY_COUNT, false},
-                {InMemoryFormat.BINARY, KEY_COUNT, false}
+                {InMemoryFormat.BINARY, KEY_COUNT, false},
         });
     }
 
     @Test
     public void test() {
-        final int expireAfter = 10;
+        int expireAfter = 10;
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(expireAfter, expireAfter, expireAfter, MILLISECONDS);
         Config hzConfig = makeConfig(factory.nextAddress());
         HazelcastInstance hz = newHazelcastInstance(hzConfig);
@@ -62,7 +62,6 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
         assertEquals(0, cache.size());
 
         hz = restartHazelcastInstance(hz, hzConfig);
-
         cache = createCache(hz);
 
         assertEquals(0, cache.size());

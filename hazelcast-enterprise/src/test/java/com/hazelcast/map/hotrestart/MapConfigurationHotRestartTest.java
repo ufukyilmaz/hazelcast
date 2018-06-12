@@ -16,6 +16,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapConfigurationHotRestartTest extends AbstractMapHotRestartTest {
+
     private static final InMemoryFormat NON_DEFAULT_IN_MEMORY_FORMAT = InMemoryFormat.NATIVE;
     private static final InMemoryFormat DEFAULT_IN_MEMORY_FORMAT = MapConfig.DEFAULT_IN_MEMORY_FORMAT;
 

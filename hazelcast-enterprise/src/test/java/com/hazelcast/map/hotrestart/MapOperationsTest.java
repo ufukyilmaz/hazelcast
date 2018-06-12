@@ -12,13 +12,15 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -26,7 +28,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapOperationsTest extends AbstractMapHotRestartTest {
 
@@ -34,9 +36,9 @@ public class MapOperationsTest extends AbstractMapHotRestartTest {
 
     private IMap<Integer, String> map;
 
-    @Parameterized.Parameters(name = "memoryFormat:{0}")
+    @Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
+        return asList(new Object[][]{
                 {InMemoryFormat.NATIVE, KEY_COUNT, false},
                 {InMemoryFormat.BINARY, KEY_COUNT, false},
                 {InMemoryFormat.OBJECT, KEY_COUNT, false},
@@ -183,7 +185,7 @@ public class MapOperationsTest extends AbstractMapHotRestartTest {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertNull(map.get(0));
             }
         });
@@ -203,7 +205,7 @@ public class MapOperationsTest extends AbstractMapHotRestartTest {
 
     @Test
     public void testSize() {
-        final int mod = 10;
+        int mod = 10;
         for (int key = 0; key < KEY_COUNT; key += mod) {
             map.remove(key);
         }

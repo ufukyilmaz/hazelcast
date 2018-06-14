@@ -17,7 +17,7 @@ import static java.util.Arrays.asList;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({SlowTest.class, ParallelTest.class})
-public class CacheOperationsSlowTest extends AbstractCacheHotRestartTest {
+public class CacheOperationsSlowTest extends CacheOperationsTest {
 
     @Parameters(name = "memoryFormat:{0} fsync:{2}")
     public static Collection<Object[]> parameters() {

@@ -181,7 +181,7 @@
                     <dependency>
                         <groupId>com.hazelcast</groupId>
                         <artifactId>hazelcast-build-utils</artifactId>
-                        <version>[3.8,4.0)</version>
+                        <version>${project.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>

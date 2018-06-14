@@ -1,6 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordInfo;
@@ -18,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hazelcast.core.EntryEventType.MERGED;
-import static com.hazelcast.map.impl.EntryViews.createSimpleEntryView;
 import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
 
 /**
@@ -97,8 +95,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
                 mapEventPublisher.publishEvent(getCallerAddress(), name, MERGED, dataKey, oldValue, dataValue);
             }
             if (hasWanReplication) {
-                EntryView entryView = createSimpleEntryView(dataKey, dataValue, recordStore.getRecord(dataKey));
-                mapEventPublisher.publishWanReplicationUpdate(name, entryView);
+                publishWanUpdate(dataKey, dataValue);
             }
             if (hasBackups) {
                 mapEntries.add(dataKey, dataValue);

@@ -35,6 +35,7 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.util.InvocationUtil;
 import com.hazelcast.internal.util.LocalRetryableExecution;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.ReplicationSupportingService;
@@ -45,6 +46,7 @@ import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
@@ -110,10 +112,11 @@ public class EnterpriseCacheService
                 }
             };
 
-    private ReplicationSupportingService replicationSupportingService;
+    private IPartitionService partitionService;
     private CacheFilterProvider cacheFilterProvider;
     private CacheWanEventPublisher cacheWanEventPublisher;
     private HotRestartIntegrationService hotRestartService;
+    private ReplicationSupportingService replicationSupportingService;
 
     @Override
     protected void postInit(NodeEngine nodeEngine, Properties properties) {
@@ -121,6 +124,7 @@ public class EnterpriseCacheService
         replicationSupportingService = new CacheReplicationSupportingService(this);
         cacheFilterProvider = new CacheFilterProvider(nodeEngine);
         cacheWanEventPublisher = new CacheWanEventPublisherImpl(this);
+        partitionService = nodeEngine.getPartitionService();
 
         hotRestartService = getHotRestartService();
         if (hotRestartService != null) {
@@ -559,14 +563,6 @@ public class EnterpriseCacheService
     }
 
     public void publishWanEvent(CacheEventContext cacheEventContext) {
-        publishWanEvent(cacheEventContext, false);
-    }
-
-    public void publishWanEventBackup(CacheEventContext cacheEventContext) {
-        publishWanEvent(cacheEventContext, true);
-    }
-
-    private void publishWanEvent(CacheEventContext cacheEventContext, boolean backup) {
         String cacheName = cacheEventContext.getCacheName();
         CacheEventType eventType = cacheEventContext.getEventType();
         WanReplicationPublisher wanReplicationPublisher =
@@ -578,6 +574,8 @@ public class EnterpriseCacheService
             if (isEventFiltered(cacheEventContext, filters)) {
                 return;
             }
+
+            boolean backup = !isOwnedPartition(cacheEventContext.getDataKey());
 
             if (eventType == CacheEventType.UPDATED
                     || eventType == CacheEventType.CREATED
@@ -609,6 +607,11 @@ public class EnterpriseCacheService
                 }
             }
         }
+    }
+
+    private boolean isOwnedPartition(Data dataKey) {
+        int partitionId = partitionService.getPartitionId(dataKey);
+        return partitionService.getPartition(partitionId, false).isLocal();
     }
 
     private boolean isEventFiltered(CacheEventContext eventContext, List<String> filters) {

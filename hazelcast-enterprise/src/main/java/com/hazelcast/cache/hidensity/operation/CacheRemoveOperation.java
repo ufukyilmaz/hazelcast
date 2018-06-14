@@ -1,6 +1,5 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -29,21 +28,18 @@ public class CacheRemoveOperation
     }
 
     @Override
-    protected void runInternal() throws Exception {
+    protected void runInternal() {
         if (currentValue == null) {
-            response = cache.remove(key, getCallerUuid(), null, completionId);
+            response = recordStore.remove(key, getCallerUuid(), null, completionId);
         } else {
-            response = cache.remove(key, currentValue, getCallerUuid(), null, completionId);
+            response = recordStore.remove(key, currentValue, getCallerUuid(), null, completionId);
         }
     }
 
     @Override
     public void afterRun() throws Exception {
         if (Boolean.TRUE.equals(response)) {
-            if (cache.isWanReplicationEnabled()) {
-                CacheWanEventPublisher publisher = cacheService.getCacheWanEventPublisher();
-                publisher.publishWanReplicationRemoveBackup(name, cache.toEventData(key));
-            }
+            publishWanRemove(key);
         }
         super.afterRun();
         dispose();

@@ -6,8 +6,7 @@ import com.hazelcast.spi.ReadonlyOperation;
  * Calculates the entry size of this store which reflects the partition size of the cache.
  */
 public class CacheSizeOperation
-        extends AbstractHiDensityCacheOperation
-        implements ReadonlyOperation {
+        extends HiDensityCacheOperation implements ReadonlyOperation {
 
     public CacheSizeOperation() {
     }
@@ -17,8 +16,8 @@ public class CacheSizeOperation
     }
 
     @Override
-    protected void runInternal() throws Exception {
-        response = cache != null ? cache.size() : 0;
+    protected void runInternal() {
+        response = recordStore != null ? recordStore.size() : 0;
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.hazelcast.cache.operation;
 
-import com.hazelcast.cache.impl.operation.AbstractMutatingCacheOperation;
 import com.hazelcast.cache.impl.operation.CacheRemoveBackupOperation;
+import com.hazelcast.cache.impl.operation.MutatingCacheOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -13,8 +13,7 @@ import java.io.IOException;
  * Operation implementation for cache remove functionality to be used
  * by WAN replication services.
  */
-public class WanCacheRemoveOperation
-        extends AbstractMutatingCacheOperation {
+public class WanCacheRemoveOperation extends MutatingCacheOperation {
 
     private String wanGroupName;
 
@@ -28,7 +27,7 @@ public class WanCacheRemoveOperation
 
     @Override
     public void run() throws Exception {
-        response = cache.remove(key, getCallerUuid(), wanGroupName, completionId);
+        response = recordStore.remove(key, getCallerUuid(), wanGroupName, completionId);
     }
 
     @Override
@@ -42,15 +41,13 @@ public class WanCacheRemoveOperation
     }
 
     @Override
-    protected void writeInternal(ObjectDataOutput out)
-            throws IOException {
+    protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeUTF(wanGroupName);
     }
 
     @Override
-    protected void readInternal(ObjectDataInput in)
-            throws IOException {
+    protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         wanGroupName = in.readUTF();
     }

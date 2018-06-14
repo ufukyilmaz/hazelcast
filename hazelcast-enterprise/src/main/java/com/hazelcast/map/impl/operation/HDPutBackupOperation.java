@@ -1,7 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.core.EntryView;
-import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordInfo;
 import com.hazelcast.map.impl.record.Records;
@@ -59,32 +57,19 @@ public final class HDPutBackupOperation extends HDKeyBasedMapOperation implement
     }
 
     @Override
-    public void afterRun() throws Exception {
+    public void afterRun() {
         if (recordInfo != null) {
             evict(dataKey);
         }
-        if (!disableWanReplicationEvent) {
-            publishWANReplicationEventBackup();
-        }
 
+        publishWanUpdate(dataKey, dataValue);
         disposeDeferredBlocks();
     }
 
-    private void publishWANReplicationEventBackup() {
-        if (!mapContainer.isWanReplicationEnabled()) {
-            return;
-        }
-
-        Record record = recordStore.getRecord(dataKey);
-        if (record == null) {
-            return;
-        }
-
-        Data valueConvertedData = mapServiceContext.toData(dataValue);
-        EntryView entryView = EntryViews.createSimpleEntryView(dataKey, valueConvertedData, record);
-        mapServiceContext.getMapEventPublisher().publishWanReplicationUpdateBackup(name, entryView);
+    @Override
+    protected boolean canThisOpGenerateWANEvent() {
+        return !disableWanReplicationEvent;
     }
-
 
     @Override
     public Object getResponse() {

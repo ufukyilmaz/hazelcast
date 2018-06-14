@@ -1,10 +1,6 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.impl.CacheEntryViews;
-import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
-import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -46,24 +42,19 @@ public class CachePutOperation
     }
 
     @Override
-    protected void runInternal() throws Exception {
+    protected void runInternal() {
         if (get) {
-            response = cache.getAndPut(key, value, expiryPolicy, getCallerUuid(), completionId);
+            response = recordStore.getAndPut(key, value, expiryPolicy, getCallerUuid(), completionId);
         } else {
-            cache.put(key, value, expiryPolicy, getCallerUuid(), completionId);
+            recordStore.put(key, value, expiryPolicy, getCallerUuid(), completionId);
             response = null;
         }
     }
 
     @Override
     public void afterRun() throws Exception {
-        if (cache.isWanReplicationEnabled()) {
-            CacheRecord cacheRecord = cache.getRecord(key);
-            CacheEntryView<Data, Data> entryView = CacheEntryViews.createDefaultEntryView(
-                    cache.toEventData(key),
-                    cache.toEventData(cacheRecord.getValue()), cacheRecord);
-            CacheWanEventPublisher publisher = cacheService.getCacheWanEventPublisher();
-            publisher.publishWanReplicationUpdate(name, entryView);
+        if (recordStore.isWanReplicationEnabled()) {
+            publishWanUpdate(key, recordStore.getRecord(key));
         }
         super.afterRun();
     }

@@ -9,7 +9,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.cache.hidensity.operation.AbstractHiDensityCacheOperation.FORCED_EVICTION_RETRY_COUNT;
+import static com.hazelcast.cache.hidensity.operation.HiDensityCacheOperation.FORCED_EVICTION_RETRY_COUNT;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.times;
@@ -162,7 +162,7 @@ public class HiDensityCacheOperationForcedEvictionTest extends AbstractHDCacheOp
         verify(recordStore, times(expectedTimes)).disposeDeferredBlocks();
     }
 
-    private class NativeOutOfMemoryOperation extends AbstractHiDensityCacheOperation {
+    private static class NativeOutOfMemoryOperation extends HiDensityCacheOperation {
 
         private int throwExceptionCounter;
 

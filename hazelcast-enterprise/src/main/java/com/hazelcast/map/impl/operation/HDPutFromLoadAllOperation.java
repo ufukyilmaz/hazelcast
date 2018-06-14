@@ -1,8 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.core.EntryEventType;
-import com.hazelcast.core.EntryView;
-import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -69,7 +66,7 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
                 checkNotNull(record, "Value loaded by a MapLoader cannot be null.");
                 value = record.getValue();
             }
-            publishWanReplicationEvent(key, value, record);
+            publishWanUpdate(key, value);
 
             addInvalidation(key);
         }
@@ -90,21 +87,6 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
 
     private void callAfterPutInterceptors(Object value) {
         mapService.getMapServiceContext().interceptAfterPut(name, value);
-    }
-
-    private void publishEntryEvent(Data key, Object previousValue, Object newValue) {
-        final EntryEventType eventType = previousValue == null ? EntryEventType.ADDED : EntryEventType.UPDATED;
-        mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, key, previousValue, newValue);
-    }
-
-    private void publishWanReplicationEvent(Data key, Object value, Record record) {
-        if (record == null || !mapContainer.isWanReplicationEnabled()) {
-            return;
-        }
-
-        value = mapServiceContext.toData(value);
-        EntryView entryView = EntryViews.createSimpleEntryView(key, value, record);
-        mapEventPublisher.publishWanReplicationUpdate(name, entryView);
     }
 
     @Override

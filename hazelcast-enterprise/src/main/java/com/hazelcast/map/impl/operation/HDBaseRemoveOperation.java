@@ -3,7 +3,6 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.util.Clock;
 
 import static com.hazelcast.core.EntryEventType.REMOVED;
 
@@ -34,11 +33,13 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
         mapServiceContext.interceptAfterRemove(name, dataValue);
         mapEventPublisher.publishEvent(getCallerAddress(), name, REMOVED, dataKey, dataOldValue, null);
         invalidateNearCache(dataKey);
-        if (mapContainer.isWanReplicationEnabled() && !disableWanReplicationEvent) {
-            // TODO should evict operation be replicated?
-            mapEventPublisher.publishWanReplicationRemove(name, dataKey, Clock.currentTimeMillis());
-        }
+        publishWanRemove(dataKey);
         evict(dataKey);
+    }
+
+    @Override
+    protected boolean canThisOpGenerateWANEvent() {
+        return !disableWanReplicationEvent;
     }
 
     @Override

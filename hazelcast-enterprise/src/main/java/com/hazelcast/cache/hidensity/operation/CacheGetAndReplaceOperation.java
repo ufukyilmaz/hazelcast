@@ -1,10 +1,6 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.impl.CacheEntryViews;
-import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
-import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -36,20 +32,14 @@ public class CacheGetAndReplaceOperation
     }
 
     @Override
-    protected void runInternal() throws Exception {
-        response = cache.getAndReplace(key, value, expiryPolicy, getCallerUuid(), completionId);
+    protected void runInternal() {
+        response = recordStore.getAndReplace(key, value, expiryPolicy, getCallerUuid(), completionId);
     }
 
     @Override
     public void afterRun() throws Exception {
         if (response != null) {
-            if (cache.isWanReplicationEnabled()) {
-                CacheRecord cacheRecord = cache.getRecord(key);
-                CacheEntryView<Data, Data> entryView = CacheEntryViews.createDefaultEntryView(cache.toEventData(key),
-                        cache.toEventData(cacheRecord.getValue()), cacheRecord);
-                CacheWanEventPublisher publisher = cacheService.getCacheWanEventPublisher();
-                publisher.publishWanReplicationUpdate(name, entryView);
-            }
+            publishWanUpdate(key, recordStore.getRecord(key));
         }
         super.afterRun();
         dispose();

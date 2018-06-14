@@ -39,13 +39,13 @@ public class CacheLoadAllOperation
     }
 
     @Override
-    protected void runInternal() throws Exception {
+    protected void runInternal() {
         final IPartitionService partitionService = getNodeEngine().getPartitionService();
 
         Set<Data> filteredKeys = new HashSet<Data>();
         if (keys != null) {
             for (Data k : keys) {
-                if (partitionService.getPartitionId(k) == partitionId) {
+                if (partitionService.getPartitionId(k) == getPartitionId()) {
                     filteredKeys.add(k);
                 }
             }
@@ -54,12 +54,12 @@ public class CacheLoadAllOperation
             return;
         }
         try {
-            final Set<Data> keysLoaded = cache.loadAll(filteredKeys, replaceExistingValues);
+            final Set<Data> keysLoaded = recordStore.loadAll(filteredKeys, replaceExistingValues);
             shouldBackup = !keysLoaded.isEmpty();
             if (shouldBackup) {
                 cacheBackupRecordStore = new CacheBackupRecordStore();
                 for (Data key : keysLoaded) {
-                    HiDensityCacheRecord record = (HiDensityCacheRecord) cache.getRecord(key);
+                    HiDensityCacheRecord record = (HiDensityCacheRecord) recordStore.getRecord(key);
                     // Loaded keys may have been evicted, then record will be null.
                     // So if the loaded key is evicted, don't send it to backup.
                     if (record != null) {
@@ -107,7 +107,7 @@ public class CacheLoadAllOperation
         int size = in.readInt();
         keys = new HashSet<Data>(size);
         for (int i = 0; i < size; i++) {
-            Data key = AbstractHiDensityCacheOperation.readHeapOperationData(in);
+            Data key = HiDensityCacheOperation.readHeapOperationData(in);
             keys.add(key);
         }
     }

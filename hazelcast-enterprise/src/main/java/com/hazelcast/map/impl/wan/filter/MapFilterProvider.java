@@ -16,10 +16,9 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  * Manages {@link MapWanEventFilter} instance access/creation.
  */
 public final class MapFilterProvider {
-    private final ConcurrentMap<String, MapWanEventFilter> filterMap;
 
     private final NodeEngine nodeEngine;
-
+    private final ConcurrentMap<String, MapWanEventFilter> filterByClassName;
     private final ConstructorFunction<String, MapWanEventFilter> filterConstructorFunction
             = new ConstructorFunction<String, MapWanEventFilter>() {
         @Override
@@ -35,11 +34,11 @@ public final class MapFilterProvider {
 
     public MapFilterProvider(NodeEngine nodeEngine) {
         this.nodeEngine = nodeEngine;
-        filterMap = new ConcurrentHashMap<String, MapWanEventFilter>();
+        this.filterByClassName = new ConcurrentHashMap<String, MapWanEventFilter>();
     }
 
     public MapWanEventFilter getFilter(String className) {
         checkNotNull(className, "Class name is mandatory!");
-        return ConcurrencyUtil.getOrPutIfAbsent(filterMap, className, filterConstructorFunction);
+        return ConcurrencyUtil.getOrPutIfAbsent(filterByClassName, className, filterConstructorFunction);
     }
 }

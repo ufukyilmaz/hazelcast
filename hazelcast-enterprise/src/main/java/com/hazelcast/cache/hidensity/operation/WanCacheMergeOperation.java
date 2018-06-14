@@ -39,7 +39,7 @@ public class WanCacheMergeOperation
 
     @Override
     public void runInternal() {
-        if (cache.merge(mergingEntry, mergePolicy) != null) {
+        if (recordStore.merge(mergingEntry, mergePolicy) != null) {
             response = true;
         }
     }

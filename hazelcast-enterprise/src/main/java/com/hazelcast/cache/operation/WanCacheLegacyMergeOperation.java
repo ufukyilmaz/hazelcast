@@ -2,8 +2,8 @@ package com.hazelcast.cache.operation;
 
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheMergePolicy;
-import com.hazelcast.cache.impl.operation.AbstractMutatingCacheOperation;
 import com.hazelcast.cache.impl.operation.CachePutBackupOperation;
+import com.hazelcast.cache.impl.operation.MutatingCacheOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -18,8 +18,7 @@ import static java.lang.Boolean.TRUE;
  * Operation implementation for merging entries.
  * This operation is used by WAN replication services.
  */
-public class WanCacheLegacyMergeOperation
-        extends AbstractMutatingCacheOperation {
+public class WanCacheLegacyMergeOperation extends MutatingCacheOperation {
 
     private CacheEntryView<Data, Data> cacheEntryView;
     private CacheMergePolicy mergePolicy;
@@ -38,11 +37,11 @@ public class WanCacheLegacyMergeOperation
 
     @Override
     public void run() throws Exception {
-        CacheRecord record = cache.merge(cacheEntryView, mergePolicy, getCallerUuid(), wanGroupName, completionId);
+        CacheRecord record = recordStore.merge(cacheEntryView, mergePolicy, getCallerUuid(), wanGroupName, completionId);
         response = record != null;
 
         if (TRUE.equals(response)) {
-            backupRecord = cache.getRecord(key);
+            backupRecord = recordStore.getRecord(key);
         }
     }
 

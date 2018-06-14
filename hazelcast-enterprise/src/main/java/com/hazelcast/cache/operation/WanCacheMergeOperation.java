@@ -1,7 +1,7 @@
 package com.hazelcast.cache.operation;
 
-import com.hazelcast.cache.impl.operation.AbstractMutatingCacheOperation;
 import com.hazelcast.cache.impl.operation.CachePutBackupOperation;
+import com.hazelcast.cache.impl.operation.MutatingCacheOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -20,8 +20,7 @@ import static java.lang.Boolean.TRUE;
  *
  * @since 3.10
  */
-public class WanCacheMergeOperation
-        extends AbstractMutatingCacheOperation {
+public class WanCacheMergeOperation extends MutatingCacheOperation {
 
     private CacheMergeTypes mergingEntry;
     private SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy;
@@ -40,10 +39,10 @@ public class WanCacheMergeOperation
 
     @Override
     public void run() throws Exception {
-        CacheRecord record = cache.merge(mergingEntry, mergePolicy);
+        CacheRecord record = recordStore.merge(mergingEntry, mergePolicy);
         if (record != null) {
             response = true;
-            backupRecord = cache.getRecord(key);
+            backupRecord = recordStore.getRecord(key);
         }
     }
 

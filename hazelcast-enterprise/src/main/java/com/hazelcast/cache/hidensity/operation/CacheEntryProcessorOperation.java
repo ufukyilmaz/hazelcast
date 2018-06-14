@@ -1,8 +1,5 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.impl.CacheEntryViews;
-import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -43,9 +40,9 @@ public class CacheEntryProcessorOperation
     }
 
     @Override
-    protected void runInternal() throws Exception {
-        response = cache.invoke(key, entryProcessor, arguments, completionId);
-        CacheRecord record = cache.getRecord(key);
+    protected void runInternal() {
+        response = recordStore.invoke(key, entryProcessor, arguments, completionId);
+        CacheRecord record = recordStore.getRecord(key);
         if (record != null) {
             Object recordVal = record.getValue();
             if (recordVal instanceof Data) {
@@ -61,15 +58,11 @@ public class CacheEntryProcessorOperation
 
     @Override
     public void afterRun() throws Exception {
-        if (cache.isWanReplicationEnabled()) {
-            CacheWanEventPublisher wanEventPublisher = cacheService.getCacheWanEventPublisher();
+        if (recordStore.isWanReplicationEnabled()) {
             if (backupData != null) {
-                CacheRecord cacheRecord = cache.getRecord(key);
-                CacheEntryView<Data, Data> entryView = CacheEntryViews.createDefaultEntryView(cache.toEventData(key),
-                        cache.toEventData(cacheRecord.getValue()), cacheRecord);
-                wanEventPublisher.publishWanReplicationUpdate(name, entryView);
+                publishWanUpdate(key, recordStore.getRecord(key));
             } else {
-                wanEventPublisher.publishWanReplicationRemove(name, key);
+                publishWanRemove(key);
             }
         }
         super.afterRun();

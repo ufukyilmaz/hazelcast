@@ -8,7 +8,9 @@ import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ServiceNamespace;
 
@@ -82,12 +84,22 @@ public class CountingWanEndpoint implements WanReplicationEndpoint {
 
     @Override
     public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
-        counter.incrementAndGet();
+        if (isOwnedPartition(eventObject.getKey())) {
+            counter.incrementAndGet();
+        }
     }
 
     @Override
     public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
-        backupCounter.incrementAndGet();
+        if (!isOwnedPartition(eventObject.getKey())) {
+            backupCounter.incrementAndGet();
+        }
+    }
+
+    private boolean isOwnedPartition(Data dataKey) {
+        InternalPartitionServiceImpl partitionService = node.partitionService;
+        int partitionId = partitionService.getPartitionId(dataKey);
+        return partitionService.getPartition(partitionId, false).isLocal();
     }
 
     @Override

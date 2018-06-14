@@ -28,7 +28,7 @@ public class WanCacheRemoveOperation
 
     @Override
     public void runInternal() {
-        response = cache.remove(key, getCallerUuid(), wanGroupName, completionId);
+        response = recordStore.remove(key, getCallerUuid(), wanGroupName, completionId);
     }
 
     @Override

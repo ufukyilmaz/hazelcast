@@ -1,7 +1,6 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.core.EntryEventType;
-import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordInfo;
@@ -19,7 +18,6 @@ import java.util.List;
 
 import static com.hazelcast.core.EntryEventType.ADDED;
 import static com.hazelcast.core.EntryEventType.UPDATED;
-import static com.hazelcast.map.impl.EntryViews.createSimpleEntryView;
 import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
 import static com.hazelcast.map.impl.recordstore.RecordStore.DEFAULT_TTL;
 
@@ -87,12 +85,11 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
             mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, oldValue, dataValue);
         }
 
-        Record record = (hasWanReplication || hasBackups) ? recordStore.getRecord(dataKey) : null;
         if (hasWanReplication) {
-            EntryView entryView = createSimpleEntryView(dataKey, dataValue, record);
-            mapEventPublisher.publishWanReplicationUpdate(name, entryView);
+            publishWanUpdate(dataKey, dataValue);
         }
         if (hasBackups) {
+            Record record = recordStore.getRecord(dataKey);
             RecordInfo replicationInfo = buildRecordInfo(record);
             backupRecordInfos.add(replicationInfo);
         }

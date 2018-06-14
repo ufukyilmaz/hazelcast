@@ -5,7 +5,6 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.BackupOperation;
-import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 
@@ -22,17 +21,6 @@ public class HDEvictBackupOperation extends HDKeyBasedMapOperation implements Ba
         super(name, dataKey);
     }
 
-    public HDEvictBackupOperation(String name, Data dataKey, boolean unlockKey) {
-        super(name, dataKey);
-        this.unlockKey = unlockKey;
-    }
-
-    public HDEvictBackupOperation(String name, Data dataKey, boolean unlockKey, boolean disableWanReplicationEvent) {
-        super(name, dataKey);
-        this.unlockKey = unlockKey;
-        this.disableWanReplicationEvent = disableWanReplicationEvent;
-    }
-
     @Override
     protected void runInternal() {
         recordStore.evict(dataKey, true);
@@ -43,11 +31,14 @@ public class HDEvictBackupOperation extends HDKeyBasedMapOperation implements Ba
 
     @Override
     public void afterRun() throws Exception {
-        if (!disableWanReplicationEvent
-                && mapContainer.isWanReplicationEnabled()) {
-            mapService.getMapServiceContext()
-                    .getMapEventPublisher().publishWanReplicationRemoveBackup(name, dataKey, Clock.currentTimeMillis());
-        }
+        publishWanRemove(dataKey);
+
+        disposeDeferredBlocks();
+    }
+
+    @Override
+    protected boolean canThisOpGenerateWANEvent() {
+        return !disableWanReplicationEvent;
     }
 
     @Override

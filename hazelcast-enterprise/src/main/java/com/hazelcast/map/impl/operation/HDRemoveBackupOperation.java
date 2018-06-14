@@ -5,7 +5,6 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.BackupOperation;
-import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 
@@ -43,11 +42,13 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
 
     @Override
     public void afterRun() throws Exception {
-        if (!disableWanReplicationEvent
-                && mapContainer.isWanReplicationEnabled()) {
-            mapEventPublisher.publishWanReplicationRemoveBackup(name, dataKey, Clock.currentTimeMillis());
-        }
+        publishWanRemove(dataKey);
         evict(dataKey);
+    }
+
+    @Override
+    protected boolean canThisOpGenerateWANEvent() {
+        return !disableWanReplicationEvent;
     }
 
     @Override

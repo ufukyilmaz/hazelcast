@@ -184,9 +184,9 @@ public final class HiDensityCacheReplicationOperation
             destination.put(name, m);
 
             for (int j = 0; j < subCount; j++) {
-                Data key = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
+                Data key = HiDensityCacheOperation.readNativeMemoryOperationData(in);
                 if (key != null) {
-                    Data value = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
+                    Data value = HiDensityCacheOperation.readNativeMemoryOperationData(in);
                     long ttlMillis = in.readLong();
                     m.put(key, new CacheRecordHolder(value, ttlMillis));
                 }

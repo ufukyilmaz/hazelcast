@@ -1,6 +1,7 @@
 package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
+import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -15,7 +16,7 @@ import java.util.Map;
  * @deprecated Not used.
  */
 @Deprecated
-public class CacheIteratorOperation extends AbstractHiDensityCacheOperation implements ReadonlyOperation {
+public class CacheIteratorOperation extends HiDensityCacheOperation implements ReadonlyOperation {
 
     private int slot;
     private int batch;
@@ -30,9 +31,10 @@ public class CacheIteratorOperation extends AbstractHiDensityCacheOperation impl
     }
 
     @Override
-    protected void runInternal() throws Exception {
-        if (cache != null) {
-            SlottableIterator<Map.Entry<Data, HiDensityCacheRecord>> iter = cache.iterator(slot);
+    protected void runInternal() {
+        if (recordStore != null) {
+            HiDensityCacheRecordStore hdCache = (HiDensityCacheRecordStore) recordStore;
+            SlottableIterator<Map.Entry<Data, HiDensityCacheRecord>> iter = hdCache.iterator(slot);
             Data[] keys = new Data[batch];
             Data[] values = new Data[batch];
             int count = 0;
@@ -41,7 +43,7 @@ public class CacheIteratorOperation extends AbstractHiDensityCacheOperation impl
                 Data key = entry.getKey();
                 keys[count] = serializationService.convertData(key, DataType.HEAP);
                 HiDensityCacheRecord record = entry.getValue();
-                Data value = cache.getRecordProcessor().readData(record.getValueAddress());
+                Data value = hdCache.getRecordProcessor().readData(record.getValueAddress());
                 values[count] = serializationService.convertData(value, DataType.HEAP);
                 if (++count == batch) {
                     break;

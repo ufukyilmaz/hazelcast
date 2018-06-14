@@ -1,27 +1,21 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.impl.ICacheService;
-import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.spi.BackupOperation;
 
 import java.io.IOException;
 import java.util.Map;
 
-import static com.hazelcast.cache.impl.CacheEntryViews.createDefaultEntryView;
 import static com.hazelcast.util.MapUtil.createHashMap;
 
 /**
  * Transfers merged data to backup replicas
  */
-public class CacheMergeBackupOperation extends AbstractHiDensityCacheOperation
+public class CacheMergeBackupOperation extends HiDensityCacheOperation
         implements BackupOperation, MutableOperation {
 
     private Map<Data, CacheRecord> cacheRecords;
@@ -36,30 +30,17 @@ public class CacheMergeBackupOperation extends AbstractHiDensityCacheOperation
 
     @Override
     protected void runInternal() {
-        if (cache == null) {
+        if (recordStore == null) {
             return;
         }
         if (cacheRecords != null) {
             for (Map.Entry<Data, CacheRecord> entry : cacheRecords.entrySet()) {
                 CacheRecord record = entry.getValue();
-                cache.putRecord(entry.getKey(), record, true);
+                recordStore.putRecord(entry.getKey(), record, true);
 
-                publishWanEvent(entry.getKey(), record);
+                publishWanUpdate(entry.getKey(), record);
             }
         }
-    }
-
-    private void publishWanEvent(Data key, CacheRecord record) {
-        if (cache.isWanReplicationEnabled()) {
-            ICacheService service = getService();
-            CacheWanEventPublisher publisher = service.getCacheWanEventPublisher();
-            CacheEntryView<Data, Data> view = createDefaultEntryView(key, toHeapData(record.getValue()), record);
-            publisher.publishWanReplicationUpdateBackup(name, view);
-        }
-    }
-
-    private Data toHeapData(Object o) {
-        return ((InternalSerializationService) getNodeEngine().getSerializationService()).toData(o, DataType.HEAP);
     }
 
     @Override

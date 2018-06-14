@@ -1,9 +1,5 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.impl.CacheEntryViews;
-import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
@@ -55,7 +51,6 @@ public class CachePutAllOperation
 
     @Override
     protected void runInternal() {
-        final CacheService service = getService();
         String callerUuid = getCallerUuid();
 
         Iterator<Map.Entry<Data, Data>> iterator = entries.iterator();
@@ -63,7 +58,7 @@ public class CachePutAllOperation
             Map.Entry<Data, Data> entry = iterator.next();
             Data key = entry.getKey();
             Data value = entry.getValue();
-            final CacheRecord record = cache.put(key, value, expiryPolicy, callerUuid, completionId);
+            final CacheRecord record = recordStore.put(key, value, expiryPolicy, callerUuid, completionId);
 
             /*
              * We should be sure that backup and WAN event records are heap based.
@@ -76,19 +71,17 @@ public class CachePutAllOperation
              */
             Data onHeapKey = null;
             Data onHeapValue = null;
-            if (cacheBackupRecordStore != null || cache.isWanReplicationEnabled()) {
+            if (cacheBackupRecordStore != null) {
                 onHeapKey = serializationService.convertData(key, DataType.HEAP);
                 onHeapValue = serializationService.convertData(value, DataType.HEAP);
-            }
 
-            if (cacheBackupRecordStore != null) {
                 cacheBackupRecordStore.addBackupRecord(onHeapKey, onHeapValue);
             }
 
-            if (cache.isWanReplicationEnabled()) {
-                final CacheWanEventPublisher publisher = service.getCacheWanEventPublisher();
-                final CacheEntryView<Data, Data> view = CacheEntryViews.createDefaultEntryView(onHeapKey, onHeapValue, record);
-                publisher.publishWanReplicationUpdate(name, view);
+            if (onHeapValue != null) {
+                publishWanUpdate(onHeapKey, onHeapValue, record);
+            } else {
+                publishWanUpdate(onHeapKey, record);
             }
 
             // we remove each fully processed entry, so it won't be processed

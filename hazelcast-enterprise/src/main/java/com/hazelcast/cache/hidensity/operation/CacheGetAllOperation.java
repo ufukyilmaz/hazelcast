@@ -1,6 +1,5 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -20,10 +19,7 @@ import java.util.Set;
  * {@link com.hazelcast.cache.impl.ICacheRecordStore#getAll(java.util.Set, javax.cache.expiry.ExpiryPolicy)}</p>
  */
 public class CacheGetAllOperation
-        extends AbstractHiDensityCacheOperation
-        implements ReadonlyOperation {
-
-    private static final MapEntries EMPTY_ENTRY_SET = new MapEntries();
+        extends HiDensityCacheOperation implements ReadonlyOperation {
 
     private Set<Data> keys = new HashSet<Data>();
     private ExpiryPolicy expiryPolicy;
@@ -38,19 +34,15 @@ public class CacheGetAllOperation
     }
 
     @Override
-    protected void runInternal() throws Exception {
-        if (cache != null) {
-            Set<Data> partitionKeySet = new HashSet<Data>();
-            IPartitionService partitionService = getNodeEngine().getPartitionService();
-            for (Data key : keys) {
-                if (partitionId == partitionService.getPartitionId(key)) {
-                    partitionKeySet.add(key);
-                }
+    protected void runInternal() {
+        Set<Data> partitionKeySet = new HashSet<Data>();
+        IPartitionService partitionService = getNodeEngine().getPartitionService();
+        for (Data key : keys) {
+            if (getPartitionId() == partitionService.getPartitionId(key)) {
+                partitionKeySet.add(key);
             }
-            response = cache.getAll(partitionKeySet, expiryPolicy);
-        } else {
-            response = EMPTY_ENTRY_SET;
         }
+        response = recordStore.getAll(partitionKeySet, expiryPolicy);
     }
 
     @Override
@@ -92,7 +84,7 @@ public class CacheGetAllOperation
         expiryPolicy = in.readObject();
         int size = in.readInt();
         for (int i = 0; i < size; i++) {
-            Data key = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
+            Data key = HiDensityCacheOperation.readNativeMemoryOperationData(in);
             keys.add(key);
         }
     }

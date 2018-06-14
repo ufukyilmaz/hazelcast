@@ -1,6 +1,5 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
@@ -16,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.hazelcast.cache.impl.CacheEntryViews.createDefaultEntryView;
 import static com.hazelcast.util.MapUtil.createHashMap;
 
 /**
@@ -29,8 +27,6 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
 
     private SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy;
     private List<CacheMergeTypes> mergingEntries;
-
-    private transient CacheWanEventPublisher wanEventPublisher;
 
     private transient boolean hasBackups;
     private transient boolean wanReplicationEnabled;
@@ -48,10 +44,7 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
 
     @Override
     public void beforeRunInternal() {
-        wanReplicationEnabled = cache.isWanReplicationEnabled();
-        if (wanReplicationEnabled) {
-            wanEventPublisher = cacheService.getCacheWanEventPublisher();
-        }
+        wanReplicationEnabled = recordStore.isWanReplicationEnabled();
 
         hasBackups = getSyncBackupCount() + getAsyncBackupCount() > 0;
         if (hasBackups) {
@@ -68,7 +61,7 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     }
 
     private void merge(CacheMergeTypes mergingEntry) {
-        CacheRecord backupRecord = cache.merge(mergingEntry, mergePolicy);
+        CacheRecord backupRecord = recordStore.merge(mergingEntry, mergePolicy);
 
         if (hasBackups && backupRecord != null) {
             backupRecords.put(mergingEntry.getKey(), backupRecord);
@@ -76,11 +69,9 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
 
         if (wanReplicationEnabled) {
             if (backupRecord != null) {
-                Data dataKey = mergingEntry.getKey();
-                Data dataValue = (Data) backupRecord.getValue();
-                wanEventPublisher.publishWanReplicationUpdate(name, createDefaultEntryView(dataKey, dataValue, backupRecord));
+                publishWanUpdate(mergingEntry.getKey(), backupRecord);
             } else {
-                wanEventPublisher.publishWanReplicationRemove(name, mergingEntry.getKey());
+                publishWanRemove(mergingEntry.getKey());
             }
         }
     }

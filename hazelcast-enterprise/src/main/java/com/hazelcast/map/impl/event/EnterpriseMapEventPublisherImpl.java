@@ -7,7 +7,6 @@ import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.MapContainer;
-import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
@@ -17,13 +16,11 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.wan.ReplicationEventObject;
-import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.util.Clock;
 
 import java.util.List;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 
 /**
  * Enterprise version of {@link MapEventPublisher} helper functionality.
@@ -40,7 +37,8 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      * before publishing the event.
      */
     @Override
-    public void publishEvent(Address caller, String mapName, EntryEventType eventType, Data dataKey, Object oldValue,
+    public void publishEvent(Address caller, String mapName, EntryEventType eventType,
+                             Data dataKey, Object oldValue,
                              Object value, Object mergingValue) {
 
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
@@ -75,12 +73,15 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      * @param entryView the updated entry
      */
     @Override
-    public void publishWanReplicationUpdate(String mapName, EntryView<Data, Data> entryView) {
+    public void publishWanUpdate(String mapName, EntryView<Data, Data> entryView) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
-        EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
-                mapContainer.getWanMergePolicy(), entryView, mapContainer.getTotalBackupCount());
+        Object wanMergePolicy = mapContainer.getWanMergePolicy();
+        int totalBackupCount = mapContainer.getTotalBackupCount();
+        EnterpriseMapReplicationUpdate replicationEvent
+                = new EnterpriseMapReplicationUpdate(mapName, wanMergePolicy, entryView, totalBackupCount);
+
         if (!isEventFiltered(mapContainer, entryView, WanFilterEventType.UPDATED)) {
-            publishWanReplicationEventInternal(mapName, replicationEvent);
+            publishWanEvent(mapName, replicationEvent);
         }
     }
 
@@ -89,54 +90,19 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      * Additionally filters events and publishes only events that do not match the {@link MapWanEventFilter}
      * configured for this map.
      *
-     * @param mapName    the map name
-     * @param key        the key of the removed entry
-     * @param removeTime the clock time for the remove event
+     * @param mapName the map name
+     * @param key     the key of the removed entry
      */
     @Override
-    public void publishWanReplicationRemove(String mapName, Data key, long removeTime) {
+    public void publishWanRemove(String mapName, Data key) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
-        final EnterpriseMapReplicationRemove event
-                = new EnterpriseMapReplicationRemove(mapName, toHeapData(key), removeTime, mapContainer.getTotalBackupCount());
+        int totalBackupCount = mapContainer.getTotalBackupCount();
+        EnterpriseMapReplicationRemove event
+                = new EnterpriseMapReplicationRemove(mapName, toHeapData(key),
+                Clock.currentTimeMillis(), totalBackupCount);
+
         if (!isEventFiltered(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
-            publishWanReplicationEventInternal(mapName, event);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * Additionally filters events and publishes only events that do not match the {@link MapWanEventFilter}
-     * configured for this map.
-     *
-     * @param mapName   the map name
-     * @param entryView the updated entry
-     */
-    @Override
-    public void publishWanReplicationUpdateBackup(String mapName, EntryView entryView) {
-        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
-        EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
-                mapContainer.getWanMergePolicy(), entryView, mapContainer.getTotalBackupCount());
-        if (!isEventFiltered(mapContainer, entryView, WanFilterEventType.UPDATED)) {
-            publishWanReplicationEventInternalBackup(mapName, replicationEvent);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * Additionally filters events and publishes only events that do not match the {@link MapWanEventFilter}
-     * configured for this map.
-     *
-     * @param mapName    the map name
-     * @param key        the key of the removed entry
-     * @param removeTime the clock time for the remove event
-     */
-    @Override
-    public void publishWanReplicationRemoveBackup(String mapName, Data key, long removeTime) {
-        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
-        final EnterpriseMapReplicationRemove event
-                = new EnterpriseMapReplicationRemove(mapName, toHeapData(key), removeTime, mapContainer.getTotalBackupCount());
-        if (!isEventFiltered(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
-            publishWanReplicationEventInternalBackup(mapName, event);
+            publishWanEvent(mapName, event);
         }
     }
 
@@ -162,19 +128,6 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
             }
         }
         return false;
-    }
-
-    /**
-     * Publishes a backup {@code event} to the {@link WanReplicationPublisher} configured for this map.
-     *
-     * @param mapName the map name
-     * @param event   the event
-     */
-    void publishWanReplicationEventInternalBackup(String mapName, ReplicationEventObject event) {
-        final MapServiceContext mapServiceContext = this.mapServiceContext;
-        final MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
-        final WanReplicationPublisher wanReplicationPublisher = mapContainer.getWanReplicationPublisher();
-        wanReplicationPublisher.publishReplicationEventBackup(SERVICE_NAME, event);
     }
 
     public EnterpriseMapServiceContext getEnterpriseMapServiceContext() {

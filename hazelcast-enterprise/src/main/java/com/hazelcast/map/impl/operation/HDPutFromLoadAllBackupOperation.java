@@ -1,8 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.core.EntryView;
-import com.hazelcast.map.impl.EntryViews;
-import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -49,17 +46,8 @@ public class HDPutFromLoadAllBackupOperation extends HDMapOperation implements B
                 continue;
             }
 
-            publishWanReplicationEvent(key, value, recordStore.getRecord(key));
+            publishWanUpdate(key, value);
         }
-    }
-
-    private void publishWanReplicationEvent(Data key, Data value, Record record) {
-        if (record == null || !mapContainer.isWanReplicationEnabled()) {
-            return;
-        }
-
-        EntryView entryView = EntryViews.createSimpleEntryView(key, value, record);
-        mapEventPublisher.publishWanReplicationUpdateBackup(name, entryView);
     }
 
     @Override

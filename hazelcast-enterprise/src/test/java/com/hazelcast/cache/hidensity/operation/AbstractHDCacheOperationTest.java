@@ -186,8 +186,8 @@ public abstract class AbstractHDCacheOperationTest {
     }
 
     private void prepareOperation(Operation operation, int partitionId) {
-        if (operation instanceof AbstractHiDensityCacheOperation) {
-            AbstractHiDensityCacheOperation cacheOperation = (AbstractHiDensityCacheOperation) operation;
+        if (operation instanceof HiDensityCacheOperation) {
+            HiDensityCacheOperation cacheOperation = (HiDensityCacheOperation) operation;
             cacheOperation.setService(cacheService);
         }
         operation.setNodeEngine(nodeEngine);

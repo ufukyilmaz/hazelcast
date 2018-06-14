@@ -39,7 +39,7 @@ public class WanCacheLegacyMergeOperation
 
     @Override
     public void runInternal() {
-        CacheRecord record = cache.merge(cacheEntryView, mergePolicy, getCallerUuid(), wanGroupName, completionId);
+        CacheRecord record = recordStore.merge(cacheEntryView, mergePolicy, getCallerUuid(), wanGroupName, completionId);
         response = record != null;
     }
 

@@ -8,7 +8,7 @@ import com.hazelcast.spi.ReadonlyOperation;
  * Determines if this store contains an entry for the specified key.
  */
 public class CacheContainsKeyOperation
-        extends AbstractKeyBasedHiDensityCacheOperation
+        extends KeyBasedHiDensityCacheOperation
         implements ReadonlyOperation {
 
     public CacheContainsKeyOperation() {
@@ -19,8 +19,8 @@ public class CacheContainsKeyOperation
     }
 
     @Override
-    protected void runInternal() throws Exception {
-        response = cache != null ? cache.contains(key) : false;
+    protected void runInternal() {
+        response = recordStore != null && recordStore.contains(key);
     }
 
     @Override

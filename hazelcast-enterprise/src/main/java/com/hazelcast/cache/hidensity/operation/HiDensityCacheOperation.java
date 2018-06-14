@@ -1,10 +1,8 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.CacheNotExistsException;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
-import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
-import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.cache.impl.operation.CacheOperation;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -14,22 +12,15 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.BackupOperation;
-import com.hazelcast.spi.PartitionAwareOperation;
-import com.hazelcast.spi.ServiceNamespace;
-import com.hazelcast.spi.ServiceNamespaceAware;
-import com.hazelcast.spi.impl.AbstractNamedOperation;
-import com.hazelcast.util.ExceptionUtil;
 
 import java.io.IOException;
 import java.util.logging.Level;
 
+import static com.hazelcast.cache.impl.AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE;
 import static java.lang.String.format;
 
-abstract class AbstractHiDensityCacheOperation
-        extends AbstractNamedOperation
-        implements PartitionAwareOperation, ServiceNamespaceAware, IdentifiedDataSerializable {
+abstract class HiDensityCacheOperation extends CacheOperation {
 
     static final int UNIT_PERCENTAGE = 100;
     static final int FORCED_EVICTION_RETRY_COUNT
@@ -38,40 +29,29 @@ abstract class AbstractHiDensityCacheOperation
     protected Object response;
     protected int completionId = MutableOperation.IGNORE_COMPLETION;
 
-    protected transient boolean dontCreateCacheRecordStoreIfNotExist;
-    protected transient EnterpriseSerializationService serializationService;
-    protected transient EnterpriseCacheService cacheService;
-    protected transient HiDensityCacheRecordStore cache;
-    protected transient int partitionId;
-    protected transient NativeOutOfMemoryError oome;
     protected transient boolean runCompleted;
+    protected transient NativeOutOfMemoryError oome;
+    protected transient EnterpriseSerializationService serializationService;
 
-    protected AbstractHiDensityCacheOperation() {
+    protected HiDensityCacheOperation() {
     }
 
-    protected AbstractHiDensityCacheOperation(String name) {
+    protected HiDensityCacheOperation(String name) {
         this(name, MutableOperation.IGNORE_COMPLETION, false);
     }
 
-    protected AbstractHiDensityCacheOperation(String name, boolean dontCreateCacheRecordStoreIfNotExist) {
+    protected HiDensityCacheOperation(String name, boolean dontCreateCacheRecordStoreIfNotExist) {
         this(name, MutableOperation.IGNORE_COMPLETION, dontCreateCacheRecordStoreIfNotExist);
     }
 
-    protected AbstractHiDensityCacheOperation(String name, int completionId) {
+    protected HiDensityCacheOperation(String name, int completionId) {
         this(name, completionId, false);
     }
 
-    protected AbstractHiDensityCacheOperation(String name, int completionId, boolean dontCreateCacheRecordStoreIfNotExist) {
+    protected HiDensityCacheOperation(String name, int completionId, boolean dontCreateCacheRecordStoreIfNotExist) {
         super(name);
         this.completionId = completionId;
         this.dontCreateCacheRecordStoreIfNotExist = dontCreateCacheRecordStoreIfNotExist;
-    }
-
-    private void ensureInitialized() {
-        if (cacheService == null) {
-            cacheService = getService();
-            serializationService = cacheService.getSerializationService();
-        }
     }
 
     @Override
@@ -80,54 +60,19 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     @Override
-    public String getServiceName() {
-        return EnterpriseCacheService.SERVICE_NAME;
-    }
-
-    @Override
-    public ServiceNamespace getServiceNamespace() {
-        ICacheRecordStore recordStore = cache;
-        if (recordStore == null) {
-            EnterpriseCacheService service = getService();
-            recordStore = service.getOrCreateRecordStore(name, getPartitionId());
-        }
-        return recordStore.getObjectNamespace();
-    }
-
-    @Override
-    public boolean returnsResponse() {
-        return true;
-    }
-
-    @Override
     public final Object getResponse() {
         return response;
     }
 
-    @Override
-    public final void beforeRun() throws Exception {
-        // no need to handle NativeOutOfMemoryError, since NOOME is not possible here
-        // (if there is not enough memory for reading operation data into native memory, it is read into heap memory,
-        // but if there is a heap OOME, there is no need to take an action since OOME handler will shutdown the node)
-
+    protected void beforeRunInternal() {
         ensureInitialized();
-
-        partitionId = getPartitionId();
-        try {
-            if (dontCreateCacheRecordStoreIfNotExist) {
-                cache = (HiDensityCacheRecordStore) cacheService.getRecordStore(name, partitionId);
-            } else {
-                cache = (HiDensityCacheRecordStore) cacheService.getOrCreateRecordStore(name, getPartitionId());
-            }
-        } catch (Throwable e) {
-            dispose();
-            throw ExceptionUtil.rethrow(e, Exception.class);
-        }
-
-        beforeRunInternal();
     }
 
-    protected void beforeRunInternal() {
+    private void ensureInitialized() {
+        if (cacheService == null || serializationService == null) {
+            cacheService = getService();
+            serializationService = ((EnterpriseCacheService) cacheService).getSerializationService();
+        }
     }
 
     @Override
@@ -144,9 +89,11 @@ abstract class AbstractHiDensityCacheOperation
 
     @Override
     public void afterRun() throws Exception {
-        super.afterRun();
-
-        disposeDeferredBlocks();
+        try {
+            super.afterRun();
+        } finally {
+            disposeDeferredBlocks();
+        }
     }
 
     @Override
@@ -155,6 +102,7 @@ abstract class AbstractHiDensityCacheOperation
         super.onExecutionFailure(e);
     }
 
+    @Override
     protected final void dispose() {
         ensureInitialized();
 
@@ -174,16 +122,14 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     @Override
-    public void logError(Throwable e) {
-        ILogger logger = getLogger();
+    public final void logError(Throwable e) {
         if (e instanceof NativeOutOfMemoryError) {
             Level level = this instanceof BackupOperation ? Level.FINEST : Level.WARNING;
-            logger.log(level, "Cannot complete operation! -> " + e.getMessage());
-        } else if (e instanceof CacheNotExistsException) {
-            logger.finest("Error while getting a cache", e);
-        } else {
-            super.logError(e);
+            getLogger().log(level, "Cannot complete operation! -> " + e.getMessage());
+            return;
         }
+
+        super.logError(e);
     }
 
     @Override
@@ -198,11 +144,11 @@ abstract class AbstractHiDensityCacheOperation
         completionId = in.readInt();
     }
 
-    public int getCompletionId() {
+    public final int getCompletionId() {
         return completionId;
     }
 
-    public void setCompletionId(int completionId) {
+    public final void setCompletionId(int completionId) {
         this.completionId = completionId;
     }
 
@@ -256,11 +202,11 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     private void forceEvict() {
-        cacheService.forceEvict(name, getPartitionId());
+        ((EnterpriseCacheService) cacheService).forceEvict(name, getPartitionId());
     }
 
     private void forceEvictOnOthers() {
-        cacheService.forceEvictOnOthers(name, getPartitionId());
+        ((EnterpriseCacheService) cacheService).forceEvictOnOthers(name, getPartitionId());
     }
 
     private void tryRunInternalByClearing() throws Exception {
@@ -272,8 +218,8 @@ abstract class AbstractHiDensityCacheOperation
                     logger.info("Clearing current RecordStore because forced eviction was not enough!");
                 }
                 // if there is still NOOME, clear current record store and try again
-                cache.clear();
-                cacheService.sendInvalidationEvent(cache.getName(), null, AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE);
+                recordStore.clear();
+                cacheService.sendInvalidationEvent(recordStore.getName(), null, SOURCE_NOT_AVAILABLE);
                 runInternal();
                 oome = null;
             } catch (NativeOutOfMemoryError e) {
@@ -288,7 +234,7 @@ abstract class AbstractHiDensityCacheOperation
                             + " because forced eviction was not enough!");
                 }
                 // if there still is NOOME, for the last chance, clear other record stores and try again
-                cacheService.clearAll(getPartitionId());
+                ((EnterpriseCacheService) cacheService).clearAll(getPartitionId());
                 runInternal();
                 oome = null;
             } catch (NativeOutOfMemoryError e) {

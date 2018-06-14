@@ -1,6 +1,7 @@
 package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
+import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.CacheKeyIterationResult;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.nio.ObjectDataInput;
@@ -20,7 +21,7 @@ import java.util.Map;
  * no need for this EE version.
  */
 @Deprecated
-public class CacheKeyIteratorOperation extends AbstractHiDensityCacheOperation implements ReadonlyOperation {
+public class CacheKeyIteratorOperation extends HiDensityCacheOperation implements ReadonlyOperation {
 
     private int slot;
     private int batch;
@@ -35,10 +36,11 @@ public class CacheKeyIteratorOperation extends AbstractHiDensityCacheOperation i
     }
 
     @Override
-    protected void runInternal() throws Exception {
-        if (cache != null) {
+    protected void runInternal() {
+        if (recordStore != null) {
             long now = Clock.currentTimeMillis();
-            SlottableIterator<Map.Entry<Data, HiDensityCacheRecord>> iter = cache.iterator(slot);
+            HiDensityCacheRecordStore hdCache = (HiDensityCacheRecordStore) this.recordStore;
+            SlottableIterator<Map.Entry<Data, HiDensityCacheRecord>> iter = hdCache.iterator(slot);
             List<Data> keys = new ArrayList<Data>();
             int count = 0;
             while (iter.hasNext()) {

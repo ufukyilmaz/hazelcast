@@ -1,8 +1,6 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.impl.CacheEntryViews;
-import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
+import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
@@ -18,12 +16,14 @@ import java.io.IOException;
  * Creates a backup for a JCache entry.
  */
 public class CachePutBackupOperation
-        extends AbstractKeyBasedHiDensityCacheOperation
+        extends KeyBasedHiDensityCacheOperation
         implements BackupOperation, MutableOperation {
 
     private Data value;
     private ExpiryPolicy expiryPolicy;
     private boolean wanOriginated;
+
+    private transient CacheRecord record;
 
     public CachePutBackupOperation() {
     }
@@ -42,19 +42,20 @@ public class CachePutBackupOperation
     }
 
     @Override
-    public void runInternal() throws Exception {
-        cache.putBackup(key, value, expiryPolicy);
+    public void runInternal() {
+        if (recordStore == null) {
+            return;
+        }
+
+        HiDensityCacheRecordStore hdCache = (HiDensityCacheRecordStore) recordStore;
+        record = hdCache.putBackup(key, value, expiryPolicy);
         response = Boolean.TRUE;
     }
 
     @Override
     public void afterRun() throws Exception {
-        if (!wanOriginated && cache.isWanReplicationEnabled()) {
-            CacheRecord cacheRecord = cache.getRecord(key);
-            CacheEntryView<Data, Data> entryView = CacheEntryViews.createDefaultEntryView(
-                    cache.toEventData(key), cache.toEventData(cacheRecord.getValue()), cacheRecord);
-            CacheWanEventPublisher publisher = cacheService.getCacheWanEventPublisher();
-            publisher.publishWanReplicationUpdateBackup(name, entryView);
+        if (!wanOriginated) {
+            publishWanUpdate(key, record);
         }
         super.afterRun();
     }

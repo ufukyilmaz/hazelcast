@@ -1,6 +1,5 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -13,8 +12,7 @@ import java.io.IOException;
 /**
  * Removes the backup of a JCache entry.
  */
-public class CacheRemoveBackupOperation
-        extends AbstractKeyBasedHiDensityCacheOperation
+public class CacheRemoveBackupOperation extends KeyBasedHiDensityCacheOperation
         implements BackupOperation, MutableOperation {
 
     private boolean wanOriginated;
@@ -32,9 +30,9 @@ public class CacheRemoveBackupOperation
     }
 
     @Override
-    public void runInternal() throws Exception {
-        if (cache != null) {
-            response = cache.removeRecord(key);
+    public void runInternal() {
+        if (recordStore != null) {
+            response = recordStore.removeRecord(key);
         } else {
             response = Boolean.FALSE;
         }
@@ -43,10 +41,7 @@ public class CacheRemoveBackupOperation
     @Override
     public void afterRun() throws Exception {
         if (!Boolean.FALSE.equals(response) && !wanOriginated) {
-            if (cache.isWanReplicationEnabled()) {
-                CacheWanEventPublisher publisher = cacheService.getCacheWanEventPublisher();
-                publisher.publishWanReplicationRemoveBackup(name, cache.toEventData(key));
-            }
+            publishWanRemove(key);
         }
         super.afterRun();
         dispose();

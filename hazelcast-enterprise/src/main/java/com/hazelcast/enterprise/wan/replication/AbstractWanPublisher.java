@@ -24,7 +24,6 @@ import com.hazelcast.enterprise.wan.sync.WanSyncResult;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.partition.InternalPartition;
-import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.SimpleEntryView;
@@ -106,7 +105,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     protected BlockingQueue<WanSyncEvent> syncRequests = new ArrayBlockingQueue<WanSyncEvent>(DEFAULT_STAGING_QUEUE_SIZE);
 
     private MapService mapService;
-    private InternalPartitionService partitionService;
     private EnterpriseWanReplicationService wanService;
     private WanQueueMigrationSupport wanQueueMigrationSupport;
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
@@ -121,7 +119,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         this.configurationContext = new WanConfigurationContext(publisherConfig.getProperties());
         this.node = node;
         this.mapService = node.nodeEngine.getService(MapService.SERVICE_NAME);
-        this.partitionService = node.nodeEngine.getPartitionService();
         this.targetGroupName = publisherConfig.getGroupName();
         this.wanReplicationName = wanReplicationConfig.getName();
         this.logger = node.getLogger(getClass());
@@ -161,12 +158,12 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
     @Override
     public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
-        publishReplicationEventInternal(serviceName, (EnterpriseReplicationEventObject) eventObject);
+        publishReplicationEventInternal(serviceName, (EnterpriseReplicationEventObject) eventObject, false);
     }
 
     @Override
     public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
-        publishReplicationEventInternal(serviceName, (EnterpriseReplicationEventObject) eventObject);
+        publishReplicationEventInternal(serviceName, (EnterpriseReplicationEventObject) eventObject, true);
     }
 
     /**
@@ -177,9 +174,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      *
      * @param serviceName the service publishing the event
      * @param eventObject the replication backup event
+     * @param backupEvent if this is an event of a backup entry
      */
-    private void publishReplicationEventInternal(String serviceName, EnterpriseReplicationEventObject eventObject) {
-        final boolean backupEvent = !isOwnedPartition(eventObject.getKey());
+    private void publishReplicationEventInternal(String serviceName, EnterpriseReplicationEventObject eventObject,
+                                                 boolean backupEvent) {
 
         if (isEventDroppingNeeded(backupEvent)) {
             if (!backupEvent) {
@@ -197,11 +195,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         if (eventPublished) {
             wanCounter.incrementCounters(backupEvent);
         }
-    }
-
-    protected boolean isOwnedPartition(Data dataKey) {
-        int partitionId = partitionService.getPartitionId(dataKey);
-        return partitionService.getPartition(partitionId, false).isLocal();
     }
 
     /**

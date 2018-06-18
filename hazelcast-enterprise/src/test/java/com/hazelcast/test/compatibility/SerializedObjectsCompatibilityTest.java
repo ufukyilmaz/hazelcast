@@ -165,6 +165,6 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     }
 
     private static void assumeBigEndianSerialization(InternalSerializationService internalSerializationService) {
-        assumeTrue(internalSerializationService.equals(ByteOrder.BIG_ENDIAN));
+        assumeTrue(ByteOrder.BIG_ENDIAN.equals(internalSerializationService.getByteOrder()));
     }
 }

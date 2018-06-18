@@ -3,6 +3,7 @@ You can also see the Release Notes document at https://hazelcast.com/enterprise-
 Release 3.10
 
 - Split-Brain Healing for Hazelcast Data Structures with High-Density (HD) Memory Store.
+- Removed IMDG Enterprise license requirement for Java clients.
 - Multiple Users/Roles in a Single Security Mapping.
 - Extended Split-Brain Protection.
 - Shorter Split-Brain Detection Window.
@@ -16,6 +17,7 @@ Release 3.10
   - hazelcast.master.confirmation.interval.seconds
   - hazelcast.max.no.master.confirmation.seconds
   - hazelcast.mc.max.visible.instance.count
+  - ClientConfig.setLicenseKey()
 
 
 Release 3.9

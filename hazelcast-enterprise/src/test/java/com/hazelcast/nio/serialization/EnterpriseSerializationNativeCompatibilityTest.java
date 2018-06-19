@@ -41,17 +41,17 @@ public class EnterpriseSerializationNativeCompatibilityTest {
 
     @Test
     public void testSampleEncodeDecode() {
-        SerializationV1Dataserializable testData = SerializationV1Dataserializable.createInstanceWithNonNullFields();
+        SerializationV1DataSerializable testData = SerializationV1DataSerializable.createInstanceWithNonNullFields();
         Data data = serializationService.toData(testData, DataType.NATIVE);
-        SerializationV1Dataserializable testDataFromSerializer = serializationService.toObject(data);
+        SerializationV1DataSerializable testDataFromSerializer = serializationService.toObject(data);
         assertTrue(testData.equals(testDataFromSerializer));
     }
 
     @Test
     public void testSampleEncodeDecode_with_null_arrays() {
-        SerializationV1Dataserializable testData = new SerializationV1Dataserializable();
+        SerializationV1DataSerializable testData = new SerializationV1DataSerializable();
         Data data = serializationService.toData(testData, DataType.NATIVE);
-        SerializationV1Dataserializable testDataFromSerializer = serializationService.toObject(data);
+        SerializationV1DataSerializable testDataFromSerializer = serializationService.toObject(data);
         assertEquals(testData, testDataFromSerializer);
     }
 

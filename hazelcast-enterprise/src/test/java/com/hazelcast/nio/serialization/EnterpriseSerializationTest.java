@@ -386,7 +386,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
     public void testNotVersionedDataSerializable_outputHasUnknownVersion() {
         TestVersionAware testVersionAware = new TestVersionAware();
         InternalSerializationService serializationService = builder().setClusterVersionAware(testVersionAware).build();
-        SerializationV1Dataserializable object = new SerializationV1Dataserializable();
+        SerializationV1DataSerializable object = new SerializationV1DataSerializable();
         serializationService.toData(object);
         Version expected = expectedVersion(false);
         assertEquals("ObjectDataOutput.getVersion should be " + expected, expected,
@@ -397,8 +397,8 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
     public void testNotVersionedDataSerializable_inputHasUnknownVersion() {
         TestVersionAware testVersionAware = new TestVersionAware();
         InternalSerializationService serializationService = builder().setClusterVersionAware(testVersionAware).build();
-        SerializationV1Dataserializable object = new SerializationV1Dataserializable();
-        SerializationV1Dataserializable otherObject = serializationService.toObject(serializationService.toData(object));
+        SerializationV1DataSerializable object = new SerializationV1DataSerializable();
+        SerializationV1DataSerializable otherObject = serializationService.toObject(serializationService.toData(object));
         Version expected = expectedVersion(false);
         assertEquals("ObjectDataInput.getVersion should be " + expected, expected,
                 otherObject.getVersion());

@@ -11,4 +11,19 @@ import org.junit.runner.RunWith;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
 public class BasicMapCompatibilityTest extends BasicMapTest {
+
+    @Override
+    public void testSetTTLConfiguresMapPolicyIfTTLIsNegative() {
+        //added in 3.11
+    }
+
+    @Override
+    public void testAlterTTLOfAnEternalKey() {
+        //added in 3.11
+    }
+
+    @Override
+    public void testExtendTTLOfAKeyBeforeItExpires() {
+        //added in 3.11
+    }
 }

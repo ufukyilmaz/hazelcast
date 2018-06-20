@@ -114,6 +114,11 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
+    public MapOperation createSetTTLOperation(String name, Data dataKey, long ttl) {
+        return new HDSetTTLOperation(name, dataKey, ttl);
+    }
+
+    @Override
     public MapOperation createContainsKeyOperation(String name, Data dataKey) {
         return new HDContainsKeyOperation(name, dataKey);
     }

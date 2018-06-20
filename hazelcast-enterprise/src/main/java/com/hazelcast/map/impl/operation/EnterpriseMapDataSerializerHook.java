@@ -105,8 +105,10 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
 
     public static final int MERGE_FACTORY = 75;
     public static final int MERGE = 76;
+    public static final int SET_TTL = 77;
+    public static final int SET_TTL_BACKUP = 78;
 
-    private static final int LEN = MERGE + 1;
+    private static final int LEN = SET_TTL_BACKUP + 1;
 
     @Override
     public int getFactoryId() {
@@ -560,6 +562,18 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new HDMergeOperation();
+            }
+        };
+        constructors[SET_TTL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDSetTTLOperation();
+            }
+        };
+        constructors[SET_TTL_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDSetTTLBackupOperation();
             }
         };
 

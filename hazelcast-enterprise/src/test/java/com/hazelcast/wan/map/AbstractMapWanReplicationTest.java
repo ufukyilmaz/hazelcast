@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -420,6 +421,43 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         map.putAll(inputMap);
 
         assertKeysInEventually(clusterB, "map", 0, 10);
+    }
+
+    @Test
+    public void setTTL() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterB, "map", 0, 100);
+        createDataIn(clusterA, "map", 0, 100);
+        IMap<Integer, Integer> map = getMap(clusterA, "map");
+
+        for (int i = 0; i < 100; i++) {
+            map.setTTL(i, 1, TimeUnit.SECONDS);
+        }
+
+        assertKeysNotInEventually(clusterB, "map", 0, 100);
+    }
+
+    @Test
+    public void setTTL_twoWay() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 100);
+        createDataIn(clusterB, "map", 0, 100);
+        IMap<Integer, Integer> mapA = getMap(clusterA, "map");
+        IMap<Integer, Integer> mapB = getMap(clusterB, "map");
+
+        for (int i = 0; i < 50; i++) {
+            mapA.setTTL(i, 1, TimeUnit.SECONDS);
+            mapB.setTTL(i + 50, 1, TimeUnit.SECONDS);
+        }
+        assertKeysNotInEventually(clusterB, "map", 0, 50);
+        assertKeysNotInEventually(clusterA, "map", 50, 100);
     }
 
     @Test

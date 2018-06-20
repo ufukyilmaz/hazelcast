@@ -1,6 +1,8 @@
 package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.Node;
 import com.hazelcast.map.impl.MapService;
@@ -36,7 +38,10 @@ public class HDBasicMapTest extends BasicMapTest {
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        MapConfig ttlMapConfig = new MapConfig("mapWithTTL*");
+        ttlMapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+        ttlMapConfig.setTimeToLiveSeconds(1);
+        return getHDConfig().addMapConfig(ttlMapConfig);
     }
 
     /**

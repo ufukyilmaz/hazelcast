@@ -1,7 +1,9 @@
 package com.hazelcast.map;
 
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.CompatibilityTest;
+import org.junit.Assume;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
@@ -12,18 +14,30 @@ import org.junit.runner.RunWith;
 @Category(CompatibilityTest.class)
 public class BasicMapCompatibilityTest extends BasicMapTest {
 
+    /**
+     * This method can be removed once 3.11 is released
+     */
     @Override
     public void testSetTTLConfiguresMapPolicyIfTTLIsNegative() {
-        //added in 3.11
+        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
+        super.testSetTTLConfiguresMapPolicyIfTTLIsNegative();
     }
 
+    /**
+     * This method can be removed once 3.11 is released
+     */
     @Override
     public void testAlterTTLOfAnEternalKey() {
-        //added in 3.11
+        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
+        super.testAlterTTLOfAnEternalKey();
     }
 
+    /**
+     * This method can be removed once 3.11 is released
+     */
     @Override
     public void testExtendTTLOfAKeyBeforeItExpires() {
-        //added in 3.11
+        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
+        super.testExtendTTLOfAKeyBeforeItExpires();
     }
 }

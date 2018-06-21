@@ -25,7 +25,6 @@ import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.nio.MappedByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
@@ -82,14 +81,6 @@ public abstract class GcHelper implements Disposable {
     GcHelper(File homeDir, GcLogger logger) {
         this.homeDir = homeDir;
         this.logger = logger;
-    }
-
-    /**
-     * Disposes the native memory block associated with the given {@link MappedByteBuffer}.
-     * Calls into OpenJDK's private API.
-     */
-    public static void disposeMappedBuffer(MappedByteBuffer buf) {
-        ((sun.nio.ch.DirectBuffer) buf).cleaner().clean();
     }
 
     /** Creates a new active value chunk file and returns an instance of {@link ActiveValChunk} that wraps it. */

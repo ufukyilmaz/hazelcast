@@ -628,7 +628,7 @@
         <profile>
             <id>jdk-9</id>
             <activation>
-                <jdk>1.9</jdk>
+                <jdk>[9,)</jdk>
             </activation>
             <build>
                 <plugins>
@@ -639,10 +639,18 @@
                         <configuration>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <trimStackTrace>false</trimStackTrace>
+                            <!--
+                            The jdk.internal.ref package export is added to allow TombFileAccessor use the JDK internal
+                            API for clearing DirectByteBuffers.
+
+                            The jdk.xml.internal package export is added to workaround Powermock issue https://github.com/powermock/powermock/issues/905 in tests.
+                             -->
                             <argLine>
                                 ${vmHeapSettings}
                                 ${extraVmArgs}
                                 -ea
+                                --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
+                                --add-exports java.xml/jdk.xml.internal=ALL-UNNAMED
                                 -Dhazelcast.hidensity.check.freememory=false
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false

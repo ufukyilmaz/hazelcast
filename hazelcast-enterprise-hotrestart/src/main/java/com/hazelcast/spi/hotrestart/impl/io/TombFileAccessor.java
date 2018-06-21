@@ -1,16 +1,21 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
+import com.hazelcast.core.HazelcastException;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 /**
@@ -18,6 +23,10 @@ import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
  */
 // Class non-final for Mockito's sake
 public class TombFileAccessor implements Closeable {
+
+    private static final Method MAPPED_BUFFER_GET_CLEANER;
+    private static final Method MAPPED_BUFFER_RUN_CLEANER;
+
     private MappedByteBuffer buf;
 
     // These three variables are updated on each call to loadAndCopyTombstone()
@@ -76,8 +85,72 @@ public class TombFileAccessor implements Closeable {
     /** Disposes the underlying {@code MappedByteBuffer}. */
     public final void close() {
         if (buf != null) {
-            GcHelper.disposeMappedBuffer(buf);
+            try {
+                Object cleanerInstance = MAPPED_BUFFER_GET_CLEANER.invoke(buf);
+                MAPPED_BUFFER_RUN_CLEANER.invoke(cleanerInstance);
+            } catch (Exception e) {
+                throw rethrow(e);
+            }
         }
         buf = null;
+    }
+
+    // The following static section inits MappedByteBuffer (DirectByteBuffer) cleanup methods.
+    // The HotRestart code uses Java internal API which changed between Java 8 and 9, so we have to use reflection to find
+    // the proper clean-up code.
+    // Java 9 and newer also has to use additional Java arguments: --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
+    static {
+        MappedByteBuffer buf = initTmpBuffer();
+        try {
+            final Class<?> bufferClass = buf.getClass();
+            MAPPED_BUFFER_GET_CLEANER = bufferClass.getMethod("cleaner");
+            if (!MAPPED_BUFFER_GET_CLEANER.isAccessible()) {
+                MAPPED_BUFFER_GET_CLEANER.setAccessible(true);
+            }
+            Class<?> cleanerType = MAPPED_BUFFER_GET_CLEANER.getReturnType();
+            // in Java 9+ the cleaner instance has type jdk.internal.ref.Cleaner which implements Runnable,
+            // older Java versions returns sun.misc.Cleaner instance with method clean()
+            String disposeMethodName = Runnable.class.isAssignableFrom(cleanerType) ? "run" : "clean";
+            MAPPED_BUFFER_RUN_CLEANER = cleanerType.getDeclaredMethod(disposeMethodName);
+            if (!MAPPED_BUFFER_RUN_CLEANER.isAccessible()) {
+                MAPPED_BUFFER_RUN_CLEANER.setAccessible(true);
+            }
+            Object cleanerInstance = MAPPED_BUFFER_GET_CLEANER.invoke(buf);
+            MAPPED_BUFFER_RUN_CLEANER.invoke(cleanerInstance);
+        } catch (Exception e) {
+            throw new HazelcastException("Unable to init MappedByteBuffer cleaner methods. "
+                            + "If you use Java 9 or newer add '--add-exports java.base/jdk.internal.ref=ALL-UNNAMED' "
+                            + "Java parameters.", e);
+        }
+
+    }
+
+    private static MappedByteBuffer initTmpBuffer() {
+        File file = null;
+        FileOutputStream fos = null;
+        try {
+            file = File.createTempFile("hzhr", ".tmp");
+            fos = new FileOutputStream(file, true);
+            fos.write("hz".getBytes("UTF-8"));
+        } catch (IOException e) {
+            throw rethrow(e);
+        } finally {
+            closeResource(fos);
+        }
+        FileInputStream fis = null;
+        MappedByteBuffer buf = null;
+        try {
+            fis = new FileInputStream(file);
+            buf = fis.getChannel().map(READ_ONLY, 0, 2);
+        } catch (IOException e) {
+            throw rethrow(e);
+        } finally {
+            closeResource(fis);
+        }
+        if (!file.delete()) {
+            Logger.getLogger(TombFileAccessor.class)
+                    .warning("Unable to remove a temporary file " + file.getAbsolutePath() + ", you can remove it manually.");
+        }
+        return buf;
     }
 }

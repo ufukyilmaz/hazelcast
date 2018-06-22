@@ -19,7 +19,6 @@ import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import org.junit.Before;
-import org.mockito.Matchers;
 import org.mockito.stubbing.OngoingStubbing;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -34,10 +33,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalMatchers.geq;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -70,7 +70,7 @@ public abstract class AbstractHDCacheOperationTest {
     @Before
     public void setUp() {
         EnterpriseSerializationService serializationService = mock(EnterpriseSerializationService.class);
-        when(serializationService.toData(Matchers.any())).thenReturn(new HeapData());
+        when(serializationService.toData(any())).thenReturn(new HeapData());
 
         nodeEngine = mock(NodeEngine.class);
         when(nodeEngine.getLogger(any(Class.class))).thenReturn(Logger.getLogger(getClass()));
@@ -217,7 +217,7 @@ public abstract class AbstractHDCacheOperationTest {
         }
 
         if (verifyBackups) {
-            verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(Data.class), any(ExpiryPolicy.class));
+            verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class), any(ExpiryPolicy.class));
         }
 
         verify(recordStore, atLeastOnce()).isWanReplicationEnabled();

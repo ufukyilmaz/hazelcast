@@ -45,11 +45,11 @@
         <maven.jacoco.plugin.version>0.7.9</maven.jacoco.plugin.version>
 
         <log4j2.version>2.3</log4j2.version>
-        <mockito.all.version>1.10.19</mockito.all.version>
+        <mockito.version>2.19.0</mockito.version>
+        <powermock.version>2.0.0-beta.5</powermock.version>
         <bytebuddy.version>1.6.12</bytebuddy.version>
         <netty.version>4.1.8.Final</netty.version>
         <netty-tcnative.version>1.1.33.Fork26</netty-tcnative.version>
-        <powermock.version>1.6.6</powermock.version>
         <findbugs.annotations.version>3.0.0</findbugs.annotations.version>
     </properties>
 
@@ -750,15 +750,16 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>${mockito.all.version}</version>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.powermock</groupId>
-            <artifactId>powermock-api-mockito</artifactId>
+            <artifactId>powermock-api-mockito2</artifactId>
             <version>${powermock.version}</version>
             <scope>test</scope>
         </dependency>
@@ -768,6 +769,7 @@
             <version>${powermock.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>

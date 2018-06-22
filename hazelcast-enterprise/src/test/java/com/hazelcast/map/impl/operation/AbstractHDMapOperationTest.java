@@ -39,11 +39,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalMatchers.geq;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
@@ -113,7 +112,7 @@ public abstract class AbstractHDMapOperationTest {
         when(recordStore.getMapContainer()).thenReturn(mapContainer);
         when(recordStore.getRecord(any(Data.class))).thenReturn(record);
         when(recordStore.putBackup(any(Data.class), any())).thenReturn(record);
-        when(recordStore.putBackup(any(Data.class), any(Data.class), anyInt(), anyBoolean())).thenReturn(record);
+        when(recordStore.putBackup(any(Data.class), any(Data.class), anyLong(), anyBoolean())).thenReturn(record);
 
         partitionMaps = new ConcurrentHashMap<String, RecordStore>();
 
@@ -267,7 +266,7 @@ public abstract class AbstractHDMapOperationTest {
             if (operationType == PUT_ALL) {
                 verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any());
             } else {
-                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(Data.class), anyInt(), anyBoolean());
+                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(Data.class), anyLong(), anyBoolean());
             }
         }
 

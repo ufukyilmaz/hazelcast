@@ -2,7 +2,7 @@ package com.hazelcast.memory;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
+class NativeMemoryStats extends DefaultMemoryStats {
 
     private static final boolean ASSERTS_ENABLED;
 

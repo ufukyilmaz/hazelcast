@@ -37,7 +37,7 @@ public class HDPartitionWideEntryWithPredicateOperation extends HDPartitionWideE
             return new HDMultipleEntryBackupOperation(name, keysFromIndex, backupProcessor);
         } else {
             // if no index used we will do a full partition-scan on backup too
-            return new HDPartitionWideEntryBackupOperation(name, backupProcessor);
+            return new HDPartitionWideEntryWithPredicateBackupOperation(name, backupProcessor, getPredicate());
         }
     }
 

@@ -4,6 +4,7 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -18,7 +19,10 @@ public class HiDensityCacheExpiryPolicyBackupTest extends CacheExpiryPolicyBacku
     @Override
     public Config getConfig() {
         Config cfg = super.getConfig();
-        cfg.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(128, MemoryUnit.MEGABYTES));
+        cfg.getNativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(new MemorySize(128, MemoryUnit.MEGABYTES))
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
         return cfg;
     }
 

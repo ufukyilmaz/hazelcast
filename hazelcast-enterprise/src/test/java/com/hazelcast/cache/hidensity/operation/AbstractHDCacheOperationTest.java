@@ -243,7 +243,9 @@ public abstract class AbstractHDCacheOperationTest {
         }
 
         if (verifyBackups) {
-            verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class), any(ExpiryPolicy.class));
+            if (operationType != SET_EXPIRY_POLICY) {
+                verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class), any(ExpiryPolicy.class));
+            }
         }
 
         verify(recordStore, atLeastOnce()).isWanReplicationEnabled();

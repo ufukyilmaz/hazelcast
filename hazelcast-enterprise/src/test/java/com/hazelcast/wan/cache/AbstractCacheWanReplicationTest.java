@@ -160,7 +160,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     }
 
     @Test
-    public void setExpiryPolicyPropagatesTTLChangeToPassiveCluster() {
+    public void setExpiryPolicyPropagatesExpiryPolicyChangeToPassiveCluster() {
         initConfigA();
         initConfigB();
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
@@ -175,7 +175,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     }
 
     @Test
-    public void setExpiryPolicyPropagatesTTLBothWays() {
+    public void setExpiryPolicyPropagatesExpiryPolicyBothWays() {
         initConfigA();
         initConfigB();
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),

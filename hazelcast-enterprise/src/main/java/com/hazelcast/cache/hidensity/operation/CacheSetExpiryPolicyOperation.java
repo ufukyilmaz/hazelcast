@@ -1,8 +1,5 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.impl.CacheEntryViews;
-import com.hazelcast.cache.impl.ICacheRecordStore;
-import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -22,9 +19,6 @@ import java.util.List;
 public class CacheSetExpiryPolicyOperation extends BackupAwareHiDensityCacheOperation
         implements MutatingOperation {
 
-    private transient ICacheService service;
-    private transient ICacheRecordStore recordStore;
-    private transient int partitionId;
     private transient boolean atLeastOneSucceeded;
 
     private List<Data> keys;
@@ -41,15 +35,7 @@ public class CacheSetExpiryPolicyOperation extends BackupAwareHiDensityCacheOper
     }
 
     @Override
-    public void beforeRunInternal() {
-        super.beforeRunInternal();
-        service = getService();
-        partitionId = getPartitionId();
-        recordStore = service.getRecordStore(name, partitionId);
-    }
-
-    @Override
-    protected void runInternal() throws Exception {
+    protected void runInternal() {
         if (recordStore == null) {
             return;
         }
@@ -62,7 +48,7 @@ public class CacheSetExpiryPolicyOperation extends BackupAwareHiDensityCacheOper
         if (recordStore.isWanReplicationEnabled()) {
             for (Data key : keys) {
                 CacheRecord record = recordStore.getRecord(key);
-                wanEventPublisher.publishWanUpdate(name, CacheEntryViews.createEntryView(key, expiryPolicy, record));
+                publishWanUpdate(key, record);
             }
         }
         super.afterRun();
@@ -100,7 +86,7 @@ public class CacheSetExpiryPolicyOperation extends BackupAwareHiDensityCacheOper
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         int s = in.readInt();
-        keys = new ArrayList<Data>();
+        keys = new ArrayList<Data>(s);
         while (s-- > 0) {
             keys.add(in.readData());
         }

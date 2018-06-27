@@ -32,6 +32,7 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.map.filter.NoFilterMapWanFilter;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -514,7 +515,10 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
     @Test
     public void putFromLoadAll() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        // Used NoFilterMapWanFilter to override default behaviour of not publishing load events over WAN
+        // which is introduced in version 3.11
+        setupReplicateFrom(configA, configB, clusterB.length, "atob",
+                PassThroughMergePolicy.class.getName(), NoFilterMapWanFilter.class.getName());
 
         MapConfig mapConfig = configA.getMapConfig("stored-map");
 
@@ -542,7 +546,10 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     @Test
     public void putFromLoadAllAddsWanEventsOnAllReplicas() {
         final String setupName = "atob";
-        setupReplicateFrom(configA, configB, clusterB.length, setupName, PassThroughMergePolicy.class.getName());
+        // Used NoFilterMapWanFilter to override default behaviour of not publishing load events over WAN
+        // which is introduced in version 3.11
+        setupReplicateFrom(configA, configB, clusterB.length, setupName,
+                PassThroughMergePolicy.class.getName(), NoFilterMapWanFilter.class.getName());
         final int startKey = 0;
         final int endKey = 10;
 

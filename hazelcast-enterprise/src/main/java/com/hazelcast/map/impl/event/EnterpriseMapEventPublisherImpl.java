@@ -5,11 +5,11 @@ import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
-import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
+import com.hazelcast.map.impl.wan.filter.MapFilterProvider;
 import com.hazelcast.map.wan.filter.MapWanEventFilter;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
@@ -21,6 +21,9 @@ import com.hazelcast.util.Clock;
 import java.util.List;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.enterprise.wan.WanFilterEventType.LOADED;
+import static com.hazelcast.enterprise.wan.WanFilterEventType.UPDATED;
+import static com.hazelcast.map.impl.EntryViews.toLazyEntryView;
 
 /**
  * Enterprise version of {@link MapEventPublisher} helper functionality.
@@ -73,14 +76,14 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      * @param entryView the updated entry
      */
     @Override
-    public void publishWanUpdate(String mapName, EntryView<Data, Data> entryView) {
+    public void publishWanUpdate(String mapName, EntryView<Data, Data> entryView, boolean hasLoadProvenance) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         Object wanMergePolicy = mapContainer.getWanMergePolicy();
         int totalBackupCount = mapContainer.getTotalBackupCount();
         EnterpriseMapReplicationUpdate replicationEvent
                 = new EnterpriseMapReplicationUpdate(mapName, wanMergePolicy, entryView, totalBackupCount);
 
-        if (!isEventFiltered(mapContainer, entryView, WanFilterEventType.UPDATED)) {
+        if (!isEventFiltered(mapContainer, entryView, hasLoadProvenance ? LOADED : UPDATED)) {
             publishWanEvent(mapName, replicationEvent);
         }
     }
@@ -117,20 +120,25 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      */
     private boolean isEventFiltered(MapContainer mapContainer, EntryView entryView, WanFilterEventType eventType) {
         List<String> filters = mapContainer.getMapConfig().getWanReplicationRef().getFilters();
-        if (!filters.isEmpty()) {
-            entryView = EntryViews.convertToLazyEntryView(entryView, serializationService, null);
-            for (String filterName : filters) {
-                MapWanEventFilter mapWanEventFilter =
-                        getEnterpriseMapServiceContext().getMapFilterProvider().getFilter(filterName);
-                if (mapWanEventFilter.filter(mapContainer.getName(), entryView, eventType)) {
-                    return true;
-                }
+        if (filters.isEmpty()) {
+            // By default do not transfer updates over WAN if they are the result of
+            // loads by MapLoader.
+            return eventType == WanFilterEventType.LOADED;
+        }
+
+        EntryView lazyEntryView = toLazyEntryView(entryView, serializationService, null);
+        MapFilterProvider mapFilterProvider = getEnterpriseMapServiceContext().getMapFilterProvider();
+
+        for (String filterName : filters) {
+            MapWanEventFilter wanEventFilter = mapFilterProvider.getFilter(filterName);
+            if (wanEventFilter.filter(mapContainer.getName(), lazyEntryView, eventType)) {
+                return true;
             }
         }
         return false;
     }
 
-    public EnterpriseMapServiceContext getEnterpriseMapServiceContext() {
+    private EnterpriseMapServiceContext getEnterpriseMapServiceContext() {
         return (EnterpriseMapServiceContext) mapServiceContext;
     }
 }

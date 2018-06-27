@@ -1,7 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.core.EntryView;
-import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
@@ -30,16 +28,13 @@ public class HDSetTTLOperation extends HDLockAwareOperation implements BackupAwa
 
     @Override
     public void afterRun() throws Exception {
-        super.afterRun();
         Record record = recordStore.getRecord(dataKey);
-        if (record == null) {
-            return;
+        if (record != null) {
+            publishWanUpdate(dataKey, record.getValue());
+            invalidateNearCache(dataKey);
         }
-        if (mapContainer.isWanReplicationEnabled()) {
-            EntryView entryView = EntryViews.createSimpleEntryView(dataKey, mapServiceContext.toData(record.getValue()), record);
-            mapEventPublisher.publishWanUpdate(name, entryView);
-        }
-        invalidateNearCache(dataKey);
+
+        super.afterRun();
     }
 
     @Override

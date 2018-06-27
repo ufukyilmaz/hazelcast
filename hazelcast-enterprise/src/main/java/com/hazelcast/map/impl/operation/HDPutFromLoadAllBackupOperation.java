@@ -46,7 +46,7 @@ public class HDPutFromLoadAllBackupOperation extends HDMapOperation implements B
                 continue;
             }
 
-            publishWanUpdate(key, value);
+            publishLoadAsWanUpdate(key, value);
         }
     }
 

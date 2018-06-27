@@ -66,7 +66,7 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
                 checkNotNull(record, "Value loaded by a MapLoader cannot be null.");
                 value = record.getValue();
             }
-            publishWanUpdate(key, value);
+            publishLoadAsWanUpdate(key, value);
 
             addInvalidation(key);
         }

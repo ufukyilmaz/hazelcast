@@ -16,11 +16,16 @@ public enum WanFilterEventType {
     /**
      * An event type indicating that the entry was removed.
      */
-    REMOVED(2);
+    REMOVED(2),
+
+    /**
+     * An event type indicating that the entry was loaded.
+     */
+    LOADED(3);
 
     private int type;
 
-    private WanFilterEventType(final int type) {
+    WanFilterEventType(final int type) {
         this.type = type;
     }
 

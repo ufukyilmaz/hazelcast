@@ -2,6 +2,7 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.InvalidConfigurationException;
+import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -11,10 +12,12 @@ import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.internal.serialization.PortableHook;
+import com.hazelcast.map.impl.mapstore.MapLoaderTest;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.wan.map.filter.DummyMapWanFilter;
+import com.hazelcast.wan.map.filter.NoFilterMapWanFilter;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.DynamicType;
 import org.junit.After;
@@ -106,6 +109,60 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
         createDataIn(clusterA, "map", 1, 10);
         assertKeysInEventually(clusterB, "map", 1, 2);
         assertKeysNotInEventually(clusterB, "map", 2, 10);
+    }
+
+    @Test
+    public void mapWanEventFilter_prevents_replication_of_loaded_entries_by_default() {
+        String mapName = "default";
+        int loadedEntryCount = 1111;
+
+        // 1. MapWanEventFilter is null to see default behaviour of filtering
+        setupReplicateFrom(configA, configB, clusterB.length, "atob",
+                PassThroughMergePolicy.class.getName(), null);
+
+        // 2. Add map-loader to cluster-A
+        MapStoreConfig mapStoreConfig = new MapStoreConfig()
+                .setEnabled(true)
+                .setInitialLoadMode(MapStoreConfig.InitialLoadMode.EAGER)
+                .setImplementation(new MapLoaderTest.DummyMapLoader(loadedEntryCount));
+        configA.getMapConfig(mapName).setMapStoreConfig(mapStoreConfig);
+
+        // 3. Start cluster-A and cluster-B
+        startClusterA();
+        startClusterB();
+
+        // 4. Create map to trigger eager map-loading on cluster-A
+        getMap(clusterA, mapName);
+
+        // 5. Ensure no keys are replicated to cluster-B
+        assertKeysNotInAllTheTime(clusterB, mapName, 0, loadedEntryCount);
+    }
+
+    @Test
+    public void mapWanEventFilter_allows_replication_of_loaded_entries_when_customized() {
+        String mapName = "default";
+        int loadedEntryCount = 1111;
+
+        // 1. Add customized MapWanEventFilter. This filter doesn't do any filtering.
+        setupReplicateFrom(configA, configB, clusterB.length, "atob",
+                PassThroughMergePolicy.class.getName(), NoFilterMapWanFilter.class.getName());
+
+        // 2. Add map-loader to cluster-A
+        MapStoreConfig mapStoreConfig = new MapStoreConfig()
+                .setEnabled(true)
+                .setInitialLoadMode(MapStoreConfig.InitialLoadMode.EAGER)
+                .setImplementation(new MapLoaderTest.DummyMapLoader(loadedEntryCount));
+        configA.getMapConfig(mapName).setMapStoreConfig(mapStoreConfig);
+
+        // 3. Start cluster-A and cluster-B
+        startClusterA();
+        startClusterB();
+
+        // 4. Create map to trigger eager map-loading on cluster-A
+        getMap(clusterA, mapName);
+
+        // 5. Ensure all keys are replicated to cluster-B eventually.
+        assertKeysInEventually(clusterB, mapName, 0, loadedEntryCount);
     }
 
     @Test

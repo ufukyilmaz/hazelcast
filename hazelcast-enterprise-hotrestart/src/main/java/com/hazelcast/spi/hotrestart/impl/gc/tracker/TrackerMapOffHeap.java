@@ -4,6 +4,7 @@ import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.internal.util.hashslot.HashSlotArray16byteKey;
 import com.hazelcast.internal.util.hashslot.HashSlotCursor16byteKey;
+import com.hazelcast.internal.util.hashslot.SlotAssignmentResult;
 import com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
@@ -31,17 +32,15 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
     @Override
     public Tracker putIfAbsent(KeyHandle kh, long chunkSeq, boolean isTombstone) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
-        final long addr = trackers.ensure(ohk.address(), ohk.sequenceId());
-        if (addr > 0) {
-            tr.address = addr;
-            tr.setLiveState(chunkSeq, isTombstone);
-            tr.resetGarbageCount();
-            added(isTombstone);
-            return null;
-        } else {
-            tr.address = -addr;
+        final SlotAssignmentResult slot = trackers.ensure(ohk.address(), ohk.sequenceId());
+        tr.address = slot.address();
+        if (!slot.isNew()) {
             return tr;
         }
+        tr.setLiveState(chunkSeq, isTombstone);
+        tr.resetGarbageCount();
+        added(isTombstone);
+        return null;
     }
 
     @Override

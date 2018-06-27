@@ -3,6 +3,7 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 import com.hazelcast.elastic.LongArray;
 import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.internal.util.hashslot.HashSlotCursor16byteKey;
+import com.hazelcast.internal.util.hashslot.SlotAssignmentResult;
 import com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
@@ -59,19 +60,17 @@ public final class RecordMapOffHeap implements RecordMap {
     @Override
     public Record putIfAbsent(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone, int additionalInt) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
-        final long addr = hsa.ensure(ohk.address(), ohk.sequenceId());
-        if (addr > 0) {
-            rec.address = addr;
-            if (!isTombstoneMap) {
-                rec.setKeyPrefix(prefix);
-            }
-            rec.setRawSeqSize(seq, toRawSizeValue(size, isTombstone));
-            rec.setAdditionalInt(additionalInt);
-            return null;
-        } else {
-            rec.address = -addr;
+        final SlotAssignmentResult slot = hsa.ensure(ohk.address(), ohk.sequenceId());
+        rec.address = slot.address();
+        if (!slot.isNew()) {
             return rec;
         }
+        if (!isTombstoneMap) {
+            rec.setKeyPrefix(prefix);
+        }
+        rec.setRawSeqSize(seq, toRawSizeValue(size, isTombstone));
+        rec.setAdditionalInt(additionalInt);
+        return null;
     }
 
     @Override

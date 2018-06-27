@@ -4,6 +4,7 @@ import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.internal.util.hashslot.HashSlotArray8byteKey;
 import com.hazelcast.internal.util.hashslot.HashSlotCursor8byteKey;
+import com.hazelcast.internal.util.hashslot.SlotAssignmentResult;
 import com.hazelcast.internal.util.hashslot.impl.HashSlotArray8byteKeyImpl;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 
@@ -112,9 +113,9 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     }
 
     private long vacateSlot(long key) {
-        long vSlotAddr = hsa.ensure(key);
-        if (vSlotAddr < 0) {
-            vSlotAddr = -vSlotAddr;
+        final SlotAssignmentResult slot = hsa.ensure(key);
+        final long vSlotAddr = slot.address();
+        if (!slot.isNew()) {
             vblockAccessor.reset(vSlotAddr);
             vblockAccessor.delete();
         }

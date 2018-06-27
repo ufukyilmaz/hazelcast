@@ -1,12 +1,10 @@
 package com.hazelcast.map.hotrestart;
 
-import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
-import com.hazelcast.core.Cluster;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
@@ -26,6 +24,7 @@ import org.junit.runners.Parameterized.Parameter;
 import java.io.File;
 import java.net.InetAddress;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
@@ -128,17 +127,14 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
     }
 
     HazelcastInstance[] restartInstances(int clusterSize, final int backupCount) {
-        ClusterState state = ClusterState.ACTIVE;
         if (factory != null) {
-            Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
-            if (!instances.isEmpty()) {
-                HazelcastInstance instance = instances.iterator().next();
-                Cluster cluster = instance.getCluster();
-                state = cluster.getClusterState();
-                cluster.changeClusterState(ClusterState.PASSIVE);
+            Iterator<HazelcastInstance> iterator = factory.getAllHazelcastInstances().iterator();
+            if (iterator.hasNext()) {
+                iterator.next().getCluster().shutdown();
             }
             factory.terminateAll();
         }
+
 
         factory = createFactory();
 
@@ -157,10 +153,6 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         assertOpenEventually(latch);
 
         Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
-        if (!instances.isEmpty()) {
-            HazelcastInstance instance = instances.iterator().next();
-            instance.getCluster().changeClusterState(state);
-        }
         return instances.toArray(new HazelcastInstance[0]);
     }
 

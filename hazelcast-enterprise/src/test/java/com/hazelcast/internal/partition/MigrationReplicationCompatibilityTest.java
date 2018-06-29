@@ -49,7 +49,6 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
     private static final String HD_PREFIX = "hd-";
 
     @Parameters(name = "{0}")
-    @SuppressWarnings("checkstyle:arraytrailingcomma")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {"Map", newValidators(mapValidator(), mapHDValidator(), mapLockValidator(), mapHDLockValidator())},

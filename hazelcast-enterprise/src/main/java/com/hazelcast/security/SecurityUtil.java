@@ -7,6 +7,7 @@ import com.hazelcast.security.permission.AtomicLongPermission;
 import com.hazelcast.security.permission.CachePermission;
 import com.hazelcast.security.permission.CardinalityEstimatorPermission;
 import com.hazelcast.security.permission.ClusterPermission;
+import com.hazelcast.security.permission.ConfigPermission;
 import com.hazelcast.security.permission.CountDownLatchPermission;
 import com.hazelcast.security.permission.DurableExecutorServicePermission;
 import com.hazelcast.security.permission.ExecutorServicePermission;
@@ -82,6 +83,8 @@ public final class SecurityUtil {
                 return new CachePermission(permissionConfig.getName(), actions);
             case USER_CODE_DEPLOYMENT:
                 return new UserCodeDeploymentPermission(actions);
+            case CONFIG:
+                return new ConfigPermission();
             default:
                 throw new IllegalArgumentException(permissionConfig.getType().toString());
         }

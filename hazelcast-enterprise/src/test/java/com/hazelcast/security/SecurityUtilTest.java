@@ -73,6 +73,15 @@ public class SecurityUtilTest extends HazelcastTestSupport {
         testCreatePermission(PermissionType.CACHE, CachePermission.class);
     }
 
+    @Test
+    public void testAllPermissionsAreHandled() {
+        for (PermissionType type : PermissionType.values()) {
+            permissionConfig.setType(type);
+            // if a permission type is not handled in ServiceUtil, an IllegalArgumentException will be thrown
+            SecurityUtil.createPermission(permissionConfig);
+        }
+    }
+
     private void testCreatePermission(PermissionType type, Class<?> clazz) {
         permissionConfig.setType(type);
 

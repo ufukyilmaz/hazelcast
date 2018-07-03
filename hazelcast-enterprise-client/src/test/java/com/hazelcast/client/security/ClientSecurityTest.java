@@ -9,6 +9,7 @@ import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SecurityConfig;
@@ -53,6 +54,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hazelcast.cache.CacheUtil.getDistributedObjectName;
 import static com.hazelcast.config.PermissionConfig.PermissionType.ALL;
 import static com.hazelcast.config.PermissionConfig.PermissionType.CACHE;
+import static com.hazelcast.config.PermissionConfig.PermissionType.CONFIG;
 import static com.hazelcast.config.PermissionConfig.PermissionType.MAP;
 import static com.hazelcast.config.PermissionConfig.PermissionType.USER_CODE_DEPLOYMENT;
 import static com.hazelcast.test.HazelcastTestSupport.randomName;
@@ -544,6 +546,33 @@ public class ClientSecurityTest {
         } catch (RuntimeException e) {
             // expected
         }
+    }
+
+    @Test
+    public void testDynamicDatastructureConfigAllowed_whenPermissionConfigured() {
+        final Config config = createConfig();
+        config.getSecurityConfig().addClientPermissionConfig(new PermissionConfig(CONFIG, null, "dev"));
+
+        HazelcastInstance member = factory.newHazelcastInstance(config);
+        HazelcastInstance client = factory.newHazelcastClient();
+
+        String mapName = randomName();
+        MapConfig mapConfig = new MapConfig(mapName).setBackupCount(4);
+        client.getConfig().addMapConfig(mapConfig);
+        assertEquals(mapConfig, member.getConfig().getMapConfig(mapName));
+    }
+
+    @Test
+    public void testDynamicDatastructureConfigDenied_whenPermissionAbsent() {
+        final Config config = createConfig();
+
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = factory.newHazelcastClient();
+
+        String mapName = randomName();
+        MapConfig mapConfig = new MapConfig(mapName).setBackupCount(4);
+        expectedException.expect(AccessControlException.class);
+        client.getConfig().addMapConfig(mapConfig);
     }
 
     public void testUserCodeDeployment(String actionType) {

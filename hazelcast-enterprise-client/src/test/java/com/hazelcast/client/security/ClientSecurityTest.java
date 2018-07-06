@@ -17,6 +17,7 @@ import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
+import com.hazelcast.crdt.pncounter.PNCounter;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.security.loginmodules.TestLoginModule;
 import com.hazelcast.security.permission.ActionConstants;
@@ -549,6 +550,57 @@ public class ClientSecurityTest {
     }
 
     @Test
+    public void testPNCounterAllPermissions() {
+        final Config config = createConfig();
+        addPermission(config, PermissionType.PN_COUNTER, "test", "dev")
+                .addAction(ActionConstants.ACTION_ALL);
+
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = createHazelcastClient();
+        PNCounter counter = client.getPNCounter("test");
+        counter.addAndGet(1);
+        counter.get();
+        counter.destroy();
+    }
+
+    @Test(expected = AccessControlException.class)
+    public void pnCounterCreateShouldFailWhenNoPermission() {
+        final Config config = createConfig();
+        addPermission(config, PermissionType.PN_COUNTER, "test", "dev")
+                .addAction(ActionConstants.ACTION_READ);
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = createHazelcastClient();
+
+        PNCounter counter = client.getPNCounter("test");
+        counter.get();
+    }
+
+    @Test(expected = AccessControlException.class)
+    public void pnCounterGetShouldFailWhenNoPermission() {
+        final Config config = createConfig();
+        addPermission(config, PermissionType.PN_COUNTER, "test", "dev")
+                .addAction(ActionConstants.ACTION_CREATE);
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = createHazelcastClient();
+
+        PNCounter counter = client.getPNCounter("test");
+        counter.get();
+    }
+
+    @Test(expected = AccessControlException.class)
+    public void pnCounterAddShouldFailWhenNoPermission() {
+        final Config config = createConfig();
+        addPermission(config, PermissionType.PN_COUNTER, "test", "dev")
+                .addAction(ActionConstants.ACTION_CREATE)
+                .addAction(ActionConstants.ACTION_READ);
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = createHazelcastClient();
+
+        PNCounter counter = client.getPNCounter("test");
+        counter.addAndGet(1);
+    }
+
+    @Test
     public void testDynamicDatastructureConfigAllowed_whenPermissionConfigured() {
         final Config config = createConfig();
         config.getSecurityConfig().addClientPermissionConfig(new PermissionConfig(CONFIG, null, "dev"));
@@ -584,7 +636,7 @@ public class ClientSecurityTest {
         FilteringClassLoader filteringCL = new FilteringClassLoader(singletonList("usercodedeployment"), null);
         config.setClassLoader(filteringCL);
         config.getUserCodeDeploymentConfig()
-                .setEnabled(true);
+              .setEnabled(true);
         factory.newHazelcastInstance(config);
 
         ClientConfig clientConfig = new ClientConfig();

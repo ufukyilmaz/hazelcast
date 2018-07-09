@@ -5,6 +5,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
@@ -23,6 +24,8 @@ public class HDMapSetTTLBackupTest extends MapSetTTLBackupTest {
 
     protected Config getConfig() {
         Config config = new Config();
+        // to reduce used native memory size
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(128, MemoryUnit.MEGABYTES));
         return config;
     }

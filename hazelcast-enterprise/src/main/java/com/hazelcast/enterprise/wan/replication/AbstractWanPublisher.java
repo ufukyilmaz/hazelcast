@@ -176,25 +176,62 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      * @param eventObject the replication backup event
      * @param backupEvent if this is an event of a backup entry
      */
-    private void publishReplicationEventInternal(String serviceName, EnterpriseReplicationEventObject eventObject,
+    private void publishReplicationEventInternal(String serviceName,
+                                                 EnterpriseReplicationEventObject eventObject,
                                                  boolean backupEvent) {
-
         if (isEventDroppingNeeded(backupEvent)) {
             if (!backupEvent) {
                 wanService.getSentEventCounter(serviceName).incrementDropped(eventObject.getObjectName());
             }
             return;
         }
+
         if (eventObject.getGroupNames().contains(targetGroupName)) {
             return;
         }
+
         eventObject.getGroupNames().add(localGroupName);
-        final WanReplicationEvent replicationEvent = new WanReplicationEvent(serviceName, eventObject);
-        final int partitionId = getPartitionId(eventObject.getKey());
-        final boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, false);
+
+        boolean eventPublished = publishEventInternal(serviceName, eventObject);
         if (eventPublished) {
             wanCounter.incrementCounters(backupEvent);
         }
+    }
+
+    /**
+     * Publishes the {@code eventObject}
+     *
+     * @param serviceName
+     * @param eventObject
+     * @return {@code true} if the event has been published, otherwise returns {@code false}
+     */
+    private boolean publishEventInternal(String serviceName, ReplicationEventObject eventObject) {
+        if (eventObject instanceof EnterpriseMapReplicationObject) {
+            String mapName = ((EnterpriseMapReplicationObject) eventObject).getMapName();
+            int partitionId = getPartitionId(eventObject.getKey());
+            return eventQueueContainer.publishMapWanEvent(mapName, partitionId,
+                    wrapReplicationEvent(serviceName, eventObject));
+        }
+
+        if (eventObject instanceof CacheReplicationObject) {
+            String cacheName = ((CacheReplicationObject) eventObject).getNameWithPrefix();
+            int partitionId = getPartitionId(eventObject.getKey());
+            return eventQueueContainer.publishCacheWanEvent(cacheName, partitionId,
+                    wrapReplicationEvent(serviceName, eventObject));
+        }
+
+        logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
+
+        return false;
+    }
+
+    /**
+     * Creates a new WanReplicationEvent to wrap a ReplicationEventObject in
+     * order to send it over wire.
+     */
+    private WanReplicationEvent wrapReplicationEvent(String serviceName,
+                                                     ReplicationEventObject eventObject) {
+        return new WanReplicationEvent(serviceName, eventObject);
     }
 
     /**
@@ -207,36 +244,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         final String serviceName = event.getServiceName();
         final ReplicationEventObject eventObject = event.getEventObject();
         eventObject.incrementEventCount(wanService.getSentEventCounter(serviceName));
-    }
-
-    /**
-     * Publishes the {@code eventObject} and drops the oldest event if {@code dropEvent} is true.
-     *
-     * @param eventObject      the replication event
-     * @param replicationEvent the event to be transmitted
-     * @param partitionId      the partition ID on which this event is published
-     * @param dropEvent        whether to drop the oldest event in the event queue
-     * @return if the event has been published
-     */
-    private boolean publishEventInternal(ReplicationEventObject eventObject, WanReplicationEvent replicationEvent,
-                                         int partitionId, boolean dropEvent) {
-        if (eventObject instanceof CacheReplicationObject) {
-            CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
-            String cacheName = cacheReplicationObject.getNameWithPrefix();
-            if (dropEvent) {
-                eventQueueContainer.pollCacheWanEvent(cacheName, partitionId);
-            }
-            return eventQueueContainer.publishCacheWanEvent(cacheName, partitionId, replicationEvent);
-        } else if (eventObject instanceof EnterpriseMapReplicationObject) {
-            EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
-            String mapName = mapReplicationObject.getMapName();
-            if (dropEvent) {
-                eventQueueContainer.pollMapWanEvent(mapName, partitionId);
-            }
-            return eventQueueContainer.publishMapWanEvent(mapName, partitionId, replicationEvent);
-        }
-        logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
-        return false;
     }
 
     /**
@@ -323,24 +330,25 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
     @Override
     public void removeBackup(WanReplicationEvent wanReplicationEvent) {
-        final ReplicationEventObject eventObject = wanReplicationEvent.getEventObject();
-        final int partitionId = getPartitionId(eventObject.getKey());
-        WanReplicationEvent wanEvent = null;
-        if (eventObject instanceof CacheReplicationObject) {
-            CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
-            String cacheName = cacheReplicationObject.getNameWithPrefix();
-            wanEvent = eventQueueContainer.pollCacheWanEvent(cacheName, partitionId);
-        } else if (eventObject instanceof EnterpriseMapReplicationObject) {
-            EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
-            String mapName = mapReplicationObject.getMapName();
-            wanEvent = eventQueueContainer.pollMapWanEvent(mapName, partitionId);
-        } else {
-            logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
+        ReplicationEventObject eventObject = wanReplicationEvent.getEventObject();
+
+        if (eventObject instanceof EnterpriseMapReplicationObject) {
+            String mapName = ((EnterpriseMapReplicationObject) eventObject).getMapName();
+            int partitionId = getPartitionId(eventObject.getKey());
+            eventQueueContainer.pollMapWanEvent(mapName, partitionId);
+            wanCounter.decrementBackupElementCounter();
+            return;
         }
 
-        if (wanEvent != null) {
+        if (eventObject instanceof CacheReplicationObject) {
+            String cacheName = ((CacheReplicationObject) eventObject).getNameWithPrefix();
+            int partitionId = getPartitionId(eventObject.getKey());
+            eventQueueContainer.pollCacheWanEvent(cacheName, partitionId);
             wanCounter.decrementBackupElementCounter();
+            return;
         }
+
+        logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
     }
 
     @Override
@@ -465,10 +473,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         return WANQueueFullBehavior.THROW_EXCEPTION == queueFullBehavior
                 || (WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE == queueFullBehavior
                 && !paused);
-    }
-
-    public String getTargetGroupName() {
-        return targetGroupName;
     }
 
     @Override
@@ -819,7 +823,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
             for (SimpleEntryView simpleEntryView : set) {
                 EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(
                         mapName, simpleEntryView, partition.getPartitionId());
-                WanReplicationEvent event = new WanReplicationEvent(MapService.SERVICE_NAME, sync);
+                WanReplicationEvent event = wrapReplicationEvent(MapService.SERVICE_NAME, sync);
                 offerToStagingQueue(event);
             }
             return set.size();

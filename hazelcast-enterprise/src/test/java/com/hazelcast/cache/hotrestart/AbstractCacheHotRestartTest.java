@@ -2,7 +2,6 @@ package com.hazelcast.cache.hotrestart;
 
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
-import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
@@ -10,46 +9,30 @@ import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.core.Cluster;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IFunction;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.TestHazelcastInstanceFactory;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestName;
 import org.junit.runners.Parameterized.Parameter;
 
 import javax.cache.CacheManager;
 import javax.cache.configuration.Configuration;
 import java.io.File;
-import java.net.InetAddress;
-import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.HDTestSupport.getICache;
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
 import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
-import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
-import static java.util.Arrays.fill;
 import static org.junit.Assert.assertNotNull;
 
-public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
+public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport {
 
     protected static final int KEY_COUNT = 1000;
-
-    private static InetAddress localAddress;
-
-    @Rule
-    public TestName testName = new TestName();
 
     @Parameter
     public InMemoryFormat memoryFormat;
@@ -64,57 +47,42 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     public boolean evictionEnabled;
 
     String cacheName;
-    TestHazelcastInstanceFactory factory;
 
-    private File baseDir;
+    protected void setupCacheInternal() {
 
-    @BeforeClass
-    public static void setupClass() throws Exception {
-        localAddress = InetAddress.getLocalHost();
     }
 
     @Before
-    public final void setup() {
+    public final void setupInternal() {
         cacheName = randomName();
-        factory = createFactory();
-
-        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        createFolder(baseDir);
-
-        setupInternal();
-    }
-
-    private TestHazelcastInstanceFactory createFactory() {
-        String[] addresses = new String[10];
-        fill(addresses, "127.0.0.1");
-        return new TestHazelcastInstanceFactory(5000, addresses);
-    }
-
-    void setupInternal() {
-    }
-
-    @After
-    public final void tearDown() {
-        if (factory != null) {
-            factory.terminateAll();
-        }
-        if (baseDir != null) {
-            delete(baseDir);
-        }
+        setupCacheInternal();
     }
 
     HazelcastInstance newHazelcastInstance() {
-        Address address = factory.nextAddress();
-        return factory.newHazelcastInstance(address, makeConfig(address));
+        return newHazelcastInstance(new IFunction<Address, Config>() {
+            @Override
+            public Config apply(Address address) {
+                return makeConfig(address);
+            }
+        });
     }
 
-    HazelcastInstance newHazelcastInstance(Config config) {
-        Address address = factory.nextAddress();
-        return factory.newHazelcastInstance(address, withHotRestart(address, config));
+    HazelcastInstance newHazelcastInstance(final Config config) {
+        return newHazelcastInstance(new IFunction<Address, Config>() {
+            @Override
+            public Config apply(Address address) {
+                return withHotRestart(address, config);
+            }
+        });
     }
 
-    HazelcastInstance newHazelcastInstance(Address address, Config config) {
-        return factory.newHazelcastInstance(address, config);
+    HazelcastInstance[] restartInstances(int clusterSize) {
+        return restartCluster(clusterSize, new IFunction<Address, Config>() {
+            @Override
+            public Config apply(Address address) {
+                return makeConfig(address);
+            }
+        });
     }
 
     HazelcastInstance[] newInstances(int clusterSize) {
@@ -123,51 +91,6 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
             instances[i] = newHazelcastInstance();
         }
         return instances;
-    }
-
-    HazelcastInstance[] restartInstances(int clusterSize) {
-        ClusterState state = ClusterState.ACTIVE;
-        if (factory != null) {
-            Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
-            if (!instances.isEmpty()) {
-                HazelcastInstance instance = instances.iterator().next();
-                Cluster cluster = instance.getCluster();
-                state = cluster.getClusterState();
-                cluster.changeClusterState(ClusterState.PASSIVE);
-            }
-            factory.terminateAll();
-        }
-
-        factory = createFactory();
-
-        final CountDownLatch latch = new CountDownLatch(clusterSize);
-        for (int i = 0; i < clusterSize; i++) {
-            final Address address = new Address("127.0.0.1", localAddress, 5000 + i);
-            spawn(new Runnable() {
-                @Override
-                public void run() {
-                    Config config = makeConfig(address);
-                    factory.newHazelcastInstance(address, config);
-                    latch.countDown();
-                }
-            });
-        }
-        assertOpenEventually(latch);
-
-        HazelcastInstance[] instances = factory.getAllHazelcastInstances().toArray(new HazelcastInstance[0]);
-        if (instances.length > 0) {
-            assertClusterSizeEventually(clusterSize, instances);
-            HazelcastInstance instance = instances[0];
-            instance.getCluster().changeClusterState(state);
-        }
-        return instances;
-    }
-
-    HazelcastInstance restartHazelcastInstance(HazelcastInstance hz, Config config) {
-        Address address = getNode(hz).getThisAddress();
-        hz.shutdown();
-        hz = factory.newHazelcastInstance(address, config);
-        return hz;
     }
 
     Config makeConfig(Address address) {
@@ -204,7 +127,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     }
 
     <V> ICache<Integer, V> createCache() {
-        HazelcastInstance hz = factory.getAllHazelcastInstances().iterator().next();
+        HazelcastInstance hz = getFirstInstance();
         assertNotNull(hz);
         return createCache(hz, 1);
     }

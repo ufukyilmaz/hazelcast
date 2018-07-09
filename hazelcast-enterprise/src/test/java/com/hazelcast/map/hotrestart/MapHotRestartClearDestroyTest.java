@@ -1,10 +1,8 @@
 package com.hazelcast.map.hotrestart;
 
-import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -57,9 +55,7 @@ public class MapHotRestartClearDestroyTest extends AbstractMapHotRestartTest {
     }
 
     private void test(MapAction action) {
-        Address address = factory.nextAddress();
-        Config config = makeConfig(address, 1);
-        HazelcastInstance hz = newHazelcastInstance(address, config);
+        HazelcastInstance hz = newHazelcastInstance();
         IMap<Integer, String> map = createMap(hz);
 
         for (int key = 0; key < OPERATION_COUNT; key++) {
@@ -68,7 +64,7 @@ public class MapHotRestartClearDestroyTest extends AbstractMapHotRestartTest {
 
         int expectedSize = action.run(map);
 
-        hz = restartHazelcastInstance(hz, config);
+        hz = restartInstances(1)[0];
         map = createMap(hz);
 
         assertEqualsStringFormat("Expected %s map entries, but found %d", expectedSize, map.size());

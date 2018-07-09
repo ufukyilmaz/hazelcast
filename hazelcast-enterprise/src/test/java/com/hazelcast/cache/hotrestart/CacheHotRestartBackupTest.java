@@ -48,7 +48,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
     private ICache<Integer, String> cache;
 
     @Override
-    void setupInternal() {
+    protected void setupCacheInternal() {
         clusterSize = 3;
         backupCount = clusterSize - 1;
     }

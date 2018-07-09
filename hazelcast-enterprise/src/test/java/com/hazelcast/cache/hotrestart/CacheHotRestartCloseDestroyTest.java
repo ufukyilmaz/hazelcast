@@ -1,10 +1,8 @@
 package com.hazelcast.cache.hotrestart;
 
 import com.hazelcast.cache.ICache;
-import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -69,9 +67,7 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
     }
 
     private void test(CacheAction action) {
-        Address address = factory.nextAddress();
-        Config config = makeConfig(address);
-        HazelcastInstance hz = newHazelcastInstance(address, config);
+        HazelcastInstance hz = newHazelcastInstance();
         ICache<Integer, String> cache = createCache(hz);
 
         for (int key = 0; key < OPERATION_COUNT; key++) {
@@ -80,7 +76,7 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
 
         int expectedSize = action.run(cache);
 
-        hz = restartHazelcastInstance(hz, config);
+        hz = restartInstances(1)[0];
         cache = createCache(hz);
 
         assertEqualsStringFormat("Expected %s cache entries, but found %d", expectedSize, cache.size());

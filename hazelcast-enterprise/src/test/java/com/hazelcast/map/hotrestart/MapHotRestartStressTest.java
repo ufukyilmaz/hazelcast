@@ -1,29 +1,23 @@
 package com.hazelcast.map.hotrestart;
 
-import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.XmlConfigBuilder;
-import com.hazelcast.core.Cluster;
-import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IFunction;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
-import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.NightlyTest;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -34,28 +28,23 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;
-import static com.hazelcast.nio.IOUtil.deleteQuietly;
+import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.util.FutureUtil.waitWithDeadline;
 import static java.util.Arrays.asList;
-import static java.util.Arrays.fill;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category(NightlyTest.class)
-public class MapHotRestartStressTest extends HazelcastTestSupport {
+public class MapHotRestartStressTest extends HotRestartTestSupport {
 
     private static final int INSTANCE_COUNT = 4;
     private static final int THREAD_COUNT = 4;
@@ -77,31 +66,15 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
     @Parameter(2)
     public boolean fsyncEnabled;
 
-    @Rule
-    public TestName testName = new TestName();
-
-    private File baseDir;
     private ConcurrentMap<Integer, Integer> localMap;
-    private TestHazelcastInstanceFactory testFactory;
     private IMap<Integer, Integer> map;
     private String name;
 
     private volatile boolean running = true;
 
     @Before
-    public void setUp() {
-        baseDir = isolatedFolder(getClass(), testName);
-        createFolder(baseDir);
-        localMap = new ConcurrentHashMap<Integer, Integer>();
+    public void setupInternal() {
         name = randomString();
-    }
-
-    @After
-    public void tearDown() {
-        if (testFactory != null) {
-            testFactory.terminateAll();
-        }
-        deleteQuietly(baseDir);
     }
 
     @Test(timeout = 10 * 60 * 1000)
@@ -152,9 +125,9 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
         }
     }
 
-    private Config makeConfig(int instanceId) {
+    private Config makeConfig(Address address) {
         Config config = new XmlConfigBuilder().build()
-                .setInstanceName("hr-test-" + instanceId)
+                .setInstanceName("hr-test-" + address.getPort())
                 .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
                 .setProperty(GroupProperty.PARTITION_COUNT.getName(), "20");
 
@@ -165,7 +138,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)
-                .setBaseDir(new File(baseDir, "hz-" + instanceId));
+                .setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())));
 
         MaxSizeConfig maxSizeConfig = new MaxSizeConfig()
                 .setMaxSizePolicy(PER_PARTITION)
@@ -185,51 +158,17 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
         return config;
     }
 
-    private void resetFixture() throws Exception {
-        ClusterState state = ClusterState.ACTIVE;
-        if (testFactory != null) {
-            Collection<HazelcastInstance> instances = testFactory.getAllHazelcastInstances();
-            if (!instances.isEmpty()) {
-                HazelcastInstance instance = instances.iterator().next();
-                Cluster cluster = instance.getCluster();
-                state = cluster.getClusterState();
-                cluster.changeClusterState(ClusterState.PASSIVE);
+    private void resetFixture() {
+        restartCluster(INSTANCE_COUNT, new IFunction<Address, Config>() {
+            @Override
+            public Config apply(Address address) {
+                return makeConfig(address);
             }
-
-            testFactory.terminateAll();
-            sleepAtLeastSeconds(2);
-        }
-
-        String[] addresses = new String[INSTANCE_COUNT];
-        fill(addresses, "127.0.0.1");
-        testFactory = new TestHazelcastInstanceFactory(5000, addresses);
-
-        final CountDownLatch latch = new CountDownLatch(INSTANCE_COUNT);
-        for (int i = 0; i < INSTANCE_COUNT; i++) {
-            final Address address = new Address("127.0.0.1", 5000 + i);
-            final Config config = makeConfig(i);
-            spawn(new Runnable() {
-                @Override
-                public void run() {
-                    testFactory.newHazelcastInstance(address, config);
-                    latch.countDown();
-
-                }
-            });
-        }
-
-        assertOpenEventually(latch);
-
-        Collection<HazelcastInstance> instances = testFactory.getAllHazelcastInstances();
-        if (!instances.isEmpty()) {
-            HazelcastInstance hz = instances.iterator().next();
-            hz.getCluster().changeClusterState(state);
-
-            if (memoryFormat == NATIVE) {
-                map = hz.getMap("native-" + name);
-            } else {
-                map = hz.getMap(name);
-            }
+        });
+        if (memoryFormat == NATIVE) {
+            map = getFirstInstance().getMap("native-" + name);
+        } else {
+            map = getFirstInstance().getMap(name);
         }
     }
 }

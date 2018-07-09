@@ -1,12 +1,10 @@
 package com.hazelcast.map.hotrestart;
 
-import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -57,9 +55,7 @@ public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
 
     @Test
     public void testEviction() {
-        Address address = factory.nextAddress();
-        Config hzConfig = makeConfig(address, 1);
-        HazelcastInstance hz = newHazelcastInstance(address, hzConfig);
+        HazelcastInstance hz = newHazelcastInstance();
         IMap<Integer, byte[]> map = createMap(hz);
 
         int threadCount = 4;
@@ -95,7 +91,7 @@ public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {
             }
         }
 
-        hz = restartHazelcastInstance(hz, hzConfig);
+        hz = restartInstances(1)[0];
         map = createMap(hz);
 
         assertEquals(expectedSize, map.size());

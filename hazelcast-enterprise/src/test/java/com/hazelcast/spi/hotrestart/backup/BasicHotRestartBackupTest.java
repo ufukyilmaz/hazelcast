@@ -48,7 +48,7 @@ public class BasicHotRestartBackupTest extends AbstractHotRestartBackupTest {
         fillMap(null);
         final int backupSeq = 0;
 
-        getNodeBackupDir(factory.getAllHazelcastInstances().iterator().next(), backupSeq).mkdirs();
+        getNodeBackupDir(getFirstInstance(), backupSeq).mkdirs();
         runBackupOnEachNode(backupSeq);
     }
 
@@ -76,7 +76,7 @@ public class BasicHotRestartBackupTest extends AbstractHotRestartBackupTest {
                 runBackupOnEachNode(i);
             }
         }
-        final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
         waitForBackupToFinish(instances);
 
         final HazelcastInstance firstNode = instances.iterator().next();
@@ -92,7 +92,7 @@ public class BasicHotRestartBackupTest extends AbstractHotRestartBackupTest {
     }
 
     private boolean[] runBackupOnEachNode(long seq) {
-        final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
         final boolean[] backupsRun = new boolean[instances.size()];
         int backupIdx = 0;
         for (HazelcastInstance instance : instances) {

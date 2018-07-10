@@ -10,11 +10,12 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
+import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -52,17 +53,8 @@ public class ClientHDCacheNearCacheInvalidationTest extends ClientCacheNearCache
         });
     }
 
-    @Override
-    public void setup() {
-        RuntimeAvailableProcessors.override(4);
-        super.setup();
-    }
-
-    @Override
-    public void tearDown() {
-        super.tearDown();
-        RuntimeAvailableProcessors.resetOverride();
-    }
+    @Rule
+    public RuntimeAvailableProcessorsRule runtimeAvailableProcessorsRule = new RuntimeAvailableProcessorsRule(4);
 
     @Override
     protected Config getConfig() {

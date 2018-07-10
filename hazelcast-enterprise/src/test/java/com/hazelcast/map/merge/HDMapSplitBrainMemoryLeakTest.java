@@ -5,7 +5,6 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -16,6 +15,8 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.SplitBrainTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
+import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -59,17 +60,9 @@ public class HDMapSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
     private IMap<Object, Object> mapA2;
     private MergeLifecycleListener mergeLifecycleListener;
 
-    @Override
-    protected void onBeforeSetup() {
-        RuntimeAvailableProcessors.override(4);
-        super.onBeforeSetup();
-    }
 
-    @Override
-    protected void onTearDown() {
-        super.onTearDown();
-        RuntimeAvailableProcessors.resetOverride();
-    }
+    @Rule
+    public RuntimeAvailableProcessorsRule runtimeAvailableProcessorsRule = new RuntimeAvailableProcessorsRule(4);
 
     @Override
     protected int[] brains() {

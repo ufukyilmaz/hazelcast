@@ -11,11 +11,11 @@ import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.NightlyTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
@@ -64,11 +64,13 @@ public class HotRestartClientHDNearCacheInvalidationTest extends ClientCacheNear
 
     private File folder;
 
+    @Rule
+    public RuntimeAvailableProcessorsRule runtimeAvailableProcessorsRule = new RuntimeAvailableProcessorsRule(4);
+
     @Override
     public void setup() {
         folder = isolatedFolder(getClass(), testName);
         createFolder(folder);
-        RuntimeAvailableProcessors.override(4);
         super.setup();
     }
 
@@ -76,7 +78,6 @@ public class HotRestartClientHDNearCacheInvalidationTest extends ClientCacheNear
     public void tearDown() {
         try {
             super.tearDown();
-            RuntimeAvailableProcessors.resetOverride();
         } finally {
             deleteQuietly(folder);
         }

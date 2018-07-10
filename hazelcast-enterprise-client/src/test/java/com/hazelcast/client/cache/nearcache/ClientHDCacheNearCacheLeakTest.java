@@ -27,12 +27,13 @@ import com.hazelcast.internal.nearcache.NearCacheManager;
 import com.hazelcast.internal.nearcache.NearCacheTestContext;
 import com.hazelcast.internal.nearcache.NearCacheTestContextBuilder;
 import com.hazelcast.internal.nearcache.impl.invalidation.RepairingTask;
-import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -69,10 +70,11 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractHiDensityNearCacheLe
 
     private final TestHazelcastFactory factory = new TestHazelcastFactory();
 
+    @Rule
+    public RuntimeAvailableProcessorsRule runtimeAvailableProcessorsRule = new RuntimeAvailableProcessorsRule(4);
+
     @Before
     public void setUp() {
-        RuntimeAvailableProcessors.override(4);
-
         NearCachePreloaderConfig nearCachePreloaderConfig = new NearCachePreloaderConfig()
                 .setEnabled(enableNearCachePreloader);
 
@@ -84,7 +86,6 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractHiDensityNearCacheLe
     @After
     public void tearDown() {
         factory.terminateAll();
-        RuntimeAvailableProcessors.resetOverride();
     }
 
     @Override

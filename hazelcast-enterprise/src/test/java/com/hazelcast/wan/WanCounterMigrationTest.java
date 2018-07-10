@@ -5,17 +5,18 @@ import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
-import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.test.annotation.NightlyTest;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.ClusterMemberStartAction;
 import com.hazelcast.wan.fw.WanReplication;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -34,8 +35,8 @@ import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationEndpoint;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({NightlyTest.class, SlowTest.class})
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class WanCounterMigrationTest {
     private static final String MAP_NAME = "map";
     private static final String CACHE_NAME = "cache";
@@ -44,17 +45,27 @@ public class WanCounterMigrationTest {
     private Cluster sourceCluster;
     private Cluster targetCluster;
     private WanReplication wanReplication;
+    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+
+    @BeforeClass
+    public static void setupClass() {
+        JsrTestUtil.setup();
+    }
+
+    @AfterClass
+    public static void cleanupClass() {
+        JsrTestUtil.cleanup();
+    }
 
     @After
     public void cleanup() {
-        HazelcastInstanceFactory.shutdownAll();
-        JsrTestUtil.cleanup();
+        factory.shutdownAll();
     }
 
     @Before
     public void setup() {
-        sourceCluster = clusterA(4).setup();
-        targetCluster = clusterB(1).setup();
+        sourceCluster = clusterA(factory, 4).setup();
+        targetCluster = clusterB(factory, 1).setup();
 
         configureCache(sourceCluster);
         configureCache(targetCluster);

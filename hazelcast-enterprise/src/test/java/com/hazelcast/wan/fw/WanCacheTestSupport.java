@@ -4,8 +4,6 @@ import com.hazelcast.cache.HazelcastCachingProvider;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.AbstractHazelcastCacheManager;
 import com.hazelcast.config.CacheConfig;
-import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.AssertTask;
 
@@ -15,7 +13,6 @@ import javax.cache.spi.CachingProvider;
 import java.net.URI;
 import java.util.Properties;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.test.HazelcastTestSupport.ASSERT_TRUE_EVENTUALLY_TIMEOUT;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static org.junit.Assert.assertTrue;
@@ -57,15 +54,7 @@ public class WanCacheTestSupport {
     }
 
     private static CacheConfig<Integer, String> createCacheConfig(String cacheName, HazelcastInstance node) throws Exception {
-        CacheConfig<Integer, String> cacheConfig = new CacheConfig<Integer, String>(node.getConfig().getCacheConfig(cacheName));
-        // TODO memory format
-        cacheConfig.setInMemoryFormat(InMemoryFormat.BINARY);
-        cacheConfig.setStatisticsEnabled(true);
-        EvictionConfig evictionConfig = new EvictionConfig()
-                .setSize(90)
-                .setMaximumSizePolicy(ENTRY_COUNT);
-        cacheConfig.setEvictionConfig(evictionConfig);
-        return cacheConfig;
+        return new CacheConfig<Integer, String>(node.getConfig().getCacheConfig(cacheName));
     }
 
     public static void verifyCacheReplicated(Cluster sourceCluster, Cluster targetCluster, String cacheName) {

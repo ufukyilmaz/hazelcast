@@ -3,10 +3,13 @@ package com.hazelcast.wan.fw;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.instance.HazelcastInstanceFactory;
+import com.hazelcast.test.TestHazelcastInstanceFactory;
 
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static com.hazelcast.util.Preconditions.checkNotNull;
 import static com.hazelcast.util.Preconditions.checkPositive;
@@ -15,12 +18,14 @@ import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 public class Cluster {
     private HazelcastInstance[] clusterMembers;
     private final String instanceNamePrefix;
+    private final TestHazelcastInstanceFactory factory;
     final Config config;
 
-    Cluster(int clusterSize, Config config) {
+    Cluster(TestHazelcastInstanceFactory factory, int clusterSize, Config config) {
         this.clusterMembers = new HazelcastInstance[clusterSize];
         this.config = config;
-        instanceNamePrefix = config.getInstanceName();
+        this.factory = factory;
+        this.instanceNamePrefix = config.getInstanceName();
     }
 
     public HazelcastInstance getAMember() {
@@ -80,7 +85,7 @@ public class Cluster {
         }
 
         config.setInstanceName(instanceNamePrefix + index);
-        clusterMembers[index] = HazelcastInstanceFactory.newHazelcastInstance(config);
+        clusterMembers[index] = factory.newHazelcastInstance(config);
         return clusterMembers[index];
     }
 
@@ -158,6 +163,7 @@ public class Cluster {
         private Config config;
         private int clusterSize;
         private ClassLoader classLoader;
+        private TestHazelcastInstanceFactory factory;
 
         private ClusterBuilder() {
         }
@@ -187,16 +193,24 @@ public class Cluster {
             return this;
         }
 
+        public ClusterBuilder factory(TestHazelcastInstanceFactory factory) {
+            this.factory = factory;
+            return this;
+        }
+
         public Cluster setup() {
             checkNotNull(groupName, "Group name should be provided");
             checkNotNull(config, "Config should be provided");
+            checkNotNull(factory, "Hazelcast instance factory should be provided");
             checkPositive(clusterSize, "Cluster size should be positive");
             checkPositive(port, "Port should be positive");
 
             config.getGroupConfig()
                   .setName(groupName)
                   .setPassword("H4:z3lc4st");
-            config.getNetworkConfig().setPort(port);
+            config.getNetworkConfig()
+                  .setPortAutoIncrement(false)
+                  .setPort(port);
 
             config.setClassLoader(classLoader);
 
@@ -205,34 +219,48 @@ public class Cluster {
             joinConfig.getTcpIpConfig().setEnabled(true);
             joinConfig.getTcpIpConfig().addMember("127.0.0.1");
 
-            return new Cluster(clusterSize, config);
+            return new Cluster(factory, clusterSize, config);
         }
     }
 
-    public static ClusterBuilder clusterA(int clusterSize) {
-        Config config = createDefaultConfig("ClusterA");
-        return setupClusterBase(config, clusterSize)
-                .groupName("A")
-                .port(5701);
+    public static ClusterBuilder clusterA(TestHazelcastInstanceFactory factory, int clusterSize) {
+        return clusterA(factory, clusterSize, UUID.randomUUID().toString());
     }
 
-    public static ClusterBuilder clusterB(int clusterSize) {
-        Config config = createDefaultConfig("ClusterB");
-        return setupClusterBase(config, clusterSize)
-                .groupName("B")
-                .port(5801);
+    public static ClusterBuilder clusterA(TestHazelcastInstanceFactory factory, int clusterSize, String clusterPostfix) {
+        return createDefaultClusterConfig(factory, clusterSize, "ClusterA", "A", 5701, clusterPostfix);
     }
 
-    public static ClusterBuilder clusterC(int clusterSize) {
-        Config config = createDefaultConfig("ClusterC");
-        return setupClusterBase(config, clusterSize)
-                .groupName("C")
-                .port(5901);
+    public static ClusterBuilder clusterB(TestHazelcastInstanceFactory factory, int clusterSize) {
+        return clusterB(factory, clusterSize, UUID.randomUUID().toString());
     }
 
-    private static ClusterBuilder setupClusterBase(Config config, int clusterSize) {
+    public static ClusterBuilder clusterB(TestHazelcastInstanceFactory factory, int clusterSize, String clusterPostfix) {
+        return createDefaultClusterConfig(factory, clusterSize, "ClusterB", "B", 5801, clusterPostfix);
+    }
+
+    public static ClusterBuilder clusterC(TestHazelcastInstanceFactory factory, int clusterSize) {
+        return clusterC(factory, clusterSize, UUID.randomUUID().toString());
+    }
+
+    public static ClusterBuilder clusterC(TestHazelcastInstanceFactory factory, int clusterSize, String clusterPostfix) {
+        return createDefaultClusterConfig(factory, clusterSize, "ClusterC", "C", 5901, clusterPostfix);
+    }
+
+    private static ClusterBuilder createDefaultClusterConfig(TestHazelcastInstanceFactory factory, int clusterSize,
+                                                             String clusterName, String groupName, int port,
+                                                             String clusterPostfix) {
+        Config config = createDefaultConfig(clusterName + "-" + clusterPostfix);
+        return setupClusterBase(factory, config, clusterSize)
+                .groupName(groupName)
+                .port(port);
+    }
+
+    private static ClusterBuilder setupClusterBase(TestHazelcastInstanceFactory factory, Config config, int clusterSize) {
         return new ClusterBuilder()
+                .factory(factory)
                 .config(config)
+                .classLoader(createCacheManagerClassLoader())
                 .clusterSize(clusterSize);
     }
 
@@ -240,4 +268,20 @@ public class Cluster {
         return new Config(clusterName);
     }
 
+    private static CacheManagerClassLoader createCacheManagerClassLoader() {
+        ClassLoader currentClassLoader = Cluster.class.getClassLoader();
+        return new CacheManagerClassLoader(new URL[0], currentClassLoader);
+    }
+
+    private static class CacheManagerClassLoader extends URLClassLoader {
+
+        CacheManagerClassLoader(URL[] urls, ClassLoader classLoader) {
+            super(urls, classLoader);
+        }
+
+        @Override
+        public String toString() {
+            return "wan-test";
+        }
+    }
 }

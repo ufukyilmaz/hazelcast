@@ -10,12 +10,12 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.CountingWanEndpoint;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,8 +34,8 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category(SlowTest.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
+@Category({QuickTest.class})
 public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSupport {
 
     @Parameterized.Parameters(name = "memoryFormat:{0}")
@@ -115,7 +115,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
                 "default");
         // disable WAN replication for the default cache config (it's auto-enabled by the setupReplicateFrom())
         configA.getCacheConfig("default")
-                .setWanReplicationRef(null);
+               .setWanReplicationRef(null);
 
         startClusterA();
         startClusterB();
@@ -126,7 +126,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
     @Override
     protected WanPublisherConfig targetCluster(Config config, int count) {
         return super.targetCluster(config, count)
-                .setClassName(CountingWanEndpoint.class.getName());
+                    .setClassName(CountingWanEndpoint.class.getName());
     }
 
     private void configureCacheWithWanReplication(String cacheName, String wanSetupName) {
@@ -142,7 +142,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
         EvictionConfig evictionConfig = new EvictionConfig();
         if (isNativeMemoryEnabled()) {
             evictionConfig.setSize(90)
-                    .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                          .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
             evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         }

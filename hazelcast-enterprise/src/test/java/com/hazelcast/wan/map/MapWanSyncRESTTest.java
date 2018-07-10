@@ -1,59 +1,58 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.sync.SyncFailedException;
-import com.hazelcast.instance.HazelcastInstanceFactory;
+import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
 import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.OverridePropertyRule;
+import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.wan.WanSyncStatus;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
 
+import static com.hazelcast.test.OverridePropertyRule.set;
+import static com.hazelcast.test.TestEnvironment.HAZELCAST_TEST_USE_NETWORK;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Base class to test WAN sync feature.
- */
-public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSupport {
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(SlowTest.class)
+public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
+
+    @Rule
+    public final OverridePropertyRule overridePropertyRule = set(HAZELCAST_TEST_USE_NETWORK, "true");
+
+    @Override
+    public String getReplicationImpl() {
+        return WanBatchReplication.class.getName();
+    }
+
+    @Override
+    public InMemoryFormat getMemoryFormat() {
+        return InMemoryFormat.BINARY;
+    }
+
 
     @Override
     protected Config getConfig() {
-        Config config = super.getConfig();
-        config.setProperty(GroupProperty.REST_ENABLED.getName(), "true");
-        MapConfig mapConfig = config.getMapConfig("default");
-        mapConfig.setInMemoryFormat(getMemoryFormat());
+        final Config config = super.getConfig()
+                                   .setProperty(GroupProperty.REST_ENABLED.getName(), "true");
+        config.getMapConfig("default")
+              .setInMemoryFormat(getMemoryFormat());
         return config;
-    }
-
-    @Test
-    public void basicSyncTest() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
-
-        clusterB[0].getCluster().shutdown();
-
-        startClusterB();
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-
-        EnterpriseWanReplicationService wanReplicationService
-                = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
-        wanReplicationService.syncMap("atob", "B", "map");
-
-        assertKeysInEventually(clusterB, "map", 0, 1000);
     }
 
     @Test
@@ -74,35 +73,6 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         communicator.syncMapOverWAN("atob", "B", "map");
 
         assertKeysInEventually(clusterB, "map", 0, 1000);
-    }
-
-    @Test
-    public void syncAllTest() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 1000);
-        createDataIn(clusterA, "map2", 0, 2000);
-        createDataIn(clusterA, "map3", 0, 3000);
-
-        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
-        assertDataInFromEventually(clusterB, "map2", 0, 2000, clusterA);
-        assertDataInFromEventually(clusterB, "map3", 0, 3000, clusterA);
-
-        clusterB[0].getCluster().shutdown();
-        startClusterB();
-
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
-        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
-
-        EnterpriseWanReplicationService wanReplicationService
-                = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
-        wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
-        assertKeysInEventually(clusterB, "map", 0, 1000);
-        assertKeysInEventually(clusterB, "map2", 0, 2000);
-        assertKeysInEventually(clusterB, "map3", 0, 3000);
     }
 
     @Test
@@ -216,14 +186,6 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
                 + " name newWRConfigName and publisher target group name groupName\"}", result);
     }
 
-    @Test(expected = SyncFailedException.class)
-    public void sendMultipleSyncRequests() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        startClusterA();
-        getWanReplicationService(clusterA[0]).syncMap("atob", configB.getGroupConfig().getName(), "map");
-        getWanReplicationService(clusterA[0]).syncMap("atob", configB.getGroupConfig().getName(), "map");
-    }
-
     @Test
     public void sendMultipleSyncRequestsWithREST() throws IOException {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
@@ -276,7 +238,7 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
             newConfig.setInstanceName(config.getInstanceName() + 1);
             newConfig.getNetworkConfig().setPort(config.getNetworkConfig().getPort());
             newConfig.setInstanceName(config.getInstanceName() + i);
-            cluster[i] = HazelcastInstanceFactory.newHazelcastInstance(newConfig);
+            cluster[i] = factory.newHazelcastInstance(newConfig);
         }
     }
 }

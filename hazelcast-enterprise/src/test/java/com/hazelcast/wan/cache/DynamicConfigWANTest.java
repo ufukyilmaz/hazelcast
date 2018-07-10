@@ -7,10 +7,10 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -19,8 +19,8 @@ import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertTrue;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(SlowTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class})
 public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
 
     @BeforeClass
@@ -55,7 +55,7 @@ public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
                 "default");
         // disable WAN replication for the default cache config (it's auto-enabled by the setupReplicateFrom())
         configA.getCacheConfig("default")
-                .setWanReplicationRef(null);
+               .setWanReplicationRef(null);
 
         startClusterA();
         startClusterB();

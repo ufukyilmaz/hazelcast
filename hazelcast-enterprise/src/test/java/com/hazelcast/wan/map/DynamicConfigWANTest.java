@@ -6,10 +6,11 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.MapUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -17,8 +18,8 @@ import org.junit.runner.RunWith;
 
 import java.util.Map;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(SlowTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class DynamicConfigWANTest extends MapWanReplicationTestSupport {
 
     @Override

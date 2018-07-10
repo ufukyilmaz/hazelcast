@@ -2,14 +2,15 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanPublisherConfig;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -20,8 +21,8 @@ import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(SlowTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class WanConnectedTest extends MapWanReplicationTestSupport {
 
     @Test

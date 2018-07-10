@@ -28,7 +28,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.OperationFactory;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.WanReplicationService;
@@ -52,11 +51,10 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
     @Override
     protected Config getConfig() {
-        Config config = super.getConfig()
-                .setProperty(GroupProperty.REST_ENABLED.getName(), "true");
+        Config config = super.getConfig();
 
         config.getMapConfig("default")
-                .setInMemoryFormat(getMemoryFormat());
+              .setInMemoryFormat(getMemoryFormat());
 
         return config;
     }

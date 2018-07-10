@@ -10,15 +10,15 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
-import com.hazelcast.instance.HazelcastInstanceFactory;
-import com.hazelcast.instance.Node;
-import com.hazelcast.instance.TestUtil;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.After;
+import org.junit.Before;
 
 import java.util.Map;
 import java.util.Random;
@@ -26,6 +26,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
+    private static final ILogger LOGGER = Logger.getLogger(WanReplicationTestSupport.class);
 
     protected HazelcastInstance[] clusterA = new HazelcastInstance[2];
     protected HazelcastInstance[] clusterB = new HazelcastInstance[2];
@@ -33,6 +34,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     protected HazelcastInstance[] singleNodeA = new HazelcastInstance[1];
     protected HazelcastInstance[] singleNodeB = new HazelcastInstance[1];
     protected HazelcastInstance[] singleNodeC = new HazelcastInstance[1];
+    protected TestHazelcastInstanceFactory factory;
 
     protected Config configA;
     protected Config configB;
@@ -40,9 +42,14 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
     protected Random random = new Random();
 
+    @Before
+    public void init() {
+        factory = createHazelcastInstanceFactory();
+    }
+
     @After
     public void cleanup() {
-        HazelcastInstanceFactory.shutdownAll();
+        factory.shutdownAll();
     }
 
     protected void givenSizeOfClusterB(int sizeOfCluster) {
@@ -59,14 +66,16 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
     @Override
     protected Config getConfig() {
-        Config config = new Config();
+        Config config = smallInstanceConfig();
         JoinConfig joinConfig = config.getNetworkConfig().getJoin();
-        joinConfig.getMulticastConfig().setEnabled(false);
-        joinConfig.getTcpIpConfig().setEnabled(true);
-        joinConfig.getTcpIpConfig().addMember("127.0.0.1");
+        joinConfig.getMulticastConfig()
+                  .setEnabled(false);
+        joinConfig.getTcpIpConfig()
+                  .setEnabled(true)
+                  .addMember("127.0.0.1");
         if (isNativeMemoryEnabled()) {
             config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
-                    .setNativeMemoryConfig(getMemoryConfig());
+                  .setNativeMemoryConfig(getMemoryConfig());
         }
         return config;
     }
@@ -90,13 +99,13 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     }
 
     protected void initCluster(HazelcastInstance[] cluster, Config config) {
-        for (int i = 0; i < cluster.length; i++) {
-            config.setInstanceName(config.getInstanceName() + i);
-            cluster[i] = HazelcastInstanceFactory.newHazelcastInstance(config);
-        }
+        initCluster(cluster, config, factory);
     }
 
-    protected void initCluster(HazelcastInstance[] cluster, Config config, TestHazelcastInstanceFactory factory) {
+    protected void initCluster(HazelcastInstance[] cluster,
+                               Config config,
+                               TestHazelcastInstanceFactory factory) {
+        factory.cleanup();
         for (int i = 0; i < cluster.length; i++) {
             config.setInstanceName(config.getInstanceName() + i);
             cluster[i] = factory.newHazelcastInstance(config);
@@ -131,34 +140,31 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     }
 
     protected void printReplicaConfig(Config config) {
-        Map<String, WanReplicationConfig> configs = config.getWanReplicationConfigs();
+        final Map<String, WanReplicationConfig> configs = config.getWanReplicationConfigs();
         for (Map.Entry<String, WanReplicationConfig> entry : configs.entrySet()) {
-            System.out.println(entry.getKey() + " ==> " + entry.getValue());
+            LOGGER.info(entry.getKey() + " ==> " + entry.getValue());
         }
     }
 
     protected void printAllReplicaConfig() {
-        System.out.println();
-        System.out.println("==configA==");
+        LOGGER.info("\n==configA==\n");
         printReplicaConfig(configA);
-        System.out.println("==configB==");
+        LOGGER.info("\n==configB==\n");
         printReplicaConfig(configB);
-        System.out.println("==configC==");
+        LOGGER.info("\n==configC==\n");
         printReplicaConfig(configC);
-        System.out.println();
+        LOGGER.info("==\n");
     }
 
     protected void pauseWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetGroupName) {
         for (HazelcastInstance instance : cluster) {
-            Node node = TestUtil.getNode(instance);
-            node.getNodeEngine().getWanReplicationService().pause(wanRepName, targetGroupName);
+            getWanReplicationService(instance).pause(wanRepName, targetGroupName);
         }
     }
 
     protected void resumeWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetGroupName) {
         for (HazelcastInstance instance : cluster) {
-            Node node = TestUtil.getNode(instance);
-            node.getNodeEngine().getWanReplicationService().resume(wanRepName, targetGroupName);
+            getWanReplicationService(instance).resume(wanRepName, targetGroupName);
         }
     }
 

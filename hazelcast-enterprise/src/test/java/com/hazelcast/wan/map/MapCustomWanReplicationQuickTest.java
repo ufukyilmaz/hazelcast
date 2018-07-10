@@ -9,12 +9,10 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.custom.CustomWanConsumer;
 import com.hazelcast.wan.custom.CustomWanPublisher;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -28,21 +26,13 @@ public class MapCustomWanReplicationQuickTest extends MapWanReplicationTestSuppo
 
     private HazelcastInstance[] sourceCluster = new HazelcastInstance[2];
     private HazelcastInstance[] targetCluster = new HazelcastInstance[2];
-    private TestHazelcastInstanceFactory factory;
-
-    @Before
-    @Override
-    public void setup() {
-        super.setup();
-        factory = createHazelcastInstanceFactory(4);
-    }
 
     @Test
     public void testCustomWanReplication() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
         initializePublisherConfig(wanConfig);
-        initCluster(sourceCluster, configA, factory);
+        initCluster(sourceCluster, configA);
 
         initializeConsumerConfig(configB);
 

@@ -7,13 +7,11 @@ import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
-import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -30,14 +28,13 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category(QuickTest.class)
 public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport {
 
     private static final String BATCH_IMPL = WanBatchReplication.class.getName();
 
     private HazelcastInstance[] basicCluster = new HazelcastInstance[2];
-    private TestHazelcastInstanceFactory factory;
 
     @Parameters(name = "replicationImpl:{0}, memoryFormat:{1}")
     public static Collection<Object[]> parameters() {
@@ -63,11 +60,6 @@ public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport
         JsrTestUtil.cleanup();
     }
 
-    @Before
-    public void setup() {
-        factory = createHazelcastInstanceFactory(2);
-    }
-
     @Test(expected = WANReplicationQueueFullException.class)
     public void testExceptionOnQueueOverrun() {
         initConfigA();
@@ -77,7 +69,7 @@ public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport
         WanPublisherConfig targetClusterConfig = wanConfig.getWanPublisherConfigs().get(0);
         targetClusterConfig.setQueueCapacity(10);
         targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
-        initCluster(basicCluster, configA, factory);
+        initCluster(basicCluster, configA);
         createCacheDataIn(basicCluster, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 1000, false);
     }
 

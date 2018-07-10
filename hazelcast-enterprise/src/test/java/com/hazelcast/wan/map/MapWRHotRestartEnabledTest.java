@@ -1,12 +1,12 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
-import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,8 +24,8 @@ import static com.hazelcast.nio.IOUtil.deleteQuietly;
 /**
  * WAN replication tests for hot-restart enabled maps.
  */
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(SlowTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
 
     @Rule
@@ -52,11 +52,11 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
     public void basicSyncTest() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         configA.getMapConfig("default")
-                .getHotRestartConfig()
-                .setEnabled(true)
-                .setFsync(false);
+               .getHotRestartConfig()
+               .setEnabled(true)
+               .setFsync(false);
         configA.getHotRestartPersistenceConfig()
-                .setEnabled(true);
+               .setEnabled(true);
         startClusterAWithDifferentHotRestartConfigs();
         startClusterB();
 
@@ -66,6 +66,7 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
         clusterB[0].getCluster().shutdown();
 
         startClusterB();
+
         assertKeysNotInEventually(clusterB, "map", 0, 1000);
 
         EnterpriseWanReplicationService wanReplicationService
@@ -89,7 +90,7 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
         for (int i = 0; i < clusterA.length; i++) {
             configA.setInstanceName(configA.getInstanceName() + i);
             configA.getHotRestartPersistenceConfig().setBaseDir(new File(folder, configA.getInstanceName()));
-            clusterA[i] = HazelcastInstanceFactory.newHazelcastInstance(configA);
+            clusterA[i] = factory.newHazelcastInstance(configA);
         }
     }
 }

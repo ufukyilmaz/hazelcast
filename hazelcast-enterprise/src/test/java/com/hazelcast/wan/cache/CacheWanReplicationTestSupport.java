@@ -24,6 +24,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -41,17 +42,17 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
 
     protected void initConfigA() {
         classLoaderA = createCacheManagerClassLoader();
-        configA = createConfig("A", "confA", 5701, classLoaderA, isNativeMemoryEnabled());
+        configA = createConfig("A", "confA-" + UUID.randomUUID() + "-", 5701, classLoaderA, isNativeMemoryEnabled());
     }
 
     protected void initConfigB() {
         classLoaderB = createCacheManagerClassLoader();
-        configB = createConfig("B", "confB", 5801, classLoaderB, isNativeMemoryEnabled());
+        configB = createConfig("B", "confB-" + UUID.randomUUID() + "-", 5801, classLoaderB, isNativeMemoryEnabled());
     }
 
     protected void initConfigC() {
         classLoaderC = createCacheManagerClassLoader();
-        configC = createConfig("C", "confC", 5901, classLoaderC, isNativeMemoryEnabled());
+        configC = createConfig("C", "confC-" + UUID.randomUUID() + "-", 5901, classLoaderC, isNativeMemoryEnabled());
     }
 
     protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz,
@@ -235,17 +236,20 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
 
     private Config createConfig(String groupName, String instanceName, int port, ClassLoader classLoader,
                                 boolean nativeMemoryEnabled) {
-        Config config = getConfig();
-        config.getGroupConfig().setName(groupName);
-        config.setInstanceName(instanceName);
-        config.getNetworkConfig().setPort(port);
-        config.setClassLoader(classLoader);
-        CacheSimpleConfig cacheConfig = config.getCacheConfig(DEFAULT_CACHE_NAME);
-        EvictionConfig evictionConfig = new EvictionConfig();
+        final Config config = getConfig()
+                .setInstanceName(instanceName)
+                .setClassLoader(classLoader);
+        config.getGroupConfig()
+              .setName(groupName);
+        config.getNetworkConfig()
+              .setPortAutoIncrement(false)
+              .setPort(port);
+        final CacheSimpleConfig cacheConfig = config.getCacheConfig(DEFAULT_CACHE_NAME);
+        final EvictionConfig evictionConfig = new EvictionConfig();
         if (nativeMemoryEnabled) {
             cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-            evictionConfig.setSize(90);
-            evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+            evictionConfig.setSize(90)
+                          .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
             evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         }

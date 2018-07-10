@@ -3,14 +3,14 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.internal.diagnostics.DiagnosticsLogWriterImpl;
 import com.hazelcast.internal.diagnostics.WANPlugin;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -19,8 +19,8 @@ import org.junit.runner.RunWith;
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(SlowTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class WANPluginTest extends MapWanReplicationTestSupport {
 
     private static final int EVENT_COUNTER = 1000;
@@ -42,11 +42,10 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
     @Override
     protected Config getConfig() {
         Config config = super.getConfig()
-                .setProperty(WANPlugin.PERIOD_SECONDS.getName(), "1")
-                .setProperty(GroupProperty.REST_ENABLED.getName(), "true");
+                             .setProperty(WANPlugin.PERIOD_SECONDS.getName(), "1");
 
         config.getMapConfig("default")
-                .setInMemoryFormat(getMemoryFormat());
+              .setInMemoryFormat(getMemoryFormat());
         return config;
     }
 

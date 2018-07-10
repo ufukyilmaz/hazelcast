@@ -2,7 +2,7 @@ package com.hazelcast.wan;
 
 import com.hazelcast.cache.wan.CacheReplicationRemove;
 import com.hazelcast.cache.wan.CacheReplicationUpdate;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
@@ -10,6 +10,7 @@ import com.hazelcast.enterprise.wan.sync.WanSyncOperation;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -27,8 +28,8 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for {@link com.hazelcast.enterprise.wan.EWRDataSerializerHook}
  */
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class EWRDataSerializerHookTest {
 
     @Test

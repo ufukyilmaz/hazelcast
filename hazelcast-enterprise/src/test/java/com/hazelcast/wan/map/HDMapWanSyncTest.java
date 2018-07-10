@@ -1,5 +1,6 @@
 package com.hazelcast.wan.map;
 
+import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.IMap;
@@ -23,9 +24,17 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
-public class HdMapWanSyncTest extends AbstractMapWanSyncTest {
+public class HDMapWanSyncTest extends MapWanReplicationTestSupport {
 
     private volatile boolean running = true;
+
+    @Override
+    protected Config getConfig() {
+        final Config config = super.getConfig();
+        config.getMapConfig("default")
+              .setInMemoryFormat(getMemoryFormat());
+        return config;
+    }
 
     /* Accessing native memory from threads other than the partition thread was causing JVM crash.
        See

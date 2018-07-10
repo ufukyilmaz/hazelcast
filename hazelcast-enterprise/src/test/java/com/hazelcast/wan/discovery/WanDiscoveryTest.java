@@ -8,11 +8,10 @@ import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.properties.PropertyDefinition;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
-import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.nio.Address;
@@ -22,7 +21,8 @@ import com.hazelcast.spi.discovery.DiscoveryStrategy;
 import com.hazelcast.spi.discovery.DiscoveryStrategyFactory;
 import com.hazelcast.spi.discovery.SimpleDiscoveryNode;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.map.MapWanReplicationTestSupport;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,8 +40,8 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(SlowTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     private String wanReplicationName;
@@ -63,6 +63,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     @Before
     public void init() {
+        super.init();
         this.wanReplicationName = "atob";
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationName, PassThroughMergePolicy.class.getName());
     }
@@ -231,7 +232,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
             }
         });
 
-        clusterB[1] = HazelcastInstanceFactory.newHazelcastInstance(configB.setInstanceName("newInstance"));
+        clusterB[1] = super.factory.newHazelcastInstance(configB.setInstanceName("newInstance"));
 
         assertTrueEventually(new AssertTask() {
             @Override

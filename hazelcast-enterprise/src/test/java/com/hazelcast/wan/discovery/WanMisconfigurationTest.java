@@ -9,7 +9,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.config.properties.PropertyDefinition;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.logging.ILogger;
@@ -19,7 +19,8 @@ import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.DiscoveryStrategy;
 import com.hazelcast.spi.discovery.DiscoveryStrategyFactory;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.executor.ManagedExecutorService;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,8 +38,8 @@ import static org.junit.Assert.assertEquals;
  * scheduling a task) before throwing an exception because of invalid
  * configuration.
  */
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(SlowTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class WanMisconfigurationTest extends HazelcastTestSupport {
     private String wanReplicationName;
     private CountingDiscoveryStrategyFactory discoveryStrategyFactory;

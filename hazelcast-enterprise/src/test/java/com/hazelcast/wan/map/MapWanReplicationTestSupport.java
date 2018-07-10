@@ -9,6 +9,7 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.WanReplicationTestSupport;
 import org.junit.Before;
 
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.assertEquals;
@@ -23,17 +24,17 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
     public void setup() {
         configA = getConfig();
         configA.getGroupConfig().setName("A");
-        configA.setInstanceName("confA");
+        configA.setInstanceName("confA-" + UUID.randomUUID() + "-");
         configA.getNetworkConfig().setPort(5701);
 
         configB = getConfig();
         configB.getGroupConfig().setName("B");
-        configB.setInstanceName("confB");
+        configB.setInstanceName("confB-" + UUID.randomUUID() + "-");
         configB.getNetworkConfig().setPort(5801);
 
         configC = getConfig();
         configC.getGroupConfig().setName("C");
-        configC.setInstanceName("confC");
+        configC.setInstanceName("confC-" + UUID.randomUUID() + "-");
         configC.getNetworkConfig().setPort(5901);
     }
 

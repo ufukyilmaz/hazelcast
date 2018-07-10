@@ -21,7 +21,7 @@ import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
 import com.hazelcast.wan.WanReplicationEvent;
-import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 
 import static com.hazelcast.spi.impl.merge.MergingValueFactory.createMergingEntry;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
@@ -51,7 +51,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     private final SplitBrainMergePolicy<Data, MapMergeTypes> defaultSyncMergePolicy;
     private final ProxyService proxyService;
     private final boolean useDeleteWhenProcessingRemoveEvents;
-    private final WanReplicationService wanService;
+    private final DistributedServiceWanEventCounters wanEventCounters;
 
     EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
         this.mapServiceContext = mapServiceContext;
@@ -64,7 +64,8 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
                 = (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicyProvider.getMergePolicy(DEFAULT_MERGE_POLICY);
         this.proxyService = nodeEngine.getProxyService();
         this.useDeleteWhenProcessingRemoveEvents = Boolean.getBoolean(USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS);
-        this.wanService = nodeEngine.getWanReplicationService();
+        this.wanEventCounters = nodeEngine.getWanReplicationService()
+                                          .getReceivedEventCounters(MapService.SERVICE_NAME);
     }
 
     @Override
@@ -85,7 +86,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
 
         if (eventObject instanceof EnterpriseMapReplicationSync) {
             handleSyncEvent((EnterpriseMapReplicationSync) eventObject);
-            wanService.getReceivedEventCounter(MapService.SERVICE_NAME).incrementSync(mapName);
+            wanEventCounters.incrementSync(mapName);
             return;
         }
 
@@ -93,10 +94,10 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
 
         if (eventObject instanceof EnterpriseMapReplicationUpdate) {
             handleUpdateEvent((EnterpriseMapReplicationUpdate) eventObject, replicationEvent.getAcknowledgeType());
-            wanService.getReceivedEventCounter(MapService.SERVICE_NAME).incrementUpdate(mapName);
+            wanEventCounters.incrementUpdate(mapName);
         } else if (eventObject instanceof EnterpriseMapReplicationRemove) {
             handleRemoveEvent((EnterpriseMapReplicationRemove) eventObject, replicationEvent.getAcknowledgeType());
-            wanService.getReceivedEventCounter(MapService.SERVICE_NAME).incrementRemove(mapName);
+            wanEventCounters.incrementRemove(mapName);
         }
     }
 
@@ -207,7 +208,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             return nodeEngine.getOperationService()
-                    .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
+                             .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
             throw rethrow(t);
         }

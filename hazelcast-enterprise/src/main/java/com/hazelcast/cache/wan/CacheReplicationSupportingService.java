@@ -68,13 +68,13 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         if (cacheReplicationObject instanceof CacheReplicationUpdate) {
             handleUpdateEvent((CacheReplicationUpdate) cacheReplicationObject,
                     cacheConfig, replicationEvent.getAcknowledgeType());
-            wanService.getReceivedEventCounter(ICacheService.SERVICE_NAME)
-                    .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
+            wanService.getReceivedEventCounters(ICacheService.SERVICE_NAME)
+                      .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
         } else if (cacheReplicationObject instanceof CacheReplicationRemove) {
             handleRemoveEvent((CacheReplicationRemove) cacheReplicationObject,
                     cacheConfig, replicationEvent.getAcknowledgeType());
-            wanService.getReceivedEventCounter(ICacheService.SERVICE_NAME)
-                    .incrementRemove(cacheReplicationObject.getNameWithPrefix());
+            wanService.getReceivedEventCounters(ICacheService.SERVICE_NAME)
+                      .incrementRemove(cacheReplicationObject.getNameWithPrefix());
         }
     }
 

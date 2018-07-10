@@ -49,6 +49,7 @@ import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -129,10 +130,13 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         this.queueFullBehavior = publisherConfig.getQueueFullBehavior();
         this.wanService = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
         this.syncManager = wanService.getSyncManager();
-        this.localWanPublisherStats.setSentMapEventCounter(
-                unmodifiableMap(wanService.getSentEventCounter(MapService.SERVICE_NAME).getEventCounterMap()));
-        this.localWanPublisherStats.setSentCacheEventCounter(
-                unmodifiableMap(wanService.getSentEventCounter(ICacheService.SERVICE_NAME).getEventCounterMap()));
+
+        final DistributedServiceWanEventCounters mapCounters = wanService.getSentEventCounters(
+                wanReplicationName, targetGroupName, MapService.SERVICE_NAME);
+        final DistributedServiceWanEventCounters cacheCounters = wanService.getSentEventCounters(
+                wanReplicationName, targetGroupName, ICacheService.SERVICE_NAME);
+        this.localWanPublisherStats.setSentMapEventCounter(unmodifiableMap(mapCounters.getEventCounterMap()));
+        this.localWanPublisherStats.setSentCacheEventCounter(unmodifiableMap(cacheCounters.getEventCounterMap()));
         this.wanQueueMigrationSupport = new WanQueueMigrationSupport(eventQueueContainer, wanCounter);
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller(syncManager));
@@ -181,7 +185,8 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
                                                  boolean backupEvent) {
         if (isEventDroppingNeeded(backupEvent)) {
             if (!backupEvent) {
-                wanService.getSentEventCounter(serviceName).incrementDropped(eventObject.getObjectName());
+                wanService.getSentEventCounters(wanReplicationName, targetGroupName, serviceName)
+                          .incrementDropped(eventObject.getObjectName());
             }
             return;
         }
@@ -243,7 +248,9 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     void incrementEventCount(WanReplicationEvent event) {
         final String serviceName = event.getServiceName();
         final ReplicationEventObject eventObject = event.getEventObject();
-        eventObject.incrementEventCount(wanService.getSentEventCounter(serviceName));
+        final DistributedServiceWanEventCounters counters
+                = wanService.getSentEventCounters(wanReplicationName, targetGroupName, serviceName);
+        eventObject.incrementEventCount(counters);
     }
 
     /**

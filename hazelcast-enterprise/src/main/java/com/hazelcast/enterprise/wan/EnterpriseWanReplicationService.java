@@ -26,8 +26,8 @@ import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
-import com.hazelcast.wan.impl.WanEventCounter;
-import com.hazelcast.wan.impl.WanEventCounterContainer;
+import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.impl.WanEventCounters;
 
 import java.util.Collection;
 import java.util.Map;
@@ -49,10 +49,10 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     private final WanSyncManager syncManager;
 
     /** WAN event counters for all services and only received events */
-    private final WanEventCounterContainer receivedWanEventCounters = new WanEventCounterContainer();
+    private final WanEventCounters receivedWanEventCounters = new WanEventCounters();
 
     /** WAN event counters for all services and only sent events */
-    private final WanEventCounterContainer sentWanEventCounters = new WanEventCounterContainer();
+    private final WanEventCounters sentWanEventCounters = new WanEventCounters();
 
     public EnterpriseWanReplicationService(Node node) {
         this.node = node;
@@ -214,13 +214,15 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     @Override
-    public WanEventCounter getReceivedEventCounter(String serviceName) {
-        return receivedWanEventCounters.getWanEventCounter(serviceName);
+    public DistributedServiceWanEventCounters getReceivedEventCounters(String serviceName) {
+        return receivedWanEventCounters.getWanEventCounter("", "", serviceName);
     }
 
     @Override
-    public WanEventCounter getSentEventCounter(String serviceName) {
-        return sentWanEventCounters.getWanEventCounter(serviceName);
+    public DistributedServiceWanEventCounters getSentEventCounters(String wanReplicationName,
+                                                                   String targetGroupName,
+                                                                   String serviceName) {
+        return sentWanEventCounters.getWanEventCounter(wanReplicationName, targetGroupName, serviceName);
     }
 
     @Override

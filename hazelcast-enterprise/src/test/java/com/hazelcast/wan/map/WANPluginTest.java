@@ -24,7 +24,8 @@ import java.io.PrintWriter;
 public class WANPluginTest extends MapWanReplicationTestSupport {
 
     private static final int EVENT_COUNTER = 1000;
-    private static final String MAP_NAME = "myMap";
+    public static final String MAP_NAME_A = "mapA";
+    public static final String MAP_NAME_B = "mapB";
 
     protected DiagnosticsLogWriterImpl logWriter;
     private CharArrayWriter out;
@@ -53,20 +54,28 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
     public void testWanDiagnosticsForActiveAndPassiveCluster() {
         final String setupName = "atob";
         setupReplicateFrom(configA, configB, singleNodeB.length, setupName, PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configA, configC, singleNodeC.length, setupName, PassThroughMergePolicy.class.getName());
+
         initCluster(singleNodeA, configA);
         initCluster(singleNodeB, configB);
+        initCluster(singleNodeC, configC);
 
         final WANPlugin wanPluginClusterA = new WANPlugin(getNodeEngineImpl(singleNodeA[0]));
         final WANPlugin wanPluginClusterB = new WANPlugin(getNodeEngineImpl(singleNodeB[0]));
+        final WANPlugin wanPluginClusterC = new WANPlugin(getNodeEngineImpl(singleNodeC[0]));
         wanPluginClusterA.onStart();
         wanPluginClusterB.onStart();
+        wanPluginClusterC.onStart();
 
-        IMap<Integer, Integer> map = getMap(singleNodeA, MAP_NAME);
+        IMap<Integer, Integer> map = getMap(singleNodeA, MAP_NAME_A);
+        IMap<Integer, Integer> map2 = getMap(singleNodeA, MAP_NAME_B);
         for (int i = 0; i < EVENT_COUNTER; i++) {
             map.put(i, i);
+            map2.put(i, i);
         }
 
-        assertKeysInEventually(singleNodeB, MAP_NAME, 0, EVENT_COUNTER);
+        assertKeysInEventually(singleNodeB, MAP_NAME_A, 0, EVENT_COUNTER);
+        assertKeysInEventually(singleNodeB, MAP_NAME_B, 0, EVENT_COUNTER);
 
         assertTrueEventually(new AssertTask() {
             @Override
@@ -75,13 +84,17 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
                 wanPluginClusterA.run(logWriter);
                 final String content = getContent();
                 assertContains(content, "WAN");
+                assertContains(content, configB.getGroupConfig().getName() + "[");
+                assertContains(content, configC.getGroupConfig().getName() + "[");
                 assertContains(content, "activeWanConfigName");
                 assertContains(content, "activePublisherName");
                 assertContains(content, "totalPublishLatency");
-                assertContains(content, "totalPublishedEventCount");
+                assertContains(content, "totalPublishedEventCount=2,000");
                 assertContains(content, "totalPublishLatency");
-                assertContains(content, "mapSentEvents-myMap");
-                assertContains(content, "updateCount");
+                assertContains(content, "mapSentEvents-mapA");
+                assertContains(content, "mapSentEvents-mapB");
+                assertContains(content, "updateCount=1,000");
+                assertContains(content, "updateCount=2,000");
                 assertContains(content, "removeCount");
                 assertContains(content, "syncCount");
                 assertContains(content, "droppedCount");
@@ -95,8 +108,10 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
                 wanPluginClusterB.run(logWriter);
                 final String content = getContent();
                 assertContains(content, "WAN");
-                assertContains(content, "mapReceivedEvents-myMap");
-                assertContains(content, "updateCount");
+                assertContains(content, "mapReceivedEvents-mapA");
+                assertContains(content, "mapReceivedEvents-mapB");
+                assertContains(content, "updateCount=1,000");
+                assertContains(content, "updateCount=2,000");
                 assertContains(content, "removeCount");
                 assertContains(content, "syncCount");
             }

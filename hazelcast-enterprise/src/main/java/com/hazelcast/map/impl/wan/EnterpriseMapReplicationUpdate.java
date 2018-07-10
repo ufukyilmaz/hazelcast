@@ -5,7 +5,7 @@ import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.wan.impl.WanEventCounter;
+import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 
 import java.io.IOException;
 
@@ -61,7 +61,7 @@ public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObje
     }
 
     @Override
-    public void incrementEventCount(WanEventCounter eventCounter) {
-        eventCounter.incrementUpdate(getMapName());
+    public void incrementEventCount(DistributedServiceWanEventCounters counters) {
+        counters.incrementUpdate(getMapName());
     }
 }

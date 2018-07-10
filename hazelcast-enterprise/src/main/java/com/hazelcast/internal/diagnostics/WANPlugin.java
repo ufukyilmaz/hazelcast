@@ -9,8 +9,8 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.properties.HazelcastProperty;
 import com.hazelcast.wan.WanReplicationService;
-import com.hazelcast.wan.impl.WanEventCounter;
-import com.hazelcast.wan.impl.WanEventCounter.EventCounter;
+import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.impl.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -80,10 +80,14 @@ public class WANPlugin extends DiagnosticsPlugin {
     @Override
     public void run(DiagnosticsLogWriter writer) {
         writer.startSection(WAN_SECTION_NAME);
+        final PublisherEventCounts publisherEventCounts = new PublisherEventCounts();
         renderReceivedEvents(MAP_EVENT_COUNT_SECTION_PREFIX, writer,
-                wanService.getReceivedEventCounter(MapService.SERVICE_NAME));
+                wanService.getReceivedEventCounters(MapService.SERVICE_NAME), publisherEventCounts);
         renderReceivedEvents(CACHE_EVENT_COUNT_SECTION_PREFIX, writer,
-                wanService.getReceivedEventCounter(CacheService.SERVICE_NAME));
+                wanService.getReceivedEventCounters(CacheService.SERVICE_NAME), publisherEventCounts);
+        writer.writeKeyValueEntry(SYNC_EVENT_COUNT_KEY, publisherEventCounts.totalSyncCount);
+        writer.writeKeyValueEntry(UPDATE_EVENT_COUNT_KEY, publisherEventCounts.totalUpdateCount);
+        writer.writeKeyValueEntry(REMOVE_EVENT_COUNT_KEY, publisherEventCounts.totalRemoveCount);
 
         renderWanSyncState(writer);
         final Map<String, LocalWanStats> stats = wanService.getStats();
@@ -106,13 +110,22 @@ public class WANPlugin extends DiagnosticsPlugin {
      */
     private void renderReceivedEvents(String distributedObjectType,
                                       DiagnosticsLogWriter writer,
-                                      WanEventCounter eventCounter) {
+                                      DistributedServiceWanEventCounters eventCounter,
+                                      PublisherEventCounts publisherEventCounts) {
         if (eventCounter != null && !isNullOrEmpty(eventCounter.getEventCounterMap())) {
-            for (Entry<String, EventCounter> mapCounterEntry : eventCounter.getEventCounterMap().entrySet()) {
+            for (Entry<String, DistributedObjectWanEventCounters> mapCounterEntry
+                    : eventCounter.getEventCounterMap().entrySet()) {
                 writer.startSection(distributedObjectType + "ReceivedEvents-" + mapCounterEntry.getKey());
-                writer.writeKeyValueEntry(SYNC_EVENT_COUNT_KEY, mapCounterEntry.getValue().getSyncCount());
-                writer.writeKeyValueEntry(UPDATE_EVENT_COUNT_KEY, mapCounterEntry.getValue().getUpdateCount());
-                writer.writeKeyValueEntry(REMOVE_EVENT_COUNT_KEY, mapCounterEntry.getValue().getRemoveCount());
+                final long syncCount = mapCounterEntry.getValue().getSyncCount();
+                final long updateCount = mapCounterEntry.getValue().getUpdateCount();
+                final long removeCount = mapCounterEntry.getValue().getRemoveCount();
+                publisherEventCounts.totalSyncCount += syncCount;
+                publisherEventCounts.totalUpdateCount += updateCount;
+                publisherEventCounts.totalRemoveCount += removeCount;
+
+                writer.writeKeyValueEntry(SYNC_EVENT_COUNT_KEY, syncCount);
+                writer.writeKeyValueEntry(UPDATE_EVENT_COUNT_KEY, updateCount);
+                writer.writeKeyValueEntry(REMOVE_EVENT_COUNT_KEY, removeCount);
                 writer.endSection();
             }
         }
@@ -153,18 +166,31 @@ public class WANPlugin extends DiagnosticsPlugin {
         writer.writeKeyValueEntry(PUBLISHER_TOTAL_PUBLISH_LATENCY_KEY, stats.getTotalPublishLatency());
         writer.writeKeyValueEntry(PUBLISHER_CONNECTED_KEY, stats.isConnected());
         writer.writeKeyValueEntry(PUBLISHER_PAUSED_KEY, stats.isPaused());
-        renderSentEventCounts(writer, CACHE_EVENT_COUNT_SECTION_PREFIX, stats.getSentCacheEventCounter());
-        renderSentEventCounts(writer, MAP_EVENT_COUNT_SECTION_PREFIX, stats.getSentMapEventCounter());
+        final PublisherEventCounts publisherEventCounts = new PublisherEventCounts();
+        renderSentEventCounts(writer, CACHE_EVENT_COUNT_SECTION_PREFIX,
+                stats.getSentCacheEventCounter(), publisherEventCounts);
+        renderSentEventCounts(writer, MAP_EVENT_COUNT_SECTION_PREFIX,
+                stats.getSentMapEventCounter(), publisherEventCounts);
+        writer.writeKeyValueEntry(UPDATE_EVENT_COUNT_KEY, publisherEventCounts.totalUpdateCount);
+        writer.writeKeyValueEntry(REMOVE_EVENT_COUNT_KEY, publisherEventCounts.totalRemoveCount);
+        writer.writeKeyValueEntry(SYNC_EVENT_COUNT_KEY, publisherEventCounts.totalSyncCount);
+        writer.writeKeyValueEntry(DROPPED_EVENT_COUNT_KEY, publisherEventCounts.totalDroppedCount);
         writer.endSection();
     }
 
     private void renderSentEventCounts(DiagnosticsLogWriter writer,
                                        String distributedObjectType,
-                                       Map<String, EventCounter> sentEventCount) {
+                                       Map<String, DistributedObjectWanEventCounters> sentEventCount,
+                                       PublisherEventCounts publisherEventCounts) {
+
         if (!isNullOrEmpty(sentEventCount)) {
-            for (Entry<String, EventCounter> sentCacheEvents : sentEventCount.entrySet()) {
-                final EventCounter sentEvents = sentCacheEvents.getValue();
+            for (Entry<String, DistributedObjectWanEventCounters> sentCacheEvents : sentEventCount.entrySet()) {
+                final DistributedObjectWanEventCounters sentEvents = sentCacheEvents.getValue();
                 writer.startSection(distributedObjectType + "SentEvents-" + sentCacheEvents.getKey());
+                publisherEventCounts.totalUpdateCount += sentEvents.getUpdateCount();
+                publisherEventCounts.totalRemoveCount += sentEvents.getRemoveCount();
+                publisherEventCounts.totalSyncCount += sentEvents.getSyncCount();
+                publisherEventCounts.totalDroppedCount += sentEvents.getDroppedCount();
                 writer.writeKeyValueEntry(UPDATE_EVENT_COUNT_KEY, sentEvents.getUpdateCount());
                 writer.writeKeyValueEntry(REMOVE_EVENT_COUNT_KEY, sentEvents.getRemoveCount());
                 writer.writeKeyValueEntry(SYNC_EVENT_COUNT_KEY, sentEvents.getSyncCount());
@@ -190,5 +216,15 @@ public class WANPlugin extends DiagnosticsPlugin {
         writer.writeKeyValueEntry(WAN_SYNC_ACTIVE_PUBLISHER_NAME_KEY, syncState.getActivePublisherName());
         writer.writeKeyValueEntry(WAN_SYNC_SYNCED_PARTITION_COUNT_KEY, syncState.getSyncedPartitionCount());
         writer.endSection();
+    }
+
+    /**
+     * Container for total event counts for a single publisher
+     */
+    private static class PublisherEventCounts {
+        long totalUpdateCount;
+        long totalRemoveCount;
+        long totalSyncCount;
+        long totalDroppedCount;
     }
 }

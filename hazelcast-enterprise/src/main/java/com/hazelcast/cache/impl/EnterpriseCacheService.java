@@ -625,6 +625,7 @@ public class EnterpriseCacheService
                             eventContext.getExpirationTime(),
                             eventContext.getLastAccessTime(),
                             eventContext.getAccessHit(),
+                            eventContext.getExpiryPolicy(),
                             getSerializationService());
             WanFilterEventType eventType = convertWanFilterEventType(eventContext.getEventType());
             for (String filterName : filters) {

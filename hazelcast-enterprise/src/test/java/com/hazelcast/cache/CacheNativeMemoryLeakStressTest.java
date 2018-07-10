@@ -93,7 +93,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
     private static final int KEY_RANGE = 10000000;
     private static final int MAX_VALUE_SIZE = 1 << 12; // Up to 4K
-    private static final int OPERATION_COUNT = 15;
+    private static final int OPERATION_COUNT = 16;
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(60);
     private static final MemoryAllocatorType ALLOCATOR_TYPE = MemoryAllocatorType.STANDARD;
     private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
@@ -287,8 +287,6 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                     doOp(op, key);
                 } catch (NativeOutOfMemoryError e) {
                     EmptyStatement.ignore(e);
-                } catch (InterruptedException e) {
-                    EmptyStatement.ignore(e);
                 } catch (CacheWriterException e) {
                     EmptyStatement.ignore(e);
                 } catch (EntryProcessorException e) {
@@ -426,7 +424,9 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                         verifyValue(k, r.get());
                     }
                     break;
-
+                case 15:
+                    cache.setExpiryPolicy(key, new HazelcastExpiryPolicy(1, 1, 1));
+                    break;
                 default:
                     cache.put(key, newValue(key));
             }
@@ -631,6 +631,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                         actualMemorySize.addAndGet(cacheRecordProcessor.getSize(key));
                         actualMemorySize.addAndGet(cacheRecordProcessor.getSize(record));
                         actualMemorySize.addAndGet(cacheRecordProcessor.getSize(record.getValue()));
+                        actualMemorySize.addAndGet(cacheRecordProcessor.getSize(record.getExpiryPolicy()));
                     }
                 }
             } finally {

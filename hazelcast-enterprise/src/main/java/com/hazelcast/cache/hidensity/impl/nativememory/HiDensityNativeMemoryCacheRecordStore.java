@@ -288,6 +288,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         cacheRecord.setAccessHit(record.getAccessHit());
         cacheRecord.setExpirationTime(record.getExpirationTime());
         cacheRecord.setValue(toHeapData(record.getValue()));
+        cacheRecord.setExpiryPolicy(toHeapData(record.getExpiryPolicy()));
         return cacheRecord;
     }
 
@@ -450,8 +451,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    protected void onDeleteRecord(Data key, HiDensityNativeMemoryCacheRecord record,
-                                  Data dataValue, boolean deleted) {
+    protected void onDeleteRecord(Data key, HiDensityNativeMemoryCacheRecord record, boolean deleted) {
         // if record is deleted and if this record is valid, dispose it and its data
         if (deleted && isMemoryBlockValid(record)) {
             cacheRecordProcessor.dispose(record);
@@ -459,15 +459,20 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    protected void onDeleteRecordError(Data key, HiDensityNativeMemoryCacheRecord record,
-                                       Data dataValue, boolean deleted, Throwable error) {
-        // if record is not deleted and its old value is still valid, restore old value of this record
-        if (!deleted && isMemoryBlockValid(record)) {
-            if (dataValue != null && dataValue instanceof NativeMemoryData) {
-                NativeMemoryData nativeMemoryData = (NativeMemoryData) dataValue;
-                if (isMemoryBlockValid(nativeMemoryData)) {
-                    record.setValue(nativeMemoryData);
-                }
+    protected void onUpdateExpiryPolicy(Data key, HiDensityNativeMemoryCacheRecord record, Data oldDataExpiryPolicy) {
+        super.onUpdateExpiryPolicy(key, record, oldDataExpiryPolicy);
+        if (oldDataExpiryPolicy != null) {
+            cacheRecordProcessor.disposeData(oldDataExpiryPolicy);
+        }
+    }
+
+    @Override
+    protected void onUpdateExpiryPolicyError(Data key, HiDensityNativeMemoryCacheRecord record, Data oldDataExpiryPolicy) {
+        super.onUpdateExpiryPolicyError(key, record, oldDataExpiryPolicy);
+        if (oldDataExpiryPolicy instanceof NativeMemoryData) {
+            NativeMemoryData nativeMemoryData = (NativeMemoryData) oldDataExpiryPolicy;
+            if (isMemoryBlockValid(nativeMemoryData)) {
+                record.setExpiryPolicy(nativeMemoryData);
             }
         }
     }

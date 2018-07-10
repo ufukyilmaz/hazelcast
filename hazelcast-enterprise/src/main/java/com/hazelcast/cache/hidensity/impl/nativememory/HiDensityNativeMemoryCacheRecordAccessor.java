@@ -1,6 +1,7 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -23,6 +24,16 @@ public class HiDensityNativeMemoryCacheRecordAccessor
     @Override
     protected HiDensityNativeMemoryCacheRecord createRecord() {
         return new HiDensityNativeMemoryCacheRecord(this);
+    }
+
+    @Override
+    public long dispose(HiDensityNativeMemoryCacheRecord record) {
+        NativeMemoryData expiryPolicyData = record.getExpiryPolicy();
+        long size = super.dispose(record);
+        if (expiryPolicyData != null) {
+            size += disposeData(expiryPolicyData);
+        }
+        return size;
     }
 
     @Override

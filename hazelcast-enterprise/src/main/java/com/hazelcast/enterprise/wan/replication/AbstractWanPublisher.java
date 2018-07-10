@@ -342,16 +342,20 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         if (eventObject instanceof EnterpriseMapReplicationObject) {
             String mapName = ((EnterpriseMapReplicationObject) eventObject).getMapName();
             int partitionId = getPartitionId(eventObject.getKey());
-            eventQueueContainer.pollMapWanEvent(mapName, partitionId);
-            wanCounter.decrementBackupElementCounter();
+            WanReplicationEvent event = eventQueueContainer.pollMapWanEvent(mapName, partitionId);
+            if (event != null) {
+                wanCounter.decrementBackupElementCounter();
+            }
             return;
         }
 
         if (eventObject instanceof CacheReplicationObject) {
             String cacheName = ((CacheReplicationObject) eventObject).getNameWithPrefix();
             int partitionId = getPartitionId(eventObject.getKey());
-            eventQueueContainer.pollCacheWanEvent(cacheName, partitionId);
-            wanCounter.decrementBackupElementCounter();
+            WanReplicationEvent event = eventQueueContainer.pollCacheWanEvent(cacheName, partitionId);
+            if (event != null) {
+                wanCounter.decrementBackupElementCounter();
+            }
             return;
         }
 

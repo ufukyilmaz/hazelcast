@@ -83,8 +83,9 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
      * Calls to this method will pause WAN event queue polling. Effectively,
      * pauses WAN replication for its {@link WanReplicationEndpoint} instance.
      * <p>
-     * WAN events will still be offered to WAN replication queues but they
-     * won't be polled.
+     * WAN events will still be offered to WAN replication queues but they won't
+     * be polled. This means that the queues might eventually fill up and start
+     * dropping events.
      * <p>
      * Calling this method on already paused {@link WanReplicationEndpoint}
      * instances will have no effect.
@@ -98,13 +99,29 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
     void pause();
 
     /**
-     * This method re-enables WAN event queue polling for a paused
+     * Calls to this method will stop WAN replication. In addition to not polling
+     * events as in the {@link #pause()} method, an endpoint which is stopped
+     * will not enqueue events. This method will not clear the WAN queues, though.
+     * This means that once this method returns, there might still be some WAN
+     * events enqueued but these events will not be replicated until the publisher
+     * is resumed.
+     * <p>
+     * Calling this method on already stopped {@link WanReplicationEndpoint}
+     * instances will have no effect.
+     *
+     * @see #resume()
+     */
+    void stop();
+
+    /**
+     * This method re-enables WAN event queue polling for a paused or stopped
      * {@link WanReplicationEndpoint} instance.
      * <p>
      * Calling this method on already running {@link WanReplicationEndpoint}
      * instances will have no effect.
      *
      * @see #pause()
+     * @see #stop()
      */
     void resume();
 

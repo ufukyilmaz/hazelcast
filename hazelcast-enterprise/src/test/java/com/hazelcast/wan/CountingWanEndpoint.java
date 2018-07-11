@@ -74,6 +74,11 @@ public class CountingWanEndpoint implements WanReplicationEndpoint {
     }
 
     @Override
+    public void stop() {
+
+    }
+
+    @Override
     public void resume() {
     }
 

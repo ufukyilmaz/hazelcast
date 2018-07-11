@@ -1,19 +1,14 @@
 package com.hazelcast.wan.map;
 
-import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
-import com.hazelcast.monitor.LocalWanPublisherStats;
-import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.WanReplicationService;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -155,24 +150,6 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
             @Override
             public void run() {
                 assertKeyRangeMappedToValue(expectedValue, rangeFromInclusive, rangeToExclusive, map);
-            }
-        });
-    }
-
-    private void assertWanQueuesEventuallyEmpty(final HazelcastInstance[] nodes,
-                                                final String wanReplicationName,
-                                                final Config toConfig) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                for (HazelcastInstance node : nodes) {
-                    final WanReplicationService service = getNodeEngineImpl(node).getService(WanReplicationService.SERVICE_NAME);
-                    final LocalWanStats localWanStats = service.getStats().get(wanReplicationName);
-                    final LocalWanPublisherStats publisherStats = localWanStats.getLocalWanPublisherStats()
-                                                                               .get(toConfig.getGroupConfig().getName());
-                    final int actualQueueSize = publisherStats.getOutboundQueueSize();
-                    assertEquals(0, actualQueueSize);
-                }
             }
         });
     }

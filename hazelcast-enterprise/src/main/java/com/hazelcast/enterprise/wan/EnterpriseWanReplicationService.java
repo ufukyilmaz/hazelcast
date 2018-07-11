@@ -2,6 +2,7 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
@@ -12,6 +13,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.WanSyncState;
+import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.FragmentedMigrationAwareService;
@@ -31,6 +33,7 @@ import com.hazelcast.wan.impl.WanEventCounters;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -192,20 +195,39 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      */
     @Override
     public Map<String, LocalWanStats> getStats() {
-        final ConcurrentHashMap<String, WanReplicationPublisherDelegate> wanReplications = getWanReplications();
-        if (wanReplications.isEmpty()) {
-            return null;
-        }
+        ConcurrentHashMap<String, WanReplicationPublisherDelegate> wanReplications = getWanReplications();
+        Map<String, LocalWanStats> wanStats = MapUtil.createHashMap(wanReplications.size());
 
-        Map<String, LocalWanStats> wanStatsMap = MapUtil.createHashMap(wanReplications.size());
+        // add stats from initialized WAN replications
         for (Map.Entry<String, WanReplicationPublisherDelegate> delegateEntry : wanReplications.entrySet()) {
             LocalWanStats localWanStats = new LocalWanStatsImpl();
             String wanReplicationConfigName = delegateEntry.getKey();
             WanReplicationPublisherDelegate delegate = delegateEntry.getValue();
             localWanStats.getLocalWanPublisherStats().putAll(delegate.getStats());
-            wanStatsMap.put(wanReplicationConfigName, localWanStats);
+            wanStats.put(wanReplicationConfigName, localWanStats);
         }
-        return wanStatsMap;
+
+        // add stats from uninitialized but configured WAN replications
+        final Map<String, WanReplicationConfig> wanReplicationConfigs
+                = node.nodeEngine.getConfig().getWanReplicationConfigs();
+        final LocalWanPublisherStatsImpl stoppedPublisherStats = new LocalWanPublisherStatsImpl();
+        stoppedPublisherStats.setState(WanPublisherState.STOPPED);
+
+        for (Entry<String, WanReplicationConfig> replicationEntry : wanReplicationConfigs.entrySet()) {
+            String wanReplicationConfigName = replicationEntry.getKey();
+            if (wanStats.containsKey(wanReplicationConfigName)) {
+                continue;
+            }
+            LocalWanStatsImpl localWanStats = new LocalWanStatsImpl();
+
+            for (WanPublisherConfig publisherConfig : replicationEntry.getValue().getWanPublisherConfigs()) {
+                localWanStats.getLocalWanPublisherStats()
+                             .put(publisherConfig.getGroupName(), stoppedPublisherStats);
+            }
+            wanStats.put(wanReplicationConfigName, localWanStats);
+        }
+
+        return wanStats;
     }
 
     @Override
@@ -264,13 +286,18 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     @Override
-    public void pause(String name, String targetGroupName) {
-        getEndpoint(name, targetGroupName).pause();
+    public void pause(String wanReplicationName, String targetGroupName) {
+        getEndpoint(wanReplicationName, targetGroupName).pause();
     }
 
     @Override
-    public void resume(String name, String targetGroupName) {
-        getEndpoint(name, targetGroupName).resume();
+    public void stop(String wanReplicationName, String targetGroupName) {
+        getEndpoint(wanReplicationName, targetGroupName).stop();
+    }
+
+    @Override
+    public void resume(String wanReplicationName, String targetGroupName) {
+        getEndpoint(wanReplicationName, targetGroupName).resume();
     }
 
     @Override
@@ -303,7 +330,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         } else {
             logger.warning(
                     "Ignoring new WAN config request. A WanReplicationConfig already exists with the given name: "
-                    + wanConfig.getName());
+                            + wanConfig.getName());
         }
     }
 

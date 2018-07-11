@@ -5,6 +5,7 @@ import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.wan.CacheReplicationObject;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.EWRMigrationContainer;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
@@ -83,7 +84,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
     protected final WanElementCounter wanCounter = new WanElementCounter();
 
-    protected volatile boolean paused;
+    protected volatile WanPublisherState state;
     protected volatile boolean running = true;
     protected volatile long lastQueueFullLogTimeMs;
 
@@ -138,6 +139,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         this.localWanPublisherStats.setSentMapEventCounter(unmodifiableMap(mapCounters.getEventCounterMap()));
         this.localWanPublisherStats.setSentCacheEventCounter(unmodifiableMap(cacheCounters.getEventCounterMap()));
         this.wanQueueMigrationSupport = new WanQueueMigrationSupport(eventQueueContainer, wanCounter);
+        this.state = publisherConfig.getInitialPublisherState();
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller(syncManager));
     }
@@ -183,6 +185,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     private void publishReplicationEventInternal(String serviceName,
                                                  EnterpriseReplicationEventObject eventObject,
                                                  boolean backupEvent) {
+        if (!state.isEnqueueNewEvents()) {
+            return;
+        }
+
         if (isEventDroppingNeeded(backupEvent)) {
             if (!backupEvent) {
                 wanService.getSentEventCounters(wanReplicationName, targetGroupName, serviceName)
@@ -395,19 +401,25 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
     @Override
     public void pause() {
-        paused = true;
-        logger.info("Pausing WAN replication.");
+        state = WanPublisherState.PAUSED;
+        logger.info("Paused WAN replication " + wanReplicationName + ",targetGroupName: " + targetGroupName);
+    }
+
+    @Override
+    public void stop() {
+        state = WanPublisherState.STOPPED;
+        logger.info("Stopped WAN replication " + wanReplicationName + ",targetGroupName: " + targetGroupName);
     }
 
     @Override
     public void resume() {
-        paused = false;
-        logger.info("WAN replication resumed.");
+        state = WanPublisherState.REPLICATING;
+        logger.info("Resumed WAN replication " + wanReplicationName + ",targetGroupName: " + targetGroupName);
     }
 
     @Override
     public LocalWanPublisherStats getStats() {
-        localWanPublisherStats.setPaused(paused);
+        localWanPublisherStats.setState(state);
         localWanPublisherStats.setConnected(isConnected());
         localWanPublisherStats.setOutboundQueueSize(wanCounter.getPrimaryElementCount());
         return localWanPublisherStats;
@@ -483,7 +495,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     private boolean isThrowExceptionBehavior(WANQueueFullBehavior queueFullBehavior) {
         return WANQueueFullBehavior.THROW_EXCEPTION == queueFullBehavior
                 || (WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE == queueFullBehavior
-                && !paused);
+                && state.isReplicateEnqueuedEvents());
     }
 
     @Override
@@ -506,14 +518,14 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
     @Override
     public void clearQueues() {
-        boolean alreadyPaused = paused;
-        if (!alreadyPaused) {
+        boolean isReplicating = state.isReplicateEnqueuedEvents();
+        if (isReplicating) {
             pause();
         }
 
         clearQueuesInternal();
 
-        if (!alreadyPaused) {
+        if (isReplicating) {
             resume();
         }
     }
@@ -690,7 +702,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
                 }
 
                 boolean offered = false;
-                if (!paused) {
+                if (state.isReplicateEnqueuedEvents()) {
                     offered = tryWanReplicationQueues();
                     emptyIterationCount = 0;
                 }

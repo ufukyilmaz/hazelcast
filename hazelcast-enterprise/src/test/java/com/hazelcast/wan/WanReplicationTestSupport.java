@@ -6,15 +6,21 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
+import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.After;
@@ -24,6 +30,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+
+import static org.junit.Assert.assertEquals;
 
 public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     private static final ILogger LOGGER = Logger.getLogger(WanReplicationTestSupport.class);
@@ -156,6 +164,57 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         LOGGER.info("==\n");
     }
 
+    protected static void assertWanQueueSizesEventually(final HazelcastInstance[] cluster,
+                                                        final String wanReplicationConfigName,
+                                                        final String endpointGroupName,
+                                                        final int eventCount) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                int totalBackupEvents = 0;
+                int totalEvents = 0;
+                for (HazelcastInstance instance : cluster) {
+                    final EnterpriseWanReplicationService s = getWanReplicationService(instance);
+                    final WanReplicationPublisherDelegate delegate
+                            = (WanReplicationPublisherDelegate) s.getWanReplicationPublisher(wanReplicationConfigName);
+                    final AbstractWanPublisher endpoint = (AbstractWanPublisher) delegate.getEndpoint(endpointGroupName);
+                    totalEvents += endpoint.getCurrentElementCount();
+                    totalBackupEvents += endpoint.getCurrentBackupElementCount();
+                }
+                assertEquals(eventCount, totalEvents);
+                assertEquals(eventCount, totalBackupEvents);
+            }
+        });
+    }
+
+    protected static void assertWanPublisherStateEventually(final HazelcastInstance[] cluster,
+                                                            final String wanReplicationConfigName,
+                                                            final String endpointGroupName,
+                                                            final WanPublisherState state) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                for (HazelcastInstance instance : cluster) {
+                    final LocalWanStats localWanStats = getWanReplicationService(instance)
+                            .getStats().get(wanReplicationConfigName);
+                    final LocalWanPublisherStats publisherStats = localWanStats.getLocalWanPublisherStats()
+                                                                               .get(endpointGroupName);
+                    assertEquals(state, publisherStats.getPublisherState());
+                }
+            }
+        });
+    }
+
+    protected static EnterpriseWanReplicationService getWanReplicationService(HazelcastInstance instance) {
+        return (EnterpriseWanReplicationService) getNodeEngineImpl(instance).getWanReplicationService();
+    }
+
+    protected void stopWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetGroupName) {
+        for (HazelcastInstance instance : cluster) {
+            getWanReplicationService(instance).stop(wanRepName, targetGroupName);
+        }
+    }
+
     protected void pauseWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetGroupName) {
         for (HazelcastInstance instance : cluster) {
             getWanReplicationService(instance).pause(wanRepName, targetGroupName);
@@ -168,8 +227,21 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         }
     }
 
-    protected EnterpriseWanReplicationService getWanReplicationService(HazelcastInstance instance) {
-        return (EnterpriseWanReplicationService) getNodeEngineImpl(instance).getWanReplicationService();
+    protected void assertWanQueuesEventuallyEmpty(final HazelcastInstance[] nodes,
+                                                  final String wanReplicationConfigName,
+                                                  final Config toConfig) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                for (HazelcastInstance node : nodes) {
+                    final LocalWanStats localWanStats = getWanReplicationService(node).getStats().get(wanReplicationConfigName);
+                    final LocalWanPublisherStats publisherStats = localWanStats.getLocalWanPublisherStats()
+                                                                               .get(toConfig.getGroupConfig().getName());
+                    final int actualQueueSize = publisherStats.getOutboundQueueSize();
+                    assertEquals(0, actualQueueSize);
+                }
+            }
+        });
     }
 
     protected boolean isNativeMemoryEnabled() {

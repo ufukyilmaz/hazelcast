@@ -51,7 +51,9 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
 
     @Test
     public void testWanDiagnosticsForActiveAndPassiveCluster() {
+        final String unusedSetupName = "unusedSetup";
         final String setupName = "atob";
+        setupReplicateFrom(configA, configB, singleNodeB.length, unusedSetupName, PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configA, configB, singleNodeB.length, setupName, PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configA, configC, singleNodeC.length, setupName, PassThroughMergePolicy.class.getName());
 
@@ -97,6 +99,8 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
                 assertContains(content, "removeCount");
                 assertContains(content, "syncCount");
                 assertContains(content, "droppedCount");
+                assertContains(content, setupName);
+                assertContains(content, unusedSetupName);
             }
         });
 

@@ -4,6 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
@@ -13,6 +14,8 @@ import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.internal.management.operation.ChangeWanStateOperation;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -32,6 +35,8 @@ import java.util.concurrent.ExecutionException;
 
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
@@ -137,6 +142,27 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
                 assert endpoint.getStats().getOutboundQueueSize() == 0;
             }
         });
+    }
+
+    @Test
+    public void testStatisticsForUninitializedReplications() {
+        final String setupName = "unused";
+        setupReplicateFrom(configA, configB, clusterB.length, setupName, PassThroughMergePolicy.class.getName());
+        initCluster(singleNodeA, configA, factory);
+
+        EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(singleNodeA[0]);
+        final Map<String, LocalWanStats> stats = wanReplicationService.getStats();
+        final LocalWanStats localWanStats = stats.get(setupName);
+        assertEquals(1, stats.size());
+        assertNotNull(localWanStats);
+        assertEquals(1, localWanStats.getLocalWanPublisherStats().size());
+
+        for (LocalWanPublisherStats localWanPublisherStats : localWanStats.getLocalWanPublisherStats().values()) {
+            assertEquals(0, localWanPublisherStats.getOutboundQueueSize());
+            assertEquals(0, localWanPublisherStats.getTotalPublishedEventCount());
+            assertEquals(0, localWanPublisherStats.getTotalPublishLatency());
+            assertEquals(WanPublisherState.STOPPED, localWanPublisherStats.getPublisherState());
+        }
     }
 
     @Override

@@ -47,7 +47,7 @@ public class WANPlugin extends DiagnosticsPlugin {
     private static final String PUBLISHER_TOTAL_PUBLISHED_EVENT_COUNT_KEY = "totalPublishedEventCount";
     private static final String PUBLISHER_TOTAL_PUBLISH_LATENCY_KEY = "totalPublishLatency";
     private static final String PUBLISHER_CONNECTED_KEY = "connected";
-    private static final String PUBLISHER_PAUSED_KEY = "paused";
+    private static final String PUBLISHER_STATE_KEY = "state";
 
     private static final String WAN_SYNC_SECTION_NAME = "syncState";
     private static final String WAN_SYNC_STATUS_KEY = "status";
@@ -165,7 +165,7 @@ public class WANPlugin extends DiagnosticsPlugin {
         writer.writeKeyValueEntry(PUBLISHER_TOTAL_PUBLISHED_EVENT_COUNT_KEY, stats.getTotalPublishedEventCount());
         writer.writeKeyValueEntry(PUBLISHER_TOTAL_PUBLISH_LATENCY_KEY, stats.getTotalPublishLatency());
         writer.writeKeyValueEntry(PUBLISHER_CONNECTED_KEY, stats.isConnected());
-        writer.writeKeyValueEntry(PUBLISHER_PAUSED_KEY, stats.isPaused());
+        writer.writeKeyValueEntry(PUBLISHER_STATE_KEY, stats.getPublisherState().toString());
         final PublisherEventCounts publisherEventCounts = new PublisherEventCounts();
         renderSentEventCounts(writer, CACHE_EVENT_COUNT_SECTION_PREFIX,
                 stats.getSentCacheEventCounter(), publisherEventCounts);

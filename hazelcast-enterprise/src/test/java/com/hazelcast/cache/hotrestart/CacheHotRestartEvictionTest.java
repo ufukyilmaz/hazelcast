@@ -3,7 +3,6 @@ package com.hazelcast.cache.hotrestart;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
-import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
@@ -69,8 +68,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
 
     @Test
     public void testEviction() {
-        Config hzConfig = makeConfig(factory.nextAddress());
-        HazelcastInstance hz = newHazelcastInstance(hzConfig);
+        HazelcastInstance hz = newHazelcastInstance();
         ICache<Integer, byte[]> cache = createCache(hz);
 
         int threadCount = 4;
@@ -106,7 +104,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
             }
         }
 
-        hz = restartHazelcastInstance(hz, hzConfig);
+        hz = restartInstances(1)[0];
         cache = createCache(hz);
 
         assertEquals(expectedSize, cache.size());

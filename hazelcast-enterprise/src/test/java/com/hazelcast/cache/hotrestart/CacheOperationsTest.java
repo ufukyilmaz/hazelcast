@@ -47,13 +47,13 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
     private ICache<Integer, String> cache;
 
     @Override
-    void setupInternal() {
+    protected void setupCacheInternal() {
         newHazelcastInstance();
         cache = createCache(newHazelcastInstance());
         warmupCacheAndHotRestart();
     }
 
-    private void warmupCacheAndHotRestart() {
+    private void  warmupCacheAndHotRestart() {
         for (int i = 0; i < 3; i++) {
             for (int key = 0; key < KEY_COUNT; key++) {
                 cache.put(key, randomString());

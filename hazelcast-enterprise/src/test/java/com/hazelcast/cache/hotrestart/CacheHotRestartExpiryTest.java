@@ -41,8 +41,8 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
     public void test() {
         int expireAfter = 10;
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(expireAfter, expireAfter, expireAfter, MILLISECONDS);
-        Config hzConfig = makeConfig(factory.nextAddress());
-        HazelcastInstance hz = newHazelcastInstance(hzConfig);
+        HazelcastInstance hz = newHazelcastInstance();
+        Config config = hz.getConfig();
         ICache<Integer, String> cache = createCache(hz);
 
         for (int key = 0; key < KEY_COUNT; key++) {
@@ -61,7 +61,7 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
         });
         assertEquals(0, cache.size());
 
-        hz = restartHazelcastInstance(hz, hzConfig);
+        hz = restartInstances(1)[0];
         cache = createCache(hz);
 
         assertEquals(0, cache.size());

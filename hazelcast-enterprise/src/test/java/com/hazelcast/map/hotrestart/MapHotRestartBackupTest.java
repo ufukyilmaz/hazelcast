@@ -44,7 +44,7 @@ public class MapHotRestartBackupTest extends AbstractMapHotRestartTest {
 
     @Override
     @SuppressWarnings("unchecked")
-    void setupInternal() {
+    protected void setupMapInternal() {
         maps = new IMap[CLUSTER_SIZE];
     }
 

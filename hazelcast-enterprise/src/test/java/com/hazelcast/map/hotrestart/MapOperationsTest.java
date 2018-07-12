@@ -44,7 +44,7 @@ public class MapOperationsTest extends AbstractMapHotRestartTest {
     private IMap<Integer, String> map;
 
     @Override
-    void setupInternal() {
+    protected void setupMapInternal() {
         map = createMap(newHazelcastInstance());
         warmupCacheAndHotRestart();
     }

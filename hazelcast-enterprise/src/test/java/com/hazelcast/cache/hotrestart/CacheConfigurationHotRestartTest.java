@@ -45,12 +45,11 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
 
     @Test
     public void givenDynamicallyCreatedCacheExist_whenClusterRestarted_thenCacheStillExists() {
-        Config hzConfig = makeConfig(factory.nextAddress());
-        HazelcastInstance hz = factory.newHazelcastInstance(hzConfig);
+        HazelcastInstance hz = newHazelcastInstance();
         ICache<Integer, Object> cache = createCache(hz);
         CacheConfig<Integer, Object> originalConfig = getConfiguration(cache);
 
-        hz = restartHazelcastInstance(hz, hzConfig);
+        hz = restartInstances(1)[0];
 
         CacheConfig config = getSingleCacheConfig(hz);
         assertEquals(cacheName, config.getName());

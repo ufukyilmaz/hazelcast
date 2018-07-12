@@ -36,7 +36,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
         fillMap(expectedMap);
 
-        final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
 
         final int backupSeq = 0;
         final HazelcastInstance firstInstance = instances.iterator().next();
@@ -69,7 +69,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         resetFixture(-1, clusterSize);
         final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
         fillMap(expectedMap);
-        final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
         final int backupSeq = 0;
         final HazelcastInstance firstNode = instances.iterator().next();
 
@@ -86,7 +86,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
         fillMap(expectedMap);
 
-        final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
         final HazelcastInstance[] instancesArr = instances.toArray(new HazelcastInstance[instances.size()]);
 
         final int backupSeq = 0;
@@ -115,7 +115,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
         fillMap(expectedMap);
 
-        final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
         final HazelcastInstance[] instancesArr = instances.toArray(new HazelcastInstance[instances.size()]);
 
         final HotBackupService backupService = (HotBackupService) getNode(instancesArr[1])

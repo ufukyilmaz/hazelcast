@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -74,6 +75,7 @@ public class MapHotRestartStressTest extends HotRestartTestSupport {
 
     @Before
     public void setupInternal() {
+        localMap = new ConcurrentHashMap<Integer, Integer>();
         name = randomString();
     }
 

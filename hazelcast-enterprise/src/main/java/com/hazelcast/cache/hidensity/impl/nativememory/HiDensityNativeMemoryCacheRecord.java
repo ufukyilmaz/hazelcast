@@ -10,27 +10,29 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
  * Structure:
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * | Creation Time      |   8 bytes (long) |
- * +--------------------+------------------+
- * | Access Time        |   8 bytes (long) |
- * +--------------------+------------------+
- * | Time-to-Live       |   8 bytes (long) |
- * +--------------------+------------------+
- * | Record Sequence    |   8 bytes (long) |
- * +--------------------+------------------+
- * | Value Address      |   8 bytes (long) |
- * +--------------------+------------------+
- * | ExpiryPolicy Addres|   8 bytes (long) |
- * +--------------------+------------------+
- * | Hit Count          |   4 bytes (int)  |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *
+ * <pre>
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * | Creation Time        |   8 bytes (long) |
+ * +----------------------+------------------+
+ * | Access Time          |   8 bytes (long) |
+ * +----------------------+------------------+
+ * | Time-to-Live         |   8 bytes (long) |
+ * +----------------------+------------------+
+ * | Record Sequence      |   8 bytes (long) |
+ * +----------------------+------------------+
+ * | Value Address        |   8 bytes (long) |
+ * +----------------------+------------------+
+ * | ExpiryPolicy Address |   8 bytes (long) |
+ * +----------------------+------------------+
+ * | Hit Count            |   4 bytes (int)  |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * </pre>
  * Total size = 52 bytes
+ * <p>
  * All fields are aligned.
- *
- * PS: In current buddy memory allocator design,
- * this is going to use 64 bytes memory block.
+ * <p>
+ * Note: In the current buddy memory allocator design, this is going to use a
+ * 64 bytes memory block.
  */
 public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord {
 
@@ -60,14 +62,13 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     private final HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor;
 
-    public HiDensityNativeMemoryCacheRecord(
-            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor, long address) {
+    public HiDensityNativeMemoryCacheRecord(HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor,
+                                            long address) {
         super(address, SIZE);
         this.recordAccessor = recordAccessor;
     }
 
-    public HiDensityNativeMemoryCacheRecord(
-            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor) {
+    public HiDensityNativeMemoryCacheRecord(HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor) {
         this.recordAccessor = recordAccessor;
     }
 
@@ -257,9 +258,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-
         HiDensityNativeMemoryCacheRecord record = (HiDensityNativeMemoryCacheRecord) o;
-
         return address == record.address && size == record.size;
     }
 
@@ -272,7 +271,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     @Override
     public String toString() {
-        if (address() > NULL_PTR) {
+        if (address() != NULL_PTR) {
             return "HiDensityNativeMemoryCacheRecord{creationTime: " + getCreationTime()
                     + ", lastAccessTime: " + getLastAccessTime()
                     + ", hits: " + getAccessHit()
@@ -281,7 +280,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
                     + ", valueAddress: " + getValueAddress()
                     + " }";
         } else {
-            return "HiDensityNativeMemoryCacheRecord{ NULL }";
+            return "HiDensityNativeMemoryCacheRecord{NULL}";
         }
     }
 }

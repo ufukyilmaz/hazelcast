@@ -107,7 +107,6 @@
                                             <!-- exclusions -->
                                             !com.atomikos.icatch.jta,
                                             !com.atomikos.datasource.xa,
-                                            !com.eclipsesource.json,
                                             !com.sun.jdmk.comm,
                                             !org.apache.tools.ant,
                                             !org.apache.tools.ant.types,

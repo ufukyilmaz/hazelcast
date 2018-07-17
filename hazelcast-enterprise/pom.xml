@@ -77,7 +77,6 @@
                                 </Export-Package>
                                 <Import-Package>
                                     !org.junit,
-                                    !com.eclipsesource.json,
                                     !freemarker.*,
                                     sun.misc;resolution:=optional,
                                     javax.cache;resolution:=optional,

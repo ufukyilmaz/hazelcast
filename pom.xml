@@ -675,6 +675,9 @@
                     </plugin>
                 </plugins>
             </build>
+            <modules>
+                <module>enterprise-modulepath-tests</module>
+            </modules>
         </profile>
 
         <profile>

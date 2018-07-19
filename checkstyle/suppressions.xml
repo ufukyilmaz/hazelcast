@@ -53,4 +53,7 @@
             files="[\\/]src[\\/]test[\\/]"/>
     <suppress checks="OuterTypeNumber"
               files="src[\\/]test[\\/]java[\\/]com[\\/]hazelcast[\\/]spi[\\/]hotrestart[\\/]impl[\\/]di[\\/]DiContainerTest"/>
+
+    <!-- module-info.java -->
+    <suppress checks="" files="[\\/]module-info"/>
 </suppressions>

@@ -28,9 +28,12 @@ import com.hazelcast.map.impl.query.PartitionScanRunner;
 import com.hazelcast.map.impl.query.QueryRunner;
 import com.hazelcast.map.impl.query.ResultProcessorRegistry;
 import com.hazelcast.map.impl.record.HDRecordComparator;
+import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStore;
+import com.hazelcast.map.impl.recordstore.RecordStoreMutationObserver;
+import com.hazelcast.map.impl.wan.MerkleTreeUpdaterRecordStoreMutationObserver;
 import com.hazelcast.map.impl.wan.filter.MapFilterProvider;
 import com.hazelcast.monitor.impl.LocalMapStatsImpl;
 import com.hazelcast.nio.serialization.Data;
@@ -49,8 +52,11 @@ import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.wan.merkletree.MerkleTree;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +70,7 @@ import static java.lang.Thread.currentThread;
  *
  * @see MapServiceContext
  */
-@SuppressWarnings("checkstyle:classfanoutcomplexity")
+@SuppressWarnings({"checkstyle:classfanoutcomplexity", "checkstyle:classdataabstractioncoupling"})
 class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements EnterpriseMapServiceContext, RamStoreRegistry {
 
     private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS = 10;
@@ -104,6 +110,11 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     @Override
     MapOperationProviders createOperationProviders() {
         return new EnterpriseMapOperationProviders(this);
+    }
+
+    @Override
+    protected PartitionContainer createPartitionContainer(MapService service, int partitionId) {
+        return new EnterprisePartitionContainer(service, partitionId);
     }
 
     @Override
@@ -287,5 +298,33 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
             return super.getIndexProvider(mapConfig);
         }
         return hdIndexProvider;
+    }
+
+    @Override
+    public Collection<RecordStoreMutationObserver<Record>> createRecordStoreMutationObservers(String mapName, int partitionId) {
+        Collection<RecordStoreMutationObserver<Record>> observers = new LinkedList<RecordStoreMutationObserver<Record>>();
+        addMerkleTreeUpdaterObserver(observers, mapName, partitionId);
+
+        observers.addAll(super.createRecordStoreMutationObservers(mapName, partitionId));
+
+        return observers;
+    }
+
+    /**
+     * Adds a merkle tree record store observer to {@code observers} if merkle
+     * trees are configured for the map with the {@code mapName} name.
+     *
+     * @param observers   the collection of record store observers
+     * @param mapName     the map name
+     * @param partitionId The partition ID
+     */
+    private void addMerkleTreeUpdaterObserver(Collection<RecordStoreMutationObserver<Record>> observers,
+                                              String mapName,
+                                              int partitionId) {
+        EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) partitionContainers[partitionId];
+        MerkleTree merkleTree = partitionContainer.getMerkleTree(mapName);
+        if (merkleTree != null) {
+            observers.add(new MerkleTreeUpdaterRecordStoreMutationObserver<Record>(merkleTree));
+        }
     }
 }

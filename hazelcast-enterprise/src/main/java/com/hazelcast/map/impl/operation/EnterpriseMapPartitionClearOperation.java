@@ -43,7 +43,7 @@ public final class EnterpriseMapPartitionClearOperation
             MapService mapService = getService();
             MapServiceContext mapServiceContext = mapService.getMapServiceContext();
             PartitionContainer partitionContainer = mapServiceContext.getPartitionContainer(partitionId);
-            partitionContainer.clear(onShutdown);
+            partitionContainer.clear(onShutdown, false);
         } finally {
             done.countDown();
         }

@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.WanPublisherState.PAUSED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -93,7 +94,7 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         initCluster(basicCluster, configA);
         for (HazelcastInstance instance : basicCluster) {
             ChangeWanStateOperation changeWanStateOperation = new ChangeWanStateOperation("atob",
-                    configB.getGroupConfig().getName(), false);
+                    configB.getGroupConfig().getName(), PAUSED);
             getOperationService(instance).createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
                     changeWanStateOperation, getNode(instance).address).invoke().get();
         }

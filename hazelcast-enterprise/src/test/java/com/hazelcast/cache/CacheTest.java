@@ -38,6 +38,11 @@ import org.junit.runner.RunWith;
 
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryExpiredListener;
+import javax.cache.event.CacheEntryListenerException;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
@@ -45,6 +50,7 @@ import javax.cache.expiry.TouchedExpiryPolicy;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CompletionListener;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -187,6 +193,31 @@ public class CacheTest extends AbstractCacheTest {
         assertNull(f.get());
         f = cache.getAndRemoveAsync(key);
         assertEquals("value4", f.get());
+    }
+
+    @Test
+    public void testExpiration() {
+        CacheConfig<Integer, String> config = createCacheConfig(CACHE_NAME);
+        final SimpleExpiryListener<Integer, String> listener = new SimpleExpiryListener<Integer, String>();
+        MutableCacheEntryListenerConfiguration<Integer, String> listenerConfiguration =
+                new MutableCacheEntryListenerConfiguration<Integer, String>(
+                        FactoryBuilder.factoryOf(listener), null, true, true);
+
+        config.addCacheEntryListenerConfiguration(listenerConfiguration);
+        config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new HazelcastExpiryPolicy(100, 100, 100)));
+
+        Cache<Integer, String> instanceCache = createCache(config);
+
+        instanceCache.put(1, "value");
+
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run()
+                    throws Exception {
+                assertEquals(1, listener.expired.get());
+            }
+        });
+        assertEquals(0, ((ICache<Integer, String>) instanceCache).size());
     }
 
     @Test
@@ -708,5 +739,22 @@ public class CacheTest extends AbstractCacheTest {
         instance.shutdown();
 
         assertEquals(0, memoryStats.getUsedNative());
+    }
+
+    public static class SimpleExpiryListener<K, V>
+            implements CacheEntryExpiredListener<K, V>, Serializable {
+
+        public AtomicInteger expired = new AtomicInteger();
+
+        public SimpleExpiryListener() {
+        }
+
+        @Override
+        public void onExpired(Iterable<CacheEntryEvent<? extends K, ? extends V>> cacheEntryEvents)
+                throws CacheEntryListenerException {
+            for (CacheEntryEvent<? extends K, ? extends V> cacheEntryEvent : cacheEntryEvents) {
+                expired.incrementAndGet();
+            }
+        }
     }
 }

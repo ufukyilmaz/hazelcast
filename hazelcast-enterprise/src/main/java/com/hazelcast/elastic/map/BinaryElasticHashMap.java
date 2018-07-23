@@ -1038,12 +1038,25 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
     }
 
+    /**
+     * @param failFast {@code true} to enable fail fast behaviour, otherwise set {@code false}
+     * @return a new iterator instance
+     * @see #modCount
+     */
+    public final Iterator<Map.Entry<Data, V>> entryIter(boolean failFast) {
+        return new EntryIter(failFast);
+    }
+
     protected SlottableIterator<Map.Entry<Data, V>> entryIter(int slot) {
         return new EntryIter(slot);
     }
 
     private class EntryIter extends SlotIter<Map.Entry<Data, V>> {
         EntryIter() {
+        }
+
+        EntryIter(boolean failFast) {
+            super(failFast);
         }
 
         EntryIter(int slot) {

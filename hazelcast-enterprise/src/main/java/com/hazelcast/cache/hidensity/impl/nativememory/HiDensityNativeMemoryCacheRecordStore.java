@@ -340,7 +340,15 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     protected HiDensityNativeMemoryCacheRecord createRecord(Object value, long creationTime, long expiryTime) {
         evictIfRequired();
+        markExpirable(expiryTime);
         return createRecordInternal(value, creationTime, expiryTime, newSequence());
+    }
+
+    @Override
+    protected void initExpirationIterator() {
+        if (expirationIterator == null || !expirationIterator.hasNext()) {
+            expirationIterator = records.entryIter(false);
+        }
     }
 
     final HiDensityNativeMemoryCacheRecord createRecordInternal(Object value, long creationTime,
@@ -420,8 +428,24 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
+    protected boolean evictIfExpired(Data key, HiDensityNativeMemoryCacheRecord record, long now) {
+        if (super.evictIfExpired(key, record, now)) {
+            getRecordProcessor().addDeferredDispose((NativeMemoryData) key);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void evictExpiredEntries(int expirationPercentage) {
+        super.evictExpiredEntries(expirationPercentage);
+        getRecordProcessor().disposeDeferredBlocks();
+    }
+
+    @Override
     protected void onProcessExpiredEntry(Data key, HiDensityNativeMemoryCacheRecord record, long expiryTime,
                                          long now, String source, String origin) {
+        super.onProcessExpiredEntry(key, record, expiryTime, now, source, origin);
         if (isMemoryBlockValid(record)) {
             cacheRecordProcessor.dispose(record);
         }

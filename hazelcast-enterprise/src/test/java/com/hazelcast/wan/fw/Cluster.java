@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 import static com.hazelcast.util.Preconditions.checkPositive;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
@@ -86,6 +87,7 @@ public class Cluster {
 
         config.setInstanceName(instanceNamePrefix + index);
         clusterMembers[index] = factory.newHazelcastInstance(config);
+        waitAllForSafeState(clusterMembers);
         return clusterMembers[index];
     }
 

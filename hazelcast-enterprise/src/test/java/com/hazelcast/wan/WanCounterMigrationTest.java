@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanCacheTestSupport.fillCache;
@@ -132,6 +133,7 @@ public class WanCounterMigrationTest {
 
         HazelcastInstance secondClusterMember = sourceCluster.startAClusterMember();
         secondClusterMember.getLifecycleService().terminate();
+        waitAllForSafeState(sourceCluster.getMembers());
 
         fillMap(sourceCluster, MAP_NAME, 1000, 2000);
         fillCache(sourceCluster, CACHE_NAME, 1000, 2000);
@@ -155,6 +157,7 @@ public class WanCounterMigrationTest {
         sourceCluster.startClusterMembers(2, new PausingClusterMemberStartAction());
         HazelcastInstance startedMember = sourceCluster.startAClusterMember();
         startedMember.getLifecycleService().terminate();
+        waitAllForSafeState(sourceCluster.getMembers());
 
         fillMap(sourceCluster, MAP_NAME, 1000, 2000);
         fillCache(sourceCluster, CACHE_NAME, 1000, 2000);
@@ -179,6 +182,7 @@ public class WanCounterMigrationTest {
         ((MigrationBreakerWanPublisher) wanReplicationEndpoint(master, wanReplication)).failMigration();
         HazelcastInstance startedMember = sourceCluster.startAClusterMember();
         startedMember.getLifecycleService().terminate();
+        waitAllForSafeState(sourceCluster.getMembers());
 
         fillMap(sourceCluster, MAP_NAME, 1000, 2000);
         fillCache(sourceCluster, CACHE_NAME, 1000, 2000);

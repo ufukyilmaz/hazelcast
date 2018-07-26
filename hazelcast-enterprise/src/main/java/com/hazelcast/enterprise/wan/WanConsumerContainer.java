@@ -1,6 +1,5 @@
 package com.hazelcast.enterprise.wan;
 
-import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.instance.Node;
@@ -40,13 +39,10 @@ public class WanConsumerContainer {
                             (WanReplicationConsumer) consumerConfig.getImplementation(),
                             node.getConfigClassLoader(),
                             consumerConfig.getClassName());
-
-                    if (consumer == null) {
-                        throw new InvalidConfigurationException("Either \'implementation\' or \'className\' "
-                                + "attribute need to be set in WanConsumerConfig");
+                    if (consumer != null) {
+                        consumer.init(node, wanReplicationConfigEntry.getKey(), consumerConfig);
+                        wanConsumers.put(wanReplicationConfigEntry.getKey(), consumer);
                     }
-                    consumer.init(node, wanReplicationConfigEntry.getKey(), consumerConfig);
-                    wanConsumers.put(wanReplicationConfigEntry.getKey(), consumer);
                 }
             }
         }

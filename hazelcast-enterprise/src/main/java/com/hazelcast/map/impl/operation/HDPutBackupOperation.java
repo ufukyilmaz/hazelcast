@@ -47,7 +47,9 @@ public final class HDPutBackupOperation extends HDKeyBasedMapOperation implement
     protected void runInternal() {
         ttl = recordInfo != null ? recordInfo.getTtl() : ttl;
 
-        Record record = recordStore.putBackup(dataKey, dataValue, ttl, putTransient);
+        Record record = recordStore.putBackup(dataKey, dataValue, ttl,
+                putTransient, getCallerProvenance());
+
         if (recordInfo != null) {
             Records.applyRecordInfo(record, recordInfo);
         }
@@ -64,11 +66,6 @@ public final class HDPutBackupOperation extends HDKeyBasedMapOperation implement
 
         publishWanUpdate(dataKey, dataValue);
         disposeDeferredBlocks();
-    }
-
-    @Override
-    protected boolean canThisOpGenerateWANEvent() {
-        return !disableWanReplicationEvent;
     }
 
     @Override

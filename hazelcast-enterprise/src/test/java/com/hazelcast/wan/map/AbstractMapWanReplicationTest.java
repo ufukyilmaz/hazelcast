@@ -3,12 +3,16 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
+import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
+import com.hazelcast.core.MapStoreAdapter;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.internal.jmx.MBeanDataHolder;
 import com.hazelcast.internal.serialization.InternalSerializationService;
@@ -33,6 +37,7 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.custom.CustomWanConsumer;
 import com.hazelcast.wan.map.filter.NoFilterMapWanFilter;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -46,6 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
@@ -738,6 +744,131 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         assertEquals(WanPublisherState.STOPPED.name(),
                 getMBeanWanReplicationPublisherState(mBeanDataHolder, wanReplicationConfigName, targetGroupName));
+    }
+
+    @Test
+    public void replicated_data_is_not_persisted_by_default() {
+        final int mapEntryCount = 1001;
+        String mapName = "default";
+
+        setupReplicateFrom(configA, configB, clusterB.length, "atob",
+                PassThroughMergePolicy.class.getName());
+
+        // 2. Add map-store to cluster-B
+        final TestMapStore store = new TestMapStore();
+        MapStoreConfig mapStoreConfig = new MapStoreConfig()
+                .setEnabled(true)
+                .setImplementation(store);
+        configB.getMapConfig(mapName).setMapStoreConfig(mapStoreConfig);
+
+        // 3. Start cluster-A and cluster-B
+        startClusterA();
+        startClusterB();
+
+        // 4. Add entries from cluster-A
+        IMap mapA = getMap(clusterA, mapName);
+        for (int i = 0; i < mapEntryCount; i++) {
+            mapA.put(i, i);
+        }
+
+        // 5. Delete entries from cluster-A
+        for (int i = 0; i < mapEntryCount; i++) {
+            mapA.delete(i);
+        }
+
+        // 6. Ensure no put or delete operation is passed to map-store
+        assertTrueAllTheTime(new AssertTask() {
+            @Override
+            public void run() {
+                assertEquals(0, store.storeCount.get());
+                assertEquals(0, store.deleteCount.get());
+            }
+        }, 5);
+    }
+
+    @Test
+    public void replicated_data_is_persisted_when_persistWanReplicatedData_is_true() {
+        final int mapEntryCount = 1001;
+        String mapName = "default";
+
+        setupReplicateFrom(configA, configB, clusterB.length, "atob",
+                PassThroughMergePolicy.class.getName());
+
+        // 2. Add map-store to cluster-B
+        final TestMapStore store = new TestMapStore();
+        MapStoreConfig mapStoreConfig = new MapStoreConfig()
+                .setEnabled(true)
+                .setImplementation(store);
+        MapConfig mapConfig = configB.getMapConfig(mapName);
+        mapConfig.setWanReplicationRef(getWanReplicationRefFrom(configB, true));
+        mapConfig.setMapStoreConfig(mapStoreConfig);
+
+        // 3. Start cluster-A and cluster-B
+        startClusterA();
+        startClusterB();
+
+        // 4. Add entries from cluster-A
+        IMap mapA = getMap(clusterA, mapName);
+        for (int i = 0; i < mapEntryCount; i++) {
+            mapA.put(i, i);
+        }
+
+        // 5. Delete entries from cluster-A
+        for (int i = 0; i < mapEntryCount; i++) {
+            mapA.delete(i);
+        }
+
+        // 6. Ensure all put and delete operations are passed to map-store
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                assertEquals(mapEntryCount, store.storeCount.get());
+                assertEquals(mapEntryCount, store.deleteCount.get());
+            }
+        });
+    }
+
+    private static WanReplicationRef getWanReplicationRefFrom(Config config,
+                                                              boolean persistWanReplicatedData) {
+
+        WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
+        wanReplicationConfig.setName("b");
+
+        WanConsumerConfig consumerConfig = new WanConsumerConfig();
+        consumerConfig.setPersistWanReplicatedData(persistWanReplicatedData);
+        consumerConfig.setClassName(CustomWanConsumer.class.getName());
+        wanReplicationConfig.setWanConsumerConfig(consumerConfig);
+        config.addWanReplicationConfig(wanReplicationConfig);
+
+        WanReplicationRef wanReplicationRef = new WanReplicationRef();
+        wanReplicationRef.setName("b");
+        wanReplicationRef.setMergePolicy(PassThroughMergePolicy.class.getName());
+        return wanReplicationRef;
+    }
+
+
+    private class TestMapStore extends MapStoreAdapter {
+
+        AtomicInteger storeCount = new AtomicInteger();
+        AtomicInteger deleteCount = new AtomicInteger();
+
+        @Override
+        public void store(Object key, Object value) {
+            storeCount.incrementAndGet();
+        }
+
+        @Override
+        public void delete(Object key) {
+            deleteCount.incrementAndGet();
+        }
+
+        @Override
+        public String toString() {
+            return "TestMapStore{"
+                    + "storeCount=" + storeCount
+                    + ", deleteCount=" + deleteCount
+                    + '}';
+        }
     }
 
     private static class UpdatingEntryProcessor implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {

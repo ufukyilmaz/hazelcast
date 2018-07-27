@@ -150,7 +150,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
 
     @Override
     public Operation getBackupOperation() {
-        return new HDPutAllBackupOperation(name, mapEntries, backupRecordInfos);
+        return new HDPutAllBackupOperation(name, mapEntries, backupRecordInfos, false);
     }
 
     @Override

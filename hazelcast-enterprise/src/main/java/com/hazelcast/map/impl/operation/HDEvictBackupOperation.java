@@ -12,7 +12,6 @@ public class HDEvictBackupOperation extends HDKeyBasedMapOperation implements Ba
         IdentifiedDataSerializable {
 
     protected boolean unlockKey;
-    protected boolean disableWanReplicationEvent;
 
     public HDEvictBackupOperation() {
     }
@@ -34,11 +33,6 @@ public class HDEvictBackupOperation extends HDKeyBasedMapOperation implements Ba
         publishWanRemove(dataKey);
 
         disposeDeferredBlocks();
-    }
-
-    @Override
-    protected boolean canThisOpGenerateWANEvent() {
-        return !disableWanReplicationEvent;
     }
 
     @Override

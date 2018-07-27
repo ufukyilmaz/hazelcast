@@ -17,7 +17,8 @@ import java.io.IOException;
 /**
  * Transactional delete operation.
  */
-public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTxnOperation, MutatingOperation {
+public class HDTxnDeleteOperation extends HDBaseRemoveOperation
+        implements MapTxnOperation, MutatingOperation {
 
     private long version;
     private boolean successful;
@@ -45,7 +46,7 @@ public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTx
         recordStore.unlock(dataKey, ownerUuid, getThreadId(), getCallId());
         Record record = recordStore.getRecord(dataKey);
         if (record == null || version == record.getVersion()) {
-            dataOldValue = getNodeEngine().toData(recordStore.remove(dataKey));
+            dataOldValue = getNodeEngine().toData(recordStore.remove(dataKey, getCallerProvenance()));
             successful = dataOldValue != null;
         }
     }

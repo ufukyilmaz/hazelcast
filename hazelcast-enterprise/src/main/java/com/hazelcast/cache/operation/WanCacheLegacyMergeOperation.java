@@ -5,6 +5,7 @@ import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.operation.CachePutBackupOperation;
 import com.hazelcast.cache.impl.operation.MutatingCacheOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -27,7 +28,8 @@ public class WanCacheLegacyMergeOperation extends MutatingCacheOperation {
     public WanCacheLegacyMergeOperation() {
     }
 
-    public WanCacheLegacyMergeOperation(String name, String wanGroupName, CacheEntryView<Data, Data> cacheEntryView,
+    public WanCacheLegacyMergeOperation(String name, String wanGroupName,
+                                        CacheEntryView<Data, Data> cacheEntryView,
                                         CacheMergePolicy mergePolicy, int completionId) {
         super(name, cacheEntryView.getKey(), completionId);
         this.cacheEntryView = cacheEntryView;
@@ -37,7 +39,8 @@ public class WanCacheLegacyMergeOperation extends MutatingCacheOperation {
 
     @Override
     public void run() throws Exception {
-        CacheRecord record = recordStore.merge(cacheEntryView, mergePolicy, getCallerUuid(), wanGroupName, completionId);
+        CacheRecord record = recordStore.merge(cacheEntryView, mergePolicy,
+                getCallerUuid(), wanGroupName, completionId, CallerProvenance.WAN);
         response = record != null;
 
         if (TRUE.equals(response)) {

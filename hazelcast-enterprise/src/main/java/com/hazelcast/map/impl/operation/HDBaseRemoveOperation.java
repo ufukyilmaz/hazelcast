@@ -10,12 +10,6 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
 
     protected transient Data dataOldValue;
 
-    /**
-     * Used by WAN replication service to disable WAN replication event publishing.
-     * Otherwise, in active-active scenarios infinite loop of event forwarding can be seen.
-     */
-    protected transient boolean disableWanReplicationEvent;
-
     public HDBaseRemoveOperation(String name, Data dataKey, boolean disableWanReplicationEvent) {
         super(name, dataKey);
         this.disableWanReplicationEvent = disableWanReplicationEvent;
@@ -35,11 +29,6 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
         invalidateNearCache(dataKey);
         publishWanRemove(dataKey);
         evict(dataKey);
-    }
-
-    @Override
-    protected boolean canThisOpGenerateWANEvent() {
-        return !disableWanReplicationEvent;
     }
 
     @Override
@@ -71,4 +60,5 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
     public void onWaitExpire() {
         sendResponse(null);
     }
+
 }

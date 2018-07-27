@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -29,7 +30,8 @@ public class WanCacheMergeOperation
     public WanCacheMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, String wanGroupName, SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy,
+    public WanCacheMergeOperation(String name, String wanGroupName,
+                                  SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy,
                                   CacheMergeTypes mergingEntry, int completionId) {
         super(name, completionId);
         this.mergingEntry = mergingEntry;
@@ -39,7 +41,7 @@ public class WanCacheMergeOperation
 
     @Override
     public void runInternal() {
-        if (recordStore.merge(mergingEntry, mergePolicy) != null) {
+        if (recordStore.merge(mergingEntry, mergePolicy, CallerProvenance.WAN) != null) {
             response = true;
         }
     }

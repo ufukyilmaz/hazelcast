@@ -8,11 +8,10 @@ import com.hazelcast.spi.BackupOperation;
 
 import java.io.IOException;
 
-public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements BackupOperation,
-        IdentifiedDataSerializable {
+public class HDRemoveBackupOperation extends HDKeyBasedMapOperation
+        implements BackupOperation, IdentifiedDataSerializable {
 
     protected boolean unlockKey;
-    protected boolean disableWanReplicationEvent;
 
     public HDRemoveBackupOperation() {
     }
@@ -26,7 +25,8 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
         this.unlockKey = unlockKey;
     }
 
-    public HDRemoveBackupOperation(String name, Data dataKey, boolean unlockKey, boolean disableWanReplicationEvent) {
+    public HDRemoveBackupOperation(String name, Data dataKey,
+                                   boolean unlockKey, boolean disableWanReplicationEvent) {
         super(name, dataKey);
         this.unlockKey = unlockKey;
         this.disableWanReplicationEvent = disableWanReplicationEvent;
@@ -34,7 +34,7 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
 
     @Override
     protected void runInternal() {
-        recordStore.removeBackup(dataKey);
+        recordStore.removeBackup(dataKey, getCallerProvenance());
         if (unlockKey) {
             recordStore.forceUnlock(dataKey);
         }
@@ -44,11 +44,6 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
     public void afterRun() throws Exception {
         publishWanRemove(dataKey);
         evict(dataKey);
-    }
-
-    @Override
-    protected boolean canThisOpGenerateWANEvent() {
-        return !disableWanReplicationEvent;
     }
 
     @Override

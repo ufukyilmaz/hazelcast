@@ -5,6 +5,7 @@ import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -39,7 +40,8 @@ public class WanCacheLegacyMergeOperation
 
     @Override
     public void runInternal() {
-        CacheRecord record = recordStore.merge(cacheEntryView, mergePolicy, getCallerUuid(), wanGroupName, completionId);
+        CacheRecord record = recordStore.merge(cacheEntryView, mergePolicy,
+                getCallerUuid(), wanGroupName, completionId, CallerProvenance.WAN);
         response = record != null;
     }
 

@@ -60,7 +60,12 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
         if (isPostProcessing(recordStore)) {
             dataValue = mapServiceContext.toData(record.getValue());
         }
-        return new HDPutBackupOperation(name, dataKey, dataValue, replicationInfo, putTransient);
+        return new HDPutBackupOperation(name, dataKey, dataValue, replicationInfo, shouldUnlockKeyOnBackup(),
+                putTransient, !canThisOpGenerateWANEvent());
+    }
+
+    protected boolean shouldUnlockKeyOnBackup() {
+        return false;
     }
 
     @Override

@@ -3,8 +3,6 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.map.impl.record.RecordInfo;
-import com.hazelcast.map.impl.record.Records;
 import com.hazelcast.map.merge.MapMergePolicy;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -78,9 +76,7 @@ public class HDLegacyMergeOperation extends HDBasePutOperation {
         if (dataValue == null) {
             return new HDRemoveBackupOperation(name, dataKey, false, disableWanReplicationEvent);
         } else {
-            final Record record = recordStore.getRecord(dataKey);
-            final RecordInfo replicationInfo = Records.buildRecordInfo(record);
-            return new HDPutBackupOperation(name, dataKey, dataValue, replicationInfo, false, false, disableWanReplicationEvent);
+            return super.getBackupOperation();
         }
     }
 

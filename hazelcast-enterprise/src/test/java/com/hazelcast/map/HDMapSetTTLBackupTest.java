@@ -2,31 +2,36 @@ package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+
+import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
 
 @Category({QuickTest.class, ParallelTest.class})
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 public class HDMapSetTTLBackupTest extends MapSetTTLBackupTest {
 
-    @Parameterized.Parameters(name = "inMemoryFormat: {0}")
+    @Parameters(name = "inMemoryFormat:{0}")
     public static Object[] memoryFormat() {
-        return new Object[] {InMemoryFormat.BINARY, InMemoryFormat.OBJECT, InMemoryFormat.NATIVE};
+        return new Object[]{
+                InMemoryFormat.BINARY,
+                InMemoryFormat.OBJECT,
+                InMemoryFormat.NATIVE,
+        };
     }
 
+    @Override
     protected Config getConfig() {
-        Config config = new Config();
-        // to reduce used native memory size
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
-        config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(128, MemoryUnit.MEGABYTES));
-        return config;
+        return getHDConfig(super.getConfig(), STANDARD, new MemorySize(128, MemoryUnit.MEGABYTES));
     }
 }

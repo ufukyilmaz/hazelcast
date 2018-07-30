@@ -10,7 +10,6 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import com.hazelcast.version.Version;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -27,78 +26,88 @@ import static org.junit.Assert.assertNull;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
-public class ICacheSetExpiryPolicyCompatibilityTest extends HazelcastTestSupport {
+public class CacheSetExpiryPolicyCompatibilityTest extends HazelcastTestSupport {
 
-    CompatibilityTestHazelcastInstanceFactory factory;
-    String cacheName;
+    private static final int ENTRY_COUNT = 1000;
 
-    @Before
-    public void setup() {
-        cacheName = randomName();
-    }
+    private String cacheName = randomName();
+
+    private CompatibilityTestHazelcastInstanceFactory factory;
+    private HazelcastInstance hz;
 
     @After
     public void tearDown() {
-        factory.terminateAll();
+        if (factory != null) {
+            factory.terminateAll();
+        }
+        if (hz != null) {
+            hz.shutdown();
+        }
     }
 
     @Test
     public void testExpiryPolicyIsKeptAfterClusterUpgrade() {
-        final int ENTRY_COUNT = 1000;
-        HazelcastInstance[] instances = new HazelcastInstance[3];
         factory = new CompatibilityTestHazelcastInstanceFactory();
-        instances[0] = factory.newHazelcastInstance();
-        instances[1] = factory.newHazelcastInstance();
-        instances[2] = factory.newHazelcastInstance();
+        HazelcastInstance[] instances = factory.newInstances();
 
         instances[0].shutdown();
         instances[1].shutdown();
-
         waitClusterForSafeState(instances[2]);
 
         ICache<String, String> cache = createCache(instances[2]);
-        //we have a 3.11 member with 3.10 cluster version, its cache records should be lacking expiryPolicy field
+        // we have a 3.11 member with 3.10 cluster version, its cache records should be lacking expiryPolicy field
         putCache(cache, 0, ENTRY_COUNT);
 
         getClusterService(instances[2]).changeClusterVersion(Version.of(CURRENT_VERSION));
 
         setExpiryPolicy(cache, new AccessedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1)), 0, ENTRY_COUNT);
 
-        //we start a new node to verify that cache records do not lose expiry policy information during migration
-        instances[0] = factory.newHazelcastInstance();
+        // we start a new node to verify that cache records do not lose expiry policy information during migration
+        hz = factory.newHazelcastInstance();
 
-        //trigger new expiry policy
+        // trigger new expiry policy
         accessEntries(cache, 0, ENTRY_COUNT);
         assertAllNullEventually(cache, 0, ENTRY_COUNT);
     }
 
-    // Create a CachingProvider off currentVersionInstance, then create a new Cache with a typed CacheConfig
     private ICache<String, String> createCache(HazelcastInstance instance) {
+        // create a CachingProvider off currentVersionInstance, then create a new Cache with a typed CacheConfig
         CachingProvider cachingProvider = HazelcastServerCachingProvider.createCachingProvider(instance);
         CacheManager cacheManager = cachingProvider.getCacheManager(null, null,
                 HazelcastCachingProvider.propertiesByInstanceItself(instance));
+        //noinspection unchecked
         return cacheManager.createCache(cacheName, createCacheConfig()).unwrap(ICache.class);
     }
 
-    private void putCache(ICache cache, int from, int to) {
+    private static CacheConfig<String, String> createCacheConfig() {
+        CacheConfig<String, String> cacheConfig = new CacheConfig<String, String>();
+        cacheConfig.setTypes(String.class, String.class);
+        return cacheConfig;
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private static void putCache(ICache<String, String> cache, int from, int to) {
         for (int i = from; i < to; i++) {
             cache.put(Integer.toString(i), Integer.toString(i));
         }
     }
 
-    private void setExpiryPolicy(ICache cache, ExpiryPolicy expiryPolicy, int from, int to) {
+    @SuppressWarnings("SameParameterValue")
+    private static void setExpiryPolicy(ICache<String, String> cache, ExpiryPolicy expiryPolicy, int from, int to) {
         for (int i = from; i < to; i++) {
             cache.setExpiryPolicy(Integer.toString(i), expiryPolicy);
         }
     }
 
-    private void accessEntries(ICache cache, int from, int to) {
+    @SuppressWarnings("SameParameterValue")
+    private static void accessEntries(ICache<String, String> cache, int from, int to) {
         for (int i = from; i < to; i++) {
             cache.get(Integer.toString(i));
         }
     }
 
-    private void assertAllNullEventually(final ICache cache, final int from, final int to) {
+    @SuppressWarnings("SameParameterValue")
+    private static void assertAllNullEventually(final ICache<String, String> cache, final int from, final int to) {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
@@ -107,11 +116,5 @@ public class ICacheSetExpiryPolicyCompatibilityTest extends HazelcastTestSupport
                 }
             }
         });
-    }
-
-    private CacheConfig<String, String> createCacheConfig() {
-        CacheConfig<String, String> cacheConfig = new CacheConfig();
-        cacheConfig.setTypes(String.class, String.class);
-        return cacheConfig;
     }
 }

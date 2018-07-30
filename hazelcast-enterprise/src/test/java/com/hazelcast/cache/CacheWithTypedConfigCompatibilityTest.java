@@ -15,7 +15,6 @@ import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -30,6 +29,7 @@ import static com.hazelcast.cache.CacheUtil.getPrefixedCacheName;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getCurrentVersion;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getOldestKnownVersion;
 import static com.hazelcast.test.starter.HazelcastStarter.getTargetVersionClassloader;
+import static com.hazelcast.test.starter.HazelcastStarterUtils.rethrowGuardianException;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -37,24 +37,21 @@ import static org.junit.Assert.assertTrue;
 @Category(CompatibilityTest.class)
 public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport {
 
-    CompatibilityTestHazelcastInstanceFactory factory;
-    HazelcastInstance[] instances;
-    HazelcastInstance currentVersionInstance;
-    String cacheName;
+    private String cacheName = randomName();
 
-    @Before
-    public void setup() {
-        cacheName = randomName();
-    }
+    private CompatibilityTestHazelcastInstanceFactory factory;
+    private HazelcastInstance[] instances;
+    private HazelcastInstance currentVersionInstance;
 
     @After
     public void tearDown() {
-        factory.terminateAll();
+        if (factory != null) {
+            factory.terminateAll();
+        }
     }
 
     @Test
-    public void testTypedCacheConfig_worksOnPreviousClusterVersion()
-            throws ClassNotFoundException {
+    public void testTypedCacheConfig_worksOnPreviousClusterVersion() {
         factory = new CompatibilityTestHazelcastInstanceFactory();
         instances = factory.newInstances();
         currentVersionInstance = instances[instances.length - 1];
@@ -65,9 +62,8 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
     }
 
     @Test
-    public void testPreviousVersionMember_joinsCurrentVersionMaster_withTypedCacheConfig()
-            throws ClassNotFoundException {
-        String[] versions = new String[] {getOldestKnownVersion(), getCurrentVersion(), getOldestKnownVersion()};
+    public void testPreviousVersionMember_joinsCurrentVersionMaster_withTypedCacheConfig() {
+        String[] versions = new String[]{getOldestKnownVersion(), getCurrentVersion(), getOldestKnownVersion()};
         factory = new CompatibilityTestHazelcastInstanceFactory(versions);
         // start previous & current instances
         instances = factory.newInstances(null, versions.length - 1);
@@ -86,7 +82,7 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
 
     @Test
     public void testCurrentVersionMember_joinsCurrentVersionMasterWithTypedCacheConfig_afterUpgrade() {
-        String[] versions = new String[] {getOldestKnownVersion(), getCurrentVersion(), getCurrentVersion()};
+        String[] versions = new String[]{getOldestKnownVersion(), getCurrentVersion(), getCurrentVersion()};
         factory = new CompatibilityTestHazelcastInstanceFactory(versions);
         // start previous & current instances
         instances = factory.newInstances(null, versions.length - 1);
@@ -105,23 +101,24 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
         assertClusterSizeEventually(2, currentVersionInstance);
     }
 
-    // Create a CachingProvider off currentVersionInstance, then create a new Cache with a typed CacheConfig
     private Cache<String, Person> createCache() {
+        // create a CachingProvider off currentVersionInstance, then create a new Cache with a typed CacheConfig
         CachingProvider cachingProvider = HazelcastServerCachingProvider.createCachingProvider(currentVersionInstance);
         CacheManager cacheManager = cachingProvider.getCacheManager(null, null,
                 HazelcastCachingProvider.propertiesByInstanceItself(currentVersionInstance));
         return cacheManager.createCache(cacheName, createCacheConfig());
     }
 
-    private void assertCacheWorks(Cache cache) {
+    private void assertCacheWorks(Cache<String, Person> cache) {
         EntryProcessor<String, Person, Person> entryProcessor = new PersonEntryProcessor();
         for (int i = 0; i < 1000; i++) {
             cache.put(Integer.toString(i), new Person());
             cache.invoke(Integer.toString(i), entryProcessor);
         }
 
-        CompleteConfiguration<String, Person> observedCacheConfig =
-                (CompleteConfiguration<String, Person>) cache.getConfiguration(CacheConfig.class);
+        //noinspection unchecked
+        CompleteConfiguration<String, Person> observedCacheConfig
+                = (CompleteConfiguration<String, Person>) cache.getConfiguration(CacheConfig.class);
         assertNotNull(observedCacheConfig.getCacheLoaderFactory());
         assertNotNull(observedCacheConfig.getCacheWriterFactory());
         assertNotNull(observedCacheConfig.getExpiryPolicyFactory());
@@ -129,7 +126,7 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
     }
 
     private CacheConfig<String, Person> createCacheConfig() {
-        CacheConfig<String, Person> cacheConfig = new CacheConfig();
+        CacheConfig<String, Person> cacheConfig = new CacheConfig<String, Person>();
         cacheConfig
                 .setTypes(String.class, Person.class)
                 .setCacheLoaderFactory(new PersonCacheLoaderFactory())
@@ -139,16 +136,21 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
         return cacheConfig;
     }
 
-    private void assertCacheConfigCorrectOnOlderMember(String version, HazelcastInstance member)
-            throws ClassNotFoundException {
-        ICache cache = member.getCacheManager().getCache(getPrefixedCacheName(cacheName, null, null));
-        ClassLoader targetClassLoader = getTargetVersionClassloader(version, true, null);
-        Class cacheConfigClass = targetClassLoader.loadClass("com.hazelcast.config.CacheConfig");
-        CompleteConfiguration<String, Person> observedCacheConfig =
-                (CompleteConfiguration<String, Person>) cache.getConfiguration(cacheConfigClass);
-        assertNotNull(observedCacheConfig.getCacheLoaderFactory());
-        assertNotNull(observedCacheConfig.getCacheWriterFactory());
-        assertNotNull(observedCacheConfig.getExpiryPolicyFactory());
-        assertTrue(observedCacheConfig.getCacheEntryListenerConfigurations().iterator().hasNext());
+    private void assertCacheConfigCorrectOnOlderMember(String version, HazelcastInstance member) {
+        try {
+            ICache cache = member.getCacheManager().getCache(getPrefixedCacheName(cacheName, null, null));
+            ClassLoader targetClassLoader = getTargetVersionClassloader(version, true, null);
+            Class cacheConfigClass = targetClassLoader.loadClass("com.hazelcast.config.CacheConfig");
+
+            //noinspection unchecked
+            CompleteConfiguration<String, Person> observedCacheConfig
+                    = (CompleteConfiguration<String, Person>) cache.getConfiguration(cacheConfigClass);
+            assertNotNull(observedCacheConfig.getCacheLoaderFactory());
+            assertNotNull(observedCacheConfig.getCacheWriterFactory());
+            assertNotNull(observedCacheConfig.getExpiryPolicyFactory());
+            assertTrue(observedCacheConfig.getCacheEntryListenerConfigurations().iterator().hasNext());
+        } catch (ClassNotFoundException e) {
+            throw rethrowGuardianException(e);
+        }
     }
 }

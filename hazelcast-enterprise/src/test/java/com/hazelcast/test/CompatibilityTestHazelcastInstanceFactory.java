@@ -2,11 +2,12 @@ package com.hazelcast.test;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.instance.FirewallingNodeContext;
 import com.hazelcast.instance.HazelcastInstanceFactory;
+import com.hazelcast.instance.NodeContext;
 import com.hazelcast.nio.Address;
 import com.hazelcast.test.mocknetwork.TestNodeRegistry;
 import com.hazelcast.test.starter.HazelcastStarter;
-import com.hazelcast.util.collection.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +15,11 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.instance.TestUtil.getNode;
 import static com.hazelcast.test.TestEnvironment.isMockNetwork;
+import static com.hazelcast.util.EmptyStatement.ignore;
+import static com.hazelcast.util.collection.ArrayUtils.concat;
+import static java.lang.reflect.Proxy.isProxyClass;
 import static org.junit.Assume.assumeFalse;
 
 /**
@@ -57,7 +62,7 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
      * <b>Note:</b> Some tests require cluster with 3 members,
      * so when a new release is made, repeat the same version twice.
      */
-    public static final String[] RELEASED_VERSIONS = new String[]{"3.10", "3.10"};
+    public static final String[] RELEASED_VERSIONS = new String[]{"3.10.3", "3.10.4"};
 
     /**
      * System property to override the versions to be used by any compatibility test.
@@ -109,8 +114,28 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
      */
     public static String[] getKnownReleasedAndCurrentVersions() {
         String[] allReleasedAndCurrentVersion = new String[RELEASED_VERSIONS.length + 1];
-        ArrayUtils.concat(RELEASED_VERSIONS, new String[]{CURRENT_VERSION}, allReleasedAndCurrentVersion);
+        concat(RELEASED_VERSIONS, new String[]{CURRENT_VERSION}, allReleasedAndCurrentVersion);
         return allReleasedAndCurrentVersion;
+    }
+
+    /**
+     * Sets the first instance in the given array to the non-proxy
+     * {@link HazelcastInstance}.
+     * <p>
+     * This method can be used in tests, which need the Hazelcast instance with
+     * the current version at the first index of the instances array.
+     *
+     * @param instances the given HazelcastInstances
+     */
+    public static void setFirstInstanceToNonProxyInstance(HazelcastInstance[] instances) {
+        for (int i = 0; i < instances.length; i++) {
+            HazelcastInstance current = instances[i];
+            if (!isProxyClass(current.getClass())) {
+                instances[i] = instances[0];
+                instances[0] = current;
+                return;
+            }
+        }
     }
 
     /**
@@ -181,11 +206,22 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
     }
 
     /**
-     * Returns all created Hazelcast instances.
+     * Returns all running Hazelcast instances (see
+     * {@link TestNodeRegistry#getAllHazelcastInstances()}).
      */
     @Override
     public Collection<HazelcastInstance> getAllHazelcastInstances() {
-        return new LinkedList<HazelcastInstance>(instances);
+        Collection<HazelcastInstance> all = new LinkedList<HazelcastInstance>();
+        for (HazelcastInstance hz : instances) {
+            try {
+                if (getNode(hz).isRunning()) {
+                    all.add(hz);
+                }
+            } catch (IllegalArgumentException e) {
+                ignore(e);
+            }
+        }
+        return all;
     }
 
     @Override
@@ -271,9 +307,13 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
     }
 
     private HazelcastInstance nextInstance(Config config) {
+        if (config == null) {
+            config = new Config();
+        }
         String nextVersion = nextVersion();
         if (CURRENT_VERSION.equals(nextVersion)) {
-            HazelcastInstance hz = HazelcastInstanceFactory.newHazelcastInstance(config);
+            NodeContext nodeContext = new FirewallingNodeContext();
+            HazelcastInstance hz = HazelcastInstanceFactory.newHazelcastInstance(config, config.getInstanceName(), nodeContext);
             instances.add(hz);
             return hz;
         } else {
@@ -291,16 +331,14 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
      * <li>fallback to all released versions</li>
      * </ol>
      */
-    private String[] resolveVersions(String[] versions) {
+    private static String[] resolveVersions(String[] versions) {
         String systemPropertyOverride = System.getProperty(COMPATIBILITY_TEST_VERSIONS);
         if (systemPropertyOverride != null) {
             return systemPropertyOverride.split(",");
         }
-
         if (versions != null) {
             return versions;
         }
-
         return getKnownReleasedAndCurrentVersions();
     }
 }

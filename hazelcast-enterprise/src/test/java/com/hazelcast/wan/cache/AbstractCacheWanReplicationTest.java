@@ -3,15 +3,28 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.merge.HigherHitsCacheMergePolicy;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
+import com.hazelcast.config.CacheSimpleConfig;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
+import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.DistributedObject;
+import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.wan.custom.CustomWanConsumer;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheWriter;
+import javax.cache.integration.CacheWriterException;
+import java.io.Serializable;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
@@ -265,8 +278,8 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
                 DEFAULT_CACHE_NAME);
 
         final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig(wanReplicationConfigName)
-                                                              .getWanPublisherConfigs()
-                                                              .get(0);
+                .getWanPublisherConfigs()
+                .get(0);
         targetClusterConfig.setInitialPublisherState(WanPublisherState.STOPPED);
 
         startClusterA();
@@ -296,8 +309,8 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
                 DEFAULT_CACHE_NAME);
 
         final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig(wanReplicationConfigName)
-                                                              .getWanPublisherConfigs()
-                                                              .get(0);
+                .getWanPublisherConfigs()
+                .get(0);
         targetClusterConfig.setInitialPublisherState(WanPublisherState.PAUSED);
 
         startClusterA();
@@ -351,4 +364,154 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
                 expiryPolicy);
         checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
     }
+
+    @Test
+    public void replicated_data_is_not_persisted_by_default() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+                DEFAULT_CACHE_NAME);
+
+        final TestCacheWriter1 writer = new TestCacheWriter1();
+        CacheSimpleConfig cacheConfig = configB.getCacheConfig(DEFAULT_CACHE_NAME);
+        cacheConfig.setWriteThrough(true);
+        cacheConfig.setCacheWriterFactory(TestCacheWriter1.class.getName());
+
+        startClusterA();
+        startClusterB();
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        removeCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50);
+
+        // Ensure no put or delete operation is passed to cache writer.
+        assertTrueAllTheTime(new AssertTask() {
+            @Override
+            public void run() {
+                assertEquals(0, writer.writeCount.get());
+                assertEquals(0, writer.deleteCount.get());
+            }
+        }, 10);
+    }
+
+    @Test
+    public void replicated_data_is_persisted_when_persistWanReplicatedData_is_true() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length,
+                "atob", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+
+        final TestCacheWriter2 writer = new TestCacheWriter2();
+        CacheSimpleConfig cacheConfig = configB.getCacheConfig(DEFAULT_CACHE_NAME);
+        cacheConfig.setWriteThrough(true);
+        cacheConfig.setCacheWriterFactory(TestCacheWriter2.class.getName());
+        cacheConfig.setWanReplicationRef(getWanReplicationRefFrom(configB, true));
+
+        startClusterA();
+        startClusterB();
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        removeCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50);
+
+        // Ensure no put or delete operation is passed to cache writer.
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                assertEquals(50, writer.writeCount.get());
+                assertEquals(50, writer.deleteCount.get());
+            }
+        });
+    }
+
+    private static WanReplicationRef getWanReplicationRefFrom(Config config,
+                                                              boolean persistWanReplicatedData) {
+
+        WanConsumerConfig consumerConfig = new WanConsumerConfig();
+        consumerConfig.setPersistWanReplicatedData(persistWanReplicatedData);
+        consumerConfig.setClassName(CustomWanConsumer.class.getName());
+
+        WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
+        wanReplicationConfig.setName("b");
+        wanReplicationConfig.setWanConsumerConfig(consumerConfig);
+
+        config.addWanReplicationConfig(wanReplicationConfig);
+
+        WanReplicationRef wanReplicationRef = new WanReplicationRef();
+        wanReplicationRef.setName("b");
+        wanReplicationRef.setMergePolicy(PassThroughMergePolicy.class.getName());
+
+        return wanReplicationRef;
+    }
+
+    public static class TestCacheWriter1 implements CacheWriter<Integer, Integer>,
+            Serializable, Factory<CacheWriter<Integer, Integer>> {
+
+        protected static AtomicInteger writeCount = new AtomicInteger();
+        protected static AtomicInteger deleteCount = new AtomicInteger();
+
+        @Override
+        public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) throws CacheWriterException {
+            Thread.dumpStack();
+            writeCount.incrementAndGet();
+        }
+
+        @Override
+        public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends Integer>> entries) throws CacheWriterException {
+            for (Cache.Entry<? extends Integer, ? extends Integer> entry : entries) {
+                write(entry);
+            }
+        }
+
+        @Override
+        public void delete(Object key) throws CacheWriterException {
+            Thread.dumpStack();
+            deleteCount.incrementAndGet();
+        }
+
+        @Override
+        public void deleteAll(Collection<?> keys) throws CacheWriterException {
+            for (Object key : keys) {
+                delete(key);
+            }
+        }
+
+        @Override
+        public CacheWriter<Integer, Integer> create() {
+            return this;
+        }
+    }
+
+    public static class TestCacheWriter2 implements CacheWriter<Integer, Integer>,
+            Serializable, Factory<CacheWriter<Integer, Integer>> {
+
+        protected static AtomicInteger writeCount = new AtomicInteger();
+        protected static AtomicInteger deleteCount = new AtomicInteger();
+
+        @Override
+        public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) throws CacheWriterException {
+            writeCount.incrementAndGet();
+        }
+
+        @Override
+        public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends Integer>> entries) throws CacheWriterException {
+            for (Cache.Entry<? extends Integer, ? extends Integer> entry : entries) {
+                write(entry);
+            }
+        }
+
+        @Override
+        public void delete(Object key) throws CacheWriterException {
+            deleteCount.incrementAndGet();
+        }
+
+        @Override
+        public void deleteAll(Collection<?> keys) throws CacheWriterException {
+            for (Object key : keys) {
+                delete(key);
+            }
+        }
+
+        @Override
+        public CacheWriter<Integer, Integer> create() {
+            return this;
+        }
+    }
+
 }

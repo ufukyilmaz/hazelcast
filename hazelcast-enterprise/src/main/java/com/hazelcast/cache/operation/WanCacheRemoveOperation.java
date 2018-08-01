@@ -2,6 +2,7 @@ package com.hazelcast.cache.operation;
 
 import com.hazelcast.cache.impl.operation.CacheRemoveBackupOperation;
 import com.hazelcast.cache.impl.operation.MutatingCacheOperation;
+import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -20,14 +21,16 @@ public class WanCacheRemoveOperation extends MutatingCacheOperation {
     public WanCacheRemoveOperation() {
     }
 
-    public WanCacheRemoveOperation(String name, String wanGroupName, Data key, int completionId) {
+    public WanCacheRemoveOperation(String name, String wanGroupName,
+                                   Data key, int completionId) {
         super(name, key, completionId);
         this.wanGroupName = wanGroupName;
     }
 
     @Override
     public void run() throws Exception {
-        response = recordStore.remove(key, getCallerUuid(), wanGroupName, completionId);
+        response = recordStore.remove(key, getCallerUuid(),
+                wanGroupName, completionId, CallerProvenance.WAN);
     }
 
     @Override

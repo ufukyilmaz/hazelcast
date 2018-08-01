@@ -22,6 +22,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -266,15 +267,16 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public CacheRecord merge(CacheMergeTypes mergingEntry, SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy) {
-        return toHeapCacheRecord((HiDensityNativeMemoryCacheRecord) super.merge(mergingEntry, mergePolicy));
+    public CacheRecord merge(CacheMergeTypes mergingEntry,
+                             SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy, CallerProvenance callerProvenance) {
+        return toHeapCacheRecord((HiDensityNativeMemoryCacheRecord) super.merge(mergingEntry, mergePolicy, callerProvenance));
     }
 
     @Override
     public CacheRecord merge(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
-                             String caller, String origin, int completionId) {
+                             String caller, String origin, int completionId, CallerProvenance callerProvenance) {
         return toHeapCacheRecord((HiDensityNativeMemoryCacheRecord) super.merge(cacheEntryView, mergePolicy,
-                caller, origin, completionId));
+                caller, origin, completionId, callerProvenance));
     }
 
     @Override

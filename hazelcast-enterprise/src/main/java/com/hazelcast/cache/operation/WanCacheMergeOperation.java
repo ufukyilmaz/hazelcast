@@ -3,6 +3,7 @@ package com.hazelcast.cache.operation;
 import com.hazelcast.cache.impl.operation.CachePutBackupOperation;
 import com.hazelcast.cache.impl.operation.MutatingCacheOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -39,7 +40,7 @@ public class WanCacheMergeOperation extends MutatingCacheOperation {
 
     @Override
     public void run() throws Exception {
-        CacheRecord record = recordStore.merge(mergingEntry, mergePolicy);
+        CacheRecord record = recordStore.merge(mergingEntry, mergePolicy, CallerProvenance.WAN);
         if (record != null) {
             response = true;
             backupRecord = recordStore.getRecord(key);

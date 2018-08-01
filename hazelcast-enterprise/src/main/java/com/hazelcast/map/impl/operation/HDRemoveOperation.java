@@ -1,10 +1,17 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.internal.cluster.Versions;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.spi.impl.MutatingOperation;
 
-public class HDRemoveOperation extends HDBaseRemoveOperation implements IdentifiedDataSerializable, MutatingOperation {
+import java.io.IOException;
+
+public class HDRemoveOperation extends HDBaseRemoveOperation
+        implements IdentifiedDataSerializable, MutatingOperation, Versioned {
 
     protected boolean successful;
 
@@ -17,7 +24,7 @@ public class HDRemoveOperation extends HDBaseRemoveOperation implements Identifi
 
     @Override
     protected void runInternal() {
-        dataOldValue = mapServiceContext.toData(recordStore.remove(dataKey));
+        dataOldValue = mapServiceContext.toData(recordStore.remove(dataKey, getCallerProvenance()));
         successful = dataOldValue != null;
     }
 
@@ -36,5 +43,25 @@ public class HDRemoveOperation extends HDBaseRemoveOperation implements Identifi
     @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.REMOVE;
+    }
+
+    @Override
+    protected void writeInternal(ObjectDataOutput out) throws IOException {
+        super.writeInternal(out);
+
+        // RU_COMPAT_3_10
+        if (out.getVersion().isGreaterOrEqual(Versions.V3_11)) {
+            out.writeBoolean(disableWanReplicationEvent);
+        }
+    }
+
+    @Override
+    protected void readInternal(ObjectDataInput in) throws IOException {
+        super.readInternal(in);
+
+        // RU_COMPAT_3_10
+        if (in.getVersion().isGreaterOrEqual(Versions.V3_11)) {
+            disableWanReplicationEvent = in.readBoolean();
+        }
     }
 }

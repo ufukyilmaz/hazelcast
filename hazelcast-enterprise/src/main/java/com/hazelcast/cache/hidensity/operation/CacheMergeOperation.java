@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -61,7 +62,7 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     }
 
     private void merge(CacheMergeTypes mergingEntry) {
-        CacheRecord backupRecord = recordStore.merge(mergingEntry, mergePolicy);
+        CacheRecord backupRecord = recordStore.merge(mergingEntry, mergePolicy, CallerProvenance.NOT_WAN);
 
         if (hasBackups && backupRecord != null) {
             backupRecords.put(mergingEntry.getKey(), backupRecord);

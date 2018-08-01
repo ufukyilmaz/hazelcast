@@ -23,7 +23,7 @@ public class HDTryRemoveOperation extends HDBaseRemoveOperation implements Mutat
     @Override
     protected void runInternal() {
         MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        dataOldValue = mapServiceContext.toData(recordStore.remove(dataKey));
+        dataOldValue = mapServiceContext.toData(recordStore.remove(dataKey, getCallerProvenance()));
         successful = dataOldValue != null;
     }
 

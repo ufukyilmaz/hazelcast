@@ -8,6 +8,8 @@ import com.hazelcast.spi.Operation;
 
 import java.io.IOException;
 
+import static com.hazelcast.wan.impl.CallerProvenance.WAN;
+
 /**
  * Operation implementation for cache remove functionality to be used
  * by WAN replication services.
@@ -28,7 +30,7 @@ public class WanCacheRemoveOperation
 
     @Override
     public void runInternal() {
-        response = recordStore.remove(key, getCallerUuid(), wanGroupName, completionId);
+        response = recordStore.remove(key, getCallerUuid(), wanGroupName, completionId, WAN);
     }
 
     @Override

@@ -16,6 +16,7 @@ import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.mapstore.MapDataStore;
 import com.hazelcast.map.impl.nearcache.EnterpriseMapNearCacheManager;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
@@ -111,8 +112,8 @@ public abstract class AbstractHDMapOperationTest {
         when(recordStore.getMapDataStore()).thenReturn(mapDataStore);
         when(recordStore.getMapContainer()).thenReturn(mapContainer);
         when(recordStore.getRecord(any(Data.class))).thenReturn(record);
-        when(recordStore.putBackup(any(Data.class), any())).thenReturn(record);
-        when(recordStore.putBackup(any(Data.class), any(Data.class), anyLong(), anyBoolean())).thenReturn(record);
+        when(recordStore.putBackup(any(Data.class), any(), any(CallerProvenance.class))).thenReturn(record);
+        when(recordStore.putBackup(any(Data.class), any(Data.class), anyLong(), anyBoolean(), any(CallerProvenance.class))).thenReturn(record);
 
         partitionMaps = new ConcurrentHashMap<String, RecordStore>();
 
@@ -264,9 +265,9 @@ public abstract class AbstractHDMapOperationTest {
 
         if (verifyBackups) {
             if (operationType == PUT_ALL) {
-                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any());
+                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(), any(CallerProvenance.class));
             } else {
-                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(Data.class), anyLong(), anyBoolean());
+                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(Data.class), anyLong(), anyBoolean(), any(CallerProvenance.class));
             }
         }
 

@@ -24,11 +24,11 @@ import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
  *
  * @since 3.10
  */
-public class HDMergeOperation extends HDMapOperation implements PartitionAwareOperation, BackupAwareOperation {
+public class HDMergeOperation extends HDMapOperation
+        implements PartitionAwareOperation, BackupAwareOperation {
 
     private List<MapMergeTypes> mergingEntries;
     private SplitBrainMergePolicy<Data, MapMergeTypes> mergePolicy;
-    private boolean disableWanReplicationEvent;
 
     private transient int size;
     private transient int currentIndex;
@@ -86,7 +86,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
         Data dataKey = mergingEntry.getKey();
         Data oldValue = hasMapListener ? getValue(dataKey) : null;
 
-        if (recordStore.merge(mergingEntry, mergePolicy)) {
+        if (recordStore.merge(mergingEntry, mergePolicy, getCallerProvenance())) {
             hasMergedValues = true;
             Data dataValue = getValueOrPostProcessedValue(dataKey, getValue(dataKey));
             mapServiceContext.interceptAfterPut(name, dataValue);
@@ -153,7 +153,7 @@ public class HDMergeOperation extends HDMapOperation implements PartitionAwareOp
 
     @Override
     public Operation getBackupOperation() {
-        return new HDPutAllBackupOperation(name, mapEntries, backupRecordInfos);
+        return new HDPutAllBackupOperation(name, mapEntries, backupRecordInfos, disableWanReplicationEvent);
     }
 
     @Override

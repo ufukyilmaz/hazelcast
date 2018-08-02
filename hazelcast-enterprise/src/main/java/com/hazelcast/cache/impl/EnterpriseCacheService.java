@@ -48,6 +48,7 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.util.Clock;
+import com.hazelcast.util.CollectionUtil;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -55,6 +56,7 @@ import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -569,7 +571,8 @@ public class EnterpriseCacheService
                 wanReplicationPublishers.get(cacheEventContext.getCacheName());
         if (wanReplicationPublisher != null && cacheEventContext.getOrigin() == null) {
             CacheConfig config = configs.get(cacheName);
-            List<String> filters = config.getWanReplicationRef().getFilters();
+            WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
+            List<String> filters = getFiltersFrom(wanReplicationRef);
 
             if (isEventFiltered(cacheEventContext, filters)) {
                 return;
@@ -608,6 +611,15 @@ public class EnterpriseCacheService
                 }
             }
         }
+    }
+
+    private static List<String> getFiltersFrom(WanReplicationRef wanReplicationRef) {
+        if (wanReplicationRef == null) {
+            return Collections.emptyList();
+        }
+
+        List<String> filters = wanReplicationRef.getFilters();
+        return CollectionUtil.isEmpty(filters) ? Collections.<String>emptyList() : filters;
     }
 
     private boolean isOwnedPartition(Data dataKey) {

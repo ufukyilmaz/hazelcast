@@ -1,6 +1,8 @@
 package com.hazelcast.map.impl.event;
 
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
@@ -17,7 +19,9 @@ import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.Clock;
+import com.hazelcast.util.CollectionUtil;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
@@ -119,7 +123,10 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      * @return if the event matches the WAN replication filter
      */
     private boolean isEventFiltered(MapContainer mapContainer, EntryView entryView, WanFilterEventType eventType) {
-        List<String> filters = mapContainer.getMapConfig().getWanReplicationRef().getFilters();
+        MapConfig mapConfig = mapContainer.getMapConfig();
+        WanReplicationRef wanReplicationRef = mapConfig.getWanReplicationRef();
+        List<String> filters = getFiltersFrom(wanReplicationRef);
+
         if (filters.isEmpty()) {
             // By default do not transfer updates over WAN if they are the result of
             // loads by MapLoader.
@@ -136,6 +143,15 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
             }
         }
         return false;
+    }
+
+    private static List<String> getFiltersFrom(WanReplicationRef wanReplicationRef) {
+        if (wanReplicationRef == null) {
+            return Collections.emptyList();
+        }
+
+        List<String> filters = wanReplicationRef.getFilters();
+        return CollectionUtil.isEmpty(filters) ? Collections.<String>emptyList() : filters;
     }
 
     private EnterpriseMapServiceContext getEnterpriseMapServiceContext() {

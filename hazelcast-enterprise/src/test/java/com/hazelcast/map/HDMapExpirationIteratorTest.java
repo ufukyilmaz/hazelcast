@@ -9,7 +9,6 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Log4j2Factory;
 import com.hazelcast.logging.LogEvent;
 import com.hazelcast.logging.LoggerFactory;
-import com.hazelcast.map.impl.eviction.ExpirationManager;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -25,22 +24,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({SlowTest.class})
-public class HDExpirationIteratorTest extends HazelcastTestSupport {
+public class HDMapExpirationIteratorTest extends HazelcastTestSupport {
 
     private IMap map;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         String factoryClassName = CMECatcherLoggerFactory.class.getName();
         System.setProperty("hazelcast.logging.class", factoryClassName);
 
         Config config = getHDConfig();
-        config.setProperty(ExpirationManager.PROP_TASK_PERIOD_SECONDS, "1");
+        config.setProperty(PROP_TASK_PERIOD_SECONDS, "1");
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
 
         HazelcastInstance node = createHazelcastInstance(config);

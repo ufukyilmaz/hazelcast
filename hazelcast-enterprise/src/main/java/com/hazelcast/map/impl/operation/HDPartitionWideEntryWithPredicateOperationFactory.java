@@ -26,7 +26,7 @@ public class HDPartitionWideEntryWithPredicateOperationFactory extends Partition
     }
 
     @Override
-    public PartitionAwareOperationFactory createFactoryOnRunner(NodeEngine nodeEngine) {
+    public PartitionAwareOperationFactory createFactoryOnRunner(NodeEngine nodeEngine, int[] partitions) {
         return new HDPartitionWideEntryWithPredicateOperationFactory(name, entryProcessor, predicate);
     }
 

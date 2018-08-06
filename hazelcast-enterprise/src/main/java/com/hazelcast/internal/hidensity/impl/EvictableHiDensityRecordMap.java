@@ -13,7 +13,9 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.Clock;
-import com.hazelcast.util.QuickMath;
+
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * @param <R> type of the {@link HiDensityRecord} to be stored
@@ -24,6 +26,8 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
 
     protected static final int ONE_HUNDRED_PERCENT = 100;
     protected static final int MIN_EVICTION_ELEMENT_COUNT = 10;
+
+    protected Iterator<Map.Entry<Data, R>> expirationIterator;
 
     // to reuse every time a key is read from a reference
     protected final NativeMemoryData keyHolder = new NativeMemoryData();
@@ -79,75 +83,68 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         return evictedEntryCount;
     }
 
-    public int evictExpiredRecords() {
-        return doEvictExpiredRecords(null, null);
-    }
+    /**
+     * Scans entries to delete expired ones.
+     *
+     * This method is not thread safe and is called under lock.
+     *
+     * A background task calls this method periodically. We expect from this
+     * method to find and delete expired entries eventually. For this purpose,
+     * in each call, it only scans a fixed number of entries. {@link
+     * #expirationIterator} is used for this scanning.
+     *
+     * @param evictionListener  used to listen evicted entries
+     * @param expirationChecker used to check entries for expiry
+     * @param maxScannableNum   scan at most this number of entries
+     * @see #initExpirationIterator()
+     */
+    public void scanByNumberToDeleteExpired(EvictionListener<Data, R> evictionListener,
+                                            ExpirationChecker<R> expirationChecker, int maxScannableNum) {
 
-    public int evictExpiredRecords(EvictionListener<Data, R> evictionListener) {
-        return doEvictExpiredRecords(evictionListener, null);
-    }
+        long now = Clock.currentTimeMillis();
+        int scannedNum = 0;
+        initExpirationIterator();
 
-    public int evictExpiredRecords(ExpirationChecker<R> expirationChecker) {
-        return doEvictExpiredRecords(null, expirationChecker);
-    }
-
-    public int evictExpiredRecords(EvictionListener<Data, R> evictionListener,
-                                   ExpirationChecker<R> expirationChecker) {
-        return doEvictExpiredRecords(evictionListener, expirationChecker);
-    }
-
-    protected <C extends EvictionCandidate<Data, R>> int doEvictExpiredRecords(
-            EvictionListener<Data, R> evictionListener, ExpirationChecker<R> expirationChecker) {
-        final long now = Clock.currentTimeMillis();
-        final int start = 0;
-        final int end = capacity();
-        final int mask = end - 1;
-
-        // assert capacity is power of 2, otherwise loop below will not work
-        // we know BinaryOffHeapHashMap.capacity() is power of 2
-        assert QuickMath.isPowerOfTwo(end);
-
-        int evictedEntryCount = 0;
-        int ix = start;
-        boolean shifted;
-
-        while (true) {
-            shifted = false;
-            if (accessor.isAssigned(ix)) {
-                long key = accessor.getKey(ix);
-                NativeMemoryData keyData = recordProcessor.readData(key);
-                R value = get(keyData);
-                boolean evict;
-                if (expirationChecker == null) {
-                    evict = value.isExpiredAt(now);
-                } else {
-                    evict = expirationChecker.isExpired(value);
-                }
-                if (evict) {
-                    onEvict(keyData, value, true);
-                    if (evictionListener != null) {
-                        evictionListener.onEvict(keyData, value, true);
-                    }
-                    delete(keyData);
-                    recordProcessor.disposeData(keyData);
-                    evictedEntryCount++;
-                    // if disposed index is still allocated, it means next keys are shifted
-                    shifted = accessor.isAssigned(ix);
-                }
+        while (expirationIterator.hasNext()) {
+            if (scannedNum >= maxScannableNum) {
+                break;
             }
-            if (!shifted) {
-                ix = (ix + 1) & mask;
-                if (ix == start) {
-                    break;
+            scannedNum++;
+            Entry<Data, R> entry = expirationIterator.next();
+            R record = entry.getValue();
+            if (record == null) {
+                continue;
+            }
+
+            boolean expired = expirationChecker == null
+                    ? record.isExpiredAt(now) : expirationChecker.isExpired(record);
+
+            if (expired) {
+                Data keyData = entry.getKey();
+                onEvict(keyData, record, true);
+                if (evictionListener != null) {
+                    evictionListener.onEvict(keyData, record, true);
                 }
+                delete(keyData);
+                recordProcessor.disposeData(keyData);
             }
         }
-        return evictedEntryCount;
+    }
+
+    /**
+     * Initializes {@link #expirationIterator} when it is either null or
+     * reached to the end of iteration.
+     */
+    private void initExpirationIterator() {
+        if (expirationIterator == null || !expirationIterator.hasNext()) {
+            expirationIterator = entryIter(false);
+        }
     }
 
     @Override
-    public <C extends EvictionCandidate<Data, R>> boolean tryEvict(C evictionCandidate,
-            EvictionListener<Data, R> evictionListener) {
+    public <C extends EvictionCandidate<Data, R>> boolean tryEvict(C
+                                                                           evictionCandidate,
+                                                                   EvictionListener<Data, R> evictionListener) {
         if (evictionCandidate == null) {
             return false;
         }
@@ -167,6 +164,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
     }
 
     @Override
-    public void onEvict(Data evictedEntryAccessor, R evictedEntry, boolean wasExpired) {
+    public void onEvict(Data evictedEntryAccessor, R evictedEntry,
+                        boolean wasExpired) {
     }
 }

@@ -32,6 +32,7 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.nearcache.NearCache.CACHED_AS_NULL;
 import static com.hazelcast.internal.nearcache.NearCacheRecord.READ_PERMITTED;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static java.lang.Integer.getInteger;
 
 /**
  * {@link com.hazelcast.internal.nearcache.NearCacheRecordStore} implementation for Near Caches
@@ -44,6 +45,14 @@ public class NativeMemoryNearCacheRecordStore<K, V>
         extends AbstractNearCacheRecordStore<K, V, Data, NativeMemoryNearCacheRecord, NativeMemoryNearCacheRecordMap>
         implements HiDensityNearCacheRecordStore<K, V, NativeMemoryNearCacheRecord> {
 
+    /**
+     * Background expiration task can only scan at most this number of
+     * entries in a round. This scanning is done under lock and has
+     * potential to affect other operations if it takes too long time.
+     */
+    private static final int DEFAULT_MAX_SCANNABLE_ENTRY_COUNT_PER_LOOP = 100;
+    private static final String PROP_MAX_SCANNABLE_ENTRY_COUNT_PER_LOOP
+            = "hazelcast.internal.hd.near.cache.max.scannable.entry.count.per.loop";
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
 
     /**
@@ -51,9 +60,11 @@ public class NativeMemoryNearCacheRecordStore<K, V>
      */
     private static final int SLOT_COST_IN_BYTES = 16;
 
+    private int maxScannableEntryCountPerLoop;
+
+    private HiDensityStorageInfo storageInfo;
     private HazelcastMemoryManager memoryManager;
     private NativeMemoryNearCacheRecordAccessor recordAccessor;
-    private HiDensityStorageInfo storageInfo;
     private HiDensityRecordProcessor<NativeMemoryNearCacheRecord> recordProcessor;
     private final RecordEvictionListener recordEvictionListener = new RecordEvictionListener();
     private final RecordExpirationChecker recordExpirationChecker = new RecordExpirationChecker();
@@ -68,6 +79,8 @@ public class NativeMemoryNearCacheRecordStore<K, V>
                                             ClassLoader classLoader) {
         super(nearCacheConfig, nearCacheStats, ss, classLoader);
         this.storageInfo = storageInfo;
+        this.maxScannableEntryCountPerLoop = getInteger(PROP_MAX_SCANNABLE_ENTRY_COUNT_PER_LOOP,
+                DEFAULT_MAX_SCANNABLE_ENTRY_COUNT_PER_LOOP);
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
@@ -394,7 +407,8 @@ public class NativeMemoryNearCacheRecordStore<K, V>
     @Override
     public void doExpiration() {
         checkAvailable();
-        records.evictExpiredRecords(recordEvictionListener, recordExpirationChecker);
+        records.scanByNumberToDeleteExpired(recordEvictionListener,
+                recordExpirationChecker, maxScannableEntryCountPerLoop);
     }
 
     @Override

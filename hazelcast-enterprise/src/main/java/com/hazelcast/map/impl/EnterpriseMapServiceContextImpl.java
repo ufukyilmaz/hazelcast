@@ -51,7 +51,6 @@ import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -192,32 +191,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     @Override
     public Data toData(Object object) {
         return ((EnterpriseSerializationService) getNodeEngine().getSerializationService()).toData(object, DataType.HEAP);
-    }
-
-    @Override
-    public void clearMapsHavingLesserBackupCountThan(int partitionId, int backupCount) {
-        PartitionContainer container = getPartitionContainer(partitionId);
-        if (container != null) {
-            Iterator<RecordStore> iter = container.getMaps().values().iterator();
-            while (iter.hasNext()) {
-                RecordStore recordStore = iter.next();
-                if (backupCount > recordStore.getMapContainer().getTotalBackupCount()) {
-                    recordStore.destroy();
-                    iter.remove();
-                }
-            }
-        }
-    }
-
-    @Override
-    public void clearPartitionData(int partitionId) {
-        PartitionContainer container = partitionContainers[partitionId];
-        if (container != null) {
-            for (RecordStore recordStore : container.getMaps().values()) {
-                recordStore.destroy();
-            }
-            container.getMaps().clear();
-        }
     }
 
     @Override

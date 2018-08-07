@@ -41,6 +41,8 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final int backupSeq = 0;
         final HazelcastInstance firstInstance = instances.iterator().next();
         final HotRestartService service = firstInstance.getCluster().getHotRestartService();
+        assertEquals(firstInstance.getConfig().getHotRestartPersistenceConfig().getBackupDir().getAbsolutePath(),
+                service.getBackupDirectory());
         BackupTaskStatus status = service.getBackupTaskStatus();
         assertEquals(0, status.getCompleted());
         assertEquals(BackupTaskState.NO_TASK, status.getState());

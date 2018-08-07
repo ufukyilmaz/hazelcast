@@ -106,6 +106,11 @@ public class HotBackupService implements HotRestartService, TransactionalService
         return true;
     }
 
+    @Override
+    public String getBackupDirectory() {
+        return node.getConfig().getHotRestartPersistenceConfig().getBackupDir().getAbsolutePath();
+    }
+
     private void broadcast(Operation operation) {
         final InternalOperationService operationService = node.getNodeEngine().getOperationService();
         for (Member member : node.getClusterService().getMembers()) {

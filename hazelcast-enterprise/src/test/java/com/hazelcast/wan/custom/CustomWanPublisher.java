@@ -9,6 +9,8 @@ import com.hazelcast.wan.WanReplicationEvent;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 public class CustomWanPublisher extends AbstractWanPublisher implements Runnable {
 
     static final BlockingQueue<WanReplicationEvent> EVENT_QUEUE = new ArrayBlockingQueue<WanReplicationEvent>(100);
@@ -30,9 +32,11 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
     public void run() {
         while (running) {
             try {
-                WanReplicationEvent event = stagingQueue.take();
-                EVENT_QUEUE.put(event);
-                removeReplicationEvent(event);
+                WanReplicationEvent event = stagingQueue.poll(100, MILLISECONDS);
+                if (event != null) {
+                    EVENT_QUEUE.put(event);
+                    removeReplicationEvent(event);
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

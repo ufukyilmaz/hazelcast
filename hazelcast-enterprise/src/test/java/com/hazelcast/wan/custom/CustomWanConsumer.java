@@ -6,6 +6,8 @@ import com.hazelcast.enterprise.wan.WanReplicationConsumer;
 import com.hazelcast.instance.Node;
 import com.hazelcast.wan.WanReplicationEvent;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 public class CustomWanConsumer implements WanReplicationConsumer, Runnable {
 
     private volatile boolean running = true;
@@ -26,10 +28,12 @@ public class CustomWanConsumer implements WanReplicationConsumer, Runnable {
     public void run() {
         while (running) {
             try {
-                WanReplicationEvent event = com.hazelcast.wan.custom.CustomWanPublisher.EVENT_QUEUE.take();
-                EnterpriseWanReplicationService wanRepService
-                        = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
-                wanRepService.handleEvent(event);
+                WanReplicationEvent event = com.hazelcast.wan.custom.CustomWanPublisher.EVENT_QUEUE.poll(100, MILLISECONDS);
+                if (event != null) {
+                    EnterpriseWanReplicationService wanRepService
+                            = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
+                    wanRepService.handleEvent(event);
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

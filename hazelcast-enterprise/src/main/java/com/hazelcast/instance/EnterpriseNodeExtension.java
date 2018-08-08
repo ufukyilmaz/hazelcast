@@ -14,19 +14,23 @@ import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.PartitioningStrategy;
-import com.hazelcast.enterprise.management.EnterpriseManagementCenterConnectionFactory;
-import com.hazelcast.enterprise.management.EnterpriseTimedMemberStateFactory;
+import com.hazelcast.enterprise.monitor.impl.jmx.EnterpriseManagementService;
+import com.hazelcast.enterprise.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
+import com.hazelcast.enterprise.monitor.impl.management.EnterpriseTimedMemberStateFactory;
+import com.hazelcast.enterprise.monitor.impl.rest.EnterpriseTextCommandServiceImpl;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
+import com.hazelcast.internal.ascii.TextCommandService;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.internal.diagnostics.Diagnostics;
 import com.hazelcast.internal.diagnostics.WANPlugin;
 import com.hazelcast.internal.dynamicconfig.DynamicConfigListener;
 import com.hazelcast.internal.dynamicconfig.HotRestartConfigListener;
+import com.hazelcast.internal.jmx.ManagementService;
 import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
@@ -37,6 +41,7 @@ import com.hazelcast.internal.networking.ChannelOutboundHandler;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListener;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.util.LicenseExpirationReminderTask;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.domain.LicenseVersion;
@@ -65,6 +70,7 @@ import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.security.SecurityService;
 import com.hazelcast.security.impl.SecurityServiceImpl;
 import com.hazelcast.security.impl.WeakSecretsConfigChecker;
+import com.hazelcast.spi.TaskScheduler;
 import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
@@ -98,7 +104,9 @@ import static com.hazelcast.util.StringUtil.isNullOrEmpty;
         "checkstyle:classfanoutcomplexity",
         "checkstyle:methodcount"
 })
-public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension, MetricsProvider {
+public class EnterpriseNodeExtension
+        extends DefaultNodeExtension
+        implements NodeExtension, MetricsProvider {
 
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
     private static final NoopInternalHotRestartService NOOP_INTERNAL_HOT_RESTART_SERVICE = new NoopInternalHotRestartService();
@@ -234,12 +242,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             node.shutdown(true);
             return;
         }
+
         final int nodeCount = node.getClusterService().getSize();
-        if (nodeCount > license.getAllowedNumberOfNodes()) {
-            logger.log(Level.SEVERE,
-                    "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: "
+        final int flexNodeCountAllowance = LicenseHelper.getFlexibleNodeCount(license);
+
+        if (nodeCount > flexNodeCountAllowance) {
+            logger.log(Level.SEVERE, "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: "
                             + license.getAllowedNumberOfNodes() + ", Current: " + nodeCount);
             node.shutdown(true);
+            return;
         }
 
         if (hotRestartService != null) {
@@ -269,6 +280,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
 
         initWanConsumers();
+        initLicenseExpReminder();
+    }
+
+    private void initLicenseExpReminder() {
+        TaskScheduler scheduler = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();
+        LicenseExpirationReminderTask.scheduleWith(scheduler, license);
     }
 
     /**
@@ -728,5 +745,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             return super.createDynamicConfigListener();
         }
         return new HotRestartConfigListener(hotRestartService);
+    }
+
+    @Override
+    public ManagementService createJMXManagementService(HazelcastInstanceImpl instance) {
+        return new EnterpriseManagementService(instance);
+    }
+
+    @Override
+    public TextCommandService createTextCommandService() {
+        return new EnterpriseTextCommandServiceImpl(node);
     }
 }

@@ -1,4 +1,4 @@
-package com.hazelcast.enterprise.management;
+package com.hazelcast.enterprise.monitor.impl.management;
 
 import com.hazelcast.config.MCMutualAuthConfig;
 import com.hazelcast.core.HazelcastException;

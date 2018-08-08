@@ -1,0 +1,16 @@
+package com.hazelcast.enterprise.monitor.impl.rest;
+
+import com.hazelcast.instance.Node;
+import com.hazelcast.internal.ascii.TextCommandServiceImpl;
+
+import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.HTTP_GET;
+
+public class EnterpriseTextCommandServiceImpl
+        extends TextCommandServiceImpl {
+
+    public EnterpriseTextCommandServiceImpl(Node node) {
+        super(node);
+        register(HTTP_GET, new EnterpriseHttpGetCommandProcessor(this));
+    }
+
+}

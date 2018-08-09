@@ -2,12 +2,15 @@ package com.hazelcast.enterprise.wan.sync;
 
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.AbstractLocalOperation;
 
 /**
  * Operation to start a WAN synchronization.
+ * This operation is invoked locally. The local member is then designated
+ * as a coordinator member which broadcasts the sync event to all other
+ * members.
  */
-public class WanSyncStarterOperation extends Operation implements IdentifiedDataSerializable {
+public class WanSyncStarterOperation extends AbstractLocalOperation implements IdentifiedDataSerializable {
 
     private String wanReplicationName;
     private String targetGroupName;
@@ -26,15 +29,5 @@ public class WanSyncStarterOperation extends Operation implements IdentifiedData
     public void run() throws Exception {
         EnterpriseWanReplicationService wanReplicationService = getService();
         wanReplicationService.populateSyncEventOnMembers(wanReplicationName, targetGroupName, syncEvent);
-    }
-
-    @Override
-    public int getFactoryId() {
-        throw new UnsupportedOperationException("WanSyncStartOperation is local only");
-    }
-
-    @Override
-    public int getId() {
-        throw new UnsupportedOperationException("WanSyncStartOperation is local only");
     }
 }

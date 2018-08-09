@@ -10,7 +10,9 @@ import com.hazelcast.spi.Operation;
 import java.io.IOException;
 
 /**
- * Operation that is responsible to publish {@link WanSyncEvent}s
+ * Operation that is responsible to publish {@link WanSyncEvent}s and trigger
+ * WAN sync. The response for this operation is sent when events for all
+ * entries have been enqueued for replication but not yet replicated.
  */
 public class WanSyncOperation extends Operation implements IdentifiedDataSerializable {
 

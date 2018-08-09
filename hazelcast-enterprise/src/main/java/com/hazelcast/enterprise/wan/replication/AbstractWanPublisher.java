@@ -18,16 +18,12 @@ import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
-import com.hazelcast.enterprise.wan.sync.GetMapPartitionDataOperation;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
-import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncResult;
-import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.monitor.LocalWanPublisherStats;
@@ -60,9 +56,7 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.MapUtil.isNullOrEmpty;
@@ -95,7 +89,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     protected String localGroupName;
     protected String targetGroupName;
     protected String wanReplicationName;
-    protected WanSyncManager syncManager;
     protected WANQueueFullBehavior queueFullBehavior;
     protected WanConfigurationContext configurationContext;
     protected PollSynchronizerPublisherQueueContainer eventQueueContainer;
@@ -106,21 +99,16 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     protected BlockingQueue<WanReplicationEvent> stagingQueue;
     protected BlockingQueue<WanSyncEvent> syncRequests = new ArrayBlockingQueue<WanSyncEvent>(DEFAULT_STAGING_QUEUE_SIZE);
 
-    private MapService mapService;
     private EnterpriseWanReplicationService wanService;
     private WanQueueMigrationSupport wanQueueMigrationSupport;
+    private WanPublisherSyncSupport syncSupport;
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
     private final Set<Operation> liveOperations = newSetFromMap(new ConcurrentHashMap<Operation, Boolean>());
-    /**
-     * The count of ongoing {@link WanReplicationEvent} sync events per partition
-     */
-    private final Map<Integer, AtomicInteger> counterMap = new ConcurrentHashMap<Integer, AtomicInteger>();
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
         this.configurationContext = new WanConfigurationContext(publisherConfig.getProperties());
         this.node = node;
-        this.mapService = node.nodeEngine.getService(MapService.SERVICE_NAME);
         this.targetGroupName = publisherConfig.getGroupName();
         this.wanReplicationName = wanReplicationConfig.getName();
         this.logger = node.getLogger(getClass());
@@ -130,7 +118,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         this.stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(getStagingQueueSize());
         this.queueFullBehavior = publisherConfig.getQueueFullBehavior();
         this.wanService = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
-        this.syncManager = wanService.getSyncManager();
 
         final DistributedServiceWanEventCounters mapCounters = wanService.getSentEventCounters(
                 wanReplicationName, targetGroupName, MapService.SERVICE_NAME);
@@ -140,8 +127,9 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         this.localWanPublisherStats.setSentCacheEventCounter(unmodifiableMap(cacheCounters.getEventCounterMap()));
         this.wanQueueMigrationSupport = new WanQueueMigrationSupport(eventQueueContainer, wanCounter);
         this.state = publisherConfig.getInitialPublisherState();
+        this.syncSupport = new WanPublisherSyncSupport(node, this);
 
-        node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller(syncManager));
+        node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller());
     }
 
     /**
@@ -294,11 +282,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      */
     public void removeReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         if (wanReplicationEvent.getEventObject() instanceof EnterpriseMapReplicationSync) {
-            EnterpriseMapReplicationSync sync = (EnterpriseMapReplicationSync) wanReplicationEvent.getEventObject();
-            int remainingEventCount = counterMap.get(sync.getPartitionId()).decrementAndGet();
-            if (remainingEventCount == 0) {
-                syncManager.incrementSyncedPartitionCount();
-            }
+            syncSupport.removeReplicationEvent((EnterpriseMapReplicationSync) wanReplicationEvent.getEventObject());
             return;
         }
         updateStats(wanReplicationEvent);
@@ -473,20 +457,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
             int partitionId = node.nodeEngine.getPartitionService().getPartitionId(key);
             node.nodeEngine.getOperationService()
                     .invokeOnPartition(serviceName, operation, partitionId).get();
-        } catch (Throwable t) {
-            throw rethrow(t);
-        }
-    }
-
-    private Object invokeOp(Operation operation) {
-        try {
-
-            Future future = node.nodeEngine
-                    .getOperationService()
-                    .createInvocationBuilder(MapService.SERVICE_NAME, operation, operation.getPartitionId())
-                    .setResultDeserialized(false)
-                    .invoke();
-            return future.get();
         } catch (Throwable t) {
             throw rethrow(t);
         }
@@ -670,6 +640,36 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     /**
+     * Offer a single event to the staging queue, blocking if necessary
+     *
+     * @return {@code true} if the event was accepted by the queue. This will
+     * always be {@code true} unless the WAN publisher is shutting down.
+     */
+    boolean offerToStagingQueue(WanReplicationEvent event) {
+        while (running) {
+            try {
+                stagingQueue.put(event);
+                return true;
+            } catch (InterruptedException ignored) {
+                currentThread().interrupt();
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Sends a response to the {@link WanSyncEvent#getOp()}
+     */
+    private void sendResponse(WanSyncEvent event,
+                              WanSyncResult result) {
+        try {
+            event.getOp().sendResponse(result);
+        } catch (Exception ex) {
+            logger.warning(ex);
+        }
+    }
+
+    /**
      * This runnable is responsible for multiplexing the WAN events from the
      * WAN replication queues with WAN events triggered by a
      * {@link WanSyncEvent}. It then fills the staging queue with WAN events
@@ -686,18 +686,11 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         private static final int MAX_SLEEP_MS = 2000;
         private static final int SLEEP_INTERVAL_MS = 200;
         private int emptyIterationCount;
-        private WanSyncManager syncManager;
-
-        QueuePoller(WanSyncManager syncManager) {
-            this.syncManager = syncManager;
-        }
 
         @Override
         public void run() {
             while (running) {
-                final WanSyncEvent syncEvent = syncRequests.poll();
-                if (syncEvent != null) {
-                    sync(syncEvent);
+                if (tryProcessAntiEntropyEvent()) {
                     continue;
                 }
 
@@ -716,6 +709,28 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
                     }
                 }
             }
+        }
+
+        /**
+         * Checks if there is an anti-entropy request and processes the request.
+         *
+         * @return {@code true} if the method processed a WAN anti-entropy event
+         */
+        private boolean tryProcessAntiEntropyEvent() {
+            final WanSyncEvent event = syncRequests.poll();
+            if (event != null) {
+                WanSyncResult result = new WanSyncResult();
+                try {
+                    syncSupport.processEvent(event, result);
+                    return true;
+                } catch (Exception ex) {
+                    logger.warning("WAN sync event processing failed", ex);
+                } finally {
+                    sendResponse(event, result);
+                    liveOperations.remove(event.getOp());
+                }
+            }
+            return false;
         }
 
         /**
@@ -743,113 +758,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
                 }
             }
             return offered;
-        }
-
-        /**
-         * Offer a single event to the staging queue, blocking if necessary
-         *
-         * @return {@code true} if the event was accepted by the queue. This will
-         * always be {@code true} unless the WAN publisher is shutting down.
-         */
-        private boolean offerToStagingQueue(WanReplicationEvent event) {
-            while (running) {
-                try {
-                    stagingQueue.put(event);
-                    return true;
-                } catch (InterruptedException ignored) {
-                    currentThread().interrupt();
-                }
-            }
-            return false;
-        }
-
-        /**
-         * Syncs only {@link WanSyncEvent#getPartitionSet()} partitions or all
-         * partitions if the set is empty.
-         *
-         * @param syncEvent the partition sync event
-         */
-        private void sync(WanSyncEvent syncEvent) {
-            syncManager.resetSyncedPartitionCount();
-            WanSyncResult result = new WanSyncResult();
-            try {
-                Set<Integer> syncedPartitions = result.getSyncedPartitions();
-                if (syncEvent.getPartitionSet().isEmpty()) {
-                    for (IPartition partition : node.getPartitionService().getPartitions()) {
-                        syncPartition(syncEvent, syncedPartitions, partition);
-                    }
-                } else {
-                    for (Integer partitionIds : syncEvent.getPartitionSet()) {
-                        IPartition partition = node.getPartitionService().getPartition(partitionIds);
-                        syncPartition(syncEvent, syncedPartitions, partition);
-                    }
-                }
-            } catch (Exception ex) {
-                logger.warning(ex);
-            } finally {
-                sendResponse(syncEvent, result);
-                liveOperations.remove(syncEvent.getOp());
-            }
-        }
-
-        /**
-         * Syncs the given {@code partition} if this node is the owner and adds
-         * the partition to the {@code syncedPartitions}
-         */
-        private void syncPartition(WanSyncEvent syncEvent, Set<Integer> syncedPartitions, IPartition partition) {
-            if (partition.isLocal()) {
-                syncPartition(syncEvent, partition);
-                syncedPartitions.add(partition.getPartitionId());
-            }
-        }
-
-        /**
-         * Sends a response to the {@link WanSyncEvent#getOp()}
-         */
-        private void sendResponse(WanSyncEvent syncEvent, WanSyncResult result) {
-            try {
-                syncEvent.getOp().sendResponse(result);
-            } catch (Exception ex) {
-                logger.warning(ex);
-            }
-        }
-
-        /**
-         * Syncs the {@code partition} for all maps or a specific map, depending
-         * on {@link WanSyncEvent#getType()}
-         */
-        private void syncPartition(WanSyncEvent syncEvent, IPartition partition) {
-            int partitionEventCount = 0;
-            counterMap.put(partition.getPartitionId(), new AtomicInteger());
-            if (syncEvent.getType() == WanSyncType.ALL_MAPS) {
-                for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
-                    partitionEventCount += syncPartitionForMap(mapName, partition);
-                }
-            } else {
-                partitionEventCount += syncPartitionForMap(syncEvent.getName(), partition);
-            }
-            if (partitionEventCount == 0) {
-                syncManager.incrementSyncedPartitionCount();
-            }
-        }
-
-        /**
-         * Gets all map partition data and offers it to the staging queue, blocking until all entries have been offered
-         */
-        @SuppressWarnings("unchecked")
-        private int syncPartitionForMap(String mapName, IPartition partition) {
-            GetMapPartitionDataOperation op = new GetMapPartitionDataOperation(mapName);
-            op.setPartitionId(partition.getPartitionId());
-            Set<SimpleEntryView> set = (Set<SimpleEntryView>) invokeOp(op);
-            counterMap.get(partition.getPartitionId()).addAndGet(set.size());
-
-            for (SimpleEntryView simpleEntryView : set) {
-                EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(
-                        mapName, simpleEntryView, partition.getPartitionId());
-                WanReplicationEvent event = wrapReplicationEvent(MapService.SERVICE_NAME, sync);
-                offerToStagingQueue(event);
-            }
-            return set.size();
         }
     }
 }

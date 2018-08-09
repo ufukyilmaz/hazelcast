@@ -1,17 +1,17 @@
 package com.hazelcast.enterprise.wan.sync;
 
 /**
- * WAN sync types.
+ * WAN sync types. These define the scope of entries which need to be synced.
  */
 public enum WanSyncType {
 
     /**
-     * Sync all maps.
+     * Sync all entries for all maps.
      */
     ALL_MAPS(0),
 
     /**
-     * Sync only a specific map.
+     * Sync all entries for a specific map.
      */
     SINGLE_MAP(1);
 

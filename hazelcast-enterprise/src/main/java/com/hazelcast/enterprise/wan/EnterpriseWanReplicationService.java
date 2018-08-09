@@ -137,6 +137,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     /**
      * Publishes a sync event for the given {@code wanReplicationName} and
      * {@code targetGroupName}.
+     * This method does not wait for WAN sync to complete.
      *
      * @param wanReplicationName the WAN replication config name
      * @param targetGroupName    the group name in the WAN replication config

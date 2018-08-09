@@ -10,10 +10,11 @@ import com.hazelcast.monitor.impl.WanSyncStateImpl;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
+import com.hazelcast.util.collection.InflatableSet;
+import com.hazelcast.util.collection.InflatableSet.Builder;
 import com.hazelcast.wan.WanSyncStatus;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -56,9 +57,20 @@ public class WanSyncManager {
         running = false;
     }
 
+    /**
+     * Initiates a WAN sync event and designates this member as the
+     * coordinator to broadcast the event to other cluster members.
+     * This method will return as soon as the sync publication has
+     * initiated but not yet processed.
+     *
+     * @param wanReplicationName name of WAN replication configuration (scheme)
+     * @param targetGroupName    WAN target cluster group name
+     * @param event              the WAN sync event
+     * @throws SyncFailedException if there is an ongoing sync event being processed
+     */
     public void initiateSyncRequest(final String wanReplicationName,
                                     final String targetGroupName,
-                                    final WanSyncEvent syncEvent) {
+                                    final WanSyncEvent event) {
         // first check if endpoint exists for the given wanReplicationName and targetGroupName
         wanReplicationService.getEndpoint(wanReplicationName, targetGroupName);
         if (!SYNC_STATUS.compareAndSet(this, WanSyncStatus.READY, WanSyncStatus.IN_PROGRESS)) {
@@ -69,7 +81,7 @@ public class WanSyncManager {
         node.nodeEngine.getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
             @Override
             public void run() {
-                Operation operation = new WanSyncStarterOperation(wanReplicationName, targetGroupName, syncEvent);
+                Operation operation = new WanSyncStarterOperation(wanReplicationName, targetGroupName, event);
                 getOperationService().invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
                         operation, getClusterService().getThisAddress());
             }
@@ -81,49 +93,96 @@ public class WanSyncManager {
         return new WanSyncStateImpl(syncStatus, syncedPartitionCount, activeWanConfig, activePublisher);
     }
 
-    public void populateSyncRequestOnMembers(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {
+    /**
+     * Keeps broadcasting the WAN sync event to all members until it
+     * has been triggered for all partitions or some partitions have failed for
+     * {@value MAX_RETRY_COUNT} times.
+     * <p>
+     * This method merely is concerned with publishing the event on all
+     * partitions. Whether the event is fully processed when this method returns
+     * depends on the semantics of processing each event type.
+     * In case of WAN sync event, the sync is not complete when this method
+     * returns. After this method returns, entries for all partitions have been
+     * enqueued but not yet replicated.
+     *
+     * @param wanReplicationName name of WAN replication configuration (scheme)
+     * @param targetGroupName    WAN target cluster group name
+     * @param event              the WAN sync event
+     */
+    public void populateSyncRequestOnMembers(String wanReplicationName,
+                                             String targetGroupName,
+                                             WanSyncEvent event) {
         int retryCount = 0;
         try {
-            Set<Member> members = getClusterService().getMembers();
-            List<Future<WanSyncResult>> futures = new ArrayList<Future<WanSyncResult>>(members.size());
-            for (Member member : getClusterService().getMembers()) {
-                WanSyncEvent wanSyncEvent = new WanSyncEvent(syncEvent.getType(), syncEvent.getName());
-                Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName, wanSyncEvent);
-                Future<WanSyncResult> future = getOperationService()
-                        .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, operation, member.getAddress());
-                futures.add(future);
-            }
+            Set<Integer> partitionsToSync = event.getPartitionSet();
 
-            Set<Integer> partitionIds = getAllPartitionIds();
-            addResultOfOps(futures, partitionIds);
-            while (!partitionIds.isEmpty() && running) {
-                futures.clear();
-                logger.info("WAN sync will retry missing partitions - " + partitionIds);
+            while (running) {
+                broadcastEvent(wanReplicationName, targetGroupName, event, partitionsToSync);
 
-                for (Member member : getClusterService().getMembers()) {
-                    WanSyncEvent wanSyncEvent = new WanSyncEvent(syncEvent.getType(), syncEvent.getName());
-                    wanSyncEvent.setPartitionSet(partitionIds);
-                    Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName, wanSyncEvent);
-                    Future<WanSyncResult> future = getOperationService()
-                            .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, operation, member.getAddress());
-                    futures.add(future);
+                if (partitionsToSync.isEmpty()) {
+                    break;
                 }
-                addResultOfOps(futures, partitionIds);
-                if (!partitionIds.isEmpty()) {
-                    if (++retryCount == MAX_RETRY_COUNT) {
-                        logger.warning("Quitting retrying to sync missing partitions. WAN Sync has failed.");
-                        break;
-                    }
-                    try {
-                        Thread.sleep(RETRY_INTERVAL_MILLIS);
-                    } catch (InterruptedException ignored) {
-                        currentThread().interrupt();
-                    }
+
+                if (++retryCount == MAX_RETRY_COUNT) {
+                    logger.warning(String.format("WAN sync event publication failed after %s attempts"
+                            + " with %s partitions not processed", MAX_RETRY_COUNT, partitionsToSync.size()));
+                    break;
+                }
+                logger.info(String.format("WAN sync event publication will retry "
+                        + "because %s partitions have not been processed", partitionsToSync.size()));
+
+                try {
+                    Thread.sleep(RETRY_INTERVAL_MILLIS);
+                } catch (InterruptedException ignored) {
+                    currentThread().interrupt();
                 }
             }
         } finally {
             SYNC_STATUS.set(this, retryCount == MAX_RETRY_COUNT ? WanSyncStatus.FAILED : WanSyncStatus.READY);
         }
+    }
+
+    /**
+     * Broadcasts the {@code event} to all cluster members.
+     * The {@code partitionKeys} map provides the keys for which the event has
+     * not yet been processed. Entries will be removed from this map once the
+     * event has been successfully processed. This method returns the map after
+     * a single round of broadcast is performed.
+     * <p>
+     * This method returns as soon as all cluster invocations return, either
+     * successfully or with a failure.
+     * This method merely is concerned with publishing the event on all
+     * partitions. Whether the event is fully processed when this method returns
+     * depends on the semantics of processing each event type.
+     * In case of WAN sync event, the sync is not complete when this method
+     * returns. After this method returns, entries for all partitions have been
+     * enqueued but not yet replicated.
+     *
+     * @param wanReplicationName name of WAN replication configuration (scheme)
+     * @param targetGroupName    WAN target cluster group name
+     * @param event              the WAN sync event
+     * @param partitionsToSync   partition IDs for which this this event applies to
+     */
+    private void broadcastEvent(String wanReplicationName,
+                                String targetGroupName,
+                                WanSyncEvent event,
+                                Set<Integer> partitionsToSync) {
+        final Set<Member> members = getClusterService().getMembers();
+        final List<Future<WanSyncResult>> futures = new ArrayList<Future<WanSyncResult>>(members.size());
+
+        for (Member member : members) {
+            WanSyncEvent wanSyncEvent = new WanSyncEvent(event.getType(), event.getName());
+            wanSyncEvent.setPartitionSet(partitionsToSync);
+
+            Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName, wanSyncEvent);
+            Future<WanSyncResult> future = getOperationService()
+                    .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, operation, member.getAddress());
+            futures.add(future);
+        }
+        if (partitionsToSync == null) {
+            partitionsToSync = getAllPartitions();
+        }
+        addResultOfOps(futures, partitionsToSync);
     }
 
     private InternalOperationService getOperationService() {
@@ -138,32 +197,37 @@ public class WanSyncManager {
         SYNCED_PARTITION_COUNT.set(this, 0);
     }
 
-    private void addResultOfOps(List<Future<WanSyncResult>> futures, Set<Integer> partitionIds) {
+    /**
+     * Removes partitions for which WAN sync has been successfully triggered
+     * from the {@code partitionsToSync} set.
+     *
+     * @param futures          the  list of futures representing pending completion
+     *                         of the WAN sync trigger task
+     * @param partitionsToSync IDs of remaining partitions to be synced
+     */
+    private void addResultOfOps(List<Future<WanSyncResult>> futures,
+                                Set<Integer> partitionsToSync) {
         boolean alreadyLogged = false;
         for (Future<WanSyncResult> future : futures) {
             try {
                 WanSyncResult result = future.get();
-                partitionIds.removeAll(result.getSyncedPartitions());
+                partitionsToSync.removeAll(result.getSyncedPartitions());
             } catch (Exception ex) {
                 if (!alreadyLogged) {
-                    logger.warning("Exception occurred during WAN sync, missing partitions will be retried.", ex);
+                    logger.warning("Exception occurred during WAN sync, missing WAN sync objects will be retried.", ex);
                     alreadyLogged = true;
                 }
             }
         }
     }
 
-    private Set<Integer> getAllPartitionIds() {
+    private Set<Integer> getAllPartitions() {
         int partitionCount = getPartitionService().getPartitionCount();
-        return createSetWithPopulatedPartitionIds(partitionCount);
-    }
-
-    private Set<Integer> createSetWithPopulatedPartitionIds(int partitionCount) {
-        Set<Integer> partitionIds = new HashSet<Integer>(partitionCount);
+        Builder<Integer> builder = InflatableSet.newBuilder(partitionCount);
         for (int i = 0; i < partitionCount; i++) {
-            partitionIds.add(i);
+            builder.add(i);
         }
-        return partitionIds;
+        return builder.build();
     }
 
     /**

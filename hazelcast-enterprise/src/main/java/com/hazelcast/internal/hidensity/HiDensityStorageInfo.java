@@ -72,6 +72,7 @@ public class HiDensityStorageInfo {
         return forceEvictedEntryCount.addAndGet(evictedEntryCount);
     }
 
+    @Probe(name = "forceEvictedEntryCount", level = MANDATORY)
     public long getForceEvictedEntryCount() {
         return forceEvictedEntryCount.get();
     }

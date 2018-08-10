@@ -118,6 +118,11 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     }
 
     @Override
+    protected LocalMapStatsProvider createLocalMapStatsProvider() {
+        return new EnterpriseLocalMapStatsProvider(this);
+    }
+
+    @Override
     void initRecordComparators() {
         super.initRecordComparators();
         recordComparatorMap.put(InMemoryFormat.NATIVE, new HDRecordComparator(serializationService));

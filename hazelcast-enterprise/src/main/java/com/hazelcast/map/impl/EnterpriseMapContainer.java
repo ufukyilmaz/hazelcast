@@ -1,10 +1,14 @@
 package com.hazelcast.map.impl;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.MerkleTreeConfig;
+import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
+import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.eviction.MapEvictionPolicy;
 import com.hazelcast.map.impl.eviction.HDEvictionChecker;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
@@ -37,6 +41,12 @@ public class EnterpriseMapContainer extends MapContainer {
 
     EnterpriseMapContainer(final String name, final Config config, MapServiceContext mapServiceContext) {
         super(name, config, mapServiceContext);
+
+        NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
+        ILogger logger = nodeEngine.getLogger(EnterpriseMapContainer.class);
+        MerkleTreeConfig mapMerkleTreeConfig = nodeEngine.getConfig().findMapMerkleTreeConfig(name);
+        logger.info("Using Merkle trees with depth " + mapMerkleTreeConfig.getDepth() + " for map " + name);
+
     }
 
     @Override
@@ -103,6 +113,14 @@ public class EnterpriseMapContainer extends MapContainer {
     @Override
     public void onDestroy() {
         deregisterMapProbes();
+        if (wanReplicationPublisher != null) {
+            if (wanReplicationPublisher instanceof WanReplicationPublisherDelegate) {
+                ((WanReplicationPublisherDelegate) wanReplicationPublisher).destroyMapData(name);
+            }
+            if (wanReplicationPublisher instanceof WanBatchReplication) {
+                ((WanBatchReplication) wanReplicationPublisher).destroyMapData(name);
+            }
+        }
     }
 
     private void initStorageInfoAndRegisterMapProbes() {

@@ -118,9 +118,14 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
         return connectionManager.getTargetEndpoints();
     }
 
+    WanConnectionManager getConnectionManager() {
+        return connectionManager;
+    }
+
     @Override
     protected void afterShutdown() {
         super.afterShutdown();
+        connectionManager.shutdown();
         if (discoveryService != null) {
             try {
                 discoveryService.destroy();

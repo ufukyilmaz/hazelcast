@@ -1,6 +1,7 @@
 package com.hazelcast.enterprise.wan.replication;
 
 import com.hazelcast.config.WanAcknowledgeType;
+import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -20,8 +21,9 @@ public class WanConfigurationContextTest {
     @Test
     public void testDefaults() {
         final HashMap<String, Comparable> props = new HashMap<String, Comparable>();
-
-        final WanConfigurationContext context = new WanConfigurationContext(props);
+        final WanPublisherConfig publisherConfig = new WanPublisherConfig();
+        publisherConfig.setProperties(props);
+        final WanConfigurationContext context = new WanConfigurationContext(publisherConfig);
         assertEquals(WanConfigurationContext.DEFAULT_IS_SNAPSHOT_ENABLED, context.isSnapshotEnabled());
         assertEquals(WanConfigurationContext.DEFAULT_EXECUTOR_THREAD_COUNT, context.getExecutorThreadCount());
         assertEquals(WanConfigurationContext.DEFAULT_BATCH_SIZE, context.getBatchSize());
@@ -49,7 +51,10 @@ public class WanConfigurationContextTest {
         props.put(WanReplicationProperties.DISCOVERY_PERIOD.key(), 1000);
         props.put(WanReplicationProperties.ENDPOINTS.key(), "A,B,C,D");
 
-        final WanConfigurationContext context = new WanConfigurationContext(props);
+
+        final WanPublisherConfig publisherConfig = new WanPublisherConfig();
+        publisherConfig.setProperties(props);
+        final WanConfigurationContext context = new WanConfigurationContext(publisherConfig);
 
         assertTrue(context.isSnapshotEnabled());
         assertEquals(100, context.getExecutorThreadCount());
@@ -69,7 +74,9 @@ public class WanConfigurationContextTest {
         props.put(WanReplicationProperties.MAX_ENDPOINTS.key(), 1);
         props.put(WanReplicationProperties.ENDPOINTS.key(), "A,B,C,D");
 
-        final WanConfigurationContext context = new WanConfigurationContext(props);
+        final WanPublisherConfig publisherConfig = new WanPublisherConfig();
+        publisherConfig.setProperties(props);
+        final WanConfigurationContext context = new WanConfigurationContext(publisherConfig);
 
         assertEquals(Integer.MAX_VALUE, context.getMaxEndpoints());
         assertEquals("A,B,C,D", context.getEndpoints());
@@ -80,7 +87,9 @@ public class WanConfigurationContextTest {
         final HashMap<String, Comparable> props = new HashMap<String, Comparable>();
         props.put(WanReplicationProperties.MAX_ENDPOINTS.key(), 1);
 
-        final WanConfigurationContext context = new WanConfigurationContext(props);
+        final WanPublisherConfig publisherConfig = new WanPublisherConfig();
+        publisherConfig.setProperties(props);
+        final WanConfigurationContext context = new WanConfigurationContext(publisherConfig);
 
         assertEquals(1, context.getMaxEndpoints());
         assertEquals("", context.getEndpoints());

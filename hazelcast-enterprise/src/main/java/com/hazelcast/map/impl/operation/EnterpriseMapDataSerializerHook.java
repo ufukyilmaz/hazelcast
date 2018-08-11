@@ -107,8 +107,11 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int MERGE = 76;
     public static final int SET_TTL = 77;
     public static final int SET_TTL_BACKUP = 78;
+    public static final int MERKLE_TREE_NODE_COMPARE_OPERATION = 79;
+    public static final int MERKLE_TREE_NODE_COMPARE_OPERATION_FACTORY = 80;
+    public static final int MERKLE_TREE_GET_ENTRIES_OPERATION = 81;
 
-    private static final int LEN = SET_TTL_BACKUP + 1;
+    private static final int LEN = MERKLE_TREE_GET_ENTRIES_OPERATION + 1;
 
     @Override
     public int getFactoryId() {
@@ -574,6 +577,25 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new HDSetTTLBackupOperation();
+            }
+        };
+        constructors[MERKLE_TREE_NODE_COMPARE_OPERATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new MerkleTreeNodeCompareOperation();
+            }
+        };
+        constructors[MERKLE_TREE_NODE_COMPARE_OPERATION_FACTORY] =
+                new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+                    @Override
+                    public IdentifiedDataSerializable createNew(Integer arg) {
+                        return new MerkleTreeNodeCompareOperationFactory();
+                    }
+                };
+        constructors[MERKLE_TREE_GET_ENTRIES_OPERATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new MerkleTreeGetEntriesOperation();
             }
         };
 

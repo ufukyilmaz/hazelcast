@@ -69,4 +69,8 @@ public class EnterprisePartitionContainer extends PartitionContainer {
 
         return ConcurrencyUtil.getOrPutSynchronized(merkleTrees, mapName, merkleTreesMutexFactory, merkleTreeConstructor);
     }
+
+    public MerkleTree getMerkleTreeOrNull(String mapName) {
+        return merkleTrees.get(mapName);
+    }
 }

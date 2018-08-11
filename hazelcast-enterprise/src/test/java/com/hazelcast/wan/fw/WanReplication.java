@@ -1,6 +1,7 @@
 package com.hazelcast.wan.fw;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
@@ -14,6 +15,7 @@ public class WanReplication {
     private final Cluster sourceCluster;
     private final Cluster targetCluster;
     private final String setupName;
+    private final ConsistencyCheckStrategy consistencyCheckStrategy;
     private WanReplicationPublisher wanPublisher;
     private Class<? extends WanReplicationPublisher> wanPublisherClass;
 
@@ -23,6 +25,7 @@ public class WanReplication {
         this.setupName = builder.setupName;
         this.wanPublisher = builder.wanPublisher;
         this.wanPublisherClass = builder.wanPublisherClass;
+        this.consistencyCheckStrategy = builder.consistencyCheckStrategy;
     }
 
     public static WanReplicationBuilder replicate() {
@@ -69,6 +72,8 @@ public class WanReplication {
         } else {
             target.setClassName(wanPublisherClass.getName());
         }
+        target.getWanSyncConfig()
+              .setConsistencyCheckStrategy(consistencyCheckStrategy);
 
         Map<String, Comparable> props = target.getProperties();
         props.put(WanReplicationProperties.GROUP_PASSWORD.key(), config.getGroupConfig().getPassword());
@@ -96,6 +101,7 @@ public class WanReplication {
         private Cluster targetCluster;
         private WanReplicationPublisher wanPublisher;
         private Class<? extends WanReplicationPublisher> wanPublisherClass = WanBatchReplication.class;
+        private ConsistencyCheckStrategy consistencyCheckStrategy;
 
         private WanReplicationBuilder() {
         }
@@ -122,6 +128,11 @@ public class WanReplication {
 
         public WanReplicationBuilder withSetupName(String setupName) {
             this.setupName = setupName;
+            return this;
+        }
+
+        public WanReplicationBuilder withConsistencyCheckStrategy(ConsistencyCheckStrategy consistencyCheckStrategy) {
+            this.consistencyCheckStrategy = consistencyCheckStrategy;
             return this;
         }
 

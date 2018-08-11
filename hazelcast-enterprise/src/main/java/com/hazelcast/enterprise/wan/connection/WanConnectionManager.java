@@ -13,9 +13,11 @@ import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
 import com.hazelcast.spi.discovery.integration.DiscoveryService;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -73,6 +75,7 @@ public class WanConnectionManager {
             };
     private String groupName;
     private WanConfigurationContext configurationContext;
+    private volatile boolean running = true;
 
     public WanConnectionManager(Node node, DiscoveryService discoveryService) {
         this.node = node;
@@ -113,6 +116,37 @@ public class WanConnectionManager {
 
         node.nodeEngine.getExecutionService().scheduleWithRepetition(new TargetEndpointDiscoveryTask(),
                 DISCOVERY_TASK_START_DELAY, configurationContext.getDiscoveryPeriodSeconds(), TimeUnit.SECONDS);
+    }
+
+    /**
+     * Returns a list of currently live endpoints. It will sleep until the list
+     * contains at least one endpoint or {@link #running} is {@code false} (this
+     * connection manager is shutting down) at which point it can return an empty
+     * list.
+     */
+    public List<Address> awaitAndGetTargetEndpoints() {
+        while (running) {
+            final List<Address> endpoints = getTargetEndpoints();
+            if (!endpoints.isEmpty()) {
+                return endpoints;
+            }
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                // the lifecycle of this class is managed by the AbstractWanReplication class from which the shutdown request
+                // is passed down via the running flag by calling the shutdown method
+                // this class is expected to be operational and this method to continue until shutdown is explicitly called
+                EmptyStatement.ignore(e);
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    /**
+     * Shuts down this connection manager.
+     */
+    public void shutdown() {
+        running = false;
     }
 
     /**

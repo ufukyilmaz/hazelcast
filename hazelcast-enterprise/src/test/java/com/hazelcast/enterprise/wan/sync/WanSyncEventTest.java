@@ -46,14 +46,14 @@ public class WanSyncEventTest {
 
         WanSyncEvent expected = new WanSyncEvent(WanSyncType.ALL_MAPS, "eventName");
         expected.setPartitionSet(partitionIds);
-        expected.setOp(new WanSyncOperation());
+        expected.setOp(new WanAntiEntropyEventPublishOperation());
 
         EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder().build();
         Data serialized = serializationService.toData(expected);
         WanSyncEvent deserialized = serializationService.toObject(serialized, WanSyncEvent.class);
 
         assertEquals(expected.getType(), deserialized.getType());
-        assertEquals(expected.getName(), deserialized.getName());
+        assertEquals(expected.getMapName(), deserialized.getMapName());
         assertEquals(expected.getPartitionSet(), deserialized.getPartitionSet());
         assertNull(deserialized.getOp());
     }

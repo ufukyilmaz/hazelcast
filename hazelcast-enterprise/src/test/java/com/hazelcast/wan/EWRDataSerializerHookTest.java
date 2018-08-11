@@ -6,7 +6,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
-import com.hazelcast.enterprise.wan.sync.WanSyncOperation;
+import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEventPublishOperation;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -51,7 +51,7 @@ public class EWRDataSerializerHookTest {
         assertTrue(mapRemove instanceof EnterpriseMapReplicationRemove);
 
         IdentifiedDataSerializable wanSyncOperation = hook.createFactory().create(WAN_SYNC_OPERATION);
-        assertTrue(wanSyncOperation instanceof WanSyncOperation);
+        assertTrue(wanSyncOperation instanceof WanAntiEntropyEventPublishOperation);
 
         IdentifiedDataSerializable postJoinWanOperation = hook.createFactory().create(POST_JOIN_WAN_OPERATION);
         assertTrue(postJoinWanOperation instanceof PostJoinWanOperation);

@@ -2,21 +2,21 @@ package com.hazelcast.enterprise.wan.replication;
 
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.config.WanSyncConfig;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.diagnostics.Diagnostics;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin;
+import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.serialization.SerializationService;
-import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.util.executor.StripedRunnable;
 import com.hazelcast.util.executor.TimeoutRunnable;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -25,6 +25,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.util.ThreadUtil.createThreadName;
 import static java.lang.Thread.currentThread;
 
@@ -81,7 +82,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
             final Map<Address, BatchWanReplicationEvent> batchReplicationEventMap
                     = new ConcurrentHashMap<Address, BatchWanReplicationEvent>();
             final List<WanReplicationEvent> events = drainStagingQueue();
-            final List<Address> liveEndpoints = awaitAndGetTargetEndpoints();
+            final List<Address> liveEndpoints = connectionManager.awaitAndGetTargetEndpoints();
             if (liveEndpoints.isEmpty()) {
                 continue;
             }
@@ -109,6 +110,16 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         }
     }
 
+    @Override
+    protected WanPublisherSyncSupport createWanSyncSupport() {
+        WanSyncConfig syncConfig = configurationContext.getPublisherConfig().getWanSyncConfig();
+        if (syncConfig != null && MERKLE_TREES.equals(syncConfig.getConsistencyCheckStrategy())) {
+            return new WanPublisherMerkleTreeSyncSupport(node, configurationContext, this);
+        } else {
+            return new WanPublisherFullSyncSupport(node, this);
+        }
+    }
+
     /**
      * Creates and returns the {@link WanBatchSender} based on the configuration.
      *
@@ -128,30 +139,11 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                 : sender;
     }
 
-    /**
-     * Returns a list of currently live endpoints. It will sleep until the list contains at least one endpoint
-     * or {@link #running} is {@code false} (this publisher is shutting down) at which point it can return an
-     * empty list.
-     */
-    private List<Address> awaitAndGetTargetEndpoints() {
-        while (running) {
-            final List<Address> endpoints = connectionManager.getTargetEndpoints();
-            if (!endpoints.isEmpty()) {
-                return endpoints;
-            }
-            try {
-                TimeUnit.SECONDS.sleep(1);
-            } catch (InterruptedException e) {
-                EmptyStatement.ignore(e);
-            }
-        }
-        return Collections.emptyList();
-    }
-
     /** Drains the staging queue until enough items have been drained or enough time has passed */
     private List<WanReplicationEvent> drainStagingQueue() {
+        int entriesInBatch = 0;
         List<WanReplicationEvent> wanReplicationEventList = new ArrayList<WanReplicationEvent>();
-        while (!(wanReplicationEventList.size() >= configurationContext.getBatchSize()
+        while (!(entriesInBatch >= configurationContext.getBatchSize()
                 || sendingPeriodPassed(wanReplicationEventList.size()))) {
             if (!running) {
                 break;
@@ -164,6 +156,14 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
             }
             if (event != null) {
                 wanReplicationEventList.add(event);
+
+                if (event.getEventObject() instanceof EnterpriseMapReplicationMerkleTreeNode) {
+                    EnterpriseMapReplicationMerkleTreeNode node =
+                            (EnterpriseMapReplicationMerkleTreeNode) event.getEventObject();
+                    entriesInBatch += node.getEntryCount();
+                } else {
+                    entriesInBatch++;
+                }
             }
         }
         return wanReplicationEventList;

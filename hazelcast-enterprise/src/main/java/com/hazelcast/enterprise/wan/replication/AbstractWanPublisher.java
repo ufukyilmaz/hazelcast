@@ -18,12 +18,15 @@ import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
+import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEvent;
+import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEventResult;
+import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
-import com.hazelcast.enterprise.wan.sync.WanSyncResult;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.monitor.LocalWanPublisherStats;
@@ -97,17 +100,18 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      * be transmitted to the target cluster
      */
     protected BlockingQueue<WanReplicationEvent> stagingQueue;
-    protected BlockingQueue<WanSyncEvent> syncRequests = new ArrayBlockingQueue<WanSyncEvent>(DEFAULT_STAGING_QUEUE_SIZE);
 
     private EnterpriseWanReplicationService wanService;
     private WanQueueMigrationSupport wanQueueMigrationSupport;
     private WanPublisherSyncSupport syncSupport;
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
     private final Set<Operation> liveOperations = newSetFromMap(new ConcurrentHashMap<Operation, Boolean>());
+    private final BlockingQueue<WanAntiEntropyEvent> antiEntropyEvents
+            = new ArrayBlockingQueue<WanAntiEntropyEvent>(DEFAULT_STAGING_QUEUE_SIZE);
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
-        this.configurationContext = new WanConfigurationContext(publisherConfig.getProperties());
+        this.configurationContext = new WanConfigurationContext(publisherConfig);
         this.node = node;
         this.targetGroupName = publisherConfig.getGroupName();
         this.wanReplicationName = wanReplicationConfig.getName();
@@ -127,7 +131,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         this.localWanPublisherStats.setSentCacheEventCounter(unmodifiableMap(cacheCounters.getEventCounterMap()));
         this.wanQueueMigrationSupport = new WanQueueMigrationSupport(eventQueueContainer, wanCounter);
         this.state = publisherConfig.getInitialPublisherState();
-        this.syncSupport = new WanPublisherSyncSupport(node, this);
+        this.syncSupport = createWanSyncSupport();
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller());
     }
@@ -205,6 +209,11 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      * @return {@code true} if the event has been published, otherwise returns {@code false}
      */
     private boolean publishEventInternal(String serviceName, ReplicationEventObject eventObject) {
+        assert !(eventObject instanceof EnterpriseMapReplicationMerkleTreeNode)
+                : "Merkle tree sync objects should not be published";
+        assert !(eventObject instanceof EnterpriseMapReplicationSync)
+                : "Sync objects should not be published";
+
         if (eventObject instanceof EnterpriseMapReplicationObject) {
             String mapName = ((EnterpriseMapReplicationObject) eventObject).getMapName();
             int partitionId = getPartitionId(eventObject.getKey());
@@ -281,8 +290,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      * @throws HazelcastSerializationException when the event fails to serialization
      */
     public void removeReplicationEvent(WanReplicationEvent wanReplicationEvent) {
-        if (wanReplicationEvent.getEventObject() instanceof EnterpriseMapReplicationSync) {
-            syncSupport.removeReplicationEvent((EnterpriseMapReplicationSync) wanReplicationEvent.getEventObject());
+        if (wanReplicationEvent.getEventObject() instanceof EnterpriseMapReplicationSync
+                || wanReplicationEvent.getEventObject() instanceof EnterpriseMapReplicationMerkleTreeNode) {
+            syncSupport.removeReplicationEvent(
+                    (EnterpriseMapReplicationObject) wanReplicationEvent.getEventObject());
             return;
         }
         updateStats(wanReplicationEvent);
@@ -406,6 +417,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         localWanPublisherStats.setState(state);
         localWanPublisherStats.setConnected(isConnected());
         localWanPublisherStats.setOutboundQueueSize(wanCounter.getPrimaryElementCount());
+        localWanPublisherStats.setLastConsistencyCheckResults(syncSupport.getLastConsistencyCheckResults());
         return localWanPublisherStats;
     }
 
@@ -456,7 +468,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         try {
             int partitionId = node.nodeEngine.getPartitionService().getPartitionId(key);
             node.nodeEngine.getOperationService()
-                    .invokeOnPartition(serviceName, operation, partitionId).get();
+                           .invokeOnPartition(serviceName, operation, partitionId).get();
         } catch (Throwable t) {
             throw rethrow(t);
         }
@@ -477,13 +489,32 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
     @Override
     public void publishSyncEvent(WanSyncEvent event) {
+        publishAntiEntropyEvent(event);
+    }
+
+    /**
+     * Publishes an anti-entropy event.
+     * This method does not wait for the event processing to complete.
+     *
+     * @param event the WAN anti-entropy event
+     */
+    public void publishAntiEntropyEvent(WanAntiEntropyEvent event) {
         try {
-            syncRequests.put(event);
+            antiEntropyEvents.put(event);
             liveOperations.add(event.getOp());
         } catch (InterruptedException e) {
             currentThread().interrupt();
             throw rethrow(e);
         }
+    }
+
+    /**
+     * Releases all resources for the map with the given {@code mapName}.
+     *
+     * @param mapName the map name
+     */
+    public void destroyMapData(String mapName) {
+        syncSupport.destroyMapData(mapName);
     }
 
     @Override
@@ -658,15 +689,24 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     /**
-     * Sends a response to the {@link WanSyncEvent#getOp()}
+     * Sends a response to the {@link WanAntiEntropyEvent#getOp()}
      */
-    private void sendResponse(WanSyncEvent event,
-                              WanSyncResult result) {
+    private void sendResponse(WanAntiEntropyEvent event,
+                              WanAntiEntropyEventResult result) {
         try {
             event.getOp().sendResponse(result);
         } catch (Exception ex) {
             logger.warning(ex);
         }
+    }
+
+    /**
+     * Creates a support instance for processing WAN merkle tree anti-entropy
+     * events. This method may return {@code null} if merkle tree WAN sync is
+     * not supported.
+     */
+    protected WanPublisherSyncSupport createWanSyncSupport() {
+        return new WanPublisherFullSyncSupport(node, this);
     }
 
     /**
@@ -717,14 +757,22 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
          * @return {@code true} if the method processed a WAN anti-entropy event
          */
         private boolean tryProcessAntiEntropyEvent() {
-            final WanSyncEvent event = syncRequests.poll();
+            WanAntiEntropyEvent event = antiEntropyEvents.poll();
             if (event != null) {
-                WanSyncResult result = new WanSyncResult();
+                final WanAntiEntropyEventResult result = new WanAntiEntropyEventResult();
                 try {
-                    syncSupport.processEvent(event, result);
-                    return true;
+                    if (event instanceof WanSyncEvent) {
+                        syncSupport.processEvent((WanSyncEvent) event, result);
+                        return true;
+                    }
+                    if (event instanceof WanConsistencyCheckEvent) {
+                        syncSupport.processEvent((WanConsistencyCheckEvent) event, result);
+                        return true;
+                    }
+
+                    logger.info("Ignoring unknown WAN anti-entropy event " + event);
                 } catch (Exception ex) {
-                    logger.warning("WAN sync event processing failed", ex);
+                    logger.warning("WAN anti-entropy event processing failed", ex);
                 } finally {
                     sendResponse(event, result);
                     liveOperations.remove(event.getOp());

@@ -69,6 +69,11 @@ public class Cluster {
         }
     }
 
+    public void startClusterAndWaitForSafeState() {
+        startCluster();
+        waitAllForSafeState(clusterMembers);
+    }
+
     public HazelcastInstance startAClusterMember() {
         for (int i = 0; i < clusterMembers.length; i++) {
             if (clusterMembers[i] == null) {
@@ -147,12 +152,32 @@ public class Cluster {
         }
     }
 
+    public void stopWanReplicationOnAllMembers(WanReplication wanReplication) {
+        for (HazelcastInstance instance : clusterMembers) {
+            if (instance != null) {
+                wanReplicationService(instance).stop(wanReplication.getSetupName(), wanReplication.getTargetClusterName());
+            }
+        }
+    }
+
     public void clearWanQueuesOnAllMembers(WanReplication wanReplication) {
         for (HazelcastInstance instance : clusterMembers) {
             if (instance != null && instance.getLifecycleService().isRunning()) {
                 wanReplicationService(instance).clearQueues(wanReplication.getSetupName(), wanReplication.getTargetClusterName());
             }
         }
+    }
+
+    public void consistencyCheck(WanReplication wanReplication, String mapName) {
+        String wanReplicationName = wanReplication.getSetupName();
+        String targetClusterName = wanReplication.getTargetClusterName();
+        wanReplicationService(getAMember()).consistencyCheck(wanReplicationName, targetClusterName, mapName);
+    }
+
+    public void syncMap(WanReplication wanReplication, String mapName) {
+        String wanReplicationName = wanReplication.getSetupName();
+        String targetClusterName = wanReplication.getTargetClusterName();
+        wanReplicationService(getAMember()).syncMap(wanReplicationName, targetClusterName, mapName);
     }
 
     private int getRandomInstanceIndex(int instances) {

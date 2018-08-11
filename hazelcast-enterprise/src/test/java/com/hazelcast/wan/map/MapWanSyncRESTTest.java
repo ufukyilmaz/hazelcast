@@ -1,11 +1,12 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
@@ -20,17 +21,35 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 
+import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
+import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
 import static com.hazelcast.test.OverridePropertyRule.set;
 import static com.hazelcast.test.TestEnvironment.HAZELCAST_TEST_USE_NETWORK;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(SlowTest.class)
 public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
+
+    @Parameterized.Parameters(name = "consistencyCheckStrategy:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {NONE},
+                {MERKLE_TREES}
+        });
+    }
+
+    @Parameter
+    public ConsistencyCheckStrategy consistencyCheckStrategy;
 
     @Rule
     public final OverridePropertyRule overridePropertyRule = set(HAZELCAST_TEST_USE_NETWORK, "true");
@@ -52,12 +71,18 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
                                    .setProperty(GroupProperty.REST_ENABLED.getName(), "true");
         config.getMapConfig("default")
               .setInMemoryFormat(getMemoryFormat());
+        if (consistencyCheckStrategy == MERKLE_TREES) {
+            config.getMapMerkleTreeConfig("default")
+                  .setEnabled(true)
+                  .setDepth(5);
+        }
         return config;
     }
 
     @Test
     public void syncUsingRestApi() throws Exception {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
+                consistencyCheckStrategy);
         startClusterA();
         startClusterB();
 
@@ -77,7 +102,8 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
 
     @Test
     public void syncAllTestUsingREST() throws IOException {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
+                consistencyCheckStrategy);
         startClusterA();
         startClusterB();
 
@@ -188,7 +214,8 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
 
     @Test
     public void sendMultipleSyncRequestsWithREST() throws IOException {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
+                consistencyCheckStrategy);
         startClusterA();
         HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
         communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName());
@@ -198,7 +225,8 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
 
     @Test
     public void checkWanSyncState() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
+                consistencyCheckStrategy);
         startClusterA();
         startClusterB();
         createDataIn(clusterA, "map", 0, 1000);

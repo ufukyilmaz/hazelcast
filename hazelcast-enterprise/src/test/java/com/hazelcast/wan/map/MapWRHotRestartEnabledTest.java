@@ -1,7 +1,8 @@
 package com.hazelcast.wan.map;
 
+import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -14,17 +15,24 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 import java.io.File;
+import java.util.Collection;
 
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
+import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
+import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
 import static com.hazelcast.nio.IOUtil.deleteQuietly;
+import static java.util.Arrays.asList;
 
 /**
  * WAN replication tests for hot-restart enabled maps.
  */
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
 
@@ -32,6 +40,17 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
     public TestName testName = new TestName();
 
     private File folder;
+
+    @Parameterized.Parameters(name = "consistencyCheckStrategy:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {NONE},
+                {MERKLE_TREES}
+        });
+    }
+
+    @Parameter
+    public ConsistencyCheckStrategy consistencyCheckStrategy;
 
     @Before
     @Override
@@ -50,11 +69,22 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
 
     @Test
     public void basicSyncTest() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
+                consistencyCheckStrategy);
         configA.getMapConfig("default")
                .getHotRestartConfig()
                .setEnabled(true)
                .setFsync(false);
+
+        if (consistencyCheckStrategy == MERKLE_TREES) {
+            configA.getMapMerkleTreeConfig("default")
+                   .setEnabled(true)
+                   .setDepth(5);
+            configB.getMapMerkleTreeConfig("default")
+                   .setEnabled(true)
+                   .setDepth(5);
+        }
+
         configA.getHotRestartPersistenceConfig()
                .setEnabled(true);
         startClusterAWithDifferentHotRestartConfigs();

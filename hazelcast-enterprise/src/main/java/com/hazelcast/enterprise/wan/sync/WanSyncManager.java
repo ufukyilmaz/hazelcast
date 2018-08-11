@@ -58,35 +58,35 @@ public class WanSyncManager {
     }
 
     /**
-     * Initiates a WAN sync event and designates this member as the
+     * Initiates a WAN anti-entropy event and designates this member as the
      * coordinator to broadcast the event to other cluster members.
-     * This method will return as soon as the sync publication has
+     * This method will return as soon as the anti-entropy publication has
      * initiated but not yet processed.
      *
      * @param wanReplicationName name of WAN replication configuration (scheme)
      * @param targetGroupName    WAN target cluster group name
-     * @param event              the WAN sync event
-     * @throws SyncFailedException if there is an ongoing sync event being processed
+     * @param event              the WAN anti-entropy event
+     * @throws SyncFailedException if there is an ongoing anti-entropy event being processed
      */
-    public void initiateSyncRequest(final String wanReplicationName,
-                                    final String targetGroupName,
-                                    final WanSyncEvent event) {
+    public void initiateAntiEntropyRequest(final String wanReplicationName,
+                                           final String targetGroupName,
+                                           final WanAntiEntropyEvent event) {
         // first check if endpoint exists for the given wanReplicationName and targetGroupName
         wanReplicationService.getEndpoint(wanReplicationName, targetGroupName);
         if (!SYNC_STATUS.compareAndSet(this, WanSyncStatus.READY, WanSyncStatus.IN_PROGRESS)) {
-            throw new SyncFailedException("Another sync request is already in progress.");
+            throw new SyncFailedException("Another anti-entropy request is already in progress.");
         }
         activeWanConfig = wanReplicationName;
         activePublisher = targetGroupName;
         node.nodeEngine.getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
             @Override
             public void run() {
-                Operation operation = new WanSyncStarterOperation(wanReplicationName, targetGroupName, event);
+                Operation operation = new WanAntiEntropyEventStarterOperation(wanReplicationName, targetGroupName, event);
                 getOperationService().invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
                         operation, getClusterService().getThisAddress());
             }
         });
-        logger.info("WAN sync request has been sent");
+        logger.info("WAN anti-entropy request has been sent");
     }
 
     public WanSyncState getWanSyncState() {
@@ -94,7 +94,7 @@ public class WanSyncManager {
     }
 
     /**
-     * Keeps broadcasting the WAN sync event to all members until it
+     * Keeps broadcasting the WAN anti-entropy event to all members until it
      * has been triggered for all partitions or some partitions have failed for
      * {@value MAX_RETRY_COUNT} times.
      * <p>
@@ -107,11 +107,11 @@ public class WanSyncManager {
      *
      * @param wanReplicationName name of WAN replication configuration (scheme)
      * @param targetGroupName    WAN target cluster group name
-     * @param event              the WAN sync event
+     * @param event              the WAN anti-entropy event
      */
-    public void populateSyncRequestOnMembers(String wanReplicationName,
-                                             String targetGroupName,
-                                             WanSyncEvent event) {
+    public void publishAntiEntropyEventOnMembers(String wanReplicationName,
+                                                 String targetGroupName,
+                                                 WanAntiEntropyEvent event) {
         int retryCount = 0;
         try {
             Set<Integer> partitionsToSync = event.getPartitionSet();
@@ -124,11 +124,11 @@ public class WanSyncManager {
                 }
 
                 if (++retryCount == MAX_RETRY_COUNT) {
-                    logger.warning(String.format("WAN sync event publication failed after %s attempts"
+                    logger.warning(String.format("WAN anti-entropy event publication failed after %s attempts"
                             + " with %s partitions not processed", MAX_RETRY_COUNT, partitionsToSync.size()));
                     break;
                 }
-                logger.info(String.format("WAN sync event publication will retry "
+                logger.info(String.format("WAN anti-entropy event publication will retry "
                         + "because %s partitions have not been processed", partitionsToSync.size()));
 
                 try {
@@ -144,7 +144,7 @@ public class WanSyncManager {
 
     /**
      * Broadcasts the {@code event} to all cluster members.
-     * The {@code partitionKeys} map provides the keys for which the event has
+     * The {@code partitionsToSync} map provides the keys for which the event has
      * not yet been processed. Entries will be removed from this map once the
      * event has been successfully processed. This method returns the map after
      * a single round of broadcast is performed.
@@ -160,22 +160,22 @@ public class WanSyncManager {
      *
      * @param wanReplicationName name of WAN replication configuration (scheme)
      * @param targetGroupName    WAN target cluster group name
-     * @param event              the WAN sync event
-     * @param partitionsToSync   partition IDs for which this this event applies to
+     * @param event              the WAN anti-antropy event
+     * @param partitionsToSync   keys for which this this event applies to,
      */
     private void broadcastEvent(String wanReplicationName,
                                 String targetGroupName,
-                                WanSyncEvent event,
+                                WanAntiEntropyEvent event,
                                 Set<Integer> partitionsToSync) {
         final Set<Member> members = getClusterService().getMembers();
-        final List<Future<WanSyncResult>> futures = new ArrayList<Future<WanSyncResult>>(members.size());
+        final List<Future<WanAntiEntropyEventResult>> futures = new ArrayList<Future<WanAntiEntropyEventResult>>(members.size());
 
         for (Member member : members) {
-            WanSyncEvent wanSyncEvent = new WanSyncEvent(event.getType(), event.getName());
-            wanSyncEvent.setPartitionSet(partitionsToSync);
+            WanAntiEntropyEvent clonedEvent = event.cloneWithoutPartitionKeys();
+            clonedEvent.setPartitionSet(partitionsToSync);
 
-            Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName, wanSyncEvent);
-            Future<WanSyncResult> future = getOperationService()
+            Operation operation = new WanAntiEntropyEventPublishOperation(wanReplicationName, targetGroupName, clonedEvent);
+            Future<WanAntiEntropyEventResult> future = getOperationService()
                     .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, operation, member.getAddress());
             futures.add(future);
         }
@@ -186,7 +186,7 @@ public class WanSyncManager {
     }
 
     private InternalOperationService getOperationService() {
-        return node.nodeEngine.getOperationService();
+        return node.getNodeEngine().getOperationService();
     }
 
     public void incrementSyncedPartitionCount() {
@@ -205,13 +205,13 @@ public class WanSyncManager {
      *                         of the WAN sync trigger task
      * @param partitionsToSync IDs of remaining partitions to be synced
      */
-    private void addResultOfOps(List<Future<WanSyncResult>> futures,
+    private void addResultOfOps(List<Future<WanAntiEntropyEventResult>> futures,
                                 Set<Integer> partitionsToSync) {
         boolean alreadyLogged = false;
-        for (Future<WanSyncResult> future : futures) {
+        for (Future<WanAntiEntropyEventResult> future : futures) {
             try {
-                WanSyncResult result = future.get();
-                partitionsToSync.removeAll(result.getSyncedPartitions());
+                WanAntiEntropyEventResult result = future.get();
+                partitionsToSync.removeAll(result.getProcessedPartitions());
             } catch (Exception ex) {
                 if (!alreadyLogged) {
                     logger.warning("Exception occurred during WAN sync, missing WAN sync objects will be retried.", ex);

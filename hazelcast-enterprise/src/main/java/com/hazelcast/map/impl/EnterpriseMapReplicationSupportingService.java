@@ -5,6 +5,7 @@ import com.hazelcast.core.EntryView;
 import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
+import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
@@ -90,6 +91,14 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
             return;
         }
 
+        if (eventObject instanceof EnterpriseMapReplicationMerkleTreeNode) {
+            EnterpriseMapReplicationMerkleTreeNode merkleTreeNode
+                    = (EnterpriseMapReplicationMerkleTreeNode) eventObject;
+            handleMerkleTreeNode(merkleTreeNode);
+            wanEventCounters.incrementSync(mapName, merkleTreeNode.getEntryCount());
+            return;
+        }
+
         republishIfNecessary(replicationEvent, mapName);
 
         if (eventObject instanceof EnterpriseMapReplicationUpdate) {
@@ -98,6 +107,24 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         } else if (eventObject instanceof EnterpriseMapReplicationRemove) {
             handleRemoveEvent((EnterpriseMapReplicationRemove) eventObject, replicationEvent.getAcknowledgeType());
             wanEventCounters.incrementRemove(mapName);
+        }
+    }
+
+    /**
+     * Processes a merkle tree node event by forwarding it to the partition owner.
+     * The method will return as soon as the event has been forwarded to the
+     * partition owner and it does not wait for the event to be processed.
+     *
+     * @param event the merkle tree node event
+     */
+    private void handleMerkleTreeNode(EnterpriseMapReplicationMerkleTreeNode event) {
+        String mapName = event.getMapName();
+        MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
+
+        for (EntryView<Data, Data> entryView : event.getEntries().getNodeEntries()) {
+            MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), entryView);
+            MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
+            invokeOnPartition(mergingEntry.getKey(), operation);
         }
     }
 

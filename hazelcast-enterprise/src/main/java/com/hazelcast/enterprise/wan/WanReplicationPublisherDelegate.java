@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan;
 
+import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ServiceNamespace;
@@ -125,6 +126,19 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
     public void collectAllServiceNamespaces(PartitionReplicationEvent event, Set<ServiceNamespace> namespaces) {
         for (WanReplicationEndpoint endpoint : endpoints.values()) {
             endpoint.collectAllServiceNamespaces(event, namespaces);
+        }
+    }
+
+    /**
+     * Releases all resources for the map with the given {@code mapName}.
+     *
+     * @param mapName the map mapName
+     */
+    public void destroyMapData(String mapName) {
+        for (WanReplicationEndpoint endpoint : endpoints.values()) {
+            if (endpoint instanceof WanBatchReplication) {
+                ((WanBatchReplication) endpoint).destroyMapData(mapName);
+            }
         }
     }
 }

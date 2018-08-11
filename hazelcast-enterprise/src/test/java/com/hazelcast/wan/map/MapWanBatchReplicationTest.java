@@ -85,7 +85,7 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
 
         // 1. MapWanEventFilter is null to see default behaviour of filtering
         setupReplicateFrom(configA, configB, clusterB.length, "atob",
-                PassThroughMergePolicy.class.getName(), null);
+                PassThroughMergePolicy.class.getName());
 
         // 2. Add map-loader to cluster-A
         MapStoreConfig mapStoreConfig = new MapStoreConfig()

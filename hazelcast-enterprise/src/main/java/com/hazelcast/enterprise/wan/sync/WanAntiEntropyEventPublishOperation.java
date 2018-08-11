@@ -10,31 +10,37 @@ import com.hazelcast.spi.Operation;
 import java.io.IOException;
 
 /**
- * Operation that is responsible to publish {@link WanSyncEvent}s and trigger
- * WAN sync. The response for this operation is sent when events for all
- * entries have been enqueued for replication but not yet replicated.
+ * Operation responsible to publish WAN anti-entropy events.
+ * <p>
+ * This operation merely is concerned with publishing the event on all
+ * partitions. Whether the event is fully processed when this method returns
+ * depends on the semantics of processing each event type.
+ * In case of WAN sync event, the sync is not complete when this method
+ * returns. After this method returns, entries for all partitions have been
+ * enqueued but not yet replicated.
  */
-public class WanSyncOperation extends Operation implements IdentifiedDataSerializable {
+public class WanAntiEntropyEventPublishOperation extends Operation implements IdentifiedDataSerializable {
 
     private String wanReplicationName;
     private String targetGroupName;
-    private WanSyncEvent syncEvent;
+    private WanAntiEntropyEvent event;
 
-    public WanSyncOperation() {
+    public WanAntiEntropyEventPublishOperation() {
     }
 
-    public WanSyncOperation(String wanReplicationName, String targetGroupName,
-                            WanSyncEvent syncEvent) {
+    public WanAntiEntropyEventPublishOperation(String wanReplicationName,
+                                               String targetGroupName,
+                                               WanAntiEntropyEvent event) {
         this.wanReplicationName = wanReplicationName;
         this.targetGroupName = targetGroupName;
-        this.syncEvent = syncEvent;
+        this.event = event;
     }
 
     @Override
     public void run() throws Exception {
         EnterpriseWanReplicationService wanReplicationService = getService();
-        syncEvent.setOp(this);
-        wanReplicationService.publishSyncEvent(wanReplicationName, targetGroupName, syncEvent);
+        event.setOp(this);
+        wanReplicationService.publishAntiEntropyEvent(wanReplicationName, targetGroupName, event);
     }
 
     @Override
@@ -42,7 +48,7 @@ public class WanSyncOperation extends Operation implements IdentifiedDataSeriali
         super.writeInternal(out);
         out.writeUTF(wanReplicationName);
         out.writeUTF(targetGroupName);
-        out.writeObject(syncEvent);
+        out.writeObject(event);
     }
 
     @Override
@@ -50,7 +56,7 @@ public class WanSyncOperation extends Operation implements IdentifiedDataSeriali
         super.readInternal(in);
         wanReplicationName = in.readUTF();
         targetGroupName = in.readUTF();
-        syncEvent = in.readObject();
+        event = in.readObject();
     }
 
     @Override

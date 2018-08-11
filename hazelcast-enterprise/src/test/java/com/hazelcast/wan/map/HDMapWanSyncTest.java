@@ -1,10 +1,11 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -16,15 +17,32 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
+import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
+import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(SlowTest.class)
 public class HDMapWanSyncTest extends MapWanReplicationTestSupport {
+
+    @Parameterized.Parameters(name = "consistencyCheckStrategy:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {NONE},
+                {MERKLE_TREES}
+        });
+    }
+
+    @Parameterized.Parameter
+    public ConsistencyCheckStrategy consistencyCheckStrategy;
 
     private volatile boolean running = true;
 
@@ -33,6 +51,11 @@ public class HDMapWanSyncTest extends MapWanReplicationTestSupport {
         final Config config = super.getConfig();
         config.getMapConfig("default")
               .setInMemoryFormat(getMemoryFormat());
+        if (consistencyCheckStrategy == MERKLE_TREES) {
+            config.getMapMerkleTreeConfig("default")
+                  .setEnabled(true)
+                  .setDepth(5);
+        }
         return config;
     }
 
@@ -42,7 +65,8 @@ public class HDMapWanSyncTest extends MapWanReplicationTestSupport {
     @Test
     public void checkMemoryAccessSafety() throws InterruptedException {
         configA.getNativeMemoryConfig().setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
+                consistencyCheckStrategy);
         startClusterA();
         startClusterB();
         warmUpPartitions(clusterA);

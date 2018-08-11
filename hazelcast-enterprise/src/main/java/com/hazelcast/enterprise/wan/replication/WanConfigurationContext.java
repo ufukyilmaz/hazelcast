@@ -1,6 +1,7 @@
 package com.hazelcast.enterprise.wan.replication;
 
 import com.hazelcast.config.WanAcknowledgeType;
+import com.hazelcast.config.WanPublisherConfig;
 
 import java.util.Map;
 
@@ -20,6 +21,9 @@ import static com.hazelcast.util.StringUtil.isNullOrEmpty;
 
 /**
  * WAN configuration context providing eager parsing of configuration.
+ * This context is valid for a single WAN publisher.
+ *
+ * @see WanPublisherConfig
  */
 public class WanConfigurationContext {
     /**
@@ -125,8 +129,11 @@ public class WanConfigurationContext {
     private final int maxEndpoints;
     private final int discoveryPeriodSeconds;
     private final String endpoints;
+    private final WanPublisherConfig publisherConfig;
 
-    WanConfigurationContext(Map<String, Comparable> publisherProperties) {
+    WanConfigurationContext(WanPublisherConfig publisherConfig) {
+        this.publisherConfig = publisherConfig;
+        Map<String, Comparable> publisherProperties = publisherConfig.getProperties();
         this.snapshotEnabled = getProperty(
                 SNAPSHOT_ENABLED, publisherProperties, DEFAULT_IS_SNAPSHOT_ENABLED);
         this.executorThreadCount = getProperty(
@@ -263,5 +270,15 @@ public class WanConfigurationContext {
      */
     public String getEndpoints() {
         return endpoints;
+    }
+
+    /**
+     * Returns the configuration for the WAN publisher for which this context
+     * is valid.
+     *
+     * @return WAN publisher configuration
+     */
+    public WanPublisherConfig getPublisherConfig() {
+        return publisherConfig;
     }
 }

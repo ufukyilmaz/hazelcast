@@ -1,6 +1,7 @@
 package com.hazelcast.wan;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NativeMemoryConfig;
@@ -136,6 +137,10 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     }
 
     protected WanPublisherConfig targetCluster(Config config, int count) {
+        return targetCluster(config, count, ConsistencyCheckStrategy.NONE);
+    }
+
+    protected WanPublisherConfig targetCluster(Config config, int count, ConsistencyCheckStrategy consistencyCheckStrategy) {
         WanPublisherConfig target = new WanPublisherConfig();
         target.setGroupName(config.getGroupConfig().getName());
         target.setClassName(getReplicationImpl());
@@ -144,6 +149,8 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         props.put(WanReplicationProperties.ENDPOINTS.key(), (getClusterEndPoints(config, count)));
         props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
         props.put(WanReplicationProperties.SNAPSHOT_ENABLED.key(), isSnapshotEnabled());
+
+        target.getWanSyncConfig().setConsistencyCheckStrategy(consistencyCheckStrategy);
         return target;
     }
 

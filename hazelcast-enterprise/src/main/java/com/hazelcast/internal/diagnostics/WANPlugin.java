@@ -11,6 +11,7 @@ import com.hazelcast.spi.properties.HazelcastProperty;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.impl.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
+import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,10 +39,15 @@ public class WANPlugin extends DiagnosticsPlugin {
 
     private static final String CACHE_EVENT_COUNT_SECTION_PREFIX = "cache";
     private static final String MAP_EVENT_COUNT_SECTION_PREFIX = "map";
+    private static final String MAP_CONSISTENCY_CHECK_SECTION_PREFIX = "mapConsistencyCheck";
     private static final String SYNC_EVENT_COUNT_KEY = "syncCount";
     private static final String UPDATE_EVENT_COUNT_KEY = "updateCount";
     private static final String REMOVE_EVENT_COUNT_KEY = "removeCount";
     private static final String DROPPED_EVENT_COUNT_KEY = "droppedCount";
+
+    private static final String CONSISTENCY_CHECK_IS_RUNNING_KEY = "isRunning";
+    private static final String CONSISTENCY_CHECK_LAST_CHECKED_COUNT_KEY = "checkedPartitionCount";
+    private static final String CONSISTENCY_CHECK_LAST_DIFF_COUNT_KEY = "diffPartitionCount";
 
     private static final String PUBLISHER_OUTBOUND_QUEUE_SIZE_KEY = "outboundQueueSize";
     private static final String PUBLISHER_TOTAL_PUBLISHED_EVENT_COUNT_KEY = "totalPublishedEventCount";
@@ -175,7 +181,29 @@ public class WANPlugin extends DiagnosticsPlugin {
         writer.writeKeyValueEntry(REMOVE_EVENT_COUNT_KEY, publisherEventCounts.totalRemoveCount);
         writer.writeKeyValueEntry(SYNC_EVENT_COUNT_KEY, publisherEventCounts.totalSyncCount);
         writer.writeKeyValueEntry(DROPPED_EVENT_COUNT_KEY, publisherEventCounts.totalDroppedCount);
+        renderConsistencyCheckResults(writer, stats.getLastConsistencyCheckResults());
         writer.endSection();
+    }
+
+    /**
+     * Writes the results of the last merkle tree root comparison for all maps.
+     *
+     * @param writer  the diagnostics log writer
+     * @param results the merkle tree root comparison results
+     */
+    private void renderConsistencyCheckResults(DiagnosticsLogWriter writer,
+                                               Map<String, ConsistencyCheckResult> results) {
+        if (!isNullOrEmpty(results)) {
+            for (Entry<String, ConsistencyCheckResult> comparisonEntry : results.entrySet()) {
+                String mapName = comparisonEntry.getKey();
+                ConsistencyCheckResult result = comparisonEntry.getValue();
+                writer.startSection(MAP_CONSISTENCY_CHECK_SECTION_PREFIX + "-" + mapName);
+                writer.writeKeyValueEntry(CONSISTENCY_CHECK_IS_RUNNING_KEY, result.isRunning());
+                writer.writeKeyValueEntry(CONSISTENCY_CHECK_LAST_CHECKED_COUNT_KEY, result.getLastCheckedPartitionCount());
+                writer.writeKeyValueEntry(CONSISTENCY_CHECK_LAST_DIFF_COUNT_KEY, result.getLastDiffPartitionCount());
+                writer.endSection();
+            }
+        }
     }
 
     private void renderSentEventCounts(DiagnosticsLogWriter writer,

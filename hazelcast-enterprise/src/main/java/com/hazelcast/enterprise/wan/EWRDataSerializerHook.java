@@ -6,15 +6,19 @@ import com.hazelcast.enterprise.wan.operation.EWRPutBackupOperation;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
+import com.hazelcast.enterprise.wan.operation.MerkleTreeNodeValueComparison;
 import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
+import com.hazelcast.enterprise.wan.operation.WanMerkleTreeNodeCompareOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.enterprise.wan.sync.GetMapPartitionDataOperation;
+import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEventPublishOperation;
+import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEventResult;
+import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEventStarterOperation;
+import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
-import com.hazelcast.enterprise.wan.sync.WanSyncOperation;
-import com.hazelcast.enterprise.wan.sync.WanSyncResult;
-import com.hazelcast.enterprise.wan.sync.WanSyncStarterOperation;
 import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
+import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
@@ -52,8 +56,12 @@ public class EWRDataSerializerHook implements DataSerializerHook {
     public static final int POST_JOIN_WAN_OPERATION = 13;
     public static final int WAN_OPERATION = 14;
     public static final int WAN_SYNC_EVENT = 15;
-    public static final int WAN_SYNC_RESULT = 16;
-    public static final int WAN_SYNC_STARTER_OPERATION = 17;
+    public static final int WAN_ANTI_ENTROPY_RESULT = 16;
+    public static final int WAN_ANTI_ENTROPY_EVENT_STARTER_OPERATION = 17;
+    public static final int WAN_CONSISTENCY_CHECK_EVENT = 18;
+    public static final int WAN_MERKLE_TREE_NODE_COMPARE_OPERATION = 19;
+    public static final int MERKLE_TREE_NODE_VALUE_COMPARISON = 20;
+    public static final int MAP_REPLICATION_MERKLE_TREE_NODE = 21;
 
     @Override
     public int getFactoryId() {
@@ -90,7 +98,7 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                     case MAP_REPLICATION_SYNC:
                         return new EnterpriseMapReplicationSync();
                     case WAN_SYNC_OPERATION:
-                        return new WanSyncOperation();
+                        return new WanAntiEntropyEventPublishOperation();
                     case GET_MAP_PARTITION_DATA_OPERATION:
                         return new GetMapPartitionDataOperation();
                     case POST_JOIN_WAN_OPERATION:
@@ -99,10 +107,18 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                         return new WanOperation();
                     case WAN_SYNC_EVENT:
                         return new WanSyncEvent();
-                    case WAN_SYNC_RESULT:
-                        return new WanSyncResult();
-                    case WAN_SYNC_STARTER_OPERATION:
-                        return new WanSyncStarterOperation();
+                    case WAN_ANTI_ENTROPY_RESULT:
+                        return new WanAntiEntropyEventResult();
+                    case WAN_ANTI_ENTROPY_EVENT_STARTER_OPERATION:
+                        return new WanAntiEntropyEventStarterOperation();
+                    case WAN_CONSISTENCY_CHECK_EVENT:
+                        return new WanConsistencyCheckEvent();
+                    case WAN_MERKLE_TREE_NODE_COMPARE_OPERATION:
+                        return new WanMerkleTreeNodeCompareOperation();
+                    case MERKLE_TREE_NODE_VALUE_COMPARISON:
+                        return new MerkleTreeNodeValueComparison();
+                    case MAP_REPLICATION_MERKLE_TREE_NODE:
+                        return new EnterpriseMapReplicationMerkleTreeNode();
                     default:
                         throw new IllegalArgumentException("Unknown type ID: " + typeId);
                 }

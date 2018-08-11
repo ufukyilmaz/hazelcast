@@ -1,15 +1,20 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.config.InvalidConfigurationException;
+import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
+import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEvent;
+import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.WanSyncState;
@@ -25,6 +30,7 @@ import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.ServiceNamespace;
 import com.hazelcast.util.MapUtil;
+import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
@@ -39,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Enterprise implementation for WAN replication.
  */
-@SuppressWarnings({"checkstyle:methodcount"})
+@SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
 public class EnterpriseWanReplicationService implements WanReplicationService, FragmentedMigrationAwareService,
         PostJoinAwareService, LiveOperationsTracker {
 
@@ -135,24 +141,32 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     /**
-     * Publishes a sync event for the given {@code wanReplicationName} and
-     * {@code targetGroupName}.
-     * This method does not wait for WAN sync to complete.
+     * Publishes an anti-entropy event for the given {@code wanReplicationName}
+     * and {@code targetGroupName}.
+     * This method does not wait for the event processing to complete.
      *
      * @param wanReplicationName the WAN replication config name
      * @param targetGroupName    the group name in the WAN replication config
-     * @param syncEvent          the WAN sync event
+     * @param event              the WAN anti-entropy event
      * @throws InvalidConfigurationException if there is no replication config
      *                                       with the name {@code wanReplicationName}
      */
-    public void publishSyncEvent(String wanReplicationName,
-                                 String targetGroupName,
-                                 WanSyncEvent syncEvent) {
-        getEndpoint(wanReplicationName, targetGroupName).publishSyncEvent(syncEvent);
-    }
+    public void publishAntiEntropyEvent(String wanReplicationName,
+                                        String targetGroupName,
+                                        WanAntiEntropyEvent event) {
+        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
+        if (event instanceof WanSyncEvent) {
+            endpoint.publishSyncEvent((WanSyncEvent) event);
+            return;
+        }
 
-    public void populateSyncEventOnMembers(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {
-        syncManager.populateSyncRequestOnMembers(wanReplicationName, targetGroupName, syncEvent);
+        if (endpoint instanceof WanBatchReplication) {
+            ((WanBatchReplication) endpoint).publishAntiEntropyEvent(event);
+        } else {
+            logger.info("WAN replication for the scheme " + wanReplicationName
+                    + " with target group name " + targetGroupName
+                    + " does not support anti-entropy events.");
+        }
     }
 
     /**
@@ -267,7 +281,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     @Override
     public void populate(LiveOperations liveOperations) {
         final Collection<WanReplicationPublisherDelegate> publishers = getWanReplications().values();
-        // populate for all WanSyncOperation
+        // populate for all WanAntiEntropyEventPublishOperation
         for (WanReplicationPublisherDelegate publisher : publishers) {
             for (WanReplicationEndpoint endpoint : publisher.getEndpoints()) {
                 if (endpoint instanceof LiveOperationsTracker) {
@@ -308,18 +322,41 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
-        syncManager.initiateSyncRequest(
-                wanReplicationName, targetGroupName, new WanSyncEvent(WanSyncType.SINGLE_MAP, mapName));
+        WanSyncEvent event = new WanSyncEvent(WanSyncType.SINGLE_MAP, mapName);
+        syncManager.initiateAntiEntropyRequest(wanReplicationName, targetGroupName, event);
     }
 
     @Override
     public void syncAllMaps(String wanReplicationName, String targetGroupName) {
-        syncManager.initiateSyncRequest(
-                wanReplicationName, targetGroupName, new WanSyncEvent(WanSyncType.ALL_MAPS));
+        WanSyncEvent event = new WanSyncEvent(WanSyncType.ALL_MAPS);
+        syncManager.initiateAntiEntropyRequest(wanReplicationName, targetGroupName, event);
     }
 
     @Override
     public void consistencyCheck(String wanReplicationName, String targetGroupName, String mapName) {
+        // RU_COMPAT_3_11
+        Version clusterVersion = node.getNodeEngine().getClusterService().getClusterVersion();
+        if (!clusterVersion.isGreaterOrEqual(Versions.V3_11)) {
+            logger.info(String.format(
+                    "Consistency check request for WAN replication '%s',"
+                            + " target group name '%s' and map '%s'"
+                            + " ignored because cluster version is not 3.11",
+                    wanReplicationName, targetGroupName, mapName));
+            return;
+        }
+
+        MerkleTreeConfig merkleTreeConfig = node.getConfig().findMapMerkleTreeConfig(mapName);
+        if (!merkleTreeConfig.isEnabled()) {
+            logger.info(String.format(
+                    "Consistency check request for WAN replication '%s',"
+                            + " target group name '%s' and map '%s'"
+                            + " ignored because map has merkle trees disabled",
+                    wanReplicationName, targetGroupName, mapName));
+            return;
+        }
+
+        syncManager.initiateAntiEntropyRequest(wanReplicationName, targetGroupName,
+                new WanConsistencyCheckEvent(mapName));
     }
 
     @Override

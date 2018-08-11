@@ -1,6 +1,7 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
@@ -38,17 +39,29 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         configC.getNetworkConfig().setPort(5901);
     }
 
-    protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy) {
-        setupReplicateFrom(fromConfig, toConfig, clusterSz, setupName, policy, null);
+    protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy,
+                                      String filter) {
+        setupReplicateFrom(fromConfig, toConfig, clusterSz, setupName, policy, filter, ConsistencyCheckStrategy.NONE);
     }
 
-    void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy, String filter) {
+    protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy,
+                                      ConsistencyCheckStrategy consistencyCheckStrategy) {
+        setupReplicateFrom(fromConfig, toConfig, clusterSz, setupName, policy, null, consistencyCheckStrategy);
+    }
+
+    protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy) {
+        setupReplicateFrom(fromConfig, toConfig, clusterSz, setupName, policy, null, ConsistencyCheckStrategy.NONE);
+    }
+
+    protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy, String
+            filter, ConsistencyCheckStrategy consistencyCheckStrategy) {
         WanReplicationConfig wanConfig = fromConfig.getWanReplicationConfig(setupName);
         if (wanConfig == null) {
             wanConfig = new WanReplicationConfig();
             wanConfig.setName(setupName);
         }
-        wanConfig.addWanPublisherConfig(targetCluster(toConfig, clusterSz));
+
+        wanConfig.addWanPublisherConfig(targetCluster(toConfig, clusterSz, consistencyCheckStrategy));
 
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(setupName);

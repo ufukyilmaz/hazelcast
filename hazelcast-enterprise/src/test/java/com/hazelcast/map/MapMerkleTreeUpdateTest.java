@@ -16,6 +16,7 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
 import com.hazelcast.query.Predicate;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -486,9 +487,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
 
     @Test
     public void loadAllOnEmptyMapUpdatesMerkleTree() {
-        basicMapStore.addRecord("42", "42");
+        basicMapStore.addRecord("42", "42x");
         boolean irrelevant = true;
         map.loadAll(irrelevant);
+
+        waitForRecordLoaded();
 
         assertNotEquals(0, rootHash());
     }
@@ -511,6 +514,8 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
 
         basicMapStore.addRecord("42", "42x");
         map.loadAll(true);
+
+        waitForRecordLoaded();
 
         assertNotEquals(0, rootHash());
         assertNotEquals(rootHashBeforeLoad, rootHash());
@@ -535,8 +540,19 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         basicMapStore.addRecord("42", "42x");
         map.loadAll(Sets.newSet("42"), true);
 
+        waitForRecordLoaded();
+
         assertNotEquals(0, rootHash());
         assertNotEquals(rootHashBeforeLoad, rootHash());
+    }
+
+    private void waitForRecordLoaded() {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                assertEquals("42x", map.get("42"));
+            }
+        });
     }
 
     @Test

@@ -54,6 +54,31 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <!-- 
+                    Hot Restart related arguments:
+                        export java.base/jdk.internal.ref=com.hazelcast.core
+                        open java.base/java.nio=com.hazelcast.core
+                    Operating system metrics related:
+                        open jdk.management/com.sun.management.internal=com.hazelcast.core
+                     -->
+                    <argLine>
+                        ${vmHeapSettings}
+                        ${extraVmArgs}
+                        -ea
+                        --add-exports java.base/jdk.internal.ref=com.hazelcast.core
+                        --add-opens java.base/java.nio=com.hazelcast.core
+                        --add-opens jdk.management/com.sun.management.internal=com.hazelcast.core
+                        --illegal-access=warn
+                        -Dhazelcast.hidensity.check.freememory=false
+                        -Dhazelcast.phone.home.enabled=false
+                        -Dlog4j.skipJansi=true
+                    </argLine>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -67,6 +92,11 @@
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-enterprise-client</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.cache</groupId>
+            <artifactId>cache-api</artifactId>
+            <version>${jsr107.api.version}</version>
         </dependency>
 
         <dependency>

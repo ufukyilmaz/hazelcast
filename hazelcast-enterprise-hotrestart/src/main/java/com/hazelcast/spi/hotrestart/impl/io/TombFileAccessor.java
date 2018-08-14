@@ -98,7 +98,9 @@ public class TombFileAccessor implements Closeable {
     // The following static section inits MappedByteBuffer (DirectByteBuffer) cleanup methods.
     // The HotRestart code uses Java internal API which changed between Java 8 and 9, so we have to use reflection to find
     // the proper clean-up code.
-    // Java 9 and newer also has to use additional Java arguments: --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
+    // Java 9 and newer also has to use additional Java arguments:
+    //   --add-exports java.base/jdk.internal.ref=...
+    //   --add-opens java.base/java.nio=...
     static {
         MappedByteBuffer buf = initTmpBuffer();
         try {
@@ -118,9 +120,14 @@ public class TombFileAccessor implements Closeable {
             Object cleanerInstance = MAPPED_BUFFER_GET_CLEANER.invoke(buf);
             MAPPED_BUFFER_RUN_CLEANER.invoke(cleanerInstance);
         } catch (Exception e) {
-            throw new HazelcastException("Unable to init MappedByteBuffer cleaner methods. "
-                            + "If you use Java 9 or newer add '--add-exports java.base/jdk.internal.ref=ALL-UNNAMED' "
-                            + "Java parameters.", e);
+            throw new HazelcastException("Unable to init MappedByteBuffer cleaner methods in Java. "
+                            + "They are necessary for Hazelcast Hot Restart feature. "
+                            + "If you use Java 9 or newer add following parameters to your Java:\n"
+                            + "  --add-exports java.base/jdk.internal.ref=[MODULE]\n"
+                            + "  --add-opens java.base/java.nio=[MODULE]\n"
+                            + "where the [MODULE] value depends on Hazelcast JAR location:\n"
+                            + "  classpath: ALL-UNNAMED\n"
+                            + "  modulepath: com.hazelcast.core", e);
         }
 
     }

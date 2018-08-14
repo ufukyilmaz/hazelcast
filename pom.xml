@@ -644,17 +644,24 @@
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <trimStackTrace>false</trimStackTrace>
                             <!--
-                            The jdk.internal.ref package export is added to allow TombFileAccessor use the JDK internal
-                            API for clearing DirectByteBuffers.
+                            Hot Restart related arguments:
+                                export java.base/jdk.internal.ref
+                                open java.base/java.nio
+                            Operating system metrics related:
+                                open jdk.management/com.sun.management.internal
 
-                            The jdk.xml.internal package export is added to workaround Powermock issue https://github.com/powermock/powermock/issues/905 in tests.
+                            Powermock issue workaround (https://github.com/powermock/powermock/issues/905):
+                                export java.xml/jdk.xml.internal
                              -->
                             <argLine>
                                 ${vmHeapSettings}
                                 ${extraVmArgs}
                                 -ea
                                 --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
+                                --add-opens java.base/java.nio=ALL-UNNAMED
+                                --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
                                 --add-exports java.xml/jdk.xml.internal=ALL-UNNAMED
+                                --illegal-access=warn
                                 -Dhazelcast.hidensity.check.freememory=false
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false

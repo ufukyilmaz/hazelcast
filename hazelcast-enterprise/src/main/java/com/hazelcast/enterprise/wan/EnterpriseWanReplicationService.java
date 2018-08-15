@@ -319,6 +319,10 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     @Override
+    public void consistencyCheck(String wanReplicationName, String targetGroupName, String mapName) {
+    }
+
+    @Override
     public void clearQueues(String wanReplicationName, String targetGroupName) {
         WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
         endpoint.clearQueues();

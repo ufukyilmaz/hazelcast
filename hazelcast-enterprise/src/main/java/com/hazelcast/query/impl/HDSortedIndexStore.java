@@ -36,35 +36,35 @@ class HDSortedIndexStore extends BaseIndexStore {
     }
 
     @Override
-    void newIndexInternal(Comparable newValue, QueryableEntry entry) {
+    Object newIndexInternal(Comparable newValue, QueryableEntry entry) {
         assertRunningOnPartitionThread();
         if (newValue instanceof IndexImpl.NullObject) {
             NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
             NativeMemoryData value = (NativeMemoryData) entry.getValueData();
-            recordsWithNullValue.put(key, value);
+            return recordsWithNullValue.put(key, value);
         } else {
-            mapAttributeToEntry(newValue, entry);
+            return mapAttributeToEntry(newValue, entry);
         }
     }
 
-    private void mapAttributeToEntry(Comparable attribute, QueryableEntry entry) {
+    private Object mapAttributeToEntry(Comparable attribute, QueryableEntry entry) {
         NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
         NativeMemoryData value = (NativeMemoryData) entry.getValueData();
-        records.put(attribute, key, value);
+        return records.put(attribute, key, value);
     }
 
     @Override
-    void removeIndexInternal(Comparable oldValue, Data indexKey) {
+    Object removeIndexInternal(Comparable oldValue, Data recordKey) {
         assertRunningOnPartitionThread();
         if (oldValue instanceof IndexImpl.NullObject) {
-            recordsWithNullValue.remove(indexKey);
+            return recordsWithNullValue.remove(recordKey);
         } else {
-            removeMappingForAttribute(oldValue, indexKey);
+            return removeMappingForAttribute(oldValue, recordKey);
         }
     }
 
-    private void removeMappingForAttribute(Comparable attribute, Data indexKey) {
-        records.remove(attribute, (NativeMemoryData) indexKey);
+    private Object removeMappingForAttribute(Comparable attribute, Data indexKey) {
+        return records.remove(attribute, (NativeMemoryData) indexKey);
     }
 
     @Override

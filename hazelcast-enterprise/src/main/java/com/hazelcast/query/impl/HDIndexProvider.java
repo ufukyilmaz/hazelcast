@@ -1,11 +1,8 @@
-package com.hazelcast.map.impl.query;
+package com.hazelcast.query.impl;
 
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.monitor.impl.PerIndexStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.query.impl.HDIndexImpl;
-import com.hazelcast.query.impl.IndexCopyBehavior;
-import com.hazelcast.query.impl.InternalIndex;
 import com.hazelcast.query.impl.getters.Extractors;
 
 /**

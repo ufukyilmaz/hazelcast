@@ -244,9 +244,7 @@ public class EnterpriseNodeExtension
         }
 
         final int nodeCount = node.getClusterService().getSize();
-        final int flexNodeCountAllowance = LicenseHelper.getFlexibleNodeCount(license);
-
-        if (nodeCount > flexNodeCountAllowance) {
+        if (nodeCount > license.getAllowedNumberOfNodes()) {
             logger.log(Level.SEVERE, "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: "
                             + license.getAllowedNumberOfNodes() + ", Current: " + nodeCount);
             node.shutdown(true);

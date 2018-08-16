@@ -650,6 +650,8 @@
                                 open java.base/sun.nio.ch
                             Operating system metrics related:
                                 open jdk.management/com.sun.management.internal
+                            Avoid warnings caused by reflection in FilteringClassLoader:
+                                open java.base/java.lang
 
                             Powermock issue workaround (https://github.com/powermock/powermock/issues/905):
                                 export java.xml/jdk.xml.internal
@@ -661,6 +663,7 @@
                                 --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
                                 --add-opens java.base/java.nio=ALL-UNNAMED
                                 --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+                                --add-opens java.base/java.lang=ALL-UNNAMED
                                 --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
                                 --add-exports java.xml/jdk.xml.internal=ALL-UNNAMED
                                 --illegal-access=warn

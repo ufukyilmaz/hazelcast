@@ -65,6 +65,8 @@
                         open java.base/sun.nio.ch
                     Operating system metrics related:
                         open jdk.management/com.sun.management.internal
+                    Avoid warnings caused by reflection in FilteringClassLoader:
+                        open java.base/java.lang
                      -->
                     <argLine>
                         ${vmHeapSettings}
@@ -72,7 +74,7 @@
                         -ea
                         --add-exports java.base/jdk.internal.ref=com.hazelcast.core
                         --add-opens java.base/java.nio=com.hazelcast.core
-                        --add-opens java.base/sun.nio.ch=com.hazelcast.core
+                        --add-opens java.base/java.lang=com.hazelcast.core
                         --add-opens jdk.management/com.sun.management.internal=com.hazelcast.core
                         --illegal-access=warn
                         -Dhazelcast.hidensity.check.freememory=false

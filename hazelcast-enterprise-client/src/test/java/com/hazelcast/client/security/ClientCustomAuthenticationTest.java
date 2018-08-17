@@ -3,10 +3,13 @@ package com.hazelcast.client.security;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.CredentialsFactoryConfig;
+import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.ClusterLoginModule;
 import com.hazelcast.security.Credentials;
+import com.hazelcast.security.ICredentialsFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -60,6 +63,111 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
+    @Test
+    public void testCustomCredentialsViaBoth_Credentials_and_CredentialsClassName() {
+        Config config = getConfig(USER_NAME, KEY1, KEY2);
+        hazelcastFactory.newHazelcastInstance(config);
+
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(USER_NAME, KEY1, KEY2));
+        clientConfig.getSecurityConfig().setCredentialsClassname(CustomCredentials.class.getName());
+        hazelcastFactory.newHazelcastClient(clientConfig);
+    }
+
+    @Test
+    public void testCustomCredentialsViaFactoryClassName() {
+        Config config = getConfig(USER_NAME, KEY1, KEY2);
+        hazelcastFactory.newHazelcastInstance(config);
+
+        Properties prop = new Properties();
+        prop.setProperty("username", USER_NAME);
+        prop.setProperty("key1", KEY1);
+        prop.setProperty("key2", KEY2);
+        ClientConfig clientConfig = new ClientConfig();
+        CredentialsFactoryConfig credentialsFactoryConfig = clientConfig.getSecurityConfig().getCredentialsFactoryConfig();
+        credentialsFactoryConfig.setProperties(prop);
+        credentialsFactoryConfig.setClassName(CustomCredentialsFactory.class.getName());
+        hazelcastFactory.newHazelcastClient(clientConfig);
+    }
+
+    @Test
+    public void testCustomCredentialsViaFactoryImplementation() {
+        Config config = getConfig(USER_NAME, KEY1, KEY2);
+        hazelcastFactory.newHazelcastInstance(config);
+
+        Properties prop = new Properties();
+        prop.setProperty("username", USER_NAME);
+        prop.setProperty("key1", KEY1);
+        prop.setProperty("key2", KEY2);
+
+        ClientConfig clientConfig = new ClientConfig();
+        CredentialsFactoryConfig credentialsFactoryConfig = clientConfig.getSecurityConfig().getCredentialsFactoryConfig();
+        CustomCredentialsFactory customCredentialsFactory = new CustomCredentialsFactory();
+        credentialsFactoryConfig.setImplementation(customCredentialsFactory);
+        credentialsFactoryConfig.setProperties(prop);
+        hazelcastFactory.newHazelcastClient(clientConfig);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCustomCredentialsViaBoth_FactoryImplementation_and_Credentials() {
+        Config config = getConfig(USER_NAME, KEY1, KEY2);
+        hazelcastFactory.newHazelcastInstance(config);
+
+        Properties prop = new Properties();
+        prop.setProperty("username", USER_NAME);
+        prop.setProperty("key1", KEY1);
+        prop.setProperty("key2", KEY2);
+
+        ClientConfig clientConfig = new ClientConfig();
+        CredentialsFactoryConfig credentialsFactoryConfig = clientConfig.getSecurityConfig().getCredentialsFactoryConfig();
+        CustomCredentialsFactory customCredentialsFactory = new CustomCredentialsFactory();
+        credentialsFactoryConfig.setImplementation(customCredentialsFactory);
+        credentialsFactoryConfig.setProperties(prop);
+
+        clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(USER_NAME, KEY1, KEY2));
+
+        hazelcastFactory.newHazelcastClient(clientConfig);
+    }
+
+
+    @Test
+    public void testCustomCredentialsViaBoth_FactoryImplementation_and_FactoryClassName() {
+        Config config = getConfig(USER_NAME, KEY1, KEY2);
+        hazelcastFactory.newHazelcastInstance(config);
+
+        Properties prop = new Properties();
+        prop.setProperty("username", USER_NAME);
+        prop.setProperty("key1", KEY1);
+        prop.setProperty("key2", KEY2);
+
+        ClientConfig clientConfig = new ClientConfig();
+        CredentialsFactoryConfig credentialsFactoryConfig = clientConfig.getSecurityConfig().getCredentialsFactoryConfig();
+        CustomCredentialsFactory customCredentialsFactory = new CustomCredentialsFactory();
+        credentialsFactoryConfig.setImplementation(customCredentialsFactory);
+        credentialsFactoryConfig.setClassName(CustomCredentialsFactory.class.getName());
+        credentialsFactoryConfig.setProperties(prop);
+
+        hazelcastFactory.newHazelcastClient(clientConfig);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCustomCredentialsViaFactoryImplementation_invalidCredentials() {
+        Config config = getConfig(USER_NAME, KEY1, KEY2);
+        hazelcastFactory.newHazelcastInstance(config);
+
+        Properties prop = new Properties();
+        prop.setProperty("username", USER_NAME);
+        prop.setProperty("key1", KEY1);
+        prop.setProperty("key2", "invalid");
+
+        ClientConfig clientConfig = new ClientConfig();
+        CredentialsFactoryConfig credentialsFactoryConfig = clientConfig.getSecurityConfig().getCredentialsFactoryConfig();
+        CustomCredentialsFactory customCredentialsFactory = new CustomCredentialsFactory();
+        credentialsFactoryConfig.setImplementation(customCredentialsFactory);
+        credentialsFactoryConfig.setProperties(prop);
+        hazelcastFactory.newHazelcastClient(clientConfig);
+    }
+
     private Config getConfig(String username, String key1, String key2) {
         Config config = new Config();
         config.getSecurityConfig()
@@ -77,6 +185,31 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
                 .setUsage(LoginModuleConfig.LoginModuleUsage.REQUIRED)
                 .setClassName(CustomLoginModule.class.getName())
                 .setProperties(prop);
+    }
+
+
+    public static class CustomCredentialsFactory implements ICredentialsFactory {
+
+        private String username;
+        private String key1;
+        private String key2;
+
+        @Override
+        public void configure(GroupConfig groupConfig, Properties properties) {
+            username = properties.getProperty("username");
+            key1 = properties.getProperty("key1");
+            key2 = properties.getProperty("key2");
+        }
+
+        @Override
+        public Credentials newCredentials() {
+            return new CustomCredentials(username, key1, key2);
+        }
+
+        @Override
+        public void destroy() {
+
+        }
     }
 
     public static class CustomCredentials implements Credentials {

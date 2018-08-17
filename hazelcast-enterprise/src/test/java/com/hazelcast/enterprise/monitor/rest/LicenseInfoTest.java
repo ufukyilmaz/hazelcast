@@ -29,6 +29,7 @@ public class LicenseInfoTest {
         when(license.getAllowedNumberOfNodes()).thenReturn(4);
         when(license.getCompanyName()).thenReturn("SuperCompany");
         when(license.getEmail()).thenReturn("SuperCompanyOwnerEmail");
+        when(license.computeKeyHash()).thenReturn("SomeKeyHash");
 
         LicenseInfo actual = new LicenseInfoImpl(license);
         JsonObject json = actual.toJson();
@@ -42,6 +43,7 @@ public class LicenseInfoTest {
         assertEquals(actual.getType(), license.getType());
         assertEquals(actual.getCompanyName(), license.getCompanyName());
         assertEquals(actual.getOwnerEmail(), license.getEmail());
+        assertEquals(actual.getKeyHash(), license.computeKeyHash());
     }
 
 }

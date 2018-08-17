@@ -33,4 +33,10 @@ public interface LicenseInfo
      * @return the owner email, of the license key assigned on this node
      */
     String getOwnerEmail();
+
+    /**
+     * @return hash of the license key assigned on this node, computed as SHA-256 hash of the key encoded as a Base64
+     * string
+     */
+    String getKeyHash();
 }

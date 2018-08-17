@@ -62,4 +62,10 @@ public class LicenseInfoMBean
     public String getCompanyName() {
         return managedObject.getCompanyName();
     }
+
+    @ManagedAnnotation("keyHash")
+    @ManagedDescription("SHA-256 hash of license key of the current license as a Base64 encoded string")
+    public String getKeyHash() {
+        return managedObject.getKeyHash();
+    }
 }

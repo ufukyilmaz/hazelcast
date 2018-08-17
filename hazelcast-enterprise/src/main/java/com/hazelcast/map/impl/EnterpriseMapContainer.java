@@ -26,6 +26,7 @@ import com.hazelcast.util.MemoryInfoAccessor;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.eviction.Evictor.NULL_EVICTOR;
+import static com.hazelcast.spi.properties.GroupProperty.MAP_EVICTION_BATCH_SIZE;
 
 /**
  * Includes enterprise specific {@link MapContainer} extensions.
@@ -46,13 +47,15 @@ public class EnterpriseMapContainer extends MapContainer {
             MapEvictionPolicy mapEvictionPolicy = mapConfig.getMapEvictionPolicy();
             if (mapEvictionPolicy != null) {
                 MemoryInfoAccessor memoryInfoAccessor = getMemoryInfoAccessor();
+                NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
                 HotRestartEvictionHelper hotRestartEvictionHelper =
-                        new HotRestartEvictionHelper(mapServiceContext.getNodeEngine().getProperties());
+                        new HotRestartEvictionHelper(nodeEngine.getProperties());
                 HDEvictionChecker evictionChecker =
                         new HDEvictionChecker(memoryInfoAccessor, mapServiceContext, hotRestartEvictionHelper);
-                IPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
+                IPartitionService partitionService = nodeEngine.getPartitionService();
+                int batchSize = nodeEngine.getProperties().getInteger(MAP_EVICTION_BATCH_SIZE);
                 evictor = new HDEvictorImpl(mapEvictionPolicy, evictionChecker, partitionService, storageInfo,
-                        mapServiceContext.getNodeEngine());
+                        nodeEngine, batchSize);
             } else {
                 evictor = NULL_EVICTOR;
             }

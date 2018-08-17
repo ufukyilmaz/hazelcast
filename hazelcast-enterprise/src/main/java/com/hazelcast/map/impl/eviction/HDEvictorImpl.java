@@ -33,8 +33,9 @@ public class HDEvictorImpl extends EvictorImpl {
     private final ILogger logger;
 
     public HDEvictorImpl(MapEvictionPolicy mapEvictionPolicy, EvictionChecker evictionChecker,
-                         IPartitionService partitionService, HiDensityStorageInfo storageInfo, NodeEngine nodeEngine) {
-        super(mapEvictionPolicy, evictionChecker, partitionService);
+                         IPartitionService partitionService, HiDensityStorageInfo storageInfo, NodeEngine nodeEngine,
+                         int batchSize) {
+        super(mapEvictionPolicy, evictionChecker, partitionService, batchSize);
         this.storageInfo = storageInfo;
         this.logger = nodeEngine.getLogger(getClass());
     }

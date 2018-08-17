@@ -203,6 +203,6 @@ public class ConcurrentArrayQueueTest extends HazelcastTestSupport {
 
     @Test(expected = UnsupportedOperationException.class)
     public void when_toArrayWithArg_thenUnsupportedException() {
-        q.toArray(null);
+        q.toArray((Integer[]) null);
     }
 }

@@ -68,32 +68,35 @@ public class PeriodicExpirationCompatibilityTest extends HazelcastTestSupport {
         final String cacheName = "testCache";
         factory = new CompatibilityTestHazelcastInstanceFactory();
         HazelcastInstance[] instances = factory.newInstances(getConfig());
+        int currentVersionIndex = CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount();
 
-        waitClusterForSafeState(instances[2]);
+        waitClusterForSafeState(instances[currentVersionIndex]);
 
-        CachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(instances[2]);
+        CachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(instances[currentVersionIndex]);
         HazelcastCacheManager cacheManager = (HazelcastCacheManager) provider.getCacheManager();
         Cache<Integer, Integer> cache = cacheManager.createCache(cacheName, createCacheConfig());
         String cacheNameWithPrefix = cacheManager.getCacheNameWithPrefix(cacheName);
 
         putRecords(cache, 20);
 
-        assertNoRecordEventually(instances[2], cacheNameWithPrefix, true);
+        assertNoRecordEventually(instances[currentVersionIndex], cacheNameWithPrefix, true);
 
-        instances[0].shutdown();
-        instances[1].shutdown();
+        for (int i = 0; i < currentVersionIndex; i++) {
+            instances[i].shutdown();
+        }
 
-        waitClusterForSafeState(instances[2]);
-        getClusterService(instances[2]).changeClusterVersion(Version.of(CURRENT_VERSION));
+        waitClusterForSafeState(instances[currentVersionIndex]);
+        getClusterService(instances[currentVersionIndex]).changeClusterVersion(Version.of(CURRENT_VERSION));
 
-        instances[0] = factory.newHazelcastInstance(getConfig());
-        instances[1] = factory.newHazelcastInstance(getConfig());
+        for (int i = 0; i < currentVersionIndex; i++) {
+            instances[i] = factory.newHazelcastInstance(getConfig());
+        }
 
         putRecords(cache, 30);
 
-        assertNoRecordEventually(instances[0], cacheNameWithPrefix, false);
-        assertNoRecordEventually(instances[1], cacheNameWithPrefix, false);
-        assertNoRecordEventually(instances[2], cacheNameWithPrefix, false);
+        for (int i = 0; i < factory.getCount(); i++) {
+            assertNoRecordEventually(instances[i], cacheNameWithPrefix, false);
+        }
     }
 
     private void assertNoRecordEventually(final HazelcastInstance instance, final String cacheNameWithPrefix, final boolean ownerOnly) {

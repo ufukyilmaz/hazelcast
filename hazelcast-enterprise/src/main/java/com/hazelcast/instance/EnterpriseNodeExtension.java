@@ -14,6 +14,7 @@ import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.PartitioningStrategy;
+import com.hazelcast.enterprise.EnterprisePhoneHome;
 import com.hazelcast.enterprise.management.EnterpriseManagementCenterConnectionFactory;
 import com.hazelcast.enterprise.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
@@ -107,12 +108,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     private final HotRestartIntegrationService hotRestartService;
     private final HotBackupService hotBackupService;
     private final SecurityService securityService;
+    private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
     private volatile HazelcastMemoryManager memoryManager;
-
-    private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
@@ -723,5 +723,10 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             return super.createDynamicConfigListener();
         }
         return new HotRestartConfigListener(hotRestartService);
+    }
+
+    @Override
+    protected void createAndSetPhoneHome() {
+        super.phoneHome = new EnterprisePhoneHome(node);
     }
 }

@@ -18,6 +18,7 @@ import com.hazelcast.enterprise.monitor.impl.jmx.EnterpriseManagementService;
 import com.hazelcast.enterprise.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
 import com.hazelcast.enterprise.monitor.impl.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.enterprise.monitor.impl.rest.EnterpriseTextCommandServiceImpl;
+import com.hazelcast.enterprise.EnterprisePhoneHome;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
@@ -121,12 +122,11 @@ public class EnterpriseNodeExtension
     private final HotRestartIntegrationService hotRestartService;
     private final HotBackupService hotBackupService;
     private final SecurityService securityService;
+    private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
     private volatile HazelcastMemoryManager memoryManager;
-
-    private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
@@ -775,5 +775,10 @@ public class EnterpriseNodeExtension
     @Override
     public TextCommandService createTextCommandService() {
         return new EnterpriseTextCommandServiceImpl(node);
+    }
+
+    @Override
+    protected void createAndSetPhoneHome() {
+        super.phoneHome = new EnterprisePhoneHome(node);
     }
 }

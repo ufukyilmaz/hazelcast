@@ -29,7 +29,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
+                <version>3.8.0</version>
                 <configuration combine.self="override">
                     <release>9</release>
                 </configuration>
@@ -54,6 +54,40 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <!-- 
+                    Hot Restart related arguments:
+                        export java.base/jdk.internal.ref
+                        open java.base/java.nio
+                        open java.base/sun.nio.ch
+                    Operating system metrics related:
+                        open jdk.management/com.sun.management.internal
+
+                    Avoid warnings caused by reflection in
+                    FilteringClassLoader:
+                        open java.base/java.lang
+                    TimedMemberStateFactoryHelper:
+                        open java.management/sun.management
+                     -->
+                    <argLine>
+                        ${vmHeapSettings}
+                        ${extraVmArgs}
+                        -ea
+                        --add-exports java.base/jdk.internal.ref=com.hazelcast.core
+                        --add-opens java.base/java.nio=com.hazelcast.core
+                        --add-opens java.base/java.lang=com.hazelcast.core
+                        --add-opens jdk.management/com.sun.management.internal=com.hazelcast.core
+                        --add-opens java.management/sun.management=com.hazelcast.core
+                        --illegal-access=warn
+                        -Dhazelcast.hidensity.check.freememory=false
+                        -Dhazelcast.phone.home.enabled=false
+                        -Dlog4j.skipJansi=true
+                    </argLine>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -67,6 +101,11 @@
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-enterprise-client</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.cache</groupId>
+            <artifactId>cache-api</artifactId>
+            <version>${jsr107.api.version}</version>
         </dependency>
 
         <dependency>

@@ -1,5 +1,6 @@
 package com.hazelcast.test.modulepath;
 
+import static com.hazelcast.test.modulepath.EnterpriseTestUtils.createConfigWithTcpJoin;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
@@ -71,8 +72,8 @@ public class SmokeEnterpriseModulePathTest {
         networkConfig.getJoin().getMulticastConfig().setEnabled(false);
         networkConfig.getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
 
-        HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(createConfigWithTcpJoin(5701));
+        HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(createConfigWithTcpJoin(5702));
         hz1.getMap("test").put("a", "b");
         assertClusterSize(2, hz1, hz2);
         HazelcastInstance client = HazelcastClient.newHazelcastClient();

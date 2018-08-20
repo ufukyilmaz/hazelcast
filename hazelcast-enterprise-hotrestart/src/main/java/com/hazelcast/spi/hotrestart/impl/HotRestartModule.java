@@ -18,7 +18,9 @@ import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager;
 import com.hazelcast.spi.hotrestart.impl.gc.Snapshotter;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
+import com.hazelcast.spi.hotrestart.impl.io.TombFileAccessor;
 import com.hazelcast.spi.properties.HazelcastProperties;
+import com.hazelcast.util.ExceptionUtil;
 
 import static com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentHotRestartStore.MUTATOR_QUEUE_CAPACITY;
@@ -52,6 +54,14 @@ public final class HotRestartModule {
     }
 
     private static HotRestartStore hrStore(HotRestartStoreConfig cfg, boolean isOffHeap, HazelcastProperties properties) {
+       // fail fast when the explicit DirectByteBuffer clean-up is not available (i.e. TombFileAccessor.<clinit> fails)
+        try {
+            Class.forName(TombFileAccessor.class.getName());
+        } catch (ClassNotFoundException e) {
+            throw ExceptionUtil.rethrow(e);
+        } catch (ExceptionInInitializerError e) {
+            throw ExceptionUtil.rethrow(e.getCause() != null ? e.getCause() : e);
+        }
         cfg.logger().info(cfg.storeName() + " homeDir: " + cfg.homeDir());
         cfg.validateAndCreateHomeDir();
         final DiContainer di = new DiContainer();

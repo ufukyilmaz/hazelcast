@@ -41,7 +41,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class EnterpriseRecordStore extends DefaultRecordStore {
 
     /**
-     * @see EnterpriseRecordStore#markRecordStoreExpirable(long)
+     * @see EnterpriseRecordStore#markRecordStoreExpirable(long, long)
      */
     // public for testing purposes
     public static final long HD_RECORD_MAX_TTL_MILLIS = SECONDS.toMillis(Integer.MAX_VALUE);
@@ -120,17 +120,17 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         return super.createStorage(recordFactory, memoryFormat);
     }
 
-    @Override
-    public Record createRecord(Object value, long ttlMillis, long now) {
-        return createRecordInternal(value, ttlMillis, now, incrementSequence());
-    }
-
     public HDRecord createRecord(Object value, long sequence) {
-        return (HDRecord) createRecordInternal(value, DEFAULT_TTL, Clock.currentTimeMillis(), sequence);
+        return (HDRecord) createRecordInternal(value, DEFAULT_TTL, DEFAULT_MAX_IDLE, Clock.currentTimeMillis(), sequence);
     }
 
-    private Record createRecordInternal(Object value, long ttlMillis, long now, long sequence) {
-        Record record = super.createRecord(value, ttlMillis, now);
+    @Override
+    public Record createRecord(Object value, long ttlMillis, long maxIdleMillis, long now) {
+        return createRecordInternal(value, ttlMillis, maxIdleMillis, now, incrementSequence());
+    }
+
+    private Record createRecordInternal(Object value, long ttlMillis, long maxIdleMillis, long now, long sequence) {
+        Record record = super.createRecord(value, ttlMillis, maxIdleMillis, now);
         if (NATIVE == inMemoryFormat) {
             record.setSequence(sequence);
             // `lastAccessTime` is used for LRU eviction, for this reason, after creation of record,

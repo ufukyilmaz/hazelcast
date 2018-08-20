@@ -15,7 +15,7 @@ public class HDTryPutOperation extends HDBasePutOperation implements MutatingOpe
 
     @Override
     protected void runInternal() {
-        recordStore.put(dataKey, dataValue, ttl);
+        recordStore.put(dataKey, dataValue, ttl, maxIdle);
     }
 
     @Override

@@ -39,8 +39,8 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createPutOperation(String name, Data key, Data value, long ttl) {
-        return new HDPutOperation(name, key, value, ttl);
+    public MapOperation createPutOperation(String name, Data key, Data value, long ttl, long maxIdle) {
+        return new HDPutOperation(name, key, value, ttl, maxIdle);
     }
 
     @Override
@@ -49,18 +49,18 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createSetOperation(String name, Data dataKey, Data value, long ttl) {
-        return new HDSetOperation(name, dataKey, value, ttl);
+    public MapOperation createSetOperation(String name, Data dataKey, Data value, long ttl, long maxIdle) {
+        return new HDSetOperation(name, dataKey, value, ttl, maxIdle);
     }
 
     @Override
-    public MapOperation createPutIfAbsentOperation(String name, Data key, Data value, long ttl) {
-        return new HDPutIfAbsentOperation(name, key, value, ttl);
+    public MapOperation createPutIfAbsentOperation(String name, Data key, Data value, long ttl, long maxIdle) {
+        return new HDPutIfAbsentOperation(name, key, value, ttl, maxIdle);
     }
 
     @Override
-    public MapOperation createPutTransientOperation(String name, Data key, Data value, long ttl) {
-        return new HDPutTransientOperation(name, key, value, ttl);
+    public MapOperation createPutTransientOperation(String name, Data key, Data value, long ttl, long maxIdle) {
+        return new HDPutTransientOperation(name, key, value, ttl, maxIdle);
     }
 
     @Override

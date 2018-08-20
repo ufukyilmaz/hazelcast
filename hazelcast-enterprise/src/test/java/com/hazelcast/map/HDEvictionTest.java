@@ -19,6 +19,7 @@ import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -42,6 +43,12 @@ public class HDEvictionTest extends EvictionTest {
         return getHDConfig();
     }
 
+    @Override
+    protected MapConfig newMapConfig(String mapName) {
+        return super.newMapConfig(mapName)
+                    .setInMemoryFormat(InMemoryFormat.NATIVE);
+    }
+
     @Test
     public void testForceEviction() {
         testForcedEvictionWithRetryCount(5);
@@ -50,6 +57,12 @@ public class HDEvictionTest extends EvictionTest {
     @Test
     public void testForceEviction_with_no_retry() {
         testForcedEvictionWithRetryCount(0);
+    }
+
+    @Override
+    @Ignore
+    public void testLastAddedKey_canBeEvicted_whenFreeHeapNeeded() {
+        // Not applicable
     }
 
     private void testForcedEvictionWithRetryCount(int forcedEvictionRetryCount) {

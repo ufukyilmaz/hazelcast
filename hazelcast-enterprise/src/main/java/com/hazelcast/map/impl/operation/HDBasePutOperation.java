@@ -19,11 +19,11 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
     protected transient boolean putTransient;
 
     public HDBasePutOperation(String name, Data dataKey, Data value) {
-        super(name, dataKey, value, -1);
+        super(name, dataKey, value, -1, -1);
     }
 
-    public HDBasePutOperation(String name, Data dataKey, Data value, long ttl) {
-        super(name, dataKey, value, ttl);
+    public HDBasePutOperation(String name, Data dataKey, Data value, long ttl, long maxIdle) {
+        super(name, dataKey, value, ttl, maxIdle);
     }
 
     public HDBasePutOperation() {

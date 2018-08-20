@@ -8,13 +8,13 @@ public class HDPutTransientOperation extends HDBasePutOperation implements Mutat
     public HDPutTransientOperation() {
     }
 
-    public HDPutTransientOperation(String name, Data dataKey, Data value, long ttl) {
-        super(name, dataKey, value, ttl);
+    public HDPutTransientOperation(String name, Data dataKey, Data value, long ttl, long maxIdle) {
+        super(name, dataKey, value, ttl, maxIdle);
     }
 
     @Override
     protected void runInternal() {
-        dataOldValue = mapServiceContext.toData(recordStore.putTransient(dataKey, dataValue, ttl));
+        dataOldValue = mapServiceContext.toData(recordStore.putTransient(dataKey, dataValue, ttl, maxIdle));
         putTransient = true;
     }
 

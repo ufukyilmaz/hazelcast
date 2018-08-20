@@ -10,7 +10,7 @@ public class HDSetTTLBackupOperation extends HDKeyBasedMapOperation {
     }
 
     public HDSetTTLBackupOperation(String name, Data dataKey, long ttl) {
-        super(name, dataKey, ttl);
+        super(name, dataKey, ttl, -1);
     }
 
     @Override

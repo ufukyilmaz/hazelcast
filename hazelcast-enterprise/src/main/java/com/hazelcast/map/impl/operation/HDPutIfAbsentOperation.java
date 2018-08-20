@@ -7,8 +7,8 @@ public class HDPutIfAbsentOperation extends HDBasePutOperation implements Mutati
 
     private boolean successful;
 
-    public HDPutIfAbsentOperation(String name, Data dataKey, Data value, long ttl) {
-        super(name, dataKey, value, ttl);
+    public HDPutIfAbsentOperation(String name, Data dataKey, Data value, long ttl, long maxIdle) {
+        super(name, dataKey, value, ttl, maxIdle);
     }
 
     public HDPutIfAbsentOperation() {
@@ -16,7 +16,7 @@ public class HDPutIfAbsentOperation extends HDBasePutOperation implements Mutati
 
     @Override
     protected void runInternal() {
-        final Object oldValue = recordStore.putIfAbsent(dataKey, dataValue, ttl, getCallerAddress());
+        final Object oldValue = recordStore.putIfAbsent(dataKey, dataValue, ttl, maxIdle, getCallerAddress());
         dataOldValue = mapService.getMapServiceContext().toData(oldValue);
         successful = dataOldValue == null;
     }

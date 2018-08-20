@@ -171,6 +171,11 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
             return record.getTtl();
         }
 
+        @Override
+        public long getMaxIdle() {
+            return record.getMaxIdle();
+        }
+
         public Record getRecord() {
             return record;
         }

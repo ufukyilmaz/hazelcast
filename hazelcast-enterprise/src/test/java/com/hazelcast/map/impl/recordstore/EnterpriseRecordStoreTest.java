@@ -28,12 +28,12 @@ public class EnterpriseRecordStoreTest extends HazelcastTestSupport {
     /**
      * Threshold for NATIVE is {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}
      *
-     * @see EnterpriseRecordStore#markRecordStoreExpirable(long)
+     * @see EnterpriseRecordStore#markRecordStoreExpirable(long, long)
      */
     @Test
     public void testHDRecord_not_mark_recordstore_expirable_when_ttl_is_higher_than_threshold() throws Exception {
         EnterpriseRecordStore recordStore = getEnterpriseRecordStore();
-        recordStore.markRecordStoreExpirable(HD_RECORD_MAX_TTL_MILLIS + getInt(0, Integer.MAX_VALUE));
+        recordStore.markRecordStoreExpirable(HD_RECORD_MAX_TTL_MILLIS + getInt(0, Integer.MAX_VALUE), -1);
 
         assertFalse("Should not be marked as expirable", recordStore.isExpirable());
     }
@@ -41,12 +41,12 @@ public class EnterpriseRecordStoreTest extends HazelcastTestSupport {
     /**
      * Threshold for NATIVE is {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}
      *
-     * @see EnterpriseRecordStore#markRecordStoreExpirable(long)
+     * @see EnterpriseRecordStore#markRecordStoreExpirable(long, long)
      */
     @Test
     public void testHDRecord_mark_recordstore_expirable_when_ttl_is_lower_than_threshold() throws Exception {
         EnterpriseRecordStore recordStore = getEnterpriseRecordStore();
-        recordStore.markRecordStoreExpirable(HD_RECORD_MAX_TTL_MILLIS - getInt(1, Integer.MAX_VALUE));
+        recordStore.markRecordStoreExpirable(HD_RECORD_MAX_TTL_MILLIS - getInt(1, Integer.MAX_VALUE), -1);
 
         assertTrue("Should be marked as expirable", recordStore.isExpirable());
     }

@@ -63,7 +63,7 @@ public class HDTxnSetOperation extends HDBasePutOperation implements MapTxnOpera
                 dataOldValue = record == null ? null : mapServiceContext.toData(record.getValue());
             }
             eventType = record == null ? EntryEventType.ADDED : EntryEventType.UPDATED;
-            recordStore.set(dataKey, dataValue, ttl);
+            recordStore.set(dataKey, dataValue, ttl, maxIdle);
             shouldBackup = true;
         }
     }

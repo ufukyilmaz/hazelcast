@@ -13,7 +13,7 @@ public class HDSetTTLOperation extends HDLockAwareOperation implements BackupAwa
     }
 
     public HDSetTTLOperation(String name, Data dataKey, long ttl) {
-        super(name, dataKey, ttl);
+        super(name, dataKey, ttl, -1);
     }
 
     @Override

@@ -19,6 +19,7 @@ import java.util.List;
 import static com.hazelcast.core.EntryEventType.ADDED;
 import static com.hazelcast.core.EntryEventType.UPDATED;
 import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
+import static com.hazelcast.map.impl.recordstore.RecordStore.DEFAULT_MAX_IDLE;
 import static com.hazelcast.map.impl.recordstore.RecordStore.DEFAULT_TTL;
 
 public class HDPutAllOperation extends HDMapOperation implements PartitionAwareOperation, BackupAwareOperation,
@@ -107,9 +108,9 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
      */
     private Object putToRecordStore(Data dataKey, Data dataValue) {
         if (hasMapListener) {
-            return recordStore.put(dataKey, dataValue, DEFAULT_TTL);
+            return recordStore.put(dataKey, dataValue, DEFAULT_TTL, DEFAULT_MAX_IDLE);
         }
-        recordStore.set(dataKey, dataValue, DEFAULT_TTL);
+        recordStore.set(dataKey, dataValue, DEFAULT_TTL, DEFAULT_MAX_IDLE);
         return null;
     }
 

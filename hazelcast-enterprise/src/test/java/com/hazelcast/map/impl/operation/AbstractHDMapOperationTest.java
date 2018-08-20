@@ -113,7 +113,7 @@ public abstract class AbstractHDMapOperationTest {
         when(recordStore.getMapContainer()).thenReturn(mapContainer);
         when(recordStore.getRecord(any(Data.class))).thenReturn(record);
         when(recordStore.putBackup(any(Data.class), any(), any(CallerProvenance.class))).thenReturn(record);
-        when(recordStore.putBackup(any(Data.class), any(Data.class), anyLong(), anyBoolean(), any(CallerProvenance.class))).thenReturn(record);
+        when(recordStore.putBackup(any(Data.class), any(Data.class), anyLong(), anyLong(), anyBoolean(), any(CallerProvenance.class))).thenReturn(record);
 
         partitionMaps = new ConcurrentHashMap<String, RecordStore>();
 
@@ -171,7 +171,7 @@ public abstract class AbstractHDMapOperationTest {
         NativeOutOfMemoryError exception = new NativeOutOfMemoryError();
         switch (operationType) {
             case PUT_ALL:
-                OngoingStubbing<Boolean> setStub = when(recordStore.set(any(Data.class), any(), anyLong()) != null);
+                OngoingStubbing<Boolean> setStub = when(recordStore.set(any(Data.class), any(), anyLong(), anyLong()) != null);
                 if (throwNativeOOME) {
                     setStub.thenReturn(true, true, true).thenThrow(exception).thenReturn(true);
                     numberOfNativeOOME = 1;
@@ -182,7 +182,7 @@ public abstract class AbstractHDMapOperationTest {
                 return;
 
             case PUT:
-                OngoingStubbing<Object> putStub = when(recordStore.put(any(Data.class), any(Data.class), anyLong()));
+                OngoingStubbing<Object> putStub = when(recordStore.put(any(Data.class), any(Data.class), anyLong(), anyLong()));
                 if (throwNativeOOME) {
                     putStub.thenReturn(null, null, null)
                             .thenThrow(exception, exception, exception, exception, exception, exception)
@@ -252,10 +252,10 @@ public abstract class AbstractHDMapOperationTest {
 
         if (operationType == PUT_ALL) {
             // RecordStore.set() is called again for each entry which threw a NativeOOME
-            verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).set(any(Data.class), any(), anyLong());
+            verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).set(any(Data.class), any(), anyLong(), anyLong());
         } else if (operationType == PUT) {
             // RecordStore.put() is called again for each entry which threw a NativeOOME
-            verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).put(any(Data.class), any(), anyLong());
+            verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).put(any(Data.class), any(), anyLong(), anyLong());
         }
 
         verify(recordStore, times(ENTRY_COUNT * syncBackupCount)).getRecord(any(Data.class));
@@ -267,7 +267,7 @@ public abstract class AbstractHDMapOperationTest {
             if (operationType == PUT_ALL) {
                 verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(), any(CallerProvenance.class));
             } else {
-                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(Data.class), anyLong(), anyBoolean(), any(CallerProvenance.class));
+                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(Data.class), anyLong(), anyLong(), anyBoolean(), any(CallerProvenance.class));
             }
         }
 

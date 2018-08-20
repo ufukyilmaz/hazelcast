@@ -9,13 +9,13 @@ public class HDPutOperation extends HDBasePutOperation implements IdentifiedData
     public HDPutOperation() {
     }
 
-    public HDPutOperation(String name, Data dataKey, Data value, long ttl) {
-        super(name, dataKey, value, ttl);
+    public HDPutOperation(String name, Data dataKey, Data value, long ttl, long maxIdle) {
+        super(name, dataKey, value, ttl, maxIdle);
     }
 
     @Override
     protected void runInternal() {
-        dataOldValue = mapServiceContext.toData(recordStore.put(dataKey, dataValue, ttl));
+        dataOldValue = mapServiceContext.toData(recordStore.put(dataKey, dataValue, ttl, maxIdle));
     }
 
     @Override

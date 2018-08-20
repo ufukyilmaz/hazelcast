@@ -95,7 +95,7 @@ public class HDPutOperationTest extends AbstractHDMapOperationTest {
         }
 
         public TestHDPutOperation(String name, Data dataKey, Data value, long ttl) {
-            super(name, dataKey, value, ttl);
+            super(name, dataKey, value, ttl, -1);
         }
 
         @Override

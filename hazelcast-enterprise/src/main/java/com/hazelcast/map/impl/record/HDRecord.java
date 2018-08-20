@@ -16,7 +16,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Represents simple Hi-Density backed {@link Record} implementation for {@link com.hazelcast.core.IMap IMap}.
  */
 @SuppressWarnings("checkstyle:methodcount")
-public class HDRecord extends HiDensityRecord implements Record<Data> {
+public class HDRecord
+        extends HiDensityRecord
+        implements Record<Data> {
 
     /*
      * Structure:
@@ -27,9 +29,11 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
      * +--------------------------+--------------------+
      * | Version                  |   8 bytes (long)   |
      * +--------------------------+--------------------+
-     * | Creation Time            |   8 bytes (long)   |
+     * | Creation Time            |   4 bytes (int)    |
      * +--------------------------+--------------------+
      * | Time To live             |   4 bytes (int)    |
+     * +--------------------------+--------------------+
+     * | Max Idle                 |   4 bytes (int)    |
      * +--------------------------+--------------------+
      * | Last Access Time         |   4 bytes (int)    |
      * +--------------------------+--------------------+
@@ -47,7 +51,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
      * Total size = 60 bytes
      */
 
-
     /**
      * Gives the size of an {@link HDRecord}.
      */
@@ -57,8 +60,9 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     static final int VALUE_OFFSET = KEY_OFFSET + LONG_SIZE_IN_BYTES;
     static final int VERSION_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
     static final int CREATION_TIME_OFFSET = VERSION_OFFSET + LONG_SIZE_IN_BYTES;
-    static final int TTL_OFFSET = CREATION_TIME_OFFSET + LONG_SIZE_IN_BYTES;
-    static final int LAST_ACCESS_TIME_OFFSET = TTL_OFFSET + INT_SIZE_IN_BYTES;
+    static final int TTL_OFFSET = CREATION_TIME_OFFSET + INT_SIZE_IN_BYTES;
+    static final int MAX_IDLE_OFFSET = TTL_OFFSET + INT_SIZE_IN_BYTES;
+    static final int LAST_ACCESS_TIME_OFFSET = MAX_IDLE_OFFSET + INT_SIZE_IN_BYTES;
     static final int LAST_UPDATE_TIME_OFFSET = LAST_ACCESS_TIME_OFFSET + INT_SIZE_IN_BYTES;
     static final int HITS = LAST_UPDATE_TIME_OFFSET + INT_SIZE_IN_BYTES;
     static final int LAST_STORED_TIME_OFFSET = HITS + INT_SIZE_IN_BYTES;
@@ -68,6 +72,12 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     static {
         SIZE = SEQUENCE_OFFSET + INT_SIZE_IN_BYTES;
     }
+
+    /**
+     * Base time to be used for storing time values as diffs (int) rather than full blown epoch based vals (long)
+     * This allows for a space in seconds, of roughly 68 years.
+     */
+    private static final long CREATION_DATE_BASE = zeroOutMillis(System.currentTimeMillis());
 
     protected HiDensityRecordAccessor<HDRecord> recordAccessor;
 
@@ -108,6 +118,11 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
                 + NativeMemoryData.class + "], but found [" + value + ']';
 
         setValueAddress(((NativeMemoryData) value).address());
+    }
+
+    @Override
+    public void setKey(Data key) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -221,17 +236,18 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
 
     @Override
     public long getCreationTime() {
-        return readLong(CREATION_TIME_OFFSET);
+        return getWithBaseTime(CREATION_TIME_OFFSET);
     }
 
     @Override
     public void setCreationTime(long creationTime) {
-        writeLong(CREATION_TIME_OFFSET, creationTime);
+        setWithBaseTime(CREATION_TIME_OFFSET, creationTime);
     }
 
     @Override
     public long getTtl() {
-        return SECONDS.toMillis(readInt(TTL_OFFSET));
+        int value = readInt(TTL_OFFSET);
+        return value == Integer.MAX_VALUE ? Long.MAX_VALUE : SECONDS.toMillis(value);
     }
 
     @Override
@@ -245,23 +261,39 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     }
 
     @Override
+    public void setMaxIdle(long maxIdle) {
+        long maxIdleSeconds = MILLISECONDS.toSeconds(maxIdle);
+        if (maxIdleSeconds == 0 && maxIdle != 0) {
+            maxIdleSeconds = 1;
+        }
+        int value = maxIdleSeconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) maxIdleSeconds;
+        writeInt(MAX_IDLE_OFFSET, value);
+    }
+
+    @Override
+    public long getMaxIdle() {
+        int value = readInt(MAX_IDLE_OFFSET);
+        return value == Integer.MAX_VALUE ? Long.MAX_VALUE : SECONDS.toMillis(value);
+    }
+
+    @Override
     public long getLastAccessTime() {
-        return getWithCreationTime(LAST_ACCESS_TIME_OFFSET);
+        return getWithBaseTime(LAST_ACCESS_TIME_OFFSET);
     }
 
     @Override
     public void setLastAccessTime(long lastAccessTime) {
-        setWithCreationTime(LAST_ACCESS_TIME_OFFSET, lastAccessTime);
+        setWithBaseTime(LAST_ACCESS_TIME_OFFSET, lastAccessTime);
     }
 
     @Override
     public long getLastUpdateTime() {
-        return getWithCreationTime(LAST_UPDATE_TIME_OFFSET);
+        return getWithBaseTime(LAST_UPDATE_TIME_OFFSET);
     }
 
     @Override
     public void setLastUpdateTime(long lastUpdatedTime) {
-        setWithCreationTime(LAST_UPDATE_TIME_OFFSET, lastUpdatedTime);
+        setWithBaseTime(LAST_UPDATE_TIME_OFFSET, lastUpdatedTime);
     }
 
     @Override
@@ -276,22 +308,32 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
 
     @Override
     public long getLastStoredTime() {
-        return getWithCreationTime(LAST_STORED_TIME_OFFSET);
+        return getWithBaseTime(LAST_STORED_TIME_OFFSET);
     }
 
     @Override
     public void setLastStoredTime(long lastStoredTime) {
-        setWithCreationTime(LAST_STORED_TIME_OFFSET, lastStoredTime);
+        setWithBaseTime(LAST_STORED_TIME_OFFSET, lastStoredTime);
     }
 
     @Override
     public long getExpirationTime() {
-        return getWithCreationTime(EXPIRATION_TIME_OFFSET);
+        int value = readInt(EXPIRATION_TIME_OFFSET);
+        if (value == Integer.MAX_VALUE) {
+            return Long.MAX_VALUE;
+        }
+
+        return recomputeWithBaseTime(value);
     }
 
     @Override
     public void setExpirationTime(long expirationTime) {
-        setWithCreationTime(EXPIRATION_TIME_OFFSET, expirationTime);
+        if (expirationTime == Long.MAX_VALUE) {
+            writeInt(EXPIRATION_TIME_OFFSET, Integer.MAX_VALUE);
+            return;
+        }
+
+        setWithBaseTime(EXPIRATION_TIME_OFFSET, expirationTime);
     }
 
     @Override
@@ -304,22 +346,30 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
         return super.hashCode();
     }
 
-    private long getWithCreationTime(int offset) {
+    private long getWithBaseTime(int offset) {
         int value = readInt(offset);
+        return recomputeWithBaseTime(value);
+    }
+
+    private long recomputeWithBaseTime(int value) {
         if (value == NOT_AVAILABLE) {
             return 0L;
         }
-        return value + getCreationTime();
+        return SECONDS.toMillis(value) + CREATION_DATE_BASE;
     }
 
-    private void setWithCreationTime(int offset, long value) {
+    private void setWithBaseTime(int offset, long value) {
         int diff = NOT_AVAILABLE;
         if (value > 0) {
-            diff = (int) (value - getCreationTime());
-            // handles overflow
-            diff = diff < 0 ? Integer.MAX_VALUE : diff;
+            diff = (int) MILLISECONDS.toSeconds(value - CREATION_DATE_BASE);
+            // overflow - should not happen, 2^31 seconds ~ 70 years
+            assert diff >= 0 : "Diff is not supposed to overflow " + diff + " Value: " + value + " Base: " + CREATION_DATE_BASE;
         }
         writeInt(offset, diff);
+    }
+
+    private static long zeroOutMillis(long value) {
+        return SECONDS.toMillis(MILLISECONDS.toSeconds(value));
     }
 }
 

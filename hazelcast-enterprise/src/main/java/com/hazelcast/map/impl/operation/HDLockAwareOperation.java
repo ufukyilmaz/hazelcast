@@ -16,12 +16,12 @@ public abstract class HDLockAwareOperation extends HDKeyBasedMapOperation implem
         super(name, dataKey);
     }
 
-    protected HDLockAwareOperation(String name, Data dataKey, long ttl) {
-        super(name, dataKey, ttl);
+    protected HDLockAwareOperation(String name, Data dataKey, long ttl, long maxIdle) {
+        super(name, dataKey, ttl, maxIdle);
     }
 
-    protected HDLockAwareOperation(String name, Data dataKey, Data dataValue, long ttl) {
-        super(name, dataKey, dataValue, ttl);
+    protected HDLockAwareOperation(String name, Data dataKey, Data dataValue, long ttl, long maxIdle) {
+        super(name, dataKey, dataValue, ttl, maxIdle);
     }
 
     @Override

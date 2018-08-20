@@ -1,21 +1,26 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.spi.NamedOperation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 
-public abstract class HDKeyBasedMapOperation extends HDMapOperation implements PartitionAwareOperation, NamedOperation {
+public abstract class HDKeyBasedMapOperation
+        extends HDMapOperation
+        implements PartitionAwareOperation, NamedOperation, Versioned {
 
     protected Data dataKey;
     protected long threadId;
     protected Data dataValue;
     protected long ttl = -1L;
+    protected long maxIdle = -1L;
 
 
     public HDKeyBasedMapOperation() {
@@ -32,17 +37,19 @@ public abstract class HDKeyBasedMapOperation extends HDMapOperation implements P
         this.dataValue = dataValue;
     }
 
-    protected HDKeyBasedMapOperation(String name, Data dataKey, long ttl) {
+    protected HDKeyBasedMapOperation(String name, Data dataKey, long ttl, long maxIdle) {
         super(name);
         this.dataKey = dataKey;
         this.ttl = ttl;
+        this.maxIdle = maxIdle;
     }
 
-    protected HDKeyBasedMapOperation(String name, Data dataKey, Data dataValue, long ttl) {
+    protected HDKeyBasedMapOperation(String name, Data dataKey, Data dataValue, long ttl, long maxIdle) {
         super(name);
         this.dataKey = dataKey;
         this.dataValue = dataValue;
         this.ttl = ttl;
+        this.maxIdle = maxIdle;
     }
 
     protected long getNow() {
@@ -92,6 +99,10 @@ public abstract class HDKeyBasedMapOperation extends HDMapOperation implements P
         out.writeLong(threadId);
         out.writeData(dataValue);
         out.writeLong(ttl);
+        //RU_COMPAT_3_10
+        if (out.getVersion().isGreaterOrEqual(Versions.V3_11)) {
+            out.writeLong(maxIdle);
+        }
     }
 
     @Override
@@ -101,5 +112,9 @@ public abstract class HDKeyBasedMapOperation extends HDMapOperation implements P
         threadId = in.readLong();
         dataValue = in.readData();
         ttl = in.readLong();
+        //RU_COMPAT_3_10
+        if (in.getVersion().isGreaterOrEqual(Versions.V3_11)) {
+            maxIdle = in.readLong();
+        }
     }
 }

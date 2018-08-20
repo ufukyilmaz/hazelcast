@@ -14,13 +14,13 @@ public class HDSetOperation extends HDBasePutOperation implements IdentifiedData
     public HDSetOperation() {
     }
 
-    public HDSetOperation(String name, Data dataKey, Data value, long ttl) {
-        super(name, dataKey, value, ttl);
+    public HDSetOperation(String name, Data dataKey, Data value, long ttl, long maxIdle) {
+        super(name, dataKey, value, ttl, maxIdle);
     }
 
     @Override
     protected void runInternal() {
-        Object oldValue = recordStore.set(dataKey, dataValue, ttl);
+        Object oldValue = recordStore.set(dataKey, dataValue, ttl, maxIdle);
         newRecord = oldValue == null;
 
         if (recordStore.hasQueryCache()) {

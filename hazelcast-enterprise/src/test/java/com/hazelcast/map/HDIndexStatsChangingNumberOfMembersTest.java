@@ -175,8 +175,8 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
         assertEquals(4 * queriesBulk, stats(map3).getIndexedQueryCount());
         assertEquals(4 * queriesBulk, valueStats(map3).getQueryCount());
 
-        // This work correctly only due to we stored data from shutdowned member and uses this data for counting
-        // originalOverallAvarageHitSelectivity. However this not represent real scenario. This check is here just for ensure
+        // This work correctly only due to we stored data from shutdown member and uses this data for counting
+        // originalOverallAverageHitSelectivity. However this not represent real scenario. This check is here just for ensure
         // that AverageHitSelectivity is still counted correctly on live members.
         originalOverallAverageHitSelectivity = calculateOverallSelectivity(map2Hits, map2TotalHitSelectivity, map1, map3);
         assertEquals((expectedEqual + expectedGreaterEqual) / 2, originalOverallAverageHitSelectivity, 0.015);
@@ -251,12 +251,12 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
 
         waitAllForSafeState(instance1, instance2, instance3);
 
-        assertChange("insertCount", originalMap1InsertCount, valueStats(map1).getInsertCount());
-        assertChange("updateCount", originalMap1UpdateCount, valueStats(map1).getUpdateCount());
-        assertChange("removeCount", originalMap1RemoveCount, valueStats(map1).getRemoveCount());
-        assertChange("insertCount", originalMap2InsertCount, valueStats(map2).getInsertCount());
-        assertChange("updateCount", originalMap2UpdateCount, valueStats(map2).getUpdateCount());
-        assertChange("removeCount", originalMap2RemoveCount, valueStats(map2).getRemoveCount());
+        assertChange("insertCount", originalMap1InsertCount + originalMap2InsertCount,
+                valueStats(map1).getInsertCount() + valueStats(map2).getInsertCount());
+        assertChange("updateCount", originalMap1UpdateCount + originalMap2UpdateCount,
+                valueStats(map1).getUpdateCount() + valueStats(map2).getUpdateCount());
+        assertChange("removeCount", originalMap1RemoveCount + originalMap2RemoveCount,
+                valueStats(map1).getRemoveCount() + valueStats(map2).getRemoveCount());
 
         long originalTotalInsertCount =
                 valueStats(map1).getInsertCount() + valueStats(map2).getInsertCount() + valueStats(map3).getInsertCount();
@@ -337,7 +337,7 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
 
     private static void assertChange(String label, long expected, long actual) {
         // we are adding a new member, maximum amount of stats "data" we can lose is one half
-        assertBetween(label, actual, (long) (expected - expected / 2.0), (long) (expected + expected / 2.0));
+        assertBetween(label, actual, (long) (expected - expected / 2.0), expected);
     }
 
 }

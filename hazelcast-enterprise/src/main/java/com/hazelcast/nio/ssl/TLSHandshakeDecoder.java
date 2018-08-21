@@ -1,7 +1,7 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.internal.networking.ChannelInboundHandler;
 import com.hazelcast.internal.networking.HandlerStatus;
+import com.hazelcast.internal.networking.InboundHandler;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -19,7 +19,7 @@ import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
 import static javax.net.ssl.SSLEngineResult.Status.OK;
 
 /**
- * A {@link ChannelInboundHandler} that takes care of incoming TLS handshake
+ * A {@link InboundHandler} that takes care of incoming TLS handshake
  * traffic.
  *
  * Once the handshake is complete, this handler will remove itself from the
@@ -29,7 +29,7 @@ import static javax.net.ssl.SSLEngineResult.Status.OK;
  *
  * @see TLSHandshakeEncoder
  */
-public class TLSHandshakeDecoder extends ChannelInboundHandler<ByteBuffer, Void> {
+public class TLSHandshakeDecoder extends InboundHandler<ByteBuffer, Void> {
 
     private final SSLEngine sslEngine;
     private final ByteBuffer appBuffer = ByteBuffer.allocate(5000);

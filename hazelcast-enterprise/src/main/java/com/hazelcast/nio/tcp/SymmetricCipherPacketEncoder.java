@@ -2,8 +2,8 @@ package com.hazelcast.nio.tcp;
 
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastException;
-import com.hazelcast.internal.networking.ChannelOutboundHandler;
 import com.hazelcast.internal.networking.HandlerStatus;
+import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.nio.Packet;
 import com.hazelcast.nio.PacketIOHelper;
 import com.hazelcast.util.function.Supplier;
@@ -22,7 +22,7 @@ import static com.hazelcast.nio.IOUtil.compactOrClear;
  * En encoder that encoded packets using a symmetric cipher.
  */
 @SuppressWarnings({"checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity"})
-public class SymmetricCipherPacketEncoder extends ChannelOutboundHandler<Supplier<Packet>, ByteBuffer> {
+public class SymmetricCipherPacketEncoder extends OutboundHandler<Supplier<Packet>, ByteBuffer> {
 
     private final Cipher cipher;
     private final PacketIOHelper packetWriter = new PacketIOHelper();
@@ -37,7 +37,7 @@ public class SymmetricCipherPacketEncoder extends ChannelOutboundHandler<Supplie
     @Override
     public void handlerAdded() {
         initDstBuffer();
-        this.packetBuffer = ByteBuffer.allocate(channel.config().getOption(SO_SNDBUF));
+        this.packetBuffer = ByteBuffer.allocate(channel.options().getOption(SO_SNDBUF));
     }
 
     @Override
@@ -47,8 +47,6 @@ public class SymmetricCipherPacketEncoder extends ChannelOutboundHandler<Supplie
         compactOrClear(dst);
         try {
             for (; ; ) {
-                //System.out.println(channel + "       SymmetricCipherPacketEncoder packet " + packet);
-
                 if (packet == null) {
                     packet = src.get();
 

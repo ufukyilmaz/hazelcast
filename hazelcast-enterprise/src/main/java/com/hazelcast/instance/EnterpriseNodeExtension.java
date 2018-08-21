@@ -37,9 +37,9 @@ import com.hazelcast.internal.management.TimedMemberStateFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.networking.Channel;
-import com.hazelcast.internal.networking.ChannelInboundHandler;
 import com.hazelcast.internal.networking.ChannelInitializer;
-import com.hazelcast.internal.networking.ChannelOutboundHandler;
+import com.hazelcast.internal.networking.InboundHandler;
+import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListener;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
@@ -399,27 +399,27 @@ public class EnterpriseNodeExtension
     }
 
     @Override
-    public ChannelInboundHandler[] createInboundHandlers(TcpIpConnection connection, IOService ioService) {
+    public InboundHandler[] createInboundHandlers(TcpIpConnection connection, IOService ioService) {
         SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Reader started with SymmetricEncryption");
             SymmetricCipherPacketDecoder decoder = new SymmetricCipherPacketDecoder(
                     connection, ioService, node.nodeEngine.getPacketDispatcher());
-            return new ChannelInboundHandler[]{decoder};
+            return new InboundHandler[]{decoder};
         }
 
         return super.createInboundHandlers(connection, ioService);
     }
 
     @Override
-    public ChannelOutboundHandler[] createOutboundHandlers(TcpIpConnection connection, IOService ioService) {
+    public OutboundHandler[] createOutboundHandlers(TcpIpConnection connection, IOService ioService) {
         SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Writer started with SymmetricEncryption");
             SymmetricCipherPacketEncoder encoder = new SymmetricCipherPacketEncoder(connection, symmetricEncryptionConfig);
-            return new ChannelOutboundHandler[]{encoder};
+            return new OutboundHandler[]{encoder};
         }
 
         return super.createOutboundHandlers(connection, ioService);

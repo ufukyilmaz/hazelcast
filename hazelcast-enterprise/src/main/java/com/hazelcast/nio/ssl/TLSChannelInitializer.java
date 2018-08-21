@@ -66,7 +66,7 @@ public class TLSChannelInitializer extends AbstractTLSChannelInitializer {
     }
 
     protected void configChannel(Channel channel) {
-        channel.config()
+        channel.options()
                 .setOption(DIRECT_BUF, props.getBoolean(SOCKET_BUFFER_DIRECT))
                 .setOption(TCP_NODELAY, props.getBoolean(SOCKET_NO_DELAY))
                 .setOption(SO_KEEPALIVE, props.getBoolean(SOCKET_KEEP_ALIVE))

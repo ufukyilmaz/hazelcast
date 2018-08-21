@@ -1,7 +1,7 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.internal.networking.ChannelOutboundHandler;
 import com.hazelcast.internal.networking.HandlerStatus;
+import com.hazelcast.internal.networking.OutboundHandler;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -14,12 +14,12 @@ import static com.hazelcast.nio.IOUtil.compactOrClear;
 import static java.lang.Math.max;
 
 /**
- * A {@link ChannelOutboundHandler} that takes care of TLS encryption.
+ * A {@link OutboundHandler} that takes care of TLS encryption.
  *
  * @see TLSDecoder
  * @see TLSHandshakeEncoder
  */
-public class TLSEncoder extends ChannelOutboundHandler<ByteBuffer, ByteBuffer> {
+public class TLSEncoder extends OutboundHandler<ByteBuffer, ByteBuffer> {
 
     private final SSLEngine sslEngine;
 
@@ -29,7 +29,7 @@ public class TLSEncoder extends ChannelOutboundHandler<ByteBuffer, ByteBuffer> {
 
     @Override
     public void handlerAdded() {
-        int sendBufferSize = channel.config().getOption(SO_SNDBUF);
+        int sendBufferSize = channel.options().getOption(SO_SNDBUF);
         int packetBufferSize = sslEngine.getSession().getPacketBufferSize();
         // whatever is configured on the socket level, a minimal size of a dst buffer is needed
         // for encoding.
@@ -51,11 +51,9 @@ public class TLSEncoder extends ChannelOutboundHandler<ByteBuffer, ByteBuffer> {
     public HandlerStatus onWrite() throws Exception {
         compactOrClear(dst);
         try {
+            // todo: get rid of for loop.
             for (;;) {
                 SSLEngineResult wrapResult = sslEngine.wrap(src, dst);
-//                if (wrapResult.bytesProduced() > 32000 || wrapResult.bytesConsumed() > 32000) {
-//                    System.out.println("TLSEncoder Bingo: " + wrapResult);
-//                }
 
                 switch (wrapResult.getStatus()) {
                     case BUFFER_OVERFLOW:

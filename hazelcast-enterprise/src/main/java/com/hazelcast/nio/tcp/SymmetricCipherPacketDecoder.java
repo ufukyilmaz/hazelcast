@@ -1,6 +1,5 @@
 package com.hazelcast.nio.tcp;
 
-import com.hazelcast.internal.networking.ChannelOption;
 import com.hazelcast.internal.networking.HandlerStatus;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Bits;
@@ -13,6 +12,7 @@ import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
 import java.nio.ByteBuffer;
 
+import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.nio.IOUtil.compactOrClear;
@@ -35,7 +35,7 @@ public class SymmetricCipherPacketDecoder extends PacketDecoder {
     @Override
     public void handlerAdded() {
         super.handlerAdded();
-        this.cipherBuffer = ByteBuffer.allocate(channel.config().getOption(ChannelOption.SO_RCVBUF));
+        this.cipherBuffer = ByteBuffer.allocate(channel.options().getOption(SO_RCVBUF));
     }
 
     @Override

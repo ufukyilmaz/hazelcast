@@ -1,7 +1,7 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.internal.networking.ChannelOutboundHandler;
 import com.hazelcast.internal.networking.HandlerStatus;
+import com.hazelcast.internal.networking.OutboundHandler;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -18,7 +18,7 @@ import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
 import static javax.net.ssl.SSLEngineResult.Status.OK;
 
 /**
- * A {@link ChannelOutboundHandler} that takes care of outgoing TLS handshake
+ * A {@link OutboundHandler} that takes care of outgoing TLS handshake
  * traffic.
  *
  * Once the handshake is complete, this handler will remove itself from the
@@ -26,12 +26,9 @@ import static javax.net.ssl.SSLEngineResult.Status.OK;
  *
  * The TLSHandshakeDecoder will not consume anything from its source.
  *
- * The {@link TLSHandshakeEncoder} also takes care of triggering TLS hostname
- * verification using the {@link TLSHostVerificationFuture}.
- *
  * @see TLSHandshakeDecoder
  */
-public class TLSHandshakeEncoder extends ChannelOutboundHandler<Void, ByteBuffer> {
+public class TLSHandshakeEncoder extends OutboundHandler<Void, ByteBuffer> {
 
     private final SSLEngine sslEngine;
     private final ByteBuffer emptyBuffer = ByteBuffer.allocate(0);

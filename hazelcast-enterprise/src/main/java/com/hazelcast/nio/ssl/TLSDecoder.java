@@ -1,7 +1,7 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.internal.networking.ChannelInboundHandler;
 import com.hazelcast.internal.networking.HandlerStatus;
+import com.hazelcast.internal.networking.InboundHandler;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -19,7 +19,7 @@ import static com.hazelcast.nio.IOUtil.toDebugString;
 import static java.lang.Math.max;
 
 /**
- * A {@link com.hazelcast.internal.networking.ChannelOutboundHandler} responsible
+ * A {@link com.hazelcast.internal.networking.OutboundHandler} responsible
  * for decoding TLS traffic.
  *
  * This TLSDecoder will decode to the application buffer and then it will get copied
@@ -46,7 +46,7 @@ import static java.lang.Math.max;
  * Ideally the TLSDecoder would not be creating the src buffer; but the destination
  * buffer.
  */
-public class TLSDecoder extends ChannelInboundHandler<ByteBuffer, ByteBuffer> {
+public class TLSDecoder extends InboundHandler<ByteBuffer, ByteBuffer> {
 
     private final SSLEngine sslEngine;
     private final SSLSession sslSession;
@@ -59,11 +59,11 @@ public class TLSDecoder extends ChannelInboundHandler<ByteBuffer, ByteBuffer> {
 
     @Override
     public void handlerAdded() {
-        int socketReceiveBuffer = channel.config().getOption(SO_RCVBUF);
+        int socketReceiveBuffer = channel.options().getOption(SO_RCVBUF);
         int packetBufferSize = sslEngine.getSession().getPacketBufferSize();
         initSrcBuffer(max(socketReceiveBuffer, packetBufferSize));
 
-        this.appBuffer = newByteBuffer(sslSession.getApplicationBufferSize(), channel.config().getOption(DIRECT_BUF));
+        this.appBuffer = newByteBuffer(sslSession.getApplicationBufferSize(), channel.options().getOption(DIRECT_BUF));
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
@@ -135,7 +135,7 @@ public class TLSDecoder extends ChannelInboundHandler<ByteBuffer, ByteBuffer> {
     }
 
     private ByteBuffer newAppBuffer() {
-        return newByteBuffer(sslSession.getApplicationBufferSize(), channel.config().getOption(DIRECT_BUF));
+        return newByteBuffer(sslSession.getApplicationBufferSize(), channel.options().getOption(DIRECT_BUF));
     }
 
     private boolean drainAppBuffer() {

@@ -1,23 +1,23 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.internal.networking.ChannelInboundHandler;
-import com.hazelcast.internal.networking.ChannelOutboundHandler;
+import com.hazelcast.internal.networking.InboundHandler;
+import com.hazelcast.internal.networking.OutboundHandler;
 
 public class ChannelHandlerPair {
 
-    private final ChannelInboundHandler inboundHandler;
-    private final ChannelOutboundHandler outboundHandler;
+    private final InboundHandler inboundHandler;
+    private final OutboundHandler outboundHandler;
 
-    public ChannelHandlerPair(ChannelInboundHandler inboundHandler, ChannelOutboundHandler outboundHandler) {
+    public ChannelHandlerPair(InboundHandler inboundHandler, OutboundHandler outboundHandler) {
         this.inboundHandler = inboundHandler;
         this.outboundHandler = outboundHandler;
     }
 
-    public ChannelInboundHandler getInboundHandler() {
+    public InboundHandler getInboundHandler() {
         return inboundHandler;
     }
 
-    public ChannelOutboundHandler getOutboundHandler() {
+    public OutboundHandler getOutboundHandler() {
         return outboundHandler;
     }
 }

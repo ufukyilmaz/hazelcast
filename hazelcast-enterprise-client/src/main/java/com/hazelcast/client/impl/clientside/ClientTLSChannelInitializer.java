@@ -52,7 +52,7 @@ public class ClientTLSChannelInitializer extends AbstractTLSChannelInitializer {
 
     @Override
     protected void configChannel(Channel channel) {
-        channel.config()
+        channel.options()
                 .setOption(SO_SNDBUF, KILO_BYTE * socketOptions.getBufferSize())
                 .setOption(SO_RCVBUF, KILO_BYTE * socketOptions.getBufferSize())
                 .setOption(SO_REUSEADDR, socketOptions.isReuseAddress())

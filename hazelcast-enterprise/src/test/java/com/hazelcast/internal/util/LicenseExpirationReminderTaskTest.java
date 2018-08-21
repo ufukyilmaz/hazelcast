@@ -101,7 +101,7 @@ public class LicenseExpirationReminderTaskTest
     }
 
     @Test
-    public void testlicenseInfoBanner() {
+    public void testLicenseInfoBanner() {
         License license = mock(License.class);
         when(license.getKey()).thenReturn("CUSTOM_TEST_KEY");
         when(license.getExpiryDate()).thenReturn(dateWithDaysDiff(ALERT_PERIOD_IN_DAYS));
@@ -122,7 +122,7 @@ public class LicenseExpirationReminderTaskTest
     }
 
     @Test
-    public void testlicenseInfoBanner_whenGracePeriod() {
+    public void testLicenseInfoBanner_whenGracePeriod() {
         License license = mock(License.class);
         when(license.getKey()).thenReturn("CUSTOM_TEST_KEY");
         when(license.getExpiryDate()).thenReturn(dateWithDaysDiff(-1));
@@ -147,7 +147,7 @@ public class LicenseExpirationReminderTaskTest
     }
 
     @Test
-    public void testlicenseInfoBanner_whenGracePeriodExpired() {
+    public void testLicenseInfoBanner_whenGracePeriodExpired() {
         License license = mock(License.class);
         when(license.getKey()).thenReturn("CUSTOM_TEST_KEY");
         when(license.getExpiryDate()).thenReturn(dateWithDaysDiff(-31));

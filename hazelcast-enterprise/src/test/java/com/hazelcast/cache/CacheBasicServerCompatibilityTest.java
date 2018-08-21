@@ -65,6 +65,22 @@ public class CacheBasicServerCompatibilityTest extends CacheBasicServerTest {
     @Test
     @Ignore
     @Override
+    // RU_COMPAT_3_10
+    public void testExpiration_entryWithOwnTtl() {
+        // Added in 3.11, older versions simply do not have the support.
+    }
+
+    @Test
+    @Ignore
+    @Override
+    // RU_COMPAT_3_10
+    public void testExpiration() {
+        // Added in 3.11, older versions simply do not have the support.
+    }
+
+    @Test
+    @Ignore
+    @Override
     public void getButCantOperateOnCacheAfterDestroy() {
         // FIXME Expected cacheAfterDestroy to be null expected null, but was:<com.hazelcast.cache.impl.CacheProxy{...}>
         // could be an issue with a duplicate CacheManager or the missing LifeCycleListener implementation

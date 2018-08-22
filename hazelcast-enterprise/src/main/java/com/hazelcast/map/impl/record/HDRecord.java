@@ -362,8 +362,6 @@ public class HDRecord
         int diff = NOT_AVAILABLE;
         if (value > 0) {
             diff = (int) MILLISECONDS.toSeconds(value - CREATION_DATE_BASE);
-            // overflow - should not happen, 2^31 seconds ~ 70 years
-            assert diff >= 0 : "Diff is not supposed to overflow " + diff + " Value: " + value + " Base: " + CREATION_DATE_BASE;
         }
         writeInt(offset, diff);
     }

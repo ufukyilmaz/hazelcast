@@ -7,7 +7,7 @@ import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -19,14 +19,17 @@ import com.hazelcast.wan.map.MapWanReplicationTestSupport;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertFalse;
@@ -35,12 +38,25 @@ import static org.junit.Assert.assertFalse;
  * Test active-active replication of a map with 1 backup across two clusters of two nodes each. When map operations are only
  * executed on one cluster, no outgoing replication events should be created on the other cluster.
  * See https://hazelcast.zendesk.com/agent/tickets/1995
+ * See https://hazelcast.zendesk.com/agent/tickets/4195
  */
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
 
     private static final String MAP_NAME = "ZD1995";
+
+    @Parameter
+    public InMemoryFormat inMemoryFormat;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> parameters() {
+        return Arrays.asList(new Object[][]{
+                {InMemoryFormat.BINARY},
+                {InMemoryFormat.NATIVE}
+        });
+    }
 
     @Test
     public void testTwoClustersTwoNodesReplication() {
@@ -52,13 +68,58 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
         startClusterA();
         startClusterB();
 
-
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
 
         final AtomicBoolean testFailed = new AtomicBoolean();
         final StringBuilder failureMessageBuilder = new StringBuilder();
 
-        // check outbound queue sizes every second
+        // check outbound queue sizes and event counters at every 100 millis
+        startVerifyingStagingWanStats(btoaWanReplicationName, clusterAGroupName, scheduler, testFailed, failureMessageBuilder);
+
+        // add a new entry per second from each node on A cluster
+        final IMap<String, String> mapOnA1 = clusterA[0].getMap(MAP_NAME);
+        final IMap<String, String> mapOnA2 = clusterA[1].getMap(MAP_NAME);
+
+        startPuttingInClusterA(scheduler, mapOnA1, mapOnA2);
+        startRemovingFromClusterAWithDelay(scheduler, mapOnA1, mapOnA2, 5);
+
+        assertTrueAllTheTime(new AssertTask() {
+            @Override
+            public void run() {
+                assertFalse(failureMessageBuilder.toString(), testFailed.get());
+            }
+        }, 30);
+    }
+
+    private void startPuttingInClusterA(ScheduledExecutorService scheduler, final IMap<String, String> mapOnA1,
+                                        final IMap<String, String> mapOnA2) {
+        scheduler.scheduleAtFixedRate(new Runnable() {
+            int counter = 0;
+
+            @Override
+            public void run() {
+                mapOnA1.put("" + counter, "" + counter++);
+                mapOnA2.put("" + counter, "" + counter++);
+            }
+        }, 0, 1, TimeUnit.SECONDS);
+    }
+
+    private void startRemovingFromClusterAWithDelay(ScheduledExecutorService scheduler, final IMap<String, String> mapOnA1,
+                                                    final IMap<String, String> mapOnA2, int delaySecs) {
+        scheduler.scheduleAtFixedRate(new Runnable() {
+            int counter = 0;
+
+            @Override
+            public void run() {
+                mapOnA1.remove("" + counter++);
+                mapOnA2.remove("" + counter++);
+            }
+        }, delaySecs, 1, TimeUnit.SECONDS);
+    }
+
+    private void startVerifyingStagingWanStats(final String btoaWanReplicationName, final String clusterAGroupName,
+                                               ScheduledExecutorService scheduler, final AtomicBoolean testFailed,
+                                               final StringBuilder failureMessageBuilder) {
         scheduler.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
@@ -85,26 +146,6 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
                 }
             }
         }, 0, 100, MILLISECONDS);
-
-        // add a new entry per second from each node on A cluster
-        final IMap<String, String> mapOnA1 = clusterA[0].getMap(MAP_NAME);
-        final IMap<String, String> mapOnA2 = clusterA[1].getMap(MAP_NAME);
-        scheduler.scheduleAtFixedRate(new Runnable() {
-            int counter = 0;
-
-            @Override
-            public void run() {
-                mapOnA1.put("" + counter, "" + counter++);
-                mapOnA2.put("" + counter, "" + counter++);
-            }
-        }, 0, 1, TimeUnit.SECONDS);
-
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertFalse(failureMessageBuilder.toString(), testFailed.get());
-            }
-        }, 30);
     }
 
     private LocalWanPublisherStats getWanPublisherStats(HazelcastInstance hz,
@@ -145,6 +186,6 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
 
     @Override
     public InMemoryFormat getMemoryFormat() {
-        return BINARY;
+        return inMemoryFormat;
     }
 }

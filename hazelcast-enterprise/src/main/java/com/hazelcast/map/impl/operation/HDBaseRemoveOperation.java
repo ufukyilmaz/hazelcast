@@ -7,6 +7,8 @@ import com.hazelcast.spi.Operation;
 import static com.hazelcast.core.EntryEventType.REMOVED;
 
 public abstract class HDBaseRemoveOperation extends HDLockAwareOperation implements BackupAwareOperation {
+    @SuppressWarnings("checkstyle:magicnumber")
+    private static final long BITMASK_TTL_DISABLE_WAN = 1L << 63;
 
     protected transient Data dataOldValue;
 
@@ -20,6 +22,23 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
     }
 
     public HDBaseRemoveOperation() {
+    }
+
+    @Override
+    public void innerBeforeRun() throws Exception {
+        super.innerBeforeRun();
+        // RU_COMPAT_3_10
+        //
+        // we restore both the disableWanReplicationEvent and the ttl flags
+        // before the operation is getting executed
+        //
+        // this may happen if the operation was created by a 3.10.5+ member
+        // which carries over the disableWanReplicationEvent flag's value
+        // in the TTL field for wire format compatibility reasons
+        if ((ttl & BITMASK_TTL_DISABLE_WAN) == 0) {
+            disableWanReplicationEvent = true;
+            ttl ^= BITMASK_TTL_DISABLE_WAN;
+        }
     }
 
     @Override

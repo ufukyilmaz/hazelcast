@@ -220,7 +220,7 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
         HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
         communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName());
         String result = communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName());
-        assertEquals("{\"status\":\"fail\",\"message\":\"Another sync request is already in progress.\"}", result);
+        assertEquals("{\"status\":\"fail\",\"message\":\"Another anti-entropy request is already in progress.\"}", result);
     }
 
     @Test

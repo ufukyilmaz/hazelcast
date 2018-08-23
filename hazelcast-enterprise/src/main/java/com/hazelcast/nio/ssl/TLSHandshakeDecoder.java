@@ -13,6 +13,8 @@ import static com.hazelcast.internal.networking.HandlerStatus.BLOCKED;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
 import static com.hazelcast.nio.IOUtil.compactOrClear;
+import static com.hazelcast.nio.IOUtil.newByteBuffer;
+import static com.hazelcast.nio.IOUtil.toDebugString;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
@@ -32,13 +34,15 @@ import static javax.net.ssl.SSLEngineResult.Status.OK;
 public class TLSHandshakeDecoder extends InboundHandler<ByteBuffer, Void> {
 
     private final SSLEngine sslEngine;
-    private final ByteBuffer appBuffer = ByteBuffer.allocate(5000);
     private final TLSExecutor tlsExecutor;
+    private final ByteBuffer appBuffer;
 
     public TLSHandshakeDecoder(SSLEngine sslEngine,
                                TLSExecutor tlsExecutor) {
         this.sslEngine = sslEngine;
         this.tlsExecutor = tlsExecutor;
+        // direct buffer isn't needed since it is just a handshake.
+        this.appBuffer = newByteBuffer(sslEngine.getSession().getApplicationBufferSize(), false);
     }
 
     @Override
@@ -105,6 +109,10 @@ public class TLSHandshakeDecoder extends InboundHandler<ByteBuffer, Void> {
                             throw new IllegalStateException("Unexpected " + unwrapResult);
                         }
                     case NOT_HANDSHAKING:
+                        if (appBuffer.position() != 0) {
+                            throw new IllegalStateException("Unexpected data in the appBuffer, it should be empty "
+                                    + toDebugString("appBuffer", appBuffer));
+                        }
                         TLSDecoder tlsDecoder = new TLSDecoder(sslEngine);
                         channel.inboundPipeline().replace(this, tlsDecoder);
                         // the src buffer could contain unencrypted data not needed for the handshake

@@ -3,6 +3,7 @@ package com.hazelcast.wan;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.GroupConfig;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
@@ -11,7 +12,7 @@ import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.test.AssertTask;
@@ -22,8 +23,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +37,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -42,8 +46,10 @@ import static org.junit.Assert.assertFalse;
  * Test active-active replication of a map with 1 backup across two clusters of two nodes each. When map operations are only
  * executed on one cluster, no outgoing replication events should be created on the other cluster.
  * See https://hazelcast.zendesk.com/agent/tickets/1995
+ * See https://hazelcast.zendesk.com/agent/tickets/4195
  */
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(SlowTest.class)
 public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
 
@@ -61,6 +67,18 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
     private HazelcastInstance dev2;
     private HazelcastInstance staging1;
     private HazelcastInstance staging2;
+
+    @Parameter
+    public InMemoryFormat inMemoryFormat;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> parameters() {
+        return Arrays.asList(new Object[][]{
+                {InMemoryFormat.BINARY},
+                {InMemoryFormat.NATIVE}
+        });
+    }
+
 
     @Before
     public void setup() {
@@ -90,7 +108,33 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
         final AtomicBoolean testFailed = new AtomicBoolean();
         final StringBuilder failureMessageBuilder = new StringBuilder();
 
-        // check outbound queue sizes every second
+        // check staging outbound queue sizes and sent event counters in every 100 millis
+        startVerifyingStagingWanStats(scheduler, testFailed, failureMessageBuilder);
+
+        // add a new entry per second from each node on DEV cluster
+        final IMap<String, String> mapOnDev1 = dev1.getMap(MAP_NAME);
+        final IMap<String, String> mapOnDev2 = dev2.getMap(MAP_NAME);
+
+        startPuttingInDevCluster(scheduler, mapOnDev1, mapOnDev2);
+        startRemovingFromDevClusterWithDelay(scheduler, mapOnDev1, mapOnDev2, 5);
+
+        verifyNoEventIsPublishedByStaging(testFailed, failureMessageBuilder, 30);
+
+        scheduler.shutdownNow();
+    }
+
+    private void verifyNoEventIsPublishedByStaging(final AtomicBoolean testFailed, final StringBuilder failureMessageBuilder,
+                                                   int durationSecs) {
+        assertTrueAllTheTime(new AssertTask() {
+            @Override
+            public void run() {
+                assertFalse(failureMessageBuilder.toString(), testFailed.get());
+            }
+        }, durationSecs);
+    }
+
+    private void startVerifyingStagingWanStats(ScheduledExecutorService scheduler, final AtomicBoolean testFailed,
+                                               final StringBuilder failureMessageBuilder) {
         scheduler.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
@@ -115,10 +159,10 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
                 }
             }
         }, 0, 100, MILLISECONDS);
+    }
 
-        // add a new entry per second from each node on DEV cluster
-        final IMap<String, String> mapOnDev1 = dev1.getMap(MAP_NAME);
-        final IMap<String, String> mapOnDev2 = dev2.getMap(MAP_NAME);
+    private void startPuttingInDevCluster(ScheduledExecutorService scheduler, final IMap<String, String> mapOnDev1,
+                                          final IMap<String, String> mapOnDev2) {
         scheduler.scheduleAtFixedRate(new Runnable() {
             int counter = 0;
 
@@ -128,13 +172,20 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
                 mapOnDev2.put("" + counter, "" + counter++);
             }
         }, 0, 1, TimeUnit.SECONDS);
+    }
 
-        assertTrueAllTheTime(new AssertTask() {
+    private void startRemovingFromDevClusterWithDelay(ScheduledExecutorService scheduler,
+                                                      final IMap<String, String> mapOnDev1,
+                                                      final IMap<String, String> mapOnDev2, int delaySecs) {
+        scheduler.scheduleAtFixedRate(new Runnable() {
+            int counter = 0;
+
             @Override
             public void run() {
-                assertFalse(failureMessageBuilder.toString(), testFailed.get());
+                mapOnDev1.remove("" + counter, "" + counter++);
+                mapOnDev2.remove("" + counter, "" + counter++);
             }
-        }, 30);
+        }, delaySecs, 1, TimeUnit.SECONDS);
     }
 
     private LocalWanPublisherStats getWanPublisherStats(HazelcastInstance hz, String replicationConfigName,
@@ -192,7 +243,7 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
 
         cfg.addMapConfig(new MapConfig(MAP_NAME)
                 .setBackupCount(1)
-                .setInMemoryFormat(BINARY)
+                .setInMemoryFormat(inMemoryFormat)
                 .setTimeToLiveSeconds(900)
                 .setMaxIdleSeconds(900)
                 .setEvictionPolicy(EvictionPolicy.LRU)
@@ -201,6 +252,11 @@ public class MultiNodeWanReplicationTest extends HazelcastTestSupport {
                         "com.hazelcast.map.merge.PassThroughMergePolicy",
                         new ArrayList<String>(),
                         true)));
+
+        if (inMemoryFormat == InMemoryFormat.NATIVE) {
+            cfg.getNativeMemoryConfig()
+               .setEnabled(true);
+        }
 
         return cfg;
     }

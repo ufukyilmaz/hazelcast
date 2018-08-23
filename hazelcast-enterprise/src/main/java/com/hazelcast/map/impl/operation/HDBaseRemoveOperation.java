@@ -8,6 +8,8 @@ import com.hazelcast.util.Clock;
 import static com.hazelcast.core.EntryEventType.REMOVED;
 
 public abstract class HDBaseRemoveOperation extends HDLockAwareOperation implements BackupAwareOperation {
+    @SuppressWarnings("checkstyle:magicnumber")
+    private static final long BITMASK_TTL_DISABLE_WAN = 1L << 63;
 
     protected transient Data dataOldValue;
 
@@ -15,11 +17,24 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
      * Used by WAN replication service to disable WAN replication event publishing.
      * Otherwise, in active-active scenarios infinite loop of event forwarding can be seen.
      */
-    protected transient boolean disableWanReplicationEvent;
+    protected boolean disableWanReplicationEvent;
 
     public HDBaseRemoveOperation(String name, Data dataKey, boolean disableWanReplicationEvent) {
         super(name, dataKey);
         this.disableWanReplicationEvent = disableWanReplicationEvent;
+
+        // disableWanReplicationEvent flag is not serialized, which may
+        // lead to publishing remove WAN events by error, if the operation
+        // executes on a remote node. This may lead to republishing remove
+        // events to clusters that have already processed it, possibly causing
+        // data loss, if the removed entry has been added back since then.
+        //
+        // Serializing the field would break the compatibility, hence
+        // we encode its value into the TTL field, which is serialized
+        // but not used for remove operations.
+        if (disableWanReplicationEvent) {
+            this.ttl ^= BITMASK_TTL_DISABLE_WAN;
+        }
     }
 
     public HDBaseRemoveOperation(String name, Data dataKey) {
@@ -27,6 +42,17 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
     }
 
     public HDBaseRemoveOperation() {
+    }
+
+    @Override
+    public void innerBeforeRun() throws Exception {
+        super.innerBeforeRun();
+        // we restore both the disableWanReplicationEvent and the ttl flags
+        // before the operation is getting executed
+        if ((ttl & BITMASK_TTL_DISABLE_WAN) == 0) {
+            disableWanReplicationEvent = true;
+            ttl ^= BITMASK_TTL_DISABLE_WAN;
+        }
     }
 
     @Override

@@ -1,9 +1,12 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.util.Clock;
+
+import java.io.IOException;
 
 import static com.hazelcast.core.EntryEventType.REMOVED;
 
@@ -42,17 +45,6 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
     }
 
     public HDBaseRemoveOperation() {
-    }
-
-    @Override
-    public void innerBeforeRun() throws Exception {
-        super.innerBeforeRun();
-        // we restore both the disableWanReplicationEvent and the ttl flags
-        // before the operation is getting executed
-        if ((ttl & BITMASK_TTL_DISABLE_WAN) == 0) {
-            disableWanReplicationEvent = true;
-            ttl ^= BITMASK_TTL_DISABLE_WAN;
-        }
     }
 
     @Override
@@ -95,5 +87,13 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
     @Override
     public void onWaitExpire() {
         sendResponse(null);
+    }
+
+    @Override
+    protected void readInternal(ObjectDataInput in) throws IOException {
+        super.readInternal(in);
+
+        // restore disableWanReplicationEvent flag
+        disableWanReplicationEvent = (ttl & BITMASK_TTL_DISABLE_WAN) == 0;
     }
 }

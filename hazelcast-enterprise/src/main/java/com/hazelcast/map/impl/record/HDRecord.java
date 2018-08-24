@@ -77,7 +77,7 @@ public class HDRecord
      * Base time to be used for storing time values as diffs (int) rather than full blown epoch based vals (long)
      * This allows for a space in seconds, of roughly 68 years.
      */
-    private static final long CREATION_DATE_BASE = zeroOutMillis(System.currentTimeMillis());
+    static final long CREATION_DATE_BASE = zeroOutMillis(System.currentTimeMillis());
 
     protected HiDensityRecordAccessor<HDRecord> recordAccessor;
 

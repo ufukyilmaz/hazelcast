@@ -133,9 +133,6 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         Record record = super.createRecord(value, ttlMillis, maxIdleMillis, now);
         if (NATIVE == inMemoryFormat) {
             record.setSequence(sequence);
-            // `lastAccessTime` is used for LRU eviction, for this reason, after creation of record,
-            // `lastAccessTime` should be zero instead of `now`
-            record.setLastAccessTime(NOT_AVAILABLE);
         }
         return record;
     }

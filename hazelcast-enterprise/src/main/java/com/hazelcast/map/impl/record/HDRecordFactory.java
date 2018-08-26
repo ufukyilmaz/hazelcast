@@ -43,6 +43,7 @@ public class HDRecordFactory implements RecordFactory<Data> {
 
             dataValue = recordProcessor.toData(value, DataType.NATIVE);
             record.setValue(dataValue);
+            record.setLastAccessTime(NOT_AVAILABLE);
 
             return record;
         } catch (NativeOutOfMemoryError error) {

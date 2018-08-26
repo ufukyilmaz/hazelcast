@@ -87,8 +87,24 @@ public class HDRecordTest extends HazelcastTestSupport {
         assertEquals(Long.MAX_VALUE, record.getExpirationTime());
     }
 
+    @Test
+    public void testBaseTime_whenNegativeOffset() {
+        long baseTime = HDRecord.CREATION_DATE_BASE;
+        long creationTime = baseTime - randomLong();
+        long expirationTime = baseTime + randomLong();
+        record.setCreationTime(creationTime);
+        record.setExpirationTime(expirationTime);
+
+        assertEquals(zeroOutMillis(creationTime), record.getCreationTime());
+        assertEquals(zeroOutMillis(expirationTime), record.getExpirationTime());
+    }
+
     private long zeroOutMillis(long value) {
         return SECONDS.toMillis(MILLISECONDS.toSeconds(value));
+    }
+
+    private long randomLong() {
+        return (long) Math.random() * 50000L;
     }
 
 }

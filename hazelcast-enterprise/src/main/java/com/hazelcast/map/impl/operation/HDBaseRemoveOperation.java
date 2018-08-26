@@ -1,13 +1,18 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.util.Clock;
 
+import java.io.IOException;
+
 import static com.hazelcast.core.EntryEventType.REMOVED;
 
 public abstract class HDBaseRemoveOperation extends HDLockAwareOperation implements BackupAwareOperation {
+    @SuppressWarnings("checkstyle:magicnumber")
+    private static final long BITMASK_TTL_DISABLE_WAN = 1L << 63;
 
     protected transient Data dataOldValue;
 
@@ -15,11 +20,24 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
      * Used by WAN replication service to disable WAN replication event publishing.
      * Otherwise, in active-active scenarios infinite loop of event forwarding can be seen.
      */
-    protected transient boolean disableWanReplicationEvent;
+    protected boolean disableWanReplicationEvent;
 
     public HDBaseRemoveOperation(String name, Data dataKey, boolean disableWanReplicationEvent) {
         super(name, dataKey);
         this.disableWanReplicationEvent = disableWanReplicationEvent;
+
+        // disableWanReplicationEvent flag is not serialized, which may
+        // lead to publishing remove WAN events by error, if the operation
+        // executes on a remote node. This may lead to republishing remove
+        // events to clusters that have already processed it, possibly causing
+        // data loss, if the removed entry has been added back since then.
+        //
+        // Serializing the field would break the compatibility, hence
+        // we encode its value into the TTL field, which is serialized
+        // but not used for remove operations.
+        if (disableWanReplicationEvent) {
+            this.ttl ^= BITMASK_TTL_DISABLE_WAN;
+        }
     }
 
     public HDBaseRemoveOperation(String name, Data dataKey) {
@@ -69,5 +87,13 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
     @Override
     public void onWaitExpire() {
         sendResponse(null);
+    }
+
+    @Override
+    protected void readInternal(ObjectDataInput in) throws IOException {
+        super.readInternal(in);
+
+        // restore disableWanReplicationEvent flag
+        disableWanReplicationEvent = (ttl & BITMASK_TTL_DISABLE_WAN) == 0;
     }
 }

@@ -2,13 +2,14 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.map.impl.PartitionContainer;
+import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
+import com.hazelcast.util.function.Predicate;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -18,8 +19,7 @@ import java.util.concurrent.TimeUnit;
  * Clears map's partition data. This operation is required because Hi-Density backed IMap can only be cleared by
  * corresponding partition threads.
  */
-public final class EnterpriseMapPartitionClearOperation
-        extends Operation
+public final class EnterpriseMapPartitionClearOperation extends Operation
         implements PartitionAwareOperation, AllowedDuringPassiveState, IdentifiedDataSerializable {
 
     private final CountDownLatch done = new CountDownLatch(1);
@@ -42,12 +42,25 @@ public final class EnterpriseMapPartitionClearOperation
             int partitionId = getPartitionId();
             MapService mapService = getService();
             MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-            PartitionContainer partitionContainer = mapServiceContext.getPartitionContainer(partitionId);
-            partitionContainer.clear(onShutdown, false);
+            mapServiceContext.removeRecordStoresFromPartitionMatchingWith(allRecordStores(),
+                    partitionId, onShutdown, false);
         } finally {
             done.countDown();
         }
     }
+
+    /**
+     * @return predicate that matches with partitions of all maps
+     */
+    private static Predicate<RecordStore> allRecordStores() {
+        return new Predicate<RecordStore>() {
+            @Override
+            public boolean test(RecordStore recordStore) {
+                return true;
+            }
+        };
+    }
+
 
     @Override
     public boolean returnsResponse() {

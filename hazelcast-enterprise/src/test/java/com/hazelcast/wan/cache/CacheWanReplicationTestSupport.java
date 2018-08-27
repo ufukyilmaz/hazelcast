@@ -1,7 +1,6 @@
 package com.hazelcast.wan.cache;
 
 import com.hazelcast.cache.ICache;
-import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
@@ -159,22 +158,6 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         });
 
         return true;
-    }
-
-    protected CacheConfig<Integer, String> createCacheConfig(String cacheName, HazelcastInstance node,
-                                                             InMemoryFormat inMemoryFormat) throws Exception {
-        CacheConfig<Integer, String> cacheConfig = new CacheConfig<Integer, String>(node.getConfig().getCacheConfig(cacheName));
-        cacheConfig.setInMemoryFormat(inMemoryFormat);
-        cacheConfig.setStatisticsEnabled(true);
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setSize(90);
-        if (inMemoryFormat == InMemoryFormat.NATIVE) {
-            evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        } else {
-            evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
-        }
-        cacheConfig.setEvictionConfig(evictionConfig);
-        return cacheConfig;
     }
 
     protected void increaseHitCount(HazelcastInstance[] targetCluster, final String cacheName,

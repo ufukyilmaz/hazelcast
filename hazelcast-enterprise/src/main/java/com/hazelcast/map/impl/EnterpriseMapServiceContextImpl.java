@@ -210,7 +210,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     }
 
     @Override
-    public void clearPartitions(boolean onShutdown, boolean onRecordStoreDestroy) {
+    protected void removeAllRecordStoresOfAllMaps(boolean onShutdown, boolean onRecordStoreDestroy) {
         InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
 
         List<EnterpriseMapPartitionClearOperation> operations = new ArrayList<EnterpriseMapPartitionClearOperation>();

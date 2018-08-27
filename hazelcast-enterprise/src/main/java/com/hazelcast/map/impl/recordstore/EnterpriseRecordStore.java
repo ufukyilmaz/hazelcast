@@ -180,6 +180,12 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         }
     }
 
+    @Override
+    public void clearPartition(boolean onShutdown, boolean onRecordStoreDestroy) {
+        clearOtherResourcesThanStorage(onRecordStoreDestroy);
+        clearStorage(onShutdown);
+    }
+
     public long getPrefix() {
         return prefix;
     }

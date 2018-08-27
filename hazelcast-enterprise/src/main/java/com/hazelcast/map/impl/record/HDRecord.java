@@ -7,6 +7,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.Clock;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
+import static com.hazelcast.map.impl.record.AbstractRecord.EPOCH_TIME;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -72,12 +73,6 @@ public class HDRecord
     static {
         SIZE = SEQUENCE_OFFSET + INT_SIZE_IN_BYTES;
     }
-
-    /**
-     * Base time to be used for storing time values as diffs (int) rather than full blown epoch based vals (long)
-     * This allows for a space in seconds, of roughly 68 years.
-     */
-    static final long CREATION_DATE_BASE = zeroOutMillis(System.currentTimeMillis());
 
     protected HiDensityRecordAccessor<HDRecord> recordAccessor;
 
@@ -355,19 +350,16 @@ public class HDRecord
         if (value == NOT_AVAILABLE) {
             return 0L;
         }
-        return SECONDS.toMillis(value) + CREATION_DATE_BASE;
+        return SECONDS.toMillis(value) + EPOCH_TIME;
     }
 
     private void setWithBaseTime(int offset, long value) {
         int diff = NOT_AVAILABLE;
         if (value > 0) {
-            diff = (int) MILLISECONDS.toSeconds(value - CREATION_DATE_BASE);
+            diff = (int) MILLISECONDS.toSeconds(value - EPOCH_TIME);
         }
         writeInt(offset, diff);
     }
 
-    private static long zeroOutMillis(long value) {
-        return SECONDS.toMillis(MILLISECONDS.toSeconds(value));
-    }
 }
 

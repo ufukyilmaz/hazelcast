@@ -89,7 +89,7 @@ public class HDRecordTest extends HazelcastTestSupport {
 
     @Test
     public void testBaseTime_whenNegativeOffset() {
-        long baseTime = HDRecord.CREATION_DATE_BASE;
+        long baseTime = AbstractRecord.EPOCH_TIME;
         long creationTime = baseTime - randomLong();
         long expirationTime = baseTime + randomLong();
         record.setCreationTime(creationTime);

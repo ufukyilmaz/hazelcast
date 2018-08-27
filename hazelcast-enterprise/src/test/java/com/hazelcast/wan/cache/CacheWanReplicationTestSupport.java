@@ -1,8 +1,6 @@
 package com.hazelcast.wan.cache;
 
-import com.hazelcast.cache.HazelcastCachingProvider;
 import com.hazelcast.cache.ICache;
-import com.hazelcast.cache.impl.AbstractHazelcastCacheManager;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
@@ -14,45 +12,28 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.WanReplicationTestSupport;
 
-import javax.cache.CacheManager;
-import javax.cache.Caching;
 import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.spi.CachingProvider;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.HashMap;
-import java.util.Properties;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 
 @SuppressWarnings({"WeakerAccess", "SameParameterValue", "UnusedReturnValue"})
 public abstract class CacheWanReplicationTestSupport extends WanReplicationTestSupport {
 
-    protected static final String DEFAULT_CACHE_MANAGER = "my-cache-manager";
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    protected ClassLoader classLoaderA;
-    protected ClassLoader classLoaderB;
-    protected ClassLoader classLoaderC;
-
     protected void initConfigA() {
-        classLoaderA = createCacheManagerClassLoader();
-        configA = createConfig("A", "confA-" + UUID.randomUUID() + "-", 5701, classLoaderA, isNativeMemoryEnabled());
+        configA = createConfig("A", "confA-" + UUID.randomUUID() + "-", 5701, isNativeMemoryEnabled());
     }
 
     protected void initConfigB() {
-        classLoaderB = createCacheManagerClassLoader();
-        configB = createConfig("B", "confB-" + UUID.randomUUID() + "-", 5801, classLoaderB, isNativeMemoryEnabled());
+        configB = createConfig("B", "confB-" + UUID.randomUUID() + "-", 5801, isNativeMemoryEnabled());
     }
 
     protected void initConfigC() {
-        classLoaderC = createCacheManagerClassLoader();
-        configC = createConfig("C", "confC-" + UUID.randomUUID() + "-", 5901, classLoaderC, isNativeMemoryEnabled());
+        configC = createConfig("C", "confC-" + UUID.randomUUID() + "-", 5901, isNativeMemoryEnabled());
     }
 
     protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz,
@@ -80,25 +61,22 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         fromConfig.getCacheConfig(cacheName).setWanReplicationRef(wanRef);
     }
 
-    protected int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
-                                    String cacheManager, String cacheName, InMemoryFormat format,
-                                    int start, int end, boolean removeBeforePut) {
-        return createCacheDataIn(cluster, classLoader, cacheManager, cacheName, format, start, end, removeBeforePut, null, false);
+    protected int createCacheDataIn(HazelcastInstance[] cluster, String cacheName, int start, int end,
+                                    boolean removeBeforePut) {
+        return createCacheDataIn(cluster, cacheName, start, end, removeBeforePut, null);
     }
 
     @SuppressWarnings("checkstyle:parameternumber")
-    protected int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
-                                    String cacheManager, String cacheName, InMemoryFormat format,
-                                    int start, int end, boolean removeBeforePut, ExpiryPolicy expiryPolicy) {
-        return createCacheDataIn(cluster, classLoader, cacheManager, cacheName, format, start, end, removeBeforePut, expiryPolicy, false);
+    protected int createCacheDataIn(HazelcastInstance[] cluster, String cacheName, int start, int end,
+                                    boolean removeBeforePut, ExpiryPolicy expiryPolicy) {
+        return createCacheDataIn(cluster, cacheName, start, end, removeBeforePut, expiryPolicy, false);
     }
 
     @SuppressWarnings("checkstyle:parameternumber")
-    protected int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
-                                    String cacheManager, String cacheName, InMemoryFormat format,
+    protected int createCacheDataIn(HazelcastInstance[] cluster, String cacheName,
                                     int start, int end, boolean removeBeforePut, ExpiryPolicy expiryPolicy,
                                     boolean usePutAll) {
-        ICache<Integer, String> myCache = getOrCreateCache(cluster, cacheManager, cacheName, format, classLoader);
+        ICache<Integer, String> myCache = getCacheFromRandomMember(cluster, cacheName);
         HashMap<Integer, String> putAllMap = usePutAll ? new HashMap<Integer, String>() : null;
 
         for (; start < end; start++) {
@@ -124,35 +102,26 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         return myCache.size();
     }
 
-    protected int removeCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
-                                    String cacheManager, String cacheName, InMemoryFormat format, int start, int end) {
-        ICache<Integer, String> myCache = getOrCreateCache(cluster, cacheManager, cacheName, format, classLoader);
+    protected int removeCacheDataIn(HazelcastInstance[] cluster, String cacheName, int start, int end) {
+        ICache<Integer, String> myCache = getCacheFromRandomMember(cluster, cacheName);
         for (; start < end; start++) {
             myCache.remove(start);
         }
         return myCache.size();
     }
 
-    protected void setExpiryPolicyDataIn(HazelcastInstance[] cluster, ClassLoader classLoader, String cacheManager,
-                                         String cacheName, InMemoryFormat format, int start, int end, ExpiryPolicy expiryPolicy) {
-        ICache<Integer, String> myCache = getOrCreateCache(cluster, cacheManager, cacheName, format, classLoader);
+    protected void setExpiryPolicyDataIn(HazelcastInstance[] cluster, String cacheName, int start, int end,
+                                         ExpiryPolicy expiryPolicy) {
+        ICache<Integer, String> myCache = getCacheFromRandomMember(cluster, cacheName);
         for (; start < end; start++) {
             myCache.setExpiryPolicy(start, expiryPolicy);
         }
     }
 
-    protected boolean checkCacheDataInFrom(HazelcastInstance[] targetCluster, ClassLoader classLoader,
-                                           String cacheManager, final String cacheName, final int start, final int end,
-                                           HazelcastInstance[] sourceCluster) {
-        final CacheManager manager = getCacheManager(targetCluster, cacheManager, classLoader);
+    protected boolean checkCacheDataInFrom(HazelcastInstance[] targetCluster, final String cacheName, final int start,
+                                           final int end, HazelcastInstance[] sourceCluster) {
         final String sourceGroupName = getNode(sourceCluster).getConfig().getGroupConfig().getName();
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertNotNull(manager.getCache(cacheName));
-            }
-        });
-        final ICache<Integer, String> cache = ((AbstractHazelcastCacheManager) manager).getCache(cacheName);
+        final ICache<Integer, String> cache = getNode(targetCluster).getCacheManager().getCache(cacheName);
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
@@ -165,10 +134,9 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         return true;
     }
 
-    protected boolean checkKeysNotIn(HazelcastInstance[] targetCluster, ClassLoader classLoader,
-                                     String cacheManager, String cacheName, final int start, final int end) {
-        CacheManager manager = getCacheManager(targetCluster, cacheManager, classLoader);
-        final ICache<Integer, String> cache = ((AbstractHazelcastCacheManager) manager).getCache(cacheName);
+    protected boolean checkKeysNotIn(HazelcastInstance[] targetCluster, String cacheName,
+                                     final int start, final int end) {
+        final ICache<Integer, String> cache = getNode(targetCluster).getCacheManager().getCache(cacheName);
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
@@ -181,16 +149,8 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         return true;
     }
 
-    protected boolean checkCacheDataSize(HazelcastInstance[] targetCluster, ClassLoader classLoader,
-                                         String cacheManager, final String cacheName, final int size) {
-        final CacheManager manager = getCacheManager(targetCluster, cacheManager, classLoader);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertNotNull(manager.getCache(cacheName));
-            }
-        });
-        final ICache cache = (ICache) manager.getCache(cacheName);
+    protected boolean checkCacheDataSize(HazelcastInstance[] targetCluster, final String cacheName, final int size) {
+        final ICache cache = getNode(targetCluster).getCacheManager().getCache(cacheName);
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
@@ -217,16 +177,9 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         return cacheConfig;
     }
 
-    protected void increaseHitCount(HazelcastInstance[] targetCluster, ClassLoader classLoader,
-                                    String cacheManager, final String cacheName, final int start, final int end, final int repeat) {
-        final CacheManager manager = getCacheManager(targetCluster, cacheManager, classLoader);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertNotNull(manager.getCache(cacheName));
-            }
-        });
-        final ICache<Integer, String> cache = ((AbstractHazelcastCacheManager) manager).getCache(cacheName);
+    protected void increaseHitCount(HazelcastInstance[] targetCluster, final String cacheName,
+                                    final int start, final int end, final int repeat) {
+        final ICache<Integer, String> cache = getNode(targetCluster).getCacheManager().getCache(cacheName);
         for (int i = start; i < end; i++) {
             for (int j = 0; j < repeat; j++) {
                 cache.get(i);
@@ -234,11 +187,9 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         }
     }
 
-    private Config createConfig(String groupName, String instanceName, int port, ClassLoader classLoader,
-                                boolean nativeMemoryEnabled) {
+    private Config createConfig(String groupName, String instanceName, int port, boolean nativeMemoryEnabled) {
         final Config config = getConfig()
-                .setInstanceName(instanceName)
-                .setClassLoader(classLoader);
+                .setInstanceName(instanceName);
         config.getGroupConfig()
               .setName(groupName);
         config.getNetworkConfig()
@@ -257,50 +208,8 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         return config;
     }
 
-    private CacheManager getCacheManager(HazelcastInstance[] targetCluster, String cacheManager, ClassLoader classLoader) {
-        HazelcastInstance node = getNode(targetCluster);
-        CachingProvider provider = Caching.getCachingProvider();
-        Properties properties = HazelcastCachingProvider.propertiesByInstanceName(node.getConfig().getInstanceName());
-        try {
-            URI cacheManagerName = new URI(cacheManager);
-            return provider.getCacheManager(cacheManagerName, classLoader, properties);
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-            throw new RuntimeException();
-        }
-    }
-
-    private ICache<Integer, String> getOrCreateCache(HazelcastInstance[] cluster, String cacheManager, String cacheName,
-                                                     InMemoryFormat format, ClassLoader classLoader) {
+    private ICache<Integer, String> getCacheFromRandomMember(HazelcastInstance[] cluster, String cacheName) {
         HazelcastInstance node = getNode(cluster);
-        CachingProvider provider = Caching.getCachingProvider();
-        Properties properties = HazelcastCachingProvider.propertiesByInstanceName(node.getConfig().getInstanceName());
-        try {
-            URI cacheManagerName = new URI(cacheManager);
-            AbstractHazelcastCacheManager manager = (AbstractHazelcastCacheManager) provider.getCacheManager(cacheManagerName,
-                    classLoader, properties);
-
-            CacheConfig<Integer, String> cacheConfig = createCacheConfig(cacheName, node, format);
-            return manager.getOrCreateCache(cacheName, cacheConfig);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private CacheManagerClassLoader createCacheManagerClassLoader() {
-        ClassLoader currentClassLoader = getClass().getClassLoader();
-        return new CacheManagerClassLoader(new URL[0], currentClassLoader);
-    }
-
-    private static class CacheManagerClassLoader extends URLClassLoader {
-
-        CacheManagerClassLoader(URL[] urls, ClassLoader classLoader) {
-            super(urls, classLoader);
-        }
-
-        @Override
-        public String toString() {
-            return "test";
-        }
+        return node.getCacheManager().getCache(cacheName);
     }
 }

@@ -39,11 +39,11 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
         startClusterA();
         startClusterB();
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false, null, true);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false, null, true);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
 
-        removeCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50);
-        checkCacheDataSize(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0);
+        removeCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50);
+        checkCacheDataSize(clusterB, DEFAULT_CACHE_NAME, 0);
     }
 
     @Test
@@ -55,11 +55,11 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
         startClusterA();
         startClusterB();
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
 
-        removeCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50);
-        checkCacheDataSize(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0);
+        removeCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50);
+        checkCacheDataSize(clusterB, DEFAULT_CACHE_NAME, 0);
     }
 
     @Test
@@ -72,12 +72,12 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterB();
 
         // create data in B then increase hit count
-        createCacheDataIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        createCacheDataIn(clusterB, DEFAULT_CACHE_NAME, 0, 50, false);
+        increaseHitCount(clusterB, DEFAULT_CACHE_NAME, 0, 50, 1000);
 
-        increaseHitCount(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, 1000);
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 100, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100, clusterA);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterB);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 100, false);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 50, 100, clusterA);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterB);
     }
 
     @Test
@@ -89,10 +89,10 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterA();
         startClusterB();
 
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, true);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, true);
 
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
     }
 
     @Test
@@ -107,15 +107,15 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
                 DEFAULT_CACHE_NAME);
         startAllClusters();
 
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
 
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
-        checkCacheDataInFrom(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        checkCacheDataInFrom(clusterC, DEFAULT_CACHE_NAME, 0, 50, clusterA);
 
-        removeCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50);
+        removeCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50);
 
-        checkCacheDataSize(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0);
-        checkCacheDataSize(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0);
+        checkCacheDataSize(clusterB, DEFAULT_CACHE_NAME, 0);
+        checkCacheDataSize(clusterC, DEFAULT_CACHE_NAME, 0);
     }
 
     @Test
@@ -127,16 +127,16 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
         startAllClusters();
 
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
-        checkCacheDataInFrom(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
+        checkCacheDataInFrom(clusterC, DEFAULT_CACHE_NAME, 0, 50, clusterA);
 
-        createCacheDataIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
-        checkCacheDataInFrom(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        createCacheDataIn(clusterB, DEFAULT_CACHE_NAME, 0, 50, false);
+        checkCacheDataInFrom(clusterC, DEFAULT_CACHE_NAME, 0, 50, clusterA);
 
-        increaseHitCount(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, 1000);
-        createCacheDataIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        increaseHitCount(clusterB, DEFAULT_CACHE_NAME, 0, 50, 1000);
+        createCacheDataIn(clusterB, DEFAULT_CACHE_NAME, 0, 50, false);
 
-        checkCacheDataInFrom(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterB);
+        checkCacheDataInFrom(clusterC, DEFAULT_CACHE_NAME, 0, 50, clusterB);
     }
 
     @Test
@@ -152,10 +152,10 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
                 DEFAULT_CACHE_NAME);
         startAllClusters();
 
-        createCacheDataIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        createCacheDataIn(clusterB, DEFAULT_CACHE_NAME, 0, 50, false);
 
-        checkCacheDataInFrom(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterB);
-        checkCacheDataInFrom(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterB);
+        checkCacheDataInFrom(clusterC, DEFAULT_CACHE_NAME, 0, 50, clusterB);
+        checkCacheDataInFrom(clusterA, DEFAULT_CACHE_NAME, 0, 50, clusterB);
     }
 
     @Test
@@ -167,11 +167,10 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterA();
         startClusterB();
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(10000, 10000, 10000);
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false,
-                expiryPolicy);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false, expiryPolicy);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
         sleepSeconds(20);
-        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50);
+        checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 0, 50);
     }
 
     @Test
@@ -183,10 +182,10 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterA();
         startClusterB();
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1000, 1000, 1000);
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
-        setExpiryPolicyDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, expiryPolicy);
-        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        setExpiryPolicyDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, expiryPolicy);
+        checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 0, 50);
     }
 
     @Test
@@ -200,12 +199,12 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterA();
         startClusterB();
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1000, 1000, 1000);
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 100, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 100, clusterA);
-        setExpiryPolicyDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, expiryPolicy);
-        setExpiryPolicyDataIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 50, 100, expiryPolicy);
-        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50);
-        checkKeysNotIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 100, false);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 100, clusterA);
+        setExpiryPolicyDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, expiryPolicy);
+        setExpiryPolicyDataIn(clusterB, DEFAULT_CACHE_NAME, 50, 100, expiryPolicy);
+        checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 0, 50);
+        checkKeysNotIn(clusterA, DEFAULT_CACHE_NAME, 50, 100);
     }
 
     @Test
@@ -220,20 +219,20 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterA();
         startClusterB();
 
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
 
         pauseWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
         assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.PAUSED);
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 50, 100, false);
-        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 50, 100, false);
+        checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 50);
 
 
         resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
         assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.REPLICATING);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 100, clusterA);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 100, clusterA);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
     }
 
@@ -249,22 +248,22 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterA();
         startClusterB();
 
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
 
         stopWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
         assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.STOPPED);
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 50, 100, false);
-        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 50, 100, false);
+        checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
 
         resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
         assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.REPLICATING);
 
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 100, 200, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 100, 200, clusterA);
-        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 100, 200, false);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 100, 200, clusterA);
+        checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
     }
 
@@ -285,17 +284,17 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterA();
         startClusterB();
 
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 50, 100, false);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 50, 100, false);
         assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.STOPPED);
-        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100);
+        checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
 
         resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
         assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.REPLICATING);
 
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 100, 200, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 100, 200, clusterA);
-        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 100, 200, false);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 100, 200, clusterA);
+        checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
     }
 
@@ -316,15 +315,15 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterA();
         startClusterB();
 
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 50, 100, false);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 50, 100, false);
         assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.PAUSED);
-        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100);
+        checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 50);
 
 
         resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
         assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.REPLICATING);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100, clusterA);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 50, 100, clusterA);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
     }
 
@@ -336,7 +335,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
                 DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
@@ -344,7 +343,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
                 assertEquals(1, distributedObjects.size());
             }
         }, 10);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
     }
 
     @Test
@@ -357,12 +356,12 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterA();
         startClusterB();
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(10000, 10000, 10000);
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false,
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false,
                 expiryPolicy);
         sleepSeconds(20);
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false,
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false,
                 expiryPolicy);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
     }
 
     @Test
@@ -379,8 +378,8 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
         startClusterA();
         startClusterB();
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
-        removeCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
+        removeCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50);
 
         // Ensure no put or delete operation is passed to cache writer.
         assertTrueAllTheTime(new AssertTask() {
@@ -399,7 +398,6 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         setupReplicateFrom(configA, configB, clusterB.length,
                 "atob", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
 
-        final TestCacheWriter2 writer = new TestCacheWriter2();
         CacheSimpleConfig cacheConfig = configB.getCacheConfig(DEFAULT_CACHE_NAME);
         cacheConfig.setWriteThrough(true);
         cacheConfig.setCacheWriterFactory(TestCacheWriter2.class.getName());
@@ -407,15 +405,15 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
         startClusterA();
         startClusterB();
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
-        removeCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
+        removeCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50);
 
         // Ensure no put or delete operation is passed to cache writer.
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                assertEquals(50, writer.writeCount.get());
-                assertEquals(50, writer.deleteCount.get());
+                assertEquals(50, TestCacheWriter2.writeCount.get());
+                assertEquals(50, TestCacheWriter2.deleteCount.get());
             }
         });
     }

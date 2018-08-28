@@ -12,6 +12,7 @@ import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.internal.serialization.PortableHook;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.impl.NodeEngineImpl;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import net.bytebuddy.ByteBuddy;
@@ -110,7 +111,20 @@ public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTe
 
 
         // assert no publisher in the entire cluster encountered a failure
-        for (HazelcastInstance instance : clusterA) {
+        assertPublisherFailureCountEventually(clusterA, expectedFailureCount, publisherName);
+    }
+
+    private static void assertPublisherFailureCountEventually(final HazelcastInstance[] cluster, final int expectedFailureCount, final String publisherName) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                assertPublisherFailureCount(cluster, expectedFailureCount, publisherName);
+            }
+        });
+    }
+
+    private static void assertPublisherFailureCount(HazelcastInstance[] cluster, int expectedFailureCount, String publisherName) {
+        for (HazelcastInstance instance : cluster) {
             final NodeEngineImpl nodeEngine = getNode(instance).nodeEngine;
             final EnterpriseWanReplicationService s = nodeEngine.getService(EnterpriseWanReplicationService.SERVICE_NAME);
             final WanReplicationPublisherDelegate atob

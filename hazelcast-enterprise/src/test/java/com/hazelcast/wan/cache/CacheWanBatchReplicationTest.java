@@ -35,11 +35,11 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
         initCluster(singleNodeA, configA);
         // exceed the size of event queue
-        createCacheDataIn(singleNodeA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 10000, false);
+        createCacheDataIn(singleNodeA, DEFAULT_CACHE_NAME,  0, 10000, false);
         sleepSeconds(20);
         // at least the last 100 should be on target
         startClusterB();
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 9900, 10000, singleNodeA);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 9900, 10000, singleNodeA);
     }
 
     @Test
@@ -50,9 +50,9 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
                 "default", DummyCacheWanFilter.class.getName());
         startClusterA();
         startClusterB();
-        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 1, 10, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 1, 2, clusterA);
-        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 2, 10);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 1, 10, false);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 1, 2, clusterA);
+        checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 2, 10);
     }
 
     @Test
@@ -62,12 +62,12 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
 
         initCluster(singleNodeA, configA);
-        createCacheDataIn(singleNodeA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 200, false);
+        createCacheDataIn(singleNodeA, DEFAULT_CACHE_NAME, 0, 200, false);
         initCluster(singleNodeC, configA);
 
         initCluster(clusterB, configB);
 
-        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 200, singleNodeA);
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 200, singleNodeA);
     }
 
     @Override

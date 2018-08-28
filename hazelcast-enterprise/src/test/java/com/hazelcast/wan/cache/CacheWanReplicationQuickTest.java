@@ -70,7 +70,7 @@ public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport
         targetClusterConfig.setQueueCapacity(10);
         targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
         initCluster(basicCluster, configA);
-        createCacheDataIn(basicCluster, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 1000, false);
+        createCacheDataIn(basicCluster, DEFAULT_CACHE_NAME, 0, 1000, false);
     }
 
     @Override

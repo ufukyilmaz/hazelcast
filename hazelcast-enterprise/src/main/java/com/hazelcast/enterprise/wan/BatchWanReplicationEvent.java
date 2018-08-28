@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan;
 
+import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -40,15 +41,18 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
     }
 
     public void addEvent(WanReplicationEvent event) {
+        final EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event.getEventObject();
         if (snapshotEnabled) {
-            final EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event.getEventObject();
             final DistributedObjectEntryIdentifier id = new DistributedObjectEntryIdentifier(
                     event.getServiceName(), eventObject.getObjectName(), eventObject.getKey());
             eventMap.put(id, event);
         } else {
             eventList.add(event);
         }
-        addedEventCount++;
+        if (!(eventObject instanceof EnterpriseMapReplicationSync)) {
+            // sync events don't count against primary WAN counters
+            addedEventCount++;
+        }
     }
 
     /**

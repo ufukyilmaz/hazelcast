@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 public class LicenseExpirationReminderTaskTest
         extends HazelcastTestSupport {
 
-    private static final  int ADVISORY_PERIOD_IN_DAYS = 59;
+    private static final int ADVISORY_PERIOD_IN_DAYS = 59;
     private static final int WARNING_PERIOD_IN_DAYS = 29;
     private static final int ALERT_PERIOD_IN_DAYS = 6;
 

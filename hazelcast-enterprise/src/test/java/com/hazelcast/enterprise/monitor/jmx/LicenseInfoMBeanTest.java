@@ -49,6 +49,7 @@ public class LicenseInfoMBeanTest
         String type = getStringAttribute("type");
         String ownerEmail = getStringAttribute("ownerEmail");
         String companyName = getStringAttribute("companyName");
+        String keyHash = getStringAttribute("keyHash");
 
         HazelcastInstanceImpl instance = ((HazelcastInstanceProxy) holder.getHz()).getOriginal();
         License license = LicenseHelper.getLicense(instance.getConfig().getLicenseKey(),
@@ -60,6 +61,7 @@ public class LicenseInfoMBeanTest
         assertEquals(license.getType().getText(), type);
         assertEquals(license.getEmail(), ownerEmail);
         assertEquals(license.getCompanyName(), companyName);
+        assertEquals(license.computeKeyHash(), keyHash);
     }
 
     private String getStringAttribute(String name) throws Exception {

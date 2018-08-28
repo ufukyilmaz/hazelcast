@@ -366,12 +366,13 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
     @Test
     public void replicated_data_is_not_persisted_by_default() {
+        TestCacheWriter1.reset();
+
         initConfigA();
         initConfigB();
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
-        final TestCacheWriter1 writer = new TestCacheWriter1();
         CacheSimpleConfig cacheConfig = configB.getCacheConfig(DEFAULT_CACHE_NAME);
         cacheConfig.setWriteThrough(true);
         cacheConfig.setCacheWriterFactory(TestCacheWriter1.class.getName());
@@ -385,14 +386,16 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         assertTrueAllTheTime(new AssertTask() {
             @Override
             public void run() {
-                assertEquals(0, writer.writeCount.get());
-                assertEquals(0, writer.deleteCount.get());
+                assertEquals(0, TestCacheWriter1.writeCount.get());
+                assertEquals(0, TestCacheWriter1.deleteCount.get());
             }
         }, 10);
     }
 
     @Test
     public void replicated_data_is_persisted_when_persistWanReplicatedData_is_true() {
+        TestCacheWriter2.reset();
+
         initConfigA();
         initConfigB();
         setupReplicateFrom(configA, configB, clusterB.length,
@@ -405,10 +408,11 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
         startClusterA();
         startClusterB();
+
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
         removeCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50);
 
-        // Ensure no put or delete operation is passed to cache writer.
+        // Ensure put or delete operation are passed to cache writer.
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
@@ -443,6 +447,11 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
         protected static AtomicInteger writeCount = new AtomicInteger();
         protected static AtomicInteger deleteCount = new AtomicInteger();
+
+        public static void reset() {
+            writeCount.set(0);
+            deleteCount.set(0);
+        }
 
         @Override
         public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) throws CacheWriterException {
@@ -481,6 +490,11 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
         protected static AtomicInteger writeCount = new AtomicInteger();
         protected static AtomicInteger deleteCount = new AtomicInteger();
+
+        public static void reset() {
+            writeCount.set(0);
+            deleteCount.set(0);
+        }
 
         @Override
         public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) throws CacheWriterException {

@@ -101,6 +101,10 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     public void processEvent(WanConsistencyCheckEvent event,
                              WanAntiEntropyEventResult result) throws Exception {
         String mapName = event.getMapName();
+        String target = publisher.wanReplicationName + "/" + publisher.targetGroupName;
+        if (logger.isFineEnabled()) {
+            logger.fine("Checking via Merkle trees if map " + mapName + " is consistent with cluster " + target);
+        }
         lastRootComparisonResults.put(mapName, new ConsistencyCheckResult(-1, -1));
         ConsistencyCheckResult checkResult = new ConsistencyCheckResult();
         try {
@@ -114,6 +118,12 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             lastRootComparisonResults.put(mapName, checkResult);
         }
 
+        if (logger.isFineEnabled()) {
+            int checkedCount = checkResult.getLastCheckedPartitionCount();
+            int diffCount = checkResult.getLastDiffPartitionCount();
+            logger.fine("Consistency check for map " + mapName + " with cluster " + target + " has completed: "
+                    + diffCount + " partitions out of " + checkedCount + " are not consistent");
+        }
     }
 
     @Override
@@ -150,29 +160,39 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     }
 
     private void processMapSync(WanSyncEvent event, WanAntiEntropyEventResult result, String mapName) throws Exception {
+        String target = publisher.wanReplicationName + "/" + publisher.targetGroupName;
         if (logger.isFineEnabled()) {
-            logger.fine("Synchronizing map " + mapName + " to the target cluster by using Merkle trees");
+            logger.fine("Synchronizing map " + mapName + " to cluster " + target + " by using Merkle trees");
         }
+
         ConsistencyCheckResult checkResult = new ConsistencyCheckResult();
         try {
             if (logger.isFineEnabled()) {
-                logger.fine("Comparing Merkle trees with the target for map " + mapName + " to identify the difference");
+                logger.fine("Comparing Merkle trees of map " + mapName + " with cluster " + target
+                        + " to identify the difference");
             }
+
             List<Integer> localPartitionsToSync = getLocalPartitions(event);
             Map<Integer, int[]> diff = compareMerkleTrees(mapName, localPartitionsToSync);
             Set<Integer> processedPartitions = result.getProcessedPartitions();
-            if (diff == null) {
+            if (diff == null || diff.isEmpty()) {
+                if (logger.isFineEnabled()) {
+                    logger.fine("Map " + mapName + " found to be consistent with cluster " + target
+                            + ", no synchronization is needed");
+                }
                 return;
             }
             checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), diff.size());
             if (logger.isFineEnabled()) {
-                logger.fine("Merkle tree comparison for map " + mapName + " has completed");
+                logger.fine("Merkle tree comparison for map " + mapName + " with cluster " + target + " has completed: " + diff
+                        .size() + " partitions out of " + localPartitionsToSync.size() + " need to be synced");
             }
 
             syncDifferences(mapName, diff, processedPartitions);
             checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), 0);
+
             if (logger.isFineEnabled()) {
-                logger.fine("Synchronization of map " + mapName + " has finished");
+                logger.fine("Synchronization of map " + mapName + " to cluster " + target + " has finished");
             }
 
         } finally {

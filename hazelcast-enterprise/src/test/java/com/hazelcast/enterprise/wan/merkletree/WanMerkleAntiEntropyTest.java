@@ -48,7 +48,7 @@ import static org.junit.Assert.assertTrue;
 @Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class WanMerkleAntiEntropyTest {
-    private static final String MAP_NAME = "map";
+    private static final String MAP_NAME = "MAP_WITH_MERKLETREES";
     private static final String REPLICATION_NAME = "wanReplication";
 
     private Cluster sourceCluster;
@@ -212,7 +212,7 @@ public class WanMerkleAntiEntropyTest {
     }
 
     @Test
-    public void testMerkleSyncPuts() {
+    public void testSyncPuts() {
         sourceCluster.startCluster();
         targetCluster.startCluster();
         sourceCluster.stopWanReplicationOnAllMembers(wanReplication);

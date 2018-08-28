@@ -42,11 +42,7 @@ public class EnterpriseMapContainer extends MapContainer {
     EnterpriseMapContainer(final String name, final Config config, MapServiceContext mapServiceContext) {
         super(name, config, mapServiceContext);
 
-        NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
-        ILogger logger = nodeEngine.getLogger(EnterpriseMapContainer.class);
-        MerkleTreeConfig mapMerkleTreeConfig = nodeEngine.getConfig().findMapMerkleTreeConfig(name);
-        logger.info("Using Merkle trees with depth " + mapMerkleTreeConfig.getDepth() + " for map " + name);
-
+        logMerkleTreeInfoIfEnabled();
     }
 
     @Override
@@ -86,6 +82,15 @@ public class EnterpriseMapContainer extends MapContainer {
             };
         } else {
             return super.createRecordFactoryConstructor(serializationService);
+        }
+    }
+
+    private void logMerkleTreeInfoIfEnabled() {
+        NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
+        MerkleTreeConfig mapMerkleTreeConfig = nodeEngine.getConfig().findMapMerkleTreeConfig(name);
+        if (mapMerkleTreeConfig.isEnabled()) {
+            ILogger logger = nodeEngine.getLogger(EnterpriseMapContainer.class);
+            logger.fine("Using Merkle trees with depth " + mapMerkleTreeConfig.getDepth() + " for map " + name);
         }
     }
 

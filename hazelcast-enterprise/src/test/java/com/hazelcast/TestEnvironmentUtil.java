@@ -18,6 +18,8 @@ public class TestEnvironmentUtil {
         if ("1".equals(majorStr)) {
             majorStr = versionParts[1];
         }
+        // early access builds could contain "-ea" suffix, we have to remove it
+        majorStr = majorStr.split("-")[0];
         JAVA_VERSION_MAJOR = Integer.parseInt(majorStr);
     }
 

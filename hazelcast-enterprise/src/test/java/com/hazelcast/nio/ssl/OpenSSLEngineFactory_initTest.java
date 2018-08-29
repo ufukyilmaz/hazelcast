@@ -3,12 +3,17 @@ package com.hazelcast.nio.ssl;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+
+import io.netty.handler.ssl.ReferenceCountedOpenSslEngine;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.Properties;
+
+import javax.net.ssl.SSLEngine;
 
 import static com.hazelcast.TestEnvironmentUtil.assumeThatNoJDK6;
 import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
@@ -49,6 +54,8 @@ public class OpenSSLEngineFactory_initTest {
         factory.init(sslProperties, false);
 
         assertEquals(enabled, factory.isOpenssl());
+        SSLEngine sslEngine = factory.create(true);
+        assertEquals(enabled, sslEngine instanceof ReferenceCountedOpenSslEngine);
     }
 
     @Test

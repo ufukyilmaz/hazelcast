@@ -34,6 +34,22 @@ Snapshots repository:
 </repository>
 ````
 
+### Additional Java arguments used for testing
+
+If you need to provide additional Java arguments to test runs, then set them to `extraVmArgs` property.
+
+**Example:**
+```bash
+mvn install "-DextraVmArgs=-XX:+UnlockCommercialFeatures -XX:+FlightRecorder -Dopenssl.enforce=true"
+```
+
+#### Available System properties
+
+Property name | Default value | Description
+---           | ---           | ---
+`cacheName`   | "CACHE"       | Cache name used in JCache tests
+`openssl.enforce` | `false`   | A true/false flag which allows to enforce running OpenSSL tests even if the OpenSSL reports it's not supported on the given platform.
+
 ### Testing for rolling upgrades compatibility
 
 Compatibility tests are categorized with `com.hazelcast.test.annotation.CompatibilityTest` and are executed with the `compatibility-tests` profile.

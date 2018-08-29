@@ -43,7 +43,7 @@ public class TestEnvironmentUtil {
      */
     public static boolean isOpenSslSupported() {
         patchOpenSslLogging();
-        return OpenSsl.isAvailable() && !isIbmJvm();
+        return Boolean.getBoolean("openssl.enforce") || (OpenSsl.isAvailable() && !isIbmJvm());
     }
 
     public static boolean isIbmJvm() {

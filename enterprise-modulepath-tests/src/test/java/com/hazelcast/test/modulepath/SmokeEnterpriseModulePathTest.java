@@ -1,13 +1,13 @@
 package com.hazelcast.test.modulepath;
 
+import static com.hazelcast.test.modulepath.EnterpriseTestUtils.assertClusterSize;
 import static com.hazelcast.test.modulepath.EnterpriseTestUtils.createConfigWithTcpJoin;
-import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,7 +20,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.Member;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 
 /**
@@ -42,10 +41,14 @@ public class SmokeEnterpriseModulePathTest {
     public void testModulePath() {
         String modulePath = System.getProperty("jdk.module.path");
         assertNotNull("Module path was expected", modulePath);
-        assertTrue("Module path should contain hazelcast JAR",
+        assertTrue("Module path should contain hazelcast-enterprise JAR",
                 modulePath.matches(".*hazelcast-enterprise-[1-9][\\p{Alnum}\\-_\\.]+\\.jar.*"));
-        assertTrue("Module path should contain hazelcast-client JAR",
+        assertTrue("Module path should contain hazelcast-enterprise-client JAR",
                 modulePath.matches(".*hazelcast-enterprise-client-[\\p{Alnum}\\-_\\.]+\\.jar.*"));
+        assertFalse("Module path must not contain hazelcast (OS) JAR",
+                modulePath.matches(".*hazelcast-[0-9][\\p{Alnum}\\-_\\.]+\\.jar.*"));
+        assertFalse("Module path must not contain hazelcast-client (OS) JAR",
+                modulePath.matches(".*hazelcast-client-[\\p{Alnum}\\-_\\.]+\\.jar.*"));
     }
 
     /**
@@ -78,20 +81,5 @@ public class SmokeEnterpriseModulePathTest {
         assertClusterSize(2, hz1, hz2);
         HazelcastInstance client = HazelcastClient.newHazelcastClient();
         assertEquals("b", client.getMap("test").get("a"));
-    }
-
-    public static void assertClusterSize(int expectedSize, HazelcastInstance... instances) {
-        for (int i = 0; i < instances.length; i++) {
-            int clusterSize = getClusterSize(instances[i]);
-            if (expectedSize != clusterSize) {
-                fail(format("Cluster size is not correct. Expected: %d, actual: %d, instance index: %d", expectedSize,
-                        clusterSize, i));
-            }
-        }
-    }
-
-    private static int getClusterSize(HazelcastInstance instance) {
-        Set<Member> members = instance.getCluster().getMembers();
-        return members == null ? 0 : members.size();
     }
 }

@@ -1,5 +1,6 @@
 package com.hazelcast.test.modulepath;
 
+import static com.hazelcast.test.modulepath.EnterpriseTestUtils.assertClusterSize;
 import static com.hazelcast.test.modulepath.EnterpriseTestUtils.createConfigWithTcpJoin;
 import static com.hazelcast.test.modulepath.EnterpriseTestUtils.waitClusterForSafeState;
 import static org.junit.Assert.assertEquals;
@@ -10,12 +11,12 @@ import javax.cache.Cache;
 import javax.cache.spi.CachingProvider;
 
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
-import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
@@ -34,10 +35,14 @@ public class JCacheHotRestartTest {
     @Rule
     public TemporaryFolder ruleTempFolder = new TemporaryFolder();
 
+    @BeforeClass
+    public static void cleanUp() {
+        HazelcastInstanceFactory.terminateAll();
+    }
+
     @After
     public void after() {
-        HazelcastClient.shutdownAll();
-        HazelcastInstanceFactory.terminateAll();
+        cleanUp();
     }
 
     /**
@@ -50,6 +55,7 @@ public class JCacheHotRestartTest {
     @Test
     public void testSingleNodeRestart() {
         HazelcastInstance instance = newHazelcastInstance(5701);
+        assertClusterSize(1, instance);
         initCache(instance);
         instance.shutdown();
         instance = newHazelcastInstance(5701);
@@ -78,7 +84,7 @@ public class JCacheHotRestartTest {
         instance1 = newHazelcastInstance(5701);
 
         instance1.getCluster().changeClusterState(ClusterState.ACTIVE);
-
+        assertClusterSize(2, instance1, instance2);
         assertCacheValues(cache);
     }
 

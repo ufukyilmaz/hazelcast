@@ -2,13 +2,17 @@ package com.hazelcast.test.modulepath;
 
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static java.lang.Integer.getInteger;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.Set;
+
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.Member;
 import com.hazelcast.core.PartitionService;
 
 /**
@@ -83,6 +87,21 @@ public abstract class EnterpriseTestUtils {
     public static boolean isClusterInSafeState(HazelcastInstance instance) {
         PartitionService ps = instance.getPartitionService();
         return ps.isClusterSafe();
+    }
+
+    public static void assertClusterSize(int expectedSize, HazelcastInstance... instances) {
+        for (int i = 0; i < instances.length; i++) {
+            int clusterSize = getClusterSize(instances[i]);
+            if (expectedSize != clusterSize) {
+                fail(format("Cluster size is not correct. Expected: %d, actual: %d, instance index: %d", expectedSize,
+                        clusterSize, i));
+            }
+        }
+    }
+
+    private static int getClusterSize(HazelcastInstance instance) {
+        Set<Member> members = instance.getCluster().getMembers();
+        return members == null ? 0 : members.size();
     }
 
     public interface AssertTask {

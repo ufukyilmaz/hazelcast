@@ -73,7 +73,6 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         Config config = getConfig();
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         map = instance.getMap(MAP_NAME);
-        merkleTree = getMerkleTree(map);
     }
 
     protected Config getConfig() {
@@ -674,7 +673,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
 
 
     private int rootHash() {
-        return merkleTree.getNodeHash(0);
+        return getMerkleTree(map).getNodeHash(0);
     }
 
     private MapServiceContext getMapServiceContext(MapProxyImpl map) {
@@ -683,10 +682,14 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     }
 
     private MerkleTree getMerkleTree(IMap<String, String> map) {
-        MapServiceContext mapServiceContext = getMapServiceContext((MapProxyImpl) map);
-        EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) mapServiceContext
-                .getPartitionContainer(0);
-        return partitionContainer.getMerkleTreeOrNull(map.getName());
+        if (merkleTree == null) {
+            MapServiceContext mapServiceContext = getMapServiceContext((MapProxyImpl) map);
+            EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) mapServiceContext
+                    .getPartitionContainer(0);
+            merkleTree = partitionContainer.getMerkleTreeOrNull(map.getName());
+        }
+
+        return merkleTree;
     }
 
     private static final class AwaitableExecutionCallback implements ExecutionCallback {

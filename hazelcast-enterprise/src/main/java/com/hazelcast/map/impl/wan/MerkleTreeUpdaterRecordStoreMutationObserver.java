@@ -1,11 +1,11 @@
 package com.hazelcast.map.impl.wan;
 
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStoreMutationObserver;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.wan.merkletree.MerkleTree;
 
@@ -70,6 +70,11 @@ public class MerkleTreeUpdaterRecordStoreMutationObserver<R extends Record> impl
     @Override
     public void onEvictRecord(Data key, R record) {
         merkleTree.updateRemove(key, asData(record.getValue()));
+    }
+
+    @Override
+    public void onLoadRecord(Data key, R record) {
+        onPutRecord(key, record);
     }
 
     @Override

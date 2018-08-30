@@ -54,6 +54,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSupport {
     private static final int WAN_TARGET_INVOCATION_DEADLINE_SECONDS = 10;
+    private static final int WAN_TARGET_INVOCATION_MIN_ATTEMPTS = 10;
     private static final long WAN_TARGET_INVOCATION_BACKOFF_MIN_PARK = MILLISECONDS.toNanos(1);
     private static final long WAN_TARGET_INVOCATION_BACKOFF_MAX_PARK = MILLISECONDS.toNanos(100);
 
@@ -430,7 +431,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         // the first call to this method may take longer since the connection to a remote cluster member needs to be established
         long deadline = calculateDeadline();
         int idleStep = 0;
-        while (System.nanoTime() < deadline) {
+        while (System.nanoTime() < deadline || idleStep < WAN_TARGET_INVOCATION_MIN_ATTEMPTS) {
             WanConnectionWrapper connectionWrapper = publisher.getConnectionManager().getConnection(target);
             if (connectionWrapper != null) {
                 String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
@@ -447,7 +448,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         }
 
         throw new IllegalStateException("Could not obtain a connection to " + target
-                + " within " + WAN_TARGET_INVOCATION_DEADLINE_SECONDS + " seconds");
+                + " within " + WAN_TARGET_INVOCATION_DEADLINE_SECONDS + " seconds after " + idleStep + " attempts");
     }
 
     private long calculateDeadline() {

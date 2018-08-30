@@ -686,7 +686,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         MapServiceContext mapServiceContext = getMapServiceContext((MapProxyImpl) map);
         EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) mapServiceContext
                 .getPartitionContainer(0);
-        return partitionContainer.getMerkleTree(map.getName());
+        return partitionContainer.getMerkleTreeOrNull(map.getName());
     }
 
     private static final class AwaitableExecutionCallback implements ExecutionCallback {

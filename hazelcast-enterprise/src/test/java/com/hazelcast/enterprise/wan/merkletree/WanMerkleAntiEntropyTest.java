@@ -4,6 +4,9 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.PartitionContainer;
+import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
@@ -32,6 +35,7 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
+import static com.hazelcast.test.HazelcastTestSupport.getNode;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanCounterTestSupport.verifyEventCountersAreEventuallyZero;
@@ -278,10 +282,10 @@ public class WanMerkleAntiEntropyTest {
 
                 }
 
-                assertEquals(partitions, checkedPartitions);
-                assertTrue(diffPartitions <= partitions);
-                assertTrue(diffPartitions <= entriesToPut);
-                assertTrue(diffPartitions > 0);
+                assertEquals("All partitions are expected to be checked by the Merkle comparison",
+                        partitions, checkedPartitions);
+                assertEquals("Partitions with differences should be equal to the number of non-empty partitions",
+                        getNumberOfNonEmptyPartitions(), diffPartitions);
             }
         });
     }
@@ -328,5 +332,21 @@ public class WanMerkleAntiEntropyTest {
                 .getStats()
                 .get(wanReplication.getSetupName()).getLocalWanPublisherStats()
                 .get(wanReplication.getTargetClusterName()).getLastConsistencyCheckResults();
+    }
+
+    private int getNumberOfNonEmptyPartitions() {
+        // the record store size is updated on the partition threads, we may read stale values here
+        // but since this method is invoked from an assertEventually periodically it is expected that we eventually observe the
+        // right value and this doesn't cause false failures due to visibility issues
+        int notEmptyPartitions = 0;
+        MapService service = getNode(sourceCluster.getAMember()).getNodeEngine().getService(MapService.SERVICE_NAME);
+        for (PartitionContainer partitionContainer : service.getMapServiceContext().getPartitionContainers()) {
+            RecordStore recordStore = partitionContainer.getRecordStore(MAP_NAME);
+            if (recordStore.size() != 0) {
+                notEmptyPartitions++;
+            }
+        }
+
+        return notEmptyPartitions;
     }
 }

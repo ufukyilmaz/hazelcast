@@ -2,11 +2,14 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.enterprise.wan.operation.MerkleTreeNodeValueComparison;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.ReadonlyOperation;
 import com.hazelcast.wan.merkletree.MerkleTree;
 import com.hazelcast.wan.merkletree.MerkleTreeUtil;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -142,5 +145,17 @@ public class MerkleTreeNodeCompareOperation extends MapOperation implements Read
     @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.MERKLE_TREE_NODE_COMPARE_OPERATION;
+    }
+
+    @Override
+    protected void writeInternal(ObjectDataOutput out) throws IOException {
+        super.writeInternal(out);
+        out.writeObject(remoteNodes);
+    }
+
+    @Override
+    protected void readInternal(ObjectDataInput in) throws IOException {
+        super.readInternal(in);
+        remoteNodes = in.readObject();
     }
 }

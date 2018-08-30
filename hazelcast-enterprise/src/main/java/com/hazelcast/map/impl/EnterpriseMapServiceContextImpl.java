@@ -327,7 +327,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
                                               String mapName,
                                               int partitionId) {
         EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) partitionContainers[partitionId];
-        MerkleTree merkleTree = partitionContainer.getMerkleTree(mapName);
+        MerkleTree merkleTree = partitionContainer.getOrCreateMerkleTree(mapName);
         if (merkleTree != null) {
             observers.add(new MerkleTreeUpdaterRecordStoreMutationObserver<Record>(merkleTree,
                     getNodeEngine().getSerializationService()));

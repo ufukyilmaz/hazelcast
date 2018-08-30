@@ -122,7 +122,7 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
             int partitionId = partition.getPartitionId();
             EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) mapServiceContext
                     .getPartitionContainer(partitionId);
-            merkleTrees[i] = partitionContainer.getMerkleTree(map.getName());
+            merkleTrees[i] = partitionContainer.getMerkleTreeOrNull(map.getName());
         }
         return merkleTrees;
     }

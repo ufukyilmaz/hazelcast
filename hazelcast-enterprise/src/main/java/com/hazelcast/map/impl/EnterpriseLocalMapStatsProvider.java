@@ -23,7 +23,7 @@ class EnterpriseLocalMapStatsProvider extends LocalMapStatsProvider {
 
         for (PartitionContainer container : mapServiceContext.getPartitionContainers()) {
             EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) container;
-            MerkleTree merkleTree = partitionContainer.getMerkleTree(mapName);
+            MerkleTree merkleTree = partitionContainer.getMerkleTreeOrNull(mapName);
 
             if (merkleTree != null) {
                 onDemandStats.incrementHeapCost(merkleTree.footprint());

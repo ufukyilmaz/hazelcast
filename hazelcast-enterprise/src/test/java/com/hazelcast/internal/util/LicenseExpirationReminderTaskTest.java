@@ -11,6 +11,8 @@ import org.junit.runner.RunWith;
 import java.util.Calendar;
 import java.util.Date;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -223,7 +225,7 @@ public class LicenseExpirationReminderTaskTest
         LicenseExpirationReminderTask.NotificationPeriod period = task.calculateNotificationPeriod();
 
         long scheduleDelay = task.calcSchedulingDelay(period);
-        assertEquals(29, SECONDS.toDays(scheduleDelay));
+        assertEquals(expectedSchedDelayDays(90), SECONDS.toDays(scheduleDelay));
     }
 
     @Test
@@ -236,7 +238,8 @@ public class LicenseExpirationReminderTaskTest
 
         long scheduleDelay = task.calcSchedulingDelay(period);
         // Should assert to expiration - 2 months
-        assertEquals(365 - 61, SECONDS.toDays(scheduleDelay));
+
+        assertEquals(expectedSchedDelayDays(365), SECONDS.toDays(scheduleDelay));
     }
 
     private Date dateWithDaysDiff(int diff) {
@@ -245,5 +248,13 @@ public class LicenseExpirationReminderTaskTest
         // Prevents testing from failing due to ms differences in time comparisons
         calendar.add(Calendar.HOUR, diff > 0 ? 1 : -1);
         return calendar.getTime();
+    }
+
+    private int expectedSchedDelayDays(int expirationDays) {
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DAY_OF_YEAR, expirationDays);
+        cal.add(Calendar.MONTH, -2);
+        cal.add(Calendar.HOUR, 1);
+        return (int) MILLISECONDS.toDays(cal.getTimeInMillis() - currentTimeMillis());
     }
 }

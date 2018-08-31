@@ -11,6 +11,7 @@ import org.junit.runner.RunWith;
 import java.util.Calendar;
 import java.util.Date;
 
+import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -112,13 +113,13 @@ public class LicenseExpirationReminderTaskTest
         LicenseExpirationReminderTask task = new LicenseExpirationReminderTask(null, license);
         String actual = task.assembleLicenseInfoBanner(LicenseExpirationReminderTask.NotificationPeriod.NONE);
 
-        String expected = "\n"
-                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-                + "HAZELCAST LICENSE WILL EXPIRE IN 6 DAYS.\n" + "Your Hazelcast cluster will stop working on next re-start after expiry.\n"
-                + "\n" + "Your license holder is customer@example-company.com, you should have them contact\n"
-                + "our license renewal department, urgently on info@hazelcast.com\n" + "or call us on +1 (650) 521-5453\n" + "\n"
-                + "Please quote license id CUSTOM_TEST_KEY\n\n"
-                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
+        String expected = format("%n"
+                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%n"
+                + "HAZELCAST LICENSE WILL EXPIRE IN 6 DAYS.%n" + "Your Hazelcast cluster will stop working on next re-start after expiry.%n"
+                + "%n" + "Your license holder is customer@example-company.com, you should have them contact%n"
+                + "our license renewal department, urgently on info@hazelcast.com%n" + "or call us on +1 (650) 521-5453%n%n"
+                + "Please quote license id CUSTOM_TEST_KEY%n%n"
+                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
         assertEquals(expected, actual);
     }
@@ -136,14 +137,14 @@ public class LicenseExpirationReminderTaskTest
 
         String actual = task.assembleLicenseInfoBanner(LicenseExpirationReminderTask.NotificationPeriod.GRACE_WARNING);
 
-        String expected = "\n"
-                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-                + "HAZELCAST LICENSE EXPIRED!\n" + "\n"
-                + "You are now in a grace period of 1 month(s). The license will expire in 29 days time\n" + "\n"
-                + "Your license holder is customer@example-company.com, you should have them contact\n"
-                + "our license renewal department, urgently on info@hazelcast.com\n" + "or call us on +1 (650) 521-5453\n" + "\n"
-                + "Please quote license id CUSTOM_TEST_KEY\n\n"
-                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
+        String expected = format("%n"
+                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%n"
+                + "HAZELCAST LICENSE EXPIRED!%n%n"
+                + "You are now in a grace period of 1 month(s). The license will expire in 29 days time%n%n"
+                + "Your license holder is customer@example-company.com, you should have them contact%n"
+                + "our license renewal department, urgently on info@hazelcast.com%n" + "or call us on +1 (650) 521-5453%n%n"
+                + "Please quote license id CUSTOM_TEST_KEY%n%n"
+                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
         assertEquals(expected, actual);
     }
@@ -161,13 +162,13 @@ public class LicenseExpirationReminderTaskTest
 
         String actual = task.assembleLicenseInfoBanner(LicenseExpirationReminderTask.NotificationPeriod.GRACE_ALERT);
 
-        String expected = "\n"
-                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-                + "HAZELCAST LICENSE EXPIRED!\n" + "\n"
-                + "Your license holder is customer@example-company.com, you should have them contact\n"
-                + "our license renewal department, urgently on info@hazelcast.com\n" + "or call us on +1 (650) 521-5453\n" + "\n"
-                + "Please quote license id CUSTOM_TEST_KEY\n\n"
-                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
+        String expected = format("%n"
+                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%n"
+                + "HAZELCAST LICENSE EXPIRED!%n%n"
+                + "Your license holder is customer@example-company.com, you should have them contact%n"
+                + "our license renewal department, urgently on info@hazelcast.com%n" + "or call us on +1 (650) 521-5453%n%n"
+                + "Please quote license id CUSTOM_TEST_KEY%n%n"
+                + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
 
         assertEquals(expected, actual);

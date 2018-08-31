@@ -5,7 +5,6 @@ import com.hazelcast.config.UserCodeDeploymentConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.usercodedeployment.impl.filter.UserCodeDeploymentAbstractTest;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
@@ -24,7 +23,6 @@ import java.util.Collection;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
@@ -55,7 +53,6 @@ public class UserCodeDeploymentCompatibility_EpAvailableAtLatestVersion_Test ext
     @Test
     @Override
     public void givenSomeMemberCanAccessTheEP_whenTheEPIsFilteredLocally_thenItWillBeLoadedOverNetwork_anonymousInnerClasses() {
-        assumeTrue(Versions.PREVIOUS_CLUSTER_VERSION.isGreaterThan(Versions.V3_8));
         super.givenSomeMemberCanAccessTheEP_whenTheEPIsFilteredLocally_thenItWillBeLoadedOverNetwork_anonymousInnerClasses();
     }
 
@@ -63,22 +60,21 @@ public class UserCodeDeploymentCompatibility_EpAvailableAtLatestVersion_Test ext
     protected void executeSimpleTestScenario(Config config, Config epFilteredConfig, EntryProcessor<Integer, Integer> ep) {
         int keyCount = 100;
 
-        CompatibilityTestHazelcastInstanceFactory factory = (CompatibilityTestHazelcastInstanceFactory) newFactory();
+        lowerOperationTimeouts(config);
+        lowerOperationTimeouts(epFilteredConfig);
+
+        factory = newFactory();
         factory.newInstances(epFilteredConfig, getKnownPreviousVersionsCount());
         HazelcastInstance instanceWithNewEp = factory.newHazelcastInstance(config);
 
-        try {
-            IMap<Integer, Integer> map = instanceWithNewEp.getMap(randomName());
+        IMap<Integer, Integer> map = instanceWithNewEp.getMap(randomName());
 
-            for (int i = 0; i < keyCount; i++) {
-                map.put(i, 0);
-            }
-            map.executeOnEntries(ep);
-            for (int i = 0; i < keyCount; i++) {
-                assertEquals(1, (int) map.get(i));
-            }
-        } finally {
-            factory.shutdownAll();
+        for (int i = 0; i < keyCount; i++) {
+            map.put(i, 0);
+        }
+        map.executeOnEntries(ep);
+        for (int i = 0; i < keyCount; i++) {
+            assertEquals(1, (int) map.get(i));
         }
     }
 }

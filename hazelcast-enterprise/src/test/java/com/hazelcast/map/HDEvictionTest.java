@@ -1,12 +1,18 @@
 package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryStats;
+import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
@@ -23,6 +29,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.map.impl.operation.HDMapOperation.FORCED_EVICTION_RETRY_COUNT;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
+import static java.lang.Math.max;
 import static java.lang.String.valueOf;
 import static org.junit.Assert.assertTrue;
 
@@ -72,6 +79,39 @@ public class HDEvictionTest extends EvictionTest {
         // let's check not everything was evicted
         // this is an extra step, the main goal is to not fail with NativeOutOfMemoryError
         assertTrue(map.size() > 0);
+    }
+
+    @Test
+    @Override
+    public void testEviction_increasingEntrySize() {
+        int maxSizeMB = 10;
+        String mapName = randomMapName();
+
+        MaxSizeConfig maxSizeConfig = new MaxSizeConfig(maxSizeMB, MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE);
+        MapConfig mapConfig = new MapConfig(mapName + "*").setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setMaxSizeConfig(maxSizeConfig).setEvictionPolicy(EvictionPolicy.LRU);
+        Config config = getConfig().addMapConfig(mapConfig);
+        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
+        config.setProperty(GroupProperty.MAP_EVICTION_BATCH_SIZE.getName(), "2");
+
+        HazelcastInstance instance = createHazelcastInstance(config);
+        IMap<Integer, byte[]> map = instance.getMap(mapName);
+
+        EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instance).getNodeExtension();
+        MemoryStats memoryStats = nodeExtension.getMemoryManager().getMemoryStats();
+
+        int perIterationIncrement = 2048;
+        long maxObservedNativeCost = 0;
+        for (int i = 0; i < 1000; i++) {
+            int payloadSizeBytes = i * perIterationIncrement;
+            map.put(i, new byte[payloadSizeBytes]);
+            maxObservedNativeCost = max(maxObservedNativeCost, memoryStats.getUsedNative());
+        }
+
+        double toleranceFactor = 1.2d;
+        long maxAllowedNativeCost = (long) (MemoryUnit.MEGABYTES.toBytes(maxSizeMB) * toleranceFactor);
+        long minAllowedNativeCost = (long) (MemoryUnit.MEGABYTES.toBytes(maxSizeMB) / toleranceFactor);
+        assertBetween("Maximum cost", maxObservedNativeCost, minAllowedNativeCost, maxAllowedNativeCost);
     }
 
     @Test

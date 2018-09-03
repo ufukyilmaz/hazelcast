@@ -140,13 +140,21 @@ public class LicenseExpirationReminderTaskTest
         String expected = format("%n"
                 + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%n"
                 + "HAZELCAST LICENSE EXPIRED!%n%n"
-                + "You are now in a grace period of 1 month(s). The license will expire in 29 days time%n%n"
+                + "You are now in a grace period of 1 month(s). The license will expire in "
+                + countDaysTillSameDayNextMonth(license.getExpiryDate()) + " days time%n%n"
                 + "Your license holder is customer@example-company.com, you should have them contact%n"
                 + "our license renewal department, urgently on info@hazelcast.com%n" + "or call us on +1 (650) 521-5453%n%n"
                 + "Please quote license id CUSTOM_TEST_KEY%n%n"
                 + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
         assertEquals(expected, actual);
+    }
+
+    private int countDaysTillSameDayNextMonth(Date expiryDate) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(expiryDate);
+        cal.add(Calendar.MONTH, 1);
+        return (int) MILLISECONDS.toDays(cal.getTimeInMillis() - currentTimeMillis());
     }
 
     @Test
@@ -207,7 +215,6 @@ public class LicenseExpirationReminderTaskTest
         // Prevents testing from failing due to ms differences in time comparisons
         calendar.add(Calendar.HOUR, -1);
 
-        System.out.println(calendar.getTime());
         when(license.getExpiryDate()).thenReturn(calendar.getTime());
 
         LicenseExpirationReminderTask task = new LicenseExpirationReminderTask(null, license);

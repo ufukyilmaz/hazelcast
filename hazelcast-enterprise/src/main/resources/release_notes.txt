@@ -1,5 +1,18 @@
 This document lists the new features, enhancements, fixed issues and, removed or deprecated features for 3.10.x releases. Note that all the Hazelcast IMDG Open Source features and enhancements are also included in this Hazelcast IMDG Enterprise release notes. The numbers in the square brackets refer to the issues in Hazelcast's GitHub repositories.
 
+==== 3.10.5 ====
+
+1. Fixes
+
+- Added a workaround for the Constructor cache, which performs caching under incorrect keys, such that you have now the option not to use that cache. [#13679]
+- A client connection could not detect whether it has been idle and hence the member closes the connection. This is fixed now so that the member does not close the connections when the clients only listen. [#13576]
+- When a client is waiting for a lock to be released for a period more than invocation timeout seconds and the member dies, the client was getting an operation timeout exception. This behavior is fixed so that the operation is now retried on the new member of that lock. [#13551]
+- By default Hazelcast map evicts just a single entry in each eviction cycle. This was insufficient when inserting entries with increasingly larger payload size - as evicting a single entry cannot make sufficient room for a new (larger) entry. This is fixed by introducing a configurable batch size for map eviction. [#13529]
+- Fixed the incorrect unit declaration in EntryView class' Javadoc: the method getTtl() returns a value in milliseconds, it was declared that it is in seconds. [#13523]
+- When a client is disconnected, the member was cleaning up resources but not the pending invocations. This is fixed so that the member now cleans up the pending invocations. [#13388]
+- In active-active WAN setups, it may happen that remove replication events get routed back to the source cluster where the actual remove replication event is originated from. If in the meantime, a record with the same key has been added in the source cluster, the record is deleted again and this is seen by the source cluster as a data loss. This is fixed by removing operations routed back to the source cluster. [#2340]
+
+
 ==== 3.10.4 ====
 
 1. Enhancements

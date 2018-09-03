@@ -31,11 +31,15 @@ public class TestEnvironmentUtil {
     }
 
     public static void assumeThatNoJDK6() {
-        assumeTrue("Test skipped for Java version 6", JAVA_VERSION_MAJOR != 6);
+        assumeJavaVersionAtLeast(7);
     }
 
     public static void assumeJdk8OrNewer() {
-        assumeTrue("Test skipped for Java versions lower than 8", JAVA_VERSION_MAJOR >= 8);
+        assumeJavaVersionAtLeast(8);
+    }
+
+    public static void assumeJavaVersionAtLeast(int minimalVersion) {
+        assumeTrue("Test skipped for Java versions lower than " + minimalVersion, JAVA_VERSION_MAJOR >= minimalVersion);
     }
 
     /**

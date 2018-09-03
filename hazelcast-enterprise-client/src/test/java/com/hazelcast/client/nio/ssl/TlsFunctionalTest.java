@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 
+import static com.hazelcast.TestEnvironmentUtil.assumeJavaVersionAtLeast;
 import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.IOUtil.copy;
@@ -39,6 +40,7 @@ import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -267,6 +269,36 @@ public class TlsFunctionalTest {
 
         ClientConfig clientConfig = createClientConfig();
         clientConfig.getNetworkConfig().getSSLConfig().setProperty("protocol", "TLS");
+        factory.newHazelcastClient(clientConfig).getMap("test").put("a", "b");
+    }
+
+    /**
+     * Smoke test for TLSv1.3 support in Java 11+.
+     * See <a href="http://openjdk.java.net/jeps/332">http://openjdk.java.net/jeps/332</a>.
+     *
+     * <pre>
+     * Given: Java runtime in version 11 or newer is used and OpenSSL is not enabled.
+     * When: Protocol TLSv1.3 is configured in Hazelcast SSLConfig
+     * Then: Members start successfully, form cluster and client is able to join.
+     * </pre>
+     */
+    @Test
+    public void testTLSv13onJava11() throws IOException {
+        // once the https://github.com/netty/netty-tcnative/issues/256 is fixed, we can remove following assumption:
+        assumeFalse(openSsl);
+        assumeJavaVersionAtLeast(11);
+        Config config = createMemberConfig();
+        SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
+        sslConfig.setProperty("protocol", "TLSv1.3");
+        sslConfig.setProperty("ciphersuites", "TLS_AES_128_GCM_SHA256");
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
+        assertClusterSize(2, hz1, hz2);
+
+        ClientConfig clientConfig = createClientConfig();
+        SSLConfig clientSslConfig = clientConfig.getNetworkConfig().getSSLConfig();
+        clientSslConfig.setProperty("protocol", "TLSv1.3");
+        clientSslConfig.setProperty("ciphersuites", "TLS_AES_128_GCM_SHA256");
         factory.newHazelcastClient(clientConfig).getMap("test").put("a", "b");
     }
 

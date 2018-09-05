@@ -1,61 +1,44 @@
 package com.hazelcast.nio.tcp;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.SymmetricEncryptionConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.HazelcastInstanceFactory;
-import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.NightlyTest;
-import org.junit.After;
+
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.util.Random;
-
 import static org.junit.Assert.assertEquals;
 
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
+
 /**
- * Simple symmetric encryption test with and without provided secret key.
+ * Nightly basic symmetric encryption tests.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(NightlyTest.class)
-public class EncryptionTest extends HazelcastTestSupport {
+public class EncryptionTest extends AbstractSymmetricEncryptionTestBase {
 
-    @After
-    public void tearDown() {
-        HazelcastInstanceFactory.terminateAll();
+    @Test
+    public void testSymmetricEncryption_withPbe() {
+        testSymmetricEncryption(createPbeConfig("secret password", 555));
     }
 
     @Test
-    public void testSymmetricEncryption_withCalculatedKey() {
-        testSymmetricEncryption(null);
+    public void testSymmetricEncryption_withAes() {
+        assumeCipherSupported(CIPHER_AES);
+        // AES key has 128 bits - 16bytes
+        testSymmetricEncryption(createConfig(generateRandomKey(16), CIPHER_AES));
     }
 
-    @Test
-    public void testSymmetricEncryption_withProvidedKey() {
-        byte[] key = new byte[128];
-        new Random().nextBytes(key);
-
-        testSymmetricEncryption(key);
-    }
-
-    private void testSymmetricEncryption(byte[] key) {
-        SymmetricEncryptionConfig encryptionConfig = new SymmetricEncryptionConfig()
-                .setEnabled(true)
-                .setAlgorithm("PBEWithMD5AndDES")
-                .setKey(key);
-
-        Config config = new Config();
-        config.getNetworkConfig().setSymmetricEncryptionConfig(encryptionConfig);
-
-        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
-        HazelcastInstance h3 = Hazelcast.newHazelcastInstance(config);
+    private void testSymmetricEncryption(Config config) {
+        HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config);
+        HazelcastInstance h3 = factory.newHazelcastInstance(config);
 
         assertClusterSize(3, h1, h2, h3);
 

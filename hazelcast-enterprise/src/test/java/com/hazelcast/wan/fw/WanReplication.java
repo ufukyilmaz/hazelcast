@@ -4,6 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
@@ -16,6 +17,7 @@ public class WanReplication {
     private final Cluster targetCluster;
     private final String setupName;
     private final ConsistencyCheckStrategy consistencyCheckStrategy;
+    private final WanPublisherState initialPublisherState;
     private WanReplicationPublisher wanPublisher;
     private Class<? extends WanReplicationPublisher> wanPublisherClass;
 
@@ -26,6 +28,7 @@ public class WanReplication {
         this.wanPublisher = builder.wanPublisher;
         this.wanPublisherClass = builder.wanPublisherClass;
         this.consistencyCheckStrategy = builder.consistencyCheckStrategy;
+        this.initialPublisherState = builder.initialPublisherState;
     }
 
     public static WanReplicationBuilder replicate() {
@@ -72,8 +75,16 @@ public class WanReplication {
         } else {
             target.setClassName(wanPublisherClass.getName());
         }
-        target.getWanSyncConfig()
-              .setConsistencyCheckStrategy(consistencyCheckStrategy);
+
+        if (consistencyCheckStrategy != null) {
+            target.getWanSyncConfig()
+                  .setConsistencyCheckStrategy(consistencyCheckStrategy);
+        }
+
+        if (initialPublisherState != null) {
+            target.setInitialPublisherState(initialPublisherState);
+        }
+
 
         Map<String, Comparable> props = target.getProperties();
         props.put(WanReplicationProperties.GROUP_PASSWORD.key(), config.getGroupConfig().getPassword());
@@ -102,6 +113,7 @@ public class WanReplication {
         private WanReplicationPublisher wanPublisher;
         private Class<? extends WanReplicationPublisher> wanPublisherClass = WanBatchReplication.class;
         private ConsistencyCheckStrategy consistencyCheckStrategy;
+        private WanPublisherState initialPublisherState;
 
         private WanReplicationBuilder() {
         }
@@ -133,6 +145,11 @@ public class WanReplication {
 
         public WanReplicationBuilder withConsistencyCheckStrategy(ConsistencyCheckStrategy consistencyCheckStrategy) {
             this.consistencyCheckStrategy = consistencyCheckStrategy;
+            return this;
+        }
+
+        public WanReplicationBuilder withInitialPublisherState(WanPublisherState initialPublisherState) {
+            this.initialPublisherState = initialPublisherState;
             return this;
         }
 

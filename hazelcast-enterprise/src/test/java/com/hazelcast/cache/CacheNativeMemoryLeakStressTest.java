@@ -4,6 +4,7 @@ import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
+import com.hazelcast.cache.impl.eviction.CacheClearExpiredRecordsTask;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheConfiguration;
@@ -165,7 +166,10 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                 // Set Max Parallel Replications to max value, so that the initial partitions can sync as soon possible.
                 // Due to a race condition in object destruction, it can happen that the sync operation takes place
                 // while a cache is being destroyed which can result in a memory leak.
-                .setProperty(PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), String.valueOf(Integer.MAX_VALUE));
+                .setProperty(PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), String.valueOf(Integer.MAX_VALUE))
+                // the automatic cache expiration task may cleanup some entries during validation and fail assertions
+                // --> we don't want it to kick in during test execution
+                .setProperty(CacheClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS, String.valueOf(Integer.MAX_VALUE));
 
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);

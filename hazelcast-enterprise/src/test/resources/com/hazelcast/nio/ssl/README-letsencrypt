@@ -1,0 +1,6 @@
+This directory contains key and a Let's Encrypt CA signed certificate for a hostname `member1.hazelcast-test.download`:
+
+`privkey.pem`  : the private key for your certificate.
+`fullchain.pem`: host cert + CA cert
+`chain.pem`    : CA cert
+`cert.pem`     : host cert

@@ -4,6 +4,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.handler.ssl.ClientAuth;
+import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 
 import javax.net.ssl.SSLEngine;
@@ -12,25 +13,41 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import static io.netty.handler.ssl.SslProvider.JDK;
 import static io.netty.handler.ssl.SslProvider.OPENSSL;
 import static java.lang.String.format;
+
+import java.io.File;
 
 /**
  * {@link SSLEngineFactory} for OpenSSL.
  */
 public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSLEngineFactory {
 
+    /**
+     * Property name which holds path to a key file (PKCS#8 in PEM format).
+     */
+    public static final String KEY_FILE = "keyFile";
+    /**
+     * Property name which holds password (if any) of the key file.
+     */
+    public static final String KEY_PASSWORD = "keyPassword";
+    /**
+     * Property name which holds path to an X.509 certificate chain file in PEM format.
+     */
+    public static final String KEY_CERT_CHAIN_FILE = "keyCertChainFile";
+    /**
+     * Property name which holds path to an X.509 certificate collection file in PEM format.
+     */
+    public static final String TRUST_CERT_COLLECTION_FILE = "trustCertCollectionFile";
+
     private final ILogger logger = Logger.getLogger(OpenSSLEngineFactory.class);
 
-    private boolean openssl;
     private List<String> cipherSuites;
     private ClientAuth clientAuth;
-
-    // for testing only
-    boolean isOpenssl() {
-        return openssl;
-    }
+    private String keyCertChainFile;
+    private String keyFile;
+    private String keyPassword;
+    private String trustCertCollectionFile;
 
     // for testing only
     List<String> getCipherSuites() {
@@ -40,8 +57,12 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
     @Override
     public void init(Properties properties, boolean forClient) throws Exception {
         load(properties);
+        keyFile = getProperty(properties, KEY_FILE);
+        keyPassword = getProperty(properties, KEY_PASSWORD);
+        keyCertChainFile = getProperty(properties, KEY_CERT_CHAIN_FILE);
+        trustCertCollectionFile = getProperty(properties, TRUST_CERT_COLLECTION_FILE);
+
         this.cipherSuites = loadCipherSuites(properties);
-        this.openssl = loadOpenSslLEnabled(properties);
         this.protocol = loadProtocol(properties);
         this.clientAuth = loadClientAuth(properties);
 
@@ -51,13 +72,10 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
     }
 
     private void logInit() {
-        if (openssl) {
-            logger.info("Using OpenSSL for SSL encryption.");
-        }
+        logger.info("Using OpenSSL for SSL encryption.");
 
         if (logger.isFineEnabled()) {
             logger.fine("ciphersuites: " + (cipherSuites.isEmpty() ? "default" : cipherSuites));
-            logger.fine("useOpenSSL: " + openssl);
             logger.fine("clientAuth: " + clientAuth);
         }
     }
@@ -102,18 +120,6 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
         serverEngine.closeOutbound();
     }
 
-    private boolean loadOpenSslLEnabled(Properties properties) {
-        String value = getProperty(properties, "openssl", "true").trim();
-        if ("true".equals(value)) {
-            return true;
-        } else if ("false".equals(value)) {
-            return false;
-        } else {
-            throw new IllegalArgumentException(
-                    format("Unrecognized value [%s] for [%s]", value, JAVA_NET_SSL_PREFIX + "openssl"));
-        }
-    }
-
     private List<String> loadCipherSuites(Properties properties) {
         String[] items = getProperty(properties, "ciphersuites", "").split(",");
         List<String> cipherSuites = new ArrayList<String>(items.length);
@@ -144,29 +150,50 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
     @Override
     public SSLEngine create(boolean clientMode) {
         try {
-            SslContextBuilder builder;
-            if (clientMode) {
-                builder = SslContextBuilder.forClient()
-                        .keyManager(kmf)
-                        .trustManager(tmf);
-            } else {
-                builder = SslContextBuilder.forServer(kmf)
-                        .trustManager(tmf);
-                // client authentication is a server-side setting. Doesn't need to be set on the client-side.
-                builder.clientAuth(clientAuth);
-            }
-
-            if (!cipherSuites.isEmpty()) {
-                builder.ciphers(cipherSuites);
-            }
-
-            builder.sslProvider(openssl ? OPENSSL : JDK);
-
-            SSLEngine engine = builder.build().newEngine(UnpooledByteBufAllocator.DEFAULT);
+            SslContext context = createSslContext(clientMode);
+            SSLEngine engine = context.newEngine(UnpooledByteBufAllocator.DEFAULT);
             engine.setEnabledProtocols(new String[]{protocol});
             return engine;
         } catch (SSLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected SslContext createSslContext(boolean clientMode) throws SSLException {
+        SslContextBuilder builder = createSslContextBuilder(clientMode);
+
+        if (trustCertCollectionFile != null) {
+            builder.trustManager(new File(trustCertCollectionFile));
+        } else {
+            builder.trustManager(tmf);
+        }
+
+        if (!cipherSuites.isEmpty()) {
+            builder.ciphers(cipherSuites);
+        }
+
+        builder.sslProvider(OPENSSL);
+        return builder.build();
+    }
+
+    private SslContextBuilder createSslContextBuilder(boolean clientMode) {
+        SslContextBuilder builder;
+        File certChain = keyCertChainFile != null ? new File(keyCertChainFile) : null;
+        File key = keyFile != null ? new File(keyFile) : null;
+        if (clientMode) {
+            builder = SslContextBuilder.forClient();
+            if (key != null) {
+                builder.keyManager(certChain, key, keyPassword);
+            } else {
+                builder.keyManager(kmf);
+            }
+        } else {
+            builder = key != null
+                    ? SslContextBuilder.forServer(certChain, key, keyPassword)
+                    : SslContextBuilder.forServer(kmf);
+            // client authentication is a server-side setting. Doesn't need to be set on the client-side.
+            builder.clientAuth(clientAuth);
+        }
+        return builder;
     }
 }

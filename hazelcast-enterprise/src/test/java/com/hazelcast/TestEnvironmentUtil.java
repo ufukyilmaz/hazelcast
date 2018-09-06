@@ -1,16 +1,29 @@
 package com.hazelcast;
 
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.ssl.PatchedLog4j2NettyLoggerFactory;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+
 import org.apache.logging.log4j.spi.ExtendedLoggerWrapper;
 
+import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.nio.IOUtil.copy;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class TestEnvironmentUtil {
 
     public static final String JAVA_VERSION = System.getProperty("java.version");
     public static final int JAVA_VERSION_MAJOR;
+
+    private static final ILogger LOGGER = Logger.getLogger(TestEnvironmentUtil.class);
 
     static {
         String[] versionParts = JAVA_VERSION.split("\\.");
@@ -47,12 +60,36 @@ public class TestEnvironmentUtil {
      */
     public static boolean isOpenSslSupported() {
         patchOpenSslLogging();
-        return Boolean.getBoolean("openssl.enforce") || (OpenSsl.isAvailable() && !isIbmJvm());
+        return Boolean.getBoolean("openssl.enforce") || OpenSsl.isAvailable();
     }
 
     public static boolean isIbmJvm() {
         String vendor = System.getProperty("java.vendor");
         return vendor.startsWith("IBM");
+    }
+
+    /**
+     * Copies a resource file from given class package to target folder. The target is
+     * denoted by given {@link java.io.File} instance.
+     */
+    public static File copyTestResource(Class<?> testClass, File targetFolder, String resourceName) {
+        File targetFile = new File(targetFolder, resourceName);
+        if (!targetFile.exists()) {
+            try {
+                assertTrue(targetFile.createNewFile());
+                LOGGER.info("Copying test resource to file " + targetFile.getAbsolutePath());
+                InputStream is = null;
+                try {
+                    is = testClass.getResourceAsStream(resourceName);
+                    copy(is, targetFile);
+                } finally {
+                    closeResource(is);
+                }
+            } catch (IOException e) {
+                fail("Unable to copy test resource " + resourceName + " to " + targetFolder + ": " + e.getMessage());
+            }
+        }
+        return targetFile;
     }
 
     private static void patchOpenSslLogging() {

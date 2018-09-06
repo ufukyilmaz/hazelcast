@@ -8,12 +8,11 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
-import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -47,8 +46,8 @@ import static org.junit.Assume.assumeTrue;
  * Functional TLS tests.
  */
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({ QuickTest.class, ParallelTest.class })
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
+@Category({ QuickTest.class })
 public class TlsFunctionalTest {
 
     private static final String KEYSTORE_SERVER = "server.keystore";

@@ -14,8 +14,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static com.hazelcast.util.TimeUtil.zeroOutMs;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -43,7 +42,7 @@ public class HDRecordTest extends HazelcastTestSupport {
 
     @Test
     public void testRecordDataCorrectness() {
-        long creationTime = zeroOutMillis(Clock.currentTimeMillis());
+        long creationTime = zeroOutMs(Clock.currentTimeMillis());
         long lastUpdatedTime = creationTime + 10000;
         long lastAccessTime = creationTime + 20000;
         long lastStoredTime = creationTime + 30000;
@@ -95,12 +94,8 @@ public class HDRecordTest extends HazelcastTestSupport {
         record.setCreationTime(creationTime);
         record.setExpirationTime(expirationTime);
 
-        assertEquals(zeroOutMillis(creationTime), record.getCreationTime());
-        assertEquals(zeroOutMillis(expirationTime), record.getExpirationTime());
-    }
-
-    private long zeroOutMillis(long value) {
-        return SECONDS.toMillis(MILLISECONDS.toSeconds(value));
+        assertEquals(zeroOutMs(creationTime), record.getCreationTime());
+        assertEquals(zeroOutMs(expirationTime), record.getExpirationTime());
     }
 
     private long randomLong() {

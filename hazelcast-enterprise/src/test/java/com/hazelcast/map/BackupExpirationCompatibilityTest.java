@@ -28,6 +28,7 @@ import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static com.hazelcast.spi.partition.IPartition.MAX_BACKUP_COUNT;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static java.lang.Math.min;
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -75,12 +76,17 @@ public class BackupExpirationCompatibilityTest extends HazelcastTestSupport {
 
         assertEquals(ENTRY_COUNT * REPLICA_COUNT, totalEntryCountOnNodes(instances));
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertEquals(0, totalEntryCountOnNodes(instances));
-            }
-        }, 240);
+        try {
+            assertTrueEventually(new AssertTask() {
+                @Override
+                public void run() {
+                    assertEquals(0, totalEntryCountOnNodes(instances));
+                }
+            }, 240);
+        } catch (AssertionError e) {
+            dumpEntryCounts();
+            throw e;
+        }
     }
 
     private Config newConfig() {
@@ -95,6 +101,17 @@ public class BackupExpirationCompatibilityTest extends HazelcastTestSupport {
                 .setInMemoryFormat(inMemoryFormat);
 
         return config;
+    }
+
+    private void dumpEntryCounts() {
+        for (HazelcastInstance instance : instances) {
+            IMap map = instance.getMap(MAP_NAME);
+            LocalMapStats stats = map.getLocalMapStats();
+            long ownedEntryCount = stats.getOwnedEntryCount();
+            long backupEntryCount = stats.getBackupEntryCount();
+            System.out.println(format("Instance %s, owned entries: %d, backup entries: %d", instance.getCluster().getLocalMember(),
+                    ownedEntryCount, backupEntryCount));
+        }
     }
 
     private static long totalEntryCountOnNodes(HazelcastInstance[] instances) {

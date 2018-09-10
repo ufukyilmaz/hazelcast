@@ -5,6 +5,7 @@ import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.ClusterHotRestartStatus;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.MemberHotRestartStatus;
+import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus;
 
 import java.util.Collection;
@@ -44,7 +45,9 @@ public final class ClusterHotRestartStatusDTOUtil {
                 new HashMap<String, MemberHotRestartStatus>(restoredMembers.size());
 
         for (MemberImpl member : restoredMembers) {
-            memberHotRestartStatusMap.put(member.toString(), getMemberHotRestartStatus(clusterMetadataManager, member));
+            Address address = member.getAddress();
+            memberHotRestartStatusMap.put(address.getHost() + ":" + address.getPort(),
+                    getMemberHotRestartStatus(clusterMetadataManager, member));
         }
         return memberHotRestartStatusMap;
     }

@@ -83,10 +83,10 @@ public class ClusterHotRestartStatusDTOUtilTest extends HazelcastTestSupport {
         assertEquals(42L, dto.getRemainingDataLoadTimeMillis());
 
         Map<String, MemberHotRestartStatus> restartStatusMap = dto.getMemberHotRestartStatusMap();
-        assertEquals(MemberHotRestartStatus.PENDING, restartStatusMap.get(localMember.toString()));
-        assertEquals(MemberHotRestartStatus.LOAD_IN_PROGRESS, restartStatusMap.get(loadInProgressMember.toString()));
-        assertEquals(MemberHotRestartStatus.FAILED, restartStatusMap.get(loadFailedMember.toString()));
-        assertEquals(MemberHotRestartStatus.SUCCESSFUL, restartStatusMap.get(loadSuccessfulMember.toString()));
+        assertEquals(MemberHotRestartStatus.PENDING, restartStatusMap.get(getAddress(localMember)));
+        assertEquals(MemberHotRestartStatus.LOAD_IN_PROGRESS, restartStatusMap.get(getAddress(loadInProgressMember)));
+        assertEquals(MemberHotRestartStatus.FAILED, restartStatusMap.get(getAddress(loadFailedMember)));
+        assertEquals(MemberHotRestartStatus.SUCCESSFUL, restartStatusMap.get(getAddress(loadSuccessfulMember)));
     }
 
     @Test
@@ -105,5 +105,9 @@ public class ClusterHotRestartStatusDTOUtilTest extends HazelcastTestSupport {
         ClusterHotRestartStatusDTO dto = create(manager);
 
         assertEquals(ClusterHotRestartStatus.FAILED, dto.getHotRestartStatus());
+    }
+
+    private String getAddress(MemberImpl member) {
+        return member.getAddress().getHost() + ":" + member.getAddress().getPort();
     }
 }

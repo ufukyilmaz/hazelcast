@@ -33,7 +33,7 @@ public class WanCounterSyncTest extends MapWanReplicationTestSupport {
 
     @Before
     public void setUp() {
-        setupReplicateFrom(configA, configB, clusterB.length, REPLICATION_NAME, PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configA, configB, singleNodeB.length, REPLICATION_NAME, PassThroughMergePolicy.class.getName());
         executorService = Executors.newSingleThreadScheduledExecutor();
     }
 
@@ -45,8 +45,8 @@ public class WanCounterSyncTest extends MapWanReplicationTestSupport {
 
     @Test
     public void testCountersReachZeroAfterSyncingInParallelWithLoad() throws Exception {
-        startClusterA();
-        startClusterB();
+        initCluster(singleNodeA, configA);
+        initCluster(singleNodeB, configB);
 
         executorService.scheduleAtFixedRate(new SyncTask(), 10, 100, MILLISECONDS);
         executorService.submit(new LoadTask())
@@ -68,7 +68,7 @@ public class WanCounterSyncTest extends MapWanReplicationTestSupport {
     private class LoadTask implements Runnable {
         @Override
         public void run() {
-            final IMap<Object, Object> map = clusterA[0].getMap(MAP_NAME);
+            final IMap<Object, Object> map = singleNodeA[0].getMap(MAP_NAME);
             for (int i = 0; i < 1000; i++) {
                 if (i % 10 == 0) {
                     map.put(i, i);
@@ -110,7 +110,7 @@ public class WanCounterSyncTest extends MapWanReplicationTestSupport {
                     }
                 }
             }
-        }, 5);
+        });
     }
 
     private int getPrimaryOutboundQueueSize(HazelcastInstance instance) {

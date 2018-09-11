@@ -37,7 +37,7 @@ public final class EnterpriseMapPartitionClearOperation extends Operation
     }
 
     @Override
-    public void run() throws Exception {
+    public void run() {
         try {
             int partitionId = getPartitionId();
             MapService mapService = getService();
@@ -60,7 +60,6 @@ public final class EnterpriseMapPartitionClearOperation extends Operation
             }
         };
     }
-
 
     @Override
     public boolean returnsResponse() {

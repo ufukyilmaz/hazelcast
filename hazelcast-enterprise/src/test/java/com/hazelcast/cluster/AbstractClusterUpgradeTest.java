@@ -2,21 +2,35 @@ package com.hazelcast.cluster;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.SampleLicense;
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.cluster.ClusterVersionListener;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
+import com.hazelcast.license.domain.License;
+import com.hazelcast.license.util.LicenseHelper;
+import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.Versions.CURRENT_CLUSTER_VERSION;
+import static com.hazelcast.license.domain.Feature.ROLLING_UPGRADE;
+import static com.hazelcast.spi.properties.GroupProperty.ENTERPRISE_LICENSE_KEY;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static org.junit.Assert.assertEquals;
 
@@ -25,6 +39,8 @@ import static org.junit.Assert.assertEquals;
  * <p>
  * This test uses artificial version numbers, to avoid dependence on any particular version.
  */
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @SuppressWarnings("WeakerAccess")
 public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
 
@@ -62,16 +78,39 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
+    @Parameter
+    public String licenseKey;
+
+    protected License license;
     protected HazelcastInstance[] clusterMembers;
+
+    @Parameters
+    public static Iterable<Object[]> parameters() {
+        return Arrays.asList(
+                new Object[] {SampleLicense.UNLIMITED_LICENSE_PRE_ROLLING_UPGRADE},
+                new Object[] {SampleLicense.UNLIMITED_LICENSE}
+        );
+    }
 
     @Before
     public final void setupCluster() {
+        System.setProperty(ENTERPRISE_LICENSE_KEY.getName(), licenseKey);
         // initialize a cluster at version 2.1.0
         System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, MEMBER_VERSION_CURRENT.toString());
         clusterMembers = new HazelcastInstance[CLUSTER_MEMBERS_COUNT];
         for (int i = 0; i < CLUSTER_MEMBERS_COUNT; i++) {
             clusterMembers[i] = createHazelcastInstance(MEMBER_VERSION_CURRENT, getConfig());
         }
+        license = LicenseHelper.getLicense(licenseKey, BuildInfoProvider.getBuildInfo().getVersion());
+    }
+
+    @After
+    public void tearDown() {
+        for (HazelcastInstance hz : clusterMembers) {
+            hz.shutdown();
+        }
+        System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
+        System.clearProperty(ENTERPRISE_LICENSE_KEY.getName());
     }
 
     @Test
@@ -82,26 +121,19 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void test_upgradeMinorVersion_isAllowed() {
-        upgradeInstances(clusterMembers, MEMBER_VERSION_NEXT_MINOR, getConfig());
-        getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_NEXT_MINOR);
-        assertClusterVersion(clusterMembers, CLUSTER_VERSION_NEXT_MINOR);
-        assertNodesVersion(MEMBER_VERSION_NEXT_MINOR);
-    }
-
-    // according to spec one should be able to only upgrade one minor version at a time
-    // in the implementation, this condition is relaxed on purpose
-    @Test
-    public void test_upgradeTwoMinorVersions_isAllowed() {
-        upgradeInstances(clusterMembers, MEMBER_VERSION_2NEXT_MINOR, getConfig());
-        getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_2NEXT_MINOR);
-        assertClusterVersion(clusterMembers, CLUSTER_VERSION_2NEXT_MINOR);
-        assertNodesVersion(MEMBER_VERSION_2NEXT_MINOR);
+    public void test_upgradeMinorVersion_isAllowed_whenRULicensed() {
+        testUpgradeMinorVersion(MEMBER_VERSION_NEXT_MINOR, CLUSTER_VERSION_NEXT_MINOR);
     }
 
     @Test
-    public void test_downgradeClusterVersionAllowed_afterMinorVersionUpgrade() {
+    public void test_downgradeClusterVersionAllowed_afterMinorVersionUpgrade_whenRULicensed() {
+        if (!isRollingUpgradeLicensed()) {
+            // when RU is not licensed, we expect upgraded node startup to fail with:
+            // java.lang.IllegalStateException: Node failed to start!
+            expectedException.expect(IllegalStateException.class);
+        }
         upgradeInstances(clusterMembers, MEMBER_VERSION_NEXT_MINOR, getConfig());
+        // test ends here when RU is not licensed
         getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_NEXT_MINOR);
         assertClusterVersion(clusterMembers, CLUSTER_VERSION_NEXT_MINOR);
         assertNodesVersion(MEMBER_VERSION_NEXT_MINOR);
@@ -126,13 +158,25 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
 
     @Test
     public void test_decreaseClusterVersion_allowedForCompatibleMinorVersions() {
+        if (!isRollingUpgradeLicensed()) {
+            // when RU is not licensed, we expect upgraded node startup to fail with:
+            // java.lang.IllegalStateException: Node failed to start!
+            expectedException.expect(VersionMismatchException.class);
+        }
         getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_PREVIOUS_MINOR);
+        // test ends here when RU is not licensed
         assertClusterVersion(clusterMembers, CLUSTER_VERSION_PREVIOUS_MINOR);
     }
 
     @Test
     public void test_decreaseClusterVersion_disallowedForIncompatibleMinorVersions() {
+        if (!isRollingUpgradeLicensed()) {
+            // when RU is not licensed, we expect upgraded node startup to fail with:
+            // java.lang.IllegalStateException: Node failed to start!
+            expectedException.expect(IllegalStateException.class);
+        }
         upgradeInstances(clusterMembers, MEMBER_VERSION_NEXT_MINOR, getConfig());
+        // test ends here when RU is not licensed
         getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_NEXT_MINOR);
         assertClusterVersion(clusterMembers, CLUSTER_VERSION_NEXT_MINOR);
         assertNodesVersion(MEMBER_VERSION_NEXT_MINOR);
@@ -145,8 +189,14 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
     // member fails to join.
     @Test
     public void test_memberIncompatibleToNewClusterVersionDoesNotJoin_duringClusterVersionChange() {
+        if (!isRollingUpgradeLicensed()) {
+            // when RU is not licensed, we expect upgraded node startup to fail with:
+            // java.lang.IllegalStateException: Node failed to start!
+            expectedException.expect(IllegalStateException.class);
+        }
         // upgrade cluster from 2.1.0 to 2.2.0
         upgradeInstances(clusterMembers, MEMBER_VERSION_NEXT_MINOR, getConfig());
+        // test ends here when RU is not licensed
 
         // register a sleepy listener that will make new cluster version commit phase last at least 5 seconds
         getNode(clusterMembers[0]).getNodeExtension().registerListener(new ClusterVersionListener() {
@@ -230,5 +280,24 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
         for (int i = 0; i < CLUSTER_MEMBERS_COUNT; i++) {
             assertEquals(version, getNode(clusterMembers[i]).getVersion());
         }
+    }
+
+    boolean isRollingUpgradeLicensed() {
+        return license.getFeatures().contains(ROLLING_UPGRADE);
+    }
+
+    // tests upgrade of members to next minor version: should succeed when RU is licensed, otherwise
+    // upgraded members fail to connect to previous-minor-version cluster
+    private void testUpgradeMinorVersion(MemberVersion nextMemberVersion, Version nextClusterVersion) {
+        if (!isRollingUpgradeLicensed()) {
+            // when RU is not licensed, we expected upgraded node startup to fail with:
+            // java.lang.IllegalStateException: Node failed to start!
+            expectedException.expect(IllegalStateException.class);
+        }
+        upgradeInstances(clusterMembers, nextMemberVersion, getConfig());
+        // when RU is not licensed, test should have already thrown exception
+        getClusterService(clusterMembers[0]).changeClusterVersion(nextClusterVersion);
+        assertClusterVersion(clusterMembers, nextClusterVersion);
+        assertNodesVersion(nextMemberVersion);
     }
 }

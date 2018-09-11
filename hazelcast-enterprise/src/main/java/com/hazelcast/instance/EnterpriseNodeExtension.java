@@ -156,6 +156,10 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         createSocketInterceptor(node.config.getNetworkConfig());
     }
 
+    private boolean isRollingUpgradeLicensed() {
+        return license.getFeatures().contains(Feature.ROLLING_UPGRADE);
+    }
+
     private void createSecurityContext(Node node) {
         boolean securityEnabled = node.getConfig().getSecurityConfig().isEnabled();
         if (securityEnabled) {
@@ -523,7 +527,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public void validateJoinRequest(JoinMessage joinRequest) {
-        validateJoiningMemberVersion(joinRequest);
+        if (isRollingUpgradeLicensed()) {
+            validateJoiningMemberVersion(joinRequest);
+        } else {
+            // when license does not allow RU, apply OS rules for validating join request
+            super.validateJoinRequest(joinRequest);
+        }
         NativeMemoryConfig memoryConfig = node.getConfig().getNativeMemoryConfig();
         if (!memoryConfig.isEnabled()) {
             return;
@@ -571,6 +580,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
      */
     @Override
     public boolean isNodeVersionCompatibleWith(Version clusterVersion) {
+        if (!isRollingUpgradeLicensed()) {
+            // when license does not allow RU, apply OS rules: node version is only
+            // compatible with its own major.minor cluster version
+            return super.isNodeVersionCompatibleWith(clusterVersion);
+        }
+
         Preconditions.checkNotNull(clusterVersion);
 
         // there is no compatibility between major versions

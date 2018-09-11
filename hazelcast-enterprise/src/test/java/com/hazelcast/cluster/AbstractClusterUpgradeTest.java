@@ -89,16 +89,6 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
         assertNodesVersion(MEMBER_VERSION_NEXT_MINOR);
     }
 
-    // according to spec one should be able to only upgrade one minor version at a time
-    // in the implementation, this condition is relaxed on purpose
-    @Test
-    public void test_upgradeTwoMinorVersions_isAllowed() {
-        upgradeInstances(clusterMembers, MEMBER_VERSION_2NEXT_MINOR, getConfig());
-        getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_2NEXT_MINOR);
-        assertClusterVersion(clusterMembers, CLUSTER_VERSION_2NEXT_MINOR);
-        assertNodesVersion(MEMBER_VERSION_2NEXT_MINOR);
-    }
-
     @Test
     public void test_downgradeClusterVersionAllowed_afterMinorVersionUpgrade() {
         upgradeInstances(clusterMembers, MEMBER_VERSION_NEXT_MINOR, getConfig());

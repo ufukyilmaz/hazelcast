@@ -268,7 +268,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     public void setTtlDoesNotUpdateMerkleTree() {
         map.put("42", "42");
         int rootHashBeforeSetTtl = rootHash();
-        map.setTTL("42", 1, SECONDS);
+        map.setTtl("42", 1, SECONDS);
         assertEquals(rootHashBeforeSetTtl, rootHash());
     }
 

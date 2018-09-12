@@ -39,7 +39,7 @@ public class CacheSetExpiryPolicyOperation extends BackupAwareHiDensityCacheOper
         if (recordStore == null) {
             return;
         }
-        recordStore.setExpiryPolicy(keys, expiryPolicy, getCallerUuid());
+        response = recordStore.setExpiryPolicy(keys, expiryPolicy, getCallerUuid());
         atLeastOneSucceeded = true;
     }
 

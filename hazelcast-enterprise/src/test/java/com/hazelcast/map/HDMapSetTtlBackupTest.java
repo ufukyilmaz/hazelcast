@@ -19,7 +19,7 @@ import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDA
 @Category({QuickTest.class, ParallelTest.class})
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
-public class HDMapSetTTLBackupTest extends MapSetTTLBackupTest {
+public class HDMapSetTtlBackupTest extends MapSetTtlBackupTest {
 
     @Parameters(name = "inMemoryFormat:{0}")
     public static Object[] memoryFormat() {

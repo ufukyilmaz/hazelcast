@@ -43,6 +43,7 @@ import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryExpiredListener;
 import javax.cache.event.CacheEntryListenerException;
+import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
@@ -240,6 +241,26 @@ public class CacheTest extends AbstractCacheTest {
         assertEquals(0, cache.size());
     }
 
+    @Test
+    public void testSetExpiryPolicyReturnsTrue() {
+        ICache<Integer, String> cache = createCache();
+        cache.put(1, "value");
+        assertTrue(cache.setExpiryPolicy(1, new TouchedExpiryPolicy(Duration.FIVE_MINUTES)));
+    }
+
+    @Test
+    public void testSetExpiryPolicyReturnsFalse_whenKeyDoesNotExist() {
+        ICache<Integer, String> cache = createCache();
+        assertFalse(cache.setExpiryPolicy(1, new TouchedExpiryPolicy(Duration.FIVE_MINUTES)));
+    }
+
+    @Test
+    public void testSetExpiryPolicyReturnsFalse_whenKeyIsAlreadyExpired() {
+        ICache<Integer, String> cache = createCache();
+        cache.put(1, "value", new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 1)));
+        sleepAtLeastSeconds(5);
+        assertFalse(cache.setExpiryPolicy(1, new TouchedExpiryPolicy(Duration.FIVE_MINUTES)));
+    }
 
     @Test
     public void testRecordExpiryPolicyTakesPrecedenceOverCachePolicy() {

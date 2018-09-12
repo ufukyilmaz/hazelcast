@@ -431,7 +431,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    public void setTTL() {
+    public void setTtl() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();
@@ -441,14 +441,14 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         IMap<Integer, Integer> map = getMap(clusterA, "map");
 
         for (int i = 0; i < 100; i++) {
-            map.setTTL(i, 1, TimeUnit.SECONDS);
+            map.setTtl(i, 1, TimeUnit.SECONDS);
         }
 
         assertKeysNotInEventually(clusterB, "map", 0, 100);
     }
 
     @Test
-    public void setTTL_twoWay() {
+    public void setTtl_twoWay() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
         startClusterA();
@@ -460,8 +460,8 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         IMap<Integer, Integer> mapB = getMap(clusterB, "map");
 
         for (int i = 0; i < 50; i++) {
-            mapA.setTTL(i, 1, TimeUnit.SECONDS);
-            mapB.setTTL(i + 50, 1, TimeUnit.SECONDS);
+            mapA.setTtl(i, 1, TimeUnit.SECONDS);
+            mapB.setTtl(i + 50, 1, TimeUnit.SECONDS);
         }
         assertKeysNotInEventually(clusterB, "map", 0, 50);
         assertKeysNotInEventually(clusterA, "map", 50, 100);

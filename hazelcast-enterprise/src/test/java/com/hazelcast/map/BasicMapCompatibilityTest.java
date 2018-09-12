@@ -40,4 +40,31 @@ public class BasicMapCompatibilityTest extends BasicMapTest {
         Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
         super.testExtendTTLOfAKeyBeforeItExpires();
     }
+
+    /**
+     * This method can be removed once 3.11 is released
+     */
+    @Override
+    public void testSetTtlReturnsTrue() {
+        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
+        super.testSetTtlReturnsTrue();
+    }
+
+    /**
+     * This method can be removed once 3.11 is released
+     */
+    @Override
+    public void testSetTtlReturnsFalse_whenKeyDoesNotExist() {
+        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
+        super.testSetTtlReturnsFalse_whenKeyDoesNotExist();
+    }
+
+    /**
+     * This method can be removed once 3.11 is released
+     */
+    @Override
+    public void testSetTtlReturnsFalse_whenKeyIsAlreadyExpired() {
+        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
+        super.testSetTtlReturnsFalse_whenKeyIsAlreadyExpired();
+    }
 }

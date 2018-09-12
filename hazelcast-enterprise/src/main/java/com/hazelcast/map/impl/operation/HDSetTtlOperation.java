@@ -6,13 +6,15 @@ import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
-public class HDSetTTLOperation extends HDLockAwareOperation implements BackupAwareOperation, MutatingOperation {
+public class HDSetTtlOperation extends HDLockAwareOperation implements BackupAwareOperation, MutatingOperation {
 
-    public HDSetTTLOperation() {
+    private transient boolean response;
+
+    public HDSetTtlOperation() {
 
     }
 
-    public HDSetTTLOperation(String name, Data dataKey, long ttl) {
+    public HDSetTtlOperation(String name, Data dataKey, long ttl) {
         super(name, dataKey, ttl, -1);
     }
 
@@ -23,7 +25,12 @@ public class HDSetTTLOperation extends HDLockAwareOperation implements BackupAwa
 
     @Override
     protected void runInternal() {
-        recordStore.setTTL(dataKey, ttl);
+        response = recordStore.setTtl(dataKey, ttl);
+    }
+
+    @Override
+    public Object getResponse() {
+        return response;
     }
 
     @Override
@@ -59,6 +66,6 @@ public class HDSetTTLOperation extends HDLockAwareOperation implements BackupAwa
 
     @Override
     public Operation getBackupOperation() {
-        return new HDSetTTLBackupOperation(name, dataKey, ttl);
+        return new HDSetTtlBackupOperation(name, dataKey, ttl);
     }
 }

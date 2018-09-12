@@ -16,7 +16,7 @@ import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.setFi
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(CompatibilityTest.class)
-public class HDMapSetTTLBackupCompatibilityTest extends HDMapSetTTLBackupTest {
+public class HDMapSetTtlBackupCompatibilityTest extends HDMapSetTtlBackupTest {
 
     @Rule
     // RU_COMPAT_3_10

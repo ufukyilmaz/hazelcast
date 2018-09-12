@@ -570,13 +570,13 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
         constructors[SET_TTL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDSetTTLOperation();
+                return new HDSetTtlOperation();
             }
         };
         constructors[SET_TTL_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDSetTTLBackupOperation();
+                return new HDSetTtlBackupOperation();
             }
         };
         constructors[MERKLE_TREE_NODE_COMPARE_OPERATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {

@@ -42,7 +42,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -156,15 +155,14 @@ public abstract class AbstractHDCacheOperationTest {
                 }
                 return;
             case SET_EXPIRY_POLICY:
+                OngoingStubbing<Boolean> expiryPolicyStub = when(recordStore.setExpiryPolicy(ArgumentMatchers.<Data>anyCollection(), any(Data.class), anyString()));
                 if (throwNativeOOME) {
-                    doNothing().doNothing().doNothing()
-                            .doThrow(exception).doThrow(exception)
-                            .doThrow(exception).doThrow(exception)
-                            .doThrow(exception).doThrow(exception)
-                            .doNothing().when(recordStore).setExpiryPolicy(ArgumentMatchers.<Data>anyCollection(), any(), anyString());
+                    expiryPolicyStub.thenReturn(true, true, true)
+                            .thenThrow(exception, exception, exception, exception, exception, exception)
+                            .thenReturn(true);
                     numberOfNativeOOME = 6;
                 } else {
-                    doNothing().when(recordStore).setExpiryPolicy(ArgumentMatchers.<Data>anyCollection(), any(), anyString());
+                    expiryPolicyStub.thenReturn(true);
                     numberOfNativeOOME = 0;
                 }
                 return;

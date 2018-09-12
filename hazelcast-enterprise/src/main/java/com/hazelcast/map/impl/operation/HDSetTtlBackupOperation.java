@@ -3,19 +3,19 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.serialization.Data;
 
-public class HDSetTTLBackupOperation extends HDKeyBasedMapOperation {
+public class HDSetTtlBackupOperation extends HDKeyBasedMapOperation {
 
-    public HDSetTTLBackupOperation() {
+    public HDSetTtlBackupOperation() {
 
     }
 
-    public HDSetTTLBackupOperation(String name, Data dataKey, long ttl) {
+    public HDSetTtlBackupOperation(String name, Data dataKey, long ttl) {
         super(name, dataKey, ttl, -1);
     }
 
     @Override
     protected void runInternal() {
-        recordStore.setTTL(dataKey, ttl);
+        recordStore.setTtl(dataKey, ttl);
     }
 
     @Override

@@ -148,7 +148,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
 
     @Override
     public boolean isDisposed() {
-        return addressQueues[0] == null;
+        return addressQueues[0] == DestroyedAddressQueue.INSTANCE;
     }
 
     @Override
@@ -160,7 +160,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
             AddressQueue q = addressQueues[i];
             if (q != null) {
                 q.destroy();
-                addressQueues[i] = null;
+                addressQueues[i] = DestroyedAddressQueue.INSTANCE;
             }
         }
         disposePageAllocations();

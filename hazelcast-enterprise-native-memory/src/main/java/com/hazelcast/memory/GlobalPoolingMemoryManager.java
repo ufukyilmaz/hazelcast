@@ -482,7 +482,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
             AddressQueue q = addressQueues[i];
             if (q != null) {
                 q.destroy();
-                addressQueues[i] = null;
+                addressQueues[i] = DestroyedAddressQueue.INSTANCE;
             }
         }
         freePageAllocations();

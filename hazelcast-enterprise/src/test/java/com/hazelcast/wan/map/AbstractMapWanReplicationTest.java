@@ -53,6 +53,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.CLEANUP_PERCENTAGE;
+import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.TASK_PERIOD_SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTestSupport {
@@ -826,6 +828,29 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
                 assertEquals(mapEntryCount, store.deleteCount.get());
             }
         });
+    }
+
+    @Test
+    public void maxIdleFromTargetClusterIsUsedForReceivedEntries() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob",
+                PassThroughMergePolicy.class.getName());
+        configA.getMapConfig("default").setMaxIdleSeconds(1);
+        configA.setProperty(CLEANUP_PERCENTAGE.getName(), "100")
+               .setProperty(TASK_PERIOD_SECONDS.getName(), "1");
+        startClusterA();
+        startClusterB();
+
+        final String mapName = "map";
+        createDataIn(clusterA, mapName, 0, 100);
+        assertDataInFromEventually(clusterB, mapName, 0, 100, clusterA);
+
+        assertSizeEventually(0, clusterA[0].getMap(mapName));
+        assertTrueAllTheTime(new AssertTask() {
+            @Override
+            public void run() {
+                assertDataInFrom(clusterB, mapName, 0, 100, clusterA);
+            }
+        }, 10);
     }
 
     private static WanReplicationRef getWanReplicationRefFrom(Config config,

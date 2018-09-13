@@ -16,13 +16,18 @@ public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObje
     /** The policy how to merge the entry on the receiving cluster */
     private Object mergePolicy;
     /** The updated entry */
-    private EntryView<Data, Data> entryView;
+    private WanMapEntryView<Data, Data> entryView;
 
     public EnterpriseMapReplicationUpdate(String mapName, Object mergePolicy,
                                           EntryView<Data, Data> entryView, int backupCount) {
         super(mapName, backupCount);
         this.mergePolicy = mergePolicy;
-        this.entryView = entryView;
+
+        if (entryView instanceof WanMapEntryView) {
+            this.entryView = (WanMapEntryView<Data, Data>) entryView;
+        } else {
+            this.entryView = new WanMapEntryView<Data, Data>(entryView);
+        }
     }
 
     public EnterpriseMapReplicationUpdate() {
@@ -32,7 +37,7 @@ public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObje
         return mergePolicy;
     }
 
-    public EntryView<Data, Data> getEntryView() {
+    public WanMapEntryView<Data, Data> getEntryView() {
         return entryView;
     }
 
@@ -52,7 +57,13 @@ public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObje
     public void readData(ObjectDataInput in) throws IOException {
         super.readData(in);
         mergePolicy = in.readObject();
-        entryView = in.readObject();
+        EntryView<Data, Data> entryView = in.readObject();
+
+        if (entryView instanceof WanMapEntryView) {
+            this.entryView = (WanMapEntryView<Data, Data>) entryView;
+        } else {
+            this.entryView = new WanMapEntryView<Data, Data>(entryView);
+        }
     }
 
     @Override

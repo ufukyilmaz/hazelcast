@@ -13,19 +13,23 @@ import java.io.IOException;
  * WAN replication object for sync requests.
  */
 public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject {
-    private EntryView<Data, Data> entryView;
+    private WanMapEntryView<Data, Data> entryView;
     private transient int partitionId;
 
     public EnterpriseMapReplicationSync(String mapName, EntryView<Data, Data> entryView, int partitionId) {
         super(mapName, 0);
-        this.entryView = entryView;
+        if (entryView instanceof WanMapEntryView) {
+            this.entryView = (WanMapEntryView<Data, Data>) entryView;
+        } else {
+            this.entryView = new WanMapEntryView<Data, Data>(entryView);
+        }
         this.partitionId = partitionId;
     }
 
     public EnterpriseMapReplicationSync() {
     }
 
-    public EntryView<Data, Data> getEntryView() {
+    public WanMapEntryView<Data, Data> getEntryView() {
         return entryView;
     }
 
@@ -42,7 +46,12 @@ public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         super.readData(in);
-        entryView = in.readObject();
+        EntryView<Data, Data> entryView = in.readObject();
+        if (entryView instanceof WanMapEntryView) {
+            this.entryView = (WanMapEntryView<Data, Data>) entryView;
+        } else {
+            this.entryView = new WanMapEntryView<Data, Data>(entryView);
+        }
     }
 
     @Override

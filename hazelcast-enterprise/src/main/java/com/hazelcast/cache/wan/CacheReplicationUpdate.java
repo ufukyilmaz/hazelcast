@@ -14,14 +14,19 @@ import java.io.IOException;
  */
 public class CacheReplicationUpdate extends CacheReplicationObject {
     private String mergePolicy;
-    private CacheEntryView<Data, Data> entryView;
+    private WanCacheEntryView entryView;
 
     public CacheReplicationUpdate(String cacheName, String mergePolicy,
                                   CacheEntryView<Data, Data> entryView,
                                   String managerPrefix, int backupCount) {
         super(cacheName, managerPrefix, backupCount);
         this.mergePolicy = mergePolicy;
-        this.entryView = entryView;
+
+        if (entryView instanceof WanCacheEntryView) {
+            this.entryView = (WanCacheEntryView) entryView;
+        } else {
+            this.entryView = new WanCacheEntryView(entryView);
+        }
     }
 
     public CacheReplicationUpdate() {
@@ -31,7 +36,7 @@ public class CacheReplicationUpdate extends CacheReplicationObject {
         return mergePolicy;
     }
 
-    public CacheEntryView<Data, Data> getEntryView() {
+    public WanCacheEntryView getEntryView() {
         return entryView;
     }
 
@@ -51,7 +56,13 @@ public class CacheReplicationUpdate extends CacheReplicationObject {
     public void readData(ObjectDataInput in) throws IOException {
         super.readData(in);
         mergePolicy = in.readUTF();
-        entryView = in.readObject();
+        CacheEntryView<Data, Data> entryView = in.readObject();
+
+        if (entryView instanceof WanCacheEntryView) {
+            this.entryView = (WanCacheEntryView) entryView;
+        } else {
+            this.entryView = new WanCacheEntryView(entryView);
+        }
     }
 
     @Override

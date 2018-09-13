@@ -13,7 +13,6 @@ import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperatio
 import com.hazelcast.cache.hotrestart.HotRestartEnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
-import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
 import com.hazelcast.cache.impl.merge.entry.LazyCacheEntryView;
 import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
 import com.hazelcast.cache.impl.wan.CacheFilterProvider;
@@ -23,6 +22,7 @@ import com.hazelcast.cache.operation.WANAwareCacheOperationProvider;
 import com.hazelcast.cache.wan.CacheReplicationRemove;
 import com.hazelcast.cache.wan.CacheReplicationSupportingService;
 import com.hazelcast.cache.wan.CacheReplicationUpdate;
+import com.hazelcast.cache.wan.WanCacheEntryView;
 import com.hazelcast.cache.wan.filter.CacheWanEventFilter;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.HotRestartConfig;
@@ -587,14 +587,13 @@ public class EnterpriseCacheService
                         new CacheReplicationUpdate(
                                 config.getName(),
                                 cacheMergePolicies.get(cacheName),
-                                new DefaultCacheEntryView(
+                                new WanCacheEntryView(
                                         cacheEventContext.getDataKey(),
                                         cacheEventContext.getDataValue(),
                                         cacheEventContext.getCreationTime(),
                                         cacheEventContext.getExpirationTime(),
                                         cacheEventContext.getLastAccessTime(),
-                                        cacheEventContext.getAccessHit(),
-                                        cacheEventContext.getExpiryPolicy()),
+                                        cacheEventContext.getAccessHit()),
                                 config.getManagerPrefix(), config.getTotalBackupCount());
                 if (backup) {
                     wanReplicationPublisher.publishReplicationEventBackup(SERVICE_NAME, update);

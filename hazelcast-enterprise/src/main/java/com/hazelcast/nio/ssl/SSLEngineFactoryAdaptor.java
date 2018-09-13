@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
+import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.getProperty;
 import static com.hazelcast.util.StringUtil.intersection;
 import static com.hazelcast.util.StringUtil.splitByComma;
 
@@ -54,7 +55,7 @@ public class SSLEngineFactoryAdaptor implements SSLEngineFactory {
     @Override
     public void init(Properties properties, boolean forClient) throws Exception {
         sslContextFactory.init(properties);
-        String[] configuredCipherSuites = splitByComma(properties.getProperty("ciphersuites"), false);
+        String[] configuredCipherSuites = splitByComma(getProperty(properties, "ciphersuites"), false);
         if (configuredCipherSuites != null) {
             // force using configured cipher suites
             SSLEngine sslEngine = sslContextFactory.getSSLContext().createSSLEngine();
@@ -68,7 +69,7 @@ public class SSLEngineFactoryAdaptor implements SSLEngineFactory {
                         + Arrays.toString(supportedCipherSuites));
             }
         }
-        this.protocol = properties.getProperty("protocol");
+        this.protocol = getProperty(properties, "protocol");
     }
 
     /**

@@ -3,6 +3,7 @@ package com.hazelcast.nio.ssl;
 import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 
 import java.util.Properties;
@@ -52,6 +53,18 @@ public class OpenSSLConnectionTest {
         final HazelcastInstance h1 = factory.newHazelcastInstance(config);
         final HazelcastInstance h2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, h1, h2);
+    }
+
+    @Test
+    public void testEmptyTrust() {
+        Config config = newConfig();
+        config.getNetworkConfig().getSSLConfig().getProperties().remove("trustCertCollectionFile");
+        // cover also the keyManagerFactory case (see OpenSSLConnectionKeyManagerFactoryTest)
+        config.getNetworkConfig().getSSLConfig().getProperties().remove(JAVAX_NET_SSL_TRUST_STORE);
+
+        final HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        final HazelcastInstance h2 = factory.newHazelcastInstance(config);
+        assertClusterSize(1, h1, h2);
     }
 
     @Test(expected = HazelcastException.class)

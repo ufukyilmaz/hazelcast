@@ -9,9 +9,9 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.logging.Logger;
+import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
+import com.hazelcast.nio.ssl.SSLConnectionTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -27,16 +27,13 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collection;
 
 import static com.hazelcast.TestEnvironmentUtil.assumeJavaVersionAtLeast;
+import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
-import static com.hazelcast.nio.IOUtil.closeResource;
-import static com.hazelcast.nio.IOUtil.copy;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -63,8 +60,6 @@ public class TlsFunctionalTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
-
-    private final ILogger logger = Logger.getLogger(TlsFunctionalTest.class);
 
     private final TestAwareClientFactory factory = new TestAwareClientFactory();
 
@@ -315,6 +310,84 @@ public class TlsFunctionalTest {
     }
 
     /**
+     * Case - Let's Encrypt certificate used.
+     *
+     * <pre>
+     * Given: TLS is enabled.
+     * When: 2 members are started with certificate signed by the Let's Encrypt CA.
+     * Then: Members successfully form a cluster.
+     * </pre>
+     */
+    @Test
+    public void testLetsEncrypt() throws IOException {
+        SSLConfig sslConfig = new SSLConfig().setEnabled(true);
+        if (openSsl) {
+            sslConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName())
+                    .setProperty("keyFile",
+                            copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "privkey.pem").getAbsolutePath())
+                    .setProperty("keyCertChainFile",
+                            copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "fullchain.pem").getAbsolutePath())
+                    .setProperty("trustCertCollectionFile",
+                            copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "chain.pem").getAbsolutePath());
+        } else {
+            File letsEncryptKeystore = copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt.jks");
+            sslConfig.setFactoryClassName(BasicSSLContextFactory.class.getName())
+                    .setProperty("keyStore", letsEncryptKeystore.getAbsolutePath())
+                    .setProperty("keyStorePassword", "123456")
+                    .setProperty("trustStore", letsEncryptKeystore.getAbsolutePath())
+                    .setProperty("trustStorePassword", "123456");
+        }
+        if (mutualAuthentication) {
+            sslConfig.setProperty("mutualAuthentication", "REQUIRED");
+        }
+
+        Config config = new Config();
+        NetworkConfig networkConfig = config.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
+        assertClusterSize(2, hz1, hz2);
+    }
+
+    /**
+     * Case - no default truststore is used - neither the keystore nor the JRE specific one (cacerts).
+     *
+     * <pre>
+     * Given: TLS is enabled.
+     * When: TrustStore is not configured within the SSL properties and 2 members are started.
+     * Then: Members don't trust each other and they don't form a cluster.
+     * </pre>
+     */
+    @Test
+    public void testNoDefaultTruststore() throws IOException {
+        SSLConfig sslConfig = new SSLConfig().setEnabled(true);
+        if (openSsl) {
+            sslConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName())
+                    .setProperty("keyFile",
+                            copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "privkey.pem").getAbsolutePath())
+                    .setProperty("keyCertChainFile",
+                            copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "fullchain.pem").getAbsolutePath());
+        } else {
+            File letsEncryptKeystore = copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt.jks");
+            sslConfig.setFactoryClassName(BasicSSLContextFactory.class.getName())
+                    .setProperty("keyStore", letsEncryptKeystore.getAbsolutePath())
+                    .setProperty("keyStorePassword", "123456");
+        }
+        if (mutualAuthentication) {
+            sslConfig.setProperty("mutualAuthentication", "REQUIRED");
+        }
+
+        Config config = new Config();
+        NetworkConfig networkConfig = config.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
+        assertClusterSize(1, hz1, hz2);
+    }
+
+    /**
      * Case - Invalid Protocol.
      *
      * <pre>
@@ -370,7 +443,7 @@ public class TlsFunctionalTest {
         Config config = new Config();
         NetworkConfig networkConfig = config.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
-        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
         return config;
     }
 
@@ -396,7 +469,7 @@ public class TlsFunctionalTest {
         ClientConfig config = new ClientConfig();
         ClientNetworkConfig networkConfig = config.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
-        networkConfig.setConnectionTimeout(30000);
+        networkConfig.setConnectionTimeout(15000);
         return config;
     }
 
@@ -404,18 +477,6 @@ public class TlsFunctionalTest {
      * Copies a resource file from current package to location denoted by given {@link java.io.File} instance.
      */
     private File copyResource(String resourceName) throws IOException {
-        File targetFile = new File(tempFolder.getRoot(), resourceName);
-        if (!targetFile.exists()) {
-            assertTrue(targetFile.createNewFile());
-            logger.info("Copying test resource to file " + targetFile.getAbsolutePath());
-            InputStream is = null;
-            try {
-                is = TlsFunctionalTest.class.getResourceAsStream(resourceName);
-                copy(is, targetFile);
-            } finally {
-                closeResource(is);
-            }
-        }
-        return targetFile;
+        return copyTestResource(getClass(), tempFolder.getRoot(), resourceName);
     }
 }

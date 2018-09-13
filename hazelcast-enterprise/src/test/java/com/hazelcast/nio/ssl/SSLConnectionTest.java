@@ -30,8 +30,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
+import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -168,10 +170,10 @@ public class SSLConnectionTest {
      */
     @Test
     public void testAllCipherSuites() throws GeneralSecurityException {
-        String allSuites = Arrays.toString(getSupportedCipherSuites());
-        Config config = createConfigWithSslProperty("ciphersuites", cropFirstAndLastChar(allSuites));
-        HazelcastInstance h1 = factory.newHazelcastInstance(config);
-        HazelcastInstance h2 = factory.newHazelcastInstance(config);
+        String allSuites = cropFirstAndLastChar(Arrays.toString(getSupportedCipherSuites()));
+        HazelcastInstance h1 = factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", allSuites));
+        HazelcastInstance h2 = factory
+                .newHazelcastInstance(createConfigWithSslProperty(JAVA_NET_SSL_PREFIX + "ciphersuites", allSuites));
 
         assertClusterSize(2, h1, h2);
     }
@@ -184,13 +186,13 @@ public class SSLConnectionTest {
         List<String> supportedCipherSuites = Arrays.asList(getSupportedCipherSuites());
         assumeTrue("We need at least 2 supported ciphersuites for this test", supportedCipherSuites.size() > 1);
         int halfIdx = supportedCipherSuites.size() / 2;
-        String firstHalf = supportedCipherSuites.subList(0, halfIdx).toString();
-        String secondHalf = supportedCipherSuites.subList(halfIdx, supportedCipherSuites.size()).toString();
+        String firstHalf = cropFirstAndLastChar(supportedCipherSuites.subList(0, halfIdx).toString());
+        String secondHalf = cropFirstAndLastChar(supportedCipherSuites.subList(halfIdx, supportedCipherSuites.size()).toString());
 
         HazelcastInstance h1 = factory
-                .newHazelcastInstance(createConfigWithSslProperty("ciphersuites", cropFirstAndLastChar(firstHalf)));
-        HazelcastInstance h2 = factory
-                .newHazelcastInstance(createConfigWithSslProperty("ciphersuites", cropFirstAndLastChar(secondHalf)));
+                .newHazelcastInstance(createConfigWithSslProperty("ciphersuites", firstHalf));
+        HazelcastInstance h2 = factory.newHazelcastInstance(
+                createConfigWithSslProperty(JAVA_NET_SSL_PREFIX + "ciphersuites", secondHalf));
 
         // Size 1 for both! we expect the instances won't form a cluster.
         assertClusterSize(1, h1, h2);
@@ -239,6 +241,26 @@ public class SSLConnectionTest {
     }
 
     /**
+     * Tests that 2 nodes form cluster if their SSL configurations have the same protocol property value, but the property name
+     * differs in prefix.
+     */
+    @Test
+    public void testProtocolPrefix() throws GeneralSecurityException {
+        String supportedTls = null;
+        for (String protocol : getSupportedProtocols()) {
+            if (protocol.startsWith("TLSv1")) {
+                supportedTls = protocol;
+                break;
+            }
+        }
+        assumeNotNull("At least 1 supported TLS protocol version is necessary for this test", supportedTls);
+        HazelcastInstance h1 = factory.newHazelcastInstance(createConfigWithSslProperty("protocol", supportedTls));
+        HazelcastInstance h2 = factory.newHazelcastInstance(createConfigWithSslProperty(JAVA_NET_SSL_PREFIX + "protocol", supportedTls));
+
+        assertClusterSize(2, h1, h2);
+    }
+
+    /**
      * Tests that 2 nodes don't form cluster if their SSL configurations have different TLS versions in protocol property value.
      */
     @Test
@@ -252,7 +274,8 @@ public class SSLConnectionTest {
         assumeTrue("At least 2 supported TLS protocol versions necessary for this test", supportedTls.size() > 1);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(createConfigWithSslProperty("protocol", supportedTls.get(0)));
-        HazelcastInstance h2 = factory.newHazelcastInstance(createConfigWithSslProperty("protocol", supportedTls.get(1)));
+        HazelcastInstance h2 = factory
+                .newHazelcastInstance(createConfigWithSslProperty(JAVA_NET_SSL_PREFIX + "protocol", supportedTls.get(1)));
 
         // Size 1 for both! we expect the instances won't form a cluster.
         assertClusterSize(1, h1, h2);

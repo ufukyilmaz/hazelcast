@@ -102,7 +102,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     public void processEvent(WanConsistencyCheckEvent event,
                              WanAntiEntropyEventResult result) throws Exception {
         String mapName = event.getMapName();
-        String target = publisher.wanReplicationName + "/" + publisher.targetGroupName;
+        String target = publisher.wanReplicationName + "/" + publisher.wanPublisherName;
         if (logger.isFineEnabled()) {
             logger.fine("Checking via Merkle trees if map " + mapName + " is consistent with cluster " + target);
         }
@@ -161,7 +161,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     }
 
     private void processMapSync(WanSyncEvent event, WanAntiEntropyEventResult result, String mapName) throws Exception {
-        String target = publisher.wanReplicationName + "/" + publisher.targetGroupName;
+        String target = publisher.wanReplicationName + "/" + publisher.wanPublisherName;
         if (logger.isFineEnabled()) {
             logger.fine("Synchronizing map " + mapName + " to cluster " + target + " by using Merkle trees");
         }

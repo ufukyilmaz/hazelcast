@@ -90,7 +90,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     protected Node node;
     protected ILogger logger;
     protected String localGroupName;
-    protected String targetGroupName;
+    protected String wanPublisherName;
     protected String wanReplicationName;
     protected WANQueueFullBehavior queueFullBehavior;
     protected WanConfigurationContext configurationContext;
@@ -113,8 +113,8 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
         this.configurationContext = new WanConfigurationContext(publisherConfig);
         this.node = node;
-        this.targetGroupName = publisherConfig.getGroupName();
         this.wanReplicationName = wanReplicationConfig.getName();
+        this.wanPublisherName = publisherConfig.getGroupName();
         this.logger = node.getLogger(getClass());
         this.queueCapacity = publisherConfig.getQueueCapacity();
         this.localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
@@ -124,9 +124,9 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         this.wanService = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
 
         final DistributedServiceWanEventCounters mapCounters = wanService.getSentEventCounters(
-                wanReplicationName, targetGroupName, MapService.SERVICE_NAME);
+                wanReplicationName, wanPublisherName, MapService.SERVICE_NAME);
         final DistributedServiceWanEventCounters cacheCounters = wanService.getSentEventCounters(
-                wanReplicationName, targetGroupName, ICacheService.SERVICE_NAME);
+                wanReplicationName, wanPublisherName, ICacheService.SERVICE_NAME);
         this.localWanPublisherStats.setSentMapEventCounter(unmodifiableMap(mapCounters.getEventCounterMap()));
         this.localWanPublisherStats.setSentCacheEventCounter(unmodifiableMap(cacheCounters.getEventCounterMap()));
         this.wanQueueMigrationSupport = new WanQueueMigrationSupport(eventQueueContainer, wanCounter);
@@ -183,13 +183,14 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
         if (isEventDroppingNeeded(backupEvent)) {
             if (!backupEvent) {
-                wanService.getSentEventCounters(wanReplicationName, targetGroupName, serviceName)
+                wanService.getSentEventCounters(wanReplicationName, wanPublisherName, serviceName)
                           .incrementDropped(eventObject.getObjectName());
             }
             return;
         }
 
-        if (eventObject.getGroupNames().contains(targetGroupName)) {
+        if (eventObject.getGroupNames()
+                       .contains(configurationContext.getGroupName())) {
             return;
         }
 
@@ -252,7 +253,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         final String serviceName = event.getServiceName();
         final ReplicationEventObject eventObject = event.getEventObject();
         final DistributedServiceWanEventCounters counters
-                = wanService.getSentEventCounters(wanReplicationName, targetGroupName, serviceName);
+                = wanService.getSentEventCounters(wanReplicationName, wanPublisherName, serviceName);
         eventObject.incrementEventCount(counters);
     }
 
@@ -308,7 +309,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         try {
             for (int i = 0; i < backupCount && i < maxAllowedBackupCount; i++) {
                 Operation ewrRemoveOperation
-                        = new EWRRemoveBackupOperation(wanReplicationName, targetGroupName, wanReplicationEventData);
+                        = new EWRRemoveBackupOperation(wanReplicationName, wanPublisherName, wanReplicationEventData);
                 InternalCompletableFuture<Object> future = operationService
                         .createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
                                 ewrRemoveOperation,
@@ -397,19 +398,19 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     @Override
     public void pause() {
         state = WanPublisherState.PAUSED;
-        logger.info("Paused WAN replication " + wanReplicationName + ",targetGroupName: " + targetGroupName);
+        logger.info("Paused WAN replication " + wanReplicationName + ",targetGroupName: " + wanPublisherName);
     }
 
     @Override
     public void stop() {
         state = WanPublisherState.STOPPED;
-        logger.info("Stopped WAN replication " + wanReplicationName + ",targetGroupName: " + targetGroupName);
+        logger.info("Stopped WAN replication " + wanReplicationName + ",targetGroupName: " + wanPublisherName);
     }
 
     @Override
     public void resume() {
         state = WanPublisherState.REPLICATING;
-        logger.info("Resumed WAN replication " + wanReplicationName + ",targetGroupName: " + targetGroupName);
+        logger.info("Resumed WAN replication " + wanReplicationName + ",targetGroupName: " + wanPublisherName);
     }
 
     @Override
@@ -433,8 +434,8 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     public void checkWanReplicationQueues() {
         if (isThrowExceptionBehavior(queueFullBehavior) && wanCounter.getPrimaryElementCount() >= queueCapacity) {
             throw new WANReplicationQueueFullException(
-                    String.format("WAN replication for target cluster %s is full. Queue capacity is %d",
-                            targetGroupName, queueCapacity));
+                    String.format("WAN replication for WAN publisher %s is full. Queue capacity is %d",
+                            wanPublisherName, queueCapacity));
         }
     }
 
@@ -451,7 +452,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         EnterpriseReplicationEventObject replicationEventObject
                 = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
         EWRPutOperation wanPutOperation =
-                new EWRPutOperation(wanReplicationName, targetGroupName,
+                new EWRPutOperation(wanReplicationName, wanPublisherName,
                         wanReplicationEvent,
                         replicationEventObject.getBackupCount());
         invokeOnPartition(wanReplicationEvent.getServiceName(), replicationEventObject.getKey(), wanPutOperation);
@@ -631,10 +632,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
                     CacheService.SERVICE_NAME, namespaces);
 
             if (!isNullOrEmpty(mapQueues)) {
-                migrationDataContainer.addMapEventQueueMap(wanReplicationName, targetGroupName, mapQueues);
+                migrationDataContainer.addMapEventQueueMap(wanReplicationName, wanPublisherName, mapQueues);
             }
             if (!isNullOrEmpty(cacheQueues)) {
-                migrationDataContainer.addCacheEventQueueMap(wanReplicationName, targetGroupName, cacheQueues);
+                migrationDataContainer.addCacheEventQueueMap(wanReplicationName, wanPublisherName, cacheQueues);
             }
         }
     }

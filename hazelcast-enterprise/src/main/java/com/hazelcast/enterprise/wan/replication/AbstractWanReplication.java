@@ -40,7 +40,7 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
         this.discoveryService.start();
 
         this.connectionManager = new WanConnectionManager(node, discoveryService);
-        this.connectionManager.init(targetGroupName, configurationContext);
+        this.connectionManager.init(configurationContext);
     }
 
     private DiscoveryService createDiscoveryService(WanPublisherConfig config) {

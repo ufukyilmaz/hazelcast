@@ -73,7 +73,6 @@ public class WanConnectionManager {
                     return new WanConnectionWrapper(addr, conn);
                 }
             };
-    private String groupName;
     private WanConfigurationContext configurationContext;
     private volatile boolean running = true;
 
@@ -87,11 +86,9 @@ public class WanConnectionManager {
      * Initialise the connection manager. This will run discovery on the supplied
      * {@link DiscoveryService} and schedule a task to rerun discovery.
      *
-     * @param groupName            the group name for the discovered endpoints
      * @param configurationContext the configuration context for the WAN publisher
      */
-    public void init(String groupName, WanConfigurationContext configurationContext) {
-        this.groupName = groupName;
+    public void init(WanConfigurationContext configurationContext) {
         this.configurationContext = configurationContext;
 
         try {
@@ -363,7 +360,11 @@ public class WanConnectionManager {
      * @return the authorized connection or null if the authorization failed
      */
     private Connection authorizeConnection(Connection conn) {
-        boolean authorized = checkAuthorization(groupName, configurationContext.getPassword(), conn.getEndPoint());
+        String groupName = configurationContext.getGroupName();
+        boolean authorized = checkAuthorization(
+                groupName,
+                configurationContext.getPassword(),
+                conn.getEndPoint());
         if (!authorized) {
             final String msg = "WAN authorization failed for groupName " + groupName
                     + " and target " + conn.getEndPoint();

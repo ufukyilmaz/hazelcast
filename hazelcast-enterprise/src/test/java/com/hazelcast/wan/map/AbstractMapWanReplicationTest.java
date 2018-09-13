@@ -1,6 +1,7 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.WanConsumerConfig;
@@ -14,6 +15,7 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
 import com.hazelcast.core.MapStoreAdapter;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.internal.jmx.MBeanDataHolder;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.EntryBackupProcessor;
@@ -851,6 +853,37 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
                 assertDataInFrom(clusterB, mapName, 0, 100, clusterA);
             }
         }, 10);
+    }
+
+    @Test
+    public void groupNamePropertyOverridesPublisherName() {
+        String wanReplicationScheme = "atob";
+        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
+
+        WanPublisherConfig publisherConfig = configA.getWanReplicationConfig(wanReplicationScheme)
+                                                    .getWanPublisherConfigs()
+                                                    .iterator().next();
+        publisherConfig.getProperties()
+                       .put(WanReplicationProperties.GROUP_NAME.key(), publisherConfig.getGroupName());
+        publisherConfig.setGroupName("dummy");
+
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 100);
+        assertKeysInEventually(clusterB, "map", 0, 100);
+    }
+
+    @Test(expected = InvalidConfigurationException.class)
+    public void duplicatePublisherConfigThrowsException() {
+        String wanReplicationScheme = "atob";
+        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
+
+        startClusterA();
+
+        clusterA[0].getMap("map")
+                   .put(1, 1);
     }
 
     private static WanReplicationRef getWanReplicationRefFrom(Config config,

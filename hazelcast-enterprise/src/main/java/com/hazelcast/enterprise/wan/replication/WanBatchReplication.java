@@ -135,7 +135,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         final Diagnostics diagnostics = node.nodeEngine.getDiagnostics();
         final StoreLatencyPlugin storeLatencyPlugin = diagnostics.getPlugin(StoreLatencyPlugin.class);
         return storeLatencyPlugin != null
-                ? new LatencyTrackingWanBatchSender(sender, storeLatencyPlugin, targetGroupName)
+                ? new LatencyTrackingWanBatchSender(sender, storeLatencyPlugin, wanPublisherName)
                 : sender;
     }
 

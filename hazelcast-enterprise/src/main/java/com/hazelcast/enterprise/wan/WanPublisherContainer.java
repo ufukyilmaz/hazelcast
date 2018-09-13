@@ -44,26 +44,33 @@ class WanPublisherContainer {
 
     /**
      * Instantiate and initialize the {@link WanReplicationEndpoint}s and
-     * group by endpoint group name.
+     * group by WAN publisher name.
      */
     private Map<String, WanReplicationEndpoint> createPublishers(
             WanReplicationConfig wanReplicationConfig,
             List<WanPublisherConfig> publisherConfigs) {
         final Map<String, WanReplicationEndpoint> targetEndpoints = new HashMap<String, WanReplicationEndpoint>();
-        if (!publisherConfigs.isEmpty()) {
-            for (WanPublisherConfig publisherConfig : publisherConfigs) {
-                final WanReplicationEndpoint endpoint = getOrCreate(
-                        (WanReplicationEndpoint) publisherConfig.getImplementation(),
-                        node.getConfigClassLoader(),
-                        publisherConfig.getClassName());
-                if (endpoint == null) {
-                    throw new InvalidConfigurationException("Either \'implementation\' or \'className\' "
-                            + "attribute need to be set in WanPublisherConfig");
-                }
-                final String groupName = publisherConfig.getGroupName();
-                endpoint.init(node, wanReplicationConfig, publisherConfig);
-                targetEndpoints.put(groupName, endpoint);
+        if (publisherConfigs.isEmpty()) {
+            return targetEndpoints;
+        }
+
+        for (WanPublisherConfig publisherConfig : publisherConfigs) {
+            final WanReplicationEndpoint endpoint = getOrCreate(
+                    (WanReplicationEndpoint) publisherConfig.getImplementation(),
+                    node.getConfigClassLoader(),
+                    publisherConfig.getClassName());
+            if (endpoint == null) {
+                throw new InvalidConfigurationException("Either \'implementation\' or \'className\' "
+                        + "attribute need to be set in WanPublisherConfig");
             }
+            final String publisherName = publisherConfig.getGroupName();
+            if (targetEndpoints.containsKey(publisherName)) {
+                throw new InvalidConfigurationException(
+                        "Detected duplicate group-name '" + publisherName + "' for a single WAN replication config");
+            }
+
+            endpoint.init(node, wanReplicationConfig, publisherConfig);
+            targetEndpoints.put(publisherName, endpoint);
         }
         return targetEndpoints;
     }

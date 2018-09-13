@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -354,20 +355,29 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterA();
         startClusterB();
 
+        final CountDownLatch putLatch = new CountDownLatch(2);
         CyclicBarrier gate = new CyclicBarrier(3);
         startGatedThread(new GatedThread(gate) {
             @Override
             public void go() {
                 createDataIn(clusterA, "map", 0, 1000);
+                putLatch.countDown();
             }
         });
         startGatedThread(new GatedThread(gate) {
             @Override
             public void go() {
                 createDataIn(clusterB, "map", 500, 1500);
+                putLatch.countDown();
             }
         });
         gate.await();
+
+        // waiting for all puts to complete and the replication queues to drain in both clusters
+        // needed to guarantee that puts happen before removes
+        putLatch.await();
+        assertOutboundQueueDrainedEventually(clusterA, "atob", "B");
+        assertOutboundQueueDrainedEventually(clusterB, "btoa", "A");
 
         assertDataInFromEventually(clusterB, "map", 0, 500, clusterA);
         assertDataInFromEventually(clusterA, "map", 1000, 1500, clusterB);
@@ -886,6 +896,21 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
                    .put(1, 1);
     }
 
+    private void assertOutboundQueueDrainedEventually(final HazelcastInstance[] cluster, final String wanPublisherName,
+                                                      final String targetGroupName) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                for (HazelcastInstance instance : cluster) {
+                    WanReplicationService wanReplicationService = getNodeEngineImpl(instance).getWanReplicationService();
+                    EnterpriseWanReplicationService ewrs = (EnterpriseWanReplicationService) wanReplicationService;
+                    assert ewrs.getStats().get(wanPublisherName).getLocalWanPublisherStats().get(targetGroupName)
+                               .getOutboundQueueSize() == 0;
+                }
+            }
+        });
+    }
+
     private static WanReplicationRef getWanReplicationRefFrom(Config config,
                                                               boolean persistWanReplicatedData) {
 
@@ -903,7 +928,6 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         wanReplicationRef.setMergePolicy(PassThroughMergePolicy.class.getName());
         return wanReplicationRef;
     }
-
 
     private class TestMapStore extends MapStoreAdapter {
 

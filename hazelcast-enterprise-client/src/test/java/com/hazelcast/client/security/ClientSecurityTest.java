@@ -627,7 +627,7 @@ public class ClientSecurityTest {
         client.getConfig().addMapConfig(mapConfig);
     }
 
-    public void testUserCodeDeployment(String actionType) {
+    private void testUserCodeDeployment(String actionType) {
         Config config = createConfig();
         addPermission(config, USER_CODE_DEPLOYMENT, null, "dev")
                 .addAction(actionType);

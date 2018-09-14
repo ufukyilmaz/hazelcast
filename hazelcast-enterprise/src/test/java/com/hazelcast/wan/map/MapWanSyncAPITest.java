@@ -10,7 +10,6 @@ import com.hazelcast.enterprise.wan.sync.SyncFailedException;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -48,7 +47,6 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
         return InMemoryFormat.BINARY;
     }
 
-
     @Override
     protected Config getConfig() {
         final Config config = super.getConfig();
@@ -65,7 +63,6 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
     }
 
     @Test
-    @Ignore
     public void basicSyncTest() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 consistencyCheckStrategy);
@@ -88,7 +85,6 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
     }
 
     @Test
-    @Ignore
     public void syncAllTest() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 consistencyCheckStrategy);

@@ -19,15 +19,22 @@ public class CompatibilityTestHazelcastFactory extends TestHazelcastFactory {
     private final ArrayList<HazelcastInstance> instances = new ArrayList<HazelcastInstance>();
 
     /**
-     * Creates instance with given version and config
+     * Creates OSS instance with given version and config
      */
     public HazelcastInstance newHazelcastInstance(String version, Config config) {
+        return newHazelcastInstance(version, config, false);
+    }
+
+    /**
+     * Creates EE or OSS instance with given version and config
+     */
+    public HazelcastInstance newHazelcastInstance(String version, Config config, boolean enterprise) {
         if (CompatibilityTestHazelcastInstanceFactory.getCurrentVersion().equals(version)) {
             HazelcastInstance hz = HazelcastInstanceFactory.newHazelcastInstance(config);
             instances.add(hz);
             return hz;
         } else {
-            HazelcastInstance hz = HazelcastStarter.newHazelcastInstance(version, config, false);
+            HazelcastInstance hz = HazelcastStarter.newHazelcastInstance(version, config, enterprise);
             instances.add(hz);
             return hz;
         }
@@ -53,6 +60,7 @@ public class CompatibilityTestHazelcastFactory extends TestHazelcastFactory {
      */
     @Override
     public void shutdownAll() {
+        super.shutdownAll();
         for (HazelcastInstance hz : instances) {
             hz.shutdown();
         }
@@ -63,6 +71,7 @@ public class CompatibilityTestHazelcastFactory extends TestHazelcastFactory {
      */
     @Override
     public void terminateAll() {
+        super.terminateAll();
         for (HazelcastInstance hz : instances) {
             hz.getLifecycleService().terminate();
         }

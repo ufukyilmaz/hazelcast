@@ -1060,6 +1060,12 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
 
         EntryIter(int slot) {
+            this(slot, true);
+        }
+
+        EntryIter(int slot, boolean failFast) {
+            super(failFast);
+
             if (slot < 0 || slot > allocatedSlotCount) {
                 slot = 0;
                 //throw new IllegalArgumentException("Slot: " + slot + ", capacity: " + allocated);

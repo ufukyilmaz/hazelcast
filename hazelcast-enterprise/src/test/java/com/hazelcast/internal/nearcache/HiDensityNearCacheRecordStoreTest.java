@@ -10,7 +10,9 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.monitor.NearCacheStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -20,6 +22,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -124,6 +127,38 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
     public void expiredRecordsCleanedUpSuccessfullyBecauseOfIdleTimeOnHiDensityNativeMemoryNearCacheRecordStore() {
         expiredRecordsCleanedUpSuccessfully(InMemoryFormat.NATIVE, true);
     }
+
+    protected void expiredRecordsCleanedUpSuccessfully(InMemoryFormat inMemoryFormat, boolean useIdleTime) {
+        int cleanUpThresholdSeconds = 3;
+
+        NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, inMemoryFormat);
+        if (useIdleTime) {
+            nearCacheConfig.setMaxIdleSeconds(cleanUpThresholdSeconds);
+        } else {
+            nearCacheConfig.setTimeToLiveSeconds(cleanUpThresholdSeconds);
+        }
+
+        final NearCacheRecordStore<Integer, String> nearCacheRecordStore = createNearCacheRecordStore(
+                nearCacheConfig, inMemoryFormat);
+
+        for (int i = 0; i < DEFAULT_RECORD_COUNT; i++) {
+            nearCacheRecordStore.put(i, null, "Record-" + i);
+        }
+
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                nearCacheRecordStore.doExpiration();
+
+                assertEquals(0, nearCacheRecordStore.size());
+
+                NearCacheStats nearCacheStats = nearCacheRecordStore.getNearCacheStats();
+                assertEquals(0, nearCacheStats.getOwnedEntryCount());
+                assertEquals(0, nearCacheStats.getOwnedEntryMemoryCost());
+            }
+        });
+    }
+
 
     @Test
     public void canCreateHiDensityNativeMemoryNearCacheRecordStoreWithEntryCountMaxSizePolicy() {

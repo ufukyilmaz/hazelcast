@@ -2,7 +2,6 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.internal.eviction.EvictionCandidate;
 import com.hazelcast.internal.eviction.EvictionListener;
-import com.hazelcast.internal.eviction.ExpirationChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -117,15 +116,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
         }
         evictKeysFromHotRestartStore();
         return evictedCount;
-    }
-
-    @Override
-    protected <C extends EvictionCandidate<Data, HiDensityNativeMemoryCacheRecord>> int doEvictExpiredRecords(
-            EvictionListener<Data, HiDensityNativeMemoryCacheRecord> evictionListener,
-            ExpirationChecker<HiDensityNativeMemoryCacheRecord> expirationChecker) {
-
-        // not expected to reach here
-        throw new UnsupportedOperationException();
     }
 
     @Override

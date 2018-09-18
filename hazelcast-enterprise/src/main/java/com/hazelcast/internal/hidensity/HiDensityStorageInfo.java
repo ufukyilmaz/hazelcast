@@ -12,9 +12,13 @@ import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 public class HiDensityStorageInfo {
 
     private final String storageName;
+    @Probe(name = "usedMemory", level = MANDATORY)
     private final AtomicLong usedMemory = new AtomicLong(0L);
+    @Probe(name = "forceEvictionCount", level = MANDATORY)
     private final AtomicLong forceEvictionCount = new AtomicLong(0L);
+    @Probe(name = "forceEvictedEntryCount", level = MANDATORY)
     private final AtomicLong forceEvictedEntryCount = new AtomicLong(0L);
+    @Probe(name = "entryCount", level = MANDATORY)
     private final AtomicLong entryCount = new AtomicLong(0L);
 
     public HiDensityStorageInfo(String storageName) {
@@ -41,7 +45,6 @@ public class HiDensityStorageInfo {
         return entryCount.decrementAndGet();
     }
 
-    @Probe(name = "entryCount", level = MANDATORY)
     public long getEntryCount() {
         return entryCount.get();
     }
@@ -54,7 +57,6 @@ public class HiDensityStorageInfo {
         return usedMemory.addAndGet(-size);
     }
 
-    @Probe(name = "usedMemory", level = MANDATORY)
     public long getUsedMemory() {
         return usedMemory.get();
     }
@@ -63,7 +65,6 @@ public class HiDensityStorageInfo {
         return forceEvictionCount.incrementAndGet();
     }
 
-    @Probe(name = "forceEvictionCount", level = MANDATORY)
     public long getForceEvictionCount() {
         return forceEvictionCount.get();
     }
@@ -72,7 +73,6 @@ public class HiDensityStorageInfo {
         return forceEvictedEntryCount.addAndGet(evictedEntryCount);
     }
 
-    @Probe(name = "forceEvictedEntryCount", level = MANDATORY)
     public long getForceEvictedEntryCount() {
         return forceEvictedEntryCount.get();
     }

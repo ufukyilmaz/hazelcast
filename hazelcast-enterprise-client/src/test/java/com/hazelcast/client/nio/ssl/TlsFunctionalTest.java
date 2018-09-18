@@ -11,7 +11,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -50,11 +49,17 @@ import static org.junit.Assume.assumeTrue;
 @Category({ QuickTest.class })
 public class TlsFunctionalTest {
 
+    private static final String KEY_FILE_SERVER = "server.pem";
+    private static final String CERT_FILE_SERVER = "server.crt";
     private static final String KEYSTORE_SERVER = "server.keystore";
     private static final String TRUSTSTORE_SERVER = "server.truststore";
+    private static final String KEY_FILE_CLIENT = "client.pem";
+    private static final String CERT_FILE_CLIENT = "client.crt";
     private static final String KEYSTORE_CLIENT = "client.keystore";
     private static final String TRUSTSTORE_CLIENT = "client.truststore";
+    private static final String CERT_FILE_UNTRUSTED = "untrusted.crt";
     private static final String TRUSTSTORE_UNTRUSTED = "untrusted.truststore";
+    private static final String TRUST_ALL = "all.crt";
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -165,8 +170,16 @@ public class TlsFunctionalTest {
     public void testUntrustedConfiguration() throws IOException {
         Config config = createMemberConfig();
         SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
-        String untrustedTruststore = copyResource(TRUSTSTORE_UNTRUSTED).getAbsolutePath();
-        sslConfig.setProperty("trustStore", untrustedTruststore);
+        String trustPropertyName;
+        String trustPropertyValue;
+        if (openSsl) {
+            trustPropertyName = "trustCertCollectionFile";
+            trustPropertyValue = copyResource(CERT_FILE_UNTRUSTED).getAbsolutePath();
+        } else {
+            trustPropertyName = "trustStore";
+            trustPropertyValue = copyResource(TRUSTSTORE_UNTRUSTED).getAbsolutePath();
+        }
+        sslConfig.setProperty(trustPropertyName, trustPropertyValue);
 
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
@@ -174,7 +187,7 @@ public class TlsFunctionalTest {
         try {
             ClientConfig clientConfig = createClientConfig();
             sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
-            sslConfig.setProperty("trustStore", untrustedTruststore);
+            sslConfig.setProperty(trustPropertyName, trustPropertyValue);
             factory.newHazelcastClient(clientConfig);
             fail("Client should not be able to connect");
         } catch (IllegalStateException expected) {
@@ -337,12 +350,19 @@ public class TlsFunctionalTest {
     }
 
     private Config createMemberConfig() throws IOException {
-        SSLConfig sslConfig = new SSLConfig().setEnabled(true)
-                .setFactoryClassName((openSsl ? OpenSSLEngineFactory.class : BasicSSLContextFactory.class).getName())
-                .setProperty("keyStore", copyResource(KEYSTORE_SERVER).getAbsolutePath())
-                .setProperty("keyStorePassword", "123456")
-                .setProperty("trustStore", copyResource(TRUSTSTORE_SERVER).getAbsolutePath())
-                .setProperty("trustStorePassword", "123456");
+        SSLConfig sslConfig = new SSLConfig().setEnabled(true);
+        if (openSsl) {
+            sslConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName())
+            .setProperty("keyFile", copyResource(KEY_FILE_SERVER).getAbsolutePath())
+            .setProperty("keyCertChainFile", copyResource(CERT_FILE_SERVER).getAbsolutePath())
+            .setProperty("trustCertCollectionFile", copyResource(TRUST_ALL).getAbsolutePath());
+        } else {
+            sslConfig
+            .setProperty("keyStore", copyResource(KEYSTORE_SERVER).getAbsolutePath())
+            .setProperty("keyStorePassword", "123456")
+            .setProperty("trustStore", copyResource(TRUSTSTORE_SERVER).getAbsolutePath())
+            .setProperty("trustStorePassword", "123456");
+        }
         if (mutualAuthentication) {
             sslConfig.setProperty("mutualAuthentication", "REQUIRED");
         }
@@ -355,13 +375,22 @@ public class TlsFunctionalTest {
     }
 
     private ClientConfig createClientConfig() throws IOException {
-        SSLConfig sslConfig = new SSLConfig().setEnabled(true)
-                .setFactoryClassName((openSsl ? OpenSSLEngineFactory.class : BasicSSLContextFactory.class).getName())
-                .setProperty("trustStore", copyResource(TRUSTSTORE_CLIENT).getAbsolutePath())
-                .setProperty("trustStorePassword", "123456");
-        if (mutualAuthentication) {
-            sslConfig.setProperty("keyStore", copyResource(KEYSTORE_CLIENT).getAbsolutePath());
-            sslConfig.setProperty("keyStorePassword", "123456");
+        SSLConfig sslConfig = new SSLConfig().setEnabled(true);
+        if (openSsl) {
+            sslConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName())
+            .setProperty("trustCertCollectionFile", copyResource(CERT_FILE_SERVER).getAbsolutePath());
+            if (mutualAuthentication) {
+                sslConfig.setProperty("keyFile", copyResource(KEY_FILE_CLIENT).getAbsolutePath())
+                .setProperty("keyCertChainFile", copyResource(CERT_FILE_CLIENT).getAbsolutePath());
+            }
+        } else {
+            sslConfig
+            .setProperty("trustStore", copyResource(TRUSTSTORE_CLIENT).getAbsolutePath())
+            .setProperty("trustStorePassword", "123456");
+            if (mutualAuthentication) {
+                sslConfig.setProperty("keyStore", copyResource(KEYSTORE_CLIENT).getAbsolutePath());
+                sslConfig.setProperty("keyStorePassword", "123456");
+            }
         }
 
         ClientConfig config = new ClientConfig();

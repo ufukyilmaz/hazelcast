@@ -12,6 +12,7 @@ import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.IOUtil.copy;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
@@ -53,6 +54,10 @@ public class TestEnvironmentUtil {
 
     public static void assumeJavaVersionAtLeast(int minimalVersion) {
         assumeTrue("Test skipped for Java versions lower than " + minimalVersion, JAVA_VERSION_MAJOR >= minimalVersion);
+    }
+
+    public static void assumeNoIbmJvm() {
+        assumeFalse("Test skipped for IBM Java", isIbmJvm());
     }
 
     /**

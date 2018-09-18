@@ -42,7 +42,7 @@ public class OpenSSLEngineFactory_initTest {
 
     @Test
     public void openssl() throws Exception {
-        Properties sslProperties = TestKeyStoreUtil.createSslProperties();
+        Properties sslProperties = TestKeyStoreUtil.createSslProperties(true);
 
         OpenSSLEngineFactory factory = new OpenSSLEngineFactory();
         factory.init(sslProperties, false);
@@ -66,6 +66,16 @@ public class OpenSSLEngineFactory_initTest {
     public void keyStore_mandatoryForMember() throws Exception {
         Properties sslProperties = TestKeyStoreUtil.createSslProperties();
         sslProperties.remove("javax.net.ssl.keyStore");
+
+        OpenSSLEngineFactory factory = new OpenSSLEngineFactory();
+        thrown.expect(NullPointerException.class);
+        factory.init(sslProperties, false);
+    }
+
+    @Test
+    public void keyFile_mandatoryForMember() throws Exception {
+        Properties sslProperties = TestKeyStoreUtil.createSslProperties(true);
+        sslProperties.remove("javax.net.ssl.keyFile");
 
         OpenSSLEngineFactory factory = new OpenSSLEngineFactory();
         thrown.expect(NullPointerException.class);
@@ -110,7 +120,7 @@ public class OpenSSLEngineFactory_initTest {
             sb.append(cipherSuite).append(",");
         }
 
-        Properties sslProperties = TestKeyStoreUtil.createSslProperties();
+        Properties sslProperties = TestKeyStoreUtil.createSslProperties(true);
         sslProperties.setProperty(JAVA_NET_SSL_PREFIX + "ciphersuites", sb.toString());
 
         OpenSSLEngineFactory factory = new OpenSSLEngineFactory();

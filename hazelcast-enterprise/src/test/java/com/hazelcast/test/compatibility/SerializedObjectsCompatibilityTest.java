@@ -20,6 +20,7 @@ import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.compatibility.SerializedObjectsAccessor.SerializedObject;
 import com.hazelcast.version.Version;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -100,6 +101,7 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     }
 
     @Test
+    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2436")
     public void testObjectsAreDeserializedInCurrentVersion_whenEESerializationService() {
         MemorySize size = new MemorySize(16, MemoryUnit.MEGABYTES);
         FreeMemoryChecker freeMemoryChecker = new FreeMemoryChecker(new HazelcastProperties((Properties) null));

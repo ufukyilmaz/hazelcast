@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity;
 
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecord;
+import com.hazelcast.internal.memory.GlobalMemoryAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**
@@ -16,11 +17,12 @@ public abstract class HiDensityCacheRecord
         extends HiDensityRecord
         implements CacheRecord<NativeMemoryData, NativeMemoryData> {
 
-    protected HiDensityCacheRecord() {
+    protected HiDensityCacheRecord(GlobalMemoryAccessor memoryAccessor) {
+        super(memoryAccessor);
     }
 
-    protected HiDensityCacheRecord(long address, int size) {
-        super(address, size);
+    protected HiDensityCacheRecord(GlobalMemoryAccessor memoryAccessor, long address, int size) {
+        super(memoryAccessor, address, size);
     }
 
     /**

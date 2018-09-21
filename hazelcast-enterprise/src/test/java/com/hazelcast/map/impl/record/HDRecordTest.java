@@ -31,7 +31,7 @@ public class HDRecordTest extends HazelcastTestSupport {
         memoryManager = new PoolingMemoryManager(memorySize);
         memoryManager.registerThread(Thread.currentThread());
 
-        record = new HDRecord();
+        record = new HDRecord(null);
         record.reset(memoryManager.allocate(HDRecord.SIZE));
     }
 

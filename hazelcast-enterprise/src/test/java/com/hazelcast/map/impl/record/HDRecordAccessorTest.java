@@ -15,7 +15,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.util.QuickMath.modPowerOfTwo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -94,6 +97,55 @@ public class HDRecordAccessorTest {
         record2.setValue(value2);
 
         assertFalse(accessor.isEqual(record1.address(), record2.address()));
+    }
+
+    @Test
+    public void test_aligned_field_access() {
+        long address = memoryManager.allocate(HDRecord.SIZE);
+        HDRecord record = (HDRecord) accessor.newRecord().reset(address);
+
+        NativeMemoryData value = serializationService.toData(1, DataType.NATIVE);
+        record.setValue(value);
+
+        assertAligned(address, HDRecord.KEY_OFFSET, 8);
+        AMEM.getLong(address + HDRecord.KEY_OFFSET);
+
+        assertAligned(address, HDRecord.VALUE_OFFSET, 8);
+        AMEM.getLong(address + HDRecord.VALUE_OFFSET);
+
+        assertAligned(address, HDRecord.VERSION_OFFSET, 8);
+        AMEM.getLong(address + HDRecord.VERSION_OFFSET);
+
+        assertAligned(address, HDRecord.CREATION_TIME_OFFSET, 4);
+        AMEM.getInt(address + HDRecord.CREATION_TIME_OFFSET);
+
+        assertAligned(address, HDRecord.TTL_OFFSET, 4);
+        AMEM.getInt(address + HDRecord.TTL_OFFSET);
+
+        assertAligned(address, HDRecord.MAX_IDLE_OFFSET, 4);
+        AMEM.getInt(address + HDRecord.MAX_IDLE_OFFSET);
+
+        assertAligned(address, HDRecord.LAST_ACCESS_TIME_OFFSET, 4);
+        AMEM.getInt(address + HDRecord.LAST_ACCESS_TIME_OFFSET);
+
+        assertAligned(address, HDRecord.LAST_UPDATE_TIME_OFFSET, 4);
+        AMEM.getInt(address + HDRecord.LAST_UPDATE_TIME_OFFSET);
+
+        assertAligned(address, HDRecord.HITS, 4);
+        AMEM.getInt(address + HDRecord.HITS);
+
+        assertAligned(address, HDRecord.LAST_STORED_TIME_OFFSET, 4);
+        AMEM.getInt(address + HDRecord.LAST_STORED_TIME_OFFSET);
+
+        assertAligned(address, HDRecord.EXPIRATION_TIME_OFFSET, 4);
+        AMEM.getInt(address + HDRecord.EXPIRATION_TIME_OFFSET);
+
+        assertAligned(address, HDRecord.SEQUENCE_OFFSET, 4);
+        AMEM.getInt(address + HDRecord.SEQUENCE_OFFSET);
+    }
+
+    private static void assertAligned(long address, int offset, int mod) {
+        assertEquals(0, modPowerOfTwo(address + offset, mod));
     }
 
 }

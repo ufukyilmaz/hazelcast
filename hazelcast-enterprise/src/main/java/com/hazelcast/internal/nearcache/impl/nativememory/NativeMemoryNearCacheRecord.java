@@ -7,6 +7,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import java.util.UUID;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
@@ -17,6 +18,31 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 @SuppressWarnings("checkstyle:methodcount")
 public class NativeMemoryNearCacheRecord extends HiDensityNearCacheRecord {
 
+    /*
+     * Structure:
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | Value Address            |   8 bytes (long)   |
+     * +--------------------------+--------------------+
+     * | Creation Time            |   8 bytes (long)   |
+     * +--------------------------+--------------------+
+     * | UUID                     | 2 x 8 bytes (long) |
+     * +--------------------------+--------------------+
+     * | Invalidation Sequence    |   8 bytes (long)   |
+     * +--------------------------+--------------------+
+     * | Record State             |   8 bytes (long)   |
+     * +--------------------------+--------------------+
+     * | Access Time/Hit          |   4 bytes (int)    |
+     * +--------------------------+--------------------+
+     * | TTL                      |   4 bytes (int)    |
+     * +--------------------------+--------------------+
+     * | Partition Id             |   4 bytes (int)    |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *
+     * Total size = 60 bytes
+     *
+     * All fields are aligned.
+     */
+
     /**
      * Size of a Hi-Density Near Cache record.
      */
@@ -24,29 +50,29 @@ public class NativeMemoryNearCacheRecord extends HiDensityNearCacheRecord {
     /**
      * Location of the value pointer in a Hi-Density Near Cache record.
      */
-    public static final int VALUE_OFFSET;
+    public static final int VALUE_OFFSET = 0;
 
-    private static final int CREATION_TIME_OFFSET = 0;
-    private static final int ACCESS_TIME_OFFSET = LONG_SIZE_IN_BYTES;
+    static final int CREATION_TIME_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int UUID_MOST_SIG_BITS_OFFSET = CREATION_TIME_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int UUID_LEAST_SIG_BITS_OFFSET = UUID_MOST_SIG_BITS_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int INVALIDATION_SEQUENCE_OFFSET = UUID_LEAST_SIG_BITS_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int RECORD_STATE_OFFSET = INVALIDATION_SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int ACCESS_TIME_OFFSET = RECORD_STATE_OFFSET + LONG_SIZE_IN_BYTES;
     // "ACCESS_HIT_OFFSET" and "ACCESS_TIME_OFFSET` is the same for NearCacheRecord
     // since these fields (access hit count and access time) are not used at same time
     // (their usage scenario is based on eviction type (LRU or LFU))
-    private static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
-    private static final int TTL_OFFSET = ACCESS_HIT_OFFSET + INT_SIZE_IN_BYTES;
-    private static final int PARTITION_ID_OFFSET = TTL_OFFSET + INT_SIZE_IN_BYTES;
-    private static final int INVALIDATION_SEQUENCE_OFFSET = PARTITION_ID_OFFSET + INT_SIZE_IN_BYTES;
-    private static final int UUID_MOST_SIG_BITS_OFFSET = INVALIDATION_SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
-    private static final int UUID_LEAST_SIG_BITS_OFFSET = UUID_MOST_SIG_BITS_OFFSET + LONG_SIZE_IN_BYTES;
-    private static final int RECORD_STATE_OFFSET = UUID_LEAST_SIG_BITS_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
+    static final int TTL_OFFSET = ACCESS_HIT_OFFSET + INT_SIZE_IN_BYTES;
+    static final int PARTITION_ID_OFFSET = TTL_OFFSET + INT_SIZE_IN_BYTES;
 
     static {
-        VALUE_OFFSET = RECORD_STATE_OFFSET + LONG_SIZE_IN_BYTES;
-        SIZE = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
+        SIZE = PARTITION_ID_OFFSET + INT_SIZE_IN_BYTES;
     }
 
     private HiDensityRecordAccessor<NativeMemoryNearCacheRecord> nearCacheRecordAccessor;
 
     public NativeMemoryNearCacheRecord(HiDensityRecordAccessor<NativeMemoryNearCacheRecord> accessor) {
+        super(AMEM);
         this.nearCacheRecordAccessor = accessor;
     }
 

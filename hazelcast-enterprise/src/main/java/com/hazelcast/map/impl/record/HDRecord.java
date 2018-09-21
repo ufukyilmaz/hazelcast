@@ -7,6 +7,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.Clock;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.map.impl.record.AbstractRecord.EPOCH_TIME;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
@@ -50,6 +51,8 @@ public class HDRecord
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      *
      * Total size = 60 bytes
+     *
+     * All fields are aligned.
      */
 
     /**
@@ -74,13 +77,10 @@ public class HDRecord
         SIZE = SEQUENCE_OFFSET + INT_SIZE_IN_BYTES;
     }
 
-    protected HiDensityRecordAccessor<HDRecord> recordAccessor;
-
-    public HDRecord() {
-        this(null);
-    }
+    private final HiDensityRecordAccessor<HDRecord> recordAccessor;
 
     public HDRecord(HiDensityRecordAccessor<HDRecord> recordAccessor) {
+        super(AMEM);
         this.recordAccessor = recordAccessor;
         setSize(getSize());
     }

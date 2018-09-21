@@ -15,8 +15,11 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.test.HazelcastTestSupport.assertInstanceOf;
+import static com.hazelcast.util.QuickMath.modPowerOfTwo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -97,5 +100,48 @@ public class NativeMemoryNearCacheRecordAccessorTest {
         record2.setValue(value2);
 
         assertFalse(accessor.isEqual(record1.address(), record2.address()));
+    }
+
+    @Test
+    public void test_aligned_field_access() {
+        long address = memoryManager.allocate(NativeMemoryNearCacheRecord.SIZE);
+        NativeMemoryNearCacheRecord record = accessor.newRecord().reset(address);
+
+        NativeMemoryData value = serializationService.toData(1, DataType.NATIVE);
+        record.setValue(value);
+
+        assertAligned(address, NativeMemoryNearCacheRecord.CREATION_TIME_OFFSET, 8);
+        AMEM.getLong(address + NativeMemoryNearCacheRecord.CREATION_TIME_OFFSET);
+
+        assertAligned(address, NativeMemoryNearCacheRecord.ACCESS_TIME_OFFSET, 4);
+        AMEM.getInt(address + NativeMemoryNearCacheRecord.ACCESS_TIME_OFFSET);
+
+        assertAligned(address, NativeMemoryNearCacheRecord.ACCESS_HIT_OFFSET, 4);
+        AMEM.getInt(address + NativeMemoryNearCacheRecord.ACCESS_HIT_OFFSET);
+
+        assertAligned(address, NativeMemoryNearCacheRecord.TTL_OFFSET, 4);
+        AMEM.getInt(address + NativeMemoryNearCacheRecord.TTL_OFFSET);
+
+        assertAligned(address, NativeMemoryNearCacheRecord.PARTITION_ID_OFFSET, 4);
+        AMEM.getInt(address + NativeMemoryNearCacheRecord.PARTITION_ID_OFFSET);
+
+        assertAligned(address, NativeMemoryNearCacheRecord.INVALIDATION_SEQUENCE_OFFSET, 8);
+        AMEM.getLong(address + NativeMemoryNearCacheRecord.INVALIDATION_SEQUENCE_OFFSET);
+
+        assertAligned(address, NativeMemoryNearCacheRecord.UUID_LEAST_SIG_BITS_OFFSET, 8);
+        AMEM.getLong(address + NativeMemoryNearCacheRecord.UUID_LEAST_SIG_BITS_OFFSET);
+
+        assertAligned(address, NativeMemoryNearCacheRecord.UUID_MOST_SIG_BITS_OFFSET, 8);
+        AMEM.getLong(address + NativeMemoryNearCacheRecord.UUID_MOST_SIG_BITS_OFFSET);
+
+        assertAligned(address, NativeMemoryNearCacheRecord.RECORD_STATE_OFFSET, 8);
+        AMEM.getLong(address + NativeMemoryNearCacheRecord.RECORD_STATE_OFFSET);
+
+        assertAligned(address, NativeMemoryNearCacheRecord.VALUE_OFFSET, 8);
+        AMEM.getLong(address + NativeMemoryNearCacheRecord.VALUE_OFFSET);
+    }
+
+    private static void assertAligned(long address, int offset, int mod) {
+        assertEquals(0, modPowerOfTwo(address + offset, mod));
     }
 }

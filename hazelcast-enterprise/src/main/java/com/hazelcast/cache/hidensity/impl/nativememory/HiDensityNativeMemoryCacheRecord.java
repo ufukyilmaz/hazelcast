@@ -5,6 +5,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
@@ -41,22 +42,19 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
      */
     public static final int SIZE;
 
+
+    static final int CREATION_TIME_OFFSET = 0;
+    static final int ACCESS_TIME_OFFSET = LONG_SIZE_IN_BYTES;
+    static final int TTL_OFFSET = ACCESS_TIME_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int SEQUENCE_OFFSET = TTL_OFFSET + LONG_SIZE_IN_BYTES;
     /**
      * Offset of value address in the record.
      */
-    static final int VALUE_OFFSET;
-
-    private static final int CREATION_TIME_OFFSET = 0;
-    private static final int ACCESS_TIME_OFFSET = LONG_SIZE_IN_BYTES;
-    private static final int TTL_OFFSET = ACCESS_TIME_OFFSET + LONG_SIZE_IN_BYTES;
-    private static final int SEQUENCE_OFFSET = TTL_OFFSET + LONG_SIZE_IN_BYTES;
-    private static final int EXPIRY_POLICY_OFFSET;
-    private static final int ACCESS_HIT_OFFSET;
+    static final int VALUE_OFFSET = SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int EXPIRY_POLICY_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int ACCESS_HIT_OFFSET = EXPIRY_POLICY_OFFSET + LONG_SIZE_IN_BYTES;
 
     static {
-        VALUE_OFFSET = SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
-        EXPIRY_POLICY_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
-        ACCESS_HIT_OFFSET = EXPIRY_POLICY_OFFSET + LONG_SIZE_IN_BYTES;
         SIZE = ACCESS_HIT_OFFSET + INT_SIZE_IN_BYTES;
     }
 
@@ -64,17 +62,17 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     public HiDensityNativeMemoryCacheRecord(HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor,
                                             long address) {
-        super(address, SIZE);
+        super(AMEM, address, SIZE);
         this.recordAccessor = recordAccessor;
     }
 
     public HiDensityNativeMemoryCacheRecord(HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor) {
+        super(AMEM);
         this.recordAccessor = recordAccessor;
     }
 
     public HiDensityNativeMemoryCacheRecord(long address) {
-        super(address, SIZE);
-        recordAccessor = null;
+        this(null, address);
     }
 
     @Override

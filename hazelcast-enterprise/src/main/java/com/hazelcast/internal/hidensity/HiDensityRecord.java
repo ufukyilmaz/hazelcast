@@ -1,5 +1,6 @@
 package com.hazelcast.internal.hidensity;
 
+import com.hazelcast.internal.memory.GlobalMemoryAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryBlock;
 
@@ -12,11 +13,12 @@ import com.hazelcast.memory.MemoryBlock;
 public abstract class HiDensityRecord
         extends MemoryBlock {
 
-    protected HiDensityRecord() {
+    protected HiDensityRecord(GlobalMemoryAccessor memoryAccessor) {
+        super(memoryAccessor);
     }
 
-    protected HiDensityRecord(long address, int size) {
-        super(address, size);
+    protected HiDensityRecord(GlobalMemoryAccessor memoryAccessor, long address, int size) {
+        super(memoryAccessor, address, size);
     }
 
     /**

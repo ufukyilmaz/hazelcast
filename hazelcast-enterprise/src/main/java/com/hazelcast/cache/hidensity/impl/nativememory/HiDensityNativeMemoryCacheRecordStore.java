@@ -14,6 +14,7 @@ import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.elastic.SlottableIterator;
@@ -21,8 +22,9 @@ import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.util.comparators.NativeValueComparator;
+import com.hazelcast.internal.util.comparators.ValueComparator;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -35,6 +37,7 @@ import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.wan.impl.CallerProvenance;
 
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -48,10 +51,11 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 128;
 
-    protected EnterpriseSerializationService serializationService;
-    protected HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> cacheRecordProcessor;
     protected HiDensityStorageInfo cacheInfo;
     protected HazelcastMemoryManager memoryManager;
+    protected EnterpriseSerializationService serializationService;
+    protected HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> cacheRecordProcessor;
+
     private final ILogger logger;
 
     public HiDensityNativeMemoryCacheRecordStore(int partitionId, String cacheNameWithPrefix, EnterpriseCacheService cacheService,
@@ -59,6 +63,14 @@ public class HiDensityNativeMemoryCacheRecordStore
         super(cacheNameWithPrefix, partitionId, nodeEngine, cacheService);
         this.logger = nodeEngine.getLogger(getClass());
         ensureInitialized();
+    }
+
+    @Override
+    protected ValueComparator getValueComparatorOf(InMemoryFormat inMemoryFormat) {
+        if (inMemoryFormat == InMemoryFormat.NATIVE) {
+            return NativeValueComparator.INSTANCE;
+        }
+        return super.getValueComparatorOf(inMemoryFormat);
     }
 
     private static boolean isInvalidMaxSizePolicyExceptionDisabled() {

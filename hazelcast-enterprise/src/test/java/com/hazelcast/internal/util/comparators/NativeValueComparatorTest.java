@@ -1,4 +1,4 @@
-package com.hazelcast.map.impl.record;
+package com.hazelcast.internal.util.comparators;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.serialization.InternalSerializationService;
@@ -21,7 +21,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class HDRecordComparatorTest extends AbstractRecordComparatorTest {
+public class NativeValueComparatorTest extends AbstractValueComparatorTest {
 
     private HazelcastMemoryManager memoryManager;
 
@@ -40,21 +40,21 @@ public class HDRecordComparatorTest extends AbstractRecordComparatorTest {
         NativeMemoryData nativeMemoryData2 = ess.toNativeData(object2, memoryManager);
 
         super.testIsEqual();
-        assertTrue(comparator.isEqual(object1, nativeMemoryData1));
-        assertTrue(comparator.isEqual(data1, nativeMemoryData1));
-        assertTrue(comparator.isEqual(nativeMemoryData1, object1));
-        assertTrue(comparator.isEqual(nativeMemoryData1, data1));
-        assertTrue(comparator.isEqual(nativeMemoryData1, nativeMemoryData1));
+        assertTrue(comparator.isEqual(object1, nativeMemoryData1, ess));
+        assertTrue(comparator.isEqual(data1, nativeMemoryData1, ess));
+        assertTrue(comparator.isEqual(nativeMemoryData1, object1, ess));
+        assertTrue(comparator.isEqual(nativeMemoryData1, data1, ess));
+        assertTrue(comparator.isEqual(nativeMemoryData1, nativeMemoryData1, ess));
 
-        assertFalse(comparator.isEqual(null, nativeMemoryData1));
-        assertFalse(comparator.isEqual(object1, nativeMemoryData2));
-        assertFalse(comparator.isEqual(data1, nativeMemoryData2));
-        assertFalse(comparator.isEqual(nullData, nativeMemoryData2));
-        assertFalse(comparator.isEqual(nativeMemoryData1, null));
-        assertFalse(comparator.isEqual(nativeMemoryData1, nullData));
-        assertFalse(comparator.isEqual(nativeMemoryData1, nativeMemoryData2));
-        assertFalse(comparator.isEqual(nativeMemoryData1, data2));
-        assertFalse(comparator.isEqual(nativeMemoryData1, object2));
+        assertFalse(comparator.isEqual(null, nativeMemoryData1, ess));
+        assertFalse(comparator.isEqual(object1, nativeMemoryData2, ess));
+        assertFalse(comparator.isEqual(data1, nativeMemoryData2, ess));
+        assertFalse(comparator.isEqual(nullData, nativeMemoryData2, ess));
+        assertFalse(comparator.isEqual(nativeMemoryData1, null, ess));
+        assertFalse(comparator.isEqual(nativeMemoryData1, nullData, ess));
+        assertFalse(comparator.isEqual(nativeMemoryData1, nativeMemoryData2, ess));
+        assertFalse(comparator.isEqual(nativeMemoryData1, data2, ess));
+        assertFalse(comparator.isEqual(nativeMemoryData1, object2, ess));
     }
 
     @Override
@@ -69,6 +69,6 @@ public class HDRecordComparatorTest extends AbstractRecordComparatorTest {
 
     @Override
     void newRecordComparator() {
-        comparator = new HDRecordComparator(serializationService);
+        comparator = NativeValueComparator.INSTANCE;
     }
 }

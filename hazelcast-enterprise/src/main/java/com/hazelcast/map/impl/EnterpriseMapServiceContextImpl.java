@@ -7,6 +7,8 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.util.comparators.NativeValueComparator;
+import com.hazelcast.internal.util.comparators.ValueComparator;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
 import com.hazelcast.map.impl.event.MapEventPublisherImpl;
@@ -25,7 +27,6 @@ import com.hazelcast.map.impl.query.PartitionScanExecutor;
 import com.hazelcast.map.impl.query.PartitionScanRunner;
 import com.hazelcast.map.impl.query.QueryRunner;
 import com.hazelcast.map.impl.query.ResultProcessorRegistry;
-import com.hazelcast.map.impl.record.HDRecordComparator;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
@@ -123,9 +124,11 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     }
 
     @Override
-    void initRecordComparators() {
-        super.initRecordComparators();
-        recordComparatorMap.put(InMemoryFormat.NATIVE, new HDRecordComparator(serializationService));
+    public ValueComparator getValueComparatorOf(InMemoryFormat inMemoryFormat) {
+        if (inMemoryFormat == InMemoryFormat.NATIVE) {
+            return NativeValueComparator.INSTANCE;
+        }
+        return super.getValueComparatorOf(inMemoryFormat);
     }
 
     @Override

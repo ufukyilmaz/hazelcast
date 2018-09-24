@@ -195,7 +195,7 @@ public final class NativeMemoryTestUtil {
 
         private String getMessage(long key, long value) {
             if (value == HiDensityNativeMemoryCacheRecord.SIZE) {
-                HiDensityNativeMemoryCacheRecord record = new HiDensityNativeMemoryCacheRecord(null, key);
+                HiDensityNativeMemoryCacheRecord record = new HiDensityNativeMemoryCacheRecord(key);
                 return (++i) + ". Record Address: " + key + " (Value Address: " + record.getValueAddress() + ")";
             } else if (value == 13) {
                 return (++i) + ". Key Address: " + key;

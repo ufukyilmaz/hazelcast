@@ -1,6 +1,7 @@
 package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.internal.hidensity.HiDensityRecord;
+import com.hazelcast.internal.memory.GlobalMemoryAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**
@@ -15,7 +16,8 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
  */
 public abstract class HiDensityNearCacheRecord extends HiDensityRecord implements NearCacheRecord<NativeMemoryData> {
 
-    protected HiDensityNearCacheRecord() {
+    public HiDensityNearCacheRecord(GlobalMemoryAccessor memoryAccessor) {
+        super(memoryAccessor);
     }
 
     /**

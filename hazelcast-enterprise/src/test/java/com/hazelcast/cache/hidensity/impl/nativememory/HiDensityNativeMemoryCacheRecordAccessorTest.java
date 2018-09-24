@@ -15,7 +15,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.util.QuickMath.modPowerOfTwo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -96,4 +99,37 @@ public class HiDensityNativeMemoryCacheRecordAccessorTest {
         assertFalse(accessor.isEqual(record1.address(), record2.address()));
     }
 
+    @Test
+    public void test_aligned_field_access() {
+        long address = memoryManager.allocate(HiDensityNativeMemoryCacheRecord.SIZE);
+        HiDensityNativeMemoryCacheRecord record = accessor.newRecord().reset(address);
+
+        NativeMemoryData value = serializationService.toData(1, DataType.NATIVE);
+        record.setValue(value);
+
+        assertAligned(address, HiDensityNativeMemoryCacheRecord.CREATION_TIME_OFFSET, 8);
+        AMEM.getLong(address + HiDensityNativeMemoryCacheRecord.CREATION_TIME_OFFSET);
+
+        assertAligned(address, HiDensityNativeMemoryCacheRecord.ACCESS_TIME_OFFSET, 8);
+        AMEM.getLong(address + HiDensityNativeMemoryCacheRecord.ACCESS_TIME_OFFSET);
+
+        assertAligned(address, HiDensityNativeMemoryCacheRecord.TTL_OFFSET, 8);
+        AMEM.getLong(address + HiDensityNativeMemoryCacheRecord.TTL_OFFSET);
+
+        assertAligned(address, HiDensityNativeMemoryCacheRecord.SEQUENCE_OFFSET, 8);
+        AMEM.getLong(address + HiDensityNativeMemoryCacheRecord.SEQUENCE_OFFSET);
+
+        assertAligned(address, HiDensityNativeMemoryCacheRecord.EXPIRY_POLICY_OFFSET, 8);
+        AMEM.getLong(address + HiDensityNativeMemoryCacheRecord.EXPIRY_POLICY_OFFSET);
+
+        assertAligned(address, HiDensityNativeMemoryCacheRecord.VALUE_OFFSET, 8);
+        AMEM.getLong(address + HiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
+
+        assertAligned(address, HiDensityNativeMemoryCacheRecord.ACCESS_HIT_OFFSET, 4);
+        AMEM.getInt(address + HiDensityNativeMemoryCacheRecord.ACCESS_HIT_OFFSET);
+    }
+
+    private static void assertAligned(long address, int offset, int mod) {
+        assertEquals(0, modPowerOfTwo(address + offset, mod));
+    }
 }

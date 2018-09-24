@@ -30,7 +30,6 @@ import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
-import com.hazelcast.wan.merkletree.MerkleTreeUtil;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -246,45 +245,24 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         }
 
         Map<Integer, int[]> diff = MapUtil.createHashMap(partitionIds.size());
-        int localTreeLevel = -1;
         for (Integer partitionId : partitionIds) {
             diff.put(partitionId, new int[0]);
         }
+        MerkleTreeComparisonProcessor processor = new MerkleTreeComparisonProcessor();
 
         while (true) {
             Map<Integer, int[]> localNodeValues = invokeLocal(mapName, diff);
-
-            localTreeLevel = extractTreeLevel(localNodeValues, localTreeLevel);
-
-            if (localNodeValues.containsValue(null)) {
-                // the comparison reached the leaf level level in the local cluster
-                // we've found the difference
-                // the diff map may need to be localized since it holds
-                // remote node hash sequences, possibly with nodes on
-                // deeper level than on which local leaves are
-
-                return localize(diff, localTreeLevel);
+            processor.processLocalNodeValues(localNodeValues);
+            if (processor.isComparisonFinished()) {
+                return processor.getDifference();
             }
-
             diff = localNodeValues;
 
             Map<Integer, int[]> remoteNodeValues = compareWithRemoteCluster(mapName, diff);
-            if (remoteNodeValues == null) {
-                logger.fine("Connection manager is shutting down, aborting merkle tree sync");
-                return null;
+            processor.processRemoteNodeValues(remoteNodeValues);
+            if (processor.isComparisonFinished()) {
+                return processor.getDifference();
             }
-
-            if (remoteNodeValues.containsValue(null)) {
-                // the comparison reached the leaf level on the target
-                // we've found the difference
-                return diff;
-            }
-
-            if (remoteNodeValues.isEmpty()) {
-                // the map in the source and target clusters is identical
-                return remoteNodeValues;
-            }
-
             diff = remoteNodeValues;
         }
     }
@@ -310,47 +288,6 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             }
         }
 
-        return diff;
-    }
-
-    private int extractTreeLevel(Map<Integer, int[]> nodeValues, int currentTreeLevel) {
-        for (int[] diffs : nodeValues.values()) {
-            if (diffs != null && diffs.length > 0) {
-                // we take the first node order from which we can tell
-                // which level the comparison is on
-                return MerkleTreeUtil.getLevelOfNode(diffs[0]);
-            }
-        }
-        return currentTreeLevel;
-    }
-
-    /**
-     * Replaces the remote node hash sequence with the parents' sequence
-     * if the remote nodes are on deeper level than the local leafLevel.
-     *
-     * @param diff      The original map with the remote node hash sequences
-     * @param leafLevel The leaf level to which localize the map
-     * @return the map with localized node hash sequences
-     */
-    @SuppressWarnings("checkstyle:magicnumber")
-    private Map<Integer, int[]> localize(Map<Integer, int[]> diff, int leafLevel) {
-        for (Map.Entry<Integer, int[]> entry : diff.entrySet()) {
-            int[] nodeValues = entry.getValue();
-            if (nodeValues != null && nodeValues.length > 0 && MerkleTreeUtil.getLevelOfNode(nodeValues[0]) > leafLevel) {
-                int[] localizedNodeValues = new int[nodeValues.length / 2];
-                int localizedIdx = 0;
-                for (int i = 0; i < nodeValues.length; i += 4) {
-                    int leftChildOrder = nodeValues[i];
-                    int leftChildHash = nodeValues[i + 1];
-                    int rightChildHash = nodeValues[i + 3];
-                    int parentChildOrder = MerkleTreeUtil.getParentOrder(leftChildOrder);
-
-                    localizedNodeValues[localizedIdx++] = parentChildOrder;
-                    localizedNodeValues[localizedIdx++] = MerkleTreeUtil.sumHash(leftChildHash, rightChildHash);
-                }
-                entry.setValue(localizedNodeValues);
-            }
-        }
         return diff;
     }
 

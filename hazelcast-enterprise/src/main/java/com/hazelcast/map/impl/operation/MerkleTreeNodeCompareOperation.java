@@ -59,7 +59,7 @@ public class MerkleTreeNodeCompareOperation extends MapOperation implements Read
 
         int localTreeDepth = localMerkleTree.depth();
         int remoteLevel = MerkleTreeUtil.getLevelOfNode(remotePartitionNodes[0]);
-        if (remoteLevel >= localTreeDepth - 1) {
+        if (remoteLevel > localTreeDepth - 1) {
             // the remote level is deeper than our local tree depth
             // we can't compare so all nodes are different
             responseDifferentNodeOrderHashPairs = null;

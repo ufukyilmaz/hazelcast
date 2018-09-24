@@ -18,20 +18,20 @@ public class LatencyTrackingWanBatchSender implements WanBatchSender {
     private final WanBatchSender delegate;
     private final StoreLatencyPlugin storeLatencyPlugin;
     private final ConcurrentHashMap<Address, LatencyProbe> latencyProbes;
-    private final String wanPublisherName;
+    private final String wanPublisherId;
     private final ConstructorFunction<Address, LatencyProbe> createLatencyProbe
             = new ConstructorFunction<Address, LatencyProbe>() {
         @Override
         public LatencyProbe createNew(Address address) {
-            return storeLatencyPlugin.newProbe(KEY, wanPublisherName, address.toString());
+            return storeLatencyPlugin.newProbe(KEY, wanPublisherId, address.toString());
         }
     };
 
-    public LatencyTrackingWanBatchSender(WanBatchSender delegate, StoreLatencyPlugin plugin, String wanPublisherName) {
+    public LatencyTrackingWanBatchSender(WanBatchSender delegate, StoreLatencyPlugin plugin, String wanPublisherId) {
         this.delegate = delegate;
         this.storeLatencyPlugin = plugin;
         this.latencyProbes = new ConcurrentHashMap<Address, LatencyProbe>();
-        this.wanPublisherName = wanPublisherName;
+        this.wanPublisherId = wanPublisherId;
     }
 
     @Override

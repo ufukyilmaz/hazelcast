@@ -15,7 +15,6 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
 import com.hazelcast.core.MapStoreAdapter;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.internal.jmx.MBeanDataHolder;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.EntryBackupProcessor;
@@ -47,6 +46,7 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -866,22 +866,22 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    public void groupNamePropertyOverridesPublisherName() {
-        String wanReplicationScheme = "atob";
+    public void publisherIdOverridesGroupName() {
+        configB.getGroupConfig().setName("targetGroup");
+        configC.getGroupConfig().setName("targetGroup");
+        String wanReplicationScheme = "replicationScheme";
+
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configA, configC, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
 
-        WanPublisherConfig publisherConfig = configA.getWanReplicationConfig(wanReplicationScheme)
-                                                    .getWanPublisherConfigs()
-                                                    .iterator().next();
-        publisherConfig.getProperties()
-                       .put(WanReplicationProperties.GROUP_NAME.key(), publisherConfig.getGroupName());
-        publisherConfig.setGroupName("dummy");
+        List<WanPublisherConfig> publisherConfigs = configA.getWanReplicationConfig(wanReplicationScheme)
+                                                           .getWanPublisherConfigs();
+        assertEquals(2, publisherConfigs.size());
+        publisherConfigs.get(0).setPublisherId("publisher1");
+        publisherConfigs.get(1).setPublisherId("publisher2");
 
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 100);
-        assertKeysInEventually(clusterB, "map", 0, 100);
+        initCluster(singleNodeA, configA);
+        createDataIn(singleNodeA, "map", 0, 100);
     }
 
     @Test(expected = InvalidConfigurationException.class)

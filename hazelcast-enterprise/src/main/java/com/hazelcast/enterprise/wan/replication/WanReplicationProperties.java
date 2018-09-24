@@ -1,7 +1,6 @@
 package com.hazelcast.enterprise.wan.replication;
 
 import com.hazelcast.config.InvalidConfigurationException;
-import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.properties.PropertyDefinition;
 import com.hazelcast.config.properties.PropertyTypeConverter;
 import com.hazelcast.config.properties.SimplePropertyDefinition;
@@ -55,13 +54,6 @@ public final class WanReplicationProperties {
      */
     public static final PropertyDefinition ACK_TYPE
             = property("ack.type", PropertyTypeConverter.STRING);
-
-    /**
-     * Group name of target cluster.
-     * If the group name is defined using this property, it takes precedence
-     * over the value returned by the {@link WanPublisherConfig#getGroupName()}.
-     */
-    public static final PropertyDefinition GROUP_NAME = property("group.name", PropertyTypeConverter.STRING);
 
     /**
      * Group password of target cluster.

@@ -42,6 +42,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.hazelcast.util.StringUtil.isNullOrEmptyAfterTrim;
+
 /**
  * Enterprise implementation for WAN replication.
  */
@@ -75,35 +77,36 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     /**
      * Returns a WAN replication configured under a WAN replication config with
-     * the name {@code wanReplicationName} and with a WAN publisher name of
-     * {@code wanPublisherName}.
+     * the name {@code wanReplicationName} and with a WAN publisher ID of
+     * {@code wanPublisherId}.
      *
      * @param wanReplicationName the name of the {@link WanReplicationConfig}
-     * @param wanPublisherName   the publisher name
+     * @param wanPublisherId     the publisher ID
      * @return the WAN endpoint
      * @throws InvalidConfigurationException if there is no replication config
      *                                       with the name {@code wanReplicationName}
-     *                                       and publisher name {@code wanPublisherName}
+     *                                       and publisher ID {@code wanPublisherId}
      * @see WanReplicationConfig#getName
-     * @see WanPublisherConfig#getGroupName
+     * @see WanPublisherConfig#getGroupName()
+     * @see WanPublisherConfig#getPublisherId()
      */
-    public WanReplicationEndpoint getEndpoint(String wanReplicationName, String wanPublisherName) {
+    public WanReplicationEndpoint getEndpoint(String wanReplicationName, String wanPublisherId) {
         final WanReplicationPublisherDelegate publisherDelegate
                 = (WanReplicationPublisherDelegate) getWanReplicationPublisher(wanReplicationName);
-        final WanReplicationEndpoint endpoint = getEndpointFromDelegate(publisherDelegate, wanPublisherName);
+        final WanReplicationEndpoint endpoint = getEndpointFromDelegate(publisherDelegate, wanPublisherId);
 
         if (publisherDelegate == null || endpoint == null) {
             throw new InvalidConfigurationException("WAN Replication Config doesn't exist with WAN configuration name "
-                    + wanReplicationName + " and publisher name " + wanPublisherName);
+                    + wanReplicationName + " and publisher ID " + wanPublisherId);
         }
 
         return endpoint;
     }
 
     private WanReplicationEndpoint getEndpointFromDelegate(WanReplicationPublisherDelegate publisherDelegate,
-                                                           String wanPublisherName) {
+                                                           String wanPublisherId) {
         if (publisherDelegate != null) {
-            return publisherDelegate.getEndpoint(wanPublisherName);
+            return publisherDelegate.getEndpoint(wanPublisherId);
         }
         return null;
     }
@@ -143,19 +146,20 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     /**
      * Publishes an anti-entropy event for the given {@code wanReplicationName}
-     * and {@code targetGroupName}.
+     * and {@code wanPublisherId}.
      * This method does not wait for the event processing to complete.
      *
      * @param wanReplicationName the WAN replication config name
-     * @param targetGroupName    the group name in the WAN replication config
+     * @param wanPublisherId     the publisher ID in the WAN replication config
      * @param event              the WAN anti-entropy event
      * @throws InvalidConfigurationException if there is no replication config
-     *                                       with the name {@code wanReplicationName}
+     *                                       with the {@code wanReplicationName}
+     *                                       and {@code wanPublisherId}
      */
     public void publishAntiEntropyEvent(String wanReplicationName,
-                                        String targetGroupName,
+                                        String wanPublisherId,
                                         WanAntiEntropyEvent event) {
-        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
+        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, wanPublisherId);
         if (event instanceof WanSyncEvent) {
             endpoint.publishSyncEvent((WanSyncEvent) event);
             return;
@@ -165,7 +169,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
             ((WanBatchReplication) endpoint).publishAntiEntropyEvent(event);
         } else {
             logger.info("WAN replication for the scheme " + wanReplicationName
-                    + " with target group name " + targetGroupName
+                    + " with publisher ID " + wanPublisherId
                     + " does not support anti-entropy events.");
         }
     }
@@ -237,13 +241,28 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
             LocalWanStatsImpl localWanStats = new LocalWanStatsImpl();
 
             for (WanPublisherConfig publisherConfig : replicationEntry.getValue().getWanPublisherConfigs()) {
-                localWanStats.getLocalWanPublisherStats()
-                             .put(publisherConfig.getGroupName(), stoppedPublisherStats);
+                String publisherId = getPublisherIdOrGroupName(publisherConfig);
+                localWanStats.getLocalWanPublisherStats().put(publisherId, stoppedPublisherStats);
             }
             wanStats.put(wanReplicationConfigName, localWanStats);
         }
 
         return wanStats;
+    }
+
+    /**
+     * Returns the publisher ID for the given WAN publisher configuration which
+     * is then used for identifying the WAN publisher in a WAN replication
+     * scheme.
+     * If the publisher ID is empty, returns the publisher group name.
+     *
+     * @param publisherConfig the WAN replication publisher configuration
+     * @return the publisher ID or group name
+     */
+    public static String getPublisherIdOrGroupName(WanPublisherConfig publisherConfig) {
+        return !isNullOrEmptyAfterTrim(publisherConfig.getPublisherId())
+                ? publisherConfig.getPublisherId()
+                : publisherConfig.getGroupName();
     }
 
     @Override
@@ -258,9 +277,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public DistributedServiceWanEventCounters getSentEventCounters(String wanReplicationName,
-                                                                   String targetGroupName,
+                                                                   String wanPublisherId,
                                                                    String serviceName) {
-        return sentWanEventCounters.getWanEventCounter(wanReplicationName, targetGroupName, serviceName);
+        return sentWanEventCounters.getWanEventCounter(wanReplicationName, wanPublisherId, serviceName);
     }
 
     @Override
@@ -302,18 +321,18 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     @Override
-    public void pause(String wanReplicationName, String targetGroupName) {
-        getEndpoint(wanReplicationName, targetGroupName).pause();
+    public void pause(String wanReplicationName, String wanPublisherId) {
+        getEndpoint(wanReplicationName, wanPublisherId).pause();
     }
 
     @Override
-    public void stop(String wanReplicationName, String targetGroupName) {
-        getEndpoint(wanReplicationName, targetGroupName).stop();
+    public void stop(String wanReplicationName, String wanPublisherId) {
+        getEndpoint(wanReplicationName, wanPublisherId).stop();
     }
 
     @Override
-    public void resume(String wanReplicationName, String targetGroupName) {
-        getEndpoint(wanReplicationName, targetGroupName).resume();
+    public void resume(String wanReplicationName, String wanPublisherId) {
+        getEndpoint(wanReplicationName, wanPublisherId).resume();
     }
 
     @Override
@@ -322,19 +341,19 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     @Override
-    public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
+    public void syncMap(String wanReplicationName, String wanPublisherId, String mapName) {
         WanSyncEvent event = new WanSyncEvent(WanSyncType.SINGLE_MAP, mapName);
-        syncManager.initiateAntiEntropyRequest(wanReplicationName, targetGroupName, event);
+        syncManager.initiateAntiEntropyRequest(wanReplicationName, wanPublisherId, event);
     }
 
     @Override
-    public void syncAllMaps(String wanReplicationName, String targetGroupName) {
+    public void syncAllMaps(String wanReplicationName, String wanPublisherId) {
         WanSyncEvent event = new WanSyncEvent(WanSyncType.ALL_MAPS);
-        syncManager.initiateAntiEntropyRequest(wanReplicationName, targetGroupName, event);
+        syncManager.initiateAntiEntropyRequest(wanReplicationName, wanPublisherId, event);
     }
 
     @Override
-    public void consistencyCheck(String wanReplicationName, String targetGroupName, String mapName) {
+    public void consistencyCheck(String wanReplicationName, String wanPublisherId, String mapName) {
         // RU_COMPAT_3_11
         Version clusterVersion = node.getNodeEngine().getClusterService().getClusterVersion();
         if (!clusterVersion.isGreaterOrEqual(Versions.V3_11)) {
@@ -342,7 +361,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
                     "Consistency check request for WAN replication '%s',"
                             + " target group name '%s' and map '%s'"
                             + " ignored because cluster version is not 3.11",
-                    wanReplicationName, targetGroupName, mapName));
+                    wanReplicationName, wanPublisherId, mapName));
             return;
         }
 
@@ -352,17 +371,17 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
                     "Consistency check request for WAN replication '%s',"
                             + " target group name '%s' and map '%s'"
                             + " ignored because map has merkle trees disabled",
-                    wanReplicationName, targetGroupName, mapName));
+                    wanReplicationName, wanPublisherId, mapName));
             return;
         }
 
-        syncManager.initiateAntiEntropyRequest(wanReplicationName, targetGroupName,
+        syncManager.initiateAntiEntropyRequest(wanReplicationName, wanPublisherId,
                 new WanConsistencyCheckEvent(mapName));
     }
 
     @Override
-    public void clearQueues(String wanReplicationName, String targetGroupName) {
-        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
+    public void clearQueues(String wanReplicationName, String wanPublisherId) {
+        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, wanPublisherId);
         endpoint.clearQueues();
     }
 

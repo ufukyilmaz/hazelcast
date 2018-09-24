@@ -209,7 +209,7 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
         HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
         String result = communicator.syncMapOverWAN("newWRConfigName", "groupName", "mapName");
         assertEquals("{\"status\":\"fail\",\"message\":\"WAN Replication Config doesn't exist with WAN configuration"
-                + " name newWRConfigName and publisher target group name groupName\"}", result);
+                + " name newWRConfigName and publisher ID groupName\"}", result);
     }
 
     @Test

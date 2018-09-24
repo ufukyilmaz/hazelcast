@@ -12,7 +12,6 @@ import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.EXECUTOR_THREAD_COUNT;
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.GROUP_NAME;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.GROUP_PASSWORD;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.MAX_ENDPOINTS;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.RESPONSE_TIMEOUT_MILLIS;
@@ -148,8 +147,7 @@ public class WanConfigurationContext {
                 RESPONSE_TIMEOUT_MILLIS, publisherProperties, DEFAULT_RESPONSE_TIMEOUT_MILLIS);
         this.acknowledgeType = WanAcknowledgeType.valueOf(getProperty(
                 ACK_TYPE, publisherProperties, DEFAULT_ACKNOWLEDGE_TYPE));
-        this.groupName = getProperty(
-                GROUP_NAME, publisherProperties, publisherConfig.getGroupName());
+        this.groupName = publisherConfig.getGroupName();
         this.password = getProperty(
                 GROUP_PASSWORD, publisherProperties, DEFAULT_GROUP_PASS);
         this.useEndpointPrivateAddress = getProperty(
@@ -240,7 +238,6 @@ public class WanConfigurationContext {
     /**
      * Returns the group name of target cluster.
      *
-     * @see WanReplicationProperties#GROUP_NAME
      * @see WanPublisherConfig#getGroupName()
      */
     public String getGroupName() {

@@ -23,7 +23,7 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 public final class WanReplicationPublisherDelegate implements WanReplicationPublisher {
     /** Non-null WAN replication name */
     final String name;
-    /** Non-null WAN publisher endpoints, grouped by publisher name */
+    /** Non-null WAN publisher endpoints, grouped by publisher ID */
     final Map<String, WanReplicationEndpoint> endpoints;
 
     public WanReplicationPublisherDelegate(String name, Map<String, WanReplicationEndpoint> endpoints) {
@@ -39,11 +39,11 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
     }
 
     /**
-     * Returns the {@link WanReplicationEndpoint} with the name {@code publisherName}
+     * Returns the {@link WanReplicationEndpoint} with the {@code publisherId}
      * or {@code null} if it doesn't exist.
      */
-    public WanReplicationEndpoint getEndpoint(String publisherName) {
-        return endpoints.get(publisherName);
+    public WanReplicationEndpoint getEndpoint(String publisherId) {
+        return endpoints.get(publisherId);
     }
 
     public String getName() {

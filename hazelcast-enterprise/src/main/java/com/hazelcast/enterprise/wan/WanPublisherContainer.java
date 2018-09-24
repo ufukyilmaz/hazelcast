@@ -63,14 +63,14 @@ class WanPublisherContainer {
                 throw new InvalidConfigurationException("Either \'implementation\' or \'className\' "
                         + "attribute need to be set in WanPublisherConfig");
             }
-            final String publisherName = publisherConfig.getGroupName();
-            if (targetEndpoints.containsKey(publisherName)) {
+            String publisherId = EnterpriseWanReplicationService.getPublisherIdOrGroupName(publisherConfig);
+            if (targetEndpoints.containsKey(publisherId)) {
                 throw new InvalidConfigurationException(
-                        "Detected duplicate group-name '" + publisherName + "' for a single WAN replication config");
+                        "Detected duplicate publisher ID '" + publisherId + "' for a single WAN replication config");
             }
 
             endpoint.init(node, wanReplicationConfig, publisherConfig);
-            targetEndpoints.put(publisherName, endpoint);
+            targetEndpoints.put(publisherId, endpoint);
         }
         return targetEndpoints;
     }

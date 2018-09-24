@@ -174,6 +174,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     }
 
     @Test
+    @Ignore
     public void setExpiryPolicyPropagatesExpiryPolicyChangeToPassiveCluster() {
         initConfigA();
         initConfigB();
@@ -189,6 +190,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     }
 
     @Test
+    @Ignore
     public void setExpiryPolicyPropagatesExpiryPolicyBothWays() {
         initConfigA();
         initConfigB();

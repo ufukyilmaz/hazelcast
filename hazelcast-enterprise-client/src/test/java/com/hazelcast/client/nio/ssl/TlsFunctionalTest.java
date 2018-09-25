@@ -1,11 +1,13 @@
 package com.hazelcast.client.nio.ssl;
 
+import com.hazelcast.TestEnvironmentUtil;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
+import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
@@ -25,6 +27,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -385,6 +388,44 @@ public class TlsFunctionalTest {
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(1, hz1, hz2);
+    }
+
+    /**
+     * Case - JRE default truststore is used (by explicit path declaration to cacerts).
+     *
+     * <pre>
+     * Given: TLS is enabled and a Let's Encrypt issued certificate is used.
+     * When: TrustStore is configured using {@code ${java.home}/lib/security/cacerts} truststure and 2 members are started.
+     * Then: Members trust each other and they form a cluster.
+     * </pre>
+     */
+    @Test
+    public void testDefaultTruststore() throws IOException {
+        // older Java versions don't have the Let's Encrypt CA certificate in their truststores
+        assumeJavaVersionAtLeast(8);
+        assumeFalse(openSsl && TestEnvironmentUtil.isIbmJvm());
+        File letsEncryptKeystore = copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt.jks");
+        String xml = "<hazelcast xmlns=\"http://www.hazelcast.com/schema/config\">\n"
+                + "    <network>\n"
+                + "        <ssl enabled=\"true\">\r\n"
+                + "          <properties>\r\n"
+                + "            <property name=\"keyStore\">" + letsEncryptKeystore.getAbsolutePath() + "</property>\r\n"
+                + "            <property name=\"keyStorePassword\">123456</property>\r\n"
+                + "            <property name=\"trustStore\">${java.home}/lib/security/cacerts</property>\r\n"
+                + "          </properties>\r\n"
+                + "        </ssl>\r\n"
+                + "    </network>\n"
+                + "</hazelcast>\n";
+        ByteArrayInputStream bis = new ByteArrayInputStream(xml.getBytes());
+        XmlConfigBuilder configBuilder = new XmlConfigBuilder(bis);
+        Config config = configBuilder.build();
+        config.getNetworkConfig().getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+        if (mutualAuthentication) {
+            config.getNetworkConfig().getSSLConfig().setProperty("mutualAuthentication", "REQUIRED");
+        }
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
+        assertClusterSize(2, hz1, hz2);
     }
 
     /**

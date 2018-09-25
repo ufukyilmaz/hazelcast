@@ -68,7 +68,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         Config config = super.getConfig();
 
         config.getMapConfig("default")
-              .setInMemoryFormat(getMemoryFormat());
+                .setInMemoryFormat(getMemoryFormat());
 
         return config;
     }
@@ -447,12 +447,13 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
     @Test
     public void setTtl() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        String mergePolicy = com.hazelcast.spi.merge.PassThroughMergePolicy.class.getName();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", mergePolicy);
         startClusterA();
         startClusterB();
 
-        createDataIn(clusterB, "map", 0, 100);
-        createDataIn(clusterA, "map", 0, 100);
+        createDataIn(clusterB, "map", 0, 100, "value");
+        createDataIn(clusterA, "map", 0, 100, "value");
         IMap<Integer, Integer> map = getMap(clusterA, "map");
 
         for (int i = 0; i < 100; i++) {
@@ -464,13 +465,14 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
     @Test
     public void setTtl_twoWay() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
+        String mergePolicy = com.hazelcast.spi.merge.PassThroughMergePolicy.class.getName();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", mergePolicy);
+        setupReplicateFrom(configB, configA, clusterA.length, "btoa", mergePolicy);
         startClusterA();
         startClusterB();
 
-        createDataIn(clusterA, "map", 0, 100);
-        createDataIn(clusterB, "map", 0, 100);
+        createDataIn(clusterA, "map", 0, 100, "value");
+        createDataIn(clusterB, "map", 0, 100, "value");
         IMap<Integer, Integer> mapA = getMap(clusterA, "map");
         IMap<Integer, Integer> mapB = getMap(clusterB, "map");
 
@@ -687,8 +689,8 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
 
         final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
-                                                              .getWanPublisherConfigs()
-                                                              .get(0);
+                .getWanPublisherConfigs()
+                .get(0);
         targetClusterConfig.setInitialPublisherState(WanPublisherState.STOPPED);
 
         startClusterA();
@@ -714,8 +716,8 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
 
         final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
-                                                              .getWanPublisherConfigs()
-                                                              .get(0);
+                .getWanPublisherConfigs()
+                .get(0);
         targetClusterConfig.setInitialPublisherState(WanPublisherState.PAUSED);
 
         startClusterA();
@@ -849,7 +851,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
                 PassThroughMergePolicy.class.getName());
         configA.getMapConfig("default").setMaxIdleSeconds(1);
         configA.setProperty(CLEANUP_PERCENTAGE.getName(), "100")
-               .setProperty(TASK_PERIOD_SECONDS.getName(), "1");
+                .setProperty(TASK_PERIOD_SECONDS.getName(), "1");
         startClusterA();
         startClusterB();
 
@@ -876,7 +878,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         setupReplicateFrom(configA, configC, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
 
         List<WanPublisherConfig> publisherConfigs = configA.getWanReplicationConfig(wanReplicationScheme)
-                                                           .getWanPublisherConfigs();
+                .getWanPublisherConfigs();
         assertEquals(2, publisherConfigs.size());
         publisherConfigs.get(0).setPublisherId("publisher1");
         publisherConfigs.get(1).setPublisherId("publisher2");
@@ -892,14 +894,14 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
 
         for (WanPublisherConfig publisherConfig : configA.getWanReplicationConfig(wanReplicationScheme)
-                                                         .getWanPublisherConfigs()) {
+                .getWanPublisherConfigs()) {
             publisherConfig.setClassName(UninitializableWanEndpoint.class.getName());
         }
 
         startClusterA();
 
         clusterA[0].getMap("map")
-                   .put(1, 1);
+                .put(1, 1);
     }
 
     private void assertOutboundQueueDrainedEventually(final HazelcastInstance[] cluster, final String wanPublisherName,
@@ -911,7 +913,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
                     WanReplicationService wanReplicationService = getNodeEngineImpl(instance).getWanReplicationService();
                     EnterpriseWanReplicationService ewrs = (EnterpriseWanReplicationService) wanReplicationService;
                     assert ewrs.getStats().get(wanPublisherName).getLocalWanPublisherStats().get(targetGroupName)
-                               .getOutboundQueueSize() == 0;
+                            .getOutboundQueueSize() == 0;
                 }
             }
         });

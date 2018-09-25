@@ -5,11 +5,13 @@ import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.instance.Node;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.WanReplicationPublisher;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.hazelcast.nio.ClassLoaderUtil.getOrCreate;
@@ -49,13 +51,16 @@ class WanPublisherContainer {
     private Map<String, WanReplicationEndpoint> createPublishers(
             WanReplicationConfig wanReplicationConfig,
             List<WanPublisherConfig> publisherConfigs) {
-        final Map<String, WanReplicationEndpoint> targetEndpoints = new HashMap<String, WanReplicationEndpoint>();
         if (publisherConfigs.isEmpty()) {
-            return targetEndpoints;
+            return Collections.emptyMap();
         }
 
+
+        Map<String, WanReplicationEndpoint> targetEndpoints = MapUtil.createHashMap(publisherConfigs.size());
+        Map<String, WanPublisherConfig> targetEndpointConfigs = MapUtil.createHashMap(publisherConfigs.size());
+
         for (WanPublisherConfig publisherConfig : publisherConfigs) {
-            final WanReplicationEndpoint endpoint = getOrCreate(
+            WanReplicationEndpoint endpoint = getOrCreate(
                     (WanReplicationEndpoint) publisherConfig.getImplementation(),
                     node.getConfigClassLoader(),
                     publisherConfig.getClassName());
@@ -69,9 +74,16 @@ class WanPublisherContainer {
                         "Detected duplicate publisher ID '" + publisherId + "' for a single WAN replication config");
             }
 
-            endpoint.init(node, wanReplicationConfig, publisherConfig);
             targetEndpoints.put(publisherId, endpoint);
+            targetEndpointConfigs.put(publisherId, publisherConfig);
         }
+
+        for (Entry<String, WanReplicationEndpoint> endpointEntry : targetEndpoints.entrySet()) {
+            String publisherId = endpointEntry.getKey();
+            WanReplicationEndpoint endpoint = endpointEntry.getValue();
+            endpoint.init(node, wanReplicationConfig, targetEndpointConfigs.get(publisherId));
+        }
+
         return targetEndpoints;
     }
 

@@ -37,6 +37,7 @@ import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.util.MapUtil;
+import com.hazelcast.wan.UninitializableWanEndpoint;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.custom.CustomWanConsumer;
 import com.hazelcast.wan.map.filter.NoFilterMapWanFilter;
@@ -889,6 +890,11 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         String wanReplicationScheme = "atob";
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
+
+        for (WanPublisherConfig publisherConfig : configA.getWanReplicationConfig(wanReplicationScheme)
+                                                         .getWanPublisherConfigs()) {
+            publisherConfig.setClassName(UninitializableWanEndpoint.class.getName());
+        }
 
         startClusterA();
 

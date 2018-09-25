@@ -2,13 +2,14 @@ package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.impl.operation.MutableOperation;
-import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
+import com.hazelcast.util.Clock;
+import com.hazelcast.wan.impl.CallerProvenance;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
@@ -53,14 +54,24 @@ public class WanCacheMergeOperation
 
     @Override
     public Operation getBackupOperation() {
-        ExpiryPolicy expiryPolicy = null;
-        long expiryTime = mergingEntry.getExpirationTime();
-        if (expiryTime > 0) {
-            long ttl = expiryTime - System.currentTimeMillis();
-            expiryPolicy = new HazelcastExpiryPolicy(ttl, 0L, 0L);
-        }
-        return new CachePutBackupOperation(name, mergingEntry.getKey(), mergingEntry.getValue(), expiryPolicy, true);
+        ExpiryPolicy expiryPolicy = createOrNullBackupExpiryPolicy(mergingEntry.getExpirationTime());
+        return new CachePutBackupOperation(name, mergingEntry.getKey(),
+                mergingEntry.getValue(), expiryPolicy, true);
     }
+
+    static ExpiryPolicy createOrNullBackupExpiryPolicy(long expiryTime) {
+        if (expiryTime <= 0) {
+            return null;
+        }
+
+        long ttl = expiryTime - Clock.currentTimeMillis();
+        if (ttl <= 0) {
+            return null;
+        }
+
+        return new HazelcastExpiryPolicy(ttl, 0L, 0L);
+    }
+
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {

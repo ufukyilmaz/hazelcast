@@ -2,17 +2,18 @@ package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheMergePolicy;
-import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.wan.impl.CallerProvenance;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
+
+import static com.hazelcast.cache.hidensity.operation.WanCacheMergeOperation.createOrNullBackupExpiryPolicy;
 
 /**
  * Operation implementation for merging entries.
@@ -52,13 +53,9 @@ public class WanCacheLegacyMergeOperation
 
     @Override
     public Operation getBackupOperation() {
-        ExpiryPolicy expiryPolicy = null;
-        long expiryTime = cacheEntryView.getExpirationTime();
-        if (expiryTime > 0) {
-            long ttl = expiryTime - System.currentTimeMillis();
-            expiryPolicy = new HazelcastExpiryPolicy(ttl, 0L, 0L);
-        }
-        return new CachePutBackupOperation(name, cacheEntryView.getKey(), cacheEntryView.getValue(), expiryPolicy, true);
+        ExpiryPolicy expiryPolicy = createOrNullBackupExpiryPolicy(cacheEntryView.getExpirationTime());
+        return new CachePutBackupOperation(name, cacheEntryView.getKey(),
+                cacheEntryView.getValue(), expiryPolicy, true);
     }
 
     @Override

@@ -3,17 +3,15 @@ package com.hazelcast.cache.operation;
 import com.hazelcast.cache.impl.operation.CachePutBackupOperation;
 import com.hazelcast.cache.impl.operation.MutatingCacheOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
+import com.hazelcast.wan.impl.CallerProvenance;
 
 import java.io.IOException;
-
-import static java.lang.Boolean.TRUE;
 
 /**
  * Operation implementation for merging entries.
@@ -49,7 +47,7 @@ public class WanCacheMergeOperation extends MutatingCacheOperation {
 
     @Override
     public boolean shouldBackup() {
-        return TRUE.equals(response);
+        return backupRecord != null;
     }
 
     @Override

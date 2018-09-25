@@ -5,11 +5,11 @@ import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.operation.CachePutBackupOperation;
 import com.hazelcast.cache.impl.operation.MutatingCacheOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.wan.impl.CallerProvenance;
 
 import java.io.IOException;
 
@@ -50,7 +50,7 @@ public class WanCacheLegacyMergeOperation extends MutatingCacheOperation {
 
     @Override
     public boolean shouldBackup() {
-        return TRUE.equals(response);
+        return backupRecord != null;
     }
 
     @Override

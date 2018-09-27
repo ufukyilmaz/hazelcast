@@ -30,11 +30,19 @@ public class WanMapTestSupport {
                                CountDownLatch loadLatch) {
         HazelcastInstance aClusterInstance = cluster.getAMember();
         IMap<Integer, String> m = aClusterInstance.getMap(mapName);
-        for (; start < end; start++) {
-            m.put(start, valuePrefix + start);
+        for (int key = start; key < end; key++) {
+            m.put(key, valuePrefix + key);
             if (loadLatch != null) {
                 loadLatch.countDown();
             }
+        }
+    }
+
+    public static void removeFromMap(Cluster cluster, String mapName, int start, int end) {
+        HazelcastInstance aClusterInstance = cluster.getAMember();
+        IMap<Integer, String> m = aClusterInstance.getMap(mapName);
+        for (int key = start; key < end; key++) {
+            m.remove(key);
         }
     }
 

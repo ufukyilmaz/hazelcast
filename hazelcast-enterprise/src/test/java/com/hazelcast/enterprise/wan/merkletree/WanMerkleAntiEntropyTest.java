@@ -1,23 +1,16 @@
 package com.hazelcast.enterprise.wan.merkletree;
 
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.PartitionContainer;
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.RandomPicker;
-import com.hazelcast.wan.WanSyncStatus;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
-import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -26,106 +19,50 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
-import java.util.Map;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
+import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
+import static com.hazelcast.wan.fw.WanAntiEntropyTestSupport.verifyAllPartitionsAreConsistent;
+import static com.hazelcast.wan.fw.WanAntiEntropyTestSupport.verifyAllPartitionsAreInconsistent;
 import static com.hazelcast.wan.fw.WanCounterTestSupport.verifyEventCountersAreEventuallyZero;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
+import static com.hazelcast.wan.fw.WanMapTestSupport.removeFromMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
-import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
+import static com.hazelcast.wan.fw.WanTestSupport.waitForReplicationToStart;
+import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class WanMerkleAntiEntropyTest {
     private static final String MAP_NAME = "MAP_WITH_MERKLETREES";
     private static final String REPLICATION_NAME = "wanReplication";
+    private static final int MAP_ENTRIES = 100;
 
     private Cluster sourceCluster;
     private Cluster targetCluster;
     private WanReplication wanReplication;
     private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
 
-    @Parameterized.Parameters(name = "inMemoryFormat: {0} sourceDepth:{1} targetDepth:{2} partitions:{3} elements:{4}")
-    public static Collection<Object[]> parameters() {
-        return asList(new Object[][]{
-
-                // the cases below mostly work with very small record counts
-                // this is because with this approach we can better approximate the expected partition difference count to the
-                // real count
-
-                // case: only one cluster member holds records to compare (no error on the other member)
-                {OBJECT, 3, 3, 3, 1},
-                {NATIVE, 3, 3, 3, 1},
-
-                // case: higher record than partition count
-                {OBJECT, 5, 5, 271, 1000},
-                {NATIVE, 5, 5, 271, 1000},
-
-                // the cases below test that:
-                // - source and target Merkle trees have the same depth
-                // - source Merkle trees are deeper than target trees
-                // - source Merkle trees are shallower than target trees
-
-                // case: even depth with smaller record than partition count
-                {OBJECT, 3, 4, 5, 2},
-                {OBJECT, 4, 4, 5, 2},
-                {OBJECT, 4, 3, 5, 2},
-                {NATIVE, 3, 4, 5, 2},
-                {NATIVE, 4, 4, 5, 2},
-                {NATIVE, 4, 3, 5, 2},
-
-                // case: odd depth with smaller record than partition count
-                {OBJECT, 5, 8, 7, 3},
-                {OBJECT, 5, 5, 7, 3},
-                {OBJECT, 8, 5, 7, 3},
-                {NATIVE, 5, 8, 7, 3},
-                {NATIVE, 5, 5, 7, 3},
-                {NATIVE, 8, 5, 7, 3},
-
-                // case: odd depths with highly unbalanced tree depths; smaller record than partition count
-                {OBJECT, 5, 11, 271, 100},
-                {OBJECT, 11, 11, 271, 100},
-                {OBJECT, 11, 5, 271, 100},
-                {NATIVE, 5, 11, 271, 100},
-                {NATIVE, 11, 11, 271, 100},
-                {NATIVE, 11, 5, 271, 100},
-                });
+    @Parameters(name = "inMemoryFormat: {0}")
+    public static Collection<InMemoryFormat> parameters() {
+        return asList(BINARY, OBJECT, NATIVE);
     }
 
-    @Parameter(0)
+    @Parameter
     public InMemoryFormat inMemoryFormat;
-
-    @Parameter(1)
-    public int sourceTreeDepth;
-
-    @Parameter(2)
-    public int targetTreeDepth;
-
-    @Parameter(3)
-    public int partitions;
-
-    @Parameter(4)
-    public int entriesToPut;
-
-    @After
-    public void cleanup() {
-        factory.shutdownAll();
-    }
 
     @Before
     public void setup() {
@@ -147,15 +84,12 @@ public class WanMerkleAntiEntropyTest {
         sourceCluster.getConfig()
                      .getMapMerkleTreeConfig(MAP_NAME)
                      .setEnabled(true)
-                     .setDepth(sourceTreeDepth);
+                     .setDepth(6);
 
         targetCluster.getConfig()
                      .getMapMerkleTreeConfig(MAP_NAME)
                      .setEnabled(true)
-                     .setDepth(targetTreeDepth);
-
-        sourceCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
-        targetCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
+                     .setDepth(6);
 
         sourceCluster.getConfig().getMapConfig(MAP_NAME)
                      .setInMemoryFormat(inMemoryFormat);
@@ -173,78 +107,93 @@ public class WanMerkleAntiEntropyTest {
         }
     }
 
-    @Test
-    public void testConsistencyCheckDifferences() {
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-        sourceCluster.stopWanReplicationOnAllMembers(wanReplication);
-
-        fillMap(sourceCluster, MAP_NAME, 0, entriesToPut);
-
-        sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
-
-        verifyConsistencyCheckResultExpectDifferences();
+    @After
+    public void cleanup() {
+        factory.shutdownAll();
     }
 
     @Test
-    public void testConsistencyCheckAllInSync() {
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-        sourceCluster.stopWanReplicationOnAllMembers(wanReplication);
-
-        String valuePrefixCommonOnBothClusters = "T";
-        fillMap(sourceCluster, MAP_NAME, 0, entriesToPut, valuePrefixCommonOnBothClusters);
-        fillMap(targetCluster, MAP_NAME, 0, entriesToPut, valuePrefixCommonOnBothClusters);
+    public void testConsistencyCheckPutNotInSync() {
+        givenTwoInconsistentClustersWithData();
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
 
-        verifyConsistencyCheckResultExpectNoDifferences();
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME);
+    }
+
+    @Test
+    public void testConsistencyCheckPutAndRemoveAllInSync() {
+        givenTwoInconsistentClustersWithData();
+        removeFromMap(sourceCluster, MAP_NAME, 0, MAP_ENTRIES);
+
+        sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
+
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplication, MAP_NAME);
+    }
+
+    @Test
+    public void testConsistencyCheckPutInSyncUpdateOneNotInSync() {
+        givenTwoConsistentClustersWithData();
+
+        IMap<Object, Object> map = sourceCluster.getAMember().getMap(MAP_NAME);
+        int randomKey = RandomPicker.getInt(0, MAP_ENTRIES);
+        map.replace(randomKey, -1);
+
+        sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
+        int inconsistentPartitions = 1;
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, inconsistentPartitions);
+    }
+
+    @Test
+    public void testConsistencyCheckPutAndRemoveOneNotInSync() {
+        givenTwoConsistentClustersWithData();
+
+        IMap<Object, Object> map = sourceCluster.getAMember().getMap(MAP_NAME);
+        int randomKey = RandomPicker.getInt(0, MAP_ENTRIES);
+        map.remove(randomKey);
+
+        sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
+        int inconsistentPartitions = 1;
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, inconsistentPartitions);
     }
 
     @Test
     public void testConsistencyCheckAfterReplicationAllInSync() {
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
+        givenTwoInconsistentClustersWithData(WanPublisherState.PAUSED);
 
-        fillMap(sourceCluster, MAP_NAME, 0, entriesToPut);
+        sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME);
 
+        sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
+
+        waitForReplicationToStart(sourceCluster, targetCluster, wanReplication, MAP_NAME);
         verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
 
-        verifyConsistencyCheckResultExpectNoDifferences();
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplication, MAP_NAME);
     }
 
     @Test
-    public void testSyncPuts() {
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-        sourceCluster.stopWanReplicationOnAllMembers(wanReplication);
-
-        fillMap(sourceCluster, MAP_NAME, 0, entriesToPut);
-        sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
+    public void testSyncMakesClustersConsistent() {
+        givenTwoInconsistentClustersWithData();
 
         sourceCluster.syncMap(wanReplication, MAP_NAME);
-        waitForSyncToComplete();
+        waitForSyncToComplete(sourceCluster);
 
         verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
 
-        verifyConsistencyCheckResultExpectNoDifferences();
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplication, MAP_NAME);
     }
 
     @Ignore("Fails if a source partition is empty, but the target is not")
     @Test
     public void testMerkleSyncRemovals() {
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-        sourceCluster.stopWanReplicationOnAllMembers(wanReplication);
+        givenTwoConsistentClustersWithData();
 
-        String valuePrefixCommonOnBothClusters = "T";
-        fillMap(sourceCluster, MAP_NAME, 0, entriesToPut, valuePrefixCommonOnBothClusters);
-        fillMap(targetCluster, MAP_NAME, 0, entriesToPut, valuePrefixCommonOnBothClusters);
-        int randomInt = RandomPicker.getInt(0, entriesToPut);
+        int randomInt = RandomPicker.getInt(0, MAP_ENTRIES);
         IMap<Object, Object> sourceMap = sourceCluster.getAMember().getMap(MAP_NAME);
         IMap<Object, Object> targetMap = targetCluster.getAMember().getMap(MAP_NAME);
         sourceMap.remove(randomInt);
@@ -252,101 +201,52 @@ public class WanMerkleAntiEntropyTest {
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
         sourceCluster.syncMap(wanReplication, MAP_NAME);
-        waitForSyncToComplete();
+        waitForSyncToComplete(sourceCluster);
 
         verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
 
-        verifyConsistencyCheckResultExpectNoDifferences();
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplication, MAP_NAME);
 
         assertEquals(sourceMap.size(), targetMap.size());
-        assertEquals(entriesToPut - 1, sourceMap.size());
+        assertEquals(MAP_ENTRIES - 1, sourceMap.size());
     }
 
-    private void verifyConsistencyCheckResultExpectDifferences() {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                int checkedPartitions = 0;
-                int diffPartitions = 0;
-                for (HazelcastInstance instance : sourceCluster.getMembers()) {
-                    assertEquals(WanSyncStatus.READY, wanReplicationService(instance).getWanSyncState().getStatus());
-                    Map<String, ConsistencyCheckResult> lastCheckResult = getLastCheckResult(instance, wanReplication);
-                    ConsistencyCheckResult result = lastCheckResult.get(MAP_NAME);
+    private void givenTwoConsistentClustersWithData() {
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
+        sourceCluster.stopWanReplicationOnAllMembers(wanReplication);
 
-                    assertNotNull(result);
+        String valuePrefix = "T";
+        fillMap(sourceCluster, MAP_NAME, 0, MAP_ENTRIES, valuePrefix);
+        fillMap(targetCluster, MAP_NAME, 0, MAP_ENTRIES, valuePrefix);
 
-                    checkedPartitions += result.getLastCheckedPartitionCount();
-                    diffPartitions += result.getLastDiffPartitionCount();
-
-                }
-
-                assertEquals("All partitions are expected to be checked by the Merkle comparison",
-                        partitions, checkedPartitions);
-                assertEquals("Partitions with differences should be equal to the number of non-empty partitions",
-                        getNumberOfNonEmptyPartitions(), diffPartitions);
-            }
-        });
+        sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplication, MAP_NAME);
     }
 
-    private void verifyConsistencyCheckResultExpectNoDifferences() {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                int checkedPartitions = 0;
-                int diffPartitions = 0;
-                for (HazelcastInstance instance : sourceCluster.getMembers()) {
-                    assertEquals(WanSyncStatus.READY, wanReplicationService(instance).getWanSyncState().getStatus());
-
-                    Map<String, ConsistencyCheckResult> lastCheckResult = getLastCheckResult(instance, wanReplication);
-                    ConsistencyCheckResult result = lastCheckResult.get(MAP_NAME);
-
-                    assertNotNull(result);
-
-                    checkedPartitions += result.getLastCheckedPartitionCount();
-                    diffPartitions += result.getLastDiffPartitionCount();
-                }
-
-                assertEquals(partitions, checkedPartitions);
-                assertEquals(0, diffPartitions);
-            }
-        });
+    private void givenTwoInconsistentClustersWithData() {
+        givenTwoInconsistentClustersWithData(WanPublisherState.STOPPED);
     }
 
-    private void waitForSyncToComplete() {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                boolean syncFinished = true;
-                for (HazelcastInstance instance : sourceCluster.getMembers()) {
-                    syncFinished &= wanReplicationService(instance).getWanSyncState().getStatus() == WanSyncStatus.READY;
-                }
-                assertTrue(syncFinished);
-            }
-        });
-    }
+    private void givenTwoInconsistentClustersWithData(WanPublisherState initialWanReplicationState) {
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
 
-    private Map<String, ConsistencyCheckResult> getLastCheckResult(HazelcastInstance instance, WanReplication wanReplication) {
-        return wanReplicationService(instance)
-                .getStats()
-                .get(wanReplication.getSetupName()).getLocalWanPublisherStats()
-                .get(wanReplication.getTargetClusterName()).getLastConsistencyCheckResults();
-    }
-
-    private int getNumberOfNonEmptyPartitions() {
-        // the record store size is updated on the partition threads, we may read stale values here
-        // but since this method is invoked from an assertEventually periodically it is expected that we eventually observe the
-        // right value and this doesn't cause false failures due to visibility issues
-        int notEmptyPartitions = 0;
-        MapService service = getNode(sourceCluster.getAMember()).getNodeEngine().getService(MapService.SERVICE_NAME);
-        for (PartitionContainer partitionContainer : service.getMapServiceContext().getPartitionContainers()) {
-            RecordStore recordStore = partitionContainer.getRecordStore(MAP_NAME);
-            if (recordStore.size() != 0) {
-                notEmptyPartitions++;
-            }
+        switch (initialWanReplicationState) {
+            case STOPPED:
+                sourceCluster.stopWanReplicationOnAllMembers(wanReplication);
+                break;
+            case PAUSED:
+                sourceCluster.pauseWanReplicationOnAllMembers(wanReplication);
+                break;
         }
 
-        return notEmptyPartitions;
+        fillMap(sourceCluster, MAP_NAME, 0, MAP_ENTRIES);
+
+        sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME);
     }
+
 }

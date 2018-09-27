@@ -30,6 +30,7 @@ import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
+import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -70,7 +71,20 @@ public class WanMerkleSyncCountTest {
                 {12, 12, 271, 1000, 950, 50},
                 {12, 12, 271, 1000, 750, 251},
                 {12, 12, 271, 1000, 500, 500},
-                {12, 12, 271, 1000, 250, 750}
+                {12, 12, 271, 1000, 250, 750},
+
+                // this test case shows that the imperfect key distribution between the leaves may lead to unexpected inefficiency
+                // in this case one would naively expect that we transfer around 104 (2093-1989) entries, but we transfer 214
+                //
+                // we have 12 deep Merkle trees on both sides, which is 2048 leaves for the 2093 entries
+                // with a perfect key distribution we would synchronize from 104 leaves records between 104 and 149 (104+(2093-2048))
+                // - 104 would be the lucky case where we synchronize from leaves that hold only one record
+                //   in this case the avg keys per inconsistent leaves would be 1
+                // - 149 would be the worst case where we synchronize from all (45) leaves that hold 2 entries and the rest
+                //   from leaves hold only 1 entries
+                //   in this case the avg keys per inconsistent leaves would be ~1.433
+                // but in this given case the avg keys per inconsistent leaves is ~2.099
+                {12, 12, 1, 2093, 1989, 214}
         });
     }
 
@@ -139,26 +153,13 @@ public class WanMerkleSyncCountTest {
         fillMap(targetCluster, MAP_NAME, 0, targetCount, valuePrefixCommonOnBothClusters);
 
         sourceCluster.syncMap(wanReplication, MAP_NAME);
-        waitForSyncToComplete();
+        waitForSyncToComplete(sourceCluster);
 
         verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
 
         verifySyncResult(expectedSyncCount);
-    }
-
-    private void waitForSyncToComplete() {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                boolean syncFinished = true;
-                for (HazelcastInstance instance : sourceCluster.getMembers()) {
-                    syncFinished &= wanReplicationService(instance).getWanSyncState().getStatus() == WanSyncStatus.READY;
-                }
-                assertTrue(syncFinished);
-            }
-        });
     }
 
     private void verifySyncResult(final int expectedRecordsToSync) {
@@ -181,7 +182,7 @@ public class WanMerkleSyncCountTest {
 
                 assertTrue("Sync count " + syncCount + " should == " + expectedRecordsToSync, syncCount == expectedRecordsToSync);
             }
-        });
+        }, 10);
     }
 
 }

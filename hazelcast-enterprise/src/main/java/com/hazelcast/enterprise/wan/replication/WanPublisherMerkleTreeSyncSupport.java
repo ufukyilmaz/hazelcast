@@ -201,7 +201,10 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     }
 
     private void syncDifferences(String mapName, Map<Integer, int[]> diff, Set<Integer> processedPartitions) {
+        MerkleTreeSyncStats stats = new MerkleTreeSyncStats();
+
         for (Entry<Integer, int[]> partitionDiffsEntry : diff.entrySet()) {
+            stats.onSyncPartition();
             Integer partitionId = partitionDiffsEntry.getKey();
             counterMap.put(partitionId, new AtomicInteger());
 
@@ -219,9 +222,32 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                             new EnterpriseMapReplicationMerkleTreeNode(mapName, nodeEntries, partitionId);
                     publisher.offerToStagingQueue(new WanReplicationEvent(MapService.SERVICE_NAME, node));
                     counterMap.get(partitionId).addAndGet(node.getEntryCount());
+                    stats.onSyncLeaf(node.getEntryCount());
                 }
             }
             processedPartitions.add(partitionId);
+        }
+
+        stats.onSyncComplete();
+        logSyncStatsIfEnabled(stats);
+    }
+
+    private void logSyncStatsIfEnabled(MerkleTreeSyncStats stats) {
+        if (logger.isFineEnabled()) {
+            String syncStatsMsg = String.format("Synchronization finished%n%n"
+                            + "Merkle synchronization statistics:%n"
+                            + "\t Duration: %d secs%n"
+                            + "\t Total records synchronized: %d%n"
+                            + "\t Total partitions synchronized: %d%n"
+                            + "\t Total Merkle tree nodes synchronized: %d%n"
+                            + "\t Average records per Merkle tree node: %.2f%n"
+                            + "\t StdDev of records per Merkle tree node: %.2f%n"
+                            + "\t Minimum records per Merkle tree node: %d%n"
+                            + "\t Maximum records per Merkle tree node: %d%n",
+                    stats.getSyncDurationSecs(), stats.getRecordsSynced(), stats.getPartitionsSynced(), stats.getNodesSynced(),
+                    stats.getAvgEntriesPerLeaf(), stats.getStdDevEntriesPerLeaf(), stats.getMinLeafEntryCount(),
+                    stats.getMaxLeafEntryCount());
+            logger.fine(syncStatsMsg);
         }
     }
 

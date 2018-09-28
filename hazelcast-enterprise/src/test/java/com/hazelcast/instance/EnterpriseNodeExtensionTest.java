@@ -2,14 +2,20 @@ package com.hazelcast.instance;
 
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.JoinRequest;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.CipherByteArrayProcessor;
 import com.hazelcast.nio.NodeIOService;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.Packet;
+import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -20,10 +26,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.V5_SECURITY_ONLY_LICENSE;
 import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +42,7 @@ import static org.junit.Assert.assertTrue;
  * Test for EnterpriseNodeExtension.isNodeCompatibleWith(clusterVersion) &
  * EnterpriseNodeExtension.validateJoinRequest(joinMessage).
  */
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
 
@@ -45,8 +55,15 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
+    @Rule
+    public TestName testName = new TestName();
+
     @Before
     public void setup() throws Exception {
+        if (testName.getMethodName().startsWith("test_versionedSerialization")) {
+            // tests for versioned serialization require separate setup of HazelcastInstance
+            return;
+        }
         buildNumber = BuildInfoProvider.getBuildInfo().getBuildNumber();
         HazelcastInstance hazelcastInstance = createHazelcastInstance();
         nodeExtension = getNode(hazelcastInstance).getNodeExtension();
@@ -149,5 +166,54 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
 
         assertTrue(nodeExtension.createMulticastInputProcessor(nodeIOService) instanceof CipherByteArrayProcessor);
         assertTrue(nodeExtension.createMulticastOutputProcessor(nodeIOService) instanceof CipherByteArrayProcessor);
+    }
+
+    @Test
+    public void test_versionedSerializationUsed_whenRUFeatureLicensed() {
+        testSerializationServiceIsVersioned(true);
+    }
+
+    @Test
+    public void test_versionedSerializationNotUsed_whenRUFeatureNotLicensed() {
+        testSerializationServiceIsVersioned(false);
+    }
+
+    private void testSerializationServiceIsVersioned(boolean ruLicensed) {
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(
+                ruLicensed ? UNLIMITED_LICENSE : V5_SECURITY_ONLY_LICENSE);
+        try {
+            HazelcastInstance instance = createHazelcastInstance();
+            InternalSerializationService serializationService = getNode(instance).getSerializationService();
+            serializationService.toData(new NotVersionedDataSerializable(ruLicensed));
+        } finally {
+            System.clearProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName());
+        }
+    }
+
+    public static final class NotVersionedDataSerializable implements DataSerializable {
+
+        final boolean ruLicensed;
+
+        public NotVersionedDataSerializable(boolean ruLicensed) {
+            this.ruLicensed = ruLicensed;
+        }
+
+        private Version expectedVersion() {
+            // when RU is licensed, versioned serialization should be in use
+            // -->  UNKNOWN is returned from objectDataOutput.getVersion (as this DataSerializable
+            // does not implement Versioned)
+            // otherwise current cluster version is always returned from objectDataOutput.getVersion
+            return ruLicensed ? Version.UNKNOWN : Versions.CURRENT_CLUSTER_VERSION;
+        }
+
+        @Override
+        public void writeData(ObjectDataOutput objectDataOutput) {
+            assertEquals(expectedVersion(), objectDataOutput.getVersion());
+        }
+
+        @Override
+        public void readData(ObjectDataInput objectDataInput) {
+
+        }
     }
 }

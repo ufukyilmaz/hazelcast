@@ -14,11 +14,11 @@ import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.PartitioningStrategy;
+import com.hazelcast.enterprise.EnterprisePhoneHome;
 import com.hazelcast.enterprise.monitor.impl.jmx.EnterpriseManagementService;
 import com.hazelcast.enterprise.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
 import com.hazelcast.enterprise.monitor.impl.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.enterprise.monitor.impl.rest.EnterpriseTextCommandServiceImpl;
-import com.hazelcast.enterprise.EnterprisePhoneHome;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
@@ -168,6 +168,10 @@ public class EnterpriseNodeExtension
         createSecurityContext(node);
         createMemoryManager(node);
         createSocketInterceptor(node.config.getNetworkConfig());
+    }
+
+    private boolean isRollingUpgradeLicensed() {
+        return license.getFeatures().contains(Feature.ROLLING_UPGRADE);
     }
 
     private void createSecurityContext(Node node) {
@@ -342,8 +346,8 @@ public class EnterpriseNodeExtension
                     .setPartitioningStrategy(partitioningStrategy)
                     .setClusterVersionAware(listener)
                     .setHazelcastInstance(hazelcastInstance)
-                    // EE version uses the versioned serialization by default
-                    .setVersionedSerializationEnabled(true)
+                    // EE version uses versioned serialization when rolling upgrade feature is licensed
+                    .setVersionedSerializationEnabled(isRollingUpgradeLicensed())
                     .setNotActiveExceptionSupplier(new Supplier<RuntimeException>() {
                         @Override
                         public RuntimeException get() {
@@ -565,7 +569,12 @@ public class EnterpriseNodeExtension
 
     @Override
     public void validateJoinRequest(JoinMessage joinRequest) {
-        validateJoiningMemberVersion(joinRequest);
+        if (isRollingUpgradeLicensed()) {
+            validateJoiningMemberVersion(joinRequest);
+        } else {
+            // when license does not allow RU, apply OS rules for validating join request
+            super.validateJoinRequest(joinRequest);
+        }
         NativeMemoryConfig memoryConfig = node.getConfig().getNativeMemoryConfig();
         if (!memoryConfig.isEnabled()) {
             return;
@@ -613,6 +622,12 @@ public class EnterpriseNodeExtension
      */
     @Override
     public boolean isNodeVersionCompatibleWith(Version clusterVersion) {
+        if (!isRollingUpgradeLicensed()) {
+            // when license does not allow RU, apply OS rules: node version is only
+            // compatible with its own major.minor cluster version
+            return super.isNodeVersionCompatibleWith(clusterVersion);
+        }
+
         Preconditions.checkNotNull(clusterVersion);
 
         // there is no compatibility between major versions

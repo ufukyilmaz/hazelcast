@@ -1,16 +1,14 @@
 package com.hazelcast.cluster;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
+import com.hazelcast.test.annotation.SerializationSamplesExcluded;
 import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
 
 /**
  * Creates a cluster using TCP/IP joiner, then change cluster version.
  */
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({NightlyTest.class})
+@Category({NightlyTest.class, SerializationSamplesExcluded.class})
 public class TcpIpJoinerClusterUpgradeTest extends MulticastJoinerClusterUpgradeTest {
 
     @Override

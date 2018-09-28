@@ -20,6 +20,33 @@ public class CacheBasicServerCompatibilityTest extends CacheBasicServerTest {
     @Test
     @Override
     // RU_COMPAT_3_10
+    public void testSetExpiryPolicyReturnsTrue() {
+        expectedException.expect(NoSuchMethodException.class);
+        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
+        super.testSetExpiryPolicyReturnsTrue();
+    }
+
+    @Test
+    @Override
+    // RU_COMPAT_3_10
+    public void testSetExpiryPolicyReturnsFalse_whenKeyDoesNotExist() {
+        expectedException.expect(NoSuchMethodException.class);
+        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
+        super.testSetExpiryPolicyReturnsFalse_whenKeyDoesNotExist();
+    }
+
+    @Test
+    @Override
+    // RU_COMPAT_3_10
+    public void testSetExpiryPolicyReturnsFalse_whenKeyIsAlreadyExpired() {
+        expectedException.expect(NoSuchMethodException.class);
+        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
+        super.testSetExpiryPolicyReturnsFalse_whenKeyIsAlreadyExpired();
+    }
+
+    @Test
+    @Override
+    // RU_COMPAT_3_10
     public void testRecordExpiryPolicyTakesPrecedenceOverCachePolicy() {
         expectedException.expect(NoSuchMethodException.class);
         expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");

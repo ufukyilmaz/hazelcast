@@ -62,6 +62,7 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {"3.10", "3.10"},
+                {"3.10.5", "3.10"},
         });
     }
 

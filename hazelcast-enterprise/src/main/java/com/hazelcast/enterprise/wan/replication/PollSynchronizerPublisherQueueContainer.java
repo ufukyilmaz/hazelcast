@@ -2,6 +2,7 @@ package com.hazelcast.enterprise.wan.replication;
 
 import com.hazelcast.enterprise.wan.PublisherQueueContainer;
 import com.hazelcast.instance.Node;
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -28,16 +29,20 @@ public class PollSynchronizerPublisherQueueContainer extends PublisherQueueConta
      * overlap since it may corrupt the internal state of the WAN
      * replication related objects
      */
-    private final ConcurrentMap<Integer, Lock> partitionPollLocksMap = new ConcurrentHashMap<Integer, Lock>();
-    private final ConstructorFunction<Integer, Lock> pollLockConstructorFunction = new ConstructorFunction<Integer, Lock>() {
+    private final ConcurrentMap<Integer, ReentrantLock> partitionPollLocksMap = new ConcurrentHashMap<Integer, ReentrantLock>();
+    private final ConstructorFunction<Integer, ReentrantLock> pollLockConstructorFunction =
+            new ConstructorFunction<Integer, ReentrantLock>() {
         @Override
-        public Lock createNew(Integer partitionId) {
+        public ReentrantLock createNew(Integer partitionId) {
             return new ReentrantLock();
         }
     };
 
+    private final ILogger logger;
+
     PollSynchronizerPublisherQueueContainer(Node node) {
         super(node);
+        logger = node.getLogger(PollSynchronizerPublisherQueueContainer.class);
     }
 
     @Override
@@ -72,11 +77,16 @@ public class PollSynchronizerPublisherQueueContainer extends PublisherQueueConta
      * @see #unblockPollingPartition
      */
     void unblockPollingPartition(int partitionId) {
-        Lock pollLock = getPartitionPollLock(partitionId);
+        ReentrantLock pollLock = getPartitionPollLock(partitionId);
+
+        if (!pollLock.isHeldByCurrentThread()) {
+            logger.warning("Poll lock to be released is not owned by this thread! Lock: " + pollLock);
+        }
+
         pollLock.unlock();
     }
 
-    private Lock getPartitionPollLock(int partitionId) {
+    private ReentrantLock getPartitionPollLock(int partitionId) {
         return ConcurrencyUtil.getOrPutIfAbsent(partitionPollLocksMap, partitionId, pollLockConstructorFunction);
     }
 }

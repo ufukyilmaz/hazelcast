@@ -61,7 +61,7 @@ public class HDEvictorImpl extends EvictorImpl {
             Data key = record.getKey();
             if (!recordStore.isLocked(key)) {
                 if (!backup) {
-                    recordStore.doPostEvictionOperations(record, backup);
+                    recordStore.doPostEvictionOperations(record);
                 }
                 keysToRemove.add(key);
             }

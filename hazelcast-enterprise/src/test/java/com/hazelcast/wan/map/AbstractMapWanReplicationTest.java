@@ -57,8 +57,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.CLEANUP_PERCENTAGE;
-import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.TASK_PERIOD_SECONDS;
+import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_CLEANUP_PERCENTAGE;
+import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTestSupport {
@@ -850,8 +850,8 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         setupReplicateFrom(configA, configB, clusterB.length, "atob",
                 PassThroughMergePolicy.class.getName());
         configA.getMapConfig("default").setMaxIdleSeconds(1);
-        configA.setProperty(CLEANUP_PERCENTAGE.getName(), "100")
-                .setProperty(TASK_PERIOD_SECONDS.getName(), "1");
+        configA.setProperty(PROP_CLEANUP_PERCENTAGE, "100")
+                .setProperty(PROP_TASK_PERIOD_SECONDS, "1");
         startClusterA();
         startClusterB();
 

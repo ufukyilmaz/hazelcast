@@ -12,6 +12,7 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.TaskScheduler;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -48,7 +49,8 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     }
 
     private NearCacheManager newNearCacheManager() {
-        return new HiDensityNearCacheManager(ess, executionService.getGlobalTaskScheduler(), null);
+        return new HiDensityNearCacheManager(ess,
+                executionService.getGlobalTaskScheduler(), null, properties);
     }
 
     @Override
@@ -65,7 +67,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     protected NearCache<Integer, String> createNearCache(String name, NearCacheConfig nearCacheConfig,
                                                          ManagedNearCacheRecordStore nearCacheRecordStore) {
         return new HiDensityNearCache<Integer, String>(name, nearCacheConfig, newNearCacheManager(),
-                nearCacheRecordStore, ss, executionService.getGlobalTaskScheduler(), null);
+                nearCacheRecordStore, ss, executionService.getGlobalTaskScheduler(), null, properties);
     }
 
     @Test
@@ -149,8 +151,9 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
 
         try {
             NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-            NearCache<Integer, byte[]> nearCache = createHDNearCache(ess,
-                    executionService.getGlobalTaskScheduler(), null, nearCacheConfig);
+            NearCache<Integer, byte[]> nearCache
+                    = createHDNearCache(ess, executionService.getGlobalTaskScheduler(),
+                    null, nearCacheConfig, properties);
             byte[] value = new byte[(int) (2 * memorySize.bytes())];
             // when - then (just don't fail)
             nearCache.put(1, ess.toData(1), value);
@@ -162,14 +165,16 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     public static <K, V> NearCache<K, V> createHDNearCache(EnterpriseSerializationService ess,
                                                            TaskScheduler taskScheduler,
                                                            NearCacheRecordStore recordStore,
-                                                           NearCacheConfig nearCacheConfig) {
+                                                           NearCacheConfig nearCacheConfig,
+                                                           HazelcastProperties properties) {
         NearCache<K, V> nearCache = new HiDensityNearCache<K, V>(DEFAULT_NEAR_CACHE_NAME,
                 nearCacheConfig,
-                new HiDensityNearCacheManager(ess, taskScheduler, null),
+                new HiDensityNearCacheManager(ess, taskScheduler, null, properties),
                 recordStore,
                 ess,
                 taskScheduler,
-                null);
+                null,
+                properties);
 
         nearCache.initialize();
 

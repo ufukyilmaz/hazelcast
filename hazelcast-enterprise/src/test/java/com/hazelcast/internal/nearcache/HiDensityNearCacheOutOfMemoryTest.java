@@ -11,12 +11,15 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+
+import java.util.Properties;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -35,7 +38,8 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
         ess = new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
                 .build();
-        nearCacheManager = new HiDensityNearCacheManager(ess, createTaskScheduler(), null);
+        nearCacheManager = new HiDensityNearCacheManager(ess, createTaskScheduler(),
+                null, new HazelcastProperties(new Properties()));
     }
 
     @After

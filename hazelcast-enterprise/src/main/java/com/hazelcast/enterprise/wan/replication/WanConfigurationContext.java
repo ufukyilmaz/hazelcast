@@ -38,7 +38,7 @@ public class WanConfigurationContext {
      *
      * @see WanReplicationProperties#BATCH_SIZE
      */
-    static final int DEFAULT_BATCH_SIZE = 500;
+    public static final int DEFAULT_BATCH_SIZE = 500;
 
     /**
      * Default maximum amount of time to be waited before sending a batch of

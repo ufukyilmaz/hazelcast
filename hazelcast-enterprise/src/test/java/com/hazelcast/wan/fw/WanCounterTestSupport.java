@@ -26,25 +26,28 @@ public class WanCounterTestSupport {
     }
 
     public static void verifyEventCountersAreEventuallyZero(final Cluster sourceCluster, final WanReplication wanReplication) {
-        final String targetGroupName = wanReplication.getTargetClusterName();
-        final String replicaName = wanReplication.getSetupName();
-
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                for (HazelcastInstance instance : sourceCluster.getMembers()) {
-                    if (instance != null && instance.getLifecycleService().isRunning()) {
-                        int outboundQueueSize = getPrimaryOutboundQueueSize(instance, replicaName, targetGroupName);
-
-                        WanBatchReplication endpoint = wanReplicationEndpoint(instance, wanReplication);
-                        int outboundBackupQueueSize = endpoint.getCurrentBackupElementCount();
-
-                        assertEquals(0, outboundQueueSize);
-                        assertEquals(0, outboundBackupQueueSize);
-                    }
-                }
+                verifyEventCountersAreZero(sourceCluster, wanReplication);
             }
         });
+    }
+
+    public static void verifyEventCountersAreZero(Cluster sourceCluster, WanReplication wanReplication) {
+        final String targetGroupName = wanReplication.getTargetClusterName();
+        final String replicaName = wanReplication.getSetupName();
+        for (HazelcastInstance instance : sourceCluster.getMembers()) {
+            if (instance != null && instance.getLifecycleService().isRunning()) {
+                int outboundQueueSize = getPrimaryOutboundQueueSize(instance, replicaName, targetGroupName);
+
+                WanBatchReplication endpoint = wanReplicationEndpoint(instance, wanReplication);
+                int outboundBackupQueueSize = endpoint.getCurrentBackupElementCount();
+
+                assertEquals(0, outboundQueueSize);
+                assertEquals(0, outboundBackupQueueSize);
+            }
+        }
     }
 
     public static ScheduledFuture<?> dumpWanCounters(WanReplication wanReplication, ScheduledExecutorService executorService) {

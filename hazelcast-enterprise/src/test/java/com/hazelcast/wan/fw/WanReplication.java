@@ -7,6 +7,7 @@ import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.replication.WanConfigurationContext;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.wan.WanReplicationPublisher;
 
@@ -18,6 +19,7 @@ public class WanReplication {
     private final String setupName;
     private final ConsistencyCheckStrategy consistencyCheckStrategy;
     private final WanPublisherState initialPublisherState;
+    private final int replicationBatchSize;
     private WanReplicationPublisher wanPublisher;
     private Class<? extends WanReplicationPublisher> wanPublisherClass;
 
@@ -29,6 +31,7 @@ public class WanReplication {
         this.wanPublisherClass = builder.wanPublisherClass;
         this.consistencyCheckStrategy = builder.consistencyCheckStrategy;
         this.initialPublisherState = builder.initialPublisherState;
+        this.replicationBatchSize = builder.replicationBatchSize;
     }
 
     public static WanReplicationBuilder replicate() {
@@ -91,6 +94,7 @@ public class WanReplication {
         props.put(WanReplicationProperties.ENDPOINTS.key(), (getClusterEndPoints(config, targetCluster.size())));
         props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
         props.put(WanReplicationProperties.SNAPSHOT_ENABLED.key(), false);
+        props.put(WanReplicationProperties.BATCH_SIZE.key(), replicationBatchSize);
 
         return target;
     }
@@ -114,6 +118,7 @@ public class WanReplication {
         private Class<? extends WanReplicationPublisher> wanPublisherClass = WanBatchReplication.class;
         private ConsistencyCheckStrategy consistencyCheckStrategy;
         private WanPublisherState initialPublisherState;
+        private int replicationBatchSize = WanConfigurationContext.DEFAULT_BATCH_SIZE;
 
         private WanReplicationBuilder() {
         }
@@ -150,6 +155,11 @@ public class WanReplication {
 
         public WanReplicationBuilder withInitialPublisherState(WanPublisherState initialPublisherState) {
             this.initialPublisherState = initialPublisherState;
+            return this;
+        }
+
+        public WanReplicationBuilder withReplicationBatchSize(int replicationBatchSize) {
+            this.replicationBatchSize = replicationBatchSize;
             return this;
         }
 

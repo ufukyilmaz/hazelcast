@@ -45,6 +45,7 @@ import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.QueueUtil;
+import com.hazelcast.util.function.Predicate;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -78,6 +79,19 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
     private static final int DEFAULT_STAGING_QUEUE_SIZE = 100;
+
+    /**
+     * Filter which checks if the WAN replication event is part of WAN sync
+     */
+    private static final Predicate<WanReplicationEvent> NO_WAN_SYNC_EVENT_FILTER =
+            new Predicate<WanReplicationEvent>() {
+                @Override
+                public boolean test(WanReplicationEvent wanReplicationEvent) {
+                    ReplicationEventObject event = wanReplicationEvent.getEventObject();
+                    return !(event instanceof EnterpriseMapReplicationSync)
+                            && !(event instanceof EnterpriseMapReplicationMerkleTreeNode);
+                }
+            };
 
     protected final WanElementCounter wanCounter = new WanElementCounter();
 
@@ -533,10 +547,12 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     private void clearQueuesInternal() {
-        final int drainedFromStagingQueue = QueueUtil.drainQueue(stagingQueue);
+        final int drainedFromStagingQueue = QueueUtil.drainQueue(stagingQueue, NO_WAN_SYNC_EVENT_FILTER);
         // the elements in the staging queue were polled from queues
         // belong to owned partitions, therefore we should decrement the
         // primary counter
+        // sync events must not be counted against the drained count
+        // because they are not part of the primary element counter
         wanCounter.decrementPrimaryElementCounter(drainedFromStagingQueue);
         int totalDrained = drainedFromStagingQueue;
 

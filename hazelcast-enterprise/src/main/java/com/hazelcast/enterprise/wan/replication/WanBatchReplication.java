@@ -184,7 +184,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                 executor.execute(batchStripedRunnable);
                 taskSubmitted = true;
             } catch (RejectedExecutionException ree) {
-                logger.info("WanBatchReplication striped runnable job queue is full. Retrying.");
+                logger.fine("WanBatchReplication striped runnable job queue is full. Retrying.");
             }
         } while (!taskSubmitted && running);
     }

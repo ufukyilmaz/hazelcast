@@ -11,6 +11,7 @@ import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.ExecutionService;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -22,6 +23,7 @@ import org.mockito.verification.VerificationMode;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Properties;
 
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -49,6 +51,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     private PoolingMemoryManager memoryManager;
     private EnterpriseSerializationService serializationService;
     private ExecutionService executionService;
+    private HazelcastProperties properties;
     private Data keyData;
 
     private HiDensityNearCache<String, String> nearCache;
@@ -71,6 +74,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
                 .build();
 
         executionService = mock(ExecutionService.class);
+        properties = new HazelcastProperties(new Properties());
 
         keyData = serializationService.toData(KEY);
     }
@@ -202,7 +206,8 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     private HiDensityNearCache<String, String> createNearCache(String name, NearCacheManager nearCacheManager,
                                                                NearCacheRecordStore<String, String> recordStore) {
         HiDensityNearCache<String, String> nearCache = new HiDensityNearCache<String, String>(name, nearCacheConfig,
-                nearCacheManager, recordStore, serializationService, executionService.getGlobalTaskScheduler(), null);
+                nearCacheManager, recordStore, serializationService,
+                executionService.getGlobalTaskScheduler(), null, properties);
         nearCache.setMemoryManager(memoryManager);
 
         nearCaches.add(nearCache);

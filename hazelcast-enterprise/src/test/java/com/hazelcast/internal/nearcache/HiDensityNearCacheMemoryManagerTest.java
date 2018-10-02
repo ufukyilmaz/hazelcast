@@ -10,6 +10,7 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.executionservice.impl.DelegatingTaskScheduler;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -18,6 +19,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -31,6 +33,7 @@ public class HiDensityNearCacheMemoryManagerTest extends HazelcastTestSupport {
 
     private PoolingMemoryManager memoryManager;
     private EnterpriseSerializationService ess;
+    private HazelcastProperties properties;
 
     @Before
     public void setup() {
@@ -39,6 +42,7 @@ public class HiDensityNearCacheMemoryManagerTest extends HazelcastTestSupport {
         ess = new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
                 .build();
+        properties = new HazelcastProperties(new Properties());
     }
 
     @After
@@ -53,15 +57,16 @@ public class HiDensityNearCacheMemoryManagerTest extends HazelcastTestSupport {
     public void putToNearCache_throws_illegal_state_exception_if_memory_manager_was_disposed() {
         memoryManager.dispose();
 
-        createHDNearCache(ess).put(1, ess.toData(1), 1);
+        createHDNearCache(ess, properties).put(1, ess.toData(1), 1);
     }
 
-    private static <K, V> NearCache<K, V> createHDNearCache(EnterpriseSerializationService ess) {
+    private static <K, V> NearCache<K, V> createHDNearCache(EnterpriseSerializationService ess,
+                                                            HazelcastProperties properties) {
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
         DelegatingTaskScheduler taskScheduler = new DelegatingTaskScheduler(executorService, executorService);
 
         NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-        return HiDensityNearCacheTest.createHDNearCache(ess, taskScheduler, null, nearCacheConfig);
+        return HiDensityNearCacheTest.createHDNearCache(ess, taskScheduler, null, nearCacheConfig, properties);
     }
 
     protected static NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {

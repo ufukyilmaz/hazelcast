@@ -31,6 +31,7 @@ import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.function.Supplier;
@@ -163,8 +164,9 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
         SerializationService ss = client.getSerializationService();
         ClientExecutionService es = client.getClientExecutionService();
         ClassLoader classLoader = client.getClientConfig().getClassLoader();
+        HazelcastProperties properties = client.getProperties();
 
-        return new HiDensityNearCacheManager(((EnterpriseSerializationService) ss), es, classLoader);
+        return new HiDensityNearCacheManager(((EnterpriseSerializationService) ss), es, classLoader, properties);
     }
 
     @Override

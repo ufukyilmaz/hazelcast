@@ -1,6 +1,7 @@
 package com.hazelcast.internal.diagnostics;
 
 import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.enterprise.wan.replication.MerkleTreeWanSyncStats;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.LocalWanStats;
@@ -11,6 +12,7 @@ import com.hazelcast.spi.properties.HazelcastProperty;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.impl.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
+import com.hazelcast.wan.WanSyncStats;
 import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
 
 import java.util.Map;
@@ -40,6 +42,7 @@ public class WANPlugin extends DiagnosticsPlugin {
     private static final String CACHE_EVENT_COUNT_SECTION_PREFIX = "cache";
     private static final String MAP_EVENT_COUNT_SECTION_PREFIX = "map";
     private static final String MAP_CONSISTENCY_CHECK_SECTION_PREFIX = "mapConsistencyCheck";
+    private static final String MAP_SYNC_STATS_SECTION_PREFIX = "mapSyncStats";
     private static final String SYNC_EVENT_COUNT_KEY = "syncCount";
     private static final String UPDATE_EVENT_COUNT_KEY = "updateCount";
     private static final String REMOVE_EVENT_COUNT_KEY = "removeCount";
@@ -48,6 +51,16 @@ public class WANPlugin extends DiagnosticsPlugin {
     private static final String CONSISTENCY_CHECK_IS_RUNNING_KEY = "isRunning";
     private static final String CONSISTENCY_CHECK_LAST_CHECKED_COUNT_KEY = "checkedPartitionCount";
     private static final String CONSISTENCY_CHECK_LAST_DIFF_COUNT_KEY = "diffPartitionCount";
+
+    private static final String SYNC_STATS_DURATION = "durationSecs";
+    private static final String SYNC_STATS_PARTITIONS = "partitionsSynced";
+    private static final String SYNC_STATS_RECORDS = "recordsSynced";
+
+    private static final String MERKLE_SYNC_STATS_NODES = "merkleNodesSynced";
+    private static final String MERKLE_SYNC_STATS_AVG_PER_LEAF = "avgRecordsPerMerkleNode";
+    private static final String MERKLE_SYNC_STATS_STDDEV_PER_LEAF = "stdDevRecordsPerMerkleNode";
+    private static final String MERKLE_SYNC_STATS_MIN_PER_LEAF = "minRecordsPerMerkleNode";
+    private static final String MERKLE_SYNC_STATS_MAX_PER_LEAF = "maxRecordsPerMerkleNode";
 
     private static final String PUBLISHER_OUTBOUND_QUEUE_SIZE_KEY = "outboundQueueSize";
     private static final String PUBLISHER_TOTAL_PUBLISHED_EVENT_COUNT_KEY = "totalPublishedEventCount";
@@ -182,6 +195,7 @@ public class WANPlugin extends DiagnosticsPlugin {
         writer.writeKeyValueEntry(SYNC_EVENT_COUNT_KEY, publisherEventCounts.totalSyncCount);
         writer.writeKeyValueEntry(DROPPED_EVENT_COUNT_KEY, publisherEventCounts.totalDroppedCount);
         renderConsistencyCheckResults(writer, stats.getLastConsistencyCheckResults());
+        renderSyncStats(writer, stats.getLastSyncStats());
         writer.endSection();
     }
 
@@ -201,6 +215,38 @@ public class WANPlugin extends DiagnosticsPlugin {
                 writer.writeKeyValueEntry(CONSISTENCY_CHECK_IS_RUNNING_KEY, result.isRunning());
                 writer.writeKeyValueEntry(CONSISTENCY_CHECK_LAST_CHECKED_COUNT_KEY, result.getLastCheckedPartitionCount());
                 writer.writeKeyValueEntry(CONSISTENCY_CHECK_LAST_DIFF_COUNT_KEY, result.getLastDiffPartitionCount());
+                writer.endSection();
+            }
+        }
+    }
+
+    /**
+     * Writes the statistics about the last synchronization for all maps.
+     *
+     * @param writer        the diagnostics log writer
+     * @param lastSyncStats the statistics about the last synchronizations
+     *                      for all maps
+     */
+    private void renderSyncStats(DiagnosticsLogWriter writer, Map<String, WanSyncStats> lastSyncStats) {
+        if (!isNullOrEmpty(lastSyncStats)) {
+            for (Entry<String, WanSyncStats> syncStatsEntry : lastSyncStats.entrySet()) {
+                String mapName = syncStatsEntry.getKey();
+                WanSyncStats stats = syncStatsEntry.getValue();
+
+                writer.startSection(MAP_SYNC_STATS_SECTION_PREFIX + "-" + mapName);
+                writer.writeKeyValueEntry(SYNC_STATS_DURATION, stats.getDurationSecs());
+                writer.writeKeyValueEntry(SYNC_STATS_PARTITIONS, stats.getPartitionsSynced());
+                writer.writeKeyValueEntry(SYNC_STATS_RECORDS, stats.getRecordsSynced());
+
+                if (stats instanceof MerkleTreeWanSyncStats) {
+                    MerkleTreeWanSyncStats merkleStats = (MerkleTreeWanSyncStats) stats;
+                    writer.writeKeyValueEntry(MERKLE_SYNC_STATS_NODES, merkleStats.getNodesSynced());
+                    writer.writeKeyValueEntry(MERKLE_SYNC_STATS_AVG_PER_LEAF, merkleStats.getAvgEntriesPerLeaf());
+                    writer.writeKeyValueEntry(MERKLE_SYNC_STATS_STDDEV_PER_LEAF, merkleStats.getStdDevEntriesPerLeaf());
+                    writer.writeKeyValueEntry(MERKLE_SYNC_STATS_MIN_PER_LEAF, merkleStats.getMinLeafEntryCount());
+                    writer.writeKeyValueEntry(MERKLE_SYNC_STATS_MAX_PER_LEAF, merkleStats.getMaxLeafEntryCount());
+                }
+
                 writer.endSection();
             }
         }

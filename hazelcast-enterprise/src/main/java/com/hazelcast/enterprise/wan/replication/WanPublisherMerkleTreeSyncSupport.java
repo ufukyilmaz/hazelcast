@@ -29,6 +29,7 @@ import com.hazelcast.util.MapUtil;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanSyncStats;
 import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
 
 import java.util.Collection;
@@ -61,8 +62,9 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     private final MapService mapService;
     private final WanConfigurationContext configurationContext;
     private final ILogger logger;
-    private final Map<String, ConsistencyCheckResult> lastRootComparisonResults =
+    private final Map<String, ConsistencyCheckResult> lastConsistencyCheckResults =
             new ConcurrentHashMap<String, ConsistencyCheckResult>();
+    private final Map<String, WanSyncStats> lastSyncStats = new ConcurrentHashMap<String, WanSyncStats>();
     private final AbstractWanReplication publisher;
     private final WanSyncManager syncManager;
     /**
@@ -105,7 +107,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         if (logger.isFineEnabled()) {
             logger.fine("Checking via Merkle trees if map " + mapName + " is consistent with cluster " + target);
         }
-        lastRootComparisonResults.put(mapName, new ConsistencyCheckResult(-1, -1));
+        lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1));
         ConsistencyCheckResult checkResult = new ConsistencyCheckResult();
         try {
             List<Integer> localPartitionsToSync = getLocalPartitions(event);
@@ -115,7 +117,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                 result.addProcessedPartitions(localPartitionsToSync);
             }
         } finally {
-            lastRootComparisonResults.put(mapName, checkResult);
+            lastConsistencyCheckResults.put(mapName, checkResult);
         }
 
         if (logger.isFineEnabled()) {
@@ -149,12 +151,12 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     public void processEvent(WanSyncEvent event, WanAntiEntropyEventResult result) throws Exception {
         if (event.getType() == WanSyncType.ALL_MAPS) {
             for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
-                lastRootComparisonResults.put(mapName, new ConsistencyCheckResult(-1, -1));
+                lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1));
                 processMapSync(event, result, mapName);
             }
         } else {
             String mapName = event.getMapName();
-            lastRootComparisonResults.put(mapName, new ConsistencyCheckResult(-1, -1));
+            lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1));
             processMapSync(event, result, mapName);
         }
     }
@@ -196,12 +198,12 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             }
 
         } finally {
-            lastRootComparisonResults.put(mapName, checkResult);
+            lastConsistencyCheckResults.put(mapName, checkResult);
         }
     }
 
     private void syncDifferences(String mapName, Map<Integer, int[]> diff, Set<Integer> processedPartitions) {
-        MerkleTreeSyncStats stats = new MerkleTreeSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
 
         for (Entry<Integer, int[]> partitionDiffsEntry : diff.entrySet()) {
             stats.onSyncPartition();
@@ -230,9 +232,10 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
 
         stats.onSyncComplete();
         logSyncStatsIfEnabled(stats);
+        lastSyncStats.put(mapName, stats);
     }
 
-    private void logSyncStatsIfEnabled(MerkleTreeSyncStats stats) {
+    private void logSyncStatsIfEnabled(MerkleTreeWanSyncStats stats) {
         if (logger.isFineEnabled()) {
             String syncStatsMsg = String.format("Synchronization finished%n%n"
                             + "Merkle synchronization statistics:%n"
@@ -244,7 +247,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                             + "\t StdDev of records per Merkle tree node: %.2f%n"
                             + "\t Minimum records per Merkle tree node: %d%n"
                             + "\t Maximum records per Merkle tree node: %d%n",
-                    stats.getSyncDurationSecs(), stats.getRecordsSynced(), stats.getPartitionsSynced(), stats.getNodesSynced(),
+                    stats.getDurationSecs(), stats.getRecordsSynced(), stats.getPartitionsSynced(), stats.getNodesSynced(),
                     stats.getAvgEntriesPerLeaf(), stats.getStdDevEntriesPerLeaf(), stats.getMinLeafEntryCount(),
                     stats.getMaxLeafEntryCount());
             logger.fine(syncStatsMsg);
@@ -351,13 +354,18 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
 
     @Override
     public Map<String, ConsistencyCheckResult> getLastConsistencyCheckResults() {
-        return lastRootComparisonResults;
+        return lastConsistencyCheckResults;
     }
 
+    @Override
+    public Map<String, WanSyncStats> getLastSyncStats() {
+        return lastSyncStats;
+    }
 
     @Override
     public void destroyMapData(String mapName) {
-        lastRootComparisonResults.remove(mapName);
+        lastConsistencyCheckResults.remove(mapName);
+        lastSyncStats.remove(mapName);
     }
 
     /**

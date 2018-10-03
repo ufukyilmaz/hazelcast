@@ -433,6 +433,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         localWanPublisherStats.setConnected(isConnected());
         localWanPublisherStats.setOutboundQueueSize(wanCounter.getPrimaryElementCount());
         localWanPublisherStats.setLastConsistencyCheckResults(syncSupport.getLastConsistencyCheckResults());
+        localWanPublisherStats.setLastSyncStats(syncSupport.getLastSyncStats());
         return localWanPublisherStats;
     }
 

@@ -4,6 +4,7 @@ import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEventResult;
 import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
+import com.hazelcast.wan.WanSyncStats;
 import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
 
 import java.util.Map;
@@ -42,6 +43,11 @@ public interface WanPublisherSyncSupport {
      * Returns the results of the last WAN consistency checks, grouped by map name.
      */
     Map<String, ConsistencyCheckResult> getLastConsistencyCheckResults();
+
+    /**
+     * Returns the statistics about the last synchronization
+     */
+    Map<String, WanSyncStats> getLastSyncStats();
 
     /**
      * Decrements the counter for pending WAN sync events.

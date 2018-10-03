@@ -6,11 +6,11 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class MerkleTreeSyncStatsTest {
+public class MerkleTreeWanSyncStatsTest {
 
     @Test
     public void testStats() {
-        MerkleTreeSyncStats stats = new MerkleTreeSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
 
         // first partition
         stats.onSyncPartition();
@@ -35,7 +35,7 @@ public class MerkleTreeSyncStatsTest {
 
     @Test
     public void testNoDeviance() {
-        MerkleTreeSyncStats stats = new MerkleTreeSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
 
         // first partition
         stats.onSyncPartition();
@@ -55,7 +55,7 @@ public class MerkleTreeSyncStatsTest {
 
     @Test
     public void testOneSyncedRecord() {
-        MerkleTreeSyncStats stats = new MerkleTreeSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
 
         // first partition
         stats.onSyncPartition();
@@ -71,7 +71,7 @@ public class MerkleTreeSyncStatsTest {
 
     @Test
     public void testNoOverflow() {
-        MerkleTreeSyncStats stats = new MerkleTreeSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
 
         // first partition
         stats.onSyncPartition();
@@ -89,11 +89,11 @@ public class MerkleTreeSyncStatsTest {
 
     @Test
     public void testSyncDuration() {
-        MerkleTreeSyncStats stats = new MerkleTreeSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
 
         HazelcastTestSupport.sleepSeconds(1);
         stats.onSyncComplete();
 
-        assertTrue(stats.getSyncDurationSecs() >= 1);
+        assertTrue(stats.getDurationSecs() >= 1);
     }
 }

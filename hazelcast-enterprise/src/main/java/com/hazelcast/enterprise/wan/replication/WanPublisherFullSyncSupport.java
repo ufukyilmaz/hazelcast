@@ -19,6 +19,7 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.util.CollectionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanSyncStats;
 import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
 
 import java.util.Map;
@@ -43,6 +44,7 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
 
     private final WanSyncManager syncManager;
     private final AbstractWanPublisher publisher;
+    private final Map<String, WanSyncStats> lastSyncStats = new ConcurrentHashMap<String, WanSyncStats>();
 
     WanPublisherFullSyncSupport(Node node, AbstractWanPublisher publisher) {
         this.nodeEngine = node.getNodeEngine();
@@ -71,17 +73,21 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         Set<Integer> syncedPartitions = result.getProcessedPartitions();
         Set<Integer> partitionsToSync = event.getPartitionSet();
         InternalPartitionService partitionService = nodeEngine.getPartitionService();
+        FullWanSyncStats syncStats = new FullWanSyncStats();
 
         if (CollectionUtil.isEmpty(partitionsToSync)) {
             for (IPartition partition : partitionService.getPartitions()) {
-                syncPartition(event, syncedPartitions, partition);
+                syncPartition(event, syncedPartitions, partition, syncStats);
             }
         } else {
             for (Integer partitionId : partitionsToSync) {
                 IPartition partition = partitionService.getPartition(partitionId);
-                syncPartition(event, syncedPartitions, partition);
+                syncPartition(event, syncedPartitions, partition, syncStats);
             }
         }
+
+        syncStats.onSyncComplete();
+        lastSyncStats.put(event.getMapName(), syncStats);
     }
 
     @Override
@@ -92,6 +98,11 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
     @Override
     public Map<String, ConsistencyCheckResult> getLastConsistencyCheckResults() {
         return null;
+    }
+
+    @Override
+    public Map<String, WanSyncStats> getLastSyncStats() {
+        return lastSyncStats;
     }
 
     @Override
@@ -115,10 +126,12 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
      */
     private void syncPartition(WanSyncEvent event,
                                Set<Integer> syncedPartitions,
-                               IPartition partition) {
+                               IPartition partition,
+                               FullWanSyncStats syncStats) {
         if (partition.isLocal()) {
-            syncPartition(event, partition);
+            syncPartition(event, partition, syncStats);
             syncedPartitions.add(partition.getPartitionId());
+            syncStats.onSyncPartition();
         }
     }
 
@@ -127,7 +140,8 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
      * on {@link WanSyncEvent#getType()}
      */
     private void syncPartition(WanSyncEvent syncEvent,
-                               IPartition partition) {
+                               IPartition partition,
+                               FullWanSyncStats syncStats) {
         int partitionEventCount = 0;
         counterMap.put(partition.getPartitionId(), new AtomicInteger());
         if (syncEvent.getType() == WanSyncType.ALL_MAPS) {
@@ -140,6 +154,7 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         if (partitionEventCount == 0) {
             syncManager.incrementSyncedPartitionCount();
         }
+        syncStats.onSyncRecords(partitionEventCount);
     }
 
     /**

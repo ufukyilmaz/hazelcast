@@ -41,7 +41,7 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
     public void testIndexStatsQueryingChangingNumberOfMembers() {
         int queriesBulk = 100;
 
-        int entryCount = 100;
+        int entryCount = 1000;
         final int lessEqualCount = 20;
         double expectedEqual = 1.0 - 1.0 / entryCount;
         double expectedGreaterEqual = 1.0 - ((double) lessEqualCount) / entryCount;
@@ -160,7 +160,7 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
         assertEquals(originalMap3AverageHitSelectivity, valueStats(map3).getAverageHitSelectivity(), 0.001);
 
         assertEquals(originalOverallAverageHitSelectivity,
-                calculateOverallSelectivity(map2Hits, map2TotalHitSelectivity, map1, map3), 0.001);
+                calculateOverallSelectivity(map2Hits, map2TotalHitSelectivity, map1, map3), 0.015);
 
         for (int i = 0; i < queriesBulk; i++) {
             map3.entrySet(Predicates.alwaysTrue());

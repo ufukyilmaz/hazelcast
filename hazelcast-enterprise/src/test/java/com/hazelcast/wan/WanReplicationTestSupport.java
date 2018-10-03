@@ -24,8 +24,10 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.WanStatisticsRule;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 
 import java.util.Map;
 import java.util.Random;
@@ -56,8 +58,12 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         factory = createHazelcastInstanceFactory();
     }
 
+    @Rule
+    public WanStatisticsRule wanStatisticsRule = new WanStatisticsRule();
+
     @After
     public void cleanup() {
+        wanStatisticsRule.snapshotStats(factory);
         factory.shutdownAll();
     }
 

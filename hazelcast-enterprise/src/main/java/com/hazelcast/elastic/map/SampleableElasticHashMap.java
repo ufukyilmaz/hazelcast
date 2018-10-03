@@ -127,12 +127,11 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
     }
 
     /**
-     * This class implements both of "Iterable" and "Iterator" interfaces.
-     * So we can use only one object (instead of two) both for "Iterable" and "Iterator" interfaces.
-     *
-     * NOTE: Assumed that it is not accessed by multiple threads. So there is synchronization.
+     * Not thread safe
      */
     private final class LazySamplingEntryIterableIterator<E extends SamplingEntry> implements Iterable<E>, Iterator<E> {
+
+        private static final int NOT_INITIALIZED = Integer.MIN_VALUE;
 
         private final int maxSampleCount;
         private final int end;
@@ -144,6 +143,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
         private boolean toRight;
         private int passedSegmentCount;
         private int returnedEntryCount;
+        private int currentIndex;
         private boolean reachedToEnd;
         private E currentSample;
 
@@ -159,6 +159,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             this.currentSegmentNo = randomSegment;
             this.passedSegmentCount = 0;
             this.toRight = true;
+            this.currentIndex = NOT_INITIALIZED;
         }
 
         @Override
@@ -166,7 +167,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             return this;
         }
 
-        @SuppressWarnings("checkstyle:npathcomplexity")
+        @SuppressWarnings({"checkstyle:npathcomplexity", "checkstyle:cyclomaticcomplexity"})
         private void iterate() {
             if (returnedEntryCount >= maxSampleCount || reachedToEnd) {
                 currentSample = null;
@@ -175,11 +176,12 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
 
             if (toRight) {
                 // iterate to right from current segment
-                for (; passedSegmentCount < segmentCount;
-                     passedSegmentCount++, currentSegmentNo = (currentSegmentNo + 1) % segmentCount) {
+                for (; passedSegmentCount < segmentCount; nextSegment()) {
                     int segmentStart = currentSegmentNo * segmentSize;
                     int segmentEnd = segmentStart + segmentSize;
-                    int ix = segmentStart + randomIndex;
+                    int ix = currentIndex == NOT_INITIALIZED
+                            ? segmentStart + randomIndex
+                            : currentIndex + 1;
 
                     // find an allocated index to be sampled from current random index
                     while (ix < segmentEnd && !isValidForSampling(ix)) {
@@ -188,9 +190,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                     }
                     if (ix < segmentEnd) {
                         currentSample = createSamplingEntry(ix);
-                        passedSegmentCount++;
-                        // move to next segment
-                        currentSegmentNo = (currentSegmentNo + 1) % segmentCount;
+                        currentIndex = ix;
                         returnedEntryCount++;
                         return;
                     }
@@ -198,14 +198,16 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                 // reset before iterating to left
                 currentSegmentNo = randomSegment;
                 passedSegmentCount = 0;
+                currentIndex = NOT_INITIALIZED;
                 toRight = false;
             }
 
             // iterate to left from current segment
-            for (; passedSegmentCount < segmentCount;
-                 passedSegmentCount++, currentSegmentNo = (currentSegmentNo + 1) % segmentCount) {
+            for (; passedSegmentCount < segmentCount; nextSegment()) {
                 int segmentStart = currentSegmentNo * segmentSize;
-                int ix = segmentStart + randomIndex - 1;
+                int ix = currentIndex == NOT_INITIALIZED
+                        ? segmentStart + randomIndex - 1
+                        : currentIndex - 1;
 
                 // find an allocated index to be sampled from current random index
                 while (ix >= segmentStart && !isValidForSampling(ix)) {
@@ -214,9 +216,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                 }
                 if (ix >= segmentStart) {
                     currentSample = createSamplingEntry(ix);
-                    passedSegmentCount++;
-                    // move to next segment
-                    currentSegmentNo = (currentSegmentNo + 1) % segmentCount;
+                    currentIndex = ix;
                     returnedEntryCount++;
                     return;
                 }
@@ -246,9 +246,16 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             throw new UnsupportedOperationException("Removing is not supported");
         }
 
+        private void nextSegment() {
+            passedSegmentCount++;
+            // move to next segment
+            currentSegmentNo = (currentSegmentNo + 1) % segmentCount;
+            currentIndex = NOT_INITIALIZED;
+        }
+
     }
 
-    protected boolean isValidForSampling(int slot) {
+    private boolean isValidForSampling(int slot) {
         return accessor.isAssigned(slot);
     }
 }

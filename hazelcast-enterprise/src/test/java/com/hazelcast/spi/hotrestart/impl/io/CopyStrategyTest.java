@@ -4,19 +4,23 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.spi.hotrestart.backup.AbstractHotRestartBackupTest;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
 import java.io.File;
 
-import static com.hazelcast.nio.IOUtil.delete;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class CopyStrategyTest extends AbstractHotRestartBackupTest {
+
+    @Rule
+    public TemporaryFolder tempDir = new TemporaryFolder();
 
     @Test
     public void testCopyStrategies() throws Exception {
@@ -36,16 +40,11 @@ public class CopyStrategyTest extends AbstractHotRestartBackupTest {
         }
     }
 
-    private static void testStrategy(FileCopyStrategy strategy) throws Exception {
-        final File source = new File("source");
-        final File dest = new File("dest");
-        assertFalse(source.exists());
+    private void testStrategy(FileCopyStrategy strategy) throws Exception {
+        final File source = tempDir.newFile();
+        final File dest = new File(tempDir.newFolder(), "dest");
         assertFalse(dest.exists());
-        source.createNewFile();
-        assertTrue(source.exists());
         strategy.copy(source, dest);
         assertTrue(dest.exists());
-        delete(source);
-        delete(dest);
     }
 }

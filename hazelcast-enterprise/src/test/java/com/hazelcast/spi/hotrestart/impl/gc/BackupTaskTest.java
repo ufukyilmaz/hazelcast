@@ -6,10 +6,11 @@ import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
@@ -31,17 +32,16 @@ import static org.mockito.Mockito.when;
 @Category({QuickTest.class})
 public class BackupTaskTest {
 
+    @Rule
+    public TemporaryFolder tempDir = new TemporaryFolder();
+
     private File destDir;
     private File sourceDir;
 
     @Before
-    public void setup() {
-        destDir = new File("dest");
-        sourceDir = new File("source");
-        assertFalse(destDir.exists());
-        assertTrue(destDir.mkdirs());
-        assertFalse(sourceDir.exists());
-        assertTrue(sourceDir.mkdirs());
+    public void setup() throws IOException {
+        destDir = tempDir.newFolder();
+        sourceDir = tempDir.newFolder();
     }
 
     @Test
@@ -119,11 +119,5 @@ public class BackupTaskTest {
                 .dep(GcHelper.class, helper)
                 .dep(ChunkManager.class, manager)
                 .wire(new BackupTask(destDir, new long[]{0}, new long[]{1}));
-    }
-
-    @After
-    public void cleanup() {
-        IOUtil.delete(destDir);
-        IOUtil.delete(sourceDir);
     }
 }

@@ -47,8 +47,11 @@ public class ClientMapMultiVersionUnsupportedOpsTest extends HazelcastTestSuppor
     @Test
     public void put_shouldBeAllowedWithoutMaxIdle()
             throws ExecutionException, InterruptedException {
-        factory.newHazelcastInstance("3.10", new Config(), true);
-        factory.newHazelcastInstance("3.10.3", new Config(), true);
+        // 3.10.5
+        factory.newHazelcastInstance("3.10.5", new Config(), true);
+        factory.newHazelcastInstance("3.10.5", new Config(), true);
+        // 3.11
+        factory.newHazelcastInstance(new Config());
         HazelcastInstance hz311 = factory.newHazelcastInstance(new Config());
         HazelcastInstance instance = factory.newHazelcastClient(newClientConfigPointingToNode(hz311));
 
@@ -73,19 +76,40 @@ public class ClientMapMultiVersionUnsupportedOpsTest extends HazelcastTestSuppor
 
 
     @Test
-    public void put_shouldNotBeAllowedWithMaxIdle() {
-        factory.newHazelcastInstance("3.10", new Config(), true);
+    public void put_shouldNotBeAllowedWithMaxIdleMultiVersionOnOldMember() {
+        // 3.10.5
+        factory.newHazelcastInstance("3.10.5", new Config(), true);
+        HazelcastInstance hz310 = factory.newHazelcastInstance("3.10.5", new Config(), true);
+        // 3.11
+        factory.newHazelcastInstance(new Config());
+        HazelcastInstance hz311 = factory.newHazelcastInstance(new Config());
+
+        HazelcastInstance instance = factory.newHazelcastClient(newClientConfigPointingToNode(hz310));
+        IMap<String, String> map = instance.getMap("Test");
+
+        assertMaxIdleNotAllowed(map, "Unrecognized client message received with type");
+    }
+
+    @Test
+    public void put_shouldNotBeAllowedWithMaxIdleMultiVersionOnNewMember() {
         factory.newHazelcastInstance("3.10.3", new Config(), true);
+
+        // 3.11
+        factory.newHazelcastInstance(new Config());
         HazelcastInstance hz311 = factory.newHazelcastInstance(new Config());
 
         HazelcastInstance instance = factory.newHazelcastClient(newClientConfigPointingToNode(hz311));
         IMap<String, String> map = instance.getMap("Test");
 
+        assertMaxIdleNotAllowed(map, "Setting MaxIdle is available when cluster version is 3.11 or higher");
+    }
+
+    private void assertMaxIdleNotAllowed(IMap<String, String> map, String expectedErrorMsg) {
         try {
             map.put("Two", "Three", 1, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
             fail("Put with max-idle succeeded");
         } catch (Exception ex) {
-            assertContains(ex.getMessage(), "Setting MaxIdle is available when cluster version is 3.11 or higher");
+            assertContains(ex.getMessage(), expectedErrorMsg);
         }
 
         try {
@@ -93,28 +117,28 @@ public class ClientMapMultiVersionUnsupportedOpsTest extends HazelcastTestSuppor
                .get();
             fail("Put with max-idle succeeded");
         } catch (Exception ex) {
-            assertContains(ex.getMessage(), "Setting MaxIdle is available when cluster version is 3.11 or higher");
+            assertContains(ex.getMessage(), expectedErrorMsg);
         }
 
         try {
             map.putIfAbsent("Six", "Seven", 1, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
             fail("Put with max-idle succeeded");
         } catch (Exception ex) {
-            assertContains(ex.getMessage(), "Setting MaxIdle is available when cluster version is 3.11 or higher");
+            assertContains(ex.getMessage(), expectedErrorMsg);
         }
 
         try {
             map.putTransient("Seven", "Eight", 1, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
             fail("Put with max-idle succeeded");
         } catch (Exception ex) {
-            assertContains(ex.getMessage(), "Setting MaxIdle is available when cluster version is 3.11 or higher");
+            assertContains(ex.getMessage(), expectedErrorMsg);
         }
 
         try {
             map.set("Two", "Three", 1, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
             fail("Put with max-idle succeeded");
         } catch (Exception ex) {
-            assertContains(ex.getMessage(), "Setting MaxIdle is available when cluster version is 3.11 or higher");
+            assertContains(ex.getMessage(), expectedErrorMsg);
         }
 
         try {
@@ -122,7 +146,7 @@ public class ClientMapMultiVersionUnsupportedOpsTest extends HazelcastTestSuppor
                .get();
             fail("Put with max-idle succeeded");
         } catch (Exception ex) {
-            assertContains(ex.getMessage(), "Setting MaxIdle is available when cluster version is 3.11 or higher");
+            assertContains(ex.getMessage(), expectedErrorMsg);
         }
     }
 

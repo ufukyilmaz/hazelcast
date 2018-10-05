@@ -79,11 +79,15 @@ public class PollSynchronizerPublisherQueueContainer extends PublisherQueueConta
     void unblockPollingPartition(int partitionId) {
         ReentrantLock pollLock = getPartitionPollLock(partitionId);
 
-        if (!pollLock.isHeldByCurrentThread()) {
-            logger.warning("Poll lock to be released is not owned by this thread! Lock: " + pollLock);
+        if (pollLock.isLocked()) {
+            // there is a race between migration and creating WAN endpoints
+            // creating a WAN endpoint between beforeMigration and finalizeMigration
+            // may leave a particular pollLock unlocked for which an unlock
+            // attempt would fail with IllegalMonitorStateException
+            // documented in details in
+            // https://github.com/hazelcast/hazelcast-enterprise/issues/2442
+            pollLock.unlock();
         }
-
-        pollLock.unlock();
     }
 
     private ReentrantLock getPartitionPollLock(int partitionId) {

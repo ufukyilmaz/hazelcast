@@ -118,7 +118,7 @@ public class WanMerkleAntiEntropyTest {
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
 
-        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME);
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, MAP_ENTRIES);
     }
 
     @Test
@@ -141,7 +141,9 @@ public class WanMerkleAntiEntropyTest {
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
         int inconsistentPartitions = 1;
-        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, inconsistentPartitions);
+        int expectedEntriesToSync = 1;
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, inconsistentPartitions,
+                expectedEntriesToSync);
     }
 
     @Test
@@ -154,7 +156,9 @@ public class WanMerkleAntiEntropyTest {
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
         int inconsistentPartitions = 1;
-        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, inconsistentPartitions);
+        int expectedEntriesToSync = 0;
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, inconsistentPartitions,
+                expectedEntriesToSync);
     }
 
     @Test
@@ -162,7 +166,7 @@ public class WanMerkleAntiEntropyTest {
         givenTwoInconsistentClustersWithData(WanPublisherState.PAUSED);
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
-        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME);
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, MAP_ENTRIES);
 
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
@@ -246,7 +250,6 @@ public class WanMerkleAntiEntropyTest {
         fillMap(sourceCluster, MAP_NAME, 0, MAP_ENTRIES);
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
-        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME);
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, MAP_ENTRIES);
     }
-
 }

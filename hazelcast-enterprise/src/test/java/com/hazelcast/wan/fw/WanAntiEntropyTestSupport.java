@@ -27,18 +27,28 @@ public class WanAntiEntropyTestSupport {
                                                           final WanReplication wanReplication,
                                                           final String mapName) {
         int nonEmptyPartitions = getNumberOfNonEmptyPartitions(cluster, mapName);
-        verifyAllPartitionsAreInconsistent(cluster, wanReplication, mapName, nonEmptyPartitions);
+        verifyAllPartitionsAreInconsistent(cluster, wanReplication, mapName, nonEmptyPartitions, -1);
     }
 
     public static void verifyAllPartitionsAreInconsistent(final Cluster cluster,
                                                           final WanReplication wanReplication,
                                                           final String mapName,
-                                                          final int inconsistentPartitions) {
+                                                          final int expectedEntriesToSync) {
+        int nonEmptyPartitions = getNumberOfNonEmptyPartitions(cluster, mapName);
+        verifyAllPartitionsAreInconsistent(cluster, wanReplication, mapName, nonEmptyPartitions, expectedEntriesToSync);
+    }
+
+    public static void verifyAllPartitionsAreInconsistent(final Cluster cluster,
+                                                          final WanReplication wanReplication,
+                                                          final String mapName,
+                                                          final int inconsistentPartitions,
+                                                          final int expectedEntriesToSync) {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() throws Exception {
                 int checkedPartitions = 0;
                 int diffPartitions = 0;
+                int entriesToSync = 0;
                 for (HazelcastInstance instance : cluster.getMembers()) {
                     assertEquals(WanSyncStatus.READY, wanReplicationService(instance).getWanSyncState().getStatus());
                     Map<String, ConsistencyCheckResult> lastCheckResult = getLastCheckResult(instance, wanReplication);
@@ -48,7 +58,7 @@ public class WanAntiEntropyTestSupport {
 
                     checkedPartitions += result.getLastCheckedPartitionCount();
                     diffPartitions += result.getLastDiffPartitionCount();
-
+                    entriesToSync += result.getLastEntriesToSync();
                 }
 
                 int partitions = cluster.getAMember().getPartitionService().getPartitions().size();
@@ -56,6 +66,8 @@ public class WanAntiEntropyTestSupport {
                         partitions, checkedPartitions);
                 assertEquals("Partitions with differences should be equal to " + inconsistentPartitions,
                         inconsistentPartitions, diffPartitions);
+                assertEquals("Entries to synchronize should be equal to " + expectedEntriesToSync, expectedEntriesToSync,
+                        entriesToSync);
             }
         }, 20);
     }
@@ -69,6 +81,7 @@ public class WanAntiEntropyTestSupport {
                 int partitions = cluster.getAMember().getPartitionService().getPartitions().size();
                 int checkedPartitions = 0;
                 int diffPartitions = 0;
+                int entriesToSync = 0;
                 for (HazelcastInstance instance : cluster.getMembers()) {
                     assertEquals(WanSyncStatus.READY, wanReplicationService(instance).getWanSyncState().getStatus());
 
@@ -79,10 +92,12 @@ public class WanAntiEntropyTestSupport {
 
                     checkedPartitions += result.getLastCheckedPartitionCount();
                     diffPartitions += result.getLastDiffPartitionCount();
+                    entriesToSync += result.getLastEntriesToSync();
                 }
 
                 assertEquals(partitions, checkedPartitions);
                 assertEquals(0, diffPartitions);
+                assertEquals(0, entriesToSync);
             }
         }, 20);
     }

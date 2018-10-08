@@ -51,6 +51,9 @@ public class WANPlugin extends DiagnosticsPlugin {
     private static final String CONSISTENCY_CHECK_IS_RUNNING_KEY = "isRunning";
     private static final String CONSISTENCY_CHECK_LAST_CHECKED_COUNT_KEY = "checkedPartitionCount";
     private static final String CONSISTENCY_CHECK_LAST_DIFF_COUNT_KEY = "diffPartitionCount";
+    private static final String CONSISTENCY_CHECK_LAST_CHECKED_LEAF_COUNT_KEY = "checkedLeafCount";
+    private static final String CONSISTENCY_CHECK_LAST_DIFF_LEAF_COUNT_KEY = "diffLeafCount";
+    private static final String CONSISTENCY_CHECK_ENTRIES_TO_SYNC_KEY = "entriesToSync";
 
     private static final String SYNC_STATS_DURATION = "durationSecs";
     private static final String SYNC_STATS_PARTITIONS = "partitionsSynced";
@@ -215,6 +218,9 @@ public class WANPlugin extends DiagnosticsPlugin {
                 writer.writeKeyValueEntry(CONSISTENCY_CHECK_IS_RUNNING_KEY, result.isRunning());
                 writer.writeKeyValueEntry(CONSISTENCY_CHECK_LAST_CHECKED_COUNT_KEY, result.getLastCheckedPartitionCount());
                 writer.writeKeyValueEntry(CONSISTENCY_CHECK_LAST_DIFF_COUNT_KEY, result.getLastDiffPartitionCount());
+                writer.writeKeyValueEntry(CONSISTENCY_CHECK_LAST_CHECKED_LEAF_COUNT_KEY, result.getLastCheckedLeafCount());
+                writer.writeKeyValueEntry(CONSISTENCY_CHECK_LAST_DIFF_LEAF_COUNT_KEY, result.getLastDiffLeafCount());
+                writer.writeKeyValueEntry(CONSISTENCY_CHECK_ENTRIES_TO_SYNC_KEY, result.getLastEntriesToSync());
                 writer.endSection();
             }
         }

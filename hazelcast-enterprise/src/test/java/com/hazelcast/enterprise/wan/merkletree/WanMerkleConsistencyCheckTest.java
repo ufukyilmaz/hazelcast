@@ -167,7 +167,7 @@ public class WanMerkleConsistencyCheckTest {
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
 
-        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME);
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, entriesToPut);
     }
 
     @Test

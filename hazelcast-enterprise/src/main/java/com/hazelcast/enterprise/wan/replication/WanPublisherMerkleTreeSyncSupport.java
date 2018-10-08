@@ -16,6 +16,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MerkleTreeNodeEntries;
 import com.hazelcast.map.impl.operation.MerkleTreeGetEntriesOperation;
+import com.hazelcast.map.impl.operation.MerkleTreeGetEntryCountOperation;
 import com.hazelcast.map.impl.operation.MerkleTreeNodeCompareOperationFactory;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
@@ -31,6 +32,7 @@ import com.hazelcast.util.concurrent.IdleStrategy;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanSyncStats;
 import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
+import com.hazelcast.wan.merkletree.MerkleTreeUtil;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -107,13 +109,15 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         if (logger.isFineEnabled()) {
             logger.fine("Checking via Merkle trees if map " + mapName + " is consistent with cluster " + target);
         }
-        lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1));
+        lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1, -1, -1, -1));
         ConsistencyCheckResult checkResult = new ConsistencyCheckResult();
         try {
             List<Integer> localPartitionsToSync = getLocalPartitions(event);
             Map<Integer, int[]> diff = compareMerkleTrees(mapName, localPartitionsToSync);
             if (diff != null) {
-                checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), diff.size());
+                int totalLocalMerkleTreeLeaves = getMerkleTreeLeaves(diff) * localPartitionsToSync.size();
+                checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), diff.size(),
+                        totalLocalMerkleTreeLeaves, getDiffLeafCount(diff), getEntriesToSync(mapName, diff));
                 result.addProcessedPartitions(localPartitionsToSync);
             }
         } finally {
@@ -121,11 +125,55 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         }
 
         if (logger.isFineEnabled()) {
+            int entriesToSync = checkResult.getLastEntriesToSync();
             int checkedCount = checkResult.getLastCheckedPartitionCount();
             int diffCount = checkResult.getLastDiffPartitionCount();
             logger.fine("Consistency check for map " + mapName + " with cluster " + target + " has completed: "
-                    + diffCount + " partitions out of " + checkedCount + " are not consistent");
+                    + diffCount + " partitions out of " + checkedCount + " are not consistent, " + entriesToSync
+                    + " entries need to be synchronized.");
         }
+    }
+
+    private int getDiffLeafCount(Map<Integer, int[]> diff) {
+        int diffLeafCount = 0;
+
+        for (int[] pairs : diff.values()) {
+            diffLeafCount += pairs.length / 2;
+        }
+
+        return diffLeafCount;
+    }
+
+    private int getMerkleTreeLeaves(Map<Integer, int[]> diff) {
+        Iterator<int[]> iterator = diff.values().iterator();
+        if (!iterator.hasNext()) {
+            return 0;
+        }
+
+        int[] pairs = iterator.next();
+        int level = MerkleTreeUtil.getLevelOfNode(pairs[0]);
+        return MerkleTreeUtil.getNodesOnLevel(level);
+    }
+
+    private int getEntriesToSync(String mapName, Map<Integer, int[]> diff) {
+        int entryCount = 0;
+        for (Entry<Integer, int[]> partitionDiffsEntry : diff.entrySet()) {
+            Integer partitionId = partitionDiffsEntry.getKey();
+            int[] merkleTreeNodeOrderValuePairs = partitionDiffsEntry.getValue();
+            int[] merkleTreeNodeOrders = new int[merkleTreeNodeOrderValuePairs.length / 2];
+            for (int i = 0; i < merkleTreeNodeOrders.length; i++) {
+                merkleTreeNodeOrders[i] = merkleTreeNodeOrderValuePairs[i * 2];
+            }
+
+            MerkleTreeGetEntryCountOperation op = new MerkleTreeGetEntryCountOperation(mapName, merkleTreeNodeOrders);
+            InternalCompletableFuture<Integer> future =
+                    nodeEngine.getOperationService()
+                              .invokeOnPartition(MapService.SERVICE_NAME, op, partitionId);
+            Integer count = future.join();
+            entryCount += count;
+        }
+
+        return entryCount;
     }
 
     @Override
@@ -151,12 +199,12 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     public void processEvent(WanSyncEvent event, WanAntiEntropyEventResult result) throws Exception {
         if (event.getType() == WanSyncType.ALL_MAPS) {
             for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
-                lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1));
+                lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1, -1, -1, -1));
                 processMapSync(event, result, mapName);
             }
         } else {
             String mapName = event.getMapName();
-            lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1));
+            lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1, -1, -1, -1));
             processMapSync(event, result, mapName);
         }
     }
@@ -184,14 +232,17 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                 }
                 return;
             }
-            checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), diff.size());
+            int entriesToSync = getEntriesToSync(mapName, diff);
+            int totalLocalMerkleTreeLeaves = getMerkleTreeLeaves(diff) * localPartitionsToSync.size();
+            checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), diff.size(), totalLocalMerkleTreeLeaves,
+                    getDiffLeafCount(diff), entriesToSync);
             if (logger.isFineEnabled()) {
                 logger.fine("Merkle tree comparison for map " + mapName + " with cluster " + target + " has completed: " + diff
                         .size() + " partitions out of " + localPartitionsToSync.size() + " need to be synced");
             }
 
             syncDifferences(mapName, diff, processedPartitions);
-            checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), 0);
+            checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), 0, totalLocalMerkleTreeLeaves, 0, 0);
 
             if (logger.isFineEnabled()) {
                 logger.fine("Synchronization of map " + mapName + " to cluster " + target + " has finished");

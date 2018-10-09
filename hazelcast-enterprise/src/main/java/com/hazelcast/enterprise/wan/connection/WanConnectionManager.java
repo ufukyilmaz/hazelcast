@@ -103,7 +103,7 @@ public class WanConnectionManager {
         }
         if (targetEndpoints.size() == 0) {
             final String msg = "There were no discovered nodes for WanPublisherConfig,"
-                    + "please define endpoints statically or check the AWS and discovery config";
+                    + "please define endpoints statically or check the discovery config";
             if (discoveryService instanceof PredefinedDiscoveryService) {
                 throw new InvalidConfigurationException(msg);
             } else {

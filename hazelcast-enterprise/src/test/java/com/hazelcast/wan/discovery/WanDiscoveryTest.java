@@ -4,6 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.DiscoveryConfig;
 import com.hazelcast.config.DiscoveryStrategyConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.properties.PropertyDefinition;
@@ -288,6 +289,22 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
 
         assertAllEndpointsDiscovered(discoveryEndpoints, 2);
+    }
+
+    @Test(expected = InvalidConfigurationException.class)
+    public void ambiguousDiscoveryConfiguration() {
+        final ArrayListDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(new ArrayListDiscoveryStrategyFactory());
+        final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
+        discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length));
+
+        final WanReplicationConfig c = configA.getWanReplicationConfig(wanReplicationName);
+        final WanPublisherConfig publisherConfig = c.getWanPublisherConfigs().iterator().next();
+        publisherConfig.getProperties().put(WanReplicationProperties.ENDPOINTS.key(), "192.168.0.1");
+
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 1000);
     }
 
     private <T extends DiscoveryStrategyFactory> T setupDiscoveryStrategyFactory(T discoveryStrategyFactory) {

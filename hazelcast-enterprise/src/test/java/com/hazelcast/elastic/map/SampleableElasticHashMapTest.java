@@ -25,9 +25,11 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static org.junit.Assert.assertEquals;
@@ -112,6 +114,40 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
         assertNotNull(iterator.next());
         assertFalse(iterator.hasNext());
     }
+
+    @Test
+    public void testIteratorContract() {
+        final int entryCount = 100;
+        final int sampleCount = 30;
+
+        map = new SampleableElasticHashMap<SimpleNativeMemoryData>(
+                entryCount, serializationService, memoryBlockAccessor, memoryManager.getSystemAllocator());
+
+        for (int i = 0; i < entryCount; i++) {
+            Data key = serializationService.toData(randomString());
+            SimpleNativeMemoryData record = memoryBlockAccessor.newRecord();
+            map.put(key, record);
+        }
+
+        Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples = map.getRandomSamples(sampleCount);
+
+        Iterator<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> iterator = samples.iterator();
+
+        // hasNext should not consume the items
+        for (int i = 0; i < entryCount * 2; i++) {
+            assertTrue(iterator.hasNext());
+        }
+
+        Set<Data> set = new HashSet<Data>();
+        // should return unique samples
+        for (int i = 0; i < sampleCount; i++) {
+            set.add(iterator.next().getEntryKey());
+        }
+        assertEquals(sampleCount, set.size());
+
+        assertFalse(iterator.hasNext());
+    }
+
 
     @Test(expected = IllegalArgumentException.class)
     public void test_getRandomSamples_whenSampleCountIsNegative() {

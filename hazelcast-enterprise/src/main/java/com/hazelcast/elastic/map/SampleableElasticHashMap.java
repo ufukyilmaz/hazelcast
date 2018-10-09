@@ -228,14 +228,18 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
 
         @Override
         public boolean hasNext() {
-            iterate();
+            if (currentSample == null) {
+                iterate();
+            }
             return currentSample != null;
         }
 
         @Override
         public E next() {
-            if (currentSample != null) {
-                return currentSample;
+            if (hasNext()) {
+                E returnedItem = currentSample;
+                currentSample = null;
+                return returnedItem;
             } else {
                 throw new NoSuchElementException();
             }

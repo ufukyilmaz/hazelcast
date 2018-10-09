@@ -57,7 +57,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_put() {
+    public void put() {
         final String key = randomString();
         final String val = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "put", key, val);
@@ -65,7 +65,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test2_put() {
+    public void put_ttl() {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
@@ -74,14 +74,26 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_remove() {
+    public void put_ttl_maxIdle() {
+        final String key = randomString();
+        final String val = randomString();
+        final long ttl = randomLong();
+        final long maxIdle = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS,
+                maxIdle, TimeUnit.MILLISECONDS);
+        map.put(key, val, ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS);
+    }
+
+
+    @Test
+    public void remove() {
         final String key = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "remove", key);
         map.remove(key);
     }
 
     @Test
-    public void test2_remove() {
+    public void remove_val() {
         final String key = randomString();
         final String val = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "remove", key, val);
@@ -109,7 +121,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_putAsync() throws ExecutionException, InterruptedException {
+    public void putAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
         final String val = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "put", key, val);
@@ -117,12 +129,23 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test2_putAsync() throws ExecutionException, InterruptedException {
+    public void putAsync_ttl() throws ExecutionException, InterruptedException {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
         interceptor.setExpectation(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS);
         map.putAsync(key, val, ttl, TimeUnit.MILLISECONDS).get();
+    }
+
+    @Test
+    public void putAsync_ttl_maxIdle() throws ExecutionException, InterruptedException {
+        final String key = randomString();
+        final String val = randomString();
+        final long ttl = randomLong();
+        final long maxIdle = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS,
+                maxIdle, TimeUnit.MILLISECONDS);
+        map.putAsync(key, val, ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS).get();
     }
 
     @Test
@@ -159,7 +182,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_putIfAbsent() {
+    public void putIfAbsent() {
         final String key = randomString();
         final String val = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "putIfAbsent", key, val);
@@ -167,16 +190,19 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test2_putIfAbsent() {
+    public void putIfAbsent_maxIdle() {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
-        interceptor.setExpectation(getObjectType(), objectName, "putIfAbsent", key, val, ttl, TimeUnit.MILLISECONDS);
-        map.putIfAbsent(key, val, ttl, TimeUnit.MILLISECONDS);
+        final long maxIdle = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "putIfAbsent", key, val,
+                ttl, TimeUnit.MILLISECONDS,
+                maxIdle, TimeUnit.MILLISECONDS);
+        map.putIfAbsent(key, val, ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS);
     }
 
     @Test
-    public void test1_replace() {
+    public void replace() {
         final String key = randomString();
         final String val = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "replace", key, val);
@@ -184,7 +210,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test2_replace() {
+    public void replace_ifSame() {
         final String key = randomString();
         final String val1 = randomString();
         final String val2 = randomString();
@@ -193,7 +219,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_set() {
+    public void set() {
         final String key = randomString();
         final String val = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "set", key, val);
@@ -201,7 +227,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test2_set() {
+    public void set_ttl() {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
@@ -210,14 +236,25 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_lock() {
+    public void set_ttl_maxIdle() {
+        final String key = randomString();
+        final String val = randomString();
+        final long ttl = randomLong();
+        final long maxIdle = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "set", key, val,
+                ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS);
+        map.set(key, val, ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
+    public void lock() {
         final String key = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "lock", key);
         map.lock(key);
     }
 
     @Test
-    public void test2_lock() {
+    public void lock_lease() {
         final String key = randomString();
         final long lease = randomLong();
         interceptor.setExpectation(getObjectType(), objectName, "lock", key, lease, TimeUnit.MILLISECONDS);
@@ -232,14 +269,14 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_tryLock() {
+    public void tryLock() {
         final String key = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "tryLock", key);
         map.tryLock(key);
     }
 
     @Test
-    public void test2_tryLock() throws InterruptedException {
+    public void tryLock_lease() throws InterruptedException {
         final String key = randomString();
         final long timeout = randomLong();
         interceptor.setExpectation(getObjectType(), objectName, "tryLock", key, timeout, TimeUnit.MILLISECONDS);
@@ -276,14 +313,14 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_addEntryListener() {
+    public void addEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", null, false);
         map.addEntryListener(entryAdapter, false);
     }
 
     @Test
-    public void test2_addEntryListener() {
+    public void addEntryListener_toKey() {
         final String key = randomString();
         final EntryAdapter entryAdapter = new EntryAdapter();
         interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", null, key, false);
@@ -291,7 +328,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test3_addEntryListener() {
+    public void addEntryListener_predicate() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", null, predicate, false);
@@ -299,7 +336,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test4_addEntryListener() {
+    public void addEntryListener_predicate_toKey() {
         final String key = randomString();
         final EntryAdapter entryAdapter = new EntryAdapter();
         final DummyPredicate predicate = new DummyPredicate(randomLong());
@@ -336,39 +373,39 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_keySet() {
+    public void keySet() {
         interceptor.setExpectation(getObjectType(), objectName, "keySet");
         map.keySet();
     }
 
     @Test
-    public void test2_keySet() {
+    public void keySet_predicate() {
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         interceptor.setExpectation(getObjectType(), objectName, "keySet", predicate);
         map.keySet(predicate);
     }
 
     @Test
-    public void test1_values() {
+    public void values() {
         interceptor.setExpectation(getObjectType(), objectName, "values");
         map.values();
     }
 
     @Test
-    public void test2_values() {
+    public void values_predicate() {
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         interceptor.setExpectation(getObjectType(), objectName, "values", predicate);
         map.values(predicate);
     }
 
     @Test
-    public void test1_entrySet() {
+    public void entrySet() {
         interceptor.setExpectation(getObjectType(), objectName, "entrySet");
         map.entrySet();
     }
 
     @Test
-    public void test2_entrySet() {
+    public void entrySet_predicate() {
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         interceptor.setExpectation(getObjectType(), objectName, "entrySet", predicate);
         map.entrySet(predicate);
@@ -408,14 +445,14 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_executeOnEntries() {
+    public void executeOnEntries() {
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
         interceptor.setExpectation(getObjectType(), objectName, "executeOnEntries", entryProcessor);
         map.executeOnEntries(entryProcessor);
     }
 
     @Test
-    public void test2_executeOnEntries() {
+    public void executeOnEntries_predicate() {
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
         final DummyPredicate predicate = new DummyPredicate();
         interceptor.setExpectation(getObjectType(), objectName, "executeOnEntries", entryProcessor, predicate);
@@ -462,7 +499,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test1_loadAll() {
+    public void loadAll() {
         objectName = "loadAll" + randomString();
         IMap<Object, Object> map = client.getMap(objectName);
         interceptor.setExpectation(getObjectType(), objectName, "loadAll", true);
@@ -470,7 +507,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    public void test2_loadAll() {
+    public void loadAll_keys() {
         final HashSet keys = new HashSet();
         keys.add(randomString());
         keys.add(randomString());

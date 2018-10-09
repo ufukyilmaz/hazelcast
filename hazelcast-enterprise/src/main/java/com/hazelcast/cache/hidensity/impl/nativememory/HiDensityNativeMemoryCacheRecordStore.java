@@ -724,10 +724,10 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public CacheRecord putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
+    public CacheRecord putBackup(Data key, Object value, long creationTime, ExpiryPolicy expiryPolicy) {
         long ttl = expiryPolicyToTTL(expiryPolicy);
         evictIfRequired();
-        return own(key, value, ttl, false, true);
+        return own(key, value, ttl, creationTime, false, true);
     }
 
     private long expiryPolicyToTTL(ExpiryPolicy expiryPolicy) {
@@ -748,11 +748,12 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public CacheRecord putReplica(Data key, Object value, long ttlMillis) {
-        return own(key, value, ttlMillis, true, false);
+    public CacheRecord putReplica(Data key, Object value, long creationTime, long ttlMillis) {
+        return own(key, value, ttlMillis, creationTime, true, false);
     }
 
-    private CacheRecord own(Data key, Object value, long ttlMillis, boolean disableDeferredDispose, boolean updateJournal) {
+    private CacheRecord own(Data key, Object value, long ttlMillis, long creationTime,
+                            boolean disableDeferredDispose, boolean updateJournal) {
         long now = Clock.currentTimeMillis();
         HiDensityNativeMemoryCacheRecord record = null;
         NativeMemoryData oldValueData = null;
@@ -762,7 +763,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             record = records.get(key);
             if (record == null) {
                 isNewPut = true;
-                record = createRecord(value, now, Long.MAX_VALUE);
+                record = createRecord(value, creationTime, Long.MAX_VALUE);
                 records.put(key, record);
                 if (updateJournal) {
                     cacheService.getEventJournal().writeCreatedEvent(eventJournalConfig, objectNamespace, partitionId,
@@ -771,6 +772,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             } else {
                 oldValueData = record.getValue();
                 updateRecordValue(record, toNativeMemoryData(value));
+                record.setCreationTime(creationTime);
                 if (updateJournal) {
                     cacheService.getEventJournal().writeUpdateEvent(eventJournalConfig, objectNamespace, partitionId,
                             key, toHeapData(oldValueData), recordToValue(record));

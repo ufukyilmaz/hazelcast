@@ -75,7 +75,7 @@ public class CachePutAllOperation
                 onHeapKey = serializationService.convertData(key, DataType.HEAP);
                 onHeapValue = serializationService.convertData(value, DataType.HEAP);
 
-                cacheBackupRecordStore.addBackupRecord(onHeapKey, onHeapValue);
+                cacheBackupRecordStore.addBackupRecord(onHeapKey, onHeapValue, record.getCreationTime());
             }
 
             if (onHeapValue != null) {

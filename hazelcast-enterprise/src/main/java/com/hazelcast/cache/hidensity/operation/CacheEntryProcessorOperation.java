@@ -14,6 +14,8 @@ import com.hazelcast.spi.impl.MutatingOperation;
 import javax.cache.processor.EntryProcessor;
 import java.io.IOException;
 
+import static com.hazelcast.cache.impl.record.CacheRecord.TIME_NOT_AVAILABLE;
+
 /**
  * Operation of the Cache Entry Processor.
  * <p>{@link javax.cache.processor.EntryProcessor} is executed on the partition.
@@ -28,6 +30,7 @@ public class CacheEntryProcessorOperation
     private Object[] arguments;
 
     private transient Data backupData;
+    private transient long backupRecordCreationTime = TIME_NOT_AVAILABLE;
 
     public CacheEntryProcessorOperation() {
     }
@@ -53,6 +56,7 @@ public class CacheEntryProcessorOperation
                     backupData = dataVal;
                 }
             }
+            backupRecordCreationTime = record.getCreationTime();
         }
     }
 
@@ -83,7 +87,7 @@ public class CacheEntryProcessorOperation
         if (backupData != null) {
             // after entry processor is executed if there is a record, this means that
             // there is a possible add/update
-            return new CachePutBackupOperation(name, key, backupData, null);
+            return new CachePutBackupOperation(name, key, backupData, null, backupRecordCreationTime);
         } else {
             // if there is no record, this means possible remove by entry processor
             // TODO In case of non-existing key, this cause redundant remove operation to backups

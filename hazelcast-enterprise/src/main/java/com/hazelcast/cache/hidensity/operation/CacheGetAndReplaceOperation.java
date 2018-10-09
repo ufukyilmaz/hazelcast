@@ -1,6 +1,7 @@
 package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -55,12 +56,13 @@ public class CacheGetAndReplaceOperation
 
     @Override
     public boolean shouldBackup() {
-        return response != null;
+        return response != null && recordStore.getRecord(key) != null;
     }
 
     @Override
     public Operation getBackupOperation() {
-        return new CachePutBackupOperation(name, key, value, expiryPolicy);
+        CacheRecord record = recordStore.getRecord(key);
+        return new CachePutBackupOperation(name, key, value, expiryPolicy, record.getCreationTime());
     }
 
     @Override

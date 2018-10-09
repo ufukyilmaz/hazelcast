@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -49,14 +50,15 @@ public class WanCacheMergeOperation
 
     @Override
     public boolean shouldBackup() {
-        return Boolean.TRUE.equals(response);
+        return Boolean.TRUE.equals(response) && recordStore.getRecord(mergingEntry.getKey()) != null;
     }
 
     @Override
     public Operation getBackupOperation() {
         ExpiryPolicy expiryPolicy = createOrNullBackupExpiryPolicy(mergingEntry.getExpirationTime());
+        CacheRecord record = recordStore.getRecord(mergingEntry.getKey());
         return new CachePutBackupOperation(name, mergingEntry.getKey(),
-                mergingEntry.getValue(), expiryPolicy, true);
+                mergingEntry.getValue(), expiryPolicy, record.getCreationTime(), true);
     }
 
     static ExpiryPolicy createOrNullBackupExpiryPolicy(long expiryTime) {

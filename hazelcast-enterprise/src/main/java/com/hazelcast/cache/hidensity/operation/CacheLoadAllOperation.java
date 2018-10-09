@@ -63,7 +63,7 @@ public class CacheLoadAllOperation
                     // Loaded keys may have been evicted, then record will be null.
                     // So if the loaded key is evicted, don't send it to backup.
                     if (record != null) {
-                        cacheBackupRecordStore.addBackupRecord(key, record.getValue());
+                        cacheBackupRecordStore.addBackupRecord(key, record.getValue(), record.getCreationTime());
                     }
                 }
             }

@@ -14,6 +14,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
@@ -21,11 +22,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import static com.hazelcast.cache.impl.record.CacheRecord.TIME_NOT_AVAILABLE;
+import static com.hazelcast.internal.cluster.Versions.V3_11;
+
 /**
  * Replicates records from one off-heap source to an off-heap destination.
  */
 public final class HiDensityCacheReplicationOperation
-        extends CacheReplicationOperation implements IdentifiedDataSerializable {
+        extends CacheReplicationOperation implements IdentifiedDataSerializable, Versioned {
 
     private final Map<String, Map<Data, HiDensityCacheRecord>> source
             = new HashMap<String, Map<Data, HiDensityCacheRecord>>();
@@ -80,7 +84,7 @@ public final class HiDensityCacheReplicationOperation
                     Map.Entry<Data, CacheRecordHolder> next = iter.next();
                     Data key = next.getKey();
                     CacheRecordHolder holder = next.getValue();
-                    recordStore.putReplica(key, holder.value, holder.ttl);
+                    recordStore.putReplica(key, holder.value, holder.creationTime, holder.ttl);
 
                     iter.remove();
                     if (recordStore.evictIfRequired()) {
@@ -154,6 +158,10 @@ public final class HiDensityCacheReplicationOperation
 
                 long remainingTtl = getRemainingTtl(record, now);
                 out.writeLong(remainingTtl);
+                // RU_COMPAT_3_10
+                if (out.getVersion().isGreaterOrEqual(V3_11)) {
+                    out.writeLong(record.getCreationTime());
+                }
                 subCount--;
             }
             if (subCount != 0) {
@@ -188,7 +196,15 @@ public final class HiDensityCacheReplicationOperation
                 if (key != null) {
                     Data value = HiDensityCacheOperation.readNativeMemoryOperationData(in);
                     long ttlMillis = in.readLong();
-                    m.put(key, new CacheRecordHolder(value, ttlMillis));
+                    // RU_COMPAT_3_10
+                    CacheRecordHolder holder;
+                    if (in.getVersion().isGreaterOrEqual(V3_11)) {
+                        long creationTime = in.readLong();
+                        holder = new CacheRecordHolder(value, creationTime, ttlMillis);
+                    } else {
+                        holder = new CacheRecordHolder(value, ttlMillis);
+                    }
+                    m.put(key, holder);
                 }
             }
         }
@@ -228,8 +244,16 @@ public final class HiDensityCacheReplicationOperation
     private static final class CacheRecordHolder {
         final Data value;
         final long ttl;
+        final long creationTime;
 
         private CacheRecordHolder(Data value, long ttl) {
+            this.creationTime = TIME_NOT_AVAILABLE;
+            this.ttl = ttl;
+            this.value = value;
+        }
+
+        private CacheRecordHolder(Data value, long creationTime, long ttl) {
+            this.creationTime = creationTime;
             this.ttl = ttl;
             this.value = value;
         }

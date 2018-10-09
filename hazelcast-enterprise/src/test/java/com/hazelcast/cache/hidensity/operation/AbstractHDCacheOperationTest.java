@@ -38,6 +38,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalMatchers.geq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -88,7 +89,7 @@ public abstract class AbstractHDCacheOperationTest {
 
         recordStore = mock(HiDensityCacheRecordStore.class);
         when(recordStore.getConfig()).thenReturn(cacheConfig);
-        when(recordStore.putBackup(any(Data.class), any(), any(ExpiryPolicy.class))).thenReturn(record);
+        when(recordStore.putBackup(any(Data.class), any(), anyLong(), any(ExpiryPolicy.class))).thenReturn(record);
         when(recordStore.getRecord(any(Data.class))).thenReturn(record);
         when(recordStore.getRecordProcessor()).thenReturn(recordProcessor);
         when(recordStore.isWanReplicationEnabled()).thenReturn(false);
@@ -242,7 +243,8 @@ public abstract class AbstractHDCacheOperationTest {
 
         if (verifyBackups) {
             if (operationType != SET_EXPIRY_POLICY) {
-                verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class), any(ExpiryPolicy.class));
+                verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class),
+                        anyLong(), any(ExpiryPolicy.class));
             }
         }
 

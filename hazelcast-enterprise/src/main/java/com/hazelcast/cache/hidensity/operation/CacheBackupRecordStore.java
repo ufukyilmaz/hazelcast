@@ -5,6 +5,8 @@ import com.hazelcast.nio.serialization.Data;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hazelcast.cache.impl.record.CacheRecord.TIME_NOT_AVAILABLE;
+
 /**
  * Holds multiple cache backup records by their keys and values.
  */
@@ -21,7 +23,11 @@ class CacheBackupRecordStore {
     }
 
     void addBackupRecord(Data key, Data value) {
-        backupRecords.add(new CacheBackupRecord(key, value));
+        backupRecords.add(new CacheBackupRecord(key, value, TIME_NOT_AVAILABLE));
+    }
+
+    void addBackupRecord(Data key, Data value, long creationTime) {
+        backupRecords.add(new CacheBackupRecord(key, value, creationTime));
     }
 
     boolean isEmpty() {
@@ -35,10 +41,12 @@ class CacheBackupRecordStore {
 
         final Data key;
         final Data value;
+        final long creationTime;
 
-        CacheBackupRecord(Data key, Data value) {
+        CacheBackupRecord(Data key, Data value, long creationTime) {
             this.key = key;
             this.value = value;
+            this.creationTime = creationTime;
         }
 
     }

@@ -7,12 +7,16 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.spi.BackupOperation;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+
+import static com.hazelcast.cache.impl.record.CacheRecord.TIME_NOT_AVAILABLE;
+import static com.hazelcast.internal.cluster.Versions.V3_11;
 
 /**
  * Cache PutAllBackup Operation is the backup operation used by load all operation. Provides backup of
@@ -21,7 +25,7 @@ import java.util.List;
  * @see com.hazelcast.cache.impl.operation.CacheLoadAllOperation
  */
 public class CachePutAllBackupOperation extends HiDensityCacheOperation
-        implements BackupOperation, MutableOperation {
+        implements BackupOperation, MutableOperation, Versioned {
 
     private CacheBackupRecordStore cacheBackupRecordStore;
     private ExpiryPolicy expiryPolicy;
@@ -48,7 +52,8 @@ public class CachePutAllBackupOperation extends HiDensityCacheOperation
         Iterator<CacheBackupRecordStore.CacheBackupRecord> iter = cacheBackupRecords.iterator();
         while (iter.hasNext()) {
             CacheBackupRecordStore.CacheBackupRecord cacheBackupRecord = iter.next();
-            CacheRecord record = hdCache.putBackup(cacheBackupRecord.key, cacheBackupRecord.value, expiryPolicy);
+            CacheRecord record = hdCache.putBackup(cacheBackupRecord.key, cacheBackupRecord.value,
+                    cacheBackupRecord.creationTime, expiryPolicy);
             publishWanUpdate(cacheBackupRecord.key, record);
             iter.remove();
         }
@@ -77,6 +82,10 @@ public class CachePutAllBackupOperation extends HiDensityCacheOperation
             for (CacheBackupRecordStore.CacheBackupRecord cacheBackupRecord : cacheBackupRecords) {
                 out.writeData(cacheBackupRecord.key);
                 out.writeData(cacheBackupRecord.value);
+                // RU_COMPAT_3_10
+                if (out.getVersion().isGreaterOrEqual(V3_11)) {
+                    out.writeLong(cacheBackupRecord.creationTime);
+                }
             }
         }
     }
@@ -92,7 +101,13 @@ public class CachePutAllBackupOperation extends HiDensityCacheOperation
             for (int i = 0; i < size; i++) {
                 Data key = HiDensityCacheOperation.readNativeMemoryOperationData(in);
                 Data value = HiDensityCacheOperation.readNativeMemoryOperationData(in);
-                cacheBackupRecordStore.addBackupRecord(key, value);
+                // RU_COMPAT_3_10
+                if (in.getVersion().isGreaterOrEqual(V3_11)) {
+                    long creationTime = in.readLong();
+                    cacheBackupRecordStore.addBackupRecord(key, value, creationTime);
+                } else {
+                    cacheBackupRecordStore.addBackupRecord(key, value, TIME_NOT_AVAILABLE);
+                }
             }
         }
     }

@@ -48,14 +48,15 @@ public class WanCacheLegacyMergeOperation
 
     @Override
     public boolean shouldBackup() {
-        return Boolean.TRUE.equals(response);
+        return Boolean.TRUE.equals(response) && recordStore.getRecord(cacheEntryView.getKey()) != null;
     }
 
     @Override
     public Operation getBackupOperation() {
         ExpiryPolicy expiryPolicy = createOrNullBackupExpiryPolicy(cacheEntryView.getExpirationTime());
+        CacheRecord record = recordStore.getRecord(cacheEntryView.getKey());
         return new CachePutBackupOperation(name, cacheEntryView.getKey(),
-                cacheEntryView.getValue(), expiryPolicy, true);
+                cacheEntryView.getValue(), expiryPolicy, record.getCreationTime(), true);
     }
 
     @Override

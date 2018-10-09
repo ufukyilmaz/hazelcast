@@ -1,47 +1,41 @@
 package com.hazelcast.client.nio.ssl;
 
-import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
+import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.HazelcastInstanceFactory;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
-import com.hazelcast.nio.ssl.TestKeyStoreUtil;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
-import static com.hazelcast.nio.IOUtil.closeResource;
-import static java.io.File.createTempFile;
+import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class ClientAuthenticationTest {
 
-    boolean openSsl;
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @Before
+    boolean openSsl;
+    private final TestAwareClientFactory factory = new TestAwareClientFactory();
+
     @After
-    public void killAllHazelcastInstances() {
-        HazelcastInstanceFactory.terminateAll();
-        HazelcastClient.shutdownAll();
+    public void after() {
+        factory.terminateAll();
     }
 
     // the happy case; everything is working perfect
@@ -177,20 +171,13 @@ public class ClientAuthenticationTest {
         Config config = new Config()
                 .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         NetworkConfig networkConfig = config.getNetworkConfig();
-        networkConfig.getJoin().getMulticastConfig()
-                .setEnabled(false);
-        networkConfig.getJoin().getTcpIpConfig()
-                .setEnabled(true)
-                .addMember("127.0.0.1")
-                .setConnectionTimeoutSeconds(3000);
         networkConfig.setSSLConfig(new SSLConfig()
                 .setEnabled(true)
                 .setProperties(serverProps));
         if (openSsl) {
             networkConfig.getSSLConfig().setFactoryImplementation(new OpenSSLEngineFactory());
         }
-
-        Hazelcast.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
 
         Properties clientProps = new Properties();
         if (settings.clientKeystore != null) {
@@ -212,37 +199,14 @@ public class ClientAuthenticationTest {
             clientNetworkConfig.getSSLConfig().setFactoryImplementation(new OpenSSLEngineFactory());
         }
 
-        HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
+        HazelcastInstance client = factory.newHazelcastClient(clientConfig);
         client.getAtomicLong("foo").incrementAndGet();
     }
 
-    public static String makeFile(String relativePath) throws IOException {
-        String resourcePath = "com/hazelcast/nio/ssl-mutual-auth/" + relativePath;
-        ClassLoader cl = TestKeyStoreUtil.class.getClassLoader();
-        InputStream resourceAsStream = cl.getResourceAsStream(resourcePath);
-        if (resourceAsStream == null) {
-            throw new RuntimeException("Failed to locate [" + resourcePath + "]");
-        }
-        InputStream in = null;
-        BufferedOutputStream out = null;
-        try {
-            File file = createTempFile("hazelcast", "jks");
-            file.deleteOnExit();
-
-            in = new BufferedInputStream(resourceAsStream);
-            out = new BufferedOutputStream(new FileOutputStream(file));
-
-            int b;
-            while ((b = in.read()) > -1) {
-                out.write(b);
-            }
-
-            out.flush();
-            return file.getAbsolutePath();
-        } finally {
-            closeResource(out);
-            closeResource(in);
-        }
+    private String makeFile(String relativePath) throws IOException {
+        String resourceName = "/com/hazelcast/nio/ssl-mutual-auth/" + relativePath;
+        return copyTestResource(ClientAuthenticationTest.class, tempFolder.getRoot(),
+                resourceName).getAbsolutePath();
     }
 
     static class TestSettings {

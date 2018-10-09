@@ -79,6 +79,10 @@ public class TestEnvironmentUtil {
      */
     public static File copyTestResource(Class<?> testClass, File targetFolder, String resourceName) {
         File targetFile = new File(targetFolder, resourceName);
+        if (! targetFile.getParentFile().isDirectory()) {
+            assertTrue("Creating a target folder for a test resource failed - " + resourceName,
+                    targetFile.getParentFile().mkdirs());
+        }
         if (!targetFile.exists()) {
             try {
                 assertTrue(targetFile.createNewFile());

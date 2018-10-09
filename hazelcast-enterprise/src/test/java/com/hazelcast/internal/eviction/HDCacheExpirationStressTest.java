@@ -20,7 +20,7 @@ import static com.hazelcast.spi.properties.GroupProperty.PARTITION_COUNT;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(NightlyTest.class)
-public class HiDensityCacheExpirationStressTest extends CacheExpirationStressTest {
+public class HDCacheExpirationStressTest extends CacheExpirationStressTest {
 
     @Override
     protected Config getConfig() {

@@ -175,6 +175,13 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
+    protected void addToDeferredDisposeQueue(Object object) {
+        if (object instanceof MemoryBlock) {
+            getRecordProcessor().addDeferredDispose(((MemoryBlock) object));
+        }
+    }
+
+    @Override
     @SuppressWarnings("checkstyle:npathcomplexity")
     protected HiDensityNativeMemoryCacheRecordMap createRecordCacheMap() {
         if (records != null) {

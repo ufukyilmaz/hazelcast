@@ -182,6 +182,18 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
+    public void putTransient_maxIdle() {
+        final String key = randomString();
+        final String val = randomString();
+        final long ttl = randomLong();
+        final long maxIdle = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "putTransient", key, val,
+                ttl, TimeUnit.MILLISECONDS,
+                maxIdle, TimeUnit.MILLISECONDS);
+        map.putTransient(key, val, ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
     public void putIfAbsent() {
         final String key = randomString();
         final String val = randomString();

@@ -594,7 +594,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         return recordToReturn;
     }
 
-    private void onAccess(long now, HiDensityNativeMemoryCacheRecord record, long creationTime) {
+    private void onAccess(long now, HiDensityNativeMemoryCacheRecord record) {
         if (isEvictionEnabled()) {
             record.setAccessTime(now);
             record.incrementAccessHit();
@@ -754,7 +754,6 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     private CacheRecord own(Data key, Object value, long ttlMillis, boolean disableDeferredDispose, boolean updateJournal) {
         long now = Clock.currentTimeMillis();
-        long creationTime;
         HiDensityNativeMemoryCacheRecord record = null;
         NativeMemoryData oldValueData = null;
         boolean isNewPut = false;
@@ -764,7 +763,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             if (record == null) {
                 isNewPut = true;
                 record = createRecord(value, now, Long.MAX_VALUE);
-                creationTime = now;
                 records.put(key, record);
                 if (updateJournal) {
                     cacheService.getEventJournal().writeCreatedEvent(eventJournalConfig, objectNamespace, partitionId,
@@ -772,7 +770,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 }
             } else {
                 oldValueData = record.getValue();
-                creationTime = record.getCreationTime();
                 updateRecordValue(record, toNativeMemoryData(value));
                 if (updateJournal) {
                     cacheService.getEventJournal().writeUpdateEvent(eventJournalConfig, objectNamespace, partitionId,
@@ -780,7 +777,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                 }
             }
 
-            onAccess(now, record, creationTime);
+            onAccess(now, record);
             record.setTtlMillis(ttlMillis);
 
             onOwn(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose);

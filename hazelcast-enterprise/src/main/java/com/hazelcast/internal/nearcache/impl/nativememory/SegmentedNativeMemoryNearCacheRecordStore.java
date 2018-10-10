@@ -148,15 +148,9 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    public boolean remove(K key) {
+    public void invalidate(K key) {
         NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
-        return segment.remove(key);
-    }
-
-    @Override
-    public boolean invalidate(K key) {
-        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
-        return segment.invalidate(key);
+        segment.invalidate(key);
     }
 
     private NativeMemoryNearCacheRecordStore<K, V> segmentFor(K key) {
@@ -376,10 +370,10 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
 
         @Override
-        public boolean remove(K key) {
+        public void invalidate(K key) {
             lock.lock();
             try {
-                return super.remove(key);
+                super.invalidate(key);
             } finally {
                 lock.unlock();
             }

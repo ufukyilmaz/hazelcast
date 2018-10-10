@@ -162,7 +162,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
                         Random random = new Random();
                         while (Clock.currentTimeMillis() < finishTime2) {
                             int key = random.nextInt(maxRecordCount);
-                            nearCache.remove(key);
+                            nearCache.invalidate(key);
                             sleepMillis(100);
                         }
                     }

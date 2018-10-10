@@ -41,6 +41,7 @@ import static java.lang.Integer.getInteger;
  * @param <K> the type of the key stored in Near Cache
  * @param <V> the type of the value stored in Near Cache
  */
+@SuppressWarnings("checkstyle:methodcount")
 public class NativeMemoryNearCacheRecordStore<K, V>
         extends AbstractNearCacheRecordStore<K, V, Data, NativeMemoryNearCacheRecord, NativeMemoryNearCacheRecordMap>
         implements HiDensityNearCacheRecordStore<K, V, NativeMemoryNearCacheRecord> {
@@ -207,6 +208,28 @@ public class NativeMemoryNearCacheRecordStore<K, V>
             } else {
                 throw e;
             }
+        }
+    }
+
+    @Override
+    public void invalidate(K key) {
+        checkAvailable();
+
+        NativeMemoryNearCacheRecord record = null;
+        boolean removed = false;
+        try {
+            record = removeRecord(key);
+            if (canUpdateStats(record)) {
+                removed = true;
+                nearCacheStats.decrementOwnedEntryCount();
+                nearCacheStats.incrementInvalidations();
+            }
+            onRemove(key, record, removed);
+        } catch (Throwable error) {
+            onRemoveError(key, record, removed, error);
+            throw rethrow(error);
+        } finally {
+            nearCacheStats.incrementInvalidationRequests();
         }
     }
 

@@ -195,7 +195,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
         // recordStore.put() doesn't succeed at all and we finally give up by removing the actual key from the RecordStore
         verifyPutOnRecordStore(2);
         verify(nearCacheRecordStore, times(2)).size();
-        verify(nearCacheRecordStore).remove(eq(KEY));
+        verify(nearCacheRecordStore).invalidate(eq(KEY));
         verifyNoMoreInteractions(nearCacheRecordStore);
     }
 

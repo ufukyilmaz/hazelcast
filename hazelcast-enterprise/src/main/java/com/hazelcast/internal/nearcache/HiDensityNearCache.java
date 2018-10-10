@@ -163,7 +163,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
         // there may be an existing entry in Near Cache for the specified `key`, to be in safe side, remove that entry,
         // otherwise stale value for that `key` may be seen indefinitely. This removal will make subsequent gets to fetch
         // the value from underlying IMap/cache
-        super.remove(key);
+        super.invalidate(key);
 
         // due to the ongoing compaction, one user thread may not see sufficient space to put entry into Near Cache;
         // in that case, skipping NativeOutOfMemoryError instead of throwing it to user (even eviction is configured)

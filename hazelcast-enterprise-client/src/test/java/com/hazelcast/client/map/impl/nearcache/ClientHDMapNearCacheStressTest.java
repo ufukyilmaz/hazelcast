@@ -75,7 +75,7 @@ public class ClientHDMapNearCacheStressTest extends HazelcastTestSupport {
                 try {
                     nearCache.tryPublishReserved(data, data, reservationId, true);
                 } catch (Throwable throwable) {
-                    nearCache.remove(data);
+                    nearCache.invalidate(data);
                     throw rethrow(throwable);
                 }
             }

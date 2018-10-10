@@ -28,9 +28,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import static com.hazelcast.cache.hidensity.operation.AbstractHDCacheOperationTest.OperationType.PUT;
-import static com.hazelcast.cache.hidensity.operation.AbstractHDCacheOperationTest.OperationType.PUT_ALL;
-import static com.hazelcast.cache.hidensity.operation.AbstractHDCacheOperationTest.OperationType.SET_EXPIRY_POLICY;
 import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -71,6 +68,7 @@ public abstract class AbstractHDCacheOperationTest {
 
     private CacheConfig cacheConfig;
     private NodeEngine nodeEngine;
+    private CacheRecord record;
 
     @Before
     public void setUp() {
@@ -84,7 +82,9 @@ public abstract class AbstractHDCacheOperationTest {
         cacheConfig = new CacheConfig()
                 .setInMemoryFormat(InMemoryFormat.NATIVE);
 
-        CacheRecord record = mock(CacheRecord.class);
+        record = mock(CacheRecord.class);
+        when(record.getCreationTime()).thenReturn(System.currentTimeMillis());
+
         recordProcessor = mock(HiDensityRecordProcessor.class);
 
         recordStore = mock(HiDensityCacheRecordStore.class);
@@ -133,12 +133,12 @@ public abstract class AbstractHDCacheOperationTest {
                 OngoingStubbing<CacheRecord> putStub = when(recordStore.put(any(Data.class), any(Data.class),
                         any(ExpiryPolicy.class), anyString(), anyInt()));
                 if (throwNativeOOME) {
-                    putStub.thenReturn(null, null, null)
+                    putStub.thenReturn(record, record, record)
                             .thenThrow(exception, exception, exception, exception, exception, exception)
-                            .thenReturn(null);
+                            .thenReturn(record);
                     numberOfNativeOOME = 6;
                 } else {
-                    putStub.thenReturn(null);
+                    putStub.thenReturn(record);
                     numberOfNativeOOME = 0;
                 }
                 return;
@@ -146,12 +146,12 @@ public abstract class AbstractHDCacheOperationTest {
                 OngoingStubbing<Object> getAndPutStub = when(recordStore.getAndPut(any(Data.class), any(Data.class),
                         any(ExpiryPolicy.class), anyString(), anyInt()));
                 if (throwNativeOOME) {
-                    getAndPutStub.thenReturn(null, null, null)
+                    getAndPutStub.thenReturn(record, record, record)
                             .thenThrow(exception, exception, exception, exception, exception, exception)
-                            .thenReturn(null);
+                            .thenReturn(record);
                     numberOfNativeOOME = 6;
                 } else {
-                    getAndPutStub.thenReturn(null);
+                    getAndPutStub.thenReturn(record);
                     numberOfNativeOOME = 0;
                 }
                 return;
@@ -221,31 +221,38 @@ public abstract class AbstractHDCacheOperationTest {
     void verifyRecordStoreAfterRun(OperationType operationType, boolean isBackupDone) {
         boolean verifyBackups = syncBackupCount > 0 && isBackupDone;
 
-        if (operationType == PUT_ALL) {
-            // RecordStore.put() is called again for each entry which threw a NativeOOME
-            verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).put(any(Data.class), any(Data.class),
-                    any(ExpiryPolicy.class), anyString(), anyInt());
-
-            verify(recordStore, atLeastOnce()).getConfig();
-        } else if (operationType == PUT) {
-            // RecordStore.getAndPut() is called again for each entry which threw a NativeOOME
-            verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).getAndPut(any(Data.class), any(Data.class),
-                    any(ExpiryPolicy.class), anyString(), anyInt());
-        } else if (operationType == SET_EXPIRY_POLICY) {
-            if (verifyBackups) {
-                verify(recordStore, times((syncBackupCount + 1) * ENTRY_COUNT + numberOfNativeOOME))
-                        .setExpiryPolicy(any(Collection.class), any(), anyString());
-            } else {
-                verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME))
-                        .setExpiryPolicy(any(Collection.class), any(), anyString());
-            }
-        }
-
-        if (verifyBackups) {
-            if (operationType != SET_EXPIRY_POLICY) {
-                verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class),
-                        anyLong(), any(ExpiryPolicy.class));
-            }
+        switch (operationType) {
+            case PUT_ALL:
+                // RecordStore.put() is called again for each entry which threw a NativeOOME
+                verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).put(any(Data.class), any(Data.class),
+                        any(ExpiryPolicy.class), anyString(), anyInt());
+                verify(recordStore, atLeastOnce()).getConfig();
+                if (verifyBackups) {
+                    verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class),
+                            anyLong(), any(ExpiryPolicy.class));
+                }
+                    break;
+            case PUT:
+                // RecordStore.getAndPut() is called again for each entry which threw a NativeOOME
+                verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).getAndPut(any(Data.class), any(Data.class),
+                        any(ExpiryPolicy.class), anyString(), anyInt());
+                if (syncBackupCount > 0) {
+                    verify(recordStore, times(ENTRY_COUNT)).getRecord(any(Data.class));
+                }
+                if (verifyBackups) {
+                    verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class),
+                            anyLong(), any(ExpiryPolicy.class));
+                }
+                break;
+            case SET_EXPIRY_POLICY:
+                if (verifyBackups) {
+                    verify(recordStore, times((syncBackupCount + 1) * ENTRY_COUNT + numberOfNativeOOME))
+                            .setExpiryPolicy(any(Collection.class), any(), anyString());
+                } else {
+                    verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME))
+                            .setExpiryPolicy(any(Collection.class), any(), anyString());
+                }
+                break;
         }
 
         verify(recordStore, atLeastOnce()).isWanReplicationEnabled();

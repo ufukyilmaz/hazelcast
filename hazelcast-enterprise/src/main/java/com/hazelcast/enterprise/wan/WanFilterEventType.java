@@ -20,6 +20,8 @@ public enum WanFilterEventType {
 
     /**
      * An event type indicating that the entry was loaded.
+     * Loading happens through MapLoader's load() and loadAll() methods which
+     * can occur on read-through but also on bulk load.
      */
     LOADED(3);
 

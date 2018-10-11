@@ -27,7 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public abstract class InterceptorTestSupport extends HazelcastTestSupport {
 
@@ -50,8 +52,13 @@ public abstract class InterceptorTestSupport extends HazelcastTestSupport {
         try {
             assertTrueEventually(new AssertTask() {
                 @Override
-                public void run() throws Exception {
-                    assertTrue(interceptor.success);
+                public void run() {
+                    if (interceptor.success) {
+                        return;
+                    }
+                    if (interceptor.failure != null) {
+                        throw interceptor.failure;
+                    }
                 }
             }, 20);
         } finally {
@@ -84,61 +91,55 @@ public abstract class InterceptorTestSupport extends HazelcastTestSupport {
 
     static class TestSecurityInterceptor implements SecurityInterceptor {
 
-        String expectedObjectType;
-        String expectedObjectName;
-        String expectedMethodName;
-        Object[] expectedParams;
-        volatile boolean success;
+        private volatile InterceptorExpectation expectation;
+        private volatile boolean success;
+        private volatile AssertionError failure;
 
         @Override
         public void before(Credentials credentials, String objectType, String objectName,
                            String methodName, Parameters parameters) throws AccessControlException {
-            if (!checkEqual(expectedObjectType, objectType)) {
+            if (expectation == null) {
                 return;
             }
-            if (!checkEqual(expectedObjectName, objectName)) {
-                return;
-            }
-            if (!checkEqual(expectedMethodName, methodName)) {
-                return;
-            }
-            if (parameters.length() != expectedParamLength()) {
-                return;
-            }
-            synchronized (this) {
-                int length = expectedParamLength();
-                for (int i = 0; i < length; i++) {
-                    Object expectedParam = expectedParams[i];
-                    Object actualParam = parameters.get(i);
-                    if (expectedParam instanceof Map && actualParam instanceof Map) {
-                        Map expectedMap = (Map) expectedParam;
-                        Map<Object, Object> actualMap = (Map<Object, Object>) actualParam;
-                        for (Map.Entry o : actualMap.entrySet()) {
-                            if (!o.getValue().equals(expectedMap.remove(o.getKey()))) {
-                                return;
-                            }
-                        }
-                        if (!expectedMap.isEmpty()) {
-                            return;
-                        }
-                    } else if (expectedParam instanceof Collection && actualParam instanceof Collection) {
-                        Collection expectedCollection = (Collection) expectedParam;
-                        Collection actualCollection = (Collection) actualParam;
-                        expectedCollection.removeAll(actualCollection);
-                        if (!expectedCollection.isEmpty()) {
-                            return;
-                        }
-                    } else if (!checkEqual(expectedParam, actualParam)) {
-                        return;
-                    }
 
-                }
+            try {
+                checkExpectation(objectType, objectName, methodName, parameters);
+                success = true;
+            } catch (AssertionError e) {
+                failure = e;
+            } catch (Throwable e) {
+                failure = new AssertionError(e);
             }
-            success = true;
         }
 
-        private int expectedParamLength() {
-            return expectedParams == null ? 0 : expectedParams.length;
+        private void checkExpectation(String objectType, String objectName, String methodName, Parameters parameters) {
+            checkEqual(expectation.objectType, objectType);
+            checkEqual(expectation.objectName, objectName);
+            checkEqual(expectation.methodName, methodName);
+            assertEquals(expectation.paramLength(), parameters.length());
+
+            synchronized (this) {
+                int length = expectation.paramLength();
+                for (int i = 0; i < length; i++) {
+                    Object expectedParam = expectation.params[i];
+                    Object actualParam = parameters.get(i);
+                    if (expectedParam instanceof Map && actualParam instanceof Map) {
+                        Map<Object, Object> expectedMap = (Map) expectedParam;
+                        Map<Object, Object> actualMap = (Map<Object, Object>) actualParam;
+                        for (Map.Entry o : actualMap.entrySet()) {
+                            checkEqual(expectedMap.remove(o.getKey()), o.getValue());
+                        }
+                        assertThat(expectedMap.entrySet(), empty());
+                    } else if (expectedParam instanceof Collection && actualParam instanceof Collection) {
+                        Collection<Object> expectedCollection = (Collection) expectedParam;
+                        Collection<Object> actualCollection = (Collection) actualParam;
+                        expectedCollection.removeAll(actualCollection);
+                        assertThat(expectedCollection, empty());
+                    } else {
+                        checkEqual(expectedParam, actualParam);
+                    }
+                }
+            }
         }
 
         @Override
@@ -147,23 +148,40 @@ public abstract class InterceptorTestSupport extends HazelcastTestSupport {
         }
 
         void setExpectation(String objectType, String objectName, String methodName, Object... params) {
-            this.expectedObjectType = objectType;
-            this.expectedObjectName = objectName;
-            this.expectedMethodName = methodName;
-            this.expectedParams = params;
+           this.expectation = new InterceptorExpectation(objectType, objectName, methodName, params);
         }
 
-        private boolean checkEqual(Object expected, Object actual) {
+        private void checkEqual(Object expected, Object actual) {
             if (expected == null && actual == null) {
-                return true;
+                return;
             }
             if (expected != null && expected.equals(actual)) {
-                return true;
+                return;
             }
             if (expected == SKIP_COMPARISON_OBJECT) {
-                return true;
+                return;
             }
-            return false;
+            throw new AssertionError("Expected: " + expected + ", Actual: " + actual);
+        }
+    }
+
+    private static class InterceptorExpectation {
+        final String objectType;
+        final String objectName;
+        final String methodName;
+        final Object[] params;
+
+        private InterceptorExpectation(String objectType, String objectName,
+                String methodName,
+                Object[] params) {
+            this.objectType = objectType;
+            this.objectName = objectName;
+            this.methodName = methodName;
+            this.params = params;
+        }
+
+        int paramLength() {
+            return params == null ? 0 : params.length;
         }
     }
 

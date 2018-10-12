@@ -15,6 +15,9 @@ import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.Versions;
+import com.hazelcast.internal.management.events.AddWanConfigIgnoredEvent;
+import com.hazelcast.internal.management.events.WanConfigurationAddedEvent;
+import com.hazelcast.internal.management.events.WanConsistencyCheckIgnoredEvent;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.WanSyncState;
@@ -139,6 +142,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         WanReplicationConfig wanReplicationConfig = node.getConfig().getWanReplicationConfig(wanConfig.getName());
         if (wanReplicationConfig == null) {
             node.getConfig().addWanReplicationConfig(wanConfig);
+            node.getManagementCenterService().log(new WanConfigurationAddedEvent(wanConfig.getName()));
             return true;
         }
         return false;
@@ -357,6 +361,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         // RU_COMPAT_3_11
         Version clusterVersion = node.getNodeEngine().getClusterService().getClusterVersion();
         if (!clusterVersion.isGreaterOrEqual(Versions.V3_11)) {
+            node.getManagementCenterService().log(new WanConsistencyCheckIgnoredEvent(wanReplicationName,
+                    wanPublisherId, mapName, "Cluster version is not 3.11."));
             logger.info(String.format(
                     "Consistency check request for WAN replication '%s',"
                             + " target group name '%s' and map '%s'"
@@ -367,6 +373,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
         MerkleTreeConfig merkleTreeConfig = node.getConfig().findMapMerkleTreeConfig(mapName);
         if (!merkleTreeConfig.isEnabled()) {
+            node.getManagementCenterService().log(new WanConsistencyCheckIgnoredEvent(wanReplicationName,
+                    wanPublisherId, mapName, "Map has merkle trees disabled."));
             logger.info(String.format(
                     "Consistency check request for WAN replication '%s',"
                             + " target group name '%s' and map '%s'"
@@ -390,6 +398,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         if (addWanReplicationConfigIfAbsent(wanConfig)) {
             getWanReplicationPublisher(wanConfig.getName());
         } else {
+            node.getManagementCenterService().log(AddWanConfigIgnoredEvent.alreadyExists(wanConfig.getName()));
+
             logger.warning(
                     "Ignoring new WAN config request. A WanReplicationConfig already exists with the given name: "
                             + wanConfig.getName());

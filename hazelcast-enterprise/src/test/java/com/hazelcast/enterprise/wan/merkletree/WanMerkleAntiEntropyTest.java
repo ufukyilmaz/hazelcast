@@ -151,8 +151,7 @@ public class WanMerkleAntiEntropyTest {
         givenTwoConsistentClustersWithData();
 
         IMap<Object, Object> map = sourceCluster.getAMember().getMap(MAP_NAME);
-        int randomKey = RandomPicker.getInt(0, MAP_ENTRIES);
-        map.remove(randomKey);
+        map.remove(42);
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
         int inconsistentPartitions = 1;

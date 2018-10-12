@@ -69,7 +69,7 @@ public class WanAntiEntropyTestSupport {
                 assertEquals("Entries to synchronize should be equal to " + expectedEntriesToSync, expectedEntriesToSync,
                         entriesToSync);
             }
-        }, 20);
+        });
     }
 
     public static void verifyAllPartitionsAreConsistent(final Cluster cluster,
@@ -99,7 +99,7 @@ public class WanAntiEntropyTestSupport {
                 assertEquals(0, diffPartitions);
                 assertEquals(0, entriesToSync);
             }
-        }, 20);
+        });
     }
 
     public static Map<String, ConsistencyCheckResult> getLastCheckResult(HazelcastInstance instance,

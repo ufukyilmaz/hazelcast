@@ -283,7 +283,7 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
         assertMemberViewsAreSame(getMemberMap(instance1), getMemberMap(instance2));
     }
 
-    private static void changeClusterVersionEventually(HazelcastInstance hz, Version version) {
+    public static void changeClusterVersionEventually(HazelcastInstance hz, Version version) {
         final Cluster cluster = hz.getCluster();
         long timeout = TimeUnit.SECONDS.toMillis(ASSERT_TRUE_EVENTUALLY_TIMEOUT);
         Throwable t = null;

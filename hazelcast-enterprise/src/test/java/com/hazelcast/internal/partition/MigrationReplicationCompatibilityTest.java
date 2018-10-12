@@ -34,6 +34,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
+import static com.hazelcast.internal.cluster.impl.MembershipUpdateCompatibilityTest.changeClusterVersionEventually;
 import static com.hazelcast.spi.properties.GroupProperty.TCP_JOIN_PORT_TRY_COUNT;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getOldestKnownVersion;
@@ -300,7 +301,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
         assertClusterSizeEventually(2, latest);
 
         Version currentVersion = getNode(latest).getVersion().asVersion();
-        latest.getCluster().changeClusterVersion(currentVersion);
+        changeClusterVersionEventually(latest, currentVersion);
 
         validate(latest);
     }

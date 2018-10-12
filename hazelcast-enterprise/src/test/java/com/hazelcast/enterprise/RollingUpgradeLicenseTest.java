@@ -6,6 +6,7 @@ import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.util.LicenseHelper;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.CompatibilityTest;
@@ -24,8 +25,13 @@ import org.junit.runners.Parameterized.Parameters;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.V5_SECURITY_ONLY_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.V5_UNLIMITED_LICENSE;
 import static com.hazelcast.instance.BuildInfoProvider.getBuildInfo;
 import static com.hazelcast.license.domain.LicenseVersion.V4;
+import static com.hazelcast.spi.properties.GroupProperty.ENTERPRISE_LICENSE_KEY;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION;
 import static com.hazelcast.test.HazelcastTestSupport.randomString;
 import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
@@ -166,24 +172,31 @@ public class RollingUpgradeLicenseTest {
     }
 
     private void assumeV4License(Config config) {
-        License license = LicenseHelper.getLicense(config.getLicenseKey(), getBuildInfo().getVersion());
+        String licenseKey = config.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName());
+        License license = LicenseHelper.getLicense(licenseKey, getBuildInfo().getVersion());
         Assume.assumeTrue(format("Assumed version %s does not match actual license version %s",
                 V4, license.getVersion()), V4.equals(license.getVersion()));
     }
 
     private static Config v4UnlimitedLicenseConfig() {
-        return new Config().setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
+        return configWithLicense(UNLIMITED_LICENSE);
     }
 
     private static Config v5UnlimitedLicenseConfig() {
-        return new Config().setLicenseKey(SampleLicense.V5_UNLIMITED_LICENSE);
+        return configWithLicense(V5_UNLIMITED_LICENSE);
     }
 
     private static Config v4SecurityOnlyLicenseConfig() {
-        return new Config().setLicenseKey(SampleLicense.SECURITY_ONLY_LICENSE);
+        return configWithLicense(SECURITY_ONLY_LICENSE);
     }
 
     private static Config v5SecurityOnlyLicenseConfig() {
-        return new Config().setLicenseKey(SampleLicense.V5_SECURITY_ONLY_LICENSE);
+        return configWithLicense(V5_SECURITY_ONLY_LICENSE);
+    }
+
+    private static Config configWithLicense(String licenseKey) {
+        Config config = new Config();
+        config.getProperties().setProperty(ENTERPRISE_LICENSE_KEY.getName(), licenseKey);
+        return config;
     }
 }

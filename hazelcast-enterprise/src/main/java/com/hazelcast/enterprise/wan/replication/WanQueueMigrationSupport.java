@@ -24,10 +24,13 @@ class WanQueueMigrationSupport implements WanEventQueueMigrationListener {
 
     @Override
     public void onMigrationCommit(int partitionId, int currentReplicaIndex, int newReplicaIndex) {
-        if (currentReplicaIndex > 0 && newReplicaIndex == 0) {
+        if (newReplicaIndex == 0) {
+            // this member was either a backup replica or not a replica at all
+            // now it is a primary replica
             int qSize = eventQueueContainer.getPublisherEventQueue(partitionId).size();
             wanCounter.moveFromBackupToPrimaryCounter(qSize);
         } else if (currentReplicaIndex == 0 && newReplicaIndex > 0) {
+            // this member was a primary replica, now it is a backup replica
             int qSize = eventQueueContainer.getPublisherEventQueue(partitionId).size();
             wanCounter.moveFromPrimaryToBackupCounter(qSize);
         }

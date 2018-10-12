@@ -20,6 +20,7 @@ public class WanReplication {
     private final ConsistencyCheckStrategy consistencyCheckStrategy;
     private final WanPublisherState initialPublisherState;
     private final int replicationBatchSize;
+    private final int executorThreadCount;
     private WanReplicationPublisher wanPublisher;
     private Class<? extends WanReplicationPublisher> wanPublisherClass;
 
@@ -32,6 +33,7 @@ public class WanReplication {
         this.consistencyCheckStrategy = builder.consistencyCheckStrategy;
         this.initialPublisherState = builder.initialPublisherState;
         this.replicationBatchSize = builder.replicationBatchSize;
+        this.executorThreadCount = builder.executorThreadCount;
     }
 
     public static WanReplicationBuilder replicate() {
@@ -95,6 +97,8 @@ public class WanReplication {
         props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
         props.put(WanReplicationProperties.SNAPSHOT_ENABLED.key(), false);
         props.put(WanReplicationProperties.BATCH_SIZE.key(), replicationBatchSize);
+        props.put(WanReplicationProperties.BATCH_MAX_DELAY_MILLIS.key(), 1000);
+        props.put(WanReplicationProperties.EXECUTOR_THREAD_COUNT.key(), executorThreadCount);
 
         return target;
     }
@@ -119,6 +123,7 @@ public class WanReplication {
         private ConsistencyCheckStrategy consistencyCheckStrategy;
         private WanPublisherState initialPublisherState;
         private int replicationBatchSize = WanConfigurationContext.DEFAULT_BATCH_SIZE;
+        private int executorThreadCount = WanConfigurationContext.DEFAULT_EXECUTOR_THREAD_COUNT;
 
         private WanReplicationBuilder() {
         }
@@ -160,6 +165,11 @@ public class WanReplication {
 
         public WanReplicationBuilder withReplicationBatchSize(int replicationBatchSize) {
             this.replicationBatchSize = replicationBatchSize;
+            return this;
+        }
+
+        public WanReplicationBuilder withExecutorThreadCount(int executorThreadCount) {
+            this.executorThreadCount = executorThreadCount;
             return this;
         }
 

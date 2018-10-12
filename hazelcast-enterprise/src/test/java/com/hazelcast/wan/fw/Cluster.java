@@ -76,7 +76,7 @@ public class Cluster {
 
     public HazelcastInstance startAClusterMember() {
         for (int i = 0; i < clusterMembers.length; i++) {
-            if (clusterMembers[i] == null) {
+            if (clusterMembers[i] == null || !clusterMembers[i].getLifecycleService().isRunning()) {
                 return startClusterMember(i);
             }
         }
@@ -86,7 +86,7 @@ public class Cluster {
     }
 
     public HazelcastInstance startClusterMember(int index) {
-        if (clusterMembers[index] != null) {
+        if (clusterMembers[index] != null && clusterMembers[index].getLifecycleService().isRunning()) {
             throw new IllegalArgumentException("Cluster member with index " + index + " has already started");
         }
 

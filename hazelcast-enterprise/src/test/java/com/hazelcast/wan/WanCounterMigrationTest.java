@@ -8,6 +8,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -192,6 +193,25 @@ public class WanCounterMigrationTest {
         verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
         verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
         verifyCacheReplicated(sourceCluster, targetCluster, CACHE_NAME);
+    }
+
+    @Test
+    public void testCountersReachZeroAfterBouncingSourceCluster() {
+        sourceCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(4));
+
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
+
+        sourceCluster.pauseWanReplicationOnAllMembers(wanReplication);
+        fillMap(sourceCluster, MAP_NAME, 0, 8);
+
+        for (HazelcastInstance member : sourceCluster.getMembers()) {
+            member.shutdown();
+            sourceCluster.startAClusterMember();
+        }
+
+        verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
+        verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
     }
 
     private class PausingClusterMemberStartAction implements ClusterMemberStartAction {

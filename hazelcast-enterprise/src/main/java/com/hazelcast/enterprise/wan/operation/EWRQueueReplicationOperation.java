@@ -68,17 +68,25 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
                 PartitionWanEventQueueMap eventQueueMap = publisherEntry.getValue();
                 WanReplicationEndpoint publisher = getEWRService().getEndpoint(wanRepName, publisherName);
                 for (Map.Entry<String, WanReplicationEventQueue> entry : eventQueueMap.entrySet()) {
-                    publishReplicationEventQueue(getReplicaIndex(), entry.getValue(), publisher);
+                    publishReplicationEventQueue(entry.getValue(), publisher);
                 }
             }
         }
     }
 
-    private void publishReplicationEventQueue(int replicaIndex, WanReplicationEventQueue eventQueue,
+    private void publishReplicationEventQueue(WanReplicationEventQueue eventQueue,
                                               WanReplicationEndpoint publisher) {
         WanReplicationEvent event = eventQueue.poll();
         while (event != null) {
-            if (replicaIndex == 0) {
+            boolean isPrimaryReplica = getNodeEngine().getPartitionService()
+                                               .getPartition(getPartitionId())
+                                               .isLocal();
+            // whether the event is published as a backup or primary only
+            // affects if the event is counted as a backup or primary event
+            // we check the local (transient) partition table and publish accordingly
+            // the WanQueueMigrationSupport.onMigrationCommit will then migrate
+            // some of the counts from backup to primary counter and vice versa
+            if (isPrimaryReplica) {
                 publisher.publishReplicationEvent(event.getServiceName(), event.getEventObject());
             } else {
                 publisher.publishReplicationEventBackup(event.getServiceName(), event.getEventObject());

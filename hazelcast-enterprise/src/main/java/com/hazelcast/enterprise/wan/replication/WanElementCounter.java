@@ -136,4 +136,12 @@ class WanElementCounter {
     void setBackupElementCounter(int newValue) {
         backupElementCounter.set(newValue);
     }
+
+    @Override
+    public String toString() {
+        return "WanElementCounter{"
+                + "primaryElementCounter=" + primaryElementCounter
+                + ", backupElementCounter=" + backupElementCounter
+                + '}';
+    }
 }

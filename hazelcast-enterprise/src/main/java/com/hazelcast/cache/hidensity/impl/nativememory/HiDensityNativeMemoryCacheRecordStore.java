@@ -140,6 +140,15 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
+    @Override
+    protected void forceRemoveRecord(Data key) {
+        removeRecord(key);
+        // the key can be disposed now as it is not used later
+        // also, disposal by the cacheRecordProcessor ensures memory stats are updated
+        // to correctly reflect free memory (while deferred disposal does not update storage info)
+        cacheRecordProcessor.disposeData(key);
+    }
+
     @SuppressWarnings("unchecked")
     private void ensureInitialized() {
         if (cacheInfo == null) {
@@ -171,13 +180,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                             serializationService,
                             new HiDensityNativeMemoryCacheRecordAccessor(serializationService, memoryManager),
                             memoryManager, cacheInfo);
-        }
-    }
-
-    @Override
-    protected void addToDeferredDisposeQueue(Object object) {
-        if (object instanceof MemoryBlock) {
-            getRecordProcessor().addDeferredDispose(((MemoryBlock) object));
         }
     }
 

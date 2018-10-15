@@ -10,6 +10,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.spi.TaskScheduler;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -141,21 +142,39 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
         int metadataSizeToTotalNativeSizeFactor = 8;
         int size = estimatedNearCacheConcurrencyLevel * metaKbPerEmptyNearCacheSegment * metadataSizeToTotalNativeSizeFactor;
         MemorySize memorySize = new MemorySize(2 * size, MemoryUnit.KILOBYTES);
-        NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+
         PoolingMemoryManager mm = new PoolingMemoryManager(memorySize);
+        EnterpriseSerializationService ess = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(mm)
+                .build();
+
         try {
-            NearCache<Integer, byte[]> nearCache = new HiDensityNearCache<Integer, byte[]>(
-                    DEFAULT_NEAR_CACHE_NAME,
-                    nearCacheConfig, newNearCacheManager(),
-                    ess, executionService.getGlobalTaskScheduler(), null);
-            nearCache.initialize();
-
+            NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+            NearCache<Integer, byte[]> nearCache
+                    = createHDNearCache(ess, executionService.getGlobalTaskScheduler(),
+                    null, nearCacheConfig);
             byte[] value = new byte[(int) (2 * memorySize.bytes())];
-
             // when - then (just don't fail)
             nearCache.put(1, ess.toData(1), value);
         } finally {
             mm.dispose();
         }
+    }
+
+    public static <K, V> NearCache<K, V> createHDNearCache(EnterpriseSerializationService ess,
+                                                           TaskScheduler taskScheduler,
+                                                           NearCacheRecordStore recordStore,
+                                                           NearCacheConfig nearCacheConfig) {
+        NearCache<K, V> nearCache = new HiDensityNearCache<K, V>(DEFAULT_NEAR_CACHE_NAME,
+                nearCacheConfig,
+                new HiDensityNearCacheManager(ess, taskScheduler, null),
+                recordStore,
+                ess,
+                taskScheduler,
+                null);
+
+        nearCache.initialize();
+
+        return nearCache;
     }
 }

@@ -397,6 +397,8 @@ public class NativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public Object selectToSave(Object... candidates) {
+        checkAvailable();
+
         Object selectedCandidate = null;
         if (candidates != null && candidates.length > 0) {
             for (Object candidate : candidates) {
@@ -458,10 +460,13 @@ public class NativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void destroy() {
+        checkAvailable();
+
         try {
             super.destroy();
         } finally {
             records.dispose();
+            records = null;
         }
     }
 

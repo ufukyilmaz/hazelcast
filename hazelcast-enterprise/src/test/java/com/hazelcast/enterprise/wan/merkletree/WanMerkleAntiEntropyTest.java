@@ -8,7 +8,6 @@ import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.RandomPicker;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import org.junit.After;
@@ -136,8 +135,7 @@ public class WanMerkleAntiEntropyTest {
         givenTwoConsistentClustersWithData();
 
         IMap<Object, Object> map = sourceCluster.getAMember().getMap(MAP_NAME);
-        int randomKey = RandomPicker.getInt(0, MAP_ENTRIES);
-        map.replace(randomKey, -1);
+        map.replace(42, -1);
 
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
         int inconsistentPartitions = 1;
@@ -196,10 +194,9 @@ public class WanMerkleAntiEntropyTest {
     public void testMerkleSyncRemovals() {
         givenTwoConsistentClustersWithData();
 
-        int randomInt = RandomPicker.getInt(0, MAP_ENTRIES);
         IMap<Object, Object> sourceMap = sourceCluster.getAMember().getMap(MAP_NAME);
         IMap<Object, Object> targetMap = targetCluster.getAMember().getMap(MAP_NAME);
-        sourceMap.remove(randomInt);
+        sourceMap.remove(42);
 
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 

@@ -5,7 +5,7 @@ import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -21,7 +21,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
@@ -36,13 +41,40 @@ import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationEndpoint;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assume.assumeThat;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(QuickTest.class)
 public class WanCounterMigrationTest {
     private static final String MAP_NAME = "map";
     private static final String CACHE_NAME = "cache";
     private static final String REPLICATION_NAME = "wanReplication";
+    private static final int SNAPSHOT_OVERWRITES = 3;
+
+    @Parameters(name = "backups:{0} snapshot:{1}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                // ignored cases for now, known to be broken
+                //                {0, false},
+                //                {0, true},
+                {1, false},
+                {1, true},
+                {2, false},
+                {2, true},
+                {3, false},
+                {3, true}
+        });
+    }
+
+    @Parameter
+    public int backupCount;
+
+    @Parameter(1)
+    public boolean snapshotEnabled;
 
     private Cluster sourceCluster;
     private Cluster targetCluster;
@@ -77,6 +109,7 @@ public class WanCounterMigrationTest {
                 .to(targetCluster)
                 .withSetupName(REPLICATION_NAME)
                 .withWanPublisher(MigrationBreakerWanPublisher.class)
+                .withSnapshotEnabled(snapshotEnabled)
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
@@ -88,6 +121,10 @@ public class WanCounterMigrationTest {
                      .withReplication(wanReplication)
                      .withMergePolicy(PassThroughCacheMergePolicy.class)
                      .setup();
+
+        sourceCluster.getConfig().getMapConfig(MAP_NAME)
+                     .setBackupCount(backupCount)
+                     .setAsyncBackupCount(0);
 
         // uncomment to dump the counters when debugging locally
         // dumpWanCounters(wanReplication, Executors.newSingleThreadScheduledExecutor());
@@ -116,6 +153,8 @@ public class WanCounterMigrationTest {
         fillMap(sourceCluster, MAP_NAME, 1000, 2000);
         fillCache(sourceCluster, CACHE_NAME, 1000, 2000);
 
+        overwriteIfSnapshotEnabled();
+
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
         verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
@@ -138,6 +177,8 @@ public class WanCounterMigrationTest {
 
         fillMap(sourceCluster, MAP_NAME, 1000, 2000);
         fillCache(sourceCluster, CACHE_NAME, 1000, 2000);
+
+        overwriteIfSnapshotEnabled();
 
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
@@ -162,6 +203,8 @@ public class WanCounterMigrationTest {
 
         fillMap(sourceCluster, MAP_NAME, 1000, 2000);
         fillCache(sourceCluster, CACHE_NAME, 1000, 2000);
+
+        overwriteIfSnapshotEnabled();
 
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
@@ -188,6 +231,8 @@ public class WanCounterMigrationTest {
         fillMap(sourceCluster, MAP_NAME, 1000, 2000);
         fillCache(sourceCluster, CACHE_NAME, 1000, 2000);
 
+        overwriteIfSnapshotEnabled();
+
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
         verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
@@ -197,6 +242,9 @@ public class WanCounterMigrationTest {
 
     @Test
     public void testCountersReachZeroAfterBouncingSourceCluster() {
+        // TODO remove me once backupCount issue is fixed
+        assumeThat(backupCount, not(equalTo(3)));
+
         sourceCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(4));
 
         sourceCluster.startCluster();
@@ -210,8 +258,19 @@ public class WanCounterMigrationTest {
             sourceCluster.startAClusterMember();
         }
 
+        overwriteIfSnapshotEnabled();
+
         verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
         verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
+    }
+
+    private void overwriteIfSnapshotEnabled() {
+        if (snapshotEnabled) {
+            for (int i = 0; i < SNAPSHOT_OVERWRITES; i++) {
+                fillMap(sourceCluster, MAP_NAME, 500, 1500);
+                fillCache(sourceCluster, CACHE_NAME, 500, 1500);
+            }
+        }
     }
 
     private class PausingClusterMemberStartAction implements ClusterMemberStartAction {

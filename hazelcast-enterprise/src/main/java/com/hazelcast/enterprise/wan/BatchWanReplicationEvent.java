@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan;
 
+import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.nio.ObjectDataInput;
@@ -13,8 +14,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
@@ -28,6 +31,7 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
     private boolean snapshotEnabled;
     private transient Map<DistributedObjectEntryIdentifier, WanReplicationEvent> eventMap;
+    private transient Map<DistributedObjectEntryIdentifier, Queue<WanReplicationEvent>> coalescedEvents;
     private List<WanReplicationEvent> eventList;
     private int addedEventCount;
 
@@ -38,6 +42,7 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
         this.snapshotEnabled = snapshotEnabled;
         if (snapshotEnabled) {
             eventMap = new HashMap<DistributedObjectEntryIdentifier, WanReplicationEvent>();
+            coalescedEvents = new HashMap<DistributedObjectEntryIdentifier, Queue<WanReplicationEvent>>();
         } else {
             eventList = new ArrayList<WanReplicationEvent>();
         }
@@ -50,14 +55,21 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
      * key or not.
      *
      * @param event a WAN replication event
-     * @see com.hazelcast.enterprise.wan.replication.WanReplicationProperties#SNAPSHOT_ENABLED
+     * @see WanReplicationProperties#SNAPSHOT_ENABLED
      */
     public void addEvent(WanReplicationEvent event) {
         final EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event.getEventObject();
         if (snapshotEnabled) {
-            final DistributedObjectEntryIdentifier id = new DistributedObjectEntryIdentifier(
-                    event.getServiceName(), eventObject.getObjectName(), eventObject.getKey());
-            eventMap.put(id, event);
+            final DistributedObjectEntryIdentifier id = getDistributedObjectEntryIdentifier(event);
+            WanReplicationEvent coalescedEvent = eventMap.put(id, event);
+            if (coalescedEvent != null) {
+                Queue<WanReplicationEvent> coalescedQueue = coalescedEvents.get(id);
+                if (coalescedQueue == null) {
+                    coalescedQueue = new LinkedList<WanReplicationEvent>();
+                    coalescedEvents.put(id, coalescedQueue);
+                }
+                coalescedQueue.offer(coalescedEvent);
+            }
         } else {
             eventList.add(event);
         }
@@ -68,12 +80,33 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
         }
     }
 
+    private DistributedObjectEntryIdentifier getDistributedObjectEntryIdentifier(WanReplicationEvent event) {
+        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event.getEventObject();
+        return new DistributedObjectEntryIdentifier(event.getServiceName(), eventObject.getObjectName(), eventObject.getKey());
+    }
+
     /**
      * Returns the number of events added to this batch. This may be different
      * than the size of the batch if {@link #snapshotEnabled} is {@code true}.
      */
     public int getAddedEventCount() {
         return addedEventCount;
+    }
+
+    /**
+     * Returns the events coalesced with the provided event in this batch
+     *
+     * @param event the replication event for which we query the
+     *              coalesced events
+     * @return the coalesced events
+     */
+    public Queue<WanReplicationEvent> getCoalescedEvents(WanReplicationEvent event) {
+        if (!snapshotEnabled) {
+            return new LinkedList<WanReplicationEvent>();
+        }
+        DistributedObjectEntryIdentifier id = getDistributedObjectEntryIdentifier(event);
+        Queue<WanReplicationEvent> coalescedQueue = coalescedEvents.get(id);
+        return coalescedQueue != null ? coalescedQueue : new LinkedList<WanReplicationEvent>();
     }
 
     /** Returns the WAN events in this batch */

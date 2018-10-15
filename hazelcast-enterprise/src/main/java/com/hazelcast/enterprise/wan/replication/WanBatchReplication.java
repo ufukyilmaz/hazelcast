@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -242,9 +243,15 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
             do {
                 transmissionSucceeded = wanBatchSender.send(batchReplicationEvent, target);
                 if (transmissionSucceeded) {
-                    for (WanReplicationEvent event : batchReplicationEvent.getEvents()) {
-                        incrementEventCount(event);
-                        removeReplicationEvent(event);
+                    for (WanReplicationEvent sentEvent : batchReplicationEvent.getEvents()) {
+                        incrementEventCount(sentEvent);
+                        removeReplicationEvent(sentEvent);
+
+                        // removing the coalesced events
+                        Queue<WanReplicationEvent> coalescedEvents = batchReplicationEvent.getCoalescedEvents(sentEvent);
+                        for (WanReplicationEvent coalescedEvent : coalescedEvents) {
+                            removeReplicationEvent(coalescedEvent);
+                        }
                     }
                     wanCounter.decrementPrimaryElementCounter(batchReplicationEvent.getAddedEventCount());
                 } else {

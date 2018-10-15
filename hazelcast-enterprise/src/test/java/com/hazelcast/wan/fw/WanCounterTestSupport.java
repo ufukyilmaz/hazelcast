@@ -52,7 +52,7 @@ public class WanCounterTestSupport {
 
     public static ScheduledFuture<?> dumpWanCounters(WanReplication wanReplication, ScheduledExecutorService executorService) {
         WanCounterDumper wanCounterDumper = new WanCounterDumper(wanReplication);
-        return executorService.scheduleAtFixedRate(wanCounterDumper, 0, 500, MILLISECONDS);
+        return executorService.scheduleAtFixedRate(wanCounterDumper, 0, 1000, MILLISECONDS);
     }
 
     public static void stopDumpingWanCounters(ScheduledFuture<?> dumpFuture) {

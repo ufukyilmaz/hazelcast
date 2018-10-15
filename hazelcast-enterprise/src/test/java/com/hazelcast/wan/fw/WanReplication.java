@@ -21,6 +21,7 @@ public class WanReplication {
     private final WanPublisherState initialPublisherState;
     private final int replicationBatchSize;
     private final int executorThreadCount;
+    private final boolean snapshotEnabled;
     private WanReplicationPublisher wanPublisher;
     private Class<? extends WanReplicationPublisher> wanPublisherClass;
     private WanReplicationConfig wanReplicationConfig;
@@ -35,6 +36,7 @@ public class WanReplication {
         this.initialPublisherState = builder.initialPublisherState;
         this.replicationBatchSize = builder.replicationBatchSize;
         this.executorThreadCount = builder.executorThreadCount;
+        this.snapshotEnabled = builder.snapshotEnabled;
     }
 
     public static WanReplicationBuilder replicate() {
@@ -101,7 +103,7 @@ public class WanReplication {
         props.put(WanReplicationProperties.GROUP_PASSWORD.key(), config.getGroupConfig().getPassword());
         props.put(WanReplicationProperties.ENDPOINTS.key(), (getClusterEndPoints(config, targetCluster.size())));
         props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
-        props.put(WanReplicationProperties.SNAPSHOT_ENABLED.key(), false);
+        props.put(WanReplicationProperties.SNAPSHOT_ENABLED.key(), snapshotEnabled);
         props.put(WanReplicationProperties.BATCH_SIZE.key(), replicationBatchSize);
         props.put(WanReplicationProperties.BATCH_MAX_DELAY_MILLIS.key(), 1000);
         props.put(WanReplicationProperties.EXECUTOR_THREAD_COUNT.key(), executorThreadCount);
@@ -130,6 +132,7 @@ public class WanReplication {
         private WanPublisherState initialPublisherState;
         private int replicationBatchSize = WanConfigurationContext.DEFAULT_BATCH_SIZE;
         private int executorThreadCount = WanConfigurationContext.DEFAULT_EXECUTOR_THREAD_COUNT;
+        private boolean snapshotEnabled = false;
 
         private WanReplicationBuilder() {
         }
@@ -176,6 +179,11 @@ public class WanReplication {
 
         public WanReplicationBuilder withExecutorThreadCount(int executorThreadCount) {
             this.executorThreadCount = executorThreadCount;
+            return this;
+        }
+
+        public WanReplicationBuilder withSnapshotEnabled(boolean snapshotEnabled) {
+            this.snapshotEnabled = snapshotEnabled;
             return this;
         }
 

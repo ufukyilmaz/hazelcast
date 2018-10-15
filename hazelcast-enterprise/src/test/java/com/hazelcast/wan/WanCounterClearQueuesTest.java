@@ -5,7 +5,7 @@ import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -20,7 +20,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -37,14 +42,24 @@ import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationEndpoint;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(QuickTest.class)
 public class WanCounterClearQueuesTest {
     private static final String MAP_NAME = "map";
     private static final String CACHE_NAME = "cache";
     private static final String REPLICATION_NAME = "wanReplication";
+
+    @Parameters(name = "snapshotEnabled:{0}")
+    public static Collection<Object> parameters() {
+        return asList(new Object[]{false, true});
+    }
+
+    @Parameter
+    public boolean snapshotEnabled = true;
 
     private Cluster sourceCluster;
     private Cluster targetCluster;
@@ -81,6 +96,7 @@ public class WanCounterClearQueuesTest {
                 .to(targetCluster)
                 .withSetupName(REPLICATION_NAME)
                 .withWanPublisher(QueueClearerWanPublisher.class)
+                .withSnapshotEnabled(snapshotEnabled)
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
@@ -113,11 +129,20 @@ public class WanCounterClearQueuesTest {
         targetCluster.startCluster();
 
         final int entriesToPut = 1000;
-        final CountDownLatch inTheMiddleOfLoadLatch = new CountDownLatch(entriesToPut / 2);
+        final int entriesToPutMiddle = snapshotEnabled ? entriesToPut : entriesToPut / 2;
+        final CountDownLatch inTheMiddleOfLoadLatch = new CountDownLatch(entriesToPutMiddle);
         executorService.submit(new Runnable() {
             @Override
             public void run() {
-                fillMap(sourceCluster, MAP_NAME, 0, entriesToPut, inTheMiddleOfLoadLatch);
+                if (snapshotEnabled) {
+                    fillMap(sourceCluster, MAP_NAME, 0, entriesToPutMiddle, inTheMiddleOfLoadLatch);
+                    fillMap(sourceCluster, MAP_NAME, 0, entriesToPutMiddle, inTheMiddleOfLoadLatch);
+                    // clearing the queues happen here
+                    fillMap(sourceCluster, MAP_NAME, entriesToPutMiddle, entriesToPut);
+                    fillMap(sourceCluster, MAP_NAME, entriesToPutMiddle, entriesToPut);
+                } else {
+                    fillMap(sourceCluster, MAP_NAME, 0, entriesToPut, inTheMiddleOfLoadLatch);
+                }
             }
         });
 

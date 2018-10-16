@@ -5,6 +5,8 @@ import com.hazelcast.security.ClusterLoginModule;
 import com.hazelcast.security.SecurityConstants;
 import com.hazelcast.security.UsernamePasswordCredentials;
 
+import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
 /**
@@ -16,17 +18,18 @@ import javax.security.auth.spi.LoginModule;
 public class DefaultLoginModule extends ClusterLoginModule implements LoginModule {
 
     @Override
-    public boolean onLogin() {
+    public boolean onLogin() throws LoginException {
         if (credentials instanceof UsernamePasswordCredentials) {
             final UsernamePasswordCredentials usernamePasswordCredentials = (UsernamePasswordCredentials) credentials;
             final Config cfg = (Config) options.get(SecurityConstants.ATTRIBUTE_CONFIG);
             final String group = cfg.getGroupConfig().getName();
             final String pass = cfg.getGroupConfig().getPassword();
 
-            if (!group.equals(usernamePasswordCredentials.getUsername())) {
-                return false;
+            if (group.equals(usernamePasswordCredentials.getUsername())
+                    && pass.equals(usernamePasswordCredentials.getPassword())) {
+                return true;
             }
-            return pass.equals(usernamePasswordCredentials.getPassword());
+            throw new FailedLoginException("Username or password doesn't match expected value.");
         }
         return false;
     }

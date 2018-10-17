@@ -11,7 +11,6 @@ import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
-import com.hazelcast.internal.management.ManagementCenterService;
 import com.hazelcast.internal.management.events.WanConsistencyCheckFinishedEvent;
 import com.hazelcast.internal.management.events.WanConsistencyCheckStartedEvent;
 import com.hazelcast.internal.management.events.WanMerkleSyncFinishedEvent;
@@ -84,7 +83,6 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
      * {@link IdleStrategy} used for
      */
     private final IdleStrategy wanTargetInvocationIdleStrategy;
-    private final ManagementCenterService managementCenterService;
 
     WanPublisherMerkleTreeSyncSupport(Node node,
                                       WanConfigurationContext configurationContext,
@@ -99,7 +97,6 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         this.syncManager = checkNotNull(service.getSyncManager());
         this.wanTargetInvocationIdleStrategy = new BackoffIdleStrategy(0, 0, WAN_TARGET_INVOCATION_BACKOFF_MIN_PARK,
                 WAN_TARGET_INVOCATION_BACKOFF_MAX_PARK);
-        this.managementCenterService = nodeEngine.getManagementCenterService();
     }
 
     /**
@@ -115,8 +112,9 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                              WanAntiEntropyEventResult result) throws Exception {
         String mapName = event.getMapName();
         String target = publisher.wanReplicationName + "/" + publisher.wanPublisherId;
-        managementCenterService.log(
-                new WanConsistencyCheckStartedEvent(publisher.wanReplicationName, publisher.wanPublisherId, mapName));
+        nodeEngine.getManagementCenterService()
+                  .log(new WanConsistencyCheckStartedEvent(publisher.wanReplicationName,
+                          publisher.wanPublisherId, mapName));
         if (logger.isFineEnabled()) {
             logger.fine("Checking via Merkle trees if map " + mapName + " is consistent with cluster " + target);
         }
@@ -138,8 +136,9 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         int entriesToSync = checkResult.getLastEntriesToSync();
         int checkedCount = checkResult.getLastCheckedPartitionCount();
         int diffCount = checkResult.getLastDiffPartitionCount();
-        managementCenterService.log(new WanConsistencyCheckFinishedEvent(publisher.wanReplicationName,
-                publisher.wanPublisherId, mapName, diffCount, checkedCount, entriesToSync));
+        nodeEngine.getManagementCenterService()
+                  .log(new WanConsistencyCheckFinishedEvent(publisher.wanReplicationName, publisher.wanPublisherId,
+                          mapName, diffCount, checkedCount, entriesToSync));
         if (logger.isFineEnabled()) {
             logger.fine("Consistency check for map " + mapName + " with cluster " + target + " has completed: "
                     + diffCount + " partitions out of " + checkedCount + " are not consistent, " + entriesToSync
@@ -230,8 +229,9 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
 
         ConsistencyCheckResult checkResult = new ConsistencyCheckResult();
         try {
-            managementCenterService.log(new WanConsistencyCheckStartedEvent(
-                    publisher.wanReplicationName, publisher.wanPublisherId, mapName));
+            nodeEngine.getManagementCenterService()
+                      .log(new WanConsistencyCheckStartedEvent(publisher.wanReplicationName,
+                              publisher.wanPublisherId, mapName));
             if (logger.isFineEnabled()) {
                 logger.fine("Comparing Merkle trees of map " + mapName + " with cluster " + target
                         + " to identify the difference");
@@ -245,23 +245,25 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                     logger.fine("Map " + mapName + " found to be consistent with cluster " + target
                             + ", no synchronization is needed");
                 }
-                managementCenterService.log(new WanConsistencyCheckFinishedEvent(publisher.wanReplicationName,
-                        publisher.wanPublisherId, mapName, 0, localPartitionsToSync.size(), 0));
+                nodeEngine.getManagementCenterService()
+                          .log(new WanConsistencyCheckFinishedEvent(publisher.wanReplicationName,
+                                  publisher.wanPublisherId, mapName, 0, localPartitionsToSync.size(), 0));
                 return;
             }
             int entriesToSync = getEntriesToSync(mapName, diff);
             int totalLocalMerkleTreeLeaves = getMerkleTreeLeaves(diff) * localPartitionsToSync.size();
             checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), diff.size(), totalLocalMerkleTreeLeaves,
                     getDiffLeafCount(diff), entriesToSync);
-            managementCenterService.log(new WanConsistencyCheckFinishedEvent(publisher.wanReplicationName,
-                    publisher.wanPublisherId, mapName, diff.size(), localPartitionsToSync.size(), entriesToSync));
+            nodeEngine.getManagementCenterService()
+                      .log(new WanConsistencyCheckFinishedEvent(publisher.wanReplicationName, publisher.wanPublisherId,
+                              mapName, diff.size(), localPartitionsToSync.size(), entriesToSync));
             if (logger.isFineEnabled()) {
                 logger.fine("Merkle tree comparison for map " + mapName + " with cluster " + target + " has completed: " + diff
                         .size() + " partitions out of " + localPartitionsToSync.size() + " need to be synced");
             }
 
-            managementCenterService.log(new WanSyncStartedEvent(publisher.wanReplicationName,
-                    publisher.wanPublisherId, mapName));
+            nodeEngine.getManagementCenterService()
+                      .log(new WanSyncStartedEvent(publisher.wanReplicationName, publisher.wanPublisherId, mapName));
 
             syncDifferences(mapName, diff, processedPartitions);
             checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), 0, totalLocalMerkleTreeLeaves, 0, 0);
@@ -334,13 +336,15 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                 mapName, stats.getDurationSecs(), stats.getPartitionsSynced(), stats.getNodesSynced(),
                 stats.getRecordsSynced(), stats.getMinLeafEntryCount(), stats.getMaxLeafEntryCount(),
                 stats.getAvgEntriesPerLeaf(), stats.getStdDevEntriesPerLeaf());
-        managementCenterService.log(event);
+        nodeEngine.getManagementCenterService()
+                  .log(event);
     }
 
     private void writeManagementCenterProgressUpdateEvent(String mapName, int partitionsToSync, MerkleTreeWanSyncStats stats) {
         WanSyncProgressUpdateEvent event = new WanSyncProgressUpdateEvent(publisher.wanReplicationName, publisher.wanPublisherId,
                 mapName, partitionsToSync, stats.getPartitionsSynced());
-        managementCenterService.log(event);
+        nodeEngine.getManagementCenterService()
+                  .log(event);
     }
 
     /**

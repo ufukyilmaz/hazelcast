@@ -8,7 +8,6 @@ import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
-import com.hazelcast.internal.management.ManagementCenterService;
 import com.hazelcast.internal.management.events.WanFullSyncFinishedEvent;
 import com.hazelcast.internal.management.events.WanSyncProgressUpdateEvent;
 import com.hazelcast.internal.management.events.WanSyncStartedEvent;
@@ -52,7 +51,6 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
     private final WanSyncManager syncManager;
     private final AbstractWanPublisher publisher;
     private final Map<String, WanSyncStats> lastSyncStats = new ConcurrentHashMap<String, WanSyncStats>();
-    private final ManagementCenterService managementCenterService;
 
     WanPublisherFullSyncSupport(Node node, AbstractWanPublisher publisher) {
         this.nodeEngine = node.getNodeEngine();
@@ -61,7 +59,6 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         final EnterpriseWanReplicationService service =
                 (EnterpriseWanReplicationService) nodeEngine.getWanReplicationService();
         this.syncManager = service.getSyncManager();
-        this.managementCenterService = nodeEngine.getManagementCenterService();
     }
 
     @Override
@@ -109,7 +106,8 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
 
     private void beforeSync(Collection<String> mapNames, Map<String, FullWanSyncStats> mapSyncStats) {
         for (String mapName : mapNames) {
-            managementCenterService.log(new WanSyncStartedEvent(publisher.wanReplicationName, publisher.wanPublisherId, mapName));
+            nodeEngine.getManagementCenterService()
+                      .log(new WanSyncStartedEvent(publisher.wanReplicationName, publisher.wanPublisherId, mapName));
             mapSyncStats.put(mapName, new FullWanSyncStats());
         }
     }
@@ -127,7 +125,8 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         WanFullSyncFinishedEvent syncFinishedEvent = new WanFullSyncFinishedEvent(publisher.wanReplicationName,
                 publisher.wanPublisherId, mapName, syncStats.getDurationSecs(), syncStats.getRecordsSynced(),
                 syncStats.getPartitionsSynced());
-        managementCenterService.log(syncFinishedEvent);
+        nodeEngine.getManagementCenterService()
+                  .log(syncFinishedEvent);
     }
 
     private IPartition[] getPartitions(InternalPartitionService partitionService, Set<Integer> partitionsToSync) {
@@ -251,8 +250,9 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
 
         syncStats.onSyncPartition();
         syncStats.onSyncRecords(syncedEntries);
-        managementCenterService.log(new WanSyncProgressUpdateEvent(publisher.wanReplicationName, publisher
-                .wanPublisherId, mapName, countLocalPartitions, syncStats.getPartitionsSynced()));
+        nodeEngine.getManagementCenterService()
+                  .log(new WanSyncProgressUpdateEvent(publisher.wanReplicationName, publisher.wanPublisherId,
+                          mapName, countLocalPartitions, syncStats.getPartitionsSynced()));
 
         return syncedEntries;
     }

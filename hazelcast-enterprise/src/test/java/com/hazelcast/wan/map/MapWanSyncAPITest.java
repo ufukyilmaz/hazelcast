@@ -130,6 +130,40 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
         verifySyncStats(clusterA, "atob", "B", "map", "map2", "map3");
     }
 
+    @Test
+    public void syncAllAfterAddingMemberToSourceCluster() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
+                consistencyCheckStrategy);
+        configA.setInstanceName(configA.getInstanceName() + 0);
+        clusterA = new HazelcastInstance[]{factory.newHazelcastInstance(configA)};
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 1000);
+        createDataIn(clusterA, "map2", 0, 2000);
+        createDataIn(clusterA, "map3", 0, 3000);
+
+        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFromEventually(clusterB, "map2", 0, 2000, clusterA);
+        assertDataInFromEventually(clusterB, "map3", 0, 3000, clusterA);
+
+        clusterB[0].getCluster().shutdown();
+        startClusterB();
+
+        configA.setInstanceName(configA.getInstanceName() + 1);
+        clusterA = new HazelcastInstance[]{clusterA[0], factory.newHazelcastInstance(configA)};
+
+        assertKeysNotInEventually(clusterB, "map", 0, 1000);
+        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
+        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
+
+        EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(clusterA[0]);
+        wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+        assertKeysInEventually(clusterB, "map", 0, 1000);
+        assertKeysInEventually(clusterB, "map2", 0, 2000);
+        assertKeysInEventually(clusterB, "map3", 0, 3000);
+        verifySyncStats(clusterA, "atob", "B", "map", "map2", "map3");
+    }
+
 
     @Test(expected = SyncFailedException.class)
     public void sendMultipleSyncRequests() {

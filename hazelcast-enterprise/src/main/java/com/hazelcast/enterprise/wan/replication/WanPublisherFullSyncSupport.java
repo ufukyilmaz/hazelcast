@@ -22,10 +22,13 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.util.CollectionUtil;
+import com.hazelcast.util.MapUtil;
+import com.hazelcast.util.SetUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanSyncStats;
 import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,31 +76,56 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
      * @param event  WAN sync event
      * @param result the processing result
      */
-    public void processEvent(WanSyncEvent event,
-                             WanAntiEntropyEventResult result) {
-        managementCenterService.log(new WanSyncStartedEvent(publisher.wanReplicationName,
-                publisher.wanPublisherId, event.getMapName()));
+    public void processEvent(WanSyncEvent event, WanAntiEntropyEventResult result) {
+        final Collection<String> mapNames = getMapsToSynchronize(event);
+        Map<String, FullWanSyncStats> mapSyncStats = MapUtil.createHashMap(mapNames.size());
+
+        beforeSync(mapNames, mapSyncStats);
 
         syncManager.resetSyncedPartitionCount();
         Set<Integer> syncedPartitions = result.getProcessedPartitions();
         Set<Integer> partitionsToSync = event.getPartitionSet();
         InternalPartitionService partitionService = nodeEngine.getPartitionService();
-        FullWanSyncStats syncStats = new FullWanSyncStats();
 
         IPartition[] partitions = getPartitions(partitionService, partitionsToSync);
         int countLocalPartitions = getLocalPartitionCount(partitions);
         for (IPartition partition : partitions) {
-            syncPartition(event, syncedPartitions, partition, countLocalPartitions, syncStats);
+            syncPartition(event, syncedPartitions, partition, countLocalPartitions, mapSyncStats);
         }
 
-        syncStats.onSyncComplete();
-        lastSyncStats.put(event.getMapName(), syncStats);
-        writeMcSyncFinishedEvent(event, syncStats);
+        afterSync(mapNames, mapSyncStats);
     }
 
-    private void writeMcSyncFinishedEvent(WanSyncEvent event, FullWanSyncStats syncStats) {
+    private Collection<String> getMapsToSynchronize(WanSyncEvent event) {
+        final Collection<String> mapNames;
+        if (event.getType() == WanSyncType.ALL_MAPS) {
+            mapNames = mapService.getMapServiceContext().getMapContainers().keySet();
+        } else {
+            mapNames = SetUtil.createHashSet(1);
+            mapNames.add(event.getMapName());
+        }
+        return mapNames;
+    }
+
+    private void beforeSync(Collection<String> mapNames, Map<String, FullWanSyncStats> mapSyncStats) {
+        for (String mapName : mapNames) {
+            managementCenterService.log(new WanSyncStartedEvent(publisher.wanReplicationName, publisher.wanPublisherId, mapName));
+            mapSyncStats.put(mapName, new FullWanSyncStats());
+        }
+    }
+
+    private void afterSync(Collection<String> mapNames, Map<String, FullWanSyncStats> mapSyncStats) {
+        for (String mapName : mapNames) {
+            FullWanSyncStats syncStats = mapSyncStats.get(mapName);
+            syncStats.onSyncComplete();
+            lastSyncStats.put(mapName, syncStats);
+            writeMcSyncFinishedEvent(mapName, syncStats);
+        }
+    }
+
+    private void writeMcSyncFinishedEvent(String mapName, FullWanSyncStats syncStats) {
         WanFullSyncFinishedEvent syncFinishedEvent = new WanFullSyncFinishedEvent(publisher.wanReplicationName,
-                publisher.wanPublisherId, event.getMapName(), syncStats.getDurationSecs(), syncStats.getRecordsSynced(),
+                publisher.wanPublisherId, mapName, syncStats.getDurationSecs(), syncStats.getRecordsSynced(),
                 syncStats.getPartitionsSynced());
         managementCenterService.log(syncFinishedEvent);
     }
@@ -159,18 +187,16 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
      * @param syncedPartitions the set of synced partition IDs
      * @param partition        the partition to sync
      * @param countLocalPartitions the number of the local partitions
+     * @param mapSyncStats the sync statistics per synced maps to update
      */
     private void syncPartition(WanSyncEvent event,
                                Set<Integer> syncedPartitions,
                                IPartition partition,
                                int countLocalPartitions,
-                               FullWanSyncStats syncStats) {
+                               Map<String, FullWanSyncStats> mapSyncStats) {
         if (partition.isLocal()) {
-            syncPartition(event, partition, syncStats);
+            syncPartition(event, partition, mapSyncStats, countLocalPartitions);
             syncedPartitions.add(partition.getPartitionId());
-            syncStats.onSyncPartition();
-            managementCenterService.log(new WanSyncProgressUpdateEvent(publisher.wanReplicationName, publisher
-                    .wanPublisherId, event.getMapName(), countLocalPartitions, syncStats.getPartitionsSynced()));
         }
     }
 
@@ -180,20 +206,23 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
      */
     private void syncPartition(WanSyncEvent syncEvent,
                                IPartition partition,
-                               FullWanSyncStats syncStats) {
+                               Map<String, FullWanSyncStats> mapSyncStats, int countLocalPartitions) {
         int partitionEventCount = 0;
         counterMap.put(partition.getPartitionId(), new AtomicInteger());
         if (syncEvent.getType() == WanSyncType.ALL_MAPS) {
-            for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
-                partitionEventCount += syncPartitionForMap(mapName, partition);
+            for (Map.Entry<String, FullWanSyncStats> entry : mapSyncStats.entrySet()) {
+                String mapName = entry.getKey();
+                FullWanSyncStats syncStats = entry.getValue();
+                partitionEventCount += syncPartitionForMap(mapName, partition, syncStats, countLocalPartitions);
             }
         } else {
-            partitionEventCount += syncPartitionForMap(syncEvent.getMapName(), partition);
+            String mapName = syncEvent.getMapName();
+            FullWanSyncStats syncStats = mapSyncStats.get(mapName);
+            partitionEventCount += syncPartitionForMap(mapName, partition, syncStats, countLocalPartitions);
         }
         if (partitionEventCount == 0) {
             syncManager.incrementSyncedPartitionCount();
         }
-        syncStats.onSyncRecords(partitionEventCount);
     }
 
     /**
@@ -202,22 +231,30 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
      *
      * @param mapName   the map name
      * @param partition the partition for which entries should be enqueued
+     * @param syncStats the synchronization statistics to update
+     * @param countLocalPartitions the number of the local partitions
      * @return the number of enqueued sync events
      */
-    private int syncPartitionForMap(String mapName,
-                                    IPartition partition) {
+    private int syncPartitionForMap(String mapName, IPartition partition, FullWanSyncStats syncStats, int countLocalPartitions) {
         GetMapPartitionDataOperation op = new GetMapPartitionDataOperation(mapName);
-        op.setPartitionId(partition.getPartitionId());
+        int partitionId = partition.getPartitionId();
+        op.setPartitionId(partitionId);
         Set<SimpleEntryView<Data, Data>> set = invokeOp(op);
-        counterMap.get(partition.getPartitionId()).addAndGet(set.size());
+        int syncedEntries = set.size();
+        counterMap.get(partitionId).addAndGet(syncedEntries);
 
         for (SimpleEntryView<Data, Data> simpleEntryView : set) {
-            EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(
-                    mapName, simpleEntryView, partition.getPartitionId());
+            EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(mapName, simpleEntryView, partitionId);
             WanReplicationEvent event = new WanReplicationEvent(MapService.SERVICE_NAME, sync);
             publisher.offerToStagingQueue(event);
         }
-        return set.size();
+
+        syncStats.onSyncPartition();
+        syncStats.onSyncRecords(syncedEntries);
+        managementCenterService.log(new WanSyncProgressUpdateEvent(publisher.wanReplicationName, publisher
+                .wanPublisherId, mapName, countLocalPartitions, syncStats.getPartitionsSynced()));
+
+        return syncedEntries;
     }
 
     /**

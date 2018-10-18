@@ -51,7 +51,7 @@
         <mockito.version>2.19.0</mockito.version>
         <powermock.version>2.0.0-beta.5</powermock.version>
         <bytebuddy.version>1.8.17</bytebuddy.version>
-        <netty.version>4.1.29.Final</netty.version>
+        <netty.version>4.1.30.Final</netty.version>
         <netty-tcnative.version>2.0.15.Final</netty-tcnative.version>
         <findbugs.annotations.version>3.0.0</findbugs.annotations.version>
         <jsr107.api.version>1.1.0</jsr107.api.version>

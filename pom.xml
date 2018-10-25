@@ -247,9 +247,14 @@
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <trimStackTrace>false</trimStackTrace>
+                    <!--
+                    Empty sun.nio.ch.bugLevel System property is used to workaround Java 6 issue https://bugs.java.com/view_bug.do?bug_id=6427854
+                    See https://github.com/hazelcast/hazelcast-enterprise/issues/2533
+                     -->
                     <argLine>
                         ${vmHeapSettings}
                         ${extraVmArgs}
+                        -Dsun.nio.ch.bugLevel
                         -ea
                         -Dhazelcast.hidensity.check.freememory=false
                         -Dhazelcast.phone.home.enabled=false
@@ -445,6 +450,7 @@
                 <argLine>
                     ${vmHeapSettings}
                     ${extraVmArgs}
+                    -Dsun.nio.ch.bugLevel
                     -ea
                     -Dhazelcast.hidensity.check.freememory=false
                     -Dhazelcast.phone.home.enabled=false
@@ -519,6 +525,7 @@
                                     <argLine>
                                         ${vmHeapSettings}
                                         ${extraVmArgs}
+                                        -Dsun.nio.ch.bugLevel
                                         -ea
                                         -Dhazelcast.operation.thread.count=16
                                         -Dhazelcast.hidensity.check.freememory=false
@@ -563,6 +570,7 @@
                                     <argLine>
                                         ${vmHeapSettings}
                                         ${extraVmArgs}
+                                        -Dsun.nio.ch.bugLevel
                                         -ea
                                         -Dhazelcast.operation.thread.count=16
                                         -Dhazelcast.hidensity.check.freememory=false
@@ -601,6 +609,7 @@
                 <argLine>
                     ${vmHeapSettings}
                     ${extraVmArgs}
+                    -Dsun.nio.ch.bugLevel
                     -ea
                     -Dhazelcast.hidensity.check.freememory=false
                     -Dhazelcast.phone.home.enabled=false
@@ -664,6 +673,7 @@
                             <argLine>
                                 ${vmHeapSettings}
                                 ${extraVmArgs}
+                                -Dsun.nio.ch.bugLevel
                                 -ea
                                 --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
                                 --add-opens java.base/java.nio=ALL-UNNAMED
@@ -716,6 +726,7 @@
                             <argLine>
                                 ${vmHeapSettings}
                                 ${extraVmArgs}
+                                -Dsun.nio.ch.bugLevel
                                 -ea
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false
@@ -761,6 +772,7 @@
                             <argLine>
                                 ${vmHeapSettings}
                                 ${extraVmArgs}
+                                -Dsun.nio.ch.bugLevel
                                 -ea
                                 -Dhazelcast.hidensity.check.freememory=false
                                 -Dhazelcast.phone.home.enabled=false

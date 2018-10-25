@@ -178,6 +178,12 @@
             <version>${project.version}</version>
             <scope>test</scope>
             <classifier>tests</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.hazelcast</groupId>
+                    <artifactId>hazelcast</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

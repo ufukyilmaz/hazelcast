@@ -24,6 +24,7 @@ import com.hazelcast.TestEnvironmentUtil;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
@@ -46,7 +47,9 @@ public class ClientSSLSocketTest {
     @Test(timeout = 60000, expected = IllegalStateException.class)
     public void testClientThrowsExceptionIfNodesAreUsingSSLButClientIsNot() throws Exception {
         Config serverConfig = new Config();
-        serverConfig.getNetworkConfig().setSSLConfig(getSslConfig());
+        NetworkConfig networkConfig = serverConfig.getNetworkConfig();
+        networkConfig.setSSLConfig(getSslConfig());
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
         factory.newHazelcastInstance(serverConfig);
         factory.newHazelcastInstance(serverConfig);
 
@@ -97,7 +100,9 @@ public class ClientSSLSocketTest {
         if (serverOpenSSL) {
             serverSSLConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName());
         }
-        serverConfig.getNetworkConfig().setSSLConfig(serverSSLConfig);
+        NetworkConfig networkConfig = serverConfig.getNetworkConfig();
+        networkConfig.setSSLConfig(serverSSLConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
 
         factory.newHazelcastInstance(serverConfig);
         factory.newHazelcastInstance(serverConfig);
@@ -116,7 +121,7 @@ public class ClientSSLSocketTest {
         if (clientOpenSSL) {
             clientSSLConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName());
         }
-        clientConfig.getNetworkConfig().setRedoOperation(true).setSSLConfig(clientSSLConfig);
+        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true).setSSLConfig(clientSSLConfig);
 
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
         IMap<Object, Object> clientMap = client.getMap("test");
@@ -131,14 +136,16 @@ public class ClientSSLSocketTest {
     public void testServerRequiresClientAuth_clientHaveKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "REQUIRED");
         Config serverConfig = new Config();
-        serverConfig.getNetworkConfig().setSSLConfig(sslConfig);
+        NetworkConfig networkConfig = serverConfig.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
 
         HazelcastInstance hz1 = factory.newHazelcastInstance(serverConfig);
         factory.newHazelcastInstance(serverConfig);
 
         Properties clientSslProps = createSslProperties();
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setRedoOperation(true)
+        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
                 .setSSLConfig(getSslConfig(clientSslProps));
 
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
@@ -152,7 +159,10 @@ public class ClientSSLSocketTest {
     public void testServerRequiresClientAuth_clientDoesNotHaveKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "REQUIRED");
         Config serverConfig = new Config();
-        serverConfig.getNetworkConfig().setSSLConfig(sslConfig);
+        NetworkConfig networkConfig = serverConfig.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+
 
         factory.newHazelcastInstance(serverConfig);
         factory.newHazelcastInstance(serverConfig);
@@ -162,7 +172,7 @@ public class ClientSSLSocketTest {
         clientSslProps.remove(JAVAX_NET_SSL_KEY_STORE);
         clientSslProps.remove(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setRedoOperation(true)
+        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
                 .setSSLConfig(getSslConfig(clientSslProps));
 
         factory.newHazelcastClient(clientConfig);
@@ -172,7 +182,9 @@ public class ClientSSLSocketTest {
     public void testServerRequiresClientAuth_clientHaveWrongKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "REQUIRED");
         Config serverConfig = new Config();
-        serverConfig.getNetworkConfig().setSSLConfig(sslConfig);
+        NetworkConfig networkConfig = serverConfig.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
 
         factory.newHazelcastInstance(serverConfig);
         factory.newHazelcastInstance(serverConfig);
@@ -180,7 +192,7 @@ public class ClientSSLSocketTest {
         Properties clientSslProps = createSslProperties();
         clientSslProps.setProperty(JAVAX_NET_SSL_KEY_STORE, getWrongKeyStoreFilePath());
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setRedoOperation(true)
+        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
                 .setSSLConfig(getSslConfig(clientSslProps));
 
         factory.newHazelcastClient(clientConfig);
@@ -190,14 +202,16 @@ public class ClientSSLSocketTest {
     public void testOptionalClientAuth_clientHaveKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
         Config serverConfig = new Config();
-        serverConfig.getNetworkConfig().setSSLConfig(sslConfig);
+        NetworkConfig networkConfig = serverConfig.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
 
         HazelcastInstance hz1 = factory.newHazelcastInstance(serverConfig);
         factory.newHazelcastInstance(serverConfig);
 
         Properties clientSslProps = createSslProperties();
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setRedoOperation(true)
+        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
                 .setSSLConfig(getSslConfig(clientSslProps));
 
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
@@ -211,7 +225,9 @@ public class ClientSSLSocketTest {
     public void testOptionalClientAuth_clientHaveWrongKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
         Config serverConfig = new Config();
-        serverConfig.getNetworkConfig().setSSLConfig(sslConfig);
+        NetworkConfig networkConfig = serverConfig.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
 
         HazelcastInstance hz1 = factory.newHazelcastInstance(serverConfig);
         factory.newHazelcastInstance(serverConfig);
@@ -220,7 +236,7 @@ public class ClientSSLSocketTest {
         clientSslProps.setProperty(JAVAX_NET_SSL_KEY_STORE, getWrongKeyStoreFilePath());
         clientSslProps.setProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD, "123456");
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setRedoOperation(true)
+        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
                 .setSSLConfig(getSslConfig(clientSslProps));
 
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
@@ -234,7 +250,9 @@ public class ClientSSLSocketTest {
     public void testOptionalClientAuth_clientDoesNotHaveKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
         Config serverConfig = new Config();
-        serverConfig.getNetworkConfig().setSSLConfig(sslConfig);
+        NetworkConfig networkConfig = serverConfig.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
 
         HazelcastInstance hz1 = factory.newHazelcastInstance(serverConfig);
         factory.newHazelcastInstance(serverConfig);
@@ -244,7 +262,7 @@ public class ClientSSLSocketTest {
         clientSslProps.remove(JAVAX_NET_SSL_KEY_STORE);
         clientSslProps.remove(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setRedoOperation(true)
+        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
                 .setSSLConfig(getSslConfig(clientSslProps));
 
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
@@ -258,7 +276,9 @@ public class ClientSSLSocketTest {
     public void testMalformedKeystore_onClient() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
         Config serverConfig = new Config();
-        serverConfig.getNetworkConfig().setSSLConfig(sslConfig);
+        NetworkConfig networkConfig = serverConfig.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
 
         factory.newHazelcastInstance(serverConfig);
 
@@ -266,7 +286,7 @@ public class ClientSSLSocketTest {
         Properties clientSslProps = createSslProperties();
         clientSslProps.put(JAVAX_NET_SSL_KEY_STORE, getMalformedKeyStoreFilePath());
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setRedoOperation(true)
+        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
                 .setSSLConfig(getSslConfig(clientSslProps));
 
         try {

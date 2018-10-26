@@ -87,7 +87,7 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
     @Parameters
     public static Iterable<Object[]> parameters() {
         return Arrays.asList(
-                new Object[] {SampleLicense.UNLIMITED_LICENSE_PRE_ROLLING_UPGRADE},
+                new Object[] {SampleLicense.V5_UNLIMITED_LICENSE},
                 new Object[] {SampleLicense.UNLIMITED_LICENSE}
         );
     }
@@ -270,6 +270,11 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
             assertClusterVersion(clusterMembers, CLUSTER_VERSION_NEXT_MINOR);
             assertClusterSize(CLUSTER_MEMBERS_COUNT, clusterMembers[0]);
         }
+    }
+
+    @Override
+    protected Config getConfig() {
+        return smallInstanceConfig();
     }
 
     abstract HazelcastInstance createHazelcastInstance(MemberVersion version, Config config);

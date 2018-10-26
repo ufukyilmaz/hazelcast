@@ -19,8 +19,6 @@ public final class SampleLicense {
     // this is a V4 unlimited license
     public static final String UNLIMITED_LICENSE
             = "UNLIMITED_LICENSE#99Nodes#VuE0OIH7TbfKwAUNmSj1JlyFkr6a53911000199920009119011112151009";
-    public static final String UNLIMITED_LICENSE_PRE_ROLLING_UPGRADE =
-            "UNLIMITED_LICENSE#99Nodes#VuE0OIH7TbfKwAUNmSj1JlyFkr6a53911000199920009119011112151009";
     public static final String V5_SECURITY_ONLY_LICENSE
             = "SECURITY_ONLY#99Nodes#JMnyKq1lCi6Q5DOXW0ufTb8wPGd2kmUBNYSgE9HZAj54090900000990090800000000091090000011009009";
     public static final String SECURITY_ONLY_LICENSE

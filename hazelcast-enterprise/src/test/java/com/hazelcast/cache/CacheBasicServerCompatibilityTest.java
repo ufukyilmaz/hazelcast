@@ -3,107 +3,13 @@ package com.hazelcast.cache;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
 public class CacheBasicServerCompatibilityTest extends CacheBasicServerTest {
-
-    @Rule
-    // RU_COMPAT_3_10
-    public ExpectedException expectedException = ExpectedException.none();
-
-    @Test
-    @Override
-    // RU_COMPAT_3_10
-    public void testSetExpiryPolicyReturnsTrue() {
-        expectedException.expect(NoSuchMethodException.class);
-        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
-        super.testSetExpiryPolicyReturnsTrue();
-    }
-
-    @Test
-    @Override
-    // RU_COMPAT_3_10
-    public void testSetExpiryPolicyReturnsFalse_whenKeyDoesNotExist() {
-        expectedException.expect(NoSuchMethodException.class);
-        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
-        super.testSetExpiryPolicyReturnsFalse_whenKeyDoesNotExist();
-    }
-
-    @Test
-    @Override
-    // RU_COMPAT_3_10
-    public void testSetExpiryPolicyReturnsFalse_whenKeyIsAlreadyExpired() {
-        expectedException.expect(NoSuchMethodException.class);
-        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
-        super.testSetExpiryPolicyReturnsFalse_whenKeyIsAlreadyExpired();
-    }
-
-    @Test
-    @Override
-    // RU_COMPAT_3_10
-    public void testRecordExpiryPolicyTakesPrecedenceOverCachePolicy() {
-        expectedException.expect(NoSuchMethodException.class);
-        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
-        super.testRecordExpiryPolicyTakesPrecedenceOverCachePolicy();
-    }
-
-    @Test
-    @Override
-    // RU_COMPAT_3_10
-    public void testRecordExpiryPolicyTakesPrecedenceOverPolicyAtCreation() {
-        expectedException.expect(NoSuchMethodException.class);
-        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
-        super.testRecordExpiryPolicyTakesPrecedenceOverPolicyAtCreation();
-    }
-
-    @Test
-    @Override
-    // RU_COMPAT_3_10
-    public void testRecordExpiryPolicyTakesPrecedence() {
-        expectedException.expect(NoSuchMethodException.class);
-        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
-        super.testRecordExpiryPolicyTakesPrecedence();
-    }
-
-    @Test
-    @Override
-    // RU_COMPAT_3_10
-    public void test_whenExpiryPolicyIsOverridden_thenNewPolicyIsInEffect() {
-        expectedException.expect(NoSuchMethodException.class);
-        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
-        super.test_whenExpiryPolicyIsOverridden_thenNewPolicyIsInEffect();
-    }
-
-    @Test
-    @Override
-    // RU_COMPAT_3_10
-    public void test_CustomExpiryPolicyIsUsedWhenEntryIsUpdated() {
-        expectedException.expect(NoSuchMethodException.class);
-        expectedException.expectMessage("class com.hazelcast.cache.impl.CacheProxy.setExpiryPolicy(");
-        super.test_CustomExpiryPolicyIsUsedWhenEntryIsUpdated();
-    }
-
-    @Test
-    @Ignore
-    @Override
-    // RU_COMPAT_3_10
-    public void testExpiration_entryWithOwnTtl() {
-        // Added in 3.11, older versions simply do not have the support.
-    }
-
-    @Test
-    @Ignore
-    @Override
-    // RU_COMPAT_3_10
-    public void testExpiration() {
-        // Added in 3.11, older versions simply do not have the support.
-    }
 
     @Test
     @Ignore

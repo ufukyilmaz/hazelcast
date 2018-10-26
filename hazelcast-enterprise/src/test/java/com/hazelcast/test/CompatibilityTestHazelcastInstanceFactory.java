@@ -51,7 +51,7 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
      * Unlike other Hazelcast instances, this one will not be proxied and
      * you can inspect the internal state, e.g. by getting the NodeEngine.
      */
-    public static final String CURRENT_VERSION = "3.11";
+    public static final String CURRENT_VERSION = "3.12";
 
     /**
      * Refers to compatible released Hazelcast versions.
@@ -62,7 +62,7 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
      * <b>Note:</b> Some tests require cluster with 3 members,
      * so when a new release is made, repeat the same version twice.
      */
-    public static final String[] RELEASED_VERSIONS = new String[]{"3.10.3", "3.10.4"};
+    public static final String[] RELEASED_VERSIONS = new String[]{"3.11", "3.11"};
 
     /**
      * System property to override the versions to be used by any compatibility test.

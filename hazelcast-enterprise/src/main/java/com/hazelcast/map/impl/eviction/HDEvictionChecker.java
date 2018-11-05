@@ -9,6 +9,7 @@ import com.hazelcast.map.impl.EnterpriseMapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.MemoryInfoAccessor;
@@ -25,12 +26,16 @@ import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 public class HDEvictionChecker extends EvictionChecker {
 
     private final int hotRestartMinFreeNativeMemoryPercentage;
+    private final MemoryStats memoryStats;
 
     public HDEvictionChecker(MemoryInfoAccessor memoryInfoAccessor,
                              MapServiceContext mapServiceContext,
                              HotRestartEvictionHelper hotRestartEvictionHelper) {
         super(memoryInfoAccessor, mapServiceContext);
         this.hotRestartMinFreeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
+        SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
+        HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
+        this.memoryStats = memoryManager.getMemoryStats();
     }
 
     @Override
@@ -39,8 +44,8 @@ public class HDEvictionChecker extends EvictionChecker {
         HiDensityStorageInfo storageInfo = mapContainer.getStorageInfo();
         MapConfig mapConfig = mapContainer.getMapConfig();
         MaxSizeConfig maxSizeConfig = mapConfig.getMaxSizeConfig();
-        int maxSize = maxSizeConfig.getSize();
         MaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
+        int maxConfiguredSize = maxSizeConfig.getSize();
 
         boolean evictable;
 
@@ -49,67 +54,36 @@ public class HDEvictionChecker extends EvictionChecker {
                 // we do not need to check Hot Restart specific eviction in this case, because from the
                 // configuration we know that it is at least 20 percent (so we just return the result)
                 // see `HDMapConfigValidator#checkHotRestartSpecificConfig` for further information
-                return checkMinFreeNativeMemoryPercentage(maxSize);
+                return isFreeNativeMemoryPercentageEvictable(maxConfiguredSize);
             case FREE_NATIVE_MEMORY_SIZE:
-                evictable = checkMinFreeNativeMemorySize(maxSize);
+                evictable = memoryStats.getFreeNative() < MEGABYTES.toBytes(maxConfiguredSize);
                 break;
             case USED_NATIVE_MEMORY_PERCENTAGE:
-                evictable = checkMaxUsedNativeMemoryPercentage(maxSize, storageInfo);
+                evictable = (storageInfo.getUsedMemory() * ONE_HUNDRED / memoryStats.getMaxNative()) > maxConfiguredSize;
                 break;
             case USED_NATIVE_MEMORY_SIZE:
-                evictable = checkMaxUsedNativeMemorySize(maxSize, storageInfo);
+                evictable = storageInfo.getUsedMemory() > MEGABYTES.toBytes(maxConfiguredSize);
                 break;
             default:
                 evictable = super.checkEvictable(recordStore);
                 break;
         }
 
-        return evictable || checkHotRestartSpecificEviction(mapConfig);
+        return evictable || checkHotRestartSpecificEviction(mapConfig.getHotRestartConfig());
     }
 
     /**
      * When Hot Restart is enabled we want at least `hotRestartMinFreeNativeMemoryPercentage` free HD space.
      */
-    protected boolean checkHotRestartSpecificEviction(MapConfig mapConfig) {
-        HotRestartConfig hotRestartConfig = mapConfig.getHotRestartConfig();
+    private boolean checkHotRestartSpecificEviction(HotRestartConfig hotRestartConfig) {
         if (hotRestartConfig == null || !hotRestartConfig.isEnabled()) {
             return false;
         }
 
-        return checkMinFreeNativeMemoryPercentage(hotRestartMinFreeNativeMemoryPercentage);
+        return isFreeNativeMemoryPercentageEvictable(hotRestartMinFreeNativeMemoryPercentage);
     }
 
-    protected boolean checkMaxUsedNativeMemorySize(int maxUsedMB, HiDensityStorageInfo storageInfo) {
-        long currentUsedBytes = storageInfo.getUsedMemory();
-        return MEGABYTES.toBytes(maxUsedMB) < currentUsedBytes;
-    }
-
-    protected boolean checkMaxUsedNativeMemoryPercentage(int maxUsedPercentage, HiDensityStorageInfo storageInfo) {
-        long currentUsedSize = storageInfo.getUsedMemory();
-
-        SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
-        long maxUsableSize = memoryManager.getMemoryStats().getMaxNative();
-
-        return maxUsedPercentage < (1D * ONE_HUNDRED_PERCENT * currentUsedSize / maxUsableSize);
-    }
-
-    protected boolean checkMinFreeNativeMemoryPercentage(int minFreePercentage) {
-        SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
-
-        long maxUsableSize = memoryManager.getMemoryStats().getMaxNative();
-        long currentFreeSize = memoryManager.getMemoryStats().getFreeNative();
-
-        return minFreePercentage > (1D * ONE_HUNDRED_PERCENT * currentFreeSize / maxUsableSize);
-    }
-
-    protected boolean checkMinFreeNativeMemorySize(int minFreeMB) {
-        SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
-
-        long currentFreeBytes = memoryManager.getMemoryStats().getFreeNative();
-
-        return MEGABYTES.toBytes(minFreeMB) > currentFreeBytes;
+    private boolean isFreeNativeMemoryPercentageEvictable(int minFreePercentage) {
+        return (memoryStats.getFreeNative() * ONE_HUNDRED / memoryStats.getMaxNative()) < minFreePercentage;
     }
 }

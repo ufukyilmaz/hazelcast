@@ -1,21 +1,5 @@
 package com.hazelcast.nio.ssl;
 
-import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
-import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
-import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
-
-import java.util.Properties;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
@@ -25,9 +9,24 @@ import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestAwareInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+
+import java.util.Properties;
+
+import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
+import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
+import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({ QuickTest.class })
+@Category({QuickTest.class})
 public class OpenSSLConnectionTest {
 
     @Rule
@@ -64,7 +63,7 @@ public class OpenSSLConnectionTest {
 
         final HazelcastInstance h1 = factory.newHazelcastInstance(config);
         final HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSize(1, h1, h2);
+        assertClusterSize(2, h1, h2);
     }
 
     @Test(expected = HazelcastException.class)

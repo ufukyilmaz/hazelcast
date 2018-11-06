@@ -323,16 +323,6 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         return memoryManager;
     }
 
-    @Override
-    public boolean isAvailable() {
-        for (int i = 0; i < segments.length; i++) {
-            if (!segments[i].isAvailable()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     /**
      * Represents a segment block (lockable by a thread) in this Near Cache storage.
      */
@@ -483,16 +473,6 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         public Iterator<Data> getKeySetIterator() {
             checkAvailable();
             return records.keySet().iterator();
-        }
-
-        @Override
-        public boolean isAvailable() {
-            lock.lock();
-            try {
-                return super.isAvailable();
-            } finally {
-                lock.unlock();
-            }
         }
 
         @Override

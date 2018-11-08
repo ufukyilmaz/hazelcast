@@ -142,7 +142,7 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
                 nearCacheConfig, inMemoryFormat);
 
         for (int i = 0; i < DEFAULT_RECORD_COUNT; i++) {
-            nearCacheRecordStore.put(i, null, "Record-" + i);
+            nearCacheRecordStore.put(i, null, "Record-" + i, null);
         }
 
         assertTrueEventually(new AssertTask() {

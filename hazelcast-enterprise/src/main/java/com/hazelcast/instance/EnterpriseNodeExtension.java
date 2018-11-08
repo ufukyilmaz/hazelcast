@@ -654,6 +654,15 @@ public class EnterpriseNodeExtension
     }
 
     @Override
+    public void onInitialClusterState(ClusterState initialState) {
+        super.onInitialClusterState(initialState);
+
+        if (hotRestartService != null) {
+            hotRestartService.onInitialClusterState(initialState);
+        }
+    }
+
+    @Override
     public void onClusterStateChange(ClusterState newState, boolean isTransient) {
         super.onClusterStateChange(newState, isTransient);
 

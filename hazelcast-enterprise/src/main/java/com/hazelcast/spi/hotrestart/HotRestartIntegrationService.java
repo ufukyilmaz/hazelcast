@@ -42,6 +42,7 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,6 +102,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private final ClusterMetadataManager clusterMetadataManager;
     private final long dataLoadTimeoutMillis;
     private final int storeCount;
+    private final boolean autoRemoveStaleData;
 
     private volatile HotRestartStore[] onHeapStores;
     private volatile HotRestartStore[] offHeapStores;
@@ -116,6 +118,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         this.hotRestartHome = hrCfg.getBaseDir();
         this.hotRestartBackupDir = hrCfg.getBackupDir();
         this.storeCount = hrCfg.getParallelism();
+        this.autoRemoveStaleData = hrCfg.isAutoRemoveStaleData();
         this.clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hrCfg);
         this.persistentConfigDescriptors = new PersistentConfigDescriptors(hotRestartHome);
         this.dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(hrCfg.getDataLoadTimeoutSeconds());
@@ -803,6 +806,22 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     @Override
     public Set<String> getExcludedMemberUuids() {
         return clusterMetadataManager.getExcludedMemberUuids();
+    }
+
+    public void onInitialClusterState(ClusterState initialState) {
+        if (!autoRemoveStaleData) {
+            return;
+        }
+        if (clusterMetadataManager.isStartWithHotRestart() && initialState.isJoinAllowed()) {
+            String thisUuid = node.getThisUuid();
+            if (isMemberExcluded(node.getThisAddress(), thisUuid)) {
+                return;
+            }
+            String message = "Cannot join the cluster with state " + initialState
+                    + ". Will initiate a force start after removing Hot Restart data.";
+            logger.warning(message);
+            handleExcludedMemberUuids(node.getMasterAddress(), Collections.singleton(thisUuid));
+        }
     }
 
     @Override

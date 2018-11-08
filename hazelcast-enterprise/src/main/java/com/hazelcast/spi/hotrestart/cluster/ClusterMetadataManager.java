@@ -570,6 +570,7 @@ public class ClusterMetadataManager {
             expectedMembersRef.set(null);
             partitionTableRef.set(null);
             memberClusterStartInfos.clear();
+            startWithHotRestart = false;
         } finally {
             hotRestartStatusLock.unlock();
         }
@@ -984,8 +985,6 @@ public class ClusterMetadataManager {
      * <p>
      * When an unexpected member joins, a member that doesn't exist in restores members, await fails
      * with {@code HotRestartException}.
-     *
-     * @return returns a mapping of old and new addresses of joined members if an address change is detected
      */
     private void awaitUntilExpectedMembersJoin() throws InterruptedException {
         final Set<String> restoredMemberUuids = getRestoredMemberUuids();
@@ -1008,8 +1007,8 @@ public class ClusterMetadataManager {
             }
 
             Collection<MemberImpl> members = clusterService.getMemberImpls();
-            failIfUnexpectedMemberJoins(restoredMemberUuids, members);
             failOrSetExpectedMembersIfValidationTimedOut(members);
+            failIfUnexpectedMemberJoins(restoredMemberUuids, members);
 
             for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                 listener.beforeAllMembersJoin(members);

@@ -129,7 +129,7 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         pauseWanReplication(singleNodeA, "atob", configB.getGroupConfig().getName());
         createDataIn(singleNodeA, "map", 0, 1000);
         EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(singleNodeA[0]);
-        final WanReplicationEndpoint endpoint = wanReplicationService.getEndpoint("atob", configB.getGroupConfig().getName());
+        final WanReplicationEndpoint endpoint = wanReplicationService.getEndpointOrFail("atob", configB.getGroupConfig().getName());
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() throws Exception {

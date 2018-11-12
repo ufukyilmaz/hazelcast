@@ -5,6 +5,7 @@ import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.enterprise.wan.operation.AddWanConfigOperationFactory;
 import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
@@ -16,8 +17,12 @@ import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.management.events.AddWanConfigIgnoredEvent;
+import com.hazelcast.internal.management.events.Event;
 import com.hazelcast.internal.management.events.WanConfigurationAddedEvent;
+import com.hazelcast.internal.management.events.WanConfigurationExtendedEvent;
 import com.hazelcast.internal.management.events.WanConsistencyCheckIgnoredEvent;
+import com.hazelcast.internal.management.operation.AddWanConfigLegacyOperation;
+import com.hazelcast.internal.util.InvocationUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.WanSyncState;
@@ -32,7 +37,9 @@ import com.hazelcast.spi.PartitionMigrationEvent;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.ServiceNamespace;
+import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.util.MapUtil;
+import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
@@ -40,20 +47,25 @@ import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.impl.WanEventCounters;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.StringUtil.isNullOrEmptyAfterTrim;
 
 /**
  * Enterprise implementation for WAN replication.
  */
-@SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
+@SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity", "checkstyle:classdataabstractioncoupling"})
 public class EnterpriseWanReplicationService implements WanReplicationService, FragmentedMigrationAwareService,
         PostJoinAwareService, LiveOperationsTracker {
 
+    private static final int ADD_WAN_CONFIG_MAX_RETRIES = 10;
     private final Node node;
     private final ILogger logger;
     private final WanReplicationMigrationAwareService migrationAwareService;
@@ -61,6 +73,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     private final WanPublisherContainer publisherContainer;
     private final WanConsumerContainer consumerContainer;
     private final WanSyncManager syncManager;
+    /** Mutex for adding new WAN replication config */
+    private final Object configUpdateMutex = new Object();
 
     /** WAN event counters for all services and only received events */
     private final WanEventCounters receivedWanEventCounters = new WanEventCounters();
@@ -71,7 +85,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     public EnterpriseWanReplicationService(Node node) {
         this.node = node;
         this.logger = node.getLogger(EnterpriseWanReplicationService.class.getName());
-        this.migrationAwareService = new WanReplicationMigrationAwareService(this);
+        this.migrationAwareService = new WanReplicationMigrationAwareService(this, node);
         this.eventProcessor = new WanEventProcessor(node);
         this.publisherContainer = new WanPublisherContainer(node);
         this.consumerContainer = new WanConsumerContainer(node);
@@ -81,7 +95,31 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     /**
      * Returns a WAN replication configured under a WAN replication config with
      * the name {@code wanReplicationName} and with a WAN publisher ID of
-     * {@code wanPublisherId}.
+     * {@code wanPublisherId} or {@code null} if there is no configuration for
+     * the given parameters.
+     *
+     * @param wanReplicationName the name of the {@link WanReplicationConfig}
+     * @param wanPublisherId     the publisher ID
+     * @return the WAN endpoint or {@code null} if there is no configuration for the
+     * given parameters
+     * @see WanReplicationConfig#getName
+     * @see WanPublisherConfig#getGroupName()
+     * @see WanPublisherConfig#getPublisherId()
+     */
+    public WanReplicationEndpoint getEndpointOrNull(String wanReplicationName,
+                                                    String wanPublisherId) {
+        final WanReplicationPublisherDelegate publisherDelegate
+                = (WanReplicationPublisherDelegate) getWanReplicationPublisher(wanReplicationName);
+        return publisherDelegate != null
+                ? publisherDelegate.getEndpoint(wanPublisherId)
+                : null;
+    }
+
+    /**
+     * Returns a WAN replication configured under a WAN replication config with
+     * the name {@code wanReplicationName} and with a WAN publisher ID of
+     * {@code wanPublisherId} or throws a {@link InvalidConfigurationException}
+     * if there is no configuration for the given parameters.
      *
      * @param wanReplicationName the name of the {@link WanReplicationConfig}
      * @param wanPublisherId     the publisher ID
@@ -93,26 +131,16 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      * @see WanPublisherConfig#getGroupName()
      * @see WanPublisherConfig#getPublisherId()
      */
-    public WanReplicationEndpoint getEndpoint(String wanReplicationName, String wanPublisherId) {
-        final WanReplicationPublisherDelegate publisherDelegate
-                = (WanReplicationPublisherDelegate) getWanReplicationPublisher(wanReplicationName);
-        final WanReplicationEndpoint endpoint = getEndpointFromDelegate(publisherDelegate, wanPublisherId);
-
-        if (publisherDelegate == null || endpoint == null) {
+    public WanReplicationEndpoint getEndpointOrFail(String wanReplicationName,
+                                                    String wanPublisherId) {
+        WanReplicationEndpoint endpoint = getEndpointOrNull(wanReplicationName, wanPublisherId);
+        if (endpoint == null) {
             throw new InvalidConfigurationException("WAN Replication Config doesn't exist with WAN configuration name "
                     + wanReplicationName + " and publisher ID " + wanPublisherId);
         }
-
         return endpoint;
     }
 
-    private WanReplicationEndpoint getEndpointFromDelegate(WanReplicationPublisherDelegate publisherDelegate,
-                                                           String wanPublisherId) {
-        if (publisherDelegate != null) {
-            return publisherDelegate.getEndpoint(wanPublisherId);
-        }
-        return null;
-    }
 
     /**
      * Processes the replication event sent from the source cluster.
@@ -132,20 +160,79 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     /**
-     * Adds a {@link WanReplicationConfig} if there is none registered under
-     * the provided {@link WanReplicationConfig#getName()}.
+     * Appends the provided {@link WanReplicationConfig} to the configuration of
+     * this member. If there is no WAN replication config with the same name/scheme,
+     * the provided config will be used. If there is an existing WAN replication
+     * config with the same name, any publishers with publisher IDs that are
+     * present in the provided {@code newConfig} but not present in the existing
+     * config will be added (appended).
+     * If the existing config contains all of the publishers from the provided
+     * config, no change is done to the existing config.
+     * This method is thread-safe and may be called concurrently.
      *
-     * @param wanConfig the WAN configuration to add
-     * @return {@code true} if the config was added, {@code false} otherwise
+     * @param newConfig the WAN configuration to add
+     * @see WanPublisherConfig#getPublisherId()
      */
-    public boolean addWanReplicationConfigIfAbsent(WanReplicationConfig wanConfig) {
-        WanReplicationConfig wanReplicationConfig = node.getConfig().getWanReplicationConfig(wanConfig.getName());
-        if (wanReplicationConfig == null) {
-            node.getConfig().addWanReplicationConfig(wanConfig);
-            node.getManagementCenterService().log(new WanConfigurationAddedEvent(wanConfig.getName()));
-            return true;
+    public void appendWanReplicationConfig(WanReplicationConfig newConfig) {
+        String scheme = newConfig.getName();
+        ConcurrentMap<String, WanReplicationConfig> wanConfigs =
+                (ConcurrentMap<String, WanReplicationConfig>) node.getConfig().getWanReplicationConfigs();
+        WanReplicationConfig existingConfig = wanConfigs.putIfAbsent(scheme, newConfig);
+
+        if (existingConfig == null) {
+            emitManagementCenterEvent(new WanConfigurationAddedEvent(scheme));
+            return;
         }
-        return false;
+
+        Map<String, WanPublisherConfig> missingPublisherConfigs = getPublisherConfigMap(newConfig);
+        for (WanPublisherConfig existingPublisherConfig : existingConfig.getWanPublisherConfigs()) {
+            missingPublisherConfigs.remove(getPublisherIdOrGroupName(existingPublisherConfig));
+        }
+        if (missingPublisherConfigs.isEmpty()) {
+            emitManagementCenterEvent(AddWanConfigIgnoredEvent.alreadyExists(newConfig.getName()));
+            return;
+        }
+
+        synchronized (configUpdateMutex) {
+            existingConfig = wanConfigs.get(scheme);
+            for (WanPublisherConfig existingPublisherConfig : existingConfig.getWanPublisherConfigs()) {
+                missingPublisherConfigs.remove(getPublisherIdOrGroupName(existingPublisherConfig));
+            }
+            if (missingPublisherConfigs.isEmpty()) {
+                // no new publishers
+                return;
+            }
+
+            // new publishers, create new config
+            ArrayList<WanPublisherConfig> mergedPublisherConfigs = new ArrayList<WanPublisherConfig>(
+                    existingConfig.getWanPublisherConfigs().size() + missingPublisherConfigs.size());
+            mergedPublisherConfigs.addAll(existingConfig.getWanPublisherConfigs());
+            mergedPublisherConfigs.addAll(missingPublisherConfigs.values());
+            WanReplicationConfig mergedConfig = new WanReplicationConfig();
+            mergedConfig.setWanConsumerConfig(existingConfig.getWanConsumerConfig());
+            mergedConfig.setName(existingConfig.getName());
+            mergedConfig.setWanPublisherConfigs(mergedPublisherConfigs);
+            wanConfigs.put(scheme, mergedConfig);
+
+            emitManagementCenterEvent(new WanConfigurationExtendedEvent(scheme, missingPublisherConfigs.keySet()));
+        }
+    }
+
+    private void emitManagementCenterEvent(Event event) {
+        // management center service may be temporarily null
+        // while node is joining the cluster
+        if (node.getManagementCenterService() != null) {
+            node.getManagementCenterService().log(event);
+        }
+    }
+
+    private static Map<String, WanPublisherConfig> getPublisherConfigMap(WanReplicationConfig config) {
+        List<WanPublisherConfig> publisherConfigs = config.getWanPublisherConfigs();
+        Map<String, WanPublisherConfig> publisherConfigMap = MapUtil.createHashMap(publisherConfigs.size());
+        for (WanPublisherConfig publisherConfig : publisherConfigs) {
+            publisherConfigMap.put(getPublisherIdOrGroupName(publisherConfig), publisherConfig);
+        }
+        return publisherConfigMap;
     }
 
     /**
@@ -163,7 +250,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     public void publishAntiEntropyEvent(String wanReplicationName,
                                         String wanPublisherId,
                                         WanAntiEntropyEvent event) {
-        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, wanPublisherId);
+        WanReplicationEndpoint endpoint = getEndpointOrFail(wanReplicationName, wanPublisherId);
         if (event instanceof WanSyncEvent) {
             endpoint.publishSyncEvent((WanSyncEvent) event);
             return;
@@ -294,12 +381,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public Operation getPostJoinOperation() {
-        PostJoinWanOperation postJoinWanOperation = new PostJoinWanOperation();
         Map<String, WanReplicationConfig> wanConfigs = node.getConfig().getWanReplicationConfigs();
-        for (Map.Entry<String, WanReplicationConfig> wanReplicationConfigEntry : wanConfigs.entrySet()) {
-            postJoinWanOperation.addWanConfig(wanReplicationConfigEntry.getValue());
-        }
-        return postJoinWanOperation;
+        return new PostJoinWanOperation(wanConfigs.values());
     }
 
     @Override
@@ -326,17 +409,17 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public void pause(String wanReplicationName, String wanPublisherId) {
-        getEndpoint(wanReplicationName, wanPublisherId).pause();
+        getEndpointOrFail(wanReplicationName, wanPublisherId).pause();
     }
 
     @Override
     public void stop(String wanReplicationName, String wanPublisherId) {
-        getEndpoint(wanReplicationName, wanPublisherId).stop();
+        getEndpointOrFail(wanReplicationName, wanPublisherId).stop();
     }
 
     @Override
     public void resume(String wanReplicationName, String wanPublisherId) {
-        getEndpoint(wanReplicationName, wanPublisherId).resume();
+        getEndpointOrFail(wanReplicationName, wanPublisherId).resume();
     }
 
     @Override
@@ -361,7 +444,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         // RU_COMPAT_3_11
         Version clusterVersion = node.getNodeEngine().getClusterService().getClusterVersion();
         if (!clusterVersion.isGreaterOrEqual(Versions.V3_11)) {
-            node.getManagementCenterService().log(new WanConsistencyCheckIgnoredEvent(wanReplicationName,
+            emitManagementCenterEvent(new WanConsistencyCheckIgnoredEvent(wanReplicationName,
                     wanPublisherId, mapName, "Cluster version is not 3.11."));
             logger.info(String.format(
                     "Consistency check request for WAN replication '%s',"
@@ -373,7 +456,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
         MerkleTreeConfig merkleTreeConfig = node.getConfig().findMapMerkleTreeConfig(mapName);
         if (!merkleTreeConfig.isEnabled()) {
-            node.getManagementCenterService().log(new WanConsistencyCheckIgnoredEvent(wanReplicationName,
+            emitManagementCenterEvent(new WanConsistencyCheckIgnoredEvent(wanReplicationName,
                     wanPublisherId, mapName, "Map has merkle trees disabled."));
             logger.info(String.format(
                     "Consistency check request for WAN replication '%s',"
@@ -389,20 +472,35 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public void clearQueues(String wanReplicationName, String wanPublisherId) {
-        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, wanPublisherId);
+        WanReplicationEndpoint endpoint = getEndpointOrFail(wanReplicationName, wanPublisherId);
         endpoint.clearQueues();
     }
 
     @Override
-    public void addWanReplicationConfig(WanReplicationConfig wanConfig) {
-        if (addWanReplicationConfigIfAbsent(wanConfig)) {
-            getWanReplicationPublisher(wanConfig.getName());
-        } else {
-            node.getManagementCenterService().log(AddWanConfigIgnoredEvent.alreadyExists(wanConfig.getName()));
+    public void addWanReplicationConfigLocally(WanReplicationConfig wanConfig) {
+        appendWanReplicationConfig(wanConfig);
+        publisherContainer.ensurePublishersInitialized(wanConfig.getName());
+    }
 
-            logger.warning(
-                    "Ignoring new WAN config request. A WanReplicationConfig already exists with the given name: "
-                            + wanConfig.getName());
+    @Override
+    public void addWanReplicationConfig(final WanReplicationConfig wanConfig) {
+        try {
+            Version clusterVersion = node.getNodeEngine().getClusterService().getClusterVersion();
+            if (clusterVersion.isGreaterOrEqual(Versions.V3_12)) {
+                InternalOperationService operationService = node.getNodeEngine().getOperationService();
+                operationService.invokeOnAllPartitions(null, new AddWanConfigOperationFactory(wanConfig));
+            } else {
+                // RU_COMPAT_3_11
+                InvocationUtil.invokeOnStableClusterSerial(node.getNodeEngine(),
+                        new Supplier<Operation>() {
+                            @Override
+                            public Operation get() {
+                                return new AddWanConfigLegacyOperation(wanConfig);
+                            }
+                        }, ADD_WAN_CONFIG_MAX_RETRIES).get();
+            }
+        } catch (Throwable t) {
+            throw rethrow(t);
         }
     }
 

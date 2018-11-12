@@ -31,7 +31,7 @@ public class WanCacheTestSupport {
         return cache.size();
     }
 
-    private static ICache<Integer, String> getOrCreateCache(Cluster cluster, String cacheName) {
+    public static ICache<Integer, String> getOrCreateCache(Cluster cluster, String cacheName) {
         HazelcastInstance instance = cluster.getAMember();
         ClassLoader classLoader = cluster.getConfig().getClassLoader();
         return getOrCreateCache(instance, cacheName, classLoader);

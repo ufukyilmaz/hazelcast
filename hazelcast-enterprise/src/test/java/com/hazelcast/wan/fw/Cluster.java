@@ -184,6 +184,11 @@ public class Cluster {
         return (int) (Math.random() * instances);
     }
 
+    public void addWanReplication(WanReplication wanReplication) {
+        wanReplicationService(getAMember())
+                .addWanReplicationConfig(wanReplication.getConfig());
+    }
+
     public static class ClusterBuilder {
         private String groupName;
         private int port;

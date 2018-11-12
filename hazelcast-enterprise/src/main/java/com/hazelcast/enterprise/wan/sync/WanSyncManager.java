@@ -72,7 +72,7 @@ public class WanSyncManager {
                                            final String targetGroupName,
                                            final WanAntiEntropyEvent event) {
         // first check if endpoint exists for the given wanReplicationName and targetGroupName
-        wanReplicationService.getEndpoint(wanReplicationName, targetGroupName);
+        wanReplicationService.getEndpointOrFail(wanReplicationName, targetGroupName);
         if (!SYNC_STATUS.compareAndSet(this, WanSyncStatus.READY, WanSyncStatus.IN_PROGRESS)) {
             throw new SyncFailedException("Another anti-entropy request is already in progress.");
         }

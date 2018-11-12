@@ -328,7 +328,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     private List<Address> getTargetEndpoints() {
         final EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(clusterA[0]);
-        final WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService.getEndpoint(
+        final WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService.getEndpointOrFail(
                 wanReplicationName, configB.getGroupConfig().getName());
         return endpoint.getTargetEndpoints();
     }

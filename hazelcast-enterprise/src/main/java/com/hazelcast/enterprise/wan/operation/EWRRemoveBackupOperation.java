@@ -28,8 +28,18 @@ public class EWRRemoveBackupOperation extends EWRBaseOperation implements Backup
 
     @Override
     public void run() throws Exception {
-        WanReplicationEndpoint endpoint = getEWRService().getEndpoint(wanReplicationName, targetName);
-        endpoint.removeBackup(getNodeEngine().<WanReplicationEvent>toObject(event));
+        WanReplicationEndpoint endpoint = getEWRService().getEndpointOrNull(wanReplicationName, wanPublisherId);
+        if (endpoint != null) {
+            // the endpoint may be null in cases where the backup does
+            // not contain the same config as the primary.
+            // For instance, this can happen when dynamically adding new
+            // WAN config during runtime and there is a race between
+            // config addition and WAN replication.
+            endpoint.removeBackup(getNodeEngine().<WanReplicationEvent>toObject(event));
+        } else {
+            getLogger().finest("Ignoring backup since WAN config doesn't exist with config name "
+                    + wanReplicationName + " and publisher ID " + wanPublisherId);
+        }
         response = true;
     }
 

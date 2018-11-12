@@ -38,7 +38,7 @@ public class EWRPutBackupOperation extends EWRBaseOperation
 
     @Override
     public void run() throws Exception {
-        WanReplicationEndpoint endpoint = getEWRService().getEndpoint(wanReplicationName, targetName);
+        WanReplicationEndpoint endpoint = getEWRService().getEndpointOrFail(wanReplicationName, wanPublisherId);
         endpoint.putBackup(getEvent());
         response = true;
     }

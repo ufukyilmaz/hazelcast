@@ -2,6 +2,9 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.cache.wan.CacheReplicationRemove;
 import com.hazelcast.cache.wan.CacheReplicationUpdate;
+import com.hazelcast.enterprise.wan.operation.AddWanConfigBackupOperation;
+import com.hazelcast.enterprise.wan.operation.AddWanConfigOperation;
+import com.hazelcast.enterprise.wan.operation.AddWanConfigOperationFactory;
 import com.hazelcast.enterprise.wan.operation.EWRPutBackupOperation;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
@@ -62,6 +65,9 @@ public class EWRDataSerializerHook implements DataSerializerHook {
     public static final int WAN_MERKLE_TREE_NODE_COMPARE_OPERATION = 19;
     public static final int MERKLE_TREE_NODE_VALUE_COMPARISON = 20;
     public static final int MAP_REPLICATION_MERKLE_TREE_NODE = 21;
+    public static final int ADD_WAN_CONFIG_OPERATION_FACTORY = 22;
+    public static final int ADD_WAN_CONFIG_OPERATION = 23;
+    public static final int ADD_WAN_CONFIG_BACKUP_OPERATION = 24;
 
     @Override
     public int getFactoryId() {
@@ -119,6 +125,12 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                         return new MerkleTreeNodeValueComparison();
                     case MAP_REPLICATION_MERKLE_TREE_NODE:
                         return new EnterpriseMapReplicationMerkleTreeNode();
+                    case ADD_WAN_CONFIG_OPERATION_FACTORY:
+                        return new AddWanConfigOperationFactory();
+                    case ADD_WAN_CONFIG_OPERATION:
+                        return new AddWanConfigOperation();
+                    case ADD_WAN_CONFIG_BACKUP_OPERATION:
+                        return new AddWanConfigBackupOperation();
                     default:
                         throw new IllegalArgumentException("Unknown type ID: " + typeId);
                 }

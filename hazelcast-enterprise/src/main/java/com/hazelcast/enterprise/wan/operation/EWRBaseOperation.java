@@ -18,7 +18,7 @@ public abstract class EWRBaseOperation extends Operation implements PartitionAwa
     protected transient Object response;
 
     String wanReplicationName;
-    String targetName;
+    String wanPublisherId;
     // service name is always null but it can't be easily removed
     // because of backwards compatibility (rolling upgrade)
     String serviceName;
@@ -26,9 +26,9 @@ public abstract class EWRBaseOperation extends Operation implements PartitionAwa
     protected EWRBaseOperation() {
     }
 
-    protected EWRBaseOperation(String wanReplicationName, String targetName) {
+    protected EWRBaseOperation(String wanReplicationName, String wanPublisherId) {
         this.wanReplicationName = wanReplicationName;
-        this.targetName = targetName;
+        this.wanPublisherId = wanPublisherId;
     }
 
     @Override
@@ -61,14 +61,14 @@ public abstract class EWRBaseOperation extends Operation implements PartitionAwa
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         out.writeUTF(wanReplicationName);
-        out.writeUTF(targetName);
+        out.writeUTF(wanPublisherId);
         out.writeUTF(serviceName);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         wanReplicationName = in.readUTF();
-        targetName = in.readUTF();
+        wanPublisherId = in.readUTF();
         serviceName = in.readUTF();
     }
 }

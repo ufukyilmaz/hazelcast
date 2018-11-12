@@ -43,9 +43,9 @@ public class EWRPutOperation extends EWRBackupAwareOperation implements Identifi
 
     @Override
     public void run() throws Exception {
-        final EnterpriseWanReplicationService wanReplicationService = getEWRService();
-        final WanReplicationEndpoint endpoint = wanReplicationService.getEndpoint(wanReplicationName, targetName);
-        final WanReplicationEvent event = getEvent();
+        EnterpriseWanReplicationService wanReplicationService = getEWRService();
+        WanReplicationEndpoint endpoint = wanReplicationService.getEndpointOrFail(wanReplicationName, wanPublisherId);
+        WanReplicationEvent event = getEvent();
         endpoint.publishReplicationEvent(event.getServiceName(), event.getEventObject());
         response = true;
     }
@@ -57,7 +57,7 @@ public class EWRPutOperation extends EWRBackupAwareOperation implements Identifi
 
     @Override
     public Operation getBackupOperation() {
-        return new EWRPutBackupOperation(wanReplicationName, targetName, getSerializedEvent(), getServiceNamespace());
+        return new EWRPutBackupOperation(wanReplicationName, wanPublisherId, getSerializedEvent(), getServiceNamespace());
     }
 
     @Override

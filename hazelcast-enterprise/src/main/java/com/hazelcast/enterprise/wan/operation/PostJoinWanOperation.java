@@ -10,25 +10,23 @@ import com.hazelcast.spi.Operation;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
 /**
- * Copies {@link WanReplicationConfig}s to joining member.
- * Existing configs are skipped.
+ * Copies {@link WanReplicationConfig}s to a joining member.
+ * New WAN replication configurations are added to joining member and
+ * existing WAN replication configurations are merged. This means that any
+ * publishers that are not present on the joining member are added.
  */
 public class PostJoinWanOperation extends Operation implements IdentifiedDataSerializable {
 
-    private List<WanReplicationConfig> wanReplicationConfigs = new ArrayList<WanReplicationConfig>();
+    private Collection<WanReplicationConfig> wanReplicationConfigs = new ArrayList<WanReplicationConfig>();
 
     public PostJoinWanOperation() {
     }
 
-    public PostJoinWanOperation(List<WanReplicationConfig> wanReplicationConfigs) {
+    public PostJoinWanOperation(Collection<WanReplicationConfig> wanReplicationConfigs) {
         this.wanReplicationConfigs = wanReplicationConfigs;
-    }
-
-    public void addWanConfig(WanReplicationConfig wanConfig) {
-        wanReplicationConfigs.add(wanConfig);
     }
 
     @Override
@@ -45,7 +43,7 @@ public class PostJoinWanOperation extends Operation implements IdentifiedDataSer
     public void run() throws Exception {
         EnterpriseWanReplicationService service = getService();
         for (WanReplicationConfig wanReplicationConfig : wanReplicationConfigs) {
-            service.addWanReplicationConfigIfAbsent(wanReplicationConfig);
+            service.appendWanReplicationConfig(wanReplicationConfig);
         }
     }
 

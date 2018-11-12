@@ -1,7 +1,9 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
+import com.hazelcast.instance.Node;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.spi.FragmentedMigrationAwareService;
 import com.hazelcast.spi.ObjectNamespace;
@@ -22,9 +24,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 class WanReplicationMigrationAwareService implements FragmentedMigrationAwareService {
     private final EnterpriseWanReplicationService wanReplicationService;
+    private final Node node;
 
-    WanReplicationMigrationAwareService(EnterpriseWanReplicationService wanReplicationService) {
+    WanReplicationMigrationAwareService(EnterpriseWanReplicationService wanReplicationService, Node node) {
         this.wanReplicationService = wanReplicationService;
+        this.node = node;
     }
 
     @Override
@@ -58,9 +62,14 @@ class WanReplicationMigrationAwareService implements FragmentedMigrationAwareSer
         for (WanReplicationPublisherDelegate delegate : wanReplications.values()) {
             delegate.collectReplicationData(event, namespaces, migrationData);
         }
+        Collection<WanReplicationConfig> wanReplicationConfigs = node.getConfig().getWanReplicationConfigs().values();
 
-        return migrationData.isEmpty() ? null
-                : new EWRQueueReplicationOperation(migrationData, event.getPartitionId(), event.getReplicaIndex());
+        if (migrationData.isEmpty() && wanReplicationConfigs.isEmpty()) {
+            return null;
+        } else {
+            return new EWRQueueReplicationOperation(
+                    wanReplicationConfigs, migrationData, event.getPartitionId(), event.getReplicaIndex());
+        }
     }
 
     @Override

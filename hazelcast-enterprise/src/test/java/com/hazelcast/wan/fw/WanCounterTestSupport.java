@@ -70,7 +70,11 @@ public class WanCounterTestSupport {
 
         @Override
         public void run() {
-            dumpWanCounters(wanReplication);
+            try {
+                dumpWanCounters(wanReplication);
+            } catch (Exception e) {
+                logger.info("Error collecting counter values", e);
+            }
         }
 
         private void dumpWanCounters(WanReplication wanReplication) {
@@ -79,26 +83,28 @@ public class WanCounterTestSupport {
             logger.info(
                     "===[" + setupName + "(" + targetClusterName + ")]=======================================================");
             int sumOfTotalPublishedEvents = 0;
-            for (HazelcastInstance instance : wanReplication.getSourceCluster().getMembers()) {
-                if (instance != null && instance.getLifecycleService().isRunning()) {
-                    String instanceName = instance.getName();
-                    WanBatchReplication endpoint = wanReplicationEndpoint(instance, wanReplication);
+            if (targetClusterName != null) {
+                for (HazelcastInstance instance : wanReplication.getSourceCluster().getMembers()) {
+                    if (instance != null && instance.getLifecycleService().isRunning()) {
+                        String instanceName = instance.getName();
+                        WanBatchReplication endpoint = wanReplicationEndpoint(instance, wanReplication);
 
-                    int outboundQueueSize = getPrimaryOutboundQueueSize(instance, setupName, targetClusterName);
-                    logger.info("PRIMARY counter on " + instanceName + ": " + outboundQueueSize);
+                        int outboundQueueSize = getPrimaryOutboundQueueSize(instance, setupName, targetClusterName);
+                        logger.info("PRIMARY counter on " + instanceName + ": " + outboundQueueSize);
 
-                    logger.info("BACKUP counter on " + instanceName + ": " + endpoint.getCurrentBackupElementCount());
+                        logger.info("BACKUP counter on " + instanceName + ": " + endpoint.getCurrentBackupElementCount());
 
-                    int outboundQueueSizes = getQueueSizes(instance, endpoint, true);
-                    logger.info("PRIMARY Q size on " + instanceName + ": " + outboundQueueSizes);
+                        int outboundQueueSizes = getQueueSizes(instance, endpoint, true);
+                        logger.info("PRIMARY Q size on " + instanceName + ": " + outboundQueueSizes);
 
-                    int outboundAllQueueSizes = getQueueSizes(instance, endpoint, false);
-                    logger.info("ALL Q size on " + instanceName + ": " + outboundAllQueueSizes);
+                        int outboundAllQueueSizes = getQueueSizes(instance, endpoint, false);
+                        logger.info("ALL Q size on " + instanceName + ": " + outboundAllQueueSizes);
 
-                    long totalPublishedEventCount = getTotalPublishedEventCount(instance, setupName, targetClusterName);
-                    logger.info("Total events published on " + instanceName + ": " + totalPublishedEventCount);
+                        long totalPublishedEventCount = getTotalPublishedEventCount(instance, setupName, targetClusterName);
+                        logger.info("Total events published on " + instanceName + ": " + totalPublishedEventCount);
 
-                    sumOfTotalPublishedEvents += totalPublishedEventCount;
+                        sumOfTotalPublishedEvents += totalPublishedEventCount;
+                    }
                 }
             }
             logger.info("Sum of total events by the members: " + sumOfTotalPublishedEvents);

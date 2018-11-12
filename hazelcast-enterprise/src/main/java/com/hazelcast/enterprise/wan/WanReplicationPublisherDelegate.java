@@ -12,6 +12,7 @@ import com.hazelcast.wan.WanReplicationPublisher;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
@@ -24,9 +25,10 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
     /** Non-null WAN replication name */
     final String name;
     /** Non-null WAN publisher endpoints, grouped by publisher ID */
-    final Map<String, WanReplicationEndpoint> endpoints;
+    final ConcurrentMap<String, WanReplicationEndpoint> endpoints;
 
-    public WanReplicationPublisherDelegate(String name, Map<String, WanReplicationEndpoint> endpoints) {
+    public WanReplicationPublisherDelegate(String name,
+                                           ConcurrentMap<String, WanReplicationEndpoint> endpoints) {
         checkNotNull(name, "WAN publisher name should not be null");
         checkNotNull(endpoints, "WAN publisher endpoint map should not be null");
         this.name = name;
@@ -44,6 +46,10 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
      */
     public WanReplicationEndpoint getEndpoint(String publisherId) {
         return endpoints.get(publisherId);
+    }
+
+    public void addEndpoint(String publisherId, WanReplicationEndpoint endpoint) {
+        endpoints.put(publisherId, endpoint);
     }
 
     public String getName() {

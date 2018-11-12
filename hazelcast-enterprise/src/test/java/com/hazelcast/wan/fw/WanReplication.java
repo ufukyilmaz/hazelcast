@@ -23,6 +23,7 @@ public class WanReplication {
     private final int executorThreadCount;
     private WanReplicationPublisher wanPublisher;
     private Class<? extends WanReplicationPublisher> wanPublisherClass;
+    private WanReplicationConfig wanReplicationConfig;
 
     private WanReplication(WanReplicationBuilder builder) {
         this.sourceCluster = builder.sourceCluster;
@@ -49,22 +50,27 @@ public class WanReplication {
     }
 
     public WanReplicationConfig getConfig() {
-        return sourceCluster.getConfig().getWanReplicationConfig(setupName);
+        return wanReplicationConfig;
     }
 
     public String getTargetClusterName() {
-        return targetCluster.getConfig().getGroupConfig().getName();
+        return targetCluster != null ? targetCluster.getConfig().getGroupConfig().getName() : null;
     }
 
     private WanReplication configure() {
-        Config sourceConfig = sourceCluster.getConfig();
+        if (sourceCluster != null
+                && sourceCluster.getConfig().getWanReplicationConfig(setupName) != null) {
+            return this;
+        }
 
-        WanReplicationConfig wanConfig = sourceConfig.getWanReplicationConfig(setupName);
-        if (wanConfig == null) {
-            wanConfig = new WanReplicationConfig();
-            wanConfig.setName(setupName);
-            wanConfig.addWanPublisherConfig(configureTargetCluster(targetCluster, wanPublisher, wanPublisherClass));
-            sourceConfig.addWanReplicationConfig(wanConfig);
+        wanReplicationConfig = new WanReplicationConfig();
+        wanReplicationConfig.setName(setupName);
+        if (targetCluster != null) {
+            wanReplicationConfig.addWanPublisherConfig(configureTargetCluster(targetCluster, wanPublisher, wanPublisherClass));
+        }
+
+        if (sourceCluster != null) {
+            sourceCluster.getConfig().addWanReplicationConfig(wanReplicationConfig);
         }
 
         return this;

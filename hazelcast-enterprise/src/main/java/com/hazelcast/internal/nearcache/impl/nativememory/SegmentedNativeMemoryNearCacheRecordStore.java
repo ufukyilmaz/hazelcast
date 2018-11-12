@@ -334,6 +334,16 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
 
         @Override
+        public void put(K key, Data keyData, V value, Data valueData) {
+            lock.lock();
+            try {
+                super.put(key, keyData, value, valueData);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
         public void invalidate(K key) {
             lock.lock();
             try {

@@ -39,6 +39,7 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.UninitializableWanEndpoint;
 import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.WanSyncStatus;
 import com.hazelcast.wan.custom.CustomWanConsumer;
 import com.hazelcast.wan.map.filter.NoFilterMapWanFilter;
 import org.junit.Ignore;
@@ -59,7 +60,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_CLEANUP_PERCENTAGE;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
+import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTestSupport {
 
@@ -936,6 +939,36 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         wanReplicationRef.setMergePolicy(PassThroughMergePolicy.class.getName());
         return wanReplicationRef;
     }
+
+    static void waitForSyncToComplete(final HazelcastInstance[] cluster) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                boolean syncFinished = true;
+                for (HazelcastInstance instance : cluster) {
+                    syncFinished &= wanReplicationService(instance).getWanSyncState().getStatus() != WanSyncStatus.IN_PROGRESS;
+                }
+                assertTrue(syncFinished);
+            }
+        });
+    }
+
+    static boolean isAllMembersConnected(HazelcastInstance[] cluster, String setupName, String publisherId) {
+        boolean allConnected = true;
+        for (HazelcastInstance instance : cluster) {
+            allConnected &= checkIfConnected(instance, setupName, publisherId);
+        }
+        return allConnected;
+    }
+
+    private static boolean checkIfConnected(HazelcastInstance instance, String setupName, String publisherId) {
+        return wanReplicationService(instance)
+                .getStats()
+                .get(setupName).getLocalWanPublisherStats()
+                .get(publisherId).isConnected();
+    }
+
+
 
     private class TestMapStore extends MapStoreAdapter {
 

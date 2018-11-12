@@ -32,6 +32,8 @@ import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
 import static com.hazelcast.test.OverridePropertyRule.set;
 import static com.hazelcast.test.TestEnvironment.HAZELCAST_TEST_USE_NETWORK;
+import static com.hazelcast.wan.map.AbstractMapWanReplicationTest.isAllMembersConnected;
+import static com.hazelcast.wan.map.AbstractMapWanReplicationTest.waitForSyncToComplete;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -97,6 +99,12 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
         HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
         communicator.syncMapOverWAN("atob", "B", "map");
 
+        waitForSyncToComplete(clusterA);
+        if (!isAllMembersConnected(clusterA, "atob", "B")) {
+            // we give another try to the sync if it failed because of the unsuccessful connection attempt
+            communicator.syncMapOverWAN("atob", "B", "map");
+        }
+
         assertKeysInEventually(clusterB, "map", 0, 1000);
     }
 
@@ -124,6 +132,13 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
 
         HTTPCommunicator communicator = new HTTPCommunicator(getNode(clusterA));
         communicator.syncMapsOverWAN("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+
+        waitForSyncToComplete(clusterA);
+        if (!isAllMembersConnected(clusterA, "atob", "B")) {
+            // we give another try to the sync if it failed because of the unsuccessful connection attempt
+            communicator.syncMapsOverWAN("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+        }
+
         assertKeysInEventually(clusterB, "map", 0, 1000);
         assertKeysInEventually(clusterB, "map2", 0, 2000);
         assertKeysInEventually(clusterB, "map3", 0, 3000);
@@ -156,6 +171,13 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
         assertKeysNotInEventually(clusterB, "map3", 0, 3000);
         communicator = new HTTPCommunicator(clusterA[0]);
         communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
+
+        waitForSyncToComplete(clusterA);
+        if (!isAllMembersConnected(clusterA, "newWRConfig", newPublisherConfig.getGroupName())) {
+            // we give another try to the sync if it failed because of the unsuccessful connection attempt
+            communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
+        }
+
         assertKeysInEventually(clusterB, "map", 0, 1000);
         assertKeysInEventually(clusterB, "map2", 0, 2000);
         assertKeysInEventually(clusterB, "map3", 0, 3000);
@@ -196,6 +218,12 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
 
         communicator = new HTTPCommunicator(instance2[0]);
         communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
+
+        waitForSyncToComplete(instance2);
+        if (!isAllMembersConnected(instance2, "newWRConfig", newPublisherConfig.getGroupName())) {
+            // we give another try to the sync if it failed because of unsuccessful connection attempt
+            communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
+        }
 
         assertKeysInEventually(clusterB, "map", 0, 1000);
         assertKeysInEventually(clusterB, "map2", 0, 2000);
@@ -241,6 +269,12 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
         service.syncMap("atob", configB.getGroupConfig().getName(), "map");
 
         assertEquals(WanSyncStatus.IN_PROGRESS, service.getWanSyncState().getStatus());
+
+        waitForSyncToComplete(clusterA);
+        if (!isAllMembersConnected(clusterA, "atob", configB.getGroupConfig().getName())) {
+            // we give another try to the sync if it failed because of the unsuccessful connection attempt
+            service.syncMap("atob", configB.getGroupConfig().getName(), "map");
+        }
 
         assertKeysInEventually(clusterB, "map", 0, 1000);
         assertEqualsEventually(new Callable<WanSyncStatus>() {

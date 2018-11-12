@@ -29,6 +29,8 @@ import java.util.Map;
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
+import static com.hazelcast.wan.map.AbstractMapWanReplicationTest.isAllMembersConnected;
+import static com.hazelcast.wan.map.AbstractMapWanReplicationTest.waitForSyncToComplete;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -96,6 +98,12 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
         EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(clusterA[0]);
         wanReplicationService.syncMap("atob", "B", "map");
 
+        waitForSyncToComplete(clusterA);
+        if (!isAllMembersConnected(clusterA, "atob", "B")) {
+            // we give another try to the sync if it failed because of the unsuccessful connection attempt
+            wanReplicationService.syncMap("atob", "B", "map");
+        }
+
         assertKeysInEventually(clusterB, "map", 0, 1000);
         verifySyncStats(clusterA, "atob", "B", "map");
     }
@@ -124,6 +132,13 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
 
         EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(clusterA[0]);
         wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+
+        waitForSyncToComplete(clusterA);
+        if (!isAllMembersConnected(clusterA, "atob", "B")) {
+            // we give another try to the sync if it failed because of the unsuccessful connection attempt
+            wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+        }
+
         assertKeysInEventually(clusterB, "map", 0, 1000);
         assertKeysInEventually(clusterB, "map2", 0, 2000);
         assertKeysInEventually(clusterB, "map3", 0, 3000);
@@ -158,6 +173,13 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
 
         EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(clusterA[0]);
         wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+
+        waitForSyncToComplete(clusterA);
+        if (!isAllMembersConnected(clusterA, "atob", "B")) {
+            // we give another try to the sync if it failed because of the unsuccessful connection attempt
+            wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+        }
+
         assertKeysInEventually(clusterB, "map", 0, 1000);
         assertKeysInEventually(clusterB, "map2", 0, 2000);
         assertKeysInEventually(clusterB, "map3", 0, 3000);

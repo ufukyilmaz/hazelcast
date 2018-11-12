@@ -84,13 +84,13 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
 
         // fill up memory with Near Cache 1
         for (int i = 0; i < smallValuePutCount; i++) {
-            nearCache1.put(i, ess.toData(i), smallValue);
+            nearCache1.put(i, ess.toData(i), smallValue, ess.toData(smallValue));
         }
 
         // then put a big value to Near Cache 2 and there should not be OOME
         // since eviction is done on other Near Caches until there is enough space for new put
         for (int i = 0; i < bigValuePutCount; i++) {
-            nearCache2.put(i, ess.toData(i), bigValue);
+            nearCache2.put(i, ess.toData(i), bigValue, ess.toData(bigValue));
         }
     }
 }

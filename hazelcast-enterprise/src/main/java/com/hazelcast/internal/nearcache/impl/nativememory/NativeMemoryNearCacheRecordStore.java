@@ -342,9 +342,7 @@ public class NativeMemoryNearCacheRecordStore<K, V>
         return oldRecord;
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    protected NativeMemoryNearCacheRecord removeRecord(K key) {
+    private NativeMemoryNearCacheRecord removeRecord(K key) {
         Data keyData = toData(key);
         NativeMemoryData nativeKeyData = new NativeMemoryData();
         nativeKeyData.reset(records.getNativeKeyAddress(keyData));
@@ -393,34 +391,6 @@ public class NativeMemoryNearCacheRecordStore<K, V>
         if (removed && isMemoryBlockValid(record)) {
             recordProcessor.dispose(record);
         }
-    }
-
-    @Override
-    public Object selectToSave(Object... candidates) {
-        checkAvailable();
-
-        Object selectedCandidate = null;
-        if (candidates != null && candidates.length > 0) {
-            for (Object candidate : candidates) {
-                // give priority to Data typed candidate, so there will be no extra conversion from Object to Data
-                if (candidate instanceof Data) {
-                    selectedCandidate = candidate;
-                    break;
-                }
-            }
-            if (selectedCandidate != null) {
-                return selectedCandidate;
-            } else {
-                // select a non-null candidate
-                for (Object candidate : candidates) {
-                    if (candidate != null) {
-                        selectedCandidate = candidate;
-                        break;
-                    }
-                }
-            }
-        }
-        return selectedCandidate;
     }
 
     @Override

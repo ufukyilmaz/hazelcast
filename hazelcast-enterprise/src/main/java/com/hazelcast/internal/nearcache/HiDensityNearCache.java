@@ -74,34 +74,6 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     }
 
     @Override
-    public void put(K key, Data keyData, V value) {
-        assert key != null : "key cannot be null";
-
-        boolean memoryCompacted = false;
-        do {
-            try {
-                super.put(key, keyData, value);
-                break;
-            } catch (NativeOutOfMemoryError error) {
-                ignore(error);
-            }
-
-            if (evictRecordStores()) {
-                continue;
-            }
-
-            if (memoryCompacted) {
-                handleNativeOOME(key);
-                break;
-            }
-
-            compactMemory();
-            memoryCompacted = true;
-
-        } while (true);
-    }
-
-    @Override
     public long tryReserveForUpdate(K key, Data keyData) {
         assert key != null : "key cannot be null";
 

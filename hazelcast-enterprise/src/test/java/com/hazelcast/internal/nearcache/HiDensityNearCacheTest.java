@@ -116,11 +116,6 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     }
 
     @Test
-    public void selectToSaveFromNearCache() {
-        doSelectToSaveFromNearCache();
-    }
-
-    @Test
     public void createNearCacheAndWaitForExpirationCalledWithTTL() {
         doCreateNearCacheAndWaitForExpirationCalled(true);
     }
@@ -156,7 +151,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
                     null, nearCacheConfig, properties);
             byte[] value = new byte[(int) (2 * memorySize.bytes())];
             // when - then (just don't fail)
-            nearCache.put(1, ess.toData(1), value);
+            nearCache.put(1, ess.toData(1), value, ess.toData(value));
         } finally {
             mm.dispose();
         }

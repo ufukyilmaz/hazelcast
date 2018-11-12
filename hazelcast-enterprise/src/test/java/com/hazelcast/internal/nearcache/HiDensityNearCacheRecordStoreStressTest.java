@@ -212,7 +212,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
                 if (shutdown.get()) {
                     break;
                 }
-                nearCacheRecordStore.put(i, ess.toData(i), value);
+                nearCacheRecordStore.put(i, ess.toData(i), value, ess.toData(value));
 
                 nearCacheRecordStore.doEvictionIfRequired();
 

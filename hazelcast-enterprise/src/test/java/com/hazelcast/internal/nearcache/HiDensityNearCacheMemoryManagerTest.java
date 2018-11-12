@@ -57,7 +57,7 @@ public class HiDensityNearCacheMemoryManagerTest extends HazelcastTestSupport {
     public void putToNearCache_throws_illegal_state_exception_if_memory_manager_was_disposed() {
         memoryManager.dispose();
 
-        createHDNearCache(ess, properties).put(1, ess.toData(1), 1);
+        createHDNearCache(ess, properties).put(1, ess.toData(1), 1, ess.toData(1));
     }
 
     private static <K, V> NearCache<K, V> createHDNearCache(EnterpriseSerializationService ess,

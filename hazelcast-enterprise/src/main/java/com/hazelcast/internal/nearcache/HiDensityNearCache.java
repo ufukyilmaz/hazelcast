@@ -74,13 +74,13 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     }
 
     @Override
-    public void put(K key, Data keyData, V value) {
+    public void put(K key, Data keyData, V value, Data valueData) {
         assert key != null : "key cannot be null";
 
         boolean memoryCompacted = false;
         do {
             try {
-                super.put(key, keyData, value);
+                super.put(key, keyData, value, valueData);
                 break;
             } catch (NativeOutOfMemoryError error) {
                 ignore(error);

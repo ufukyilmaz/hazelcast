@@ -142,9 +142,9 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    public void put(K key, Data keyData, V value) {
+    public void put(K key, Data keyData, V value, Data valueData) {
         NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
-        segment.put(key, keyData, value);
+        segment.put(key, keyData, value, valueData);
     }
 
     @Override
@@ -185,32 +185,6 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public NearCacheStats getNearCacheStats() {
         return nearCacheStats;
-    }
-
-    @Override
-    public Object selectToSave(Object... candidates) {
-        Object selectedCandidate = null;
-        if (candidates != null && candidates.length > 0) {
-            for (Object candidate : candidates) {
-                // give priority to Data typed candidate, so there will be no extra conversion from Object to Data
-                if (candidate instanceof Data) {
-                    selectedCandidate = candidate;
-                    break;
-                }
-            }
-            if (selectedCandidate != null) {
-                return selectedCandidate;
-            } else {
-                // select a non-null candidate
-                for (Object candidate : candidates) {
-                    if (candidate != null) {
-                        selectedCandidate = candidate;
-                        break;
-                    }
-                }
-            }
-        }
-        return selectedCandidate;
     }
 
     @Override
@@ -360,10 +334,10 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
 
         @Override
-        public void put(K key, Data keyData, V value) {
+        public void put(K key, Data keyData, V value, Data valueData) {
             lock.lock();
             try {
-                super.put(key, keyData, value);
+                super.put(key, keyData, value, valueData);
             } finally {
                 lock.unlock();
             }

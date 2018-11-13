@@ -2,6 +2,10 @@ package com.hazelcast.map.impl.nearcache.invalidation;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.internal.nearcache.NearCacheRecordStore;
+import com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector;
+import com.hazelcast.internal.nearcache.impl.nativememory.NativeMemoryNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.impl.nativememory.SegmentedNativeMemoryNearCacheRecordStore;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
@@ -43,5 +47,16 @@ public class HDMemberMapReconciliationTest extends MemberMapReconciliationTest {
     @Override
     protected Config getConfig() {
         return getHDConfig(super.getConfig());
+    }
+
+    @Override
+    protected StaleReadDetector getStaleReadDetector(NearCacheRecordStore nearCacheRecordStore) {
+        if (nearCacheInMemoryFormat == NATIVE) {
+            NativeMemoryNearCacheRecordStore[] segments
+                    = ((SegmentedNativeMemoryNearCacheRecordStore) nearCacheRecordStore).getSegments();
+            return segments[0].getStaleReadDetector();
+        } else {
+            return super.getStaleReadDetector(nearCacheRecordStore);
+        }
     }
 }

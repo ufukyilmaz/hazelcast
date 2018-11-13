@@ -226,13 +226,13 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     }
 
     private void verifyPutOnRecordStore(int times) {
-        verify(nearCacheRecordStore, times(times)).doEvictionIfRequired();
+        verify(nearCacheRecordStore, times(times)).doEviction(false);
         verify(nearCacheRecordStore, times(times)).put(eq(KEY), eq(keyData), eq(VALUE), eq(valueData));
     }
 
     private void verifyForcedEviction(NearCacheRecordStore<String, String> recordStore, VerificationMode verificationMode) {
         verify(recordStore, verificationMode).size();
-        verify(recordStore, verificationMode).doEviction();
+        verify(recordStore, verificationMode).doEviction(true);
     }
 
     @SuppressWarnings("unchecked")

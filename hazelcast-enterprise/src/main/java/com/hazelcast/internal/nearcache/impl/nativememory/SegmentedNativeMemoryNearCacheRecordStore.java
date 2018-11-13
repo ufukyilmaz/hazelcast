@@ -16,6 +16,7 @@ import com.hazelcast.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.serialization.SerializationService;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +24,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.hazelcast.config.EvictionPolicy.NONE;
-import static com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector.ALWAYS_FRESH;
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static java.lang.Thread.currentThread;
 
@@ -40,15 +40,14 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     private final int hashSeed;
     private final int segmentMask;
     private final int segmentShift;
-    private final EnterpriseSerializationService serializationService;
+    private final boolean evictionDisabled;
+
     private final ClassLoader classLoader;
     private final NearCacheStatsImpl nearCacheStats;
     private final HazelcastMemoryManager memoryManager;
-    private final NativeMemoryNearCacheRecordStore<K, V>[] segments;
     private final NearCachePreloader<Data> nearCachePreloader;
-    private final boolean evictionDisabled;
-
-    private volatile StaleReadDetector staleReadDetector = ALWAYS_FRESH;
+    private final NativeMemoryNearCacheRecordStore<K, V>[] segments;
+    private final EnterpriseSerializationService serializationService;
 
     @SuppressWarnings("checkstyle:magicnumber")
     public SegmentedNativeMemoryNearCacheRecordStore(String name,
@@ -127,6 +126,12 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         h += (h << 2) + (h << 14);
 
         return h ^ (h >>> 16);
+    }
+
+    // used only for testing purposes
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public NativeMemoryNearCacheRecordStore<K, V>[] getSegments() {
+        return segments;
     }
 
     @Override
@@ -219,7 +224,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    public void doEvictionIfRequired() {
+    public void doEviction(boolean withoutMaxSizeCheck) {
         if (evictionDisabled) {
             // if eviction disabled, we are going to short-circuit the currently extremely expensive eviction
             return;
@@ -231,24 +236,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
                 return;
             }
             NativeMemoryNearCacheRecordStore segment = segments[i];
-            segment.doEvictionIfRequired();
-        }
-    }
-
-    @Override
-    public void doEviction() {
-        if (evictionDisabled) {
-            // if eviction disabled, we are going to short-circuit the currently extremely expensive eviction
-            return;
-        }
-
-        Thread currentThread = Thread.currentThread();
-        for (int i = 0; i < segments.length; i++) {
-            if (currentThread.isInterrupted()) {
-                return;
-            }
-            NativeMemoryNearCacheRecordStore segment = segments[i];
-            segment.doEviction();
+            segment.doEviction(withoutMaxSizeCheck);
         }
     }
 
@@ -269,15 +257,9 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void setStaleReadDetector(StaleReadDetector staleReadDetector) {
-        this.staleReadDetector = staleReadDetector;
         for (NativeMemoryNearCacheRecordStore<K, V> segment : segments) {
             segment.setStaleReadDetector(staleReadDetector);
         }
-    }
-
-    @Override
-    public StaleReadDetector getStaleReadDetector() {
-        return staleReadDetector;
     }
 
     @Override
@@ -394,20 +376,10 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
 
         @Override
-        public void doEvictionIfRequired() {
+        public void doEviction(boolean withoutMaxSizeCheck) {
             lock.lock();
             try {
-                super.doEvictionIfRequired();
-            } finally {
-                lock.unlock();
-            }
-        }
-
-        @Override
-        public void doEviction() {
-            lock.lock();
-            try {
-                super.doEviction();
+                super.doEviction(withoutMaxSizeCheck);
             } finally {
                 lock.unlock();
             }

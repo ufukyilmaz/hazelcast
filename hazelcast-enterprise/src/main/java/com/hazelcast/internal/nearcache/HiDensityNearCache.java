@@ -199,8 +199,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
             return false;
         }
 
-        // evict a record from this Near Cache regardless from eviction max-size policy
-        nearCacheRecordStore.doEviction();
+        nearCacheRecordStore.doEviction(true);
         return true;
     }
 

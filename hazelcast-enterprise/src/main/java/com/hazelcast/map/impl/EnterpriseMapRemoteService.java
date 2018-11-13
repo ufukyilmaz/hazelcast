@@ -41,7 +41,7 @@ class EnterpriseMapRemoteService extends MapRemoteService {
 
         Object mergePolicy = mergePolicyProvider.getMergePolicy(mapConfig.getMergePolicyConfig().getPolicy());
         checkMergePolicySupportsInMemoryFormat(name, mergePolicy, mapConfig.getInMemoryFormat(),
-                nodeEngine.getClusterService().getClusterVersion(), true, nodeEngine.getLogger(getClass()));
+                true, nodeEngine.getLogger(getClass()));
 
         if (mapConfig.isNearCacheEnabled()) {
             checkNearCacheConfig(name, mapConfig.getNearCacheConfig(), nativeMemoryConfig, false);

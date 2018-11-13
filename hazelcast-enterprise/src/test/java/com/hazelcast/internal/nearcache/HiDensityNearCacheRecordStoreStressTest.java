@@ -214,7 +214,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
                 }
                 nearCacheRecordStore.put(i, ess.toData(i), value, ess.toData(value));
 
-                nearCacheRecordStore.doEvictionIfRequired();
+                nearCacheRecordStore.doEviction(false);
 
                 MemoryStats memoryStats = memoryManager.getMemoryStats();
                 if (maxSizePolicy == MaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {

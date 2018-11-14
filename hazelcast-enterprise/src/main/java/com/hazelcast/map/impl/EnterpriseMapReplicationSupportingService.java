@@ -2,7 +2,6 @@ package com.hazelcast.map.impl;
 
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.core.EntryView;
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
@@ -41,14 +40,10 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
      * delete instead of remove).
      */
     public static final String USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS = "hazelcast.wan.map.useDeleteWhenProcessingRemoveEvents";
-    // RU_COMPAT_3_9
-    private static final String DEFAULT_LEGACY_MERGE_POLICY = com.hazelcast.map.merge.PassThroughMergePolicy.class.getName();
     private static final String DEFAULT_MERGE_POLICY = PassThroughMergePolicy.class.getName();
 
     private final MapServiceContext mapServiceContext;
     private final NodeEngine nodeEngine;
-    // RU_COMPAT_3_9
-    private final MapMergePolicy defaultSyncLegacyMergePolicy;
     private final SplitBrainMergePolicy<Data, MapMergeTypes> defaultSyncMergePolicy;
     private final ProxyService proxyService;
     private final boolean useDeleteWhenProcessingRemoveEvents;
@@ -57,9 +52,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
         this.mapServiceContext = mapServiceContext;
         this.nodeEngine = mapServiceContext.getNodeEngine();
-        // RU_COMPAT_3_9
         MergePolicyProvider mergePolicyProvider = mapServiceContext.getMergePolicyProvider();
-        this.defaultSyncLegacyMergePolicy = (MapMergePolicy) mergePolicyProvider.getMergePolicy(DEFAULT_LEGACY_MERGE_POLICY);
         //noinspection unchecked
         this.defaultSyncMergePolicy
                 = (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicyProvider.getMergePolicy(DEFAULT_MERGE_POLICY);
@@ -210,17 +203,9 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     private void handleSyncEvent(EnterpriseMapReplicationSync event) {
         String mapName = event.getMapName();
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
-        // RU_COMPAT_3_9
-        if (nodeEngine.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V3_10)) {
-            MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
-            MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
-            invokeOnPartition(mergingEntry.getKey(), operation);
-        } else {
-            EntryView<Data, Data> entryView = event.getEntryView();
-            MapOperation operation = operationProvider.createLegacyMergeOperation(mapName, entryView,
-                    defaultSyncLegacyMergePolicy, true);
-            invokeOnPartition(entryView.getKey(), operation);
-        }
+        MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
+        MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
+        invokeOnPartition(mergingEntry.getKey(), operation);
     }
 
     /**

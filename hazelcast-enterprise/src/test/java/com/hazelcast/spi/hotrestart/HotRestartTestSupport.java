@@ -100,6 +100,7 @@ public abstract class HotRestartTestSupport extends HazelcastTestSupport {
         assertOpenEventually(latch);
 
         Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        assertClusterSizeEventually(newClusterSize, instances);
         return instances.toArray(new HazelcastInstance[0]);
     }
 

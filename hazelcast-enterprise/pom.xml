@@ -319,5 +319,12 @@
             <version>4.3.1</version>
             <scope>test</scope>
         </dependency>
+        <!-- scripting protection test -->
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>2.1.8</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

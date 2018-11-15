@@ -27,6 +27,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import org.mockito.internal.util.collections.Sets;
 
 import java.util.Collection;
@@ -36,7 +39,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -44,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     private static final String MAP_NAME = "mapWithMerkleTree";
@@ -54,10 +56,10 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     private MerkleTree merkleTree;
     private BasicMapStore basicMapStore;
 
-    @Parameterized.Parameter
+    @Parameter
     public InMemoryFormat inMemoryFormat;
 
-    @Parameterized.Parameters(name = "method:{0} inMemoryFormat:{1}")
+    @Parameters(name = "method:{0} inMemoryFormat:{1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {InMemoryFormat.BINARY},
@@ -469,7 +471,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
             }
         }, callback);
 
-        callback.await(1, SECONDS);
+        callback.await();
         assertNotEquals(0, rootHash());
         assertNotEquals(rootHashBeforeReplace, rootHash());
     }
@@ -502,7 +504,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
             }
         }, callback);
 
-        callback.await(1, SECONDS);
+        callback.await();
         assertEquals(0, rootHash());
     }
 
@@ -707,13 +709,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
             latch.countDown();
         }
 
-        private boolean await(int time, TimeUnit timeUnit) throws Throwable {
-            boolean awaitResult = latch.await(time, timeUnit);
+        private void await() throws Throwable {
+            latch.await();
             if (throwable != null) {
                 throw throwable;
             }
-
-            return awaitResult;
         }
     }
 

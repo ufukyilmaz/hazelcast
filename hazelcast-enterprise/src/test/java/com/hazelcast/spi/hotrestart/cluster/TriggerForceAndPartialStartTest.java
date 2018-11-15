@@ -103,12 +103,12 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
         Map<Address, ClusterHotRestartEventListener> listenerMap =
                 new HashMap<Address, ClusterHotRestartEventListener>(addresses.length);
         for (Address address : addresses) {
-            listenerMap.put(address, new TriggerForceStartListener(partialStart, onMaster, expectedMemberCount));
+            listenerMap.put(address, new TriggerForceStart(partialStart, onMaster, expectedMemberCount));
         }
         return listenerMap;
     }
 
-    private static class TriggerForceStartListener extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
+    private static class TriggerForceStart extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final AtomicBoolean flag = new AtomicBoolean(false);
 
@@ -118,7 +118,7 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
 
         private volatile Node node;
 
-        TriggerForceStartListener(boolean partialStart, boolean onMaster, int expectedMemberCount) {
+        TriggerForceStart(boolean partialStart, boolean onMaster, int expectedMemberCount) {
             this.partialStart = partialStart;
             this.onMaster = onMaster;
             this.expectedMemberCount = expectedMemberCount;

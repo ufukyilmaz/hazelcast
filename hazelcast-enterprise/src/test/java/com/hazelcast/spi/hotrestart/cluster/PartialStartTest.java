@@ -73,7 +73,6 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
     public void init() {
         // most of the tests in this class don't depend on validation timeout
         validationTimeoutInSeconds = Integer.MAX_VALUE;
-        dataLoadTimeoutInSeconds = 60;
     }
 
     @Test
@@ -134,6 +133,9 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
     private void testTimeoutOnMissingLoadStatusOfPresentNode(HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         checkFalse(clusterStartPolicy == HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY,
                 "invalid cluster start policy for partial start test");
+
+        // this test depends on data load timeout
+        dataLoadTimeoutInSeconds = 30;
 
         HazelcastInstance[] instances = startInstancesAndChangeClusterState(ClusterState.PASSIVE);
         Address[] addresses = getAddresses(instances);

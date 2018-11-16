@@ -52,7 +52,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         return Arrays.asList(new Object[]{NONE, PARTIAL, ALL});
     }
 
-    private int memberlistPublishPeriod = -1;
+    private int memberListPublishPeriod = -1;
 
     @Test
     public void testClusterHotRestartEventListenerRegistration() {
@@ -74,7 +74,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
     @Test
     public void testMasterRestartAfterNodesJoin() {
-        memberlistPublishPeriod = 1;
+        memberListPublishPeriod = 1;
         Address[] addresses = startAndTerminateInstances(4);
 
         final AtomicBoolean crash = new AtomicBoolean(false);
@@ -90,7 +90,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
     @Test
     public void testMemberRestartAfterNodesJoin() {
-        memberlistPublishPeriod = 1;
+        memberListPublishPeriod = 1;
         Address[] addresses = startAndTerminateInstances(4);
 
         final AtomicBoolean crash = new AtomicBoolean(false);
@@ -146,9 +146,9 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
                      HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
 
-        if (memberlistPublishPeriod > 0) {
+        if (memberListPublishPeriod > 0) {
             config.setProperty(GroupProperty.MEMBER_LIST_PUBLISH_INTERVAL_SECONDS.getName(),
-                    String.valueOf(memberlistPublishPeriod));
+                    String.valueOf(memberListPublishPeriod));
         }
 
         return config;

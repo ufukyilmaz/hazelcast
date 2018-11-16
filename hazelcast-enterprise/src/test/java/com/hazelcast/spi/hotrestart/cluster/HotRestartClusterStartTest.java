@@ -356,7 +356,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_antiEntropyCheckNotAllowed_untilStartupIsCompleted() throws Exception {
+    public void test_antiEntropyCheckNotAllowed_untilStartupIsCompleted() {
         Assume.assumeTrue("Restarting a single node, address change is irrelevant", addressChangePolicy == NONE);
 
         final HazelcastInstance[] instances = startNewInstances(2);

@@ -9,6 +9,7 @@ import com.hazelcast.map.impl.proxy.EnterpriseMapProxyImpl;
 import com.hazelcast.map.impl.proxy.EnterpriseNearCachedMapProxyImpl;
 import com.hazelcast.map.merge.MergePolicyProvider;
 
+import static com.hazelcast.config.NearCacheConfigAccessor.initDefaultMaxSizeForOnHeapMaps;
 import static com.hazelcast.internal.config.ConfigValidator.checkMapConfig;
 import static com.hazelcast.internal.config.ConfigValidator.checkNearCacheConfig;
 import static com.hazelcast.internal.config.MergePolicyValidator.checkMergePolicySupportsInMemoryFormat;
@@ -45,7 +46,7 @@ class EnterpriseMapRemoteService extends MapRemoteService {
 
         if (mapConfig.isNearCacheEnabled()) {
             checkNearCacheConfig(name, mapConfig.getNearCacheConfig(), nativeMemoryConfig, false);
-
+            initDefaultMaxSizeForOnHeapMaps(mapConfig.getNearCacheConfig());
             return new EnterpriseNearCachedMapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);
         } else {
             return new EnterpriseMapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);

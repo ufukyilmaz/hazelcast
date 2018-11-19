@@ -182,7 +182,7 @@ public class WanMerkleSyncCountTest {
 
                 assertTrue("Sync count " + syncCount + " should == " + expectedRecordsToSync, syncCount == expectedRecordsToSync);
             }
-        }, 10);
+        });
     }
 
 }

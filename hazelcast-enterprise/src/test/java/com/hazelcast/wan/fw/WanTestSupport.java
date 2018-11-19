@@ -79,7 +79,7 @@ public class WanTestSupport {
                     assertNotEquals(0, updateCount);
                 }
             }
-        }, 5);
+        });
     }
 
 }

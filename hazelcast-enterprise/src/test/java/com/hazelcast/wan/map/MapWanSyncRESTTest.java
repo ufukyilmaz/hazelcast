@@ -32,8 +32,8 @@ import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
 import static com.hazelcast.test.OverridePropertyRule.set;
 import static com.hazelcast.test.TestEnvironment.HAZELCAST_TEST_USE_NETWORK;
-import static com.hazelcast.wan.map.AbstractMapWanReplicationTest.isAllMembersConnected;
-import static com.hazelcast.wan.map.AbstractMapWanReplicationTest.waitForSyncToComplete;
+import static com.hazelcast.wan.map.MapWanBatchReplicationTest.isAllMembersConnected;
+import static com.hazelcast.wan.map.MapWanBatchReplicationTest.waitForSyncToComplete;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 

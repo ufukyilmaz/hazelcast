@@ -1,25 +1,5 @@
 package com.hazelcast.client.enterprise.encryption;
 
-import static com.hazelcast.TestEnvironmentUtil.assumeJdk8OrNewer;
-import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_FILE;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_MUTUAL_AUTHENTICATION;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.createSslProperties;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.getMalformedKeyStoreFilePath;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.getWrongKeyStoreFilePath;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.util.Properties;
-
-import org.junit.After;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-
 import com.hazelcast.TestEnvironmentUtil;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestAwareClientFactory;
@@ -32,6 +12,32 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.After;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+
+import java.io.IOException;
+import java.util.Properties;
+
+import static com.hazelcast.TestEnvironmentUtil.assumeJdk8OrNewer;
+import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_FILE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_MUTUAL_AUTHENTICATION;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.createSslProperties;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.getOrCreateTempFile;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.keyStore;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.keyStore2;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.malformedKeystore;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.trustStoreTwoCertificates;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.wrongKeyStore;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -190,7 +196,7 @@ public class ClientSSLSocketTest {
         factory.newHazelcastInstance(serverConfig);
 
         Properties clientSslProps = createSslProperties();
-        clientSslProps.setProperty(JAVAX_NET_SSL_KEY_STORE, getWrongKeyStoreFilePath());
+        clientSslProps.setProperty(JAVAX_NET_SSL_KEY_STORE, getOrCreateTempFile(wrongKeyStore));
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
                 .setSSLConfig(getSslConfig(clientSslProps));
@@ -233,7 +239,7 @@ public class ClientSSLSocketTest {
         factory.newHazelcastInstance(serverConfig);
 
         Properties clientSslProps = createSslProperties();
-        clientSslProps.setProperty(JAVAX_NET_SSL_KEY_STORE, getWrongKeyStoreFilePath());
+        clientSslProps.setProperty(JAVAX_NET_SSL_KEY_STORE, getOrCreateTempFile(wrongKeyStore));
         clientSslProps.setProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD, "123456");
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
@@ -284,7 +290,7 @@ public class ClientSSLSocketTest {
 
         // remove keystore on client properties side
         Properties clientSslProps = createSslProperties();
-        clientSslProps.put(JAVAX_NET_SSL_KEY_STORE, getMalformedKeyStoreFilePath());
+        clientSslProps.put(JAVAX_NET_SSL_KEY_STORE, getOrCreateTempFile(malformedKeystore));
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
                 .setSSLConfig(getSslConfig(clientSslProps));
@@ -297,11 +303,57 @@ public class ClientSSLSocketTest {
         }
     }
 
+    @Test
+    public void testTwoServers_withDifferentKeys() {
+        Properties sslProperties1 = createSslPropertiesTrustTwoCertificate();
+        sslProperties1.setProperty(JAVAX_NET_SSL_KEY_STORE, getOrCreateTempFile(keyStore));
+        sslProperties1.setProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD, "123456");
+        Config config1 = getConfig(sslProperties1);
+        HazelcastInstance h1 = factory.newHazelcastInstance(config1);
+
+        Properties sslProperties2 = createSslPropertiesTrustTwoCertificate();
+        sslProperties2.setProperty(JAVAX_NET_SSL_KEY_STORE, getOrCreateTempFile(keyStore2));
+        sslProperties2.setProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD, "123456");
+        Config config2 = getConfig(sslProperties2);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config2);
+
+        assertClusterSize(2, h1, h2);
+
+        Properties clientSslProps = createSslPropertiesTrustTwoCertificate();
+
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
+                .setSSLConfig(getSslConfig(clientSslProps));
+
+        HazelcastInstance client = factory.newHazelcastClient(clientConfig);
+        IMap<Object, Object> clientMap = client.getMap("test");
+        clientMap.put(1, 2);
+        IMap<Object, Object> map = h1.getMap("test");
+        assertEquals(2, map.get(1));
+    }
+
+    private static Properties createSslPropertiesTrustTwoCertificate() {
+        Properties props = new Properties();
+        props.setProperty(JAVAX_NET_SSL_TRUST_STORE, getOrCreateTempFile(trustStoreTwoCertificates));
+        props.setProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD, "123456");
+        return props;
+    }
+
+    private Config getConfig(Properties sslProperties) {
+        SSLConfig sslConfig = getSslConfig(sslProperties);
+        Config serverConfig = new Config();
+        NetworkConfig networkConfig = serverConfig.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+        return serverConfig;
+    }
+
+
     private static SSLConfig getSslConfig() throws Exception {
         return getSslConfig(createSslProperties());
     }
 
-    private static SSLConfig getSslConfig(Properties sslProps) throws Exception {
+    private static SSLConfig getSslConfig(Properties sslProps) {
         return new SSLConfig().setEnabled(true).setProperties(sslProps);
     }
 }

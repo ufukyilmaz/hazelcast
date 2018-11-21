@@ -46,7 +46,6 @@ import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.UninitializableWanEndpoint;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.WanSyncStatus;
-import com.hazelcast.wan.custom.CustomWanConsumer;
 import com.hazelcast.wan.map.filter.DummyMapWanFilter;
 import com.hazelcast.wan.map.filter.NoFilterMapWanFilter;
 import org.junit.Ignore;
@@ -1069,16 +1068,15 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         });
     }
 
-    private static WanReplicationRef getWanReplicationRefFrom(Config config,
-                                                              boolean persistWanReplicatedData) {
-
+    private static WanReplicationRef getWanReplicationRefFrom(Config config, boolean persistWanReplicatedData) {
         WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
         wanReplicationConfig.setName("b");
 
         WanConsumerConfig consumerConfig = new WanConsumerConfig();
         consumerConfig.setPersistWanReplicatedData(persistWanReplicatedData);
-        consumerConfig.setClassName(CustomWanConsumer.class.getName());
+
         wanReplicationConfig.setWanConsumerConfig(consumerConfig);
+
         config.addWanReplicationConfig(wanReplicationConfig);
 
         WanReplicationRef wanReplicationRef = new WanReplicationRef();

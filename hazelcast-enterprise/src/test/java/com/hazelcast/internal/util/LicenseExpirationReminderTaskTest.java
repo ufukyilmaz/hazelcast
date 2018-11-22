@@ -211,9 +211,8 @@ public class LicenseExpirationReminderTaskTest
         License license = mock(License.class);
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.MONTH, 2);
-        calendar.add(Calendar.DATE, 2);
-        // Prevents testing from failing due to ms differences in time comparisons
-        calendar.add(Calendar.HOUR, -1);
+        calendar.add(Calendar.DATE, 1);
+        calendar.add(Calendar.HOUR, 1);
 
         when(license.getExpiryDate()).thenReturn(calendar.getTime());
 

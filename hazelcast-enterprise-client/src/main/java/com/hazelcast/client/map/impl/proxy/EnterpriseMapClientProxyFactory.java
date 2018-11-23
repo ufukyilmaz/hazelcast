@@ -6,6 +6,7 @@ import com.hazelcast.client.spi.ClientProxy;
 import com.hazelcast.client.spi.impl.ClientProxyFactoryWithContext;
 import com.hazelcast.config.NearCacheConfig;
 
+import static com.hazelcast.config.NearCacheConfigAccessor.initDefaultMaxSizeForOnHeapMaps;
 import static com.hazelcast.internal.config.ConfigValidator.checkNearCacheConfig;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 
@@ -25,6 +26,7 @@ public class EnterpriseMapClientProxyFactory extends ClientProxyFactoryWithConte
         NearCacheConfig nearCacheConfig = clientConfig.getNearCacheConfig(id);
         if (nearCacheConfig != null) {
             checkNearCacheConfig(id, nearCacheConfig, clientConfig.getNativeMemoryConfig(), true);
+            initDefaultMaxSizeForOnHeapMaps(nearCacheConfig);
             return new EnterpriseNearCachedClientMapProxyImpl(SERVICE_NAME, id, context);
         } else {
             return new EnterpriseClientMapProxyImpl(SERVICE_NAME, id, context);

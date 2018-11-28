@@ -46,7 +46,7 @@ import static org.junit.Assume.assumeTrue;
  */
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
-@Category({ QuickTest.class })
+@Category({QuickTest.class})
 public class TlsFunctionalTest {
 
     private static final String KEY_FILE_SERVER = "server.pem";
@@ -354,17 +354,32 @@ public class TlsFunctionalTest {
     }
 
     /**
-     * Case - no default truststore is used - neither the keystore nor the JRE specific one (cacerts).
+     * Case - no truststore is set - neither the keystore nor the JRE specific one (cacerts).
      *
      * <pre>
      * Given: TLS is enabled.
      * When: TrustStore is not configured within the SSL properties and 2 members are started.
-     * Then: Members don't trust each other and they don't form a cluster.
+     * Then: Members trust each other and they form a cluster via system trust store
      * </pre>
      */
     @Test
-    public void testNoDefaultTruststore() throws IOException {
+    public void testDefaultTruststore() throws IOException {
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
+        setSignedKeyFiles(sslConfig);
+        if (mutualAuthentication) {
+            sslConfig.setProperty("mutualAuthentication", "REQUIRED");
+        }
+
+        Config config = new Config();
+        NetworkConfig networkConfig = config.getNetworkConfig();
+        networkConfig.setSSLConfig(sslConfig);
+        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
+        assertClusterSize(2, hz1, hz2);
+    }
+
+    private void setSignedKeyFiles(SSLConfig sslConfig) {
         if (openSsl) {
             sslConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName())
                     .setProperty("keyFile",
@@ -377,17 +392,36 @@ public class TlsFunctionalTest {
                     .setProperty("keyStore", letsEncryptKeystore.getAbsolutePath())
                     .setProperty("keyStorePassword", "123456");
         }
+    }
+
+    /**
+     * Case - no truststore is set - neither the keystore nor the JRE specific one (cacerts).
+     *
+     * <pre>
+     * Given: TLS is enabled.
+     * When: TrustStore is not configured within the SSL properties and a member and a client started.
+     * Then: Client trusts member and joins via system trust store
+     * </pre>
+     */
+    @Test
+    public void testDefaultTruststore_client() throws IOException {
+        SSLConfig sslConfig = new SSLConfig().setEnabled(true);
+        SSLConfig clientSSLConfig = new SSLConfig().setEnabled(true);
+        setSignedKeyFiles(sslConfig);
         if (mutualAuthentication) {
             sslConfig.setProperty("mutualAuthentication", "REQUIRED");
+            setSignedKeyFiles(clientSSLConfig);
         }
 
         Config config = new Config();
         NetworkConfig networkConfig = config.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
         networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
-        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
-        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        assertClusterSize(1, hz1, hz2);
+        ClientConfig clientConfig = new ClientConfig();
+        HazelcastInstance hz = factory.newHazelcastInstance(config);
+        clientConfig.getNetworkConfig().setSSLConfig(clientSSLConfig);
+        HazelcastInstance client = factory.newHazelcastClient(clientConfig);
+        assertClusterSize(1, hz, client);
     }
 
     /**
@@ -400,7 +434,7 @@ public class TlsFunctionalTest {
      * </pre>
      */
     @Test
-    public void testDefaultTruststore() throws IOException {
+    public void testDefaultTruststore_configuredExplicitly() throws IOException {
         // older Java versions don't have the Let's Encrypt CA certificate in their truststores
         assumeJavaVersionAtLeast(8);
         assumeFalse(openSsl && TestEnvironmentUtil.isIbmJvm());

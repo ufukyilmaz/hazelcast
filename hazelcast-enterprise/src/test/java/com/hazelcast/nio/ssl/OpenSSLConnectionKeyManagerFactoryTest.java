@@ -9,6 +9,8 @@ import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.io.File;
+
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.TestEnvironmentUtil.isIbmJvm;
 import static org.junit.Assume.assumeFalse;
@@ -24,13 +26,12 @@ public class OpenSSLConnectionKeyManagerFactoryTest extends OpenSSLConnectionTes
 
     protected Config newConfig() {
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
+        File letsEncryptKeystore = copyTestResource(OpenSSLConnectionKeyManagerFactoryTest.class, tempFolder.getRoot(), "letsencrypt.jks");
         sslConfig.setFactoryImplementation(new OpenSSLEngineFactory())
-                .setProperty("keyFile",
-                        copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "privkey.pem").getAbsolutePath())
-                .setProperty("keyCertChainFile",
-                        copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "fullchain.pem").getAbsolutePath())
-                .setProperty("trustCertCollectionFile",
-                        copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "chain.pem").getAbsolutePath());
+                .setProperty("keyStore", letsEncryptKeystore.getAbsolutePath())
+                .setProperty("keyStorePassword", "123456")
+                .setProperty("trustStore", letsEncryptKeystore.getAbsolutePath())
+                .setProperty("trustStorePassword", "123456");
 
         Config config = new Config().setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         config.getNetworkConfig().setSSLConfig(sslConfig);

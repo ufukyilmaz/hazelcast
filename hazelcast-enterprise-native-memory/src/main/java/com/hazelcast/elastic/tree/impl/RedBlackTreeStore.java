@@ -20,6 +20,7 @@ import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.LEFT;
 import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.RED;
 import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.RIGHT;
 import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.newNode;
+import static com.hazelcast.elastic.tree.impl.RedBlackTreeNode.of;
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
@@ -51,6 +52,11 @@ public class RedBlackTreeStore
     private final MemoryAllocator malloc;
     private final OffHeapComparator offHeapKeyComparator;
 
+    // Cached node placeholders, to avoid alloc cost while searching
+    private final RedBlackTreeNode nodeCached;
+    private final RedBlackTreeNode leftCached;
+    private final RedBlackTreeNode rightCached;
+
     private RedBlackTreeNode root;
 
     public RedBlackTreeStore(
@@ -66,6 +72,9 @@ public class RedBlackTreeStore
             OffHeapComparator offHeapKeyComparator, boolean disableConcistencyAssertions) {
         this.malloc = malloc;
         this.offHeapKeyComparator = offHeapKeyComparator;
+        this.nodeCached = of(this, malloc, NULL_ADDRESS);
+        this.leftCached = of(this, malloc, NULL_ADDRESS);
+        this.rightCached = of(this, malloc, NULL_ADDRESS);
         assert (assertOn = !disableConcistencyAssertions) || true;
     }
 
@@ -223,31 +232,34 @@ public class RedBlackTreeStore
             return new LookupResult(null, true);
         }
 
-        RedBlackTreeNode node = root;
+        // Reset cached placeholders
+        nodeCached.reset(root.address());
+        leftCached.reset();
+        rightCached.reset();
 
         while (true) {
-            int compareResult = compareKeys(comparator, key, type, node);
+            int compareResult = compareKeys(comparator, key, type, nodeCached);
             if (compareResult > 0) {
                 //Our key is greater
-                RedBlackTreeNode right = node.right();
+                rightCached.reset(nodeCached.rightAddress());
 
-                if (right.isNil()) {
-                    return new LookupResult(node, false, RIGHT);
+                if (rightCached.isNil()) {
+                    return new LookupResult(nodeCached, false, RIGHT);
                 } else {
-                    node = right;
+                    nodeCached.reset(rightCached.address());
                 }
             } else if (compareResult < 0) {
                 //Our key is less
-                RedBlackTreeNode left = node.left();
+                leftCached.reset(nodeCached.leftAddress());
 
-                if (left.isNil()) {
-                    return new LookupResult(node, false, LEFT);
+                if (leftCached.isNil()) {
+                    return new LookupResult(nodeCached, false, LEFT);
                 } else {
-                    node = left;
+                    nodeCached.reset(leftCached.address());
                 }
             } else {
                 //Our key is the same
-                return new LookupResult(node, true);
+                return new LookupResult(nodeCached, true);
             }
         }
     }
@@ -695,7 +707,7 @@ public class RedBlackTreeStore
         }
 
         private LookupResult(RedBlackTreeNode node, boolean isExactMatch, byte side) {
-            this.node = node;
+            this.node = node != null ? node.asNew() : null;
             this.isExactMatch = isExactMatch;
             this.side = side;
         }

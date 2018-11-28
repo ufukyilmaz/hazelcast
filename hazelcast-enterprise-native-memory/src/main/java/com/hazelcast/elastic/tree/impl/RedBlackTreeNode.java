@@ -94,8 +94,12 @@ class RedBlackTreeNode
      * @return The left node {@link RedBlackTreeNode}
      */
     RedBlackTreeNode left() {
+        return of(tree, malloc, leftAddress());
+    }
+
+    long leftAddress() {
         assert address != NULL_ADDRESS;
-        return of(tree, malloc, readLong(LEFT_LEAF_OFFSET));
+        return readLong(LEFT_LEAF_OFFSET);
     }
 
     void left(RedBlackTreeNode node) {
@@ -114,8 +118,12 @@ class RedBlackTreeNode
      * @return The right node {@link RedBlackTreeNode}
      */
     RedBlackTreeNode right() {
+        return of(tree, malloc, rightAddress());
+    }
+
+    long rightAddress() {
         assert address != NULL_ADDRESS;
-        return of(tree, malloc, readLong(RIGHT_LEAF_OFFSET));
+        return readLong(RIGHT_LEAF_OFFSET);
     }
 
     void right(RedBlackTreeNode node) {
@@ -172,6 +180,18 @@ class RedBlackTreeNode
 
     boolean isNil() {
         return address == NULL_ADDRESS;
+    }
+
+    void reset() {
+        reset(NULL_ADDRESS);
+    }
+
+    void reset(long baseAddr) {
+        setAddress(baseAddr);
+    }
+
+    RedBlackTreeNode asNew() {
+        return of(tree, malloc, address);
     }
 
     void dispose() {

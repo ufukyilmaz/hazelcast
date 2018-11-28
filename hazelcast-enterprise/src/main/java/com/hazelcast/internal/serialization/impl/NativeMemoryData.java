@@ -158,6 +158,15 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
         return this;
     }
 
+    public NativeMemoryData reset(long address, int size) {
+        setAddress(address);
+        if (address > 0L) {
+            setSize(size);
+        }
+
+        return this;
+    }
+
     @Override
     public String toString() {
         if (address() > 0L) {

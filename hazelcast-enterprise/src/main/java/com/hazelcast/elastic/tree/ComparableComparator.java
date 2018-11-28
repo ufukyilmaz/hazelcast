@@ -9,20 +9,35 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 /**
  * Comparator of the off-heap comparable values given to the compare methods as native addresses and sizes.
  * Will move the data to heap, deserialize the objects execute the comparision implemented by the Comparable contract.
+ * Not thread safe.
  */
 public class ComparableComparator implements OffHeapComparator {
 
     private final EnterpriseSerializationService ess;
+    private final ThreadLocal<NativeMemoryData> leftDataHolder = new ThreadLocal<NativeMemoryData>() {
+        @Override
+        protected NativeMemoryData initialValue() {
+            return new NativeMemoryData();
+        }
+    };
+
+    private final ThreadLocal<NativeMemoryData> rightDataHolder = new ThreadLocal<NativeMemoryData>() {
+        @Override
+        protected NativeMemoryData initialValue() {
+            return new NativeMemoryData();
+        }
+    };
 
     public ComparableComparator(EnterpriseSerializationService ess) {
         this.ess = ess;
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
     public int compare(MemoryBlock lBlob, MemoryBlock rBlob) {
-        NativeMemoryData leftData = new NativeMemoryData(lBlob.address(), lBlob.size());
-        NativeMemoryData rightData = new NativeMemoryData(rBlob.address(), rBlob.size());
+        NativeMemoryData leftData = leftDataHolder.get();
+        NativeMemoryData rightData = rightDataHolder.get();
+
+        leftData.reset(lBlob.address(), lBlob.size());
+        rightData.reset(rBlob.address(), rBlob.size());
 
         if (leftData.equals(rightData)) {
             return 0;

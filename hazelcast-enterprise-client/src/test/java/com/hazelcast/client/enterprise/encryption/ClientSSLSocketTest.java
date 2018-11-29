@@ -2,6 +2,7 @@ package com.hazelcast.client.enterprise.encryption;
 
 import com.hazelcast.TestEnvironmentUtil;
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.test.ClientTestSupport;
 import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
@@ -35,13 +36,12 @@ import static com.hazelcast.nio.ssl.TestKeyStoreUtil.keyStore2;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.malformedKeystore;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.trustStoreTwoCertificates;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.wrongKeyStore;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class ClientSSLSocketTest {
+public class ClientSSLSocketTest extends ClientTestSupport {
 
     private final TestAwareClientFactory factory = new TestAwareClientFactory();
 
@@ -326,10 +326,7 @@ public class ClientSSLSocketTest {
                 .setSSLConfig(getSslConfig(clientSslProps));
 
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
-        IMap<Object, Object> clientMap = client.getMap("test");
-        clientMap.put(1, 2);
-        IMap<Object, Object> map = h1.getMap("test");
-        assertEquals(2, map.get(1));
+        makeSureConnectedToServers(client, 2);
     }
 
     private static Properties createSslPropertiesTrustTwoCertificate() {

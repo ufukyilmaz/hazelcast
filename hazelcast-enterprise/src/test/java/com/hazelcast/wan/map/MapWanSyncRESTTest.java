@@ -10,6 +10,9 @@ import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
+import com.hazelcast.internal.json.Json;
+import com.hazelcast.internal.json.JsonObject;
+import com.hazelcast.internal.json.JsonValue;
 import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.WanSyncState;
@@ -36,6 +39,7 @@ import static com.hazelcast.wan.map.MapWanBatchReplicationTest.isAllMembersConne
 import static com.hazelcast.wan.map.MapWanBatchReplicationTest.waitForSyncToComplete;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
@@ -163,14 +167,20 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
         WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanReplicationConfig);
 
         HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
-        communicator.addWanConfig(dto.toJson().toString());
+        JsonObject jsonObject = toJsonObject(communicator.addWanConfig(dto.toJson().toString()));
+
+        assertEquals("success", jsonObject.getString("status", null));
+        assertEquals(1, jsonObject.get("addedPublisherIds").asArray().size());
+        assertEquals(0, jsonObject.get("ignoredPublisherIds").asArray().size());
 
         createDataIn(clusterA, "map3", 0, 3000);
         assertKeysNotInEventually(clusterB, "map", 0, 1000);
         assertKeysNotInEventually(clusterB, "map2", 0, 2000);
         assertKeysNotInEventually(clusterB, "map3", 0, 3000);
         communicator = new HTTPCommunicator(clusterA[0]);
-        communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
+        jsonObject = toJsonObject(communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName()));
+
+        assertEquals("success", jsonObject.getString("status", null));
 
         waitForSyncToComplete(clusterA);
         if (!isAllMembersConnected(clusterA, "newWRConfig", newPublisherConfig.getGroupName())) {
@@ -205,7 +215,11 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
         WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanReplicationConfig);
 
         HTTPCommunicator communicator = new HTTPCommunicator(instance1[0]);
-        communicator.addWanConfig(dto.toJson().toString());
+        JsonObject jsonObject = toJsonObject(communicator.addWanConfig(dto.toJson().toString()));
+
+        assertEquals("success", jsonObject.getString("status", null));
+        assertEquals(1, jsonObject.get("addedPublisherIds").asArray().size());
+        assertEquals(0, jsonObject.get("ignoredPublisherIds").asArray().size());
 
         startClusterWithUniqueConfigObjects(instance2, configA.setInstanceName("confA-new"));
         assertClusterSizeEventually(2, instance1[0]);
@@ -217,7 +231,9 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
         assertKeysNotInEventually(clusterB, "map3", 0, 3000);
 
         communicator = new HTTPCommunicator(instance2[0]);
-        communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
+        jsonObject = toJsonObject(communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName()));
+
+        assertEquals("success", jsonObject.getString("status", null));
 
         waitForSyncToComplete(instance2);
         if (!isAllMembersConnected(instance2, "newWRConfig", newPublisherConfig.getGroupName())) {
@@ -235,9 +251,11 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
         startClusterA();
         createDataIn(clusterA, "map", 0, 1000);
         HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
-        String result = communicator.syncMapOverWAN("newWRConfigName", "groupName", "mapName");
-        assertEquals("{\"status\":\"fail\",\"message\":\"WAN Replication Config doesn't exist with WAN configuration"
-                + " name newWRConfigName and publisher ID groupName\"}", result);
+        JsonObject jsonObject = toJsonObject(communicator.syncMapOverWAN("newWRConfigName", "groupName", "mapName"));
+
+        assertEquals("fail", jsonObject.getString("status", null));
+        assertEquals("WAN Replication Config doesn't exist with WAN configuration "
+                + "name newWRConfigName and publisher ID groupName", jsonObject.getString("message", null));
     }
 
     @Test
@@ -246,9 +264,13 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
                 consistencyCheckStrategy);
         startClusterA();
         HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
-        communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName());
-        String result = communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName());
-        assertEquals("{\"status\":\"fail\",\"message\":\"Another anti-entropy request is already in progress.\"}", result);
+        JsonObject jsonObject;
+
+        jsonObject = toJsonObject(communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName()));
+        jsonObject = toJsonObject(communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName()));
+
+        assertEquals("fail", jsonObject.getString("status", null));
+        assertEquals("Another anti-entropy request is already in progress.", jsonObject.getString("message", null));
     }
 
     @Test
@@ -302,5 +324,11 @@ public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
             newConfig.setInstanceName(config.getInstanceName() + i);
             cluster[i] = factory.newHazelcastInstance(newConfig);
         }
+    }
+
+    private JsonObject toJsonObject(String jsonStr) {
+        JsonValue jsonValue = Json.parse(jsonStr);
+        assertTrue(jsonValue.isObject());
+        return jsonValue.asObject();
     }
 }

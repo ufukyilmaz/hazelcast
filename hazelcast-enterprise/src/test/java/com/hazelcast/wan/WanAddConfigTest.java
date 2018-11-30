@@ -255,15 +255,28 @@ public class WanAddConfigTest {
                 .to(clusterB)
                 .withSetupName(REPLICATION_NAME)
                 .setup();
+        final WanReplication toCReplication = replicate()
+                .to(clusterC)
+                .withSetupName(REPLICATION_NAME)
+                .setup();
+
         clusterA.startCluster();
 
         assertPublisherCountEventually(REPLICATION_NAME, 0);
 
-        clusterA.addWanReplication(toBReplication);
+        AddWanConfigResult addResult = clusterA.addWanReplication(toBReplication);
+        assertEquals(1, addResult.getAddedPublisherIds().size());
+        assertEquals(0, addResult.getIgnoredPublisherIds().size());
         assertPublisherCountEventually(REPLICATION_NAME, 1);
 
-        clusterA.addWanReplication(toBReplication);
-        assertPublisherCountEventually(REPLICATION_NAME, 1);
+        toBReplication.getConfig()
+                      .getWanPublisherConfigs()
+                      .addAll(toCReplication.getConfig().getWanPublisherConfigs());
+
+        addResult = clusterA.addWanReplication(toBReplication);
+        assertEquals(1, addResult.getAddedPublisherIds().size());
+        assertEquals(1, addResult.getIgnoredPublisherIds().size());
+        assertPublisherCountEventually(REPLICATION_NAME, 2);
     }
 
     private void assertPublisherCountEventually(final String wanReplicationName,

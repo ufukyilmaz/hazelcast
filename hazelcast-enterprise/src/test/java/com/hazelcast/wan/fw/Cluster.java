@@ -4,6 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.wan.AddWanConfigResult;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -184,8 +185,8 @@ public class Cluster {
         return (int) (Math.random() * instances);
     }
 
-    public void addWanReplication(WanReplication wanReplication) {
-        wanReplicationService(getAMember())
+    public AddWanConfigResult addWanReplication(WanReplication wanReplication) {
+        return wanReplicationService(getAMember())
                 .addWanReplicationConfig(wanReplication.getConfig());
     }
 

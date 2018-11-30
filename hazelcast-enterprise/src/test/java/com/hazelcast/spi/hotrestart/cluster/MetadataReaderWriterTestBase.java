@@ -1,7 +1,9 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
+import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.util.UuidUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,11 +50,11 @@ public abstract class MetadataReaderWriterTestBase extends HazelcastTestSupport 
     void tearDownInternal() {
     }
 
-    final Address[] initializeAddresses(int len) {
-        Address[] addresses = new Address[len];
+    final PartitionReplica[] initializeReplicas(int len) {
+        PartitionReplica[] addresses = new PartitionReplica[len];
         Random random = new Random();
         for (int i = 0; i < addresses.length; i++) {
-            addresses[i] = new Address("10.10.10." + random.nextInt(256), localAddress, i + 1);
+            addresses[i] = new PartitionReplica(new Address("10.10.10." + random.nextInt(256), localAddress, i + 1), UuidUtil.newUnsecureUuidString());
         }
         return addresses;
     }

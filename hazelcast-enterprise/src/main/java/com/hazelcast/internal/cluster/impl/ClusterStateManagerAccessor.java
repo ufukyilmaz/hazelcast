@@ -29,7 +29,7 @@ public final class ClusterStateManagerAccessor {
         clusterService.getClusterStateManager().setClusterVersion(newVersion);
     }
 
-    public static void addMembersRemovedInNotActiveState(ClusterServiceImpl clusterService, Collection<MemberImpl> members) {
-        clusterService.addMembersRemovedInNotJoinableState(members);
+    public static void setMissingMembers(ClusterServiceImpl clusterService, Collection<MemberImpl> members) {
+        clusterService.getMembershipManager().setMissingMembers(members);
     }
 }

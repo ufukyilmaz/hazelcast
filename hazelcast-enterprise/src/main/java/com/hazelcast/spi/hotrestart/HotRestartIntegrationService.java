@@ -124,6 +124,11 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         logger.fine("Created hot-restart service. Base directory: " + hotRestartHome.getAbsolutePath());
     }
 
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
     public void registerLoadedConfigurationListener(LoadedConfigurationListener listener) {
         loadedConfigurationListeners.add(listener);
     }
@@ -648,6 +653,9 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         node.getJoiner().setTargetAddress(null);
 
         clusterService.reset();
+        // PartitionService is reset after ClusterService,
+        // because partitions should be aware of the new UUID of local member.
+        node.getPartitionService().reset();
 
         if (isAfterJoin) {
             try {

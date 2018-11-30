@@ -49,7 +49,7 @@ abstract class AbstractMetadataWriter<T> {
     abstract void doWrite(DataOutput out, T param) throws IOException;
 
     // this will be called from the subclasses
-    final void writeAddress(DataOutput out, Address address) throws IOException {
+    static void writeAddress(DataOutput out, Address address) throws IOException {
         out.writeUTF(address.getHost());
         out.writeInt(address.getPort());
     }

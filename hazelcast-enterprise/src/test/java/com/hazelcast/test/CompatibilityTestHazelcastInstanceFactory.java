@@ -62,7 +62,7 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
      * <b>Note:</b> Some tests require cluster with 3 members,
      * so when a new release is made, repeat the same version twice.
      */
-    public static final String[] RELEASED_VERSIONS = new String[]{"3.11", "3.11"};
+    public static final String[] RELEASED_VERSIONS = new String[]{"3.11", "3.11.1"};
 
     /**
      * System property to override the versions to be used by any compatibility test.

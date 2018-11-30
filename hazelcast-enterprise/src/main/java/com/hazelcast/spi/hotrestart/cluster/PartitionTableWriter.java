@@ -1,18 +1,23 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.internal.partition.InternalPartition;
+import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
-import com.hazelcast.nio.Address;
 
 import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COUNT;
 
 /**
  * Writes partition table to a specific file
  * by overwriting previous one if exists.
+ *
+ * @since 3.12
  */
-class PartitionTableWriter extends AbstractMetadataWriter<PartitionTableView> {
+final class PartitionTableWriter extends AbstractMetadataWriter<PartitionTableView> {
 
     static final String FILE_NAME = "partitions.bin";
 
@@ -21,25 +26,63 @@ class PartitionTableWriter extends AbstractMetadataWriter<PartitionTableView> {
     }
 
     @Override
-    String getFilename() {
-        return FILE_NAME;
+    void doWrite(DataOutput out, PartitionTableView partitionTable) throws IOException {
+        writePartitionTable(out, partitionTable);
     }
 
-    @Override
-    void doWrite(DataOutput out, PartitionTableView partitionTable) throws IOException {
+    static void writePartitionTable(DataOutput out, PartitionTableView partitionTable) throws IOException {
         out.writeInt(partitionTable.getVersion());
-        int length = partitionTable.getLength();
-        out.writeInt(length);
-        for (int partition = 0; partition < length; partition++) {
-            for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
-                Address address = partitionTable.getAddress(partition, replica);
-                if (address != null) {
-                    out.writeBoolean(true);
-                    writeAddress(out, address);
+        out.writeInt(partitionTable.getLength());
+
+        LinkedHashMap<PartitionReplica, Integer> replicaIdToIndexes = createReplicaIdToIndexMap(partitionTable);
+
+        // replicaIdToIndexes is ordered, that's why we can write keys in iteration (same as insertion) order
+        out.writeInt(replicaIdToIndexes.size());
+        for (PartitionReplica replica : replicaIdToIndexes.keySet()) {
+            writeAddress(out, replica.address());
+            out.writeUTF(replica.uuid());
+        }
+
+        writePartitionTable(partitionTable, replicaIdToIndexes, out);
+    }
+
+    private static void writePartitionTable(PartitionTableView partitionTable, Map<PartitionReplica, Integer> replicaIdToIndexes,
+            DataOutput out) throws IOException {
+        for (int partitionId = 0; partitionId < partitionTable.getLength(); partitionId++) {
+            for (int replicaIndex = 0; replicaIndex < MAX_REPLICA_COUNT; replicaIndex++) {
+                PartitionReplica replica = partitionTable.getReplica(partitionId, replicaIndex);
+                if (replica == null) {
+                    out.writeInt(-1);
                 } else {
-                    out.writeBoolean(false);
+                    int index = replicaIdToIndexes.get(replica);
+                    out.writeInt(index);
                 }
             }
         }
+    }
+
+    @SuppressWarnings("checkstyle:illegaltype")
+    // Returns a LinkedHashMap with insertion order on purpose.
+    private static LinkedHashMap<PartitionReplica, Integer> createReplicaIdToIndexMap(PartitionTableView partitionTable) {
+        LinkedHashMap<PartitionReplica, Integer> map = new LinkedHashMap<PartitionReplica, Integer>();
+        int addressIndex = 0;
+        for (int partitionId = 0; partitionId < partitionTable.getLength(); partitionId++) {
+            for (int replicaIndex = 0; replicaIndex < MAX_REPLICA_COUNT; replicaIndex++) {
+                PartitionReplica replica = partitionTable.getReplica(partitionId, replicaIndex);
+                if (replica == null) {
+                    continue;
+                }
+                if (map.containsKey(replica)) {
+                    continue;
+                }
+                map.put(replica, addressIndex++);
+            }
+        }
+        return map;
+    }
+
+    @Override
+    String getFilename() {
+        return FILE_NAME;
     }
 }

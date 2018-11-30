@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
 
@@ -14,7 +14,7 @@ class LocalMemberReader extends MemberListReader {
     }
 
     @Override
-    void doRead(DataInputStream in) throws IOException {
+    void doRead(DataInput in) throws IOException {
         localMember = readMember(in);
     }
 }

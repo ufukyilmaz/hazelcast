@@ -5,7 +5,6 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.version.MemberVersion;
 
 import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -25,7 +24,7 @@ class MemberListReader extends AbstractMetadataReader {
     }
 
     @Override
-    void doRead(DataInputStream in) throws IOException {
+    void doRead(DataInput in) throws IOException {
         localMember = readMember(in);
         int size = in.readInt();
         members = new HashSet<MemberImpl>(size);

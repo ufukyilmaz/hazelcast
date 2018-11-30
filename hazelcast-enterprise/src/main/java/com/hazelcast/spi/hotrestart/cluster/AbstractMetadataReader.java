@@ -40,7 +40,7 @@ abstract class AbstractMetadataReader {
 
     abstract String getFilename();
 
-    abstract void doRead(DataInputStream in) throws IOException;
+    abstract void doRead(DataInput in) throws IOException;
 
     static Address readAddress(DataInput in) throws IOException {
         return new Address(in.readUTF(), in.readInt());

@@ -32,6 +32,8 @@ final class ClusterMetadataWriterLoop implements Runnable {
     private final ILogger logger;
     private final MPSCQueue<Runnable> taskQueue = new MPSCQueue<Runnable>(null);
     private final MemberListHandler memberListHandler;
+    // RU_COMPAT_3_11
+    private final PartitionTableHandler legacyPartitionTableHandler;
     private final PartitionTableHandler partitionTableHandler;
     private final ClusterStateHandler clusterStateHandler;
     private final ClusterVersionHandler clusterVersionHandler;
@@ -44,6 +46,7 @@ final class ClusterMetadataWriterLoop implements Runnable {
 
         logger = node.getLogger(getClass());
         memberListHandler = new MemberListHandler(new MemberListWriter(homeDir, node));
+        legacyPartitionTableHandler = new PartitionTableHandler(new LegacyPartitionTableWriter(homeDir));
         partitionTableHandler = new PartitionTableHandler(new PartitionTableWriter(homeDir));
         clusterStateHandler = new ClusterStateHandler(new ClusterStateWriter(homeDir));
         clusterVersionHandler = new ClusterVersionHandler(new ClusterVersionWriter(homeDir));
@@ -103,6 +106,12 @@ final class ClusterMetadataWriterLoop implements Runnable {
     void writePartitionTable(PartitionTableView partitionTable) {
         partitionTableHandler.set(partitionTable);
         taskQueue.offer(partitionTableHandler);
+    }
+
+    // RU_COMPAT_3_11
+    void writePartitionTableLegacy(PartitionTableView partitionTable) {
+        legacyPartitionTableHandler.set(partitionTable);
+        taskQueue.offer(legacyPartitionTableHandler);
     }
 
     void writeClusterState(ClusterState state) {
@@ -178,9 +187,9 @@ final class ClusterMetadataWriterLoop implements Runnable {
     }
 
     private final class PartitionTableHandler extends StatefulTask<PartitionTableView> {
-        private final PartitionTableWriter writer;
+        private final AbstractMetadataWriter<PartitionTableView> writer;
 
-        private PartitionTableHandler(PartitionTableWriter writer) {
+        private PartitionTableHandler(AbstractMetadataWriter<PartitionTableView> writer) {
             this.writer = writer;
         }
 

@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.util.Collection;
 
 import static com.hazelcast.TestEnvironmentUtil.assumeJavaVersionAtLeast;
+import static com.hazelcast.TestEnvironmentUtil.assumeNoIbmJvm;
+import static com.hazelcast.TestEnvironmentUtil.assumeThatNoJDK6;
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
@@ -364,6 +366,8 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testDefaultTruststore() throws IOException {
+        assumeNoIbmJvm();
+        assumeThatNoJDK6();
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
         setSignedKeyFiles(sslConfig);
         if (mutualAuthentication) {
@@ -405,6 +409,8 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testDefaultTruststore_client() throws IOException {
+        assumeNoIbmJvm();
+        assumeThatNoJDK6();
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
         SSLConfig clientSSLConfig = new SSLConfig().setEnabled(true);
         setSignedKeyFiles(sslConfig);

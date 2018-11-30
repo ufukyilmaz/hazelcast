@@ -19,6 +19,8 @@ import org.junit.runner.RunWith;
 
 import java.util.Properties;
 
+import static com.hazelcast.TestEnvironmentUtil.assumeNoIbmJvm;
+import static com.hazelcast.TestEnvironmentUtil.assumeThatNoJDK6;
 import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
@@ -56,6 +58,8 @@ public class OpenSSLConnectionTest {
 
     @Test
     public void testEmptyTrust() {
+        assumeNoIbmJvm();
+        assumeThatNoJDK6();
         Config config = newConfig();
         config.getNetworkConfig().getSSLConfig().getProperties().remove("trustCertCollectionFile");
         // cover also the keyManagerFactory case (see OpenSSLConnectionKeyManagerFactoryTest)

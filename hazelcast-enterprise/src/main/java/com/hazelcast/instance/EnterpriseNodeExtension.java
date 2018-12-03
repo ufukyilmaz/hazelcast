@@ -96,6 +96,7 @@ import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Level;
 
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
@@ -293,9 +294,14 @@ public class EnterpriseNodeExtension
 
     private void initLicenseExpReminder() {
         TaskScheduler scheduler = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();
-        LicenseExpirationReminderTask.scheduleWith(scheduler, license);
+        try {
+            LicenseExpirationReminderTask.scheduleWith(scheduler, license);
+        } catch (RejectedExecutionException e) {
+            if (node.isRunning()) {
+                throw e;
+            }
+        }
     }
-
     /**
      * Constructs and initializes all WAN consumers defined in the WAN
      * configuration

@@ -31,6 +31,15 @@ import java.util.List;
 import java.util.Properties;
 
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.createSslProperties;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.getOrCreateTempFile;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.keyStore;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.keyStore2;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.trustStore;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeNotNull;
@@ -57,16 +66,7 @@ public class SSLConnectionTest {
 
     @Test(timeout = 1000 * 180)
     public void testNodes() {
-        Config config = new Config();
-        config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
-        JoinConfig join = config.getNetworkConfig().getJoin();
-        join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).setConnectionTimeoutSeconds(3000);
-
-        Properties props = TestKeyStoreUtil.createSslProperties();
-        config.getNetworkConfig()
-                .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props))
-                .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+        Config config = getConfig(TestKeyStoreUtil.createSslProperties());
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -103,16 +103,7 @@ public class SSLConnectionTest {
 
     @Test(timeout = 1000 * 600)
     public void testPutAndGetAlwaysGoesToWire() {
-        Config config = new Config();
-        config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
-        JoinConfig join = config.getNetworkConfig().getJoin();
-        join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).setConnectionTimeoutSeconds(3000);
-
-        Properties props = TestKeyStoreUtil.createSslProperties();
-        config.getNetworkConfig()
-                .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props))
-                .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+        Config config = getConfig(TestKeyStoreUtil.createSslProperties());
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -279,6 +270,61 @@ public class SSLConnectionTest {
 
         // Size 1 for both! we expect the instances won't form a cluster.
         assertClusterSize(1, h1, h2);
+    }
+
+    @Test(timeout = 1000 * 180)
+    public void testTwoNodes_withDifferentKeys() {
+        Properties sslProperties1 = createSslProperties();
+        sslProperties1.setProperty(JAVAX_NET_SSL_KEY_STORE, getOrCreateTempFile(keyStore));
+        sslProperties1.setProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD, "123456");
+        Config config1 = getConfig(sslProperties1);
+        HazelcastInstance h1 = factory.newHazelcastInstance(config1);
+
+        Properties sslProperties2 = createSslPropertiesTrustTwoCertificate();
+        sslProperties2.setProperty(JAVAX_NET_SSL_KEY_STORE, getOrCreateTempFile(keyStore2));
+        sslProperties2.setProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD, "123456");
+        Config config2 = getConfig(sslProperties2);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config2);
+
+        assertClusterSize(2, h1, h2);
+
+        TestUtil.warmUpPartitions(h1, h2);
+        Member owner1 = h1.getPartitionService().getPartition(0).getOwner();
+        Member owner2 = h2.getPartitionService().getPartition(0).getOwner();
+        assertEquals(owner1, owner2);
+
+        String name = "ssl-test";
+        int count = 128;
+        IMap<Integer, byte[]> map1 = h1.getMap(name);
+        for (int i = 1; i < count; i++) {
+            map1.put(i, new byte[1024 * i]);
+        }
+
+        IMap<Integer, byte[]> map2 = h2.getMap(name);
+        for (int i = 1; i < count; i++) {
+            byte[] bytes = map2.get(i);
+            assertEquals(i * 1024, bytes.length);
+        }
+    }
+
+    private static Properties createSslPropertiesTrustTwoCertificate() {
+        Properties props = new Properties();
+        props.setProperty(JAVAX_NET_SSL_TRUST_STORE, getOrCreateTempFile(trustStore));
+        props.setProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD, "123456");
+        return props;
+    }
+
+    private Config getConfig(Properties sslProperties) {
+        Config config = new Config();
+        config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        JoinConfig join = config.getNetworkConfig().getJoin();
+        join.getMulticastConfig().setEnabled(false);
+        join.getTcpIpConfig().setEnabled(true).setConnectionTimeoutSeconds(3000);
+
+        config.getNetworkConfig()
+                .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(sslProperties))
+                .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+        return config;
     }
 
     private Config createConfigWithSslProperty(String propertyName, String propertyValue) {

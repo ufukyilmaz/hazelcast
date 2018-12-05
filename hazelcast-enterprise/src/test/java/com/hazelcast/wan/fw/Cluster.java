@@ -181,6 +181,12 @@ public class Cluster {
         wanReplicationService(getAMember()).syncMap(wanReplicationName, targetClusterName, mapName);
     }
 
+    public void syncAllMaps(WanReplication wanReplication) {
+        String wanReplicationName = wanReplication.getSetupName();
+        String targetClusterName = wanReplication.getTargetClusterName();
+        wanReplicationService(getAMember()).syncAllMaps(wanReplicationName, targetClusterName);
+    }
+
     private int getRandomInstanceIndex(int instances) {
         return (int) (Math.random() * instances);
     }

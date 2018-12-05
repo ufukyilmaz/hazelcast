@@ -1,36 +1,54 @@
 package com.hazelcast.wan.map;
 
-import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
-import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.MerkleTreeWanSyncStats;
-import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.sync.SyncFailedException;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.partition.IPartition;
+import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.util.RootCauseMatcher;
+import com.hazelcast.wan.AddWanConfigResult;
 import com.hazelcast.wan.WanSyncStats;
+import com.hazelcast.wan.WanSyncStatus;
+import com.hazelcast.wan.fw.Cluster;
+import com.hazelcast.wan.fw.WanReplication;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
+import static com.hazelcast.test.HazelcastTestSupport.assertContains;
+import static com.hazelcast.test.HazelcastTestSupport.getNodeEngineImpl;
+import static com.hazelcast.test.HazelcastTestSupport.getPartitionService;
+import static com.hazelcast.wan.fw.Cluster.clusterA;
+import static com.hazelcast.wan.fw.Cluster.clusterB;
+import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
+import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
+import static com.hazelcast.wan.fw.WanReplication.replicate;
+import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static com.hazelcast.wan.map.MapWanBatchReplicationTest.isAllMembersConnected;
-import static com.hazelcast.wan.map.MapWanBatchReplicationTest.waitForSyncToComplete;
+import static com.hazelcast.wan.map.MapWanReplicationTestSupport.assertKeysNotInEventually;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -39,7 +57,7 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
+public class MapWanSyncAPITest {
 
     @Parameters(name = "consistencyCheckStrategy:{0}")
     public static Collection<Object[]> parameters() {
@@ -49,151 +67,247 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
         });
     }
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    private static final String MAP_NAME = "map";
+    private static final String REPLICATION_NAME = "wanReplication";
+
+    private Cluster clusterA;
+    private Cluster clusterB;
+
+    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+
+    @After
+    public void cleanup() {
+        factory.shutdownAll();
+    }
+
+    @Before
+    public void setup() {
+        clusterA = clusterA(factory, 2).setup();
+        clusterB = clusterB(factory, 2).setup();
+
+        configureMerkleTrees(clusterA);
+        configureMerkleTrees(clusterB);
+
+        WanReplication wanReplication = replicate()
+                .from(clusterA)
+                .to(null)
+                .withSetupName(REPLICATION_NAME)
+                .setup();
+
+
+        clusterA.replicateMap("default")
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
+
+//         uncomment to dump the counters when debugging locally
+        //dumpWanCounters(wanReplication, Executors.newSingleThreadScheduledExecutor());
+    }
+
+    private void configureMerkleTrees(Cluster cluster) {
+        if (consistencyCheckStrategy == MERKLE_TREES) {
+            cluster.getConfig()
+                   .getMapMerkleTreeConfig("default")
+                   .setEnabled(true)
+                   .setDepth(6);
+        }
+    }
+
     @Parameter
     public ConsistencyCheckStrategy consistencyCheckStrategy;
 
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
-    }
-
-    @Override
-    public InMemoryFormat getMemoryFormat() {
-        return InMemoryFormat.BINARY;
-    }
-
-    @Override
-    protected Config getConfig() {
-        final Config config = super.getConfig();
-        config.getMapConfig("default")
-              .setInMemoryFormat(getMemoryFormat());
-
-        if (consistencyCheckStrategy == MERKLE_TREES) {
-            config.getMapMerkleTreeConfig("default")
-                  .setEnabled(true)
-                  .setDepth(6);
-        }
-
-        return config;
-    }
-
     @Test
     public void basicSyncTest() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
-                consistencyCheckStrategy);
-        startClusterA();
-        startClusterB();
+        clusterA.startCluster();
+        clusterB.startCluster();
 
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
+        WanReplication toBReplication = replicate()
+                .to(clusterB)
+                .withSetupName(REPLICATION_NAME)
+                .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .setup();
+        clusterA.addWanReplication(toBReplication);
+
+        fillMap(clusterA, MAP_NAME, 0, 1000);
+        verifyMapReplicated(clusterA, clusterB, MAP_NAME);
 
         // create another map to verify that only one map is synced even if there are multiple ones
-        createDataIn(clusterA, "map2", 0, 10);
+        fillMap(clusterA, "notSynced", 0, 1000);
 
-        clusterB[0].getCluster().shutdown();
+        clusterB.shutdownMembers();
+        factory.cleanup();
+        clusterB.startCluster();
 
-        startClusterB();
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
 
-        EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(clusterA[0]);
-        wanReplicationService.syncMap("atob", "B", "map");
+        assertKeysNotInEventually(clusterB.getMembers(), "map", 0, 1000);
+
+        clusterA.syncMap(toBReplication, MAP_NAME);
 
         waitForSyncToComplete(clusterA);
-        if (!isAllMembersConnected(clusterA, "atob", "B")) {
-            // we give another try to the sync if it failed because of the unsuccessful connection attempt
-            wanReplicationService.syncMap("atob", "B", "map");
+        if (!isAllMembersConnected(clusterA.getMembers(), REPLICATION_NAME, "B")) {
+            // we give another try to the sync if it failed because of unsuccessful connection attempt
+            clusterA.syncMap(toBReplication, MAP_NAME);
         }
 
-        assertKeysInEventually(clusterB, "map", 0, 1000);
-        verifySyncStats(clusterA, "atob", "B", "map");
+        verifyMapReplicated(clusterA, clusterB, MAP_NAME);
+        verifySyncStats(clusterA, toBReplication, MAP_NAME);
     }
 
     @Test
     public void syncAllTest() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
-                consistencyCheckStrategy);
-        startClusterA();
-        startClusterB();
+        clusterA.startCluster();
+        clusterB.startCluster();
 
-        createDataIn(clusterA, "map", 0, 1000);
-        createDataIn(clusterA, "map2", 0, 2000);
-        createDataIn(clusterA, "map3", 0, 3000);
+        WanReplication toBReplication = replicate()
+                .to(clusterB)
+                .withSetupName(REPLICATION_NAME)
+                .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .setup();
+        clusterA.addWanReplication(toBReplication);
 
-        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
-        assertDataInFromEventually(clusterB, "map2", 0, 2000, clusterA);
-        assertDataInFromEventually(clusterB, "map3", 0, 3000, clusterA);
+        fillMap(clusterA, "map", 0, 1000);
+        fillMap(clusterA, "map2", 0, 2000);
+        fillMap(clusterA, "map3", 0, 3000);
 
-        clusterB[0].getCluster().shutdown();
-        startClusterB();
+        verifyMapReplicated(clusterA, clusterB, "map");
+        verifyMapReplicated(clusterA, clusterB, "map2");
+        verifyMapReplicated(clusterA, clusterB, "map3");
 
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
-        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
+        clusterB.shutdownMembers();
+        factory.cleanup();
+        clusterB.startCluster();
 
-        EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(clusterA[0]);
-        wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+        assertKeysNotInEventually(clusterB.getMembers(), "map", 0, 1000);
+        assertKeysNotInEventually(clusterB.getMembers(), "map2", 0, 2000);
+        assertKeysNotInEventually(clusterB.getMembers(), "map3", 0, 3000);
+
+        clusterA.syncAllMaps(toBReplication);
 
         waitForSyncToComplete(clusterA);
-        if (!isAllMembersConnected(clusterA, "atob", "B")) {
-            // we give another try to the sync if it failed because of the unsuccessful connection attempt
-            wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+        if (!isAllMembersConnected(clusterA.getMembers(), REPLICATION_NAME, "B")) {
+            // we give another try to the sync if it failed because of unsuccessful connection attempt
+            clusterA.syncAllMaps(toBReplication);
         }
 
-        assertKeysInEventually(clusterB, "map", 0, 1000);
-        assertKeysInEventually(clusterB, "map2", 0, 2000);
-        assertKeysInEventually(clusterB, "map3", 0, 3000);
-        verifySyncStats(clusterA, "atob", "B", "map", "map2", "map3");
+        verifyMapReplicated(clusterA, clusterB, "map");
+        verifyMapReplicated(clusterA, clusterB, "map2");
+        verifyMapReplicated(clusterA, clusterB, "map3");
+
+        verifySyncStats(clusterA, toBReplication, "map", "map2", "map3");
     }
 
     @Test
-    public void syncAllAfterAddingMemberToSourceCluster() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
-                consistencyCheckStrategy);
-        configA.setInstanceName(configA.getInstanceName() + 0);
-        clusterA = new HazelcastInstance[]{factory.newHazelcastInstance(configA)};
-        startClusterB();
+    public void addNewWanConfigAndSyncTest() {
+        clusterA.startCluster();
+        clusterB.startCluster();
 
-        createDataIn(clusterA, "map", 0, 1000);
-        createDataIn(clusterA, "map2", 0, 2000);
-        createDataIn(clusterA, "map3", 0, 3000);
+        fillMap(clusterA, "map", 0, 1000);
+        fillMap(clusterA, "map2", 0, 2000);
 
-        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
-        assertDataInFromEventually(clusterB, "map2", 0, 2000, clusterA);
-        assertDataInFromEventually(clusterB, "map3", 0, 3000, clusterA);
+        assertKeysNotInEventually(clusterB.getMembers(), "map", 0, 1000);
 
-        clusterB[0].getCluster().shutdown();
-        startClusterB();
+        String newReplicationName = "newReplicationName";
+        final WanReplication toBReplication = replicate()
+                .to(clusterB)
+                .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withSetupName(newReplicationName)
+                .setup();
 
-        configA.setInstanceName(configA.getInstanceName() + 1);
-        clusterA = new HazelcastInstance[]{clusterA[0], factory.newHazelcastInstance(configA)};
+        AddWanConfigResult result = clusterA.addWanReplication(toBReplication);
+        assertContains(result.getAddedPublisherIds(), clusterB.getName());
+        assertEquals(0, result.getIgnoredPublisherIds().size());
 
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
-        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
+        fillMap(clusterA, "map3", 0, 3000);
 
-        EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(clusterA[0]);
-        wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+        assertKeysNotInEventually(clusterB.getMembers(), "map", 0, 1000);
+        assertKeysNotInEventually(clusterB.getMembers(), "map2", 0, 2000);
+        assertKeysNotInEventually(clusterB.getMembers(), "map3", 0, 3000);
+
+        clusterA.syncAllMaps(toBReplication);
 
         waitForSyncToComplete(clusterA);
-        if (!isAllMembersConnected(clusterA, "atob", "B")) {
-            // we give another try to the sync if it failed because of the unsuccessful connection attempt
-            wanReplicationService.syncAllMaps("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
+        if (!isAllMembersConnected(clusterA.getMembers(), newReplicationName, "B")) {
+            // we give another try to the sync if it failed because of unsuccessful connection attempt
+            clusterA.syncAllMaps(toBReplication);
         }
 
-        assertKeysInEventually(clusterB, "map", 0, 1000);
-        assertKeysInEventually(clusterB, "map2", 0, 2000);
-        assertKeysInEventually(clusterB, "map3", 0, 3000);
-        verifySyncStats(clusterA, "atob", "B", "map", "map2", "map3");
+        verifyMapReplicated(clusterA, clusterB, "map");
+        verifyMapReplicated(clusterA, clusterB, "map2");
+        verifyMapReplicated(clusterA, clusterB, "map3");
     }
 
-
-    @Test(expected = SyncFailedException.class)
+    @Test
     public void sendMultipleSyncRequests() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
-                consistencyCheckStrategy);
-        startClusterA();
-        getWanReplicationService(clusterA[0]).syncMap("atob", configB.getGroupConfig().getName(), "map");
-        getWanReplicationService(clusterA[0]).syncMap("atob", configB.getGroupConfig().getName(), "map");
+        clusterA.startAClusterMember();
+        fillMap(clusterA, MAP_NAME, 0, 10000);
+
+        final WanReplication toBReplication = replicate()
+                .to(clusterB)
+                .withSetupName(REPLICATION_NAME)
+                .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withReplicationBatchSize(1)
+                .setup();
+        clusterA.addWanReplication(toBReplication);
+
+        clusterA.syncAllMaps(toBReplication);
+
+        expectedException.expect(
+                new RootCauseMatcher(SyncFailedException.class, "Another anti-entropy request is already in progress."));
+        clusterA.syncAllMaps(toBReplication);
+    }
+
+    @Test
+    public void tryToSyncNonExistingConfig() {
+        clusterA.startCluster();
+        final WanReplication nonExistantReplication = replicate()
+                .to(clusterB)
+                .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withSetupName(REPLICATION_NAME)
+                .setup();
+
+        expectedException.expect(new RootCauseMatcher(InvalidConfigurationException.class,
+                "WAN Replication Config doesn't exist with WAN configuration name wanReplication and publisher ID B"));
+        clusterA.syncMap(nonExistantReplication, MAP_NAME);
+    }
+
+    @Test
+    public void checkWanSyncState() {
+        clusterA.startCluster();
+        clusterB.startCluster();
+        final WanReplication toBReplication = replicate()
+                .to(clusterB)
+                .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withSetupName(REPLICATION_NAME)
+                .setup();
+        AddWanConfigResult result = clusterA.addWanReplication(toBReplication);
+        assertContains(result.getAddedPublisherIds(), clusterB.getName());
+        assertEquals(0, result.getIgnoredPublisherIds().size());
+
+        fillMap(clusterA, MAP_NAME, 0, 10000);
+        verifyMapReplicated(clusterA, clusterB, MAP_NAME);
+
+        clusterB.shutdownMembers();
+        factory.cleanup();
+
+        clusterA.syncMap(toBReplication, MAP_NAME);
+        assertSyncState(clusterA, toBReplication, WanSyncStatus.IN_PROGRESS, -1);
+
+        clusterB.startCluster();
+
+        waitForSyncToComplete(clusterA);
+        if (!isAllMembersConnected(clusterA.getMembers(), REPLICATION_NAME, "B")) {
+            // we give another try to the sync if it failed because of unsuccessful connection attempt
+            clusterA.syncMap(toBReplication, MAP_NAME);
+        }
+        waitForSyncToComplete(clusterA);
+
+        verifyMapReplicated(clusterA, clusterB, MAP_NAME);
+
+        assertSyncState(clusterA, toBReplication, WanSyncStatus.READY,
+                getPartitionService(clusterA.getAMember()).getPartitionCount());
     }
 
     private static Map<String, WanSyncStats> getLastSyncResult(HazelcastInstance instance, String setupName, String publisherId) {
@@ -203,9 +317,12 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
                 .get(publisherId).getLastSyncStats();
     }
 
-    private void verifySyncStats(HazelcastInstance[] cluster, String setupName, String publisherId, String... mapNames) {
-        for (HazelcastInstance instance : cluster) {
-            Map<String, WanSyncStats> lastSyncResult = getLastSyncResult(instance, setupName, publisherId);
+    private void verifySyncStats(Cluster sourceCluster,
+                                 WanReplication wanReplication,
+                                 String... mapNames) {
+        for (HazelcastInstance instance : sourceCluster.getMembers()) {
+            Map<String, WanSyncStats> lastSyncResult = getLastSyncResult(
+                    instance, wanReplication.getSetupName(), wanReplication.getTargetClusterName());
             int localPartitions = getLocalPartitions(instance);
 
             for (String mapName : mapNames) {
@@ -222,7 +339,7 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
         }
     }
 
-    private int getLocalPartitions(HazelcastInstance instance) {
+    private static int getLocalPartitions(HazelcastInstance instance) {
         NodeEngineImpl nodeEngineImpl = getNodeEngineImpl(instance);
         int localPartitions = 0;
         IPartition[] partitions = nodeEngineImpl.getPartitionService().getPartitions();
@@ -234,14 +351,16 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
         return localPartitions;
     }
 
-    private void verifyFullSyncStats(Map<String, WanSyncStats> lastSyncResult, int localPartitions, String mapName) {
+    private static void verifyFullSyncStats(
+            Map<String, WanSyncStats> lastSyncResult, int localPartitions, String mapName) {
         WanSyncStats wanSyncStats = lastSyncResult.get(mapName);
 
         assertEquals(localPartitions, wanSyncStats.getPartitionsSynced());
         assertTrue(wanSyncStats.getRecordsSynced() > 0);
     }
 
-    private void verifyMerkleSyncStats(Map<String, WanSyncStats> lastSyncResult, int localPartitions, String mapName) {
+    private static void verifyMerkleSyncStats(
+            Map<String, WanSyncStats> lastSyncResult, int localPartitions, String mapName) {
         MerkleTreeWanSyncStats wanSyncStats = (MerkleTreeWanSyncStats) lastSyncResult.get(mapName);
 
         // we don't assert on actual values here just verify if the values are filled as expected
@@ -255,4 +374,42 @@ public class MapWanSyncAPITest extends MapWanReplicationTestSupport {
         assertTrue(wanSyncStats.getMaxLeafEntryCount() > 0);
     }
 
+    /**
+     * Asserts that at least one member in the {@code cluster} will have the
+     * provided {@code syncStatus} for the {@code wanReplication}. This is
+     * because the sync state is only kept on one member (which initiated
+     * the sync).
+     * If the {@code expectedSyncedPartitionCount} is less than {@code 0}, the
+     * check for total synced partition count will be skipped.
+     *
+     * @param cluster        the source cluster
+     * @param wanReplication the WAN replication
+     * @param syncStatus     the expected sync status
+     */
+    private static void assertSyncState(Cluster cluster,
+                                        WanReplication wanReplication,
+                                        WanSyncStatus syncStatus,
+                                        int expectedSyncedPartitionCount) {
+        boolean passed = false;
+        ArrayList<WanSyncState> wanSyncStates = new ArrayList<WanSyncState>(cluster.size());
+        int totalSyncedPartitions = 0;
+
+        for (HazelcastInstance instance : cluster.getMembers()) {
+            WanSyncState syncState = wanReplicationService(instance).getWanSyncState();
+            boolean memberSyncStatePasses =
+                    syncState.getStatus() == syncStatus
+                            && wanReplication.getSetupName().equals(syncState.getActiveWanConfigName())
+                            && wanReplication.getTargetClusterName().equals(syncState.getActivePublisherName());
+            passed |= memberSyncStatePasses;
+            wanSyncStates.add(syncState);
+            totalSyncedPartitions += syncState.getSyncedPartitionCount();
+        }
+        assertTrue("Expected one cluster member to have syncStatus " + syncStatus + " but statuses were " + wanSyncStates,
+                passed);
+
+        if (expectedSyncedPartitionCount > 0) {
+            assertEquals("Expected " + totalSyncedPartitions + " but sync states were " + wanSyncStates,
+                    expectedSyncedPartitionCount, totalSyncedPartitions);
+        }
+    }
 }

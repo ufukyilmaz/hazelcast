@@ -5,7 +5,7 @@ package com.hazelcast.enterprise.wan.sync;
  */
 public class SyncFailedException extends RuntimeException {
 
-    SyncFailedException(String s) {
+    public SyncFailedException(String s) {
         super(s);
     }
 }

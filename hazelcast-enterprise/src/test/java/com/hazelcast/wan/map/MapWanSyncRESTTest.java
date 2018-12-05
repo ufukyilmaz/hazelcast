@@ -1,334 +1,174 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.ConsistencyCheckStrategy;
-import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
+import com.hazelcast.enterprise.wan.sync.SyncFailedException;
+import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
 import com.hazelcast.internal.json.Json;
 import com.hazelcast.internal.json.JsonObject;
-import com.hazelcast.internal.json.JsonValue;
 import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.OverridePropertyRule;
-import com.hazelcast.test.annotation.SlowTest;
-import com.hazelcast.wan.WanSyncStatus;
-import org.junit.Rule;
+import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.wan.AddWanConfigResult;
+import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.WanServiceMockingNodeContext;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.Callable;
+import java.util.Collections;
+import java.util.Map;
 
-import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
-import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
-import static com.hazelcast.test.OverridePropertyRule.set;
-import static com.hazelcast.test.TestEnvironment.HAZELCAST_TEST_USE_NETWORK;
-import static com.hazelcast.wan.map.MapWanBatchReplicationTest.isAllMembersConnected;
-import static com.hazelcast.wan.map.MapWanBatchReplicationTest.waitForSyncToComplete;
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
-@Category(SlowTest.class)
-public class MapWanSyncRESTTest extends MapWanReplicationTestSupport {
+@RunWith(HazelcastSerialClassRunner.class)
+@Category(QuickTest.class)
+public class MapWanSyncRESTTest extends HazelcastTestSupport {
 
-    @Parameterized.Parameters(name = "consistencyCheckStrategy:{0}")
-    public static Collection<Object[]> parameters() {
-        return asList(new Object[][]{
-                {NONE},
-                {MERKLE_TREES}
-        });
-    }
+    private WanReplicationService wanServiceMock;
+    private HTTPCommunicator communicator;
 
-    @Parameter
-    public ConsistencyCheckStrategy consistencyCheckStrategy;
-
-    @Rule
-    public final OverridePropertyRule overridePropertyRule = set(HAZELCAST_TEST_USE_NETWORK, "true");
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
-    }
-
-    @Override
-    public InMemoryFormat getMemoryFormat() {
-        return InMemoryFormat.BINARY;
-    }
-
-
-    @Override
-    protected Config getConfig() {
-        final Config config = super.getConfig()
-                                   .setProperty(GroupProperty.REST_ENABLED.getName(), "true");
-        config.getMapConfig("default")
-              .setInMemoryFormat(getMemoryFormat());
-        if (consistencyCheckStrategy == MERKLE_TREES) {
-            config.getMapMerkleTreeConfig("default")
-                  .setEnabled(true)
-                  .setDepth(5);
-        }
-        return config;
+    @Before
+    public void initInstance() {
+        wanServiceMock = mock(WanReplicationService.class);
+        HazelcastInstance instance = HazelcastInstanceFactory.newHazelcastInstance(getConfig(), randomName(),
+                new WanServiceMockingNodeContext(wanServiceMock));
+        communicator = new HTTPCommunicator(instance);
     }
 
     @Test
-    public void syncUsingRestApi() throws Exception {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
-                consistencyCheckStrategy);
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
-
-        clusterB[0].getCluster().shutdown();
-
-        startClusterB();
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-
-        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
-        communicator.syncMapOverWAN("atob", "B", "map");
-
-        waitForSyncToComplete(clusterA);
-        if (!isAllMembersConnected(clusterA, "atob", "B")) {
-            // we give another try to the sync if it failed because of the unsuccessful connection attempt
-            communicator.syncMapOverWAN("atob", "B", "map");
-        }
-
-        assertKeysInEventually(clusterB, "map", 0, 1000);
+    public void syncSuccess() throws Exception {
+        JsonObject responseObject = assertSuccess(communicator.syncMapOverWAN("atob", "B", "map"));
+        assertNotNull(responseObject.getString("message", null));
+        verify(wanServiceMock, times(1)).syncMap("atob", "B", "map");
     }
 
     @Test
-    public void syncAllTestUsingREST() throws IOException {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
-                consistencyCheckStrategy);
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 1000);
-        createDataIn(clusterA, "map2", 0, 2000);
-        createDataIn(clusterA, "map3", 0, 3000);
-
-        assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
-        assertDataInFromEventually(clusterB, "map2", 0, 2000, clusterA);
-        assertDataInFromEventually(clusterB, "map3", 0, 3000, clusterA);
-
-        clusterB[0].getCluster().shutdown();
-        startClusterB();
-
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
-        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
-
-        HTTPCommunicator communicator = new HTTPCommunicator(getNode(clusterA));
-        communicator.syncMapsOverWAN("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
-
-        waitForSyncToComplete(clusterA);
-        if (!isAllMembersConnected(clusterA, "atob", "B")) {
-            // we give another try to the sync if it failed because of the unsuccessful connection attempt
-            communicator.syncMapsOverWAN("atob", getNode(clusterB).getConfig().getGroupConfig().getName());
-        }
-
-        assertKeysInEventually(clusterB, "map", 0, 1000);
-        assertKeysInEventually(clusterB, "map2", 0, 2000);
-        assertKeysInEventually(clusterB, "map3", 0, 3000);
+    public void syncFail() throws IOException {
+        String msg = "Error occurred";
+        doThrow(new RuntimeException(msg))
+                .when(wanServiceMock)
+                .syncMap("atob", "B", "map");
+        JsonObject responseObject = assertFail(communicator.syncMapOverWAN("atob", "B", "map"));
+        assertEquals(msg, responseObject.getString("message", null));
+        verify(wanServiceMock, times(1)).syncMap("atob", "B", "map");
     }
 
     @Test
-    public void addNewWanConfigAndSyncTest() throws IOException {
-        /*Form Cluster A by starting each instance with different Config object
-        reference to prevent sharing */
-        startClusterWithUniqueConfigObjects(clusterA, configA);
-        startClusterB();
-        createDataIn(clusterA, "map", 0, 1000);
-        createDataIn(clusterA, "map2", 0, 2000);
-        sleepSeconds(5);
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-
-        WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
-        wanReplicationConfig.setName("newWRConfig");
-        WanPublisherConfig newPublisherConfig = targetCluster(clusterB[0].getConfig(), clusterB.length);
-        wanReplicationConfig.addWanPublisherConfig(newPublisherConfig);
-
-        WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanReplicationConfig);
-
-        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
-        JsonObject jsonObject = toJsonObject(communicator.addWanConfig(dto.toJson().toString()));
-
-        assertEquals("success", jsonObject.getString("status", null));
-        assertEquals(1, jsonObject.get("addedPublisherIds").asArray().size());
-        assertEquals(0, jsonObject.get("ignoredPublisherIds").asArray().size());
-
-        createDataIn(clusterA, "map3", 0, 3000);
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
-        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
-        communicator = new HTTPCommunicator(clusterA[0]);
-        jsonObject = toJsonObject(communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName()));
-
-        assertEquals("success", jsonObject.getString("status", null));
-
-        waitForSyncToComplete(clusterA);
-        if (!isAllMembersConnected(clusterA, "newWRConfig", newPublisherConfig.getGroupName())) {
-            // we give another try to the sync if it failed because of the unsuccessful connection attempt
-            communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
-        }
-
-        assertKeysInEventually(clusterB, "map", 0, 1000);
-        assertKeysInEventually(clusterB, "map2", 0, 2000);
-        assertKeysInEventually(clusterB, "map3", 0, 3000);
+    public void syncAllSuccess() throws IOException {
+        JsonObject responseObject = assertSuccess(communicator.syncMapsOverWAN("atob", "B"));
+        assertNotNull(responseObject.getString("message", null));
+        verify(wanServiceMock, times(1)).syncAllMaps("atob", "B");
     }
 
     @Test
-    public void checkNewWanConfigExistsInNewNodesAndSyncTest() throws IOException {
-        /* Form Cluster A by starting each instance with different Config object
-        reference to prevent sharing */
-        HazelcastInstance[] instance1 = new HazelcastInstance[1];
-        HazelcastInstance[] instance2 = new HazelcastInstance[1];
-        startClusterWithUniqueConfigObjects(instance1, configA);
-        startClusterB();
-
-        createDataIn(instance1, "map", 0, 1000);
-        createDataIn(instance1, "map2", 0, 2000);
-        sleepSeconds(5);
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-
-        WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
-        wanReplicationConfig.setName("newWRConfig");
-        WanPublisherConfig newPublisherConfig = targetCluster(clusterB[0].getConfig(), clusterB.length);
-        wanReplicationConfig.addWanPublisherConfig(newPublisherConfig);
-
-        WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanReplicationConfig);
-
-        HTTPCommunicator communicator = new HTTPCommunicator(instance1[0]);
-        JsonObject jsonObject = toJsonObject(communicator.addWanConfig(dto.toJson().toString()));
-
-        assertEquals("success", jsonObject.getString("status", null));
-        assertEquals(1, jsonObject.get("addedPublisherIds").asArray().size());
-        assertEquals(0, jsonObject.get("ignoredPublisherIds").asArray().size());
-
-        startClusterWithUniqueConfigObjects(instance2, configA.setInstanceName("confA-new"));
-        assertClusterSizeEventually(2, instance1[0]);
-        assert instance2[0].getConfig().getWanReplicationConfig("newWRConfig") != null;
-
-        createDataIn(instance1, "map3", 0, 3000);
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-        assertKeysNotInEventually(clusterB, "map2", 0, 2000);
-        assertKeysNotInEventually(clusterB, "map3", 0, 3000);
-
-        communicator = new HTTPCommunicator(instance2[0]);
-        jsonObject = toJsonObject(communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName()));
-
-        assertEquals("success", jsonObject.getString("status", null));
-
-        waitForSyncToComplete(instance2);
-        if (!isAllMembersConnected(instance2, "newWRConfig", newPublisherConfig.getGroupName())) {
-            // we give another try to the sync if it failed because of unsuccessful connection attempt
-            communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
-        }
-
-        assertKeysInEventually(clusterB, "map", 0, 1000);
-        assertKeysInEventually(clusterB, "map2", 0, 2000);
-        assertKeysInEventually(clusterB, "map3", 0, 3000);
+    public void syncAllFail() throws IOException {
+        String msg = "Error occurred";
+        doThrow(new RuntimeException(msg))
+                .when(wanServiceMock)
+                .syncAllMaps("atob", "B");
+        JsonObject responseObject = assertFail(communicator.syncMapsOverWAN("atob", "B"));
+        assertEquals(msg, responseObject.getString("message", null));
+        verify(wanServiceMock, times(1)).syncAllMaps("atob", "B");
     }
 
     @Test
-    public void tryToSyncNonExistingConfig() throws IOException {
-        startClusterA();
-        createDataIn(clusterA, "map", 0, 1000);
-        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
-        JsonObject jsonObject = toJsonObject(communicator.syncMapOverWAN("newWRConfigName", "groupName", "mapName"));
+    public void addWanConfigSuccess() throws IOException {
+        WanReplicationConfig wanConfig = getExampleWanConfig();
+        WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanConfig);
 
-        assertEquals("fail", jsonObject.getString("status", null));
-        assertEquals("WAN Replication Config doesn't exist with WAN configuration "
-                + "name newWRConfigName and publisher ID groupName", jsonObject.getString("message", null));
+        when(wanServiceMock.addWanReplicationConfig(wanConfig))
+                .thenReturn(new AddWanConfigResult(Collections.singleton("A"), Collections.singleton("B")));
+
+        JsonObject responseObject = assertSuccess(communicator.addWanConfig(dto.toJson().toString()));
+
+        assertEquals(1, responseObject.get("addedPublisherIds").asArray().size());
+        assertEquals(1, responseObject.get("ignoredPublisherIds").asArray().size());
+        verify(wanServiceMock, times(1)).addWanReplicationConfig(wanConfig);
+    }
+
+    @Test
+    public void addWanConfigFail() throws IOException {
+        WanReplicationConfig wanConfig = getExampleWanConfig();
+        WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanConfig);
+
+        String msg = "Error occurred";
+        doThrow(new RuntimeException(msg))
+                .when(wanServiceMock)
+                .addWanReplicationConfig(wanConfig);
+
+        JsonObject responseObject = assertFail(communicator.addWanConfig(dto.toJson().toString()));
+        assertEquals(msg, responseObject.getString("message", null));
+        verify(wanServiceMock, times(1)).addWanReplicationConfig(wanConfig);
     }
 
     @Test
     public void sendMultipleSyncRequestsWithREST() throws IOException {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
-                consistencyCheckStrategy);
-        startClusterA();
-        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
-        JsonObject jsonObject;
-
-        jsonObject = toJsonObject(communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName()));
-        jsonObject = toJsonObject(communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName()));
-
-        assertEquals("fail", jsonObject.getString("status", null));
-        assertEquals("Another anti-entropy request is already in progress.", jsonObject.getString("message", null));
+        doThrow(new SyncFailedException("message"))
+                .when(wanServiceMock)
+                .syncAllMaps("atob", "B");
+        assertFail(communicator.syncMapsOverWAN("atob", "B"));
+        verify(wanServiceMock, times(1)).syncAllMaps("atob", "B");
     }
 
-    @Test
-    public void checkWanSyncState() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
-                consistencyCheckStrategy);
-        startClusterA();
-        startClusterB();
-        createDataIn(clusterA, "map", 0, 1000);
-        assertKeysInEventually(clusterB, "map", 0, 1000);
+    private WanReplicationConfig getExampleWanConfig() {
+        WanPublisherConfig newPublisherConfig = new WanPublisherConfig()
+                .setGroupName("B")
+                .setClassName("ClassName");
+        Map<String, Comparable> props = newPublisherConfig.getProperties();
+        props.put(WanReplicationProperties.GROUP_PASSWORD.key(), "password");
+        props.put(WanReplicationProperties.ENDPOINTS.key(), "1.1.1.1:5701");
+        props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE.name());
 
-        clusterB[0].getCluster().shutdown();
-
-        startClusterB();
-        assertKeysNotInEventually(clusterB, "map", 0, 1000);
-
-        final EnterpriseWanReplicationService service = getWanReplicationService(clusterA[0]);
-        service.syncMap("atob", configB.getGroupConfig().getName(), "map");
-
-        assertEquals(WanSyncStatus.IN_PROGRESS, service.getWanSyncState().getStatus());
-
-        waitForSyncToComplete(clusterA);
-        if (!isAllMembersConnected(clusterA, "atob", configB.getGroupConfig().getName())) {
-            // we give another try to the sync if it failed because of the unsuccessful connection attempt
-            service.syncMap("atob", configB.getGroupConfig().getName(), "map");
-        }
-
-        assertKeysInEventually(clusterB, "map", 0, 1000);
-        assertEqualsEventually(new Callable<WanSyncStatus>() {
-            @Override
-            public WanSyncStatus call() {
-                return service.getWanSyncState().getStatus();
-            }
-        }, WanSyncStatus.READY);
-
-        WanSyncState syncState = service.getWanSyncState();
-        int member1SyncCount = syncState.getSyncedPartitionCount();
-        int member2SyncCount = getWanReplicationService(clusterA[1]).getWanSyncState().getSyncedPartitionCount();
-        int totalCount = getPartitionService(clusterA[0]).getPartitionCount();
-        assertEquals(totalCount, member1SyncCount + member2SyncCount);
-        assertEquals("atob", syncState.getActiveWanConfigName());
-        assertEquals(configB.getGroupConfig().getName(), syncState.getActivePublisherName());
+        return new WanReplicationConfig()
+                .setName("newWRConfig")
+                .addWanPublisherConfig(newPublisherConfig);
     }
 
-    private void startClusterWithUniqueConfigObjects(HazelcastInstance[] cluster, Config config) {
-        for (int i = 0; i < cluster.length; i++) {
-            Config newConfig = getConfig();
-            newConfig.getGroupConfig().setName(config.getGroupConfig().getName());
-            newConfig.setInstanceName(config.getInstanceName() + 1);
-            newConfig.getNetworkConfig().setPort(config.getNetworkConfig().getPort());
-            newConfig.setInstanceName(config.getInstanceName() + i);
-            cluster[i] = factory.newHazelcastInstance(newConfig);
-        }
+    @Override
+    protected Config getConfig() {
+        Config config = smallInstanceConfig()
+                .setProperty(GroupProperty.REST_ENABLED.getName(), "true");
+        JoinConfig joinConfig = config.getNetworkConfig().getJoin();
+        joinConfig.getMulticastConfig()
+                  .setEnabled(false);
+        joinConfig.getTcpIpConfig()
+                  .setEnabled(true)
+                  .addMember("127.0.0.1");
+        return config;
     }
 
-    private JsonObject toJsonObject(String jsonStr) {
-        JsonValue jsonValue = Json.parse(jsonStr);
-        assertTrue(jsonValue.isObject());
-        return jsonValue.asObject();
+    @After
+    public void cleanup() {
+        HazelcastInstanceFactory.shutdownAll();
+    }
+
+    private JsonObject assertFail(String jsonResult) {
+        JsonObject result = Json.parse(jsonResult).asObject();
+        assertEquals("fail", result.getString("status", null));
+        return result;
+    }
+
+    private JsonObject assertSuccess(String jsonResult) {
+        JsonObject result = Json.parse(jsonResult).asObject();
+        assertEquals("success", result.getString("status", null));
+        return result;
     }
 }

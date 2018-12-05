@@ -51,7 +51,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     protected Config configB;
     protected Config configC;
 
-    protected Random random = new Random();
+    protected static Random random = new Random();
 
     @Before
     public void init() {
@@ -127,7 +127,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         }
     }
 
-    protected HazelcastInstance getNode(HazelcastInstance[] cluster) {
+    public static HazelcastInstance getNode(HazelcastInstance[] cluster) {
         return cluster[random.nextInt(cluster.length)];
     }
 
@@ -218,7 +218,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         });
     }
 
-    protected static EnterpriseWanReplicationService getWanReplicationService(HazelcastInstance instance) {
+    public static EnterpriseWanReplicationService getWanReplicationService(HazelcastInstance instance) {
         return (EnterpriseWanReplicationService) getNodeEngineImpl(instance).getWanReplicationService();
     }
 

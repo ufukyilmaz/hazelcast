@@ -1098,7 +1098,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         });
     }
 
-    static boolean isAllMembersConnected(HazelcastInstance[] cluster, String setupName, String publisherId) {
+    public static boolean isAllMembersConnected(HazelcastInstance[] cluster, String setupName, String publisherId) {
         boolean allConnected = true;
         for (HazelcastInstance instance : cluster) {
             allConnected &= checkIfConnected(instance, setupName, publisherId);

@@ -18,8 +18,10 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.BrokenBarrierException;
@@ -30,6 +32,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
+import static com.hazelcast.test.HazelcastTestSupport.assertContains;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
 import static com.hazelcast.test.HazelcastTestSupport.spawn;
@@ -43,11 +47,18 @@ import static com.hazelcast.wan.fw.WanCounterTestSupport.verifyEventCountersAreE
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
+import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
+import static com.hazelcast.wan.map.MapWanBatchReplicationTest.isAllMembersConnected;
+import static com.hazelcast.wan.map.MapWanReplicationTestSupport.assertKeysNotInEventually;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class WanAddConfigTest {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     private static final String MAP_NAME = "map";
     private static final String CACHE_NAME = "cache";
     private static final String REPLICATION_NAME = "wanReplication";
@@ -55,8 +66,6 @@ public class WanAddConfigTest {
     private Cluster clusterA;
     private Cluster clusterB;
     private Cluster clusterC;
-
-    private WanReplication wanReplication;
 
     private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
 
@@ -85,7 +94,7 @@ public class WanAddConfigTest {
         configureCache(clusterB);
         configureCache(clusterC);
 
-        wanReplication = replicate()
+        WanReplication wanReplication = replicate()
                 .from(clusterA)
                 .to(null)
                 .withSetupName(REPLICATION_NAME)
@@ -247,6 +256,52 @@ public class WanAddConfigTest {
         configAdded.await();
 
         assertPublisherCountEventually(REPLICATION_NAME, 2);
+    }
+
+    @Test
+    public void syncAllAfterAddingMemberToSourceCluster() {
+        clusterA.startAClusterMember();
+        clusterB.startCluster();
+
+        fillMap(clusterA, "map", 0, 1000);
+        fillMap(clusterA, "map2", 0, 2000);
+
+        assertKeysNotInEventually(clusterB.getMembers(), "map", 0, 1000);
+
+        final WanReplication toBReplication = replicate()
+                .to(clusterB)
+                .withSetupName(REPLICATION_NAME)
+                .setup();
+
+        AddWanConfigResult result = clusterA.addWanReplication(toBReplication);
+
+        assertContains(result.getAddedPublisherIds(), clusterB.getName());
+        assertEquals(0, result.getIgnoredPublisherIds().size());
+
+        clusterA.startAClusterMember();
+        assertClusterSizeEventually(2, clusterA.getAMember());
+
+        for (HazelcastInstance clusterAMember : clusterA.getMembers()) {
+            assertNotNull(clusterAMember.getConfig().getWanReplicationConfig(REPLICATION_NAME));
+        }
+
+        fillMap(clusterA, "map3", 0, 3000);
+
+        assertKeysNotInEventually(clusterB.getMembers(), "map", 0, 1000);
+        assertKeysNotInEventually(clusterB.getMembers(), "map2", 0, 2000);
+        assertKeysNotInEventually(clusterB.getMembers(), "map3", 0, 3000);
+
+        clusterA.syncAllMaps(toBReplication);
+
+        waitForSyncToComplete(clusterA);
+        if (!isAllMembersConnected(clusterA.getMembers(), REPLICATION_NAME, "B")) {
+            // we give another try to the sync if it failed because of unsuccessful connection attempt
+            clusterA.syncAllMaps(toBReplication);
+        }
+
+        verifyMapReplicated(clusterA, clusterB, "map");
+        verifyMapReplicated(clusterA, clusterB, "map2");
+        verifyMapReplicated(clusterA, clusterB, "map3");
     }
 
     @Test

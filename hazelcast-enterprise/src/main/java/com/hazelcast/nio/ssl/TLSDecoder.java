@@ -122,9 +122,7 @@ public class TLSDecoder extends InboundHandler<ByteBuffer, ByteBuffer> {
                         // breaking is what openssl likes
                         break;
                     case CLOSED:
-                        // we need to signal the TLSEncoder that it will complete the closing
-                        channel.outboundPipeline().wakeup();
-                        return CLEAN;
+                         return CLEAN;
                     default:
                         throw new IllegalStateException();
                 }

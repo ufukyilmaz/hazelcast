@@ -55,11 +55,6 @@ public class TLSHandshakeEncoder extends OutboundHandler<Void, ByteBuffer> {
     }
 
     @Override
-    public void requestClose() {
-        sslEngine.closeOutbound();
-    }
-
-    @Override
     public HandlerStatus onWrite() throws Exception {
         compactOrClear(dst);
 

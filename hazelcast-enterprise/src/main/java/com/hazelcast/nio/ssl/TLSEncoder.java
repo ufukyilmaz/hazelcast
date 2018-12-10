@@ -38,11 +38,6 @@ public class TLSEncoder extends OutboundHandler<ByteBuffer, ByteBuffer> {
         initDstBuffer(max(sendBufferSize, packetBufferSize));
     }
 
-    @Override
-    public void requestClose() {
-        sslEngine.closeOutbound();
-    }
-
     /**
      * The logic to encode needs to be executed in a loop. wrap returns OK, even if not all src data is encrypted and even if
      * there is space in the dst buffer.

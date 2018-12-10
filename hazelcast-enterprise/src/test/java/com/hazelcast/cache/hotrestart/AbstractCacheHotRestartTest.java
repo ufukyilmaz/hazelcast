@@ -52,7 +52,7 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
 
     }
 
-    @Before
+    @Override
     public final void setupInternal() {
         cacheName = randomName();
         setupCacheInternal();

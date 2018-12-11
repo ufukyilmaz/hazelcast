@@ -727,6 +727,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public CacheRecord putBackup(Data key, Object value, long creationTime, ExpiryPolicy expiryPolicy) {
+        expiryPolicy = getExpiryPolicy(null, expiryPolicy);
         long ttl = expiryPolicyToTTL(expiryPolicy);
         evictIfRequired();
         return own(key, value, ttl, creationTime, false, true);

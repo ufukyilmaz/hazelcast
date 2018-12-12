@@ -18,7 +18,6 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.GroupProperty;
-import org.junit.Before;
 import org.junit.runners.Parameterized.Parameter;
 
 import javax.cache.CacheManager;
@@ -52,7 +51,7 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
 
     }
 
-    @Before
+    @Override
     public final void setupInternal() {
         cacheName = randomName();
         setupCacheInternal();

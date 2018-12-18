@@ -37,7 +37,7 @@ public class HDIndexHashMapTest {
     private MapEntryFactory<QueryableEntry> factory;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
         this.ess = getSerializationService();
         this.factory = new CachedQueryEntryFactory(ess);
@@ -230,7 +230,8 @@ public class HDIndexHashMapTest {
     }
 
     private QueryableEntry entry(Object key, Object value) {
-        return new CachedQueryEntry(ess, ess.toData(key, NATIVE), ess.toData(value, NATIVE), Extractors.empty());
+        return new CachedQueryEntry(ess, ess.toData(key, NATIVE),
+                ess.toData(value, NATIVE), Extractors.newBuilder(ess).build());
     }
 
     private void assertNativeMemoryUsage(int expected) {
@@ -246,7 +247,7 @@ public class HDIndexHashMapTest {
 
         @Override
         public CachedQueryEntry create(Data key, Data value) {
-            return new CachedQueryEntry(ess, key, value, Extractors.empty());
+            return new CachedQueryEntry(ess, key, value, Extractors.newBuilder(ess).build());
         }
     }
 

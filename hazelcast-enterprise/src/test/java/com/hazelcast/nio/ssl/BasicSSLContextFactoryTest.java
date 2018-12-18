@@ -1,27 +1,27 @@
 package com.hazelcast.nio.ssl;
 
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.createSslProperties;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.getMalformedKeyStoreFilePath;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.getWrongKeyStoreFilePath;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.io.IOException;
-import java.security.KeyStoreException;
-import java.util.Properties;
-
-import javax.net.ssl.SSLContext;
-
+import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import com.hazelcast.test.HazelcastParallelClassRunner;
-import com.hazelcast.test.annotation.ParallelTest;
-import com.hazelcast.test.annotation.QuickTest;
+import javax.net.ssl.SSLContext;
+import java.io.IOException;
+import java.security.KeyStoreException;
+import java.util.Properties;
+
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.createSslProperties;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.getOrCreateTempFile;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.malformedKeystore;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.wrongKeyStore;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -35,7 +35,10 @@ public class BasicSSLContextFactoryTest {
 
         factory.init(properties);
 
-        assertSSLContext();
+        SSLContext sslContext = factory.getSSLContext();
+        assertNull("TrustManagerFactory must be null", factory.tmf);
+        assertNotNull(sslContext);
+        assertEquals("TLS", sslContext.getProtocol());
     }
 
     @Test
@@ -54,7 +57,10 @@ public class BasicSSLContextFactoryTest {
         properties.remove(JAVAX_NET_SSL_TRUST_STORE_PASSWORD);
         factory.init(properties);
 
-        assertSSLContext();
+        SSLContext sslContext = factory.getSSLContext();
+        assertNull("TrustManagerFactory must be null", factory.tmf);
+        assertNotNull(sslContext);
+        assertEquals("TLS", sslContext.getProtocol());
     }
 
     @Test(expected = KeyStoreException.class)
@@ -70,7 +76,7 @@ public class BasicSSLContextFactoryTest {
     @Test
     public void testInit_withWrongKeyStore() throws Exception {
         Properties properties = createSslProperties();
-        properties.setProperty(JAVAX_NET_SSL_KEY_STORE, getWrongKeyStoreFilePath());
+        properties.setProperty(JAVAX_NET_SSL_KEY_STORE, getOrCreateTempFile(wrongKeyStore));
 
         factory.init(properties);
 
@@ -80,7 +86,7 @@ public class BasicSSLContextFactoryTest {
     @Test(expected = IOException.class)
     public void testInit_withMalformedKeyStore() throws Exception {
         Properties properties = createSslProperties();
-        properties.setProperty(JAVAX_NET_SSL_KEY_STORE, getMalformedKeyStoreFilePath());
+        properties.setProperty(JAVAX_NET_SSL_KEY_STORE, getOrCreateTempFile(malformedKeystore));
 
         factory.init(properties);
     }

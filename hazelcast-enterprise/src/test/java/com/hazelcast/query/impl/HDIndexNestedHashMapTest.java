@@ -224,7 +224,7 @@ public class HDIndexNestedHashMapTest {
         for (int j = 0; j < count; j++) {
             String k = 0 + "" + j;
 
-            QueryableEntry entry = new CachedQueryEntry(ess, ess.toData(k, HEAP), ess.toData("v" + k, HEAP), Extractors.empty());
+            QueryableEntry entry = new CachedQueryEntry(ess, ess.toData(k, HEAP), ess.toData("v" + k, HEAP), newExtractors());
 
             ConcurrentHashMap m = new ConcurrentHashMap<Data, QueryableEntry>(1, LOAD_FACTOR, 1);
             m.put(entry.getKeyData(), entry);
@@ -244,6 +244,10 @@ public class HDIndexNestedHashMapTest {
         }
         System.err.println("Test finished");
         System.err.println("Count for " + count + " elements = " + resultCount);
+    }
+
+    protected Extractors newExtractors() {
+        return Extractors.newBuilder(ess).build();
     }
 
     @Ignore
@@ -344,7 +348,8 @@ public class HDIndexNestedHashMapTest {
     }
 
     private QueryableEntry entry(Object key, Object value) {
-        return new CachedQueryEntry(ess, ess.toData(key, NATIVE), ess.toData(value, NATIVE), Extractors.empty());
+        return new CachedQueryEntry(ess, ess.toData(key, NATIVE),
+                ess.toData(value, NATIVE), Extractors.newBuilder(ess).build());
     }
 
     private void dispose(QueryableEntry entry) {
@@ -365,7 +370,7 @@ public class HDIndexNestedHashMapTest {
 
         @Override
         public CachedQueryEntry create(Data key, Data value) {
-            return new CachedQueryEntry(ess, key, value, Extractors.empty());
+            return new CachedQueryEntry(ess, key, value, Extractors.newBuilder(ess).build());
         }
     }
 

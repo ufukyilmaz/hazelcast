@@ -25,14 +25,13 @@ import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.impl.NodeEngineImpl;
-import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
-import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
+import com.hazelcast.spi.impl.PartitionSpecificRunnable;
+import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.ExpectedRuntimeException;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.function.Supplier;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -49,16 +48,16 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.LockSupport;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
+import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -281,7 +280,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         return config;
     }
 
-    private static class MockHotRestartService implements ManagedService, RamStoreRegistry, RamStore {
+    private static class MockHotRestartService implements ManagedService, RamStoreRegistry {
 
         private static final String NAME = "_MockHotRestartService_";
 
@@ -306,39 +305,79 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         public void shutdown(boolean terminate) {
         }
 
-        public void put() throws Exception {
+        public void put() {
             final String name = "name";
             hotRestartService.ensureHasConfiguration(NAME, name, null);
 
-            OperationServiceImpl operationService = (OperationServiceImpl) nodeEngineImpl.getOperationService();
-            final OperationExecutor operationExecutor = operationService.getOperationExecutor();
-            final CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionThreadCount());
-            final int partitionId = 123;
+            int partitionCount = nodeEngineImpl.getPartitionService().getPartitionCount();
+            final CountDownLatch latch = new CountDownLatch(partitionCount);
+            InternalOperationService operationService = nodeEngineImpl.getOperationService();
 
-            operationExecutor.executeOnPartitionThreads(new Runnable() {
-                @Override
-                public void run() {
-                    try {
+            for (int i = 0; i < partitionCount; i++) {
+                final int partitionId = i;
+                final byte[] bytes = "value".getBytes();
+                operationService.execute(new PartitionSpecificRunnable() {
+                    @Override
+                    public void run() {
                         RamStoreRegistry registry = MockHotRestartService.this;
                         long prefix = hotRestartService.registerRamStore(registry, NAME, name, partitionId);
                         HotRestartStore store = hotRestartService.getOnHeapHotRestartStoreForPartition(partitionId);
-                        byte[] bytes = "value".getBytes();
                         store.put(new KeyOnHeap(prefix, bytes), bytes, false);
-                    } finally {
                         latch.countDown();
                     }
-                }
-            });
 
-            latch.await();
+                    @Override
+                    public int getPartitionId() {
+                        return partitionId;
+                    }
+                });
+            }
+            assertOpenEventually(latch);
         }
 
         void awaitLoadStart() {
-            try {
-                loadStarted.await();
-            } catch (InterruptedException e) {
-                throw ExceptionUtil.rethrow(e);
-            }
+            assertOpenEventually(loadStarted);
+        }
+
+        @Override
+        public RamStore ramStoreForPrefix(long prefix) {
+            return new MockRamStore(loadStarted, hotRestartService.getClusterMetadataManager(), prefix);
+        }
+
+        @Override
+        public RamStore restartingRamStoreForPrefix(long prefix) {
+            return ramStoreForPrefix(prefix);
+        }
+
+        @Override
+        public int prefixToThreadId(long prefix) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class MockRamStore implements RamStore {
+        private final CountDownLatch loadStarted;
+        private final ClusterMetadataManager clusterMetadataManager;
+        private final long prefix;
+
+        private MockRamStore(CountDownLatch loadStarted, ClusterMetadataManager clusterMetadataManager, long prefix) {
+            this.loadStarted = loadStarted;
+            this.clusterMetadataManager = clusterMetadataManager;
+            this.prefix = prefix;
+        }
+
+        @Override
+        public KeyHandle toKeyHandle(byte[] key) {
+            loadStarted.countDown();
+
+            assertTrueEventually(new AssertTask() {
+                @Override
+                public void run() {
+                    assertNotEquals(CLUSTER_START_IN_PROGRESS, clusterMetadataManager.getHotRestartStatus());
+                }
+            });
+
+            return new KeyOnHeap(prefix, key);
         }
 
         @Override
@@ -347,38 +386,11 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         }
 
         @Override
-        public KeyHandle toKeyHandle(byte[] key) {
-            loadStarted.countDown();
-
-            ClusterMetadataManager clusterMetadataManager = hotRestartService.getClusterMetadataManager();
-            while (clusterMetadataManager.getHotRestartStatus() == HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
-            }
-
-            return new KeyOnHeap(1, key);
-        }
-
-        @Override
         public void accept(KeyHandle kh, byte[] value) {
         }
 
         @Override
         public void removeNullEntries(SetOfKeyHandle keyHandles) {
-        }
-
-        @Override
-        public RamStore ramStoreForPrefix(long prefix) {
-            return this;
-        }
-
-        @Override
-        public RamStore restartingRamStoreForPrefix(long prefix) {
-            return this;
-        }
-
-        @Override
-        public int prefixToThreadId(long prefix) {
-            return 0;
         }
     }
 

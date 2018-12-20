@@ -16,6 +16,7 @@ import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
+import com.hazelcast.core.ILock;
 import com.hazelcast.core.IMap;
 import com.hazelcast.crdt.pncounter.PNCounter;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -50,6 +51,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hazelcast.cache.CacheUtil.getDistributedObjectName;
@@ -95,11 +97,12 @@ public class ClientSecurityTest {
         factory.terminateAll();
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testDenyAll() {
         final Config config = createConfig();
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
+        expectedException.expect(RuntimeException.class);
         client.getMap("test").size();
     }
 
@@ -116,7 +119,7 @@ public class ClientSecurityTest {
         client.getQueue("Q").poll();
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testDenyEndpoint() {
         final Config config = createConfig();
         final PermissionConfig pc = addPermission(config, ALL, "", "dev");
@@ -124,6 +127,7 @@ public class ClientSecurityTest {
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
+        expectedException.expect(RuntimeException.class);
         client.getMap("test").size();
     }
 
@@ -143,7 +147,7 @@ public class ClientSecurityTest {
         map.destroy();
     }
 
-    @Test(expected = AccessControlException.class)
+    @Test
     public void testNewPermissionAtRuntime() {
         final Config config = createConfig();
         PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", "dev");
@@ -159,6 +163,7 @@ public class ClientSecurityTest {
         instance.getConfig().getSecurityConfig().setClientPermissionConfigs(newPermissions);
         //read-only
         IMap<String, String> map = client.getMap("test");
+        expectedException.expect(AccessControlException.class);
         map.put("test", "test");
     }
 
@@ -277,7 +282,7 @@ public class ClientSecurityTest {
         map.destroy();
     }
 
-    @Test(expected = AccessControlException.class)
+    @Test
     public void testMapAllPermission_multiplePrincipalWithoutAllowedOne_andMalformedStringEndingWithSeparator() {
         String loginUser = "UserA";
         String principal = "UserB,UserC,";
@@ -293,15 +298,11 @@ public class ClientSecurityTest {
         factory.newHazelcastInstance(config);
         HazelcastInstance client = factory.newHazelcastClient(cc);
 
-        IMap<String, String> map = client.getMap("test");
-        map.put("1", "A");
-        map.get("1");
-        map.lock("1");
-        map.unlock("1");
-        map.destroy();
+        expectedException.expect(AccessControlException.class);
+        client.getMap("test");
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testMapPermissionActions() {
         final Config config = createConfig();
         addPermission(config, PermissionType.MAP, "test", "dev")
@@ -315,6 +316,7 @@ public class ClientSecurityTest {
         assertNull(map.put("1", "A"));
         assertEquals("A", map.get("1"));
         assertEquals("A", map.remove("1"));
+        expectedException.expect(RuntimeException.class);
         map.lock("1"); // throw exception
     }
 
@@ -334,12 +336,13 @@ public class ClientSecurityTest {
         assertTrue(client.getQueue("test").offer("value"));
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testQueuePermissionFail() {
         final Config config = createConfig();
         addPermission(config, PermissionType.QUEUE, "test", "dev");
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
+        expectedException.expect(RuntimeException.class);
         client.getQueue("test").offer("value");
     }
 
@@ -366,24 +369,27 @@ public class ClientSecurityTest {
         assertEquals("value", map.get("key"));
     }
 
-    @Test(expected = AccessControlException.class)
+    @Test
     public void testLockPermissionFail() {
         final Config config = createConfig();
         addPermission(config, PermissionType.LOCK, "test", "dev")
                 .addAction(ActionConstants.ACTION_LOCK);
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        client.getLock("test").unlock();
+        expectedException.expect(AccessControlException.class);
+        client.getLock("test");
     }
 
-    @Test(expected = AccessControlException.class)
+    @Test
     public void testLockPermissionFail2() {
         final Config config = createConfig();
         addPermission(config, PermissionType.LOCK, "test", "dev")
                 .addAction(ActionConstants.ACTION_CREATE);
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        client.getLock("test").tryLock();
+        ILock lock = client.getLock("test");
+        expectedException.expect(AccessControlException.class);
+        lock.tryLock();
     }
 
     @Test
@@ -399,23 +405,26 @@ public class ClientSecurityTest {
         assertEquals(new Integer(11), client.getExecutorService("test").submit(new DummyCallable()).get());
     }
 
-    @Test(expected = ExecutionException.class)
+    @Test
     public void testExecutorPermissionFail() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
                 .addAction(ActionConstants.ACTION_CREATE);
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        client.getExecutorService("test").submit(new DummyCallable()).get();
+        Future<Integer> future = client.getExecutorService("test").submit(new DummyCallable());
+        expectedException.expect(ExecutionException.class);
+        future.get();
     }
 
-    @Test(expected = AccessControlException.class)
+    @Test
     public void testExecutorPermissionFail2() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev");
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
-        client.getExecutorService("test").submit(new DummyCallable()).get();
+        expectedException.expect(AccessControlException.class);
+        client.getExecutorService("test");
     }
 
     @Test
@@ -563,7 +572,7 @@ public class ClientSecurityTest {
         counter.destroy();
     }
 
-    @Test(expected = AccessControlException.class)
+    @Test
     public void pnCounterCreateShouldFailWhenNoPermission() {
         final Config config = createConfig();
         addPermission(config, PermissionType.PN_COUNTER, "test", "dev")
@@ -571,11 +580,11 @@ public class ClientSecurityTest {
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
 
-        PNCounter counter = client.getPNCounter("test");
-        counter.get();
+        expectedException.expect(AccessControlException.class);
+        client.getPNCounter("test");
     }
 
-    @Test(expected = AccessControlException.class)
+    @Test
     public void pnCounterGetShouldFailWhenNoPermission() {
         final Config config = createConfig();
         addPermission(config, PermissionType.PN_COUNTER, "test", "dev")
@@ -584,10 +593,11 @@ public class ClientSecurityTest {
         HazelcastInstance client = createHazelcastClient();
 
         PNCounter counter = client.getPNCounter("test");
+        expectedException.expect(AccessControlException.class);
         counter.get();
     }
 
-    @Test(expected = AccessControlException.class)
+    @Test
     public void pnCounterAddShouldFailWhenNoPermission() {
         final Config config = createConfig();
         addPermission(config, PermissionType.PN_COUNTER, "test", "dev")
@@ -597,6 +607,7 @@ public class ClientSecurityTest {
         HazelcastInstance client = createHazelcastClient();
 
         PNCounter counter = client.getPNCounter("test");
+        expectedException.expect(AccessControlException.class);
         counter.addAndGet(1);
     }
 

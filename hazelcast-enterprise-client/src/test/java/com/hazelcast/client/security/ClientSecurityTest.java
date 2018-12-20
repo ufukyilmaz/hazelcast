@@ -20,6 +20,7 @@ import com.hazelcast.core.ILock;
 import com.hazelcast.core.IMap;
 import com.hazelcast.crdt.pncounter.PNCounter;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.flakeidgen.FlakeIdGenerator;
 import com.hazelcast.security.loginmodules.TestLoginModule;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.annotation.QuickTest;
@@ -39,11 +40,10 @@ import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.configuration.MutableConfiguration;
 import javax.cache.spi.CachingProvider;
-import java.io.File;
+
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Serializable;
-import java.io.Writer;
 import java.security.AccessControlException;
 import java.util.HashSet;
 import java.util.Properties;
@@ -62,7 +62,6 @@ import static com.hazelcast.config.PermissionConfig.PermissionType.MAP;
 import static com.hazelcast.config.PermissionConfig.PermissionType.USER_CODE_DEPLOYMENT;
 import static com.hazelcast.test.HazelcastTestSupport.randomName;
 import static com.hazelcast.test.HazelcastTestSupport.randomString;
-import static java.io.File.createTempFile;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -195,9 +194,6 @@ public class ClientSecurityTest {
             throws IOException {
         String loginUser = "role1";
 
-        File file = createTempFile("foo", "bar");
-        file.deleteOnExit();
-
         String xml = HAZELCAST_START_TAG
                 + "<security enabled=\"true\">"
                 + "    <client-permissions>"
@@ -215,12 +211,9 @@ public class ClientSecurityTest {
                 + "    </client-permissions>"
                 + "</security>"
                 + HAZELCAST_END_TAG;
-        Writer writer = new PrintWriter(file, "UTF-8");
-        writer.write(xml);
-        writer.close();
-
-        String path = file.getAbsolutePath();
-        Config config = new XmlConfigBuilder(path).build();
+        ByteArrayInputStream bis = new ByteArrayInputStream(xml.getBytes());
+        Config config = new XmlConfigBuilder(bis).build();
+        bis.close();
         addCustomUserLoginModule(config, loginUser);
 
         final ClientConfig cc = new ClientConfig();
@@ -609,6 +602,53 @@ public class ClientSecurityTest {
         PNCounter counter = client.getPNCounter("test");
         expectedException.expect(AccessControlException.class);
         counter.addAndGet(1);
+    }
+
+    @Test
+    public void testFlakeIdGeneratorPermissions() {
+        final Config config = createConfig();
+        addPermission(config, PermissionType.FLAKE_ID_GENERATOR, "test", "dev")
+        .addAction(ActionConstants.ACTION_CREATE)
+        .addAction(ActionConstants.ACTION_MODIFY);
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = createHazelcastClient();
+
+        FlakeIdGenerator flakeIdGenerator = client.getFlakeIdGenerator("test");
+        flakeIdGenerator.newId();
+        expectedException.expect(AccessControlException.class);
+        client.getFlakeIdGenerator("test2");
+    }
+
+    @Test
+    public void testFlakeIdGeneratorPermissionsInXml() throws IOException {
+        String xml = HAZELCAST_START_TAG
+                + "<security enabled=\"true\">"
+                + "    <client-permissions>"
+                + "        <flake-id-generator-permission name='test'>"
+                + "            <endpoints>"
+                + "                <endpoint>127.0.0.1</endpoint>"
+                + "            </endpoints>"
+                + "            <actions>"
+                + "                <action>all</action>"
+                + "            </actions>"
+                + "        </flake-id-generator-permission>"
+                + "    </client-permissions>"
+                + "</security>"
+                + HAZELCAST_END_TAG;
+        ByteArrayInputStream bis = new ByteArrayInputStream(xml.getBytes());
+        Config config = new XmlConfigBuilder(bis).build();
+        bis.close();
+
+        addPermission(config, PermissionType.FLAKE_ID_GENERATOR, "test", "dev")
+        .addAction(ActionConstants.ACTION_CREATE)
+        .addAction(ActionConstants.ACTION_MODIFY);
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = createHazelcastClient();
+
+        FlakeIdGenerator flakeIdGenerator = client.getFlakeIdGenerator("test");
+        flakeIdGenerator.newId();
+        expectedException.expect(AccessControlException.class);
+        client.getFlakeIdGenerator("test2");
     }
 
     @Test

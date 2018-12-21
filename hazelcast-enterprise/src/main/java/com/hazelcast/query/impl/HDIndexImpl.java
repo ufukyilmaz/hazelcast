@@ -10,7 +10,14 @@ import com.hazelcast.query.impl.getters.Extractors;
 
 import static com.hazelcast.nio.serialization.DataType.HEAP;
 
-public class HDIndexImpl extends IndexImpl {
+/**
+ * Provides implementation of off-heap indexes.
+ */
+public class HDIndexImpl extends AbstractIndex {
+
+    private static final int UNINDEXED = -1;
+
+    private int indexedPartition = UNINDEXED;
 
     public HDIndexImpl(String attributeName, boolean ordered, EnterpriseSerializationService ss, Extractors extractors,
                        PerIndexStats stats) {
@@ -19,7 +26,7 @@ public class HDIndexImpl extends IndexImpl {
     }
 
     @Override
-    public IndexStore createIndexStore(boolean ordered, PerIndexStats stats) {
+    protected IndexStore createIndexStore(boolean ordered, PerIndexStats stats) {
         EnterpriseSerializationService ess = (EnterpriseSerializationService) ss;
         MemoryAllocator malloc = stats.wrapMemoryAllocator(ess.getCurrentMemoryAllocator());
         MapEntryFactory<QueryableEntry> entryFactory = new OnHeapEntryFactory(ess, extractors);
@@ -27,9 +34,31 @@ public class HDIndexImpl extends IndexImpl {
     }
 
     @Override
+    public boolean hasPartitionIndexed(int partitionId) {
+        return indexedPartition == partitionId;
+    }
+
+    @Override
+    public void markPartitionAsIndexed(int partitionId) {
+        assert indexedPartition == UNINDEXED;
+        indexedPartition = partitionId;
+    }
+
+    @Override
+    public void markPartitionAsUnindexed(int partitionId) {
+        indexedPartition = UNINDEXED;
+    }
+
+    @Override
     public void destroy() {
         indexStore.destroy();
         super.destroy();
+    }
+
+    @Override
+    public void clear() {
+        super.clear();
+        indexedPartition = UNINDEXED;
     }
 
     /**

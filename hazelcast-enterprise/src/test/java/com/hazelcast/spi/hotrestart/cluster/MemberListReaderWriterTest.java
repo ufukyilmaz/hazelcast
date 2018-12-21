@@ -5,6 +5,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.nio.Address;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -95,10 +96,11 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
 
     @SuppressWarnings("SameParameterValue")
     private Collection<Member> initializeMembers(int memberCount) {
-        Address[] addresses = initializeAddresses(memberCount - 1);
+        PartitionReplica[] replicas = initializeReplicas(memberCount - 1);
         Collection<Member> members = new HashSet<Member>(memberCount);
-        for (Address address : addresses) {
-            members.add(new MemberImpl(address, MemberVersion.of(BuildInfoProvider.getBuildInfo().getVersion()), false, newUnsecureUuidString()));
+        for (PartitionReplica replica : replicas) {
+            MemberVersion version = MemberVersion.of(BuildInfoProvider.getBuildInfo().getVersion());
+            members.add(new MemberImpl(replica.address(), version, false, replica.uuid()));
         }
         members.add(new MemberImpl(node.getLocalMember()));
         return members;

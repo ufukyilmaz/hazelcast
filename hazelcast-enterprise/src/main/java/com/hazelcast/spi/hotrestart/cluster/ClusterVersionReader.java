@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.version.Version;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
 
@@ -35,7 +35,7 @@ class ClusterVersionReader extends AbstractMetadataReader {
     }
 
     @Override
-    void doRead(DataInputStream in) throws IOException {
+    void doRead(DataInput in) throws IOException {
         String name = in.readUTF();
         if (!name.equals(UNKNOWN_VERSION)) {
             clusterVersion = Version.of(name);

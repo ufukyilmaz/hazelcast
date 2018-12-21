@@ -20,20 +20,20 @@ import static org.junit.Assert.fail;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase {
+public class LegacyPartitionTableReaderWriterTest extends MetadataReaderWriterTestBase {
 
     @Test
     public void test_readNotExistingFolder() throws Exception {
-        PartitionTableReader reader = new PartitionTableReader(getNonExistingFolder(), 100);
+        LegacyPartitionTableReader reader = new LegacyPartitionTableReader(getNonExistingFolder(), 100);
         reader.read();
-        assertPartitionTableEmpty(reader.getPartitionTable());
+        assertPartitionTableEmpty(reader.getPartitionTable(new PartitionReplica[0]));
     }
 
     @Test
     public void test_readEmptyFolder() throws Exception {
-        PartitionTableReader reader = new PartitionTableReader(folder, 100);
+        LegacyPartitionTableReader reader = new LegacyPartitionTableReader(folder, 100);
         reader.read();
-        PartitionTableView table = reader.getPartitionTable();
+        PartitionTableView table = reader.getPartitionTable(new PartitionReplica[0]);
         assertEquals(0, table.getVersion());
         assertPartitionTableEmpty(table);
     }
@@ -49,7 +49,7 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
     @Test(expected = FileNotFoundException.class)
     public void test_writeNotExistingFolder() throws Exception {
         PartitionTableView partitions = new PartitionTableView(new PartitionReplica[100][InternalPartition.MAX_REPLICA_COUNT], 0);
-        PartitionTableWriter writer = new PartitionTableWriter(getNonExistingFolder());
+        LegacyPartitionTableWriter writer = new LegacyPartitionTableWriter(getNonExistingFolder());
         writer.write(partitions);
     }
 
@@ -69,33 +69,33 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
     }
 
     private void test_WriteRead(int memberCount) throws Exception {
-        PartitionReplica[] replicas = initializeReplicas(memberCount);
+        PartitionReplica[] members = initializeReplicas(memberCount);
 
         final int partitionCount = 100;
-        PartitionTableView expectedPartitionTable = initializePartitionTable(replicas, partitionCount);
+        PartitionTableView expectedPartitionTable = initializePartitionTable(members, partitionCount);
 
-        PartitionTableWriter writer = new PartitionTableWriter(folder);
+        LegacyPartitionTableWriter writer = new LegacyPartitionTableWriter(folder);
         writer.write(expectedPartitionTable);
 
-        PartitionTableReader reader = new PartitionTableReader(folder, partitionCount);
+        LegacyPartitionTableReader reader = new LegacyPartitionTableReader(folder, partitionCount);
         reader.read();
 
-        PartitionTableView partitionTable = reader.getPartitionTable();
+        PartitionTableView partitionTable = reader.getPartitionTable(members);
         assertEquals(expectedPartitionTable, partitionTable);
     }
 
     @Test
     public void test_withIncreasingPartitionCount() throws Exception {
-        PartitionReplica[] replicas = initializeReplicas(0);
+        PartitionReplica[] members = initializeReplicas(0);
         int partitionCount = 100;
 
-        PartitionTableView expectedPartitionTable = initializePartitionTable(replicas, partitionCount);
+        PartitionTableView expectedPartitionTable = initializePartitionTable(members, partitionCount);
 
-        PartitionTableWriter writer = new PartitionTableWriter(folder);
+        LegacyPartitionTableWriter writer = new LegacyPartitionTableWriter(folder);
         writer.write(expectedPartitionTable);
 
         int newPartitionCount = partitionCount + 1;
-        PartitionTableReader reader = new PartitionTableReader(folder, newPartitionCount);
+        LegacyPartitionTableReader reader = new LegacyPartitionTableReader(folder, newPartitionCount);
 
         try {
             reader.read();
@@ -107,16 +107,16 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
 
     @Test
     public void test_withDecreasingPartitionCount() throws Exception {
-        PartitionReplica[] replicas = initializeReplicas(0);
+        PartitionReplica[] members = initializeReplicas(0);
         int partitionCount = 100;
 
-        PartitionTableView expectedPartitionTable = initializePartitionTable(replicas, partitionCount);
+        PartitionTableView expectedPartitionTable = initializePartitionTable(members, partitionCount);
 
-        PartitionTableWriter writer = new PartitionTableWriter(folder);
+        LegacyPartitionTableWriter writer = new LegacyPartitionTableWriter(folder);
         writer.write(expectedPartitionTable);
 
         int newPartitionCount = partitionCount - 1;
-        PartitionTableReader reader = new PartitionTableReader(folder, newPartitionCount);
+        LegacyPartitionTableReader reader = new LegacyPartitionTableReader(folder, newPartitionCount);
 
         try {
             reader.read();

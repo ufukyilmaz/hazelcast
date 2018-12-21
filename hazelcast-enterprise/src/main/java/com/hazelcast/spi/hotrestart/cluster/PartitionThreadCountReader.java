@@ -1,13 +1,13 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
 
 /**
  * Reads the saved partition thread count.
  */
-public class PartitionThreadCountReader extends AbstractMetadataReader {
+class PartitionThreadCountReader extends AbstractMetadataReader {
 
     private int loadedValue;
 
@@ -27,7 +27,7 @@ public class PartitionThreadCountReader extends AbstractMetadataReader {
     }
 
     @Override
-    void doRead(DataInputStream in) throws IOException {
+    void doRead(DataInput in) throws IOException {
         this.loadedValue = in.readInt();
     }
 }

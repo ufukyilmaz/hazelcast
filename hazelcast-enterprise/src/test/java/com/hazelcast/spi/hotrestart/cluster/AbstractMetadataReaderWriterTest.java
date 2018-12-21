@@ -11,7 +11,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +21,6 @@ import java.util.Random;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
@@ -74,9 +73,7 @@ public class AbstractMetadataReaderWriterTest extends MetadataReaderWriterTestBa
         @Override
         void doWrite(DataOutput out, byte[] param) throws IOException {
             out.writeInt(param.length);
-            for (byte b : param) {
-                out.writeByte(b);
-            }
+            out.write(param);
         }
 
         @Override
@@ -94,11 +91,10 @@ public class AbstractMetadataReaderWriterTest extends MetadataReaderWriterTestBa
         }
 
         @Override
-        protected void doRead(DataInputStream in) throws IOException {
+        protected void doRead(DataInput in) throws IOException {
             int len = in.readInt();
             data = new byte[len];
-            int read = in.read(data);
-            assertEquals(len, read);
+            in.readFully(data);
         }
 
         @Override

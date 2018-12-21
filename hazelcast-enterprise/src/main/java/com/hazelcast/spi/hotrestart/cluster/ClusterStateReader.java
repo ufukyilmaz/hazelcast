@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.logging.ILogger;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
 
@@ -33,7 +33,7 @@ class ClusterStateReader extends AbstractMetadataReader {
     }
 
     @Override
-    void doRead(DataInputStream in) throws IOException {
+    void doRead(DataInput in) throws IOException {
         String name = in.readUTF();
         clusterState = ClusterState.valueOf(name);
         if (logger.isFineEnabled()) {

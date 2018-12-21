@@ -7,7 +7,7 @@ import java.io.IOException;
 /**
  * Writes the partition thread count to disk.
  */
-public class PartitionThreadCountWriter extends AbstractMetadataWriter<Integer> {
+class PartitionThreadCountWriter extends AbstractMetadataWriter<Integer> {
 
     static final String FILE_NAME = "partition-thread-count.bin";
 

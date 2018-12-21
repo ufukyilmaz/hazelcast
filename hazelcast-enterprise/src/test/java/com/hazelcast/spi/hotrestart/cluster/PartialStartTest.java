@@ -10,6 +10,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
+import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.nio.Address;
 import com.hazelcast.partition.PartitionLostEvent;
@@ -492,7 +493,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         for (HazelcastInstance instance : instances) {
             for (int partitionId = 0; partitionId < survivingInstanceReplicaIndices.length; partitionId++) {
                 InternalPartition partition = partitionService.getPartition(partitionId);
-                int i = partition.getReplicaIndex(getAddress(instance));
+                int i = partition.getReplicaIndex(PartitionReplica.from(getNode(instance).getLocalMember()));
                 if (i < survivingInstanceReplicaIndices[partitionId]) {
                     survivingInstanceReplicaIndices[partitionId] = i;
                 }

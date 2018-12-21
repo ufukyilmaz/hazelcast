@@ -9,6 +9,7 @@ import com.hazelcast.core.Member;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.partition.InternalPartition;
+import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartException;
@@ -231,7 +232,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
                 addresses.add(sender);
                 if (addresses.size() == expectedNodeCount && firstCrash.compareAndSet(false, true)) {
                     PartitionTableView partitionTableView = new PartitionTableView(
-                            new Address[PARTITION_COUNT][InternalPartition.MAX_REPLICA_COUNT], 0);
+                            new PartitionReplica[PARTITION_COUNT][InternalPartition.MAX_REPLICA_COUNT], 0);
                     MemberClusterStartInfo invalidMemberClusterStartInfo
                             = new MemberClusterStartInfo(partitionTableView, LOAD_IN_PROGRESS);
                     final HotRestartIntegrationService hotRestartService =

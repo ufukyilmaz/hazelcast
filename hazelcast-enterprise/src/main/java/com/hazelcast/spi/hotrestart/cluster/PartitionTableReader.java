@@ -1,28 +1,43 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.internal.partition.InternalPartition;
+import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.Address;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
 
+import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COUNT;
+
 /**
  * Reads partition table from a specific file if exists.
+ *
+ * @since 3.12
  */
 final class PartitionTableReader extends AbstractMetadataReader {
 
-    private final Address[][] addresses;
-    private int partitionVersion;
+    private final int partitionCount;
+    private PartitionTableView partitionTable;
 
     PartitionTableReader(File homeDir, int partitionCount) {
         super(homeDir);
-        addresses = new Address[partitionCount][InternalPartition.MAX_REPLICA_COUNT];
+        this.partitionCount = partitionCount;
+        this.partitionTable = new PartitionTableView(new PartitionReplica[partitionCount][MAX_REPLICA_COUNT], 0);
     }
 
     @Override
-    void doRead(DataInputStream in) throws IOException {
+    void doRead(DataInput in) throws IOException {
+        PartitionTableView pt = readPartitionTable(in);
+        if (pt.getLength() != partitionCount) {
+            throw new IOException("Invalid partition count! Expected: " + partitionCount
+                    + ", Actual: " + pt.getLength());
+        }
+        partitionTable = pt;
+    }
+
+    static PartitionTableView readPartitionTable(DataInput in) throws IOException {
+        int partitionVersion;
         try {
             partitionVersion = in.readInt();
         } catch (IOException e) {
@@ -35,19 +50,32 @@ final class PartitionTableReader extends AbstractMetadataReader {
         } catch (IOException e) {
             throw new IOException("Cannot read partition count!", e);
         }
-        if (partitionCount != addresses.length) {
-            throw new IOException("Invalid partition count! Expected: " + addresses.length + ", Actual: " + partitionCount);
-        }
 
+        PartitionReplica[] replicas;
         try {
-            for (int partition = 0; partition < addresses.length; partition++) {
-                for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
-                    addresses[partition][replica] = in.readBoolean() ? readAddress(in) : null;
-                }
+            int len = in.readInt();
+            replicas = new PartitionReplica[len];
+            for (int i = 0; i < len; i++) {
+                Address address = readAddress(in);
+                String uuid = in.readUTF();
+                replicas[i] = new PartitionReplica(address, uuid);
             }
         } catch (IOException e) {
-            throw new IOException("Cannot read partition table!", e);
+            throw new IOException("Cannot read partition table replicas!", e);
         }
+
+        PartitionReplica[][] table = new PartitionReplica[partitionCount][MAX_REPLICA_COUNT];
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
+            for (int replicaIndex = 0; replicaIndex < MAX_REPLICA_COUNT; replicaIndex++) {
+                int index = in.readInt();
+                if (index != -1) {
+                    PartitionReplica member = replicas[index];
+                    assert member != null;
+                    table[partitionId][replicaIndex] = member;
+                }
+            }
+        }
+        return new PartitionTableView(table, partitionVersion);
     }
 
     @Override
@@ -55,7 +83,7 @@ final class PartitionTableReader extends AbstractMetadataReader {
         return PartitionTableWriter.FILE_NAME;
     }
 
-    PartitionTableView getTable() {
-        return new PartitionTableView(addresses, partitionVersion);
+    PartitionTableView getPartitionTable() {
+        return partitionTable;
     }
 }

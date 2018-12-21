@@ -1,6 +1,8 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IndeterminateOperationStateException;
@@ -48,6 +50,8 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     public static Collection<Object> parameters() {
         return Arrays.asList(new Object[]{NONE, PARTIAL, ALL});
     }
+
+    private boolean disableAutoRemoveStaleData;
 
     @Test
     public void testSingleMemberRestart() {
@@ -158,6 +162,8 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
 
     @Test
     public void test_hotRestartFails_withMissingHotRestartDirectory_forOneNode() {
+        disableAutoRemoveStaleData = true;
+
         Address[] addresses = startAndTerminateInstances(4);
 
         Address randomAddress = addresses[RandomPicker.getInt(addresses.length)];
@@ -175,6 +181,8 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
 
     @Test
     public void test_hotRestartFails_whenNodeStartsBeforeOthers_withMissingHotRestartDirectory() {
+        disableAutoRemoveStaleData = true;
+
         Address[] addresses = startAndTerminateInstances(4);
 
         Address randomAddress = addresses[RandomPicker.getInt(addresses.length)];
@@ -203,6 +211,8 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
 
     @Test
     public void test_hotRestartFails_withUnknownNode() {
+        disableAutoRemoveStaleData = true;
+
         Address[] addresses = startAndTerminateInstances(4);
 
         HazelcastInstance unknownNode = startNewInstance();
@@ -402,5 +412,15 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
                 assertTrue(isInstanceInSafeState(instances[0]));
             }
         });
+    }
+
+    @Override
+    Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
+            HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+        Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
+        if (disableAutoRemoveStaleData) {
+            config.getHotRestartPersistenceConfig().setAutoRemoveStaleData(false);
+        }
+        return config;
     }
 }

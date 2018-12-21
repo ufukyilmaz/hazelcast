@@ -52,6 +52,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+/**
+ * Tests in this class assumes {@link com.hazelcast.config.HotRestartPersistenceConfig#autoRemoveStaleData} is disabled.
+ */
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterJoinTest extends HazelcastTestSupport {
@@ -487,7 +490,8 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
                 .setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())))
                 .setClusterDataRecoveryPolicy(HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE)
                 .setValidationTimeoutSeconds(10)
-                .setDataLoadTimeoutSeconds(10);
+                .setDataLoadTimeoutSeconds(10)
+                .setAutoRemoveStaleData(false);
 
         return config;
     }

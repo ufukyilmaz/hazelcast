@@ -35,9 +35,9 @@
                             <minimizeJar>false</minimizeJar>
                             <artifactSet>
                                 <includes>
-                                    <include>com.hazelcast:hazelcast-all</include>
                                     <include>com.hazelcast:hazelcast-enterprise</include>
                                     <include>com.hazelcast:hazelcast-enterprise-client</include>
+                                    <include>com.hazelcast:hazelcast-all</include>
                                 </includes>
                             </artifactSet>
                             <transformers>
@@ -206,13 +206,6 @@
     <dependencies>
         <dependency>
             <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-all</artifactId>
-            <version>${project.version}</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-enterprise</artifactId>
             <version>${project.version}</version>
             <type>jar</type>
@@ -229,6 +222,13 @@
             <version>${project.version}</version>
             <scope>test</scope>
             <classifier>tests</classifier>
+        </dependency>
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-all</artifactId>
+            <version>${project.version}</version>
+            <type>jar</type>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>

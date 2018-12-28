@@ -4,6 +4,7 @@ import com.hazelcast.license.domain.License;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -207,6 +208,7 @@ public class LicenseExpirationReminderTaskTest
     }
 
     @Test
+    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2558")
     public void testSchedulingDelay_expiresInTwoMonths() {
         License license = mock(License.class);
         Calendar calendar = Calendar.getInstance();

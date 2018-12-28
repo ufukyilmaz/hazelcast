@@ -253,7 +253,7 @@ public class NativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    protected NativeMemoryNearCacheRecord valueToRecord(V value) {
+    protected NativeMemoryNearCacheRecord createRecord(V value) {
         long creationTime = Clock.currentTimeMillis();
         return timeToLiveMillis > 0
                 ? createRecord(value, creationTime, creationTime + timeToLiveMillis)

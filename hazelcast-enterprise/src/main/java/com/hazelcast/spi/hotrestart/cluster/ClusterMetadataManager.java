@@ -640,8 +640,8 @@ public class ClusterMetadataManager {
                     excludedMemberUuids, getCurrentClusterState());
             sendIfNotThisMember(op, sender);
         } else if (!partitionTableValidated || senderDataLoadStatus == LOAD_FAILED) {
-            logger.info("Sender: " + sender + " failed after cluster is started. partition table validated: "
-                    + partitionTableValidated + " sender data load result: " + senderDataLoadStatus);
+            logger.warning("Sender: " + sender + " failed after cluster is started. Partition table validated: "
+                    + partitionTableValidated + ", sender data load result: " + senderDataLoadStatus);
             sendIfNotThisMember(SendClusterStartResultOperation.newFailureResultOperation(), sender);
         } else {
             logger.fine("Sender: " + sender + " validated its partition table but we are still waiting for data load result...");
@@ -650,28 +650,40 @@ public class ClusterMetadataManager {
 
     @SuppressWarnings("checkstyle:npathcomplexity")
     private boolean validatePartitionTable(PartitionTableView localPartitionTable, PartitionTableView senderPartitionTable) {
-        if (node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V3_12)) {
-            return localPartitionTable.equals(senderPartitionTable);
-        }
-
-        // RU_COMPAT_3_11
         if (localPartitionTable.getLength() != senderPartitionTable.getLength()) {
             return false;
         }
-        if (localPartitionTable.getVersion() != senderPartitionTable.getVersion()) {
-            return false;
-        }
-        for (int partition = 0; partition < localPartitionTable.getLength(); partition++) {
-            for (int ix = 0; ix < InternalPartition.MAX_REPLICA_COUNT; ix++) {
-                PartitionReplica localReplica = localPartitionTable.getReplica(partition, ix);
-                PartitionReplica remoteReplica = senderPartitionTable.getReplica(partition, ix);
+
+        boolean compatibilityMode = node.getClusterService().getClusterVersion().isLessThan(Versions.V3_12);
+        for (int partitionId = 0; partitionId < localPartitionTable.getLength(); partitionId++) {
+            for (int replicaIndex = 0; replicaIndex < InternalPartition.MAX_REPLICA_COUNT; replicaIndex++) {
+                PartitionReplica localReplica = localPartitionTable.getReplica(partitionId, replicaIndex);
+                PartitionReplica remoteReplica = senderPartitionTable.getReplica(partitionId, replicaIndex);
                 if (localReplica == null) {
                     if (remoteReplica != null) {
+                        logger.fine("Partition table validation failed! Local replica is null but sender's replica is "
+                                + remoteReplica + ". partitionId=" + partitionId + ", replicaIndex=" + replicaIndex);
                         return false;
                     }
                     continue;
                 }
-                if (!localReplica.address().equals(remoteReplica.address())) {
+                if (remoteReplica == null) {
+                    logger.fine("Partition table validation failed! Local replica is " + localReplica
+                            + " but sender's replica is null. partitionId=" + partitionId + ", replicaIndex=" + replicaIndex);
+                    return false;
+                }
+                // RU_COMPAT_3_11
+                if (compatibilityMode) {
+                    if (!localReplica.address().equals(remoteReplica.address())) {
+                        logger.fine("Partition table validation failed! Local replica is " + localReplica
+                                + " but sender's replica is " + remoteReplica
+                                + ". partitionId=" + partitionId + ", replicaIndex=" + replicaIndex);
+                        return false;
+                    }
+                } else if (!localReplica.uuid().equals(remoteReplica.uuid())) {
+                    logger.fine("Partition table validation failed! Local replica is " + localReplica
+                            + " but sender's replica is " + remoteReplica
+                            + ". partitionId=" + partitionId + ", replicaIndex=" + replicaIndex);
                     return false;
                 }
             }

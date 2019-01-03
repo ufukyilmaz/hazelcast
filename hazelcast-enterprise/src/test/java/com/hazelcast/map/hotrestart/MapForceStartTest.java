@@ -8,7 +8,6 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.Node;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -73,8 +72,8 @@ public class MapForceStartTest extends AbstractMapHotRestartTest {
     }
 
     @Override
-    Config makeConfig(Address address, int backupCount) {
-        Config config = super.makeConfig(address, backupCount);
+    Config makeConfig(int backupCount) {
+        Config config = super.makeConfig(backupCount);
         if (triggerForceStart) {
             config.addListenerConfig(new ListenerConfig(new TriggerForceStart()));
         } else {

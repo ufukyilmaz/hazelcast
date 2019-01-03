@@ -34,16 +34,13 @@ public class EnterpriseTriggerPartialStartRequestTest extends HotRestartConsoleR
 
     @Test
     public void testTriggerPartialStart() throws Exception {
-        String dir_hz1 = "hz_1";
-        final HazelcastInstance hz1 = factory.newHazelcastInstance(newConfig(dir_hz1));
-
-        String dir_hz2 = "hz_2";
-        HazelcastInstance hz2 = factory.newHazelcastInstance(newConfig(dir_hz2));
+        final HazelcastInstance hz1 = factory.newHazelcastInstance(newConfig());
+        HazelcastInstance hz2 = factory.newHazelcastInstance(newConfig());
 
         assertClusterSize(2, hz1, hz2);
         shutdown(hz1, hz2);
 
-        final Config config = newConfig(dir_hz1);
+        final Config config = newConfig();
         TriggerPartialStartViaManagementCenterListener listener = new TriggerPartialStartViaManagementCenterListener();
         config.addListenerConfig(new ListenerConfig(listener));
 

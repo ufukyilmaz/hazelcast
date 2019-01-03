@@ -12,6 +12,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
+import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
@@ -22,7 +23,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
@@ -32,8 +32,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -46,26 +44,19 @@ import static org.junit.Assert.assertThat;
 public class HotRestartCompatibilityTest extends HazelcastTestSupport {
 
     @Rule
-    public TestName testName = new TestName();
+    public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
 
-    private File baseDir;
     private CompatibilityTestHazelcastInstanceFactory factory;
 
     @Before
     public void init() {
         factory = new CompatibilityTestHazelcastInstanceFactory();
-        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(baseDir);
-        if (!baseDir.mkdir()) {
-            throw new IllegalStateException("Failed to create hot-restart directory!");
-        }
     }
 
     @After
     public void shutdown() {
         factory.terminateAll();
         HazelcastInstanceFactory.terminateAll();
-        delete(baseDir);
     }
 
     @Test
@@ -280,7 +271,8 @@ public class HotRestartCompatibilityTest extends HazelcastTestSupport {
 
         HotRestartPersistenceConfig hotRestartConfig = config.getHotRestartPersistenceConfig();
         hotRestartConfig.setEnabled(true)
-                .setBaseDir(new File(baseDir, UuidUtil.newUnsecureUuidString()))
+                // For 3.11, we need to define a unique non-shared hot-restart directory
+                .setBaseDir(new File(hotRestartFolderRule.getBaseDir(), UuidUtil.newUnsecureUuidString()))
                 .setValidationTimeoutSeconds(30).setDataLoadTimeoutSeconds(30);
 
         return config;

@@ -133,9 +133,10 @@ public class ClusterMetadataManager {
     // main thread
     public void prepare() {
         try {
-            clusterState = readClusterState(node.getLogger(ClusterStateReader.class), homeDir);
-            Version clusterVersion = readClusterVersion(node.getLogger(ClusterVersionReader.class), homeDir);
+            clusterState = readClusterState(homeDir);
+            Version clusterVersion = readClusterVersion(homeDir);
             if (!clusterVersion.isUnknown()) {
+                logger.info("Restored cluster version: " + clusterVersion + ", cluster state: " + clusterState);
                 // validate current codebase version is compatible with the persisted cluster version
                 if (!node.getNodeExtension().isNodeVersionCompatibleWith(clusterVersion)) {
                     throw new HotRestartException("Member cannot start: codebase version " + node.getVersion() + " is not "
@@ -899,11 +900,11 @@ public class ClusterMetadataManager {
         Collection<MemberImpl> members = r.getMembers();
 
         if (thisMember != null && !node.getThisAddress().equals(thisMember.getAddress())) {
-            logger.warning("Local address change detected. Previous: " + thisMember.getAddress()
+            logger.info("Local address change detected. Previous: " + thisMember.getAddress()
                     + ", Current: " + node.getThisAddress());
         }
         if (thisMember == null) {
-            logger.info("Cluster state not found on disk. Will not load Hot Restart data.");
+            logger.info("Cluster metadata could not found on disk. Will not load Hot Restart data.");
             startWithHotRestart = false;
             members = Collections.singletonList(node.getLocalMember());
         } else if (logger.isFineEnabled()) {
@@ -931,7 +932,7 @@ public class ClusterMetadataManager {
             for (Map.Entry<Address, Address> entry : addressMapping.entrySet()) {
                 s.append("\n\t").append(entry.getKey()).append(" -> ").append(entry.getValue());
             }
-            logger.warning(s.toString());
+            logger.info(s.toString());
         }
     }
 
@@ -955,11 +956,13 @@ public class ClusterMetadataManager {
         if (addressMapping.isEmpty()) {
             return;
         }
-        StringBuilder s = new StringBuilder("Replacing old addresses with the new ones in restored partition table:");
-        for (Map.Entry<Address, Address> entry : addressMapping.entrySet()) {
-            s.append("\n\t").append(entry.getKey()).append(" -> ").append(entry.getValue());
+        if (logger.isFineEnabled()) {
+            StringBuilder s = new StringBuilder("Replacing old addresses with the new ones in restored partition table:");
+            for (Map.Entry<Address, Address> entry : addressMapping.entrySet()) {
+                s.append("\n\t").append(entry.getKey()).append(" -> ").append(entry.getValue());
+            }
+            logger.fine(s.toString());
         }
-        logger.info(s.toString());
 
         PartitionTableView table = partitionTableRef.get();
         PartitionReplica[][] newReplicas = new PartitionReplica[table.getLength()][];
@@ -1463,6 +1466,21 @@ public class ClusterMetadataManager {
         }
         long remaining = dataLoadStartTime + dataLoadTimeout - Clock.currentTimeMillis();
         return Math.max(0, remaining);
+    }
+
+    /**
+     * Returns true {@link #DIR_NAME cluster} directory exists inside the {@code homeDir}
+     * and cluster metadata files exist in {@code cluster} directory,
+     * false otherwise.
+     */
+    @SuppressWarnings("checkstyle:booleanexpressioncomplexity")
+    public static boolean isValidHotRestartDir(File homeDir) {
+        File clusterDir = new File(homeDir, DIR_NAME);
+        return clusterDir.exists() && clusterDir.isDirectory()
+                && new File(clusterDir, ClusterVersionWriter.FILE_NAME).exists()
+                && new File(clusterDir, ClusterStateWriter.FILE_NAME).exists()
+                && new File(clusterDir, PartitionThreadCountWriter.FILE_NAME).exists()
+                && new File(clusterDir, MemberListWriter.FILE_NAME).exists();
     }
 
     private class ClearMemberClusterStartInfoTask implements Runnable {

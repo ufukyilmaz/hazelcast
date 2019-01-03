@@ -9,42 +9,20 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
-
-import java.io.File;
-
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.getBaseDir;
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
-import static com.hazelcast.nio.IOUtil.deleteQuietly;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClientCacheClearTest extends ClientCacheClearTest {
 
     @Rule
-    public TestName testName = new TestName();
-
-    private File folder;
-
-    @Override
-    protected void onSetup() {
-        folder = isolatedFolder(getClass(), testName);
-        createFolder(folder);
-        super.onSetup();
-    }
-
-    @Override
-    protected void onTearDown() {
-        super.onTearDown();
-        deleteQuietly(folder);
-    }
+    public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
 
     @Override
     protected Config createConfig() {
@@ -57,7 +35,7 @@ public class HotRestartClientCacheClearTest extends ClientCacheClearTest {
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)
-                .setBaseDir(getBaseDir(folder));
+                .setBaseDir(hotRestartFolderRule.getBaseDir());
 
         config.getNativeMemoryConfig().setEnabled(true)
                 .setSize(new MemorySize(128, MemoryUnit.MEGABYTES))

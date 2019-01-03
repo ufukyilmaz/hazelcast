@@ -17,6 +17,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(HazelcastSerialClassRunner.class)
@@ -25,7 +26,6 @@ public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTe
 
     private int partitionCount = 271;
     private int partitionThreadCount = -1;
-    private String explicitBaseDir = null;
 
     @Test
     public void testFreshStart() {
@@ -34,11 +34,16 @@ public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTe
         invokeDummyOperationOnAllPartitions(instances);
     }
 
-    @Test(expected = HotRestartException.class)
-    public void test_hotRestartFails_whenBaseDirUsed_byMultipleMembers() {
-        explicitBaseDir = "hot-restart-dir";
-        startNewInstance();
-        startNewInstance();
+    @Test
+    public void test_hotRestart_withLegacyDir() {
+        HazelcastInstance instance = startNewInstance();
+        File hotRestartHome = getHotRestartHome(instance);
+        terminateInstances();
+
+        instance = startNewInstanceWithBaseDir(hotRestartHome);
+        File hotRestartHome2 = getHotRestartHome(instance);
+
+        assertEquals(hotRestartHome, hotRestartHome2);
     }
 
     @Test
@@ -108,16 +113,10 @@ public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTe
     }
 
     @Override
-    protected Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
-                               HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
-        final Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
+    protected Config newConfig(ClusterHotRestartEventListener listener, HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+        final Config config = super.newConfig(listener, clusterStartPolicy);
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(partitionCount));
         config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), String.valueOf(partitionThreadCount));
-
-        if (explicitBaseDir != null) {
-            config.getHotRestartPersistenceConfig().setBaseDir(new File(baseDir, explicitBaseDir));
-        }
-
         return config;
     }
 }

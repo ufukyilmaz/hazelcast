@@ -7,6 +7,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.internal.cluster.Versions;
+import com.hazelcast.instance.NodeExtension;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
@@ -14,18 +15,17 @@ import com.hazelcast.internal.partition.impl.FrozenPartitionTableTest.NonRetryab
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.exception.TargetNotMemberException;
+import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static java.util.Collections.synchronizedList;
 import static org.hamcrest.Matchers.arrayWithSize;
@@ -60,25 +59,9 @@ import static org.junit.Assert.fail;
 public class HotRestartClusterJoinTest extends HazelcastTestSupport {
 
     @Rule
-    public TestName testName = new TestName();
+    public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
 
-    private File baseDir;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
-
-    @Before
-    public void before() {
-        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(baseDir);
-        if (!baseDir.mkdir()) {
-            throw new IllegalStateException("Failed to create hot-restart directory!");
-        }
-    }
-
-    @After
-    public void after() {
-        factory.terminateAll();
-        delete(baseDir);
-    }
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @Test
     public void hotRestart_fails_when_members_join_unknown_master() {
@@ -94,6 +77,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
 
         // start and shutdown cluster
         assertClusterSizeEventually(instances);
+        warmUpPartitions(instances);
         shutdownCluster(instances[0]);
 
         // start an unknown member
@@ -193,6 +177,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
 
         // shutdown cluster
         assertClusterSizeEventually(instances);
+        warmUpPartitions(instances);
         shutdownCluster(instances);
 
         // partial start cluster excluding single member
@@ -268,11 +253,13 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
     private void hotRestart_withSwappingAddresses(int nodeCount) throws Exception {
         final HazelcastInstance[] instances = new HazelcastInstance[nodeCount];
         final Address[] addresses = new Address[instances.length];
+        final File[] hotRestartDirs = new File[instances.length];
 
         for (int i = 0; i < instances.length; i++) {
             Address address = factory.nextAddress();
             addresses[i] = address;
-            instances[i] = factory.newHazelcastInstance(address, newConfig(address));
+            instances[i] = factory.newHazelcastInstance(address, newConfig());
+            hotRestartDirs[i] = getHotRestartHome(instances[i]);
         }
 
         assertClusterSizeEventually(instances);
@@ -291,7 +278,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
             futures[i] = spawn(new Callable<HazelcastInstance>() {
                 @Override
                 public HazelcastInstance call() {
-                    return factory.newHazelcastInstance(newAddresses[ix], newConfig(addresses[ix]));
+                    return factory.newHazelcastInstance(newAddresses[ix], newConfig(hotRestartDirs[ix]));
                 }
             });
         }
@@ -331,7 +318,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         for (int i = 0; i < instances.length; i++) {
             Address address = factory.nextAddress();
             addresses[i] = address;
-            instances[i] = factory.newHazelcastInstance(address, newConfig(address));
+            instances[i] = factory.newHazelcastInstance(address, newConfig());
         }
 
         assertClusterSizeEventually(instances);
@@ -339,6 +326,8 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         PartitionTableView originalPartitionTable = getPartitionService(instances[0]).createPartitionTableView();
 
         changeClusterStateEventually(instances[0], ClusterState.FROZEN);
+        final File hotRestartHome1 = getHotRestartHome(instances[1]);
+        final File hotRestartHome2 = getHotRestartHome(instances[2]);
         instances[1].shutdown();
         instances[2].shutdown();
 
@@ -346,13 +335,13 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         futures[0] = spawn(new Callable<HazelcastInstance>() {
             @Override
             public HazelcastInstance call() {
-                return factory.newHazelcastInstance(addresses[1], newConfig(addresses[2]));
+                return factory.newHazelcastInstance(addresses[1], newConfig(hotRestartHome2));
             }
         });
         futures[1] = spawn(new Callable<HazelcastInstance>() {
             @Override
             public HazelcastInstance call() {
-                return factory.newHazelcastInstance(addresses[2], newConfig(addresses[1]));
+                return factory.newHazelcastInstance(addresses[2], newConfig(hotRestartHome1));
             }
         });
 
@@ -393,7 +382,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         for (int i = 0; i < instances.length; i++) {
             Address address = factory.nextAddress();
             addresses[i] = address;
-            instances[i] = factory.newHazelcastInstance(address, newConfig(address));
+            instances[i] = factory.newHazelcastInstance(address, newConfig());
         }
 
         assertClusterSizeEventually(instances);
@@ -403,13 +392,14 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         changeClusterStateEventually(instances[0], ClusterState.FROZEN);
 
         String missingMemberUuid = getClusterService(instances[1]).getLocalMember().getUuid();
+        final File hotRestartHome = getHotRestartHome(instances[2]);
         instances[1].shutdown();
         instances[2].shutdown();
 
         Future<HazelcastInstance> future = spawn(new Callable<HazelcastInstance>() {
             @Override
             public HazelcastInstance call() {
-                return factory.newHazelcastInstance(addresses[1], newConfig(addresses[2]));
+                return factory.newHazelcastInstance(addresses[1], newConfig(hotRestartHome));
             }
         });
 
@@ -482,12 +472,27 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         return instancesList.toArray(new HazelcastInstance[instancesList.size()]);
     }
 
+    private File getHotRestartHome(HazelcastInstance hz) {
+        NodeExtension nodeExtension = getNode(hz).getNodeExtension();
+        HotRestartIntegrationService service = (HotRestartIntegrationService) nodeExtension.getInternalHotRestartService();
+        return service.getHotRestartHome();
+    }
+
+    private Config newConfig() {
+        return newConfig(hotRestartFolderRule.getBaseDir());
+    }
+
     private Config newConfig(Address address) {
+        String child = toFileName(address.getHost() + ":" + address.getPort());
+        return newConfig(new File(hotRestartFolderRule.getBaseDir(), child));
+    }
+
+    private static Config newConfig(File baseDir) {
         Config config = new Config()
                 .setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
 
         config.getHotRestartPersistenceConfig().setEnabled(true)
-                .setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())))
+                .setBaseDir(baseDir)
                 .setClusterDataRecoveryPolicy(HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE)
                 .setValidationTimeoutSeconds(10)
                 .setDataLoadTimeoutSeconds(10)

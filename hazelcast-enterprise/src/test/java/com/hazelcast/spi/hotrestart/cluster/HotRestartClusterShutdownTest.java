@@ -22,27 +22,27 @@ import java.util.Collection;
 import static com.hazelcast.cluster.ClusterShutdownTest.assertNodesShutDownEventually;
 import static com.hazelcast.cluster.ClusterShutdownTest.getNodes;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.NEVER;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.ALWAYS;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.SOMETIMES;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterShutdownTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameters(name = "clusterState:{1},nodeState:{2},addressChangePolicy:{0}")
+    @Parameters(name = "clusterState:{1},nodeState:{2},reuseAddress:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                {NONE, ClusterState.ACTIVE, NodeState.ACTIVE},
-                {NONE, ClusterState.FROZEN, NodeState.ACTIVE},
-                {NONE, ClusterState.PASSIVE, NodeState.PASSIVE},
-                {PARTIAL, ClusterState.ACTIVE, NodeState.ACTIVE},
-                {PARTIAL, ClusterState.FROZEN, NodeState.ACTIVE},
-                {PARTIAL, ClusterState.PASSIVE, NodeState.PASSIVE},
-                {ALL, ClusterState.ACTIVE, NodeState.ACTIVE},
-                {ALL, ClusterState.FROZEN, NodeState.ACTIVE},
-                {ALL, ClusterState.PASSIVE, NodeState.PASSIVE},
+                {ALWAYS, ClusterState.ACTIVE, NodeState.ACTIVE},
+                {ALWAYS, ClusterState.FROZEN, NodeState.ACTIVE},
+                {ALWAYS, ClusterState.PASSIVE, NodeState.PASSIVE},
+                {SOMETIMES, ClusterState.ACTIVE, NodeState.ACTIVE},
+                {SOMETIMES, ClusterState.FROZEN, NodeState.ACTIVE},
+                {SOMETIMES, ClusterState.PASSIVE, NodeState.PASSIVE},
+                {NEVER, ClusterState.ACTIVE, NodeState.ACTIVE},
+                {NEVER, ClusterState.FROZEN, NodeState.ACTIVE},
+                {NEVER, ClusterState.PASSIVE, NodeState.PASSIVE},
         });
     }
 

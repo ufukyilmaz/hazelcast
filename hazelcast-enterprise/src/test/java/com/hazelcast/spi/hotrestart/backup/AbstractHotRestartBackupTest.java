@@ -4,20 +4,19 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IFunction;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.nio.Address;
+import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.util.function.Supplier;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import static com.hazelcast.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport {
@@ -30,7 +29,7 @@ public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport
     private long startFromBackupSeq;
     private boolean setBackupDir;
 
-    private Config makeConfig(Address address) {
+    private Config makeConfig() {
         final MapConfig mapConfig = new MapConfig(MAP_NAME).setBackupCount(1);
 
         mapConfig.getHotRestartConfig().setEnabled(true);
@@ -42,11 +41,10 @@ public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport
         final HotRestartPersistenceConfig persistenceConfig = config.getHotRestartPersistenceConfig();
         persistenceConfig.setEnabled(true);
 
-        final File persistenceBaseDir = new File(this.baseDir, toFileName(address.getHost() + ":" + address.getPort()));
-        final File nodeBackupDir = new File(persistenceBaseDir, "backup");
+        final File nodeBackupDir = new File(baseDir, "backup");
 
         if (startFromBackupSeq < 0) {
-            persistenceConfig.setBaseDir(new File(persistenceBaseDir, "original"));
+            persistenceConfig.setBaseDir(new File(baseDir, "original"));
         } else {
             persistenceConfig.setBaseDir(new File(nodeBackupDir, "backup-" + startFromBackupSeq));
         }
@@ -64,10 +62,10 @@ public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport
     void resetFixture(long backupSeqToLoad, int clusterSize, boolean setBackupDir) {
         this.startFromBackupSeq = backupSeqToLoad;
         this.setBackupDir = setBackupDir;
-        restartCluster(clusterSize, new IFunction<Address, Config>() {
+        restartCluster(clusterSize, new Supplier<Config>() {
             @Override
-            public Config apply(Address address) {
-                return makeConfig(address);
+            public Config get() {
+                return makeConfig();
             }
         });
         map = getFirstInstance().getMap(MAP_NAME);
@@ -102,8 +100,8 @@ public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport
     }
 
     static File getNodeBackupDir(HazelcastInstance instance, int backupSeq) {
-        final HotRestartPersistenceConfig hrConfig = instance.getConfig().getHotRestartPersistenceConfig();
-        return new File(hrConfig.getBackupDir(), "backup-" + backupSeq);
+        InternalHotRestartService hotRestartService = getNode(instance).getNodeExtension().getInternalHotRestartService();
+        return ((HotRestartIntegrationService) hotRestartService).getBackupDir(backupSeq);
     }
 
     static void assertContainsAll(IMap<Integer, Object> map, Map<Integer, String> backupedMap) {

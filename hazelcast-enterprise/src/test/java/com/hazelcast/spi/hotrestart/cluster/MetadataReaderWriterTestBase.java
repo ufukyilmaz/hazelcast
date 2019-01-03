@@ -2,24 +2,20 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.util.UuidUtil;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.rules.TestName;
 
 import java.io.File;
 import java.net.InetAddress;
 import java.util.Random;
 
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.toFileName;
-
 public abstract class MetadataReaderWriterTestBase extends HazelcastTestSupport {
 
     @Rule
-    public final TestName testName = new TestName();
+    public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule(true);
 
     protected InetAddress localAddress;
     protected File folder;
@@ -27,27 +23,11 @@ public abstract class MetadataReaderWriterTestBase extends HazelcastTestSupport 
     @Before
     public final void setup() throws Exception {
         localAddress = InetAddress.getLocalHost();
-        folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(folder);
-        if (!folder.mkdir() && !folder.exists()) {
-            throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
-        }
+        folder = hotRestartFolderRule.getBaseDir();
         setupInternal();
     }
 
     void setupInternal() {
-    }
-
-    @After
-    public final void tearDown() {
-        if (folder != null) {
-            delete(folder);
-        }
-
-        tearDownInternal();
-    }
-
-    void tearDownInternal() {
     }
 
     final PartitionReplica[] initializeReplicas(int len) {

@@ -25,7 +25,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,11 +35,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.ALWAYS;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.NEVER;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.SOMETIMES;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_IN_PROGRESS;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -48,9 +48,13 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameters(name = "addressChangePolicy:{0}")
+    @Parameters(name = "reuseAddress:{0}")
     public static Collection<Object> parameters() {
-        return Arrays.asList(new Object[]{NONE, PARTIAL, ALL});
+        return asList(new Object[]{
+                ALWAYS,
+                SOMETIMES,
+                NEVER
+        });
     }
 
     private int memberListPublishPeriod = -1;
@@ -143,9 +147,8 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
     }
 
     @Override
-    Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
-                     HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
-        Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
+    Config newConfig(ClusterHotRestartEventListener listener, HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+        Config config = super.newConfig(listener, clusterStartPolicy);
 
         if (memberListPublishPeriod > 0) {
             config.setProperty(GroupProperty.MEMBER_LIST_PUBLISH_INTERVAL_SECONDS.getName(),

@@ -30,8 +30,8 @@ import static java.lang.Math.max;
  */
 public class PersistentConfigDescriptors {
 
-    private static final String CONFIG_SUFFIX = ".config";
     private static final String CONFIG_FOLDER = "configs";
+    private static final String CONFIG_SUFFIX = ".config";
     private static final String TMP_SUFFIX = ".tmp";
 
     /**
@@ -53,7 +53,7 @@ public class PersistentConfigDescriptors {
     /**
      * Checks if the configuration directory exists and creates one if not.
      */
-    public void ensureConfigDirectoryExists() {
+    private void ensureConfigDirectoryExists() {
         if (!configsDir.exists() && !configsDir.mkdirs()) {
             throw new HotRestartException("Cannot create config directory: " + configsDir.getAbsolutePath());
         }
@@ -250,5 +250,14 @@ public class PersistentConfigDescriptors {
      */
     public void backup(File targetDir) {
         IOUtil.copy(configsDir, targetDir);
+    }
+
+    /**
+     * Returns true {@link #CONFIG_FOLDER configs} folder exists inside the {@code homeDir},
+     * false otherwise.
+     */
+    static boolean isValidHotRestartDir(File homeDir) {
+        File configDir = new File(homeDir, CONFIG_FOLDER);
+        return configDir.exists() && configDir.isDirectory();
     }
 }

@@ -5,16 +5,15 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.XmlConfigBuilder;
-import com.hazelcast.core.IFunction;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.NightlyTest;
+import com.hazelcast.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -24,7 +23,6 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
@@ -36,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;
-import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.util.FutureUtil.waitWithDeadline;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -127,9 +124,8 @@ public class MapHotRestartStressTest extends HotRestartTestSupport {
         }
     }
 
-    private Config makeConfig(Address address) {
+    private Config makeConfig() {
         Config config = new XmlConfigBuilder().build()
-                .setInstanceName("hr-test-" + address.getPort())
                 .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
                 .setProperty(GroupProperty.PARTITION_COUNT.getName(), "20");
 
@@ -140,7 +136,7 @@ public class MapHotRestartStressTest extends HotRestartTestSupport {
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)
-                .setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())));
+                .setBaseDir(baseDir);
 
         MaxSizeConfig maxSizeConfig = new MaxSizeConfig()
                 .setMaxSizePolicy(PER_PARTITION)
@@ -161,10 +157,10 @@ public class MapHotRestartStressTest extends HotRestartTestSupport {
     }
 
     private void resetFixture() {
-        restartCluster(INSTANCE_COUNT, new IFunction<Address, Config>() {
+        restartCluster(INSTANCE_COUNT, new Supplier<Config>() {
             @Override
-            public Config apply(Address address) {
-                return makeConfig(address);
+            public Config get() {
+                return makeConfig();
             }
         });
         if (memoryFormat == NATIVE) {

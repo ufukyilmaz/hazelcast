@@ -6,21 +6,17 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IFunction;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.util.function.Supplier;
 import org.junit.runners.Parameterized.Parameter;
-
-import java.io.File;
 
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;
-import static com.hazelcast.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractMapHotRestartTest extends HotRestartTestSupport {
@@ -56,10 +52,10 @@ public abstract class AbstractMapHotRestartTest extends HotRestartTestSupport {
     }
 
     HazelcastInstance newHazelcastInstance(final int backupCount) {
-        return newHazelcastInstance(new IFunction<Address, Config>() {
+        return newHazelcastInstance(new Supplier<Config>() {
             @Override
-            public Config apply(Address input) {
-                return makeConfig(input, backupCount);
+            public Config get() {
+                return makeConfig(backupCount);
             }
         });
     }
@@ -82,15 +78,15 @@ public abstract class AbstractMapHotRestartTest extends HotRestartTestSupport {
     }
 
     HazelcastInstance[] restartInstances(int clusterSize, final int backupCount) {
-        return restartCluster(clusterSize, new IFunction<Address, Config>() {
+        return restartCluster(clusterSize, new Supplier<Config>() {
             @Override
-            public Config apply(Address address) {
-                return makeConfig(address, backupCount);
+            public Config get() {
+                return makeConfig(backupCount);
             }
         });
     }
 
-    Config makeConfig(Address address, int backupCount) {
+    Config makeConfig(int backupCount) {
         Config config = new Config()
                 .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
                 .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
@@ -99,7 +95,7 @@ public abstract class AbstractMapHotRestartTest extends HotRestartTestSupport {
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)
-                .setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())));
+                .setBaseDir(baseDir);
 
         if (memoryFormat == InMemoryFormat.NATIVE) {
             config.getNativeMemoryConfig()

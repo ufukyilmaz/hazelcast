@@ -194,6 +194,11 @@ public class MerkleTreeUpdaterRecordStoreMutationObserverTest {
         }
 
         @Override
+        public boolean isJson() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public int hashCode() {
             return wrapped.hashCode();
         }

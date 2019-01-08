@@ -168,6 +168,11 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
     }
 
     @Override
+    public boolean isJson() {
+        return SerializationConstants.JAVASCRIPT_JSON_SERIALIZATION_TYPE == getType();
+    }
+
+    @Override
     public String toString() {
         if (address() > 0L) {
             final StringBuilder sb = new StringBuilder("NativeMemoryData{");

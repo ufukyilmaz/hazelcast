@@ -35,7 +35,7 @@ public class LicenseExpirationReminderTask
             + "our license renewal department, urgently on :HAZELCAST_EMAIL:%n" + "or call us on :HAZELCAST_PHONE_NUMBER:%n%n"
             + "Please quote license id :LICENSE_ID:%n%n"
             + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
-    private static final int SCHEDULING_DELAY_MONTHS_DUE_TO_EXPIRATION = 2;
+    private static final int SCHEDULING_DELAY_DAYS_DUE_TO_EXPIRATION = 60;
 
     enum NotificationPeriod {
         ADVISORY(SECONDS_IN_DAY, 60 * SECONDS_IN_DAY),
@@ -145,7 +145,7 @@ public class LicenseExpirationReminderTask
 
         Calendar scheduledDate = Calendar.getInstance();
         scheduledDate.setTime(license.getExpiryDate());
-        scheduledDate.add(Calendar.MONTH, -SCHEDULING_DELAY_MONTHS_DUE_TO_EXPIRATION);
+        scheduledDate.add(Calendar.DATE, -SCHEDULING_DELAY_DAYS_DUE_TO_EXPIRATION);
         if (scheduledDate.getTimeInMillis() <= System.currentTimeMillis()) {
             throw new IllegalStateException("Notification period not NONE & scheduledDate in the past");
         }

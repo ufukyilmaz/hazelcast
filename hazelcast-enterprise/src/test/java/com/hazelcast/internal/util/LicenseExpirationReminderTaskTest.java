@@ -1,10 +1,9 @@
 package com.hazelcast.internal.util;
 
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.license.domain.License;
-import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -20,7 +19,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class LicenseExpirationReminderTaskTest
         extends HazelcastTestSupport {
@@ -208,15 +207,9 @@ public class LicenseExpirationReminderTaskTest
     }
 
     @Test
-    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2558")
     public void testSchedulingDelay_expiresInTwoMonths() {
         License license = mock(License.class);
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.MONTH, 2);
-        calendar.add(Calendar.DATE, 1);
-        calendar.add(Calendar.HOUR, 1);
-
-        when(license.getExpiryDate()).thenReturn(calendar.getTime());
+        when(license.getExpiryDate()).thenReturn(dateWithDaysDiff(61));
 
         LicenseExpirationReminderTask task = new LicenseExpirationReminderTask(null, license);
         LicenseExpirationReminderTask.NotificationPeriod period = task.calculateNotificationPeriod();
@@ -261,8 +254,8 @@ public class LicenseExpirationReminderTaskTest
 
     private int expectedSchedDelayDays(int expirationDays) {
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DAY_OF_YEAR, expirationDays);
-        cal.add(Calendar.MONTH, -2);
+        cal.add(Calendar.DATE, expirationDays);
+        cal.add(Calendar.DATE, -2 * 30);
         cal.add(Calendar.HOUR, 1);
         return (int) MILLISECONDS.toDays(cal.getTimeInMillis() - currentTimeMillis());
     }

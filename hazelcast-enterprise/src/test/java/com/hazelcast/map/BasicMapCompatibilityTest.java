@@ -3,9 +3,10 @@ package com.hazelcast.map;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.CompatibilityTest;
-import org.junit.Assume;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Compatibility test for basic IMap functionality.
@@ -14,57 +15,11 @@ import org.junit.runner.RunWith;
 @Category(CompatibilityTest.class)
 public class BasicMapCompatibilityTest extends BasicMapTest {
 
-    /**
-     * This method can be removed once 3.11 is released
-     */
-    @Override
-    public void testSetTTLConfiguresMapPolicyIfTTLIsNegative() {
-        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
-        super.testSetTTLConfiguresMapPolicyIfTTLIsNegative();
-    }
 
-    /**
-     * This method can be removed once 3.11 is released
-     */
+    // RU_COMPAT_3_11
     @Override
-    public void testAlterTTLOfAnEternalKey() {
-        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
-        super.testAlterTTLOfAnEternalKey();
-    }
-
-    /**
-     * This method can be removed once 3.11 is released
-     */
-    @Override
-    public void testExtendTTLOfAKeyBeforeItExpires() {
-        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
-        super.testExtendTTLOfAKeyBeforeItExpires();
-    }
-
-    /**
-     * This method can be removed once 3.11 is released
-     */
-    @Override
-    public void testSetTtlReturnsTrue() {
-        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
-        super.testSetTtlReturnsTrue();
-    }
-
-    /**
-     * This method can be removed once 3.11 is released
-     */
-    @Override
-    public void testSetTtlReturnsFalse_whenKeyDoesNotExist() {
-        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
-        super.testSetTtlReturnsFalse_whenKeyDoesNotExist();
-    }
-
-    /**
-     * This method can be removed once 3.11 is released
-     */
-    @Override
-    public void testSetTtlReturnsFalse_whenKeyIsAlreadyExpired() {
-        Assume.assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.12"));
-        super.testSetTtlReturnsFalse_whenKeyIsAlreadyExpired();
+    public void testJsonPutGet() {
+        assumeTrue(CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION.equals("3.13"));
+        super.testJsonPutGet();
     }
 }

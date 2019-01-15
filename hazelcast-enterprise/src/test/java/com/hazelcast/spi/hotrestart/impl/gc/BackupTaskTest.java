@@ -118,6 +118,6 @@ public class BackupTaskTest {
                 .dep(GcLogger.class, mock(GcLogger.class))
                 .dep(GcHelper.class, helper)
                 .dep(ChunkManager.class, manager)
-                .wire(new BackupTask(destDir, new long[]{0}, new long[]{1}));
+                .wire(new BackupTask(destDir, "store", new long[]{0}, new long[]{1}));
     }
 }

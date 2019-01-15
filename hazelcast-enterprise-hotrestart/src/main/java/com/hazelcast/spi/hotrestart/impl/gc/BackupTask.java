@@ -39,6 +39,7 @@ public class BackupTask implements Runnable {
     private final long[] stableValChunkSeqs;
     private final long maxChunkSeq;
     private final boolean useHardLinks;
+    private final String storeName;
     @Inject
     private GcLogger logger;
     @Inject
@@ -48,7 +49,7 @@ public class BackupTask implements Runnable {
     private FileCopyStrategy copyStrategy;
     private volatile BackupTaskState state = BackupTaskState.NOT_STARTED;
 
-    BackupTask(File targetDir, long[] stableValChunkSeqs, long[] stableTombChunkSeqs) {
+    BackupTask(File targetDir, String storeName, long[] stableValChunkSeqs, long[] stableTombChunkSeqs) {
         Arrays.sort(stableValChunkSeqs);
         Arrays.sort(stableTombChunkSeqs);
         final long maxValChunkSeq = stableValChunkSeqs.length > 0
@@ -61,6 +62,7 @@ public class BackupTask implements Runnable {
         this.maxChunkSeq = Math.max(maxValChunkSeq, maxTombChunkSeq);
         final String useHardLinksStr = System.getProperty(PROPERTY_BACKUP_USE_HARD_LINKS);
         this.useHardLinks = useHardLinksStr == null || Boolean.parseBoolean(useHardLinksStr);
+        this.storeName = storeName;
     }
 
     /**
@@ -90,7 +92,8 @@ public class BackupTask implements Runnable {
             Thread.interrupted();
         }
         chunkManager.deletePendingChunks();
-        logger.info("Hot restart backup finished in " + NANOSECONDS.toMillis(System.nanoTime() - start));
+        long durationMillis = NANOSECONDS.toMillis(System.nanoTime() - start);
+        logger.info("Backup of hot restart store " + storeName + " finished in " + durationMillis + " ms");
     }
 
     private void copyOrMoveChunks(long[] seqs, boolean areValChunks) {

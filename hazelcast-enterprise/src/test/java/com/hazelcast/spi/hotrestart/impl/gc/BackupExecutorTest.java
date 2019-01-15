@@ -57,7 +57,7 @@ public class BackupExecutorTest extends AbstractHotRestartBackupTest {
         private BackupTaskState state = BackupTaskState.NOT_STARTED;
 
         CustomBackupTask(CountDownLatch latch) {
-            super(null, new long[0], new long[0]);
+            super(null, "store", new long[0], new long[0]);
             this.latch = latch;
         }
 
@@ -85,7 +85,7 @@ public class BackupExecutorTest extends AbstractHotRestartBackupTest {
     private static class InterruptableBackupTask extends BackupTask {
 
         InterruptableBackupTask() {
-            super(null, new long[0], new long[0]);
+            super(null, "store", new long[0], new long[0]);
         }
 
         @Override

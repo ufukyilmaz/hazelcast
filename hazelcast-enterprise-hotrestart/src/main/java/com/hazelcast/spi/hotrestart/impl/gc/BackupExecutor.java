@@ -20,7 +20,8 @@ public class BackupExecutor implements Disposable {
     private static final long[] EMPTY_LONG_ARRAY = new long[0];
     private volatile Thread currentBackupThread;
     private volatile BackupTask currentBackupTask;
-    private final BackupTask taskReservation = new BackupTask(null, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY);
+    private final BackupTask taskReservation = new BackupTask(null, "reservationStore",
+            EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY);
 
     /**
      * Runs the backup task. If a backup task is already in progress returns without starting a new task. The backup task can

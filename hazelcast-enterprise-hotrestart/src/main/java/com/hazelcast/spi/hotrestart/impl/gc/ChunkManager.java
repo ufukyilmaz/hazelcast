@@ -83,6 +83,7 @@ public class ChunkManager implements Disposable {
     private final GcLogger logger;
     private final GcHelper gcHelper;
     private final BackupExecutor backupExecutor;
+    private final String storeName;
     @Inject
     private Snapshotter snapshotter;
     private Set<Long> chunkSeqsPendingDeletion = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
@@ -99,6 +100,7 @@ public class ChunkManager implements Disposable {
         this.gcHelper = gcHelper;
         this.trackers = gcHelper.newTrackerMap();
         this.backupExecutor = backupExecutor;
+        this.storeName = storeName;
         final String metricsPrefix = "hot-restart." + storeName;
         metrics.scanAndRegister(this, metricsPrefix);
         metrics.scanAndRegister(trackers, metricsPrefix);
@@ -226,7 +228,7 @@ public class ChunkManager implements Disposable {
                     stableValChunkSeqs[valIdx++] = chunk.seq;
                 }
             }
-            backupExecutor.run(di.wire(new BackupTask(targetDir, stableValChunkSeqs, stableTombChunkSeqs)));
+            backupExecutor.run(di.wire(new BackupTask(targetDir, storeName, stableValChunkSeqs, stableTombChunkSeqs)));
         }
     }
 

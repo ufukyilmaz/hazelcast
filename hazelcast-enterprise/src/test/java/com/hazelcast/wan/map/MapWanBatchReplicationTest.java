@@ -17,6 +17,7 @@ import com.hazelcast.core.MapStore;
 import com.hazelcast.core.MapStoreAdapter;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.internal.jmx.MBeanDataHolder;
 import com.hazelcast.internal.serialization.InternalSerializationService;
@@ -67,6 +68,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.config.WanPublisherState.PAUSED;
+import static com.hazelcast.config.WanPublisherState.STOPPED;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_CLEANUP_PERCENTAGE;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
@@ -161,25 +164,42 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         int loadedEntryCount = 1111;
 
         // 1. MapWanEventFilter is null to see default behaviour of filtering
-        setupReplicateFrom(configA, configB, clusterB.length, "atob",
+        setupReplicateFrom(configA, configB, singleNodeB.length, "atob",
                 PassThroughMergePolicy.class.getName());
 
-        // 2. Add map-loader to cluster-A
+        // 2. Ensure WAN events are enqueued but not replicated
+        // PAUSED state let WAN events offered to the queues, but prevents replicating it
+        configA.getWanReplicationConfig("atob")
+               .getWanPublisherConfigs().get(0).setInitialPublisherState(PAUSED);
+
+        // 3. Add map-loader to cluster-A
         MapStoreConfig mapStoreConfig = new MapStoreConfig()
                 .setEnabled(true)
                 .setInitialLoadMode(MapStoreConfig.InitialLoadMode.EAGER)
                 .setImplementation(new MapLoaderTest.DummyMapLoader(loadedEntryCount));
         configA.getMapConfig(mapName).setMapStoreConfig(mapStoreConfig);
 
-        // 3. Start cluster-A and cluster-B
-        startClusterA();
-        startClusterB();
+        // 4. Start single-node cluster-A and single-node cluster-B
+        initCluster(singleNodeA, configA);
+        initCluster(singleNodeB, configB);
 
-        // 4. Create map to trigger eager map-loading on cluster-A
-        getMap(clusterA, mapName);
+        // 5. Create map to trigger eager map-loading on cluster-A
+        getMap(singleNodeA, mapName);
+
+        // Getting the outbound queue counter directly from the WanBatchReplication instance, which is synchronously updated
+        // on the partition operation thread
+        int outboundQueueSize = getOutboundQueueSizeFromReplicationInstance(singleNodeA[0], "atob", "B");
 
         // 5. Ensure no keys are replicated to cluster-B
-        assertKeysNotInAllTheTime(clusterB, mapName, 0, loadedEntryCount);
+        assertEquals("Loading from MapLoader should not trigger WAN publication", 0, outboundQueueSize);
+    }
+
+    private int getOutboundQueueSizeFromReplicationInstance(HazelcastInstance instance, String setupName, String publisherName) {
+        EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(instance);
+        WanReplicationPublisherDelegate publisherDelegate = (WanReplicationPublisherDelegate) wanReplicationService
+                .getWanReplicationPublisher(setupName);
+        WanBatchReplication wanBatchReplication = (WanBatchReplication) publisherDelegate.getEndpoint(publisherName);
+        return wanBatchReplication.getCurrentElementCount();
     }
 
     @Test
@@ -188,7 +208,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         int loadedEntryCount = 1111;
 
         // 1. Add customized MapWanEventFilter. This filter doesn't do any filtering.
-        setupReplicateFrom(configA, configB, clusterB.length, "atob",
+        setupReplicateFrom(configA, configB, singleNodeB.length, "atob",
                 PassThroughMergePolicy.class.getName(), NoFilterMapWanFilter.class.getName());
 
         // 2. Add map-loader to cluster-A
@@ -198,15 +218,15 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
                 .setImplementation(new MapLoaderTest.DummyMapLoader(loadedEntryCount));
         configA.getMapConfig(mapName).setMapStoreConfig(mapStoreConfig);
 
-        // 3. Start cluster-A and cluster-B
-        startClusterA();
-        startClusterB();
+        // 3. Start single-node cluster-A and single-node cluster-B
+        initCluster(singleNodeA, configA);
+        initCluster(singleNodeB, configB);
 
         // 4. Create map to trigger eager map-loading on cluster-A
-        getMap(clusterA, mapName);
+        getMap(singleNodeA, mapName);
 
         // 5. Ensure all keys are replicated to cluster-B eventually.
-        assertKeysInEventually(clusterB, mapName, 0, loadedEntryCount);
+        assertKeysInEventually(singleNodeB, mapName, 0, loadedEntryCount);
     }
 
     @Test
@@ -794,7 +814,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
 
         stopWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), WanPublisherState.STOPPED);
+        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), STOPPED);
         createDataIn(clusterA, "map", 50, 100);
         assertKeysNotInEventually(clusterB, "map", 50, 100);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
@@ -840,13 +860,13 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
                 .getWanPublisherConfigs()
                 .get(0);
-        targetClusterConfig.setInitialPublisherState(WanPublisherState.STOPPED);
+        targetClusterConfig.setInitialPublisherState(STOPPED);
 
         startClusterA();
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 100);
-        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), WanPublisherState.STOPPED);
+        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), STOPPED);
         assertKeysNotInEventually(clusterB, "map", 0, 100);
         assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
 
@@ -906,9 +926,9 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
                 getMBeanWanReplicationPublisherState(mBeanDataHolder, wanReplicationConfigName, targetGroupName));
 
         stopWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), WanPublisherState.STOPPED);
+        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), STOPPED);
 
-        assertEquals(WanPublisherState.STOPPED.name(),
+        assertEquals(STOPPED.name(),
                 getMBeanWanReplicationPublisherState(mBeanDataHolder, wanReplicationConfigName, targetGroupName));
     }
 

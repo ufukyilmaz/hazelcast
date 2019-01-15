@@ -196,15 +196,6 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    public static void assertKeysNotInAllTheTime(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertTrue(checkKeysNotIn(cluster, mapName, start, end));
-            }
-        }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
-    }
-
     public static void removeAndCreateDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
         HazelcastInstance node = getNode(cluster);
         IMap<Integer, String> m = node.getMap(mapName);

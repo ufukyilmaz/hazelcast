@@ -3,6 +3,7 @@ package com.hazelcast.client.impl.clientside;
 import com.hazelcast.client.HazelcastClientNotActiveException;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
+import com.hazelcast.client.config.SocketOptions;
 import com.hazelcast.client.map.impl.proxy.EnterpriseMapClientProxyFactory;
 import com.hazelcast.client.spi.ClientExecutionService;
 import com.hazelcast.client.spi.ClientProxyFactory;
@@ -49,14 +50,10 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
 
     private HazelcastMemoryManager memoryManager;
 
-    private volatile SocketInterceptor socketInterceptor;
-
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
         super.beforeStart(client);
         ClientConfig clientConfig = client.getClientConfig();
-        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
-        initSocketInterceptor(networkConfig.getSocketInterceptorConfig());
         String licenseKey = clientConfig.getLicenseKey();
         if (licenseKey == null) {
             licenseKey = clientConfig.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName());
@@ -127,20 +124,27 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     public ChannelInitializer createChannelInitializer() {
         ClientNetworkConfig networkConfig = client.getClientConfig().getNetworkConfig();
         SSLConfig sslConfig = networkConfig.getSSLConfig();
+        return createChannelInitializer(sslConfig, networkConfig.getSocketOptions());
+    }
+
+    @Override
+    public ChannelInitializer createChannelInitializer(SSLConfig sslConfig, SocketOptions socketOptions) {
         if (sslConfig != null && sslConfig.isEnabled()) {
             LOGGER.info("SSL is enabled");
             Executor executor = client.getClientExecutionService().getUserExecutor();
-            return new ClientTLSChannelInitializer(sslConfig, executor, networkConfig.getSocketOptions());
+            return new ClientTLSChannelInitializer(sslConfig, executor, socketOptions);
         }
-        return super.createChannelInitializer();
+        return super.createChannelInitializer(sslConfig, socketOptions);
     }
 
     @Override
     public SocketInterceptor createSocketInterceptor() {
-        return socketInterceptor;
+        ClientNetworkConfig networkConfig = client.getClientConfig().getNetworkConfig();
+        return createSocketInterceptor(networkConfig.getSocketInterceptorConfig());
     }
 
-    private void initSocketInterceptor(SocketInterceptorConfig sic) {
+    @Override
+    public SocketInterceptor createSocketInterceptor(SocketInterceptorConfig sic) {
         SocketInterceptor implementation = null;
         if (sic != null && sic.isEnabled()) {
             implementation = (SocketInterceptor) sic.getImplementation();
@@ -155,8 +159,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
 
         if (implementation != null) {
             implementation.init(sic.getProperties());
-            socketInterceptor = implementation;
         }
+        return implementation;
     }
 
     @Override

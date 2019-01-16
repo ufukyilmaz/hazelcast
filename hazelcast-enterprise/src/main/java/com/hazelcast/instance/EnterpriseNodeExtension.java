@@ -336,6 +336,7 @@ public class EnterpriseNodeExtension
             }
         }
     }
+
     /**
      * Constructs and initializes all WAN consumers defined in the WAN
      * configuration
@@ -840,5 +841,10 @@ public class EnterpriseNodeExtension
             socketInterceptorConfig = node.getConfig().getNetworkConfig().getSocketInterceptorConfig();
         }
         return socketInterceptorConfig;
+    }
+
+    @Override
+    public boolean isClientFailoverSupported() {
+        return true;
     }
 }

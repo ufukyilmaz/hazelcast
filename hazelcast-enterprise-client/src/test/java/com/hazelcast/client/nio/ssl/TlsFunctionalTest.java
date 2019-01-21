@@ -16,12 +16,14 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.instance.EndpointQualifier;
+import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.nio.ssl.SSLConnectionTest;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +38,12 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.cert.CertificateFactory;
 import java.util.Collection;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.X509Certificate;
 
 import static com.hazelcast.TestEnvironmentUtil.assumeJavaVersionAtLeast;
 import static com.hazelcast.TestEnvironmentUtil.assumeJdk8OrNewer;
@@ -371,16 +378,16 @@ public class TlsFunctionalTest {
     }
 
     /**
-     * Case - Let's Encrypt certificate used.
+     * Case - CA signed certificate is used.
      *
      * <pre>
      * Given: TLS is enabled.
-     * When: 2 members are started with certificate signed by the Let's Encrypt CA.
+     * When: 2 members are started with certificate signed by a custom CA.
      * Then: Members successfully form a cluster.
      * </pre>
      */
     @Test
-    public void testLetsEncrypt() throws IOException {
+    public void testCASignedCert() throws IOException {
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
         if (openSsl) {
             sslConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName())
@@ -391,7 +398,7 @@ public class TlsFunctionalTest {
                     .setProperty("trustCertCollectionFile",
                             copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "chain.pem").getAbsolutePath());
         } else {
-            File letsEncryptKeystore = copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt.jks");
+            File letsEncryptKeystore = copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "server.jks");
             sslConfig.setFactoryClassName(BasicSSLContextFactory.class.getName())
                     .setProperty("keyStore", letsEncryptKeystore.getAbsolutePath())
                     .setProperty("keyStorePassword", "123456")
@@ -430,6 +437,7 @@ public class TlsFunctionalTest {
     public void testDefaultTruststore() throws IOException {
         assumeNoIbmJvm();
         assumeJdk8OrNewer();
+        assumeLetsEncryptCertValid();
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
         setSignedKeyFiles(sslConfig);
         if (mutualAuthentication) {
@@ -451,21 +459,6 @@ public class TlsFunctionalTest {
         assertClusterSize(2, hz1, hz2);
     }
 
-    private void setSignedKeyFiles(SSLConfig sslConfig) {
-        if (openSsl) {
-            sslConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName())
-                    .setProperty("keyFile",
-                            copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "privkey.pem").getAbsolutePath())
-                    .setProperty("keyCertChainFile",
-                            copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "fullchain.pem").getAbsolutePath());
-        } else {
-            File letsEncryptKeystore = copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt.jks");
-            sslConfig.setFactoryClassName(BasicSSLContextFactory.class.getName())
-                    .setProperty("keyStore", letsEncryptKeystore.getAbsolutePath())
-                    .setProperty("keyStorePassword", "123456");
-        }
-    }
-
     /**
      * Case - no truststore is set - neither the keystore nor the JRE specific one (cacerts).
      *
@@ -479,6 +472,7 @@ public class TlsFunctionalTest {
     public void testDefaultTruststore_client() throws IOException {
         assumeNoIbmJvm();
         assumeJdk8OrNewer();
+        assumeLetsEncryptCertValid();
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
         SSLConfig clientSSLConfig = new SSLConfig().setEnabled(true);
         setSignedKeyFiles(sslConfig);
@@ -518,6 +512,7 @@ public class TlsFunctionalTest {
         // older Java versions don't have the Let's Encrypt CA certificate in their truststores
         assumeJavaVersionAtLeast(8);
         assumeFalse(openSsl && TestEnvironmentUtil.isIbmJvm());
+        assumeLetsEncryptCertValid();
         File letsEncryptKeystore = copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt.jks");
         String xml = "<hazelcast xmlns=\"http://www.hazelcast.com/schema/config\">\n"
                 + "    <network>\n"
@@ -666,5 +661,39 @@ public class TlsFunctionalTest {
      */
     private File copyResource(String resourceName) throws IOException {
         return copyTestResource(getClass(), tempFolder.getRoot(), resourceName);
+    }
+
+    private void setSignedKeyFiles(SSLConfig sslConfig) {
+        if (openSsl) {
+            sslConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName())
+                    .setProperty("keyFile",
+                            copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt-privkey.pem").getAbsolutePath())
+                    .setProperty("keyCertChainFile",
+                            copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt-fullchain.pem").getAbsolutePath());
+        } else {
+            File letsEncryptKeystore = copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt.jks");
+            sslConfig.setFactoryClassName(BasicSSLContextFactory.class.getName())
+                    .setProperty("keyStore", letsEncryptKeystore.getAbsolutePath())
+                    .setProperty("keyStorePassword", "123456");
+        }
+    }
+
+    private void assumeLetsEncryptCertValid() {
+        if (Boolean.getBoolean("letsencrypt.enforce")) {
+            return;
+        }
+        copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt.jks");
+        InputStream resourceStream = SSLConnectionTest.class.getResourceAsStream("letsencrypt-chain.pem");
+        try {
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            X509Certificate x509Cert = (X509Certificate) cf.generateCertificate(resourceStream);
+            x509Cert.checkValidity();
+        } catch (CertificateExpiredException e) {
+            throw new AssumptionViolatedException("Expired Let's Encrypt certificate", e);
+        } catch (CertificateException e) {
+            throw new AssertionError("Unexpected CertificateException", e);
+        } finally {
+            IOUtil.closeResource(resourceStream);
+        }
     }
 }

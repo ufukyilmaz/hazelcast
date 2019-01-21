@@ -48,6 +48,7 @@ mvn install "-DextraVmArgs=-XX:+UnlockCommercialFeatures -XX:+FlightRecorder -Do
 Property name | Default value | Description
 ---           | ---           | ---
 `cacheName`   | "CACHE"       | Cache name used in JCache tests
+`letsencrypt.enforce` | `false`   | A true/false flag which allows to enforce running Let's Encrypt certificate TLS tests even if the certificate is not yet valid or already expired.
 `openssl.enforce` | `false`   | A true/false flag which allows to enforce running OpenSSL tests even if the OpenSSL reports it's not supported on the given platform.
 
 ### Testing for rolling upgrades compatibility

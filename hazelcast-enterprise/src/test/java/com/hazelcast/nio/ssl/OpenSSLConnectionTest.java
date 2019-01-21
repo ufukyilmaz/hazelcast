@@ -24,12 +24,9 @@ import org.junit.runner.RunWith;
 
 import java.util.Properties;
 
-import static com.hazelcast.TestEnvironmentUtil.assumeJdk8OrNewer;
-import static com.hazelcast.TestEnvironmentUtil.assumeNoIbmJvm;
 import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -72,20 +69,6 @@ public class OpenSSLConnectionTest {
         config.getNetworkConfig().getSSLConfig().setProperty("fipsMode", "true");
         expectedException.expect(HazelcastException.class);
         factory.newHazelcastInstance(config);
-    }
-
-    @Test
-    public void testEmptyTrust() {
-        assumeNoIbmJvm();
-        assumeJdk8OrNewer();
-        Config config = newConfig();
-        config.getNetworkConfig().getSSLConfig().getProperties().remove("trustCertCollectionFile");
-        // cover also the keyManagerFactory case (see OpenSSLConnectionKeyManagerFactoryTest)
-        config.getNetworkConfig().getSSLConfig().getProperties().remove(JAVAX_NET_SSL_TRUST_STORE);
-
-        final HazelcastInstance h1 = factory.newHazelcastInstance(config);
-        final HazelcastInstance h2 = factory.newHazelcastInstance(config);
-        assertClusterSize(2, h1, h2);
     }
 
     @Test

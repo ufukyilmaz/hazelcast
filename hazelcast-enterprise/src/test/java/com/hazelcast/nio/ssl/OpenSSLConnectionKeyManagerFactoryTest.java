@@ -27,7 +27,7 @@ public class OpenSSLConnectionKeyManagerFactoryTest extends OpenSSLConnectionTes
 
     protected Config newConfig() {
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
-        File letsEncryptKeystore = copyTestResource(OpenSSLConnectionKeyManagerFactoryTest.class, tempFolder.getRoot(), "letsencrypt.jks");
+        File letsEncryptKeystore = copyTestResource(OpenSSLConnectionKeyManagerFactoryTest.class, tempFolder.getRoot(), "server.jks");
         sslConfig.setFactoryImplementation(new OpenSSLEngineFactory())
                 .setProperty("keyStore", letsEncryptKeystore.getAbsolutePath())
                 .setProperty("keyStorePassword", "123456")

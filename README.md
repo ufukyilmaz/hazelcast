@@ -7,8 +7,8 @@ Releases repository:
 ````xml
 <repository>
     <id>hazelcast-ee-release</id>
-    <name>Sonatype Snapshot Repository</name>
-    <url>https://repository-hazelcast-l337.forge.cloudbees.com/release</url>
+    <name>Hazelcast Private Release Repository</name>
+    <url>https://repository.hazelcast.com/release</url>
     <releases>
         <enabled>true</enabled>
     </releases>
@@ -23,8 +23,8 @@ Snapshots repository:
 ````xml
 <repository>
     <id>hazelcast-ee-snapshot</id>
-    <name>Sonatype Snapshot Repository</name>
-    <url>https://repository-hazelcast-l337.forge.cloudbees.com/snapshot</url>
+    <name>Hazelcast Private Snapshot Repository</name>
+    <url>https://repository.hazelcast.com/snapshot</url>
     <releases>
         <enabled>false</enabled>
     </releases>

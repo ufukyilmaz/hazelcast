@@ -10,7 +10,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PowerMockIgnore({"javax.net.ssl.*", "javax.security.*"})
+@PowerMockIgnore({"javax.net.ssl.*", "javax.security.*", "javax.management.*"})
 @PrepareForTest(Version.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseVersionedInCurrentVersionTest extends VersionedInCurrentVersionTest {

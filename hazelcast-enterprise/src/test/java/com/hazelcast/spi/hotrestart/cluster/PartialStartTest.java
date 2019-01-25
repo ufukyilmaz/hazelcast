@@ -11,13 +11,14 @@ import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.partition.PartitionReplica;
-import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
+import com.hazelcast.internal.partition.impl.PartitionTableUtil;
 import com.hazelcast.nio.Address;
 import com.hazelcast.partition.PartitionLostEvent;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.SlowTest;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -46,10 +47,13 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.
 import static com.hazelcast.util.Preconditions.checkFalse;
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
@@ -211,7 +215,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         }
 
         String excludedUuid = getNode(instances[0]).getThisUuid();
-        terminateWithOverwrittenIncrementedPartitionTableVersion(instances[0]);
+        terminateWithOverwrittenUpdatedPartitionTable(instances[0]);
 
         instances = restartInstances(addresses, NO_LISTENERS, PARTIAL_RECOVERY_MOST_COMPLETE);
         assertInstancesJoined(nodeCount - 1, instances, NodeState.PASSIVE, ClusterState.PASSIVE);
@@ -232,7 +236,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             terminateWithOverwrittenACTIVEClusterState(instances[i]);
         }
 
-        overwriteIncrementedPartitionTableVersion(instances[0]);
+        overwriteUpdatedPartitionTable(instances[0]);
         String excludedUuid = terminateWithOverwrittenACTIVEClusterState(instances[0]);
 
         partitionLostListener.clear();
@@ -265,7 +269,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             instances[i].getLifecycleService().terminate();
         }
 
-        terminateWithOverwrittenIncrementedPartitionTableVersion(instances[0]);
+        terminateWithOverwrittenUpdatedPartitionTable(instances[0]);
 
         instances = restartInstances(addresses, NO_LISTENERS, PARTIAL_RECOVERY_MOST_RECENT);
         assertInstancesJoined(1, instances, NodeState.PASSIVE, ClusterState.PASSIVE);
@@ -302,7 +306,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             terminateWithOverwrittenACTIVEClusterState(instance);
         }
 
-        overwriteIncrementedPartitionTableVersion(instances[0]);
+        overwriteUpdatedPartitionTable(instances[0]);
         terminateWithOverwrittenACTIVEClusterState(instances[0]);
 
 
@@ -353,7 +357,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             terminateWithOverwrittenACTIVEClusterState(instance);
         }
 
-        overwriteIncrementedPartitionTableVersion(instances[0]);
+        overwriteUpdatedPartitionTable(instances[0]);
         terminateWithOverwrittenACTIVEClusterState(instances[0]);
 
         instances = restartInstances(addresses, NO_LISTENERS, PARTIAL_RECOVERY_MOST_RECENT);
@@ -403,7 +407,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             terminateWithOverwrittenACTIVEClusterState(instance);
         }
 
-        overwriteIncrementedPartitionTableVersion(instances[0]);
+        overwriteUpdatedPartitionTable(instances[0]);
         terminateWithOverwrittenACTIVEClusterState(instances[0]);
 
         instances = restartInstances(addresses, NO_LISTENERS, PARTIAL_RECOVERY_MOST_RECENT);
@@ -430,7 +434,6 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         Address[] addresses = getAddresses(instances);
         warmUpPartitions(instances);
 
-        int[] survivingInstanceReplicaIndices = getSurvivingReplicaIndices(instances[0]);
 
         changeClusterStateEventually(instances[0], ClusterState.PASSIVE);
 
@@ -441,7 +444,9 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             terminateWithOverwrittenACTIVEClusterState(instance);
         }
 
-        overwriteIncrementedPartitionTableVersion(instances[0]);
+        overwriteUpdatedPartitionTable(instances[0]);
+        int[] survivingInstanceReplicaIndices = getSurvivingReplicaIndices(instances[0]);
+
         terminateWithOverwrittenACTIVEClusterState(instances[0]);
 
         partitionLostListener.clear();
@@ -457,11 +462,10 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         waitAllForSafeState(instances);
 
         List<PartitionLostEvent> events = partitionLostListener.getEvents();
-        assertFalse("PartitionLostEvents should not be empty", events.isEmpty());
+        assertThat("PartitionLostEvents should not be empty", events, not(Matchers.<PartitionLostEvent>empty()));
         for (PartitionLostEvent event : events) {
-            assertTrue(
-                    "Expected PartitionLostEvent.getLostBackupCount() < survivingInstanceReplicaIndices[event.getPartitionId()]",
-                    event.getLostBackupCount() < survivingInstanceReplicaIndices[event.getPartitionId()]);
+            assertThat("PartitionLostEvent.getLostBackupCount() < survivingInstanceReplicaIndices[event.getPartitionId()]",
+                    event.getLostBackupCount(), lessThan(survivingInstanceReplicaIndices[event.getPartitionId()]));
         }
     }
 
@@ -474,7 +478,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             terminateWithOverwrittenACTIVEClusterState(instances[i]);
         }
 
-        overwriteIncrementedPartitionTableVersion(instances[0]);
+        overwriteUpdatedPartitionTable(instances[0]);
         AtomicReference<String> restartedUuid = new AtomicReference<String>();
         Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
         listeners.put(getAddress(instances[0]), new RestartOnComplete(restartedUuid));
@@ -502,15 +506,16 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         return survivingInstanceReplicaIndices;
     }
 
-    private void overwriteIncrementedPartitionTableVersion(HazelcastInstance instance) {
-        InternalPartitionServiceImpl partitionService = (InternalPartitionServiceImpl) getPartitionService(instance);
-        partitionService.getPartitionStateManager().incrementVersion();
-        ClusterMetadataManager clusterMetadataManager = getClusterMetadataManager(getNode(instance));
-        clusterMetadataManager.onPartitionStateChange();
+    private void overwriteUpdatedPartitionTable(HazelcastInstance instance) {
+        PartitionReplica[] replicas0 = PartitionTableUtil.getReplicas(instance, 0);
+        PartitionReplica[] replicas1 = PartitionTableUtil.getReplicas(instance, 1);
+        // Replace replicas of partitions to get an updated partition table
+        PartitionTableUtil.updateReplicas(instance, 0, replicas1);
+        PartitionTableUtil.updateReplicas(instance, 1, replicas0);
     }
 
-    private void terminateWithOverwrittenIncrementedPartitionTableVersion(HazelcastInstance instance) {
-        overwriteIncrementedPartitionTableVersion(instance);
+    private void terminateWithOverwrittenUpdatedPartitionTable(HazelcastInstance instance) {
+        overwriteUpdatedPartitionTable(instance);
         instance.getLifecycleService().terminate();
     }
 

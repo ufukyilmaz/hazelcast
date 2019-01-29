@@ -48,6 +48,11 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         INSECURE_SERVICES.add(com.hazelcast.concurrent.idgen.IdGeneratorService.class);
         INSECURE_SERVICES.add(com.hazelcast.transaction.impl.xa.XAService.class);
         INSECURE_SERVICES.add(com.hazelcast.mapreduce.impl.MapReduceService.class);
+        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.lock.RaftLockService.class);
+        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomiclong.RaftAtomicLongService.class);
+        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomicref.RaftAtomicRefService.class);
+        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.countdownlatch.RaftCountDownLatchService.class);
+        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.semaphore.RaftSemaphoreService.class);
     }
 
     // Common methods that don't require security

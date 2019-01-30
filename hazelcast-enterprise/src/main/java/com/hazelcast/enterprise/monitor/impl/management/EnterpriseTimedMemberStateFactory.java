@@ -2,12 +2,12 @@ package com.hazelcast.enterprise.monitor.impl.management;
 
 import com.hazelcast.enterprise.monitor.LicenseInfo;
 import com.hazelcast.enterprise.monitor.impl.rest.LicenseInfoImpl;
+import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.HazelcastInstanceImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.management.TimedMemberState;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
-import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.monitor.NodeState;
 import com.hazelcast.monitor.impl.MemberStateImpl;
 import com.hazelcast.security.impl.WeakSecretError;
@@ -25,18 +25,18 @@ import java.util.Map;
 public class EnterpriseTimedMemberStateFactory extends TimedMemberStateFactory {
 
     private final Map<String, List<String>> weakSecretsReport = new HashMap<String, List<String>>();
-    private final LicenseInfo licenseInfo;
 
     public EnterpriseTimedMemberStateFactory(HazelcastInstanceImpl instance) {
         super(instance);
 
-        this.licenseInfo = new LicenseInfoImpl(LicenseHelper.getLicense(instance.getConfig().getLicenseKey(),
-                instance.node.getBuildInfo().getVersion()));
         evaluateWeakSecretsInConfig();
     }
 
     @Override
     protected void createNodeState(MemberStateImpl memberState) {
+        EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) instance.node.getNodeExtension();
+        LicenseInfo licenseInfo = new LicenseInfoImpl(nodeExtension.getLicense());
+
         Node node = instance.node;
         ClusterService cluster = instance.node.clusterService;
         NodeState nodeState = new EnterpriseNodeStateImpl(cluster.getClusterState(), node.getState(),

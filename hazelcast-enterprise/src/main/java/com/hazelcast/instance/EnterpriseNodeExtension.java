@@ -155,15 +155,21 @@ public class EnterpriseNodeExtension
 
     @Override
     public void beforeStart() {
-        logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
+        // NLC mode check for a "built-in license"
+        license = LicenseHelper.getBuiltInLicense();
+        if (license == null) {
+            logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
 
-        String licenseKey = node.getProperties().getString(GroupProperty.ENTERPRISE_LICENSE_KEY);
-        if (licenseKey == null || licenseKey.isEmpty()) {
-            licenseKey = node.getConfig().getLicenseKey();
+            String licenseKey = node.getProperties().getString(GroupProperty.ENTERPRISE_LICENSE_KEY);
+            if (licenseKey == null || licenseKey.isEmpty()) {
+                licenseKey = node.getConfig().getLicenseKey();
+            }
+            node.config.setLicenseKey(licenseKey);
+            license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
+            logger.log(Level.INFO, license.toString());
+        } else {
+            logger.log(Level.FINE, "This is an OEM version of Hazelcast Enterprise.");
         }
-        node.config.setLicenseKey(licenseKey);
-        license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
-        logger.log(Level.INFO, license.toString());
 
         createSecurityContext(node);
         createMemoryManager(node);
@@ -177,8 +183,7 @@ public class EnterpriseNodeExtension
     private void createSecurityContext(Node node) {
         boolean securityEnabled = node.getConfig().getSecurityConfig().isEnabled();
         if (securityEnabled) {
-            LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
-                    Feature.SECURITY);
+            LicenseHelper.checkLicensePerFeature(license, Feature.SECURITY);
             securityContext = new SecurityContextImpl(node);
         }
     }
@@ -213,12 +218,11 @@ public class EnterpriseNodeExtension
     @Override
     public void beforeJoin() {
         if (hotRestartService != null) {
-            LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
-                    Feature.HOT_RESTART);
+            LicenseHelper.checkLicensePerFeature(license, Feature.HOT_RESTART);
             hotRestartService.prepare();
         }
         if (node.getConfig().getNativeMemoryConfig().isEnabled()) {
-            LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(), Feature.HD_MEMORY);
+            LicenseHelper.checkLicensePerFeature(license, Feature.HD_MEMORY);
         }
     }
 
@@ -292,6 +296,11 @@ public class EnterpriseNodeExtension
     }
 
     private void initLicenseExpReminder() {
+        // don't start reminder task in case of "built-in license" (NLC mode)
+        if (LicenseHelper.isBuiltInLicense(license)) {
+            return;
+        }
+
         TaskScheduler scheduler = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();
         LicenseExpirationReminderTask.scheduleWith(scheduler, license);
     }
@@ -503,8 +512,7 @@ public class EnterpriseNodeExtension
     public boolean isFeatureEnabledForLicenseKey(Feature feature) {
         boolean enabled = true;
         try {
-            LicenseHelper.checkLicenseKeyPerFeature(license.getKey(),
-                    buildInfo.getVersion(), feature);
+            LicenseHelper.checkLicensePerFeature(license, feature);
         } catch (InvalidLicenseException e) {
             enabled = false;
             logger.warning(e.getMessage());
@@ -530,8 +538,7 @@ public class EnterpriseNodeExtension
     public <T> T createService(Class<T> clazz) {
         if (WanReplicationService.class.isAssignableFrom(clazz)) {
             try {
-                LicenseHelper.checkLicenseKeyPerFeature(license.getKey(),
-                        buildInfo.getVersion(), Feature.WAN);
+                LicenseHelper.checkLicensePerFeature(license, Feature.WAN);
                 return (T) new EnterpriseWanReplicationService(node);
             } catch (InvalidLicenseException e) {
                 return (T) new WanReplicationServiceImpl(node);

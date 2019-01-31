@@ -9,11 +9,16 @@ import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestAwareInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
+
+import io.netty.handler.ssl.OpenSsl;
+
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
@@ -26,6 +31,7 @@ import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static org.hamcrest.CoreMatchers.containsString;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class})
@@ -33,6 +39,8 @@ public class OpenSSLConnectionTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     protected final TestAwareInstanceFactory factory = new TestAwareInstanceFactory();
 
@@ -57,6 +65,15 @@ public class OpenSSLConnectionTest {
     }
 
     @Test
+    public void testFipsMode_failsForBoringSSL() {
+        Assume.assumeThat(OpenSsl.versionString(), containsString("BoringSSL"));
+        Config config = newConfig();
+        config.getNetworkConfig().getSSLConfig().setProperty("fipsMode", "true");
+        expectedException.expect(HazelcastException.class);
+        factory.newHazelcastInstance(config);
+    }
+
+    @Test
     public void testEmptyTrust() {
         assumeNoIbmJvm();
         assumeJdk8OrNewer();
@@ -70,11 +87,11 @@ public class OpenSSLConnectionTest {
         assertClusterSize(2, h1, h2);
     }
 
-    @Test(expected = HazelcastException.class)
+    @Test
     public void testUnknownCipherSuite() {
         Config config = newConfig();
         config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "ciphersuites", "unknown");
-
+        expectedException.expect(HazelcastException.class);
         factory.newHazelcastInstance(config);
     }
 
@@ -82,14 +99,6 @@ public class OpenSSLConnectionTest {
     public void testTLSProtocol() {
         Config config = newConfig();
         config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "protocol", "TLS");
-
-        factory.newHazelcastInstance(config);
-    }
-
-    @Test
-    public void testSSLProtocol() {
-        Config config = newConfig();
-        config.getNetworkConfig().getSSLConfig().setProperty(JAVA_NET_SSL_PREFIX + "protocol", "SSL");
 
         factory.newHazelcastInstance(config);
     }

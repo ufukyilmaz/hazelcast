@@ -200,8 +200,9 @@
         <!-- netty dependencies for OpenSSL integration -->
         <dependency>
             <groupId>io.netty</groupId>
-            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <artifactId>${netty-tcnative.artifactId}</artifactId>
             <version>${netty-tcnative.version}</version>
+            <classifier>${netty-tcnative.classifier}</classifier>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>

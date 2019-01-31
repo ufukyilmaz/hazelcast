@@ -4,8 +4,10 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.handler.ssl.ClientAuth;
+import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.internal.tcnative.SSL;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -39,6 +41,10 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
      * Property name which holds path to an X.509 certificate collection file in PEM format.
      */
     public static final String TRUST_CERT_COLLECTION_FILE = "trustCertCollectionFile";
+    /**
+     * Property name which allows to set OpenSSL engine into FIPS 140-2 mode.
+     */
+    public static final String FIPS_MODE = "fipsMode";
 
     private final ILogger logger = Logger.getLogger(OpenSSLEngineFactory.class);
 
@@ -65,6 +71,13 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
         this.cipherSuites = loadCipherSuites(properties);
         this.protocol = loadProtocol(properties);
         this.clientAuth = loadClientAuth(properties);
+
+        OpenSsl.ensureAvailability();
+        if (Boolean.valueOf(getProperty(properties, FIPS_MODE))) {
+            logger.info("Enabling OpenSSL in FIPS mode.");
+            SSL.fipsModeSet(1);
+            logger.info("OpenSSL is enabled in FIPS mode.");
+        }
 
         logInit();
 
@@ -194,6 +207,7 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
             // client authentication is a server-side setting. Doesn't need to be set on the client-side.
             builder.clientAuth(clientAuth);
         }
+
         return builder;
     }
 }

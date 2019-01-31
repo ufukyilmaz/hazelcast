@@ -25,6 +25,7 @@ import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
 import com.hazelcast.internal.ascii.TextCommandService;
+import com.hazelcast.internal.cluster.impl.ClusterVersionAutoUpgradeHelper;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.internal.diagnostics.Diagnostics;
@@ -123,10 +124,13 @@ public class EnterpriseNodeExtension
     private final HotBackupService hotBackupService;
     private final SecurityService securityService;
     private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
+    private final ClusterVersionAutoUpgradeHelper clusterVersionAutoUpgradeHelper
+            = new ClusterVersionAutoUpgradeHelper();
+
     private volatile License license;
     private volatile SecurityContext securityContext;
-    private volatile MemberSocketInterceptor memberSocketInterceptor;
     private volatile HazelcastMemoryManager memoryManager;
+    private volatile MemberSocketInterceptor memberSocketInterceptor;
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
@@ -256,7 +260,7 @@ public class EnterpriseNodeExtension
         final int nodeCount = node.getClusterService().getSize();
         if (nodeCount > license.getAllowedNumberOfNodes()) {
             logger.log(Level.SEVERE, "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: "
-                            + license.getAllowedNumberOfNodes() + ", Current: " + nodeCount);
+                    + license.getAllowedNumberOfNodes() + ", Current: " + nodeCount);
             node.shutdown(true);
             return;
         }
@@ -359,6 +363,13 @@ public class EnterpriseNodeExtension
             throw ExceptionUtil.rethrow(e);
         }
         return ss;
+    }
+
+    @Override
+    public void scheduleClusterVersionAutoUpgrade() {
+        if (isRollingUpgradeLicensed()) {
+            clusterVersionAutoUpgradeHelper.scheduleNewAutoUpgradeTask(node.clusterService);
+        }
     }
 
     private void createMemoryManager(Node node) {

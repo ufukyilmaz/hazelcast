@@ -877,6 +877,13 @@
             <version>2.7.9</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>${reflections.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <distributionManagement>

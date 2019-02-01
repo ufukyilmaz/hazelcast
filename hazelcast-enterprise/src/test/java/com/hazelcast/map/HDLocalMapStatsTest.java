@@ -10,6 +10,7 @@ import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.monitor.LocalMapStats;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -23,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
+@Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2704")
 public class HDLocalMapStatsTest extends LocalMapStatsTest {
 
     // NOTE: all sizes below are as expected from the POOLED memory allocator

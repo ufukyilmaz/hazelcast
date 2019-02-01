@@ -618,7 +618,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     }
 
     @Override
-    public void resetHotRestartData() {
+    public void forceStartBeforeJoin() {
         if (isStartCompleted()) {
             throw new HotRestartException("cannot reset hot restart data since node has already started!");
         }
@@ -647,7 +647,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
         resetNode();
 
-        resetHotRestart(isAfterJoin);
+        resetService(isAfterJoin);
 
         logger.info("Resetting cluster state to ACTIVE");
 
@@ -703,7 +703,8 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         }
     }
 
-    private void resetHotRestart(boolean isAfterJoin) {
+    @Override
+    public void resetService(boolean isAfterJoin) {
         logger.info("Closing Hot Restart stores");
         closeHotRestartStores();
         clusterMetadataManager.stopPersistence();

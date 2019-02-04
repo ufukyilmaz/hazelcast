@@ -23,7 +23,8 @@ public class HDSetOperation extends HDBasePutOperation implements IdentifiedData
         Object oldValue = recordStore.set(dataKey, dataValue, ttl, maxIdle);
         newRecord = oldValue == null;
 
-        if (recordStore.hasQueryCache()) {
+        if (mapEventPublisher.usesNaturalFiltering()
+                || recordStore.hasQueryCache()) {
             dataOldValue = mapServiceContext.toData(oldValue);
         }
     }

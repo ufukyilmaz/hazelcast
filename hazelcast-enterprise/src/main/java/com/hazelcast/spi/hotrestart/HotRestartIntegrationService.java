@@ -32,14 +32,11 @@ import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationThread;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
+import com.hazelcast.util.UuidUtil;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,8 +57,8 @@ import static com.hazelcast.hotrestart.BackupTaskState.NO_TASK;
 import static com.hazelcast.hotrestart.BackupTaskState.SUCCESS;
 import static com.hazelcast.hotrestart.HotRestartService.BACKUP_DIR_PREFIX;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
-import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.spi.hotrestart.DirectoryLock.lockForDirectory;
 import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
@@ -90,7 +87,6 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private static final char ONHEAP_SUFFIX = '0';
     private static final char OFFHEAP_SUFFIX = '1';
     private static final String STORE_NAME_PATTERN = STORE_PREFIX + "\\d+" + ONHEAP_SUFFIX;
-    private static final String LOCK_FILE_NAME = "lock";
 
     private final Map<String, RamStoreRegistry> ramStoreRegistryServiceMap = new ConcurrentHashMap<String, RamStoreRegistry>();
     private final Map<Long, RamStoreRegistry> ramStoreRegistryPrefixMap = new ConcurrentHashMap<Long, RamStoreRegistry>();
@@ -103,28 +99,81 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private final long dataLoadTimeoutMillis;
     private final int storeCount;
     private final boolean autoRemoveStaleData;
+    private final List<LoadedConfigurationListener> loadedConfigurationListeners;
+    private final boolean legacyHotRestartDir;
 
     private volatile HotRestartStore[] onHeapStores;
     private volatile HotRestartStore[] offHeapStores;
     private volatile int partitionThreadCount;
-    private final List<LoadedConfigurationListener> loadedConfigurationListeners;
-
     private volatile DirectoryLock directoryLock;
 
     public HotRestartIntegrationService(Node node) {
         this.node = node;
         this.logger = node.getLogger(getClass());
-        HotRestartPersistenceConfig hrCfg = node.getConfig().getHotRestartPersistenceConfig();
-        this.hotRestartHome = hrCfg.getBaseDir();
-        this.hotRestartBackupDir = hrCfg.getBackupDir();
-        this.storeCount = hrCfg.getParallelism();
-        this.autoRemoveStaleData = hrCfg.isAutoRemoveStaleData();
-        this.clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hrCfg);
+        HotRestartPersistenceConfig config = node.getConfig().getHotRestartPersistenceConfig();
+        this.directoryLock = acquireHotRestartDir(config);
+        this.hotRestartHome = directoryLock.getDir();
+        this.legacyHotRestartDir = hotRestartHome.getName().equals(config.getBaseDir().getName());
+        this.hotRestartBackupDir = config.getBackupDir();
+        this.storeCount = config.getParallelism();
+        this.autoRemoveStaleData = config.isAutoRemoveStaleData();
+        this.clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, config);
         this.persistentConfigDescriptors = new PersistentConfigDescriptors(hotRestartHome);
-        this.dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(hrCfg.getDataLoadTimeoutSeconds());
+        this.dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(config.getDataLoadTimeoutSeconds());
         this.loadedConfigurationListeners = new ArrayList<LoadedConfigurationListener>();
-        this.directoryLock = new DirectoryLock();
-        logger.fine("Created hot-restart service. Base directory: " + hotRestartHome.getAbsolutePath());
+    }
+
+    private DirectoryLock acquireHotRestartDir(HotRestartPersistenceConfig config) {
+        File baseDir = config.getBaseDir();
+        if (!baseDir.exists() && !baseDir.mkdirs() && !baseDir.exists()) {
+            throw new HotRestartException("Could not create " + baseDir.getAbsolutePath());
+        }
+        if (!baseDir.isDirectory()) {
+            throw new HotRestartException(baseDir.getAbsolutePath() + " is not a directory!");
+        }
+        if (isHotRestartDirectory(baseDir)) {
+            // Legacy Hot Restart directory
+            logger.info("Found legacy hot-restart directory: " + baseDir.getAbsolutePath());
+            return lockForDirectory(baseDir, logger);
+        }
+        File[] dirs = baseDir.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File f) {
+                boolean hotRestartDirectory = isHotRestartDirectory(f);
+                if (!hotRestartDirectory) {
+                    logger.fine(f.getAbsolutePath() + " is not a valid hot-restart directory.");
+                }
+                return hotRestartDirectory;
+            }
+        });
+        if (dirs == null) {
+            return newHotRestartDir(baseDir);
+        }
+        for (File dir : dirs) {
+            try {
+                logger.fine("Trying to lock existing hot-restart directory: " + dir.getAbsolutePath());
+                DirectoryLock directoryLock = lockForDirectory(dir, logger);
+                logger.info("Found existing hot-restart directory: " + dir.getAbsolutePath());
+                return directoryLock;
+            } catch (Exception e) {
+                logger.fine("Could not lock existing hot-restart directory: " + dir.getAbsolutePath()
+                        + ". Reason: " + e.getMessage());
+            }
+        }
+        // create a new one
+        return newHotRestartDir(baseDir);
+    }
+
+    private DirectoryLock newHotRestartDir(File baseDir) {
+        File dir = new File(baseDir, UuidUtil.newUnsecureUuidString());
+        boolean created = dir.mkdir();
+        assert created : "Couldn't create " + dir.getAbsolutePath();
+        logger.info("Created new empty hot-restart directory: " + dir.getAbsolutePath());
+        return lockForDirectory(dir, logger);
+    }
+
+    private static boolean isHotRestartDirectory(File dir) {
+        return PersistentConfigDescriptors.isValidHotRestartDir(dir) && ClusterMetadataManager.isValidHotRestartDir(dir);
     }
 
     @Override
@@ -326,13 +375,23 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             return false;
         }
         logger.info("Starting new hot backup with sequence " + sequence);
-        File backupDir = new File(hotRestartBackupDir, BACKUP_DIR_PREFIX + sequence);
+        File backupDir = getBackupDir(sequence);
         ensureDir(backupDir);
         persistentConfigDescriptors.backup(backupDir);
         clusterMetadataManager.backup(backupDir);
         backup(backupDir, onHeapStores, true);
         backup(backupDir, offHeapStores, false);
         return true;
+    }
+
+    /**
+     * Returns the member specific backup directory for requested backup sequence
+     * @param sequence backup sequence
+     * @return backup directory
+     */
+    public File getBackupDir(long sequence) {
+        File backupDir = new File(hotRestartBackupDir, BACKUP_DIR_PREFIX + sequence);
+        return legacyHotRestartDir ? backupDir : new File(backupDir, hotRestartHome.getName());
     }
 
     /**
@@ -715,7 +774,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         if (!hotRestartHome.mkdir()) {
             throw new HotRestartException("Could not re-create base-dir " + hotRestartHome);
         }
-        directoryLock = new DirectoryLock();
+        directoryLock = lockForDirectory(hotRestartHome, logger);
 
         logger.info("Resetting hot restart cluster metadata service...");
         clusterMetadataManager.reset(isAfterJoin);
@@ -883,63 +942,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         }
     }
 
-    private final class DirectoryLock {
-
-        private final FileChannel channel;
-        private final FileLock lock;
-
-        private DirectoryLock() {
-            File lockFile = getFile();
-            channel = openChannel(lockFile);
-            lock = acquireLock(lockFile);
-            if (logger.isFineEnabled()) {
-                logger.fine("Acquired lock on " + lockFile.getAbsolutePath());
-            }
-        }
-
-        private FileLock acquireLock(File lockFile) {
-            FileLock fileLock = null;
-            try {
-                fileLock = channel.tryLock();
-                if (fileLock == null) {
-                    throw new HotRestartException("Cannot acquire lock on " + lockFile.getAbsolutePath()
-                            + ". " + hotRestartHome + " is already being used by another member.");
-                }
-                return fileLock;
-            } catch (OverlappingFileLockException e) {
-                throw new HotRestartException("Cannot acquire lock on " + lockFile.getAbsolutePath()
-                        + ". " + hotRestartHome + " is already being used by another member.", e);
-            } catch (IOException e) {
-                throw new HotRestartException("Unknown failure while acquiring lock on " + lockFile.getAbsolutePath(), e);
-            } finally {
-                if (fileLock == null) {
-                    closeResource(channel);
-                }
-            }
-        }
-
-        private FileChannel openChannel(File lockFile) {
-            try {
-                return new RandomAccessFile(lockFile, "rw").getChannel();
-            } catch (IOException e) {
-                throw new HotRestartException("Cannot create lock file " + lockFile.getAbsolutePath(), e);
-            }
-        }
-
-        private void release() {
-            if (logger.isFineEnabled()) {
-                logger.fine("Releasing lock on " + getFile().getAbsolutePath());
-            }
-            try {
-                lock.release();
-                channel.close();
-            } catch (IOException e) {
-                logger.severe("Problem while releasing the lock and closing channel on " + getFile(), e);
-            }
-        }
-
-        private File getFile() {
-            return new File(hotRestartHome, LOCK_FILE_NAME);
-        }
+    public File getHotRestartHome() {
+        return hotRestartHome;
     }
 }

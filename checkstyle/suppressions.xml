@@ -25,6 +25,7 @@
 
     <!-- Hot restart module -->
     <suppress checks="VisibilityModifier|InnerAssignment" files="com/hazelcast/spi/hotrestart/impl"/>
+    <suppress checks="FileLength" files="com/hazelcast/spi/hotrestart/cluster/ClusterMetadataManager\.java"/>
     <suppress checks="OuterTypeNumber" files="com/hazelcast/internal/util/collection/AbstractConcurrentArrayQueue\.java"/>
 
     <!-- SerializerHook -->

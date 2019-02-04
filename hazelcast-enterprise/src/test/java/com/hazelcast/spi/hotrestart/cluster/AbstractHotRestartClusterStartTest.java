@@ -19,6 +19,7 @@ import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
+import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -30,7 +31,6 @@ import com.hazelcast.version.MemberVersion;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.rules.TestName;
 import org.junit.runners.Parameterized.Parameter;
 
 import java.io.File;
@@ -41,21 +41,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.toFileName;
 import static java.util.Collections.synchronizedList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings({"WeakerAccess", "SameParameterValue"})
@@ -63,12 +57,19 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
 
     protected static final int PARTITION_COUNT = 50;
 
-    private static final AtomicInteger instanceNameIndex = new AtomicInteger(0);
-
-    public enum AddressChangePolicy {
-        NONE,
-        PARTIAL,
-        ALL
+    public enum ReuseAddress {
+        /**
+         * Reuse all previous addresses
+         */
+        ALWAYS,
+        /**
+         * Randomly decide whether or not to reuse an address.
+         */
+        SOMETIMES,
+        /**
+         * Never reuse, always pick new addresses
+         */
+        NEVER
     }
 
     private final ILogger logger = Logger.getLogger(getClass());
@@ -84,23 +85,17 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
     private Future startNodeFuture;
 
     @Rule
-    public TestName testName = new TestName();
+    public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
 
     @Parameter
-    public volatile AddressChangePolicy addressChangePolicy = AddressChangePolicy.NONE;
+    public volatile ReuseAddress reuseAddress = ReuseAddress.ALWAYS;
 
-    protected File baseDir;
+    private File baseDir;
     private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
-    private ConcurrentMap<Address, String> instanceNames = new ConcurrentHashMap<Address, String>();
 
     @Before
     public void before() {
-        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(baseDir);
-
-        if (!baseDir.mkdir()) {
-            throw new IllegalStateException("Failed to create hot-restart directory!");
-        }
+        baseDir = hotRestartFolderRule.getBaseDir();
     }
 
     @After
@@ -117,7 +112,6 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
         }
 
         factory.terminateAll();
-        delete(baseDir);
     }
 
     HazelcastInstance[] startNewInstances(int numberOfInstances) {
@@ -200,11 +194,7 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
                                        HotRestartClusterDataRecoveryPolicy clusterStartPolicy,
                                        MemberVersion codebaseVersion) {
         Address address = factory.nextAddress();
-
-        String instanceName = "instance_" + instanceNameIndex.getAndIncrement();
-        assertNull("instanceName should be unique", instanceNames.putIfAbsent(address, instanceName));
-
-        Config config = newConfig(instanceName, listener, clusterStartPolicy);
+        Config config = newConfig(listener, clusterStartPolicy);
         if (codebaseVersion == null) {
             return factory.newHazelcastInstance(address, config);
         } else {
@@ -246,15 +236,9 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
             if (codebaseVersion != null) {
                 System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, codebaseVersion.toString());
             }
-            String instanceName = instanceNames.get(address);
-            assertNotNull("instanceName should not be null", instanceName);
 
-            Config config = newConfig(instanceName, listener, clusterStartPolicy);
-
+            Config config = newConfig(listener, clusterStartPolicy);
             Address newAddress = getRestartingAddress(address);
-            if (!address.equals(newAddress)) {
-                assertNull("instanceName should be unique", instanceNames.putIfAbsent(newAddress, instanceName));
-            }
             return factory.newHazelcastInstance(newAddress, config);
         } finally {
             if (existingHazelcastVersionValue == null) {
@@ -266,12 +250,12 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
     }
 
     private Address getRestartingAddress(Address address) {
-        switch (addressChangePolicy) {
-            case NONE:
+        switch (reuseAddress) {
+            case ALWAYS:
                 return address;
-            case ALL:
+            case NEVER:
                 return factory.nextAddress();
-            case PARTIAL:
+            case SOMETIMES:
                 return (address.getPort() % 2 == 1) ? factory.nextAddress() : address;
         }
         throw new IllegalStateException("Should not reach here!");
@@ -358,8 +342,7 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
         return factory.getAllHazelcastInstances();
     }
 
-    Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
-                     HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+    Config newConfig(ClusterHotRestartEventListener listener, HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         Config config = new Config()
                 .setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
                 .setProperty(GroupProperty.SLOW_OPERATION_DETECTOR_STACK_TRACE_LOGGING_ENABLED.getName(), "true")
@@ -379,7 +362,7 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)
-                .setBaseDir(new File(baseDir, instanceName))
+                .setBaseDir(baseDir)
                 .setClusterDataRecoveryPolicy(clusterStartPolicy)
                 .setValidationTimeoutSeconds(validationTimeoutInSeconds)
                 .setDataLoadTimeoutSeconds(dataLoadTimeoutInSeconds);
@@ -390,15 +373,6 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
         }
 
         return config;
-    }
-
-    void deleteHotRestartDirectoryOfNode(Address address) {
-        String hotRestartDirName = instanceNames.get(address);
-        assertNotNull("hotRestartDirName should not be null", hotRestartDirName);
-
-        File hotRestartDir = new File(baseDir, hotRestartDirName);
-        assertTrue("hotRestartDir doesn't exist: " + hotRestartDir.getAbsolutePath(), hotRestartDir.exists());
-        delete(hotRestartDir);
     }
 
     void assertInstancesJoined(int numberOfInstances, NodeState nodeState, ClusterState clusterState) {
@@ -447,11 +421,6 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
     }
 
     void invokeDummyOperationOnAllPartitions(HazelcastInstance... instances) {
-        if (addressChangePolicy == AddressChangePolicy.NONE) {
-            // not needed
-            return;
-        }
-
         for (HazelcastInstance hz : instances) {
             NodeEngine nodeEngine = getNodeEngineImpl(hz);
             OperationService operationService = nodeEngine.getOperationService();
@@ -463,7 +432,7 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
             }
             for (InternalCompletableFuture f : futures) {
                 try {
-                    f.get(2, TimeUnit.MINUTES);
+                    f.get(ASSERT_TRUE_EVENTUALLY_TIMEOUT, TimeUnit.SECONDS);
                 } catch (Exception e) {
                     throw ExceptionUtil.rethrow(e);
                 }
@@ -479,13 +448,31 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
                 try {
                     assertNodeStateEventually(node, NodeState.SHUT_DOWN);
                     // we can't change address anymore after cluster restart is initiated
-                    addressChangePolicy = AddressChangePolicy.NONE;
+                    reuseAddress = ReuseAddress.ALWAYS;
                     restartInstance(address);
                 } catch (Throwable e) {
                     logger.severe("Restart for " + address + " failed!", e);
                 }
             }
         });
+    }
+
+    HazelcastInstance startNewInstanceWithBaseDir(File tmpBaseDir) {
+        File baseDirBackup = baseDir;
+        try {
+            baseDir = tmpBaseDir;
+            return startNewInstance();
+        } finally {
+            baseDir = baseDirBackup;
+        }
+    }
+
+    File getHotRestartHome(HazelcastInstance hz) {
+        return getHotRestartIntegrationService(getNode(hz)).getHotRestartHome();
+    }
+
+    File getBaseDir() {
+        return baseDir;
     }
 
     private static class DummyPartitionAwareOperation extends Operation implements AllowedDuringPassiveState {

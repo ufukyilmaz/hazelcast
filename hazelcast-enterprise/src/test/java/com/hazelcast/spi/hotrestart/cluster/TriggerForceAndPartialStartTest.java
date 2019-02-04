@@ -83,9 +83,8 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
     }
 
     @Override
-    protected Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
-                               HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
-        Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
+    protected Config newConfig(ClusterHotRestartEventListener listener, HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+        Config config = super.newConfig(listener, clusterStartPolicy);
         config.getHotRestartPersistenceConfig()
                 // tests don't depend on validation timeout, we explicitly trigger force & partial start
                 .setValidationTimeoutSeconds(Integer.MAX_VALUE);

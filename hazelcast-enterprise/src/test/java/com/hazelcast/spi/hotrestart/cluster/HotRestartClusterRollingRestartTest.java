@@ -18,25 +18,27 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static com.hazelcast.cluster.ClusterState.FROZEN;
+import static com.hazelcast.cluster.ClusterState.PASSIVE;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.NEVER;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.ALWAYS;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.SOMETIMES;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameters(name = "clusterState:{1},addressChangePolicy:{0}")
+    @Parameters(name = "clusterState:{1},reuseAddress:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                {NONE, ClusterState.FROZEN},
-                {NONE, ClusterState.PASSIVE},
-                {PARTIAL, ClusterState.FROZEN},
-                {PARTIAL, ClusterState.PASSIVE},
-                {ALL, ClusterState.FROZEN},
-                {ALL, ClusterState.PASSIVE},
+                {ALWAYS, FROZEN},
+                {ALWAYS, PASSIVE},
+                {SOMETIMES, FROZEN},
+                {SOMETIMES, PASSIVE},
+                {NEVER, FROZEN},
+                {NEVER, PASSIVE},
         });
     }
 

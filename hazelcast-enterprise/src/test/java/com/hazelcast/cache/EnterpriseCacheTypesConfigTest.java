@@ -17,23 +17,17 @@ import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.instance.Node;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.CountingWanEndpoint;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
-import java.io.File;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_RECENT;
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.toFileName;
 
 /**
  * Test transfer of CacheConfig's with typed Caches along with EE features (HotRestart, WAN replication)
@@ -42,29 +36,8 @@ import static com.hazelcast.nio.IOUtil.toFileName;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
 
-    static final AtomicInteger counter = new AtomicInteger();
-
     @Rule
-    public TestName testName = new TestName();
-
-    File baseDir;
-
-    @Before
-    public void before() {
-        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()
-                + "_" + randomString()));
-        delete(baseDir);
-
-        if (!baseDir.mkdir()) {
-            throw new IllegalStateException("Failed to create hot-restart directory!");
-        }
-    }
-
-    @After
-    public void after() {
-        factory.terminateAll();
-        delete(baseDir);
-    }
+    public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
 
     @Override
     CacheConfig createCacheConfig() {
@@ -83,9 +56,7 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
 
     @Override
     protected Config getConfig() {
-        int sequenceNumber = counter.incrementAndGet();
         Config config = super.getConfig();
-        config.setInstanceName("instance_" + sequenceNumber);
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(16, MemoryUnit.MEGABYTES));
         WanReplicationConfig wanReplicationConfig = new WanReplicationConfig().setName("wan-replication");
         WanPublisherConfig wanPublisherConfig = new WanPublisherConfig().setGroupName("target-cluster")
@@ -97,7 +68,7 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
         config.addWanReplicationConfig(wanReplicationConfig);
 
         config.getHotRestartPersistenceConfig().setEnabled(true)
-                .setBaseDir(new File(baseDir, "instance_" + sequenceNumber))
+                .setBaseDir(hotRestartFolderRule.getBaseDir())
                 .setClusterDataRecoveryPolicy(PARTIAL_RECOVERY_MOST_RECENT)
                 .setDataLoadTimeoutSeconds(10)
                 .setValidationTimeoutSeconds(10);

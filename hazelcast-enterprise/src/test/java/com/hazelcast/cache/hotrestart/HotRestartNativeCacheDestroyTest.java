@@ -10,46 +10,19 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
-
-import java.io.File;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.toFileName;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class})
 public class HotRestartNativeCacheDestroyTest extends CacheDestroyTest {
 
-    private static final AtomicInteger instanceIndex = new AtomicInteger();
-
-    private File folder;
-
     @Rule
-    public TestName testName = new TestName();
-
-    @Override
-    protected void onSetup() {
-        folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        createFolder(folder);
-
-        super.onSetup();
-    }
-
-    @Override
-    protected void onTearDown() {
-        super.onTearDown();
-        if (folder != null) {
-            delete(folder);
-        }
-    }
+    public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
 
     @Override
     protected Config createConfig() {
@@ -61,7 +34,7 @@ public class HotRestartNativeCacheDestroyTest extends CacheDestroyTest {
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)
-                .setBaseDir(new File(folder, "hz_" + instanceIndex.incrementAndGet()));
+                .setBaseDir(hotRestartFolderRule.getBaseDir());
 
         config.getNativeMemoryConfig()
                 .setEnabled(true)

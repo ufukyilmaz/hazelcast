@@ -58,7 +58,7 @@ final class ClusterMetadataWriterLoop implements Runnable {
 
     private static void mkdir(File homeDir) {
         if (!homeDir.exists() && !homeDir.mkdirs()) {
-            throw new HotRestartException("Cannot create Hot Restart base directory: " + homeDir.getAbsolutePath());
+            throw new HotRestartException("Cannot create Hot Restart cluster metadata directory: " + homeDir.getAbsolutePath());
         }
     }
 

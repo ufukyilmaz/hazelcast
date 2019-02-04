@@ -10,23 +10,20 @@ import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IFunction;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.util.function.Supplier;
 import org.junit.runners.Parameterized.Parameter;
 
 import javax.cache.CacheManager;
 import javax.cache.configuration.Configuration;
-import java.io.File;
 
 import static com.hazelcast.HDTestSupport.getICache;
 import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
-import static com.hazelcast.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport {
@@ -58,28 +55,28 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
     }
 
     HazelcastInstance newHazelcastInstance() {
-        return newHazelcastInstance(new IFunction<Address, Config>() {
+        return newHazelcastInstance(new Supplier<Config>() {
             @Override
-            public Config apply(Address address) {
-                return makeConfig(address);
+            public Config get() {
+                return makeConfig();
             }
         });
     }
 
     HazelcastInstance newHazelcastInstance(final Config config) {
-        return newHazelcastInstance(new IFunction<Address, Config>() {
+        return newHazelcastInstance(new Supplier<Config>() {
             @Override
-            public Config apply(Address address) {
-                return withHotRestart(address, config);
+            public Config get() {
+                return withHotRestart(config);
             }
         });
     }
 
     HazelcastInstance[] restartInstances(int clusterSize) {
-        return restartCluster(clusterSize, new IFunction<Address, Config>() {
+        return restartCluster(clusterSize, new Supplier<Config>() {
             @Override
-            public Config apply(Address address) {
-                return makeConfig(address);
+            public Config get() {
+                return makeConfig();
             }
         });
     }
@@ -92,20 +89,20 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
         return instances;
     }
 
-    Config makeConfig(Address address) {
-        Config config = makeConfig();
-        return withHotRestart(address, config);
+    Config makeConfig() {
+        Config config = createConfig();
+        return withHotRestart(config);
     }
 
-    private Config withHotRestart(Address address, Config config) {
+    private Config withHotRestart(Config config) {
         HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
         hotRestartPersistenceConfig
                 .setEnabled(true)
-                .setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())));
+                .setBaseDir(baseDir);
         return config;
     }
 
-    Config makeConfig() {
+    private Config createConfig() {
         Config config = new Config()
                 .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
                 .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")

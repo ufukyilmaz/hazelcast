@@ -1,6 +1,5 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.version.Version;
 
 import java.io.DataInput;
@@ -14,17 +13,14 @@ import static com.hazelcast.spi.hotrestart.cluster.ClusterVersionWriter.UNKNOWN_
  */
 class ClusterVersionReader extends AbstractMetadataReader {
 
-    private final ILogger logger;
-
     private Version clusterVersion = Version.UNKNOWN;
 
-    ClusterVersionReader(ILogger logger, File homeDir) {
+    ClusterVersionReader(File homeDir) {
         super(homeDir);
-        this.logger = logger;
     }
 
-    static Version readClusterVersion(ILogger logger, File homeDir) throws IOException {
-        final ClusterVersionReader clusterVersionReader = new ClusterVersionReader(logger, homeDir);
+    static Version readClusterVersion(File homeDir) throws IOException {
+        final ClusterVersionReader clusterVersionReader = new ClusterVersionReader(homeDir);
         clusterVersionReader.read();
         return clusterVersionReader.clusterVersion;
     }
@@ -39,9 +35,6 @@ class ClusterVersionReader extends AbstractMetadataReader {
         String name = in.readUTF();
         if (!name.equals(UNKNOWN_VERSION)) {
             clusterVersion = Version.of(name);
-        }
-        if (logger.isFineEnabled()) {
-            logger.fine("Read cluster version " + clusterVersion + " from disk.");
         }
     }
 }

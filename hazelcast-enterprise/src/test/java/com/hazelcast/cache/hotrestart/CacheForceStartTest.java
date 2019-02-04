@@ -8,7 +8,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.Node;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -72,8 +71,8 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
     }
 
     @Override
-    Config makeConfig(Address address) {
-        Config config = super.makeConfig(address);
+    Config makeConfig() {
+        Config config = super.makeConfig();
         if (triggerForceStart) {
             config.addListenerConfig(new ListenerConfig(new TriggerForceStart()));
         }

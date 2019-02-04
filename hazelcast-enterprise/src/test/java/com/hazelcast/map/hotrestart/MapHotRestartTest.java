@@ -8,7 +8,6 @@ import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.nio.Address;
 import com.hazelcast.query.QueryConstants;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.spi.impl.proxyservice.InternalProxyService;
@@ -226,8 +225,8 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
     }
 
     @Override
-    Config makeConfig(Address address, int backupCount) {
-        Config config = super.makeConfig(address, backupCount);
+    Config makeConfig(int backupCount) {
+        Config config = super.makeConfig(backupCount);
         MapConfig mapConfig = config.getMapConfig(mapName);
         if (addIndex) {
             mapConfig.addMapIndexConfig(new MapIndexConfig(QueryConstants.THIS_ATTRIBUTE_NAME.value(), false));

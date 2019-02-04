@@ -51,10 +51,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.NEVER;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.ALWAYS;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.SOMETIMES;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -66,12 +66,12 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelTest.class})
 public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameters(name = "addressChangePolicy:{0}")
+    @Parameters(name = "reuseAddress:{0}")
     public static Collection<Object> parameters() {
         return asList(new Object[]{
-                NONE,
-                PARTIAL,
-                ALL,
+                ALWAYS,
+                SOMETIMES,
+                NEVER
         });
     }
 
@@ -268,14 +268,13 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
     }
 
     @Override
-    protected Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
-                               HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+    protected Config newConfig(ClusterHotRestartEventListener listener, HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         ServiceConfig serviceConfig = new ServiceConfig()
                 .setEnabled(true)
                 .setName(MockHotRestartService.NAME)
                 .setClassName(MockHotRestartService.class.getName());
 
-        Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
+        Config config = super.newConfig(listener, clusterStartPolicy);
         config.getServicesConfig().addServiceConfig(serviceConfig);
         return config;
     }

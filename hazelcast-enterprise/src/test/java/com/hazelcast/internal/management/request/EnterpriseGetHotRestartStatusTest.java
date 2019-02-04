@@ -53,11 +53,8 @@ public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestT
 
     @Test
     public void testGetStatus() throws Exception {
-        final String dir_hz1 = "hz_1";
-        HazelcastInstance hz1 = factory.newHazelcastInstance(newConfig(dir_hz1));
-
-        final String dir_hz2 = "hz_2";
-        HazelcastInstance hz2 = factory.newHazelcastInstance(newConfig(dir_hz2));
+        HazelcastInstance hz1 = factory.newHazelcastInstance(newConfig());
+        HazelcastInstance hz2 = factory.newHazelcastInstance(newConfig());
 
         assertClusterSize(2, hz1, hz2);
         warmUpPartitions(hz2);
@@ -65,8 +62,8 @@ public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestT
 
         final GetHotRestartStatusListener listener = new GetHotRestartStatusListener();
 
-        Future<HazelcastInstance> future1 = startHazelcastInstanceAsync(dir_hz1, listener);
-        Future<HazelcastInstance> future2 = startHazelcastInstanceAsync(dir_hz2, listener);
+        Future<HazelcastInstance> future1 = startHazelcastInstanceAsync(listener);
+        Future<HazelcastInstance> future2 = startHazelcastInstanceAsync(listener);
 
         ClusterHotRestartStatusDTO loadingClusterHotRestartStatus = listener.getCurrentClusterHotRestartStatus();
         listener.unblockHotRestart();
@@ -89,12 +86,11 @@ public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestT
         assertHotRestartCompleted(finalClusterHotRestartStatus);
     }
 
-    private Future<HazelcastInstance> startHazelcastInstanceAsync(final String dir,
-                                                                  final GetHotRestartStatusListener listener) {
+    private Future<HazelcastInstance> startHazelcastInstanceAsync(final GetHotRestartStatusListener listener) {
         return spawn(new Callable<HazelcastInstance>() {
             @Override
             public HazelcastInstance call() throws Exception {
-                Config config = newConfig(dir);
+                Config config = newConfig();
                 config.addListenerConfig(new ListenerConfig(listener));
                 return factory.newHazelcastInstance(config);
             }

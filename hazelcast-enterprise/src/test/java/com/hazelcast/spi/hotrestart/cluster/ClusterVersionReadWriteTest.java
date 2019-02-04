@@ -37,12 +37,12 @@ public class ClusterVersionReadWriteTest extends MetadataReaderWriterTestBase {
 
     @Test
     public void test_readNotExistingFolder() throws Exception {
-        assertEquals(Version.UNKNOWN, ClusterVersionReader.readClusterVersion(logger, getNonExistingFolder()));
+        assertEquals(Version.UNKNOWN, ClusterVersionReader.readClusterVersion(getNonExistingFolder()));
     }
 
     @Test
     public void test_readEmptyFolder() throws Exception {
-        assertEquals(Version.UNKNOWN, ClusterVersionReader.readClusterVersion(logger, folder));
+        assertEquals(Version.UNKNOWN, ClusterVersionReader.readClusterVersion(folder));
     }
 
     @Test
@@ -57,7 +57,7 @@ public class ClusterVersionReadWriteTest extends MetadataReaderWriterTestBase {
         ClusterVersionWriter writer = new ClusterVersionWriter(folder);
         writer.write(Version.UNKNOWN);
 
-        assertEquals(Version.UNKNOWN, ClusterVersionReader.readClusterVersion(logger, folder));
+        assertEquals(Version.UNKNOWN, ClusterVersionReader.readClusterVersion(folder));
     }
 
     @Test
@@ -65,6 +65,6 @@ public class ClusterVersionReadWriteTest extends MetadataReaderWriterTestBase {
         ClusterVersionWriter writer = new ClusterVersionWriter(folder);
         writer.write(version);
 
-        assertEquals(version, ClusterVersionReader.readClusterVersion(logger, folder));
+        assertEquals(version, ClusterVersionReader.readClusterVersion(folder));
     }
 }

@@ -40,9 +40,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE;
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_RECENT;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.NEVER;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.ALWAYS;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.SOMETIMES;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 import static com.hazelcast.util.Preconditions.checkFalse;
 import static java.lang.System.arraycopy;
@@ -63,12 +63,12 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
     private static final Map<Address, ClusterHotRestartEventListener> NO_LISTENERS = Collections.emptyMap();
 
-    @Parameters(name = "addressChangePolicy:{0}")
+    @Parameters(name = "reuseAddress:{0}")
     public static Collection<Object> parameters() {
         return asList(new Object[]{
-                NONE,
-                PARTIAL,
-                ALL,
+                ALWAYS,
+                SOMETIMES,
+                NEVER
         });
     }
 

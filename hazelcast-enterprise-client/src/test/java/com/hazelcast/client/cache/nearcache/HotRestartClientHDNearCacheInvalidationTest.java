@@ -13,24 +13,19 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.io.File;
 import java.util.Collection;
 
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.getBaseDir;
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
-import static com.hazelcast.nio.IOUtil.deleteQuietly;
 import static java.util.Arrays.asList;
 
 /**
@@ -60,28 +55,10 @@ public class HotRestartClientHDNearCacheInvalidationTest extends ClientCacheNear
     }
 
     @Rule
-    public TestName testName = new TestName();
-
-    private File folder;
+    public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
 
     @Rule
     public RuntimeAvailableProcessorsRule runtimeAvailableProcessorsRule = new RuntimeAvailableProcessorsRule(4);
-
-    @Override
-    public void setup() {
-        folder = isolatedFolder(getClass(), testName);
-        createFolder(folder);
-        super.setup();
-    }
-
-    @Override
-    public void tearDown() {
-        try {
-            super.tearDown();
-        } finally {
-            deleteQuietly(folder);
-        }
-    }
 
     @Override
     protected Config getConfig() {
@@ -91,7 +68,7 @@ public class HotRestartClientHDNearCacheInvalidationTest extends ClientCacheNear
 
         HotRestartPersistenceConfig hotRestartPersistenceConfig = new HotRestartPersistenceConfig()
                 .setEnabled(true)
-                .setBaseDir(getBaseDir(folder));
+                .setBaseDir(hotRestartFolderRule.getBaseDir());
 
         return super.getConfig()
                 .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")

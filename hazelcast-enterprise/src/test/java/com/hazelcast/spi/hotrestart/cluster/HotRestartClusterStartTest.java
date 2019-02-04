@@ -16,7 +16,6 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.RandomPicker;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -25,7 +24,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.Arrays;
+import java.io.File;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -33,9 +32,10 @@ import java.util.concurrent.ExecutionException;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.internal.partition.AntiEntropyCorrectnessTest.setBackupPacketDropFilter;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
-import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.ALWAYS;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.NEVER;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.SOMETIMES;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -46,18 +46,30 @@ import static org.junit.Assert.fail;
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameters(name = "addressChangePolicy:{0}")
+    @Parameters(name = "reuseAddress:{0}")
     public static Collection<Object> parameters() {
-        return Arrays.asList(new Object[]{NONE, PARTIAL, ALL});
+        return asList(new Object[]{
+                ALWAYS,
+                SOMETIMES,
+                NEVER
+        });
     }
 
     private boolean disableAutoRemoveStaleData;
 
     @Test
     public void testSingleMemberRestart() {
-        Address address = startAndTerminateInstance();
-        HazelcastInstance hz = restartInstance(address);
+        HazelcastInstance hz = startNewInstance();
+        Address address = getAddress(hz);
+        File hotRestartHome = getHotRestartHome(hz);
+        terminateInstances();
+
+        hz = restartInstance(address);
         assertInstancesJoined(1, NodeState.ACTIVE, ClusterState.ACTIVE);
+
+        File hotRestartHome2 = getHotRestartHome(hz);
+        assertEquals(hotRestartHome, hotRestartHome2);
+
         invokeDummyOperationOnAllPartitions(hz);
     }
 
@@ -161,61 +173,12 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_hotRestartFails_withMissingHotRestartDirectory_forOneNode() {
-        disableAutoRemoveStaleData = true;
-
-        Address[] addresses = startAndTerminateInstances(4);
-
-        Address randomAddress = addresses[RandomPicker.getInt(addresses.length)];
-        deleteHotRestartDirectoryOfNode(randomAddress);
-
-        HazelcastInstance[] instances = restartInstances(addresses);
-        if (instances.length == 1) {
-            HazelcastInstance instance = instances[0];
-            assertTrue(getClusterService(instance).isJoined());
-            assertClusterSizeEventually(1, instance);
-        } else {
-            assertEquals(0, instances.length);
-        }
-    }
-
-    @Test
-    public void test_hotRestartFails_whenNodeStartsBeforeOthers_withMissingHotRestartDirectory() {
-        disableAutoRemoveStaleData = true;
-
-        Address[] addresses = startAndTerminateInstances(4);
-
-        Address randomAddress = addresses[RandomPicker.getInt(addresses.length)];
-        deleteHotRestartDirectoryOfNode(randomAddress);
-
-        HazelcastInstance instance = restartInstance(randomAddress);
-        assertTrue(getClusterService(instance).isJoined());
-
-        HazelcastInstance[] instances = restartInstances(removeAddress(addresses, randomAddress));
-        assertEquals(0, instances.length);
-
-        assertClusterSizeEventually(1, instance);
-    }
-
-    private static Address[] removeAddress(Address[] addresses, Address address) {
-        Address[] newAddresses = new Address[addresses.length - 1];
-        int ix = 0;
-        for (Address a : addresses) {
-            if (a.equals(address)) {
-                continue;
-            }
-            newAddresses[ix++] = a;
-        }
-        return newAddresses;
-    }
-
-    @Test
     public void test_hotRestartFails_withUnknownNode() {
         disableAutoRemoveStaleData = true;
 
         Address[] addresses = startAndTerminateInstances(4);
 
-        HazelcastInstance unknownNode = startNewInstance();
+        HazelcastInstance unknownNode = startNewInstanceWithBaseDir(new File(getBaseDir(), "unknown_hot-restart_dir"));
         assertTrue(getClusterService(unknownNode).isJoined());
 
         HazelcastInstance[] instances = restartInstances(addresses);
@@ -323,7 +286,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
 
     @Test
     public void test_backupOperationNotAllowed_untilStartupIsCompleted() throws Exception {
-        Assume.assumeTrue("Restarting a single node, address change is irrelevant", addressChangePolicy == NONE);
+        Assume.assumeTrue("Restarting a single node, address change is irrelevant", reuseAddress == ALWAYS);
 
         HazelcastInstance[] instances = startNewInstances(2);
         warmUpPartitions(instances);
@@ -367,7 +330,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
 
     @Test
     public void test_antiEntropyCheckNotAllowed_untilStartupIsCompleted() {
-        Assume.assumeTrue("Restarting a single node, address change is irrelevant", addressChangePolicy == NONE);
+        Assume.assumeTrue("Restarting a single node, address change is irrelevant", reuseAddress == ALWAYS);
 
         final HazelcastInstance[] instances = startNewInstances(2);
         warmUpPartitions(instances);
@@ -415,9 +378,9 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Override
-    Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
+    Config newConfig(ClusterHotRestartEventListener listener,
             HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
-        Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
+        Config config = super.newConfig(listener, clusterStartPolicy);
         if (disableAutoRemoveStaleData) {
             config.getHotRestartPersistenceConfig().setAutoRemoveStaleData(false);
         }

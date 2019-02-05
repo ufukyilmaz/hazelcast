@@ -8,7 +8,9 @@ import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.config.OnJoinPermissionOperation;
 import com.hazelcast.config.SSLConfig;
+import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
@@ -101,6 +103,7 @@ import java.util.logging.Level;
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
 import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
+import static com.hazelcast.spi.properties.GroupProperty.ON_JOIN_PERMISSIONS_OPERATION;
 import static com.hazelcast.util.StringUtil.isNullOrEmpty;
 
 /**
@@ -274,6 +277,8 @@ public class EnterpriseNodeExtension
             }
         }
 
+        refreshClusterPermissions();
+
         if (memoryManager != null) {
             // (<native_memory_size> * <node_count>) / (2 * <partition_count>)
             // `2` comes from default backup count is `1` so by default there are primary and backup partitions.
@@ -293,6 +298,16 @@ public class EnterpriseNodeExtension
 
         initWanConsumers();
         initLicenseExpReminder();
+    }
+
+    private void refreshClusterPermissions() {
+        OnJoinPermissionOperation onJoinOp = node.getProperties().getEnum(ON_JOIN_PERMISSIONS_OPERATION,
+                OnJoinPermissionOperation.class);
+        SecurityConfig securityConfig = node.getConfig().getSecurityConfig();
+        if (securityService != null && onJoinOp == OnJoinPermissionOperation.SEND) {
+            logger.info("Refreshing client permissions in cluster");
+            securityService.refreshClientPermissions(securityConfig.getClientPermissionConfigs());
+        }
     }
 
     private void initLicenseExpReminder() {

@@ -8,6 +8,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.OnJoinPermissionOperationName;
+import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
@@ -288,6 +290,8 @@ public class EnterpriseNodeExtension
             }
         }
 
+        refreshClusterPermissions();
+
         if (memoryManager != null) {
             // (<native_memory_size> * <node_count>) / (2 * <partition_count>)
             // `2` comes from default backup count is `1` so by default there are primary and backup partitions.
@@ -307,6 +311,14 @@ public class EnterpriseNodeExtension
 
         initWanConsumers();
         initLicenseExpReminder();
+    }
+
+    private void refreshClusterPermissions() {
+        SecurityConfig securityConfig = node.getConfig().getSecurityConfig();
+        if (securityService != null && securityConfig.getOnJoinPermissionOperation() == OnJoinPermissionOperationName.SEND) {
+            logger.info("Refreshing client permissions in cluster");
+            securityService.refreshClientPermissions(securityConfig.getClientPermissionConfigs());
+        }
     }
 
     private void initLicenseExpReminder() {

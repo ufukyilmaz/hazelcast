@@ -47,6 +47,8 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.
 import static com.hazelcast.util.Preconditions.checkFalse;
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -97,16 +99,6 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         HazelcastInstance[] instances = startInstancesAndChangeClusterState(ClusterState.PASSIVE);
         Address[] addresses = getAddresses(instances);
 
-        String excludedUuid = null;
-        for (HazelcastInstance instance : instances) {
-            if (getAddress(instance).equals(addresses[0])) {
-                excludedUuid = getNode(instance).getThisUuid();
-                break;
-            }
-        }
-
-        assertNotNull("excludedUuid should not be null", excludedUuid);
-
         terminateInstances();
 
         Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
@@ -114,14 +106,25 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             listeners.put(address, new TriggerPartialStart(nodeCount - 1));
         }
 
-        Address[] newAddresses = new Address[nodeCount - 1];
-        arraycopy(addresses, 1, newAddresses, 0, newAddresses.length);
+        Address[] newAddresses = Arrays.copyOf(addresses, nodeCount - 1);
         instances = restartInstances(newAddresses, listeners, clusterStartPolicy);
-        assertInstancesJoined(nodeCount - 1, instances, NodeState.PASSIVE, ClusterState.PASSIVE);
+        assertInstancesJoined(newAddresses.length, instances, NodeState.PASSIVE, ClusterState.PASSIVE);
 
+        assertContainsSingleExcludedUuid(instances);
+    }
+
+    private void assertContainsSingleExcludedUuid(HazelcastInstance[] instances) {
+        String excludedUuid = null;
         for (HazelcastInstance instance : instances) {
             InternalHotRestartService hotRestartService = getHotRestartIntegrationService(getNode(instance));
-            assertContains(hotRestartService.getExcludedMemberUuids(), excludedUuid);
+            Set<String> excludedMemberUuids = hotRestartService.getExcludedMemberUuids();
+            assertThat(excludedMemberUuids, hasSize(1));
+
+            if (excludedUuid == null) {
+                excludedUuid = excludedMemberUuids.iterator().next();
+            } else {
+                assertThat(excludedMemberUuids, hasItem(excludedUuid));
+            }
         }
     }
 
@@ -181,28 +184,13 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         HazelcastInstance[] instances = startInstancesAndChangeClusterState(ClusterState.PASSIVE);
         Address[] addresses = getAddresses(instances);
 
-        String excludedUuid = null;
-        for (HazelcastInstance instance : instances) {
-            if (getAddress(instance).equals(addresses[0])) {
-                excludedUuid = getNode(instance).getThisUuid();
-                break;
-            }
-        }
-
-        assertNotNull("excludedUuid should not be null", excludedUuid);
-
         terminateInstances();
 
-        Address[] newAddresses = new Address[nodeCount - 1];
-        arraycopy(addresses, 1, newAddresses, 0, newAddresses.length);
+        Address[] newAddresses = Arrays.copyOf(addresses, nodeCount - 1);
         instances = restartInstances(newAddresses, NO_LISTENERS, clusterStartPolicy);
         assertInstancesJoined(nodeCount - 1, instances, NodeState.PASSIVE, ClusterState.PASSIVE);
 
-        for (HazelcastInstance instance : instances) {
-            Node node = getNode(instance);
-            InternalHotRestartService hotRestartService = getHotRestartIntegrationService(node);
-            assertContains(hotRestartService.getExcludedMemberUuids(), excludedUuid);
-        }
+        assertContainsSingleExcludedUuid(instances);
     }
 
     @Test
@@ -474,20 +462,21 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         HazelcastInstance[] instances = startInstancesAndChangeClusterState(ClusterState.PASSIVE);
         Address[] addresses = getAddresses(instances);
 
-        for (int i = 1; i < instances.length; i++) {
-            terminateWithOverwrittenACTIVEClusterState(instances[i]);
+        for (HazelcastInstance instance : instances) {
+            terminateWithOverwrittenACTIVEClusterState(instance);
         }
 
-        overwriteUpdatedPartitionTable(instances[0]);
         AtomicReference<String> restartedUuid = new AtomicReference<String>();
         Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
-        listeners.put(getAddress(instances[0]), new RestartOnComplete(restartedUuid));
-        String excludedUuid = terminateWithOverwrittenACTIVEClusterState(instances[0]);
+        listeners.put(addresses[0], new RestartOnComplete(restartedUuid));
 
-        restartInstances(addresses, listeners, PARTIAL_RECOVERY_MOST_COMPLETE);
+        instances = restartInstances(addresses, listeners, PARTIAL_RECOVERY_MOST_COMPLETE);
         assertInstancesJoinedEventually(nodeCount, NodeState.ACTIVE, ClusterState.ACTIVE);
 
-        assertEquals("restartedUuid should be the excludedUuid", excludedUuid, restartedUuid.get());
+        assertNotNull(restartedUuid.get());
+        for (HazelcastInstance instance : instances) {
+            assertNotEquals(restartedUuid.get(), getClusterService(instance).getLocalMember().getUuid());
+        }
     }
 
     private int[] getSurvivingReplicaIndices(HazelcastInstance... instances) {
@@ -573,7 +562,6 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         @Override
         public void onHotRestartDataLoadComplete(HotRestartClusterStartStatus result, Set<String> excludedMemberUuids) {
             if (result == CLUSTER_START_SUCCEEDED
-                    && excludedMemberUuids.contains(node.getThisUuid())
                     && restartedUuid.compareAndSet(null, node.getThisUuid())) {
                 startNodeAfterTermination(node);
                 throw new HotRestartException("hot restart is failed manually!");
@@ -597,7 +585,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         }
 
         @Override
-        public void onDataLoadStart(Address address) {
+        public void onDataLoadStart(Member member) {
             if (!node.isMaster() && excludedUuid.compareAndSet(null, node.getThisUuid())) {
                 ClusterMetadataManager clusterMetadataManager = getClusterMetadataManager(node);
                 while (clusterMetadataManager.getHotRestartStatus() == HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS) {

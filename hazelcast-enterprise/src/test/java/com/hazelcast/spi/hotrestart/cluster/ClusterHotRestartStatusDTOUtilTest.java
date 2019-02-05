@@ -41,15 +41,10 @@ public class ClusterHotRestartStatusDTOUtilTest extends HazelcastTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        Address localAddress = new Address("127.0.0.1", 5701);
-        Address loadInProgressAddress = new Address("127.0.0.1", 5702);
-        Address loadInFailedAddress = new Address("127.0.0.1", 5703);
-        Address loadInSuccessfulAddress = new Address("127.0.0.1", 5704);
-
-        localMember = new MemberImpl(localAddress, MemberVersion.UNKNOWN, true);
-        loadInProgressMember = new MemberImpl(loadInProgressAddress, MemberVersion.UNKNOWN, false);
-        loadFailedMember = new MemberImpl(loadInFailedAddress, MemberVersion.UNKNOWN, false);
-        loadSuccessfulMember = new MemberImpl(loadInSuccessfulAddress, MemberVersion.UNKNOWN, false);
+        localMember = new MemberImpl(new Address("127.0.0.1", 5701), MemberVersion.UNKNOWN, true);
+        loadInProgressMember = new MemberImpl(new Address("127.0.0.1", 5702), MemberVersion.UNKNOWN, false);
+        loadFailedMember = new MemberImpl(new Address("127.0.0.1", 5703), MemberVersion.UNKNOWN, false);
+        loadSuccessfulMember = new MemberImpl(new Address("127.0.0.1", 5704), MemberVersion.UNKNOWN, false);
 
         restoredMembers.add(localMember);
         restoredMembers.add(loadInProgressMember);
@@ -63,9 +58,9 @@ public class ClusterHotRestartStatusDTOUtilTest extends HazelcastTestSupport {
         when(manager.getRemainingDataLoadTimeMillis()).thenReturn(42L);
 
         when(manager.getRestoredMembers()).thenReturn(restoredMembers);
-        when(manager.getMemberDataLoadStatus(loadInProgressAddress)).thenReturn(DataLoadStatus.LOAD_IN_PROGRESS);
-        when(manager.getMemberDataLoadStatus(loadInFailedAddress)).thenReturn(DataLoadStatus.LOAD_FAILED);
-        when(manager.getMemberDataLoadStatus(loadInSuccessfulAddress)).thenReturn(DataLoadStatus.LOAD_SUCCESSFUL);
+        when(manager.getMemberDataLoadStatus(loadInProgressMember)).thenReturn(DataLoadStatus.LOAD_IN_PROGRESS);
+        when(manager.getMemberDataLoadStatus(loadFailedMember)).thenReturn(DataLoadStatus.LOAD_FAILED);
+        when(manager.getMemberDataLoadStatus(loadSuccessfulMember)).thenReturn(DataLoadStatus.LOAD_SUCCESSFUL);
     }
 
     @Test

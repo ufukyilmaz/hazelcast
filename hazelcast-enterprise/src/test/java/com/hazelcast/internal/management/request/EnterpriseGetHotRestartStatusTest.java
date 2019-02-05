@@ -4,11 +4,11 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
+import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.ClusterHotRestartStatus;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.MemberHotRestartStatus;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -114,7 +114,7 @@ public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestT
         private final Collection<HazelcastInstance> instances = synchronizedCollection(new ArrayList<HazelcastInstance>());
 
         @Override
-        public void onDataLoadStart(Address address) {
+        public void onDataLoadStart(Member member) {
             loadStartLatch.countDown();
             try {
                 latch.await();

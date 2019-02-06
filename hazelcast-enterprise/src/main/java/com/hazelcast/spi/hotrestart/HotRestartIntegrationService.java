@@ -58,7 +58,6 @@ import static com.hazelcast.hotrestart.BackupTaskState.IN_PROGRESS;
 import static com.hazelcast.hotrestart.BackupTaskState.NO_TASK;
 import static com.hazelcast.hotrestart.BackupTaskState.SUCCESS;
 import static com.hazelcast.hotrestart.HotRestartService.BACKUP_DIR_PREFIX;
-import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartitionId;
@@ -638,35 +637,20 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         logger.warning("Force start requested, skipping hot restart");
 
         resetNode();
-
-        resetService(isAfterJoin);
-
-        logger.info("Resetting cluster state to ACTIVE");
-
-        setClusterState(clusterService, ClusterState.ACTIVE, false);
-
         node.getJoiner().setTargetAddress(null);
 
+        logger.info("Resetting cluster state to ACTIVE");
         clusterService.reset();
 
-        if (isAfterJoin) {
-            try {
-                runRestarterPipeline(onHeapStores, true);
-                runRestarterPipeline(offHeapStores, true);
-            } catch (Throwable t) {
-                throw new HotRestartException("starting hot restart threads after force start failed", t);
-            }
-        }
+        resetService(isAfterJoin);
 
         // start connection-manager to setup and accept new connections
         node.connectionManager.start();
 
         if (isAfterJoin) {
             logger.info("Joining back...");
-
             // re-join to the target cluster
             node.join();
-
             clusterMetadataManager.forceStartCompleted();
         }
     }
@@ -708,6 +692,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
         logger.info("Resetting hot restart cluster metadata service...");
         clusterMetadataManager.reset(isAfterJoin);
+        clusterMetadataManager.onClusterStateChange(ClusterState.ACTIVE);
         clusterMetadataManager.writePartitionThreadCount(getOperationExecutor().getPartitionThreadCount());
         persistentConfigDescriptors.reset();
 
@@ -717,6 +702,15 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
         logger.info("Creating thread local hot restart stores");
         createHotRestartStores();
+
+        if (isAfterJoin) {
+            try {
+                runRestarterPipeline(onHeapStores, true);
+                runRestarterPipeline(offHeapStores, true);
+            } catch (Throwable t) {
+                throw new HotRestartException("Starting hot restart threads failed!", t);
+            }
+        }
     }
 
     private OperationExecutor getOperationExecutor() {

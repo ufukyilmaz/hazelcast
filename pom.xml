@@ -29,7 +29,8 @@
         <hazelcast.distribution>Hazelcast Enterprise</hazelcast.distribution>
         <hazelcast.serialization.version>1</hazelcast.serialization.version>
         <hazelcast.serverMainClass>com.hazelcast.core.server.StartServer</hazelcast.serverMainClass>
-        <license.extractor.version>1.1.7</license.extractor.version>
+        <hazelcast.license.provider.exclude>NLCLicenseProvider</hazelcast.license.provider.exclude>
+        <license.extractor.version>1.2.0</license.extractor.version>
 
         <maven.compiler.plugin.version>2.5.1</maven.compiler.plugin.version>
         <maven.assembly.plugin.version>2.4</maven.assembly.plugin.version>
@@ -789,6 +790,18 @@
                         </configuration>
                     </plugin>
                 </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <!-- generates a NLC build (with -nlc suffix) -->
+            <!-- warning: this build has no license enforcement and all features are enabled -->
+            <id>no-license-checker-build</id>
+            <properties>
+                <hazelcast.license.provider.exclude>NoLicenseProvider</hazelcast.license.provider.exclude>
+            </properties>
+            <build>
+                <finalName>${project.artifactId}-${project.version}-nlc</finalName>
             </build>
         </profile>
     </profiles>

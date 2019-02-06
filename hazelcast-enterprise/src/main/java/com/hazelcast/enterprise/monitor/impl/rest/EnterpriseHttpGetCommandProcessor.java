@@ -1,11 +1,10 @@
 package com.hazelcast.enterprise.monitor.impl.rest;
 
 import com.hazelcast.enterprise.monitor.LicenseInfo;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.internal.ascii.TextCommandService;
 import com.hazelcast.internal.ascii.rest.HttpGetCommand;
 import com.hazelcast.internal.ascii.rest.HttpGetCommandProcessor;
-import com.hazelcast.license.util.LicenseHelper;
 
 import static com.hazelcast.internal.ascii.TextCommandConstants.MIME_TEXT_PLAIN;
 import static com.hazelcast.util.StringUtil.stringToBytes;
@@ -20,11 +19,9 @@ class EnterpriseHttpGetCommandProcessor
         super(textCommandService);
     }
 
-    @Override
     protected void handleLicense(HttpGetCommand command) {
-        Node node = textCommandService.getNode();
-        LicenseInfo licenseInfo = new LicenseInfoImpl(LicenseHelper.getLicense(
-                node.getConfig().getLicenseKey(), node.getBuildInfo().getVersion()));
+        EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) textCommandService.getNode().getNodeExtension();
+        LicenseInfo licenseInfo = new LicenseInfoImpl(nodeExtension.getLicense());
 
         StringBuilder res = new StringBuilder();
         res.append("licenseInfo").append(licenseInfo.toJson()).append("\n");

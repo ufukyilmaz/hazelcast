@@ -2,13 +2,13 @@ package com.hazelcast.enterprise.monitor.impl.jmx;
 
 import com.hazelcast.enterprise.monitor.LicenseInfo;
 import com.hazelcast.enterprise.monitor.impl.rest.LicenseInfoImpl;
+import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.HazelcastInstanceImpl;
 import com.hazelcast.internal.jmx.InstanceMBean;
 import com.hazelcast.internal.jmx.ManagementService;
-import com.hazelcast.license.util.LicenseHelper;
 
 /**
- * JMX Extention point for EE
+ * JMX Extension point for EE
  * Offers additional JMX beans to the service for the Enterprise version of Hazelcast
  */
 public class EnterpriseManagementService
@@ -34,8 +34,8 @@ public class EnterpriseManagementService
         }
 
         private void createAndRegisterLicenseMBean(HazelcastInstanceImpl hazelcastInstance, ManagementService managementService) {
-            LicenseInfo licenseInfo = new LicenseInfoImpl(LicenseHelper.getLicense(
-                    hazelcastInstance.node.getConfig().getLicenseKey(), hazelcastInstance.node.getBuildInfo().getVersion()));
+            EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) hazelcastInstance.node.getNodeExtension();
+            LicenseInfo licenseInfo = new LicenseInfoImpl(nodeExtension.getLicense());
             this.licenseInfoMBean = new LicenseInfoMBean(licenseInfo, hazelcastInstance.node, managementService);
             register(licenseInfoMBean);
         }

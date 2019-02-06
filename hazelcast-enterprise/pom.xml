@@ -153,6 +153,8 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                        <!-- here we get rid of NLC mode support class -->
+                                        <exclude>com/hazelcast/license/nlc/impl/${hazelcast.license.provider.exclude}.class</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

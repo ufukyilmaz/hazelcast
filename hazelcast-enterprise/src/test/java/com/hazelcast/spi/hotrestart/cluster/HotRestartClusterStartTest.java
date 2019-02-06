@@ -6,6 +6,7 @@ import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IndeterminateOperationStateException;
+import com.hazelcast.core.Member;
 import com.hazelcast.core.MembershipAdapter;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.instance.NodeState;
@@ -203,7 +204,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
             public void run() {
                 ClusterHotRestartEventListener listener = new ClusterHotRestartEventListener() {
                     @Override
-                    public void onDataLoadStart(Address address) {
+                    public void onDataLoadStart(Member member) {
                         try {
                             dataLoadLatch.await();
                         } catch (InterruptedException e) {
@@ -302,7 +303,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
             public HazelcastInstance call() throws Exception {
                 return restartInstance(restartingNodeAddress, new ClusterHotRestartEventListener() {
                     @Override
-                    public void onDataLoadStart(Address address) {
+                    public void onDataLoadStart(Member member) {
                         dataLoadStartedLatch.countDown();
                         assertOpenEventually(dataLoadResumeLatch);
                     }
@@ -350,7 +351,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
             public HazelcastInstance call() throws Exception {
                 return restartInstance(restartingNodeAddress, new ClusterHotRestartEventListener() {
                     @Override
-                    public void onDataLoadStart(Address address) {
+                    public void onDataLoadStart(Member member) {
                         dataLoadStartedLatch.countDown();
                         assertOpenEventually(dataLoadResumeLatch);
                     }

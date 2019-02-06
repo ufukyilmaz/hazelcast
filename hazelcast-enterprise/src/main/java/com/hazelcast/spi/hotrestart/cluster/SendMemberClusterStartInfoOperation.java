@@ -1,5 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
+import com.hazelcast.core.Member;
+import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.ObjectDataInput;
@@ -31,7 +33,14 @@ public class SendMemberClusterStartInfoOperation extends Operation implements Jo
     public void run() throws Exception {
         HotRestartIntegrationService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
-        clusterMetadataManager.receiveClusterStartInfoFromMember(getCallerAddress(), getCallerUuid(), memberClusterStartInfo);
+        ClusterService clusterService = getNodeEngine().getClusterService();
+        Member member = clusterService.getMember(getCallerAddress(), getCallerUuid());
+        if (member == null) {
+            getLogger().warning("An unknown member sent MemberClusterStartInfo. Address: "
+                    + getCallerAddress() + ", UUID: " + getCallerUuid());
+            return;
+        }
+        clusterMetadataManager.receiveClusterStartInfoFromMember(member, memberClusterStartInfo);
     }
 
     @Override

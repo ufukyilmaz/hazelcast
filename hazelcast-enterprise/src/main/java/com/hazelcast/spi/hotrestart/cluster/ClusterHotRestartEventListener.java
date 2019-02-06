@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.core.Member;
 import com.hazelcast.internal.partition.PartitionTableView;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.annotation.PrivateApi;
 
 import java.util.Collection;
@@ -52,29 +51,27 @@ public abstract class ClusterHotRestartEventListener implements EventListener {
 
     /**
      * Called after master receives a partition table from a member and validates it.
-     *
-     * @param sender  member that has sent the partition table
+     *  @param sender  member that has sent the partition table
      * @param success result of the validation
      */
-    public void onPartitionTableValidationResult(Address sender, boolean success) {
+    public void onPartitionTableValidationResult(Member sender, boolean success) {
 
     }
 
     /**
      * Called when data load is started.
-     * @param address address of the node that starts to load its own data
+     * @param member member that starts to load its own data
      */
-    public void onDataLoadStart(Address address) {
+    public void onDataLoadStart(Member member) {
 
     }
 
     /**
      * Called on master when it receives a Hot Restart data load result from a node.
-     *
-     * @param sender  address of the node that sends its hot-restart data load result
+     *  @param sender member that sends its hot-restart data load result
      * @param success result of the hot restart data load attempt of the node
      */
-    public void onHotRestartDataLoadResult(Address sender, boolean success) {
+    public void onHotRestartDataLoadResult(Member sender, boolean success) {
 
     }
 

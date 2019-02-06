@@ -199,7 +199,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
         private final AtomicBoolean firstCrash;
 
-        private final Set<Address> addresses = Collections.newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
+        private final Set<Member> members = Collections.newSetFromMap(new ConcurrentHashMap<Member, Boolean>());
 
         private final int expectedNodeCount;
 
@@ -216,7 +216,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         }
 
         @Override
-        public void onDataLoadStart(Address address) {
+        public void onDataLoadStart(Member member) {
             final Node node = getNode(instance);
             if (!node.isMaster()) {
                 return;
@@ -225,15 +225,15 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         }
 
         @Override
-        public void onPartitionTableValidationResult(Address sender, boolean success) {
+        public void onPartitionTableValidationResult(Member sender, boolean success) {
             final Node node = getNode(instance);
             if (!node.isMaster()) {
                 return;
             }
 
             if (success) {
-                addresses.add(sender);
-                if (addresses.size() == expectedNodeCount && firstCrash.compareAndSet(false, true)) {
+                members.add(sender);
+                if (members.size() == expectedNodeCount && firstCrash.compareAndSet(false, true)) {
                     PartitionTableView partitionTableView = new PartitionTableView(
                             new PartitionReplica[PARTITION_COUNT][InternalPartition.MAX_REPLICA_COUNT], 0);
                     MemberClusterStartInfo invalidMemberClusterStartInfo
@@ -241,7 +241,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
                     final HotRestartIntegrationService hotRestartService =
                             (HotRestartIntegrationService) node.getNodeExtension().getInternalHotRestartService();
                     ClusterMetadataManager clusterMetadataManager = hotRestartService.getClusterMetadataManager();
-                    clusterMetadataManager.receiveClusterStartInfoFromMember(sender, null, invalidMemberClusterStartInfo);
+                    clusterMetadataManager.receiveClusterStartInfoFromMember(sender, invalidMemberClusterStartInfo);
                     latch.countDown();
                 }
             } else {

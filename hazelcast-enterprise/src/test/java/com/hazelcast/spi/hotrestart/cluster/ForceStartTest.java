@@ -427,7 +427,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         }
 
         @Override
-        public void onPartitionTableValidationResult(Address sender, boolean success) {
+        public void onPartitionTableValidationResult(Member sender, boolean success) {
             if (success) {
                 if (forceStartFlag.compareAndSet(false, true)) {
                     node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
@@ -455,7 +455,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         }
 
         @Override
-        public void onHotRestartDataLoadResult(Address sender, boolean success) {
+        public void onHotRestartDataLoadResult(Member sender, boolean success) {
             if (success) {
                 if (forceStartFlag.compareAndSet(false, true)) {
                     node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
@@ -489,7 +489,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         }
 
         @Override
-        public void onDataLoadStart(Address address) {
+        public void onDataLoadStart(Member member) {
             if (!node.isMaster()) {
                 return;
             }
@@ -497,12 +497,12 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         }
 
         @Override
-        public void onPartitionTableValidationResult(Address sender, boolean success) {
+        public void onPartitionTableValidationResult(Member sender, boolean success) {
             if (!node.isMaster()) {
                 return;
             }
             if (success) {
-                addresses.add(sender);
+                addresses.add(sender.getAddress());
                 if (addresses.size() == expectedNodeCount && forceStart.compareAndSet(false, true)) {
                     node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
                     latch.countDown();
@@ -557,7 +557,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         private volatile Node node;
 
         @Override
-        public void onDataLoadStart(final Address address) {
+        public void onDataLoadStart(final Member member) {
             spawn(new Runnable() {
                 @Override
                 public void run() {

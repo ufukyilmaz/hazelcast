@@ -55,7 +55,7 @@ public final class ClusterHotRestartStatusDTOUtil {
     private static MemberHotRestartStatus getMemberHotRestartStatus(ClusterMetadataManager clusterMetadataManager,
             MemberImpl member) {
 
-        DataLoadStatus dataLoadStatus = clusterMetadataManager.getMemberDataLoadStatus(member.getAddress());
+        DataLoadStatus dataLoadStatus = clusterMetadataManager.getMemberDataLoadStatus(member);
         if (dataLoadStatus == null) {
             // either data load not started yet or it's completed successfully and per-member stats are removed
             return clusterMetadataManager.getHotRestartStatus()

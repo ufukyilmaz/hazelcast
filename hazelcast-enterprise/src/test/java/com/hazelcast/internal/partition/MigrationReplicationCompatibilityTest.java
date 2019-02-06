@@ -21,9 +21,11 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.version.Version;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -48,6 +50,9 @@ import static org.junit.Assert.assertTrue;
 public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport {
 
     private static final String HD_PREFIX = "hd-";
+
+    @Rule
+    public RuntimeAvailableProcessorsRule runtimeAvailableProcessorsRule = new RuntimeAvailableProcessorsRule(4);
 
     @Parameters(name = "{0}")
     public static Collection<Object[]> parameters() {

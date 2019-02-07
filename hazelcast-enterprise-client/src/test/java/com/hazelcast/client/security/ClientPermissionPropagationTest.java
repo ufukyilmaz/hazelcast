@@ -175,7 +175,7 @@ public class ClientPermissionPropagationTest {
     public void testNoneOperationScenario() {
         HazelcastInstance hz1 = createMember(null, PERMISSION_1);
         createMember(null, PERMISSION_1);
-        final HazelcastInstance client1 = factory.newHazelcastClient(createClientCofig(hz1));
+        final HazelcastInstance client1 = factory.newHazelcastClient(createClientConfig(hz1));
         assertEquals(0, client1.getMap("test1").size());
         assertMapAccessDenied(client1, "test2");
 
@@ -186,6 +186,16 @@ public class ClientPermissionPropagationTest {
         clientOfLite.getMap("test2").put("key", "value");
         assertEquals(0, clientOfLite.getMap("test1").size());
         assertEquals(0, clientOfLite.getMap("fooBar").size());
+
+        assertEquals(0, client1.getMap("test1").size());
+        assertMapAccessDenied(client1, "test2");
+        try {
+            client1.getMap("test2").put("key", "wrongValue");
+            fail();
+        } catch (AccessControlException ex) {
+            // expected
+        }
+
         clientOfLite.shutdown();
         factory.terminate(hzLite);
 
@@ -254,13 +264,49 @@ public class ClientPermissionPropagationTest {
         }
     }
 
+    @Test
+    public void testReceiveMemberConnectToClusterWithNoneMember() {
+        HazelcastInstance hz1 = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_1);
+        final HazelcastInstance client1 = createDumbClient(hz1);
+        HazelcastInstance hz2 = createMember(OnJoinPermissionOperation.NONE, PERMISSION_2);
+        final HazelcastInstance client2 = createDumbClient(hz2);
+        HazelcastInstance hz3 = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_2);
+        final HazelcastInstance client3 = createDumbClient(hz3);
+        assertClusterSize(3, hz1, hz2, hz3);
+
+        assertEquals(0, client3.getMap("test1").size());
+        assertMapAccessDenied(client3, "test2");
+        assertMapAccessDenied(client2, "test1");
+        assertEquals(0, client2.getMap("test2").size());
+        assertEquals(0, client1.getMap("test1").size());
+        assertMapAccessDenied(client1, "test2");
+    }
+
+    @Test
+    public void testSendMemberConnectToClusterWithNoneMember() {
+        HazelcastInstance hz1 = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_1);
+        final HazelcastInstance client1 = createDumbClient(hz1);
+        HazelcastInstance hz2 = createMember(OnJoinPermissionOperation.NONE, PERMISSION_2);
+        final HazelcastInstance client2 = createDumbClient(hz2);
+        HazelcastInstance hz3 = createMember(OnJoinPermissionOperation.SEND, PERMISSION_1);
+        final HazelcastInstance client3 = createDumbClient(hz3);
+        assertClusterSize(3, hz1, hz2, hz3);
+
+        assertEquals(0, client3.getMap("test1").size());
+        assertMapAccessDenied(client3, "test2");
+        assertEquals(0, client2.getMap("test1").size());
+        assertMapAccessDenied(client2, "test2");
+        assertEquals(0, client1.getMap("test1").size());
+        assertMapAccessDenied(client1, "test2");
+    }
+
     private HazelcastInstance createDumbClient(HazelcastInstance hz) {
-        ClientConfig clientConfig = createClientCofig(hz);
+        ClientConfig clientConfig = createClientConfig(hz);
         clientConfig.getNetworkConfig().setSmartRouting(false);
         return factory.newHazelcastClient(clientConfig);
     }
 
-    private ClientConfig createClientCofig(HazelcastInstance hz) {
+    private ClientConfig createClientConfig(HazelcastInstance hz) {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getNetworkConfig().addAddress("127.0.0.1:" + getAddress(hz).getPort());
         return clientConfig;

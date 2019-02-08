@@ -8,7 +8,7 @@ import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.config.OnJoinPermissionOperation;
+import com.hazelcast.config.OnJoinPermissionOperationName;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SerializationConfig;
@@ -301,10 +301,10 @@ public class EnterpriseNodeExtension
     }
 
     private void refreshClusterPermissions() {
-        OnJoinPermissionOperation onJoinOp = node.getProperties().getEnum(ON_JOIN_PERMISSIONS_OPERATION,
-                OnJoinPermissionOperation.class);
+        OnJoinPermissionOperationName onJoinOp = node.getProperties().getEnum(ON_JOIN_PERMISSIONS_OPERATION,
+                OnJoinPermissionOperationName.class);
         SecurityConfig securityConfig = node.getConfig().getSecurityConfig();
-        if (securityService != null && onJoinOp == OnJoinPermissionOperation.SEND) {
+        if (securityService != null && onJoinOp == OnJoinPermissionOperationName.SEND) {
             logger.info("Refreshing client permissions in cluster");
             securityService.refreshClientPermissions(securityConfig.getClientPermissionConfigs());
         }

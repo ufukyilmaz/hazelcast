@@ -1,6 +1,6 @@
 package com.hazelcast.client.security;
 
-import static com.hazelcast.config.OnJoinPermissionOperation.NONE;
+import static com.hazelcast.config.OnJoinPermissionOperationName.NONE;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.OnJoinPermissionOperation;
+import com.hazelcast.config.OnJoinPermissionOperationName;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SecurityConfig;
@@ -33,7 +33,7 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 
 /**
- * Tests behavior of {@link OnJoinPermissionOperation} in {@link SecurityConfig}.
+ * Tests behavior of {@link OnJoinPermissionOperationName} in {@link SecurityConfig}.
  */
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -61,7 +61,7 @@ public class ClientPermissionPropagationTest {
         assertEquals(0, client1.getMap("test1").size());
         assertMapAccessDenied(client1, "test2");
 
-        HazelcastInstance hz2 = createMember(OnJoinPermissionOperation.SEND, PERMISSION_2);
+        HazelcastInstance hz2 = createMember(OnJoinPermissionOperationName.SEND, PERMISSION_2);
         assertClusterSize(2, hz1, hz2);
         final HazelcastInstance client2 = createDumbClient(hz2);
         assertMapAccessDenied(client2, "test1");
@@ -74,7 +74,7 @@ public class ClientPermissionPropagationTest {
             }
         });
 
-        HazelcastInstance hz3 = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_1);
+        HazelcastInstance hz3 = createMember(OnJoinPermissionOperationName.RECEIVE, PERMISSION_1);
         assertClusterSize(3, hz1, hz2, hz3);
         final HazelcastInstance client3 = createDumbClient(hz3);
         assertMapAccessDenied(client3, "test1");
@@ -92,7 +92,7 @@ public class ClientPermissionPropagationTest {
         assertEquals(0, client1.getMap("test1").size());
         assertMapAccessDenied(client1, "test2");
 
-        HazelcastInstance hz2 = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_2);
+        HazelcastInstance hz2 = createMember(OnJoinPermissionOperationName.RECEIVE, PERMISSION_2);
         assertClusterSize(2, hz1, hz2);
         final HazelcastInstance client2 = createDumbClient(hz2);
         assertEquals(0, client2.getMap("test1").size());
@@ -100,7 +100,7 @@ public class ClientPermissionPropagationTest {
         assertEquals(0, client1.getMap("test1").size());
         assertMapAccessDenied(client1, "test2");
 
-        HazelcastInstance hz3 = createMember(OnJoinPermissionOperation.SEND, PERMISSION_2);
+        HazelcastInstance hz3 = createMember(OnJoinPermissionOperationName.SEND, PERMISSION_2);
         assertClusterSize(3, hz1, hz2, hz3);
         final HazelcastInstance client3 = createDumbClient(hz3);
         assertMapAccessDenied(client3, "test1");
@@ -118,12 +118,12 @@ public class ClientPermissionPropagationTest {
 
     @Test
     public void testNoopAndSendPermissions() {
-        HazelcastInstance hz1 = createMember(OnJoinPermissionOperation.NONE, PERMISSION_1);
+        HazelcastInstance hz1 = createMember(OnJoinPermissionOperationName.NONE, PERMISSION_1);
         final HazelcastInstance client1 = createDumbClient(hz1);
         assertEquals(0, client1.getMap("test1").size());
         assertMapAccessDenied(client1, "test2");
 
-        HazelcastInstance hz2 = createMember(OnJoinPermissionOperation.SEND, PERMISSION_2);
+        HazelcastInstance hz2 = createMember(OnJoinPermissionOperationName.SEND, PERMISSION_2);
         assertClusterSize(2, hz1, hz2);
         final HazelcastInstance client2 = createDumbClient(hz2);
         assertMapAccessDenied(client2, "test1");
@@ -140,12 +140,12 @@ public class ClientPermissionPropagationTest {
 
     @Test
     public void testNoopAndReceivePermissions() {
-        HazelcastInstance hz1 = createMember(OnJoinPermissionOperation.NONE, PERMISSION_1);
+        HazelcastInstance hz1 = createMember(OnJoinPermissionOperationName.NONE, PERMISSION_1);
         final HazelcastInstance client1 = createDumbClient(hz1);
         assertEquals(0, client1.getMap("test1").size());
         assertMapAccessDenied(client1, "test2");
 
-        HazelcastInstance hz2 = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_2);
+        HazelcastInstance hz2 = createMember(OnJoinPermissionOperationName.RECEIVE, PERMISSION_2);
         assertClusterSize(2, hz1, hz2);
         final HazelcastInstance client2 = createDumbClient(hz2);
         assertEquals(0, client2.getMap("test1").size());
@@ -205,7 +205,7 @@ public class ClientPermissionPropagationTest {
     }
 
     /**
-     * Default {@link SecurityConfig#getOnJoinPermissionOperation()} is {@link OnJoinPermissionOperation#RECEIVE}.
+     * Default {@link SecurityConfig#getOnJoinPermissionOperation()} is {@link OnJoinPermissionOperationName#RECEIVE}.
      */
     @Test
     public void testDefaultDefaultPermissions() {
@@ -225,9 +225,9 @@ public class ClientPermissionPropagationTest {
 
     @Test
     public void testReceivePermissionsWhenMasterChanges() {
-        HazelcastInstance hzOld = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_1);
+        HazelcastInstance hzOld = createMember(OnJoinPermissionOperationName.RECEIVE, PERMISSION_1);
         for (int i = 0; i < 5; i++) {
-            HazelcastInstance hzNew = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_2);
+            HazelcastInstance hzNew = createMember(OnJoinPermissionOperationName.RECEIVE, PERMISSION_2);
             factory.terminate(hzOld);
             hzOld = hzNew;
         }
@@ -238,10 +238,10 @@ public class ClientPermissionPropagationTest {
 
     @Test
     public void testSendPermissionsWhenMasterChanges() {
-        HazelcastInstance hzOld = createMember(OnJoinPermissionOperation.SEND, PERMISSION_1);
+        HazelcastInstance hzOld = createMember(OnJoinPermissionOperationName.SEND, PERMISSION_1);
         for (int i = 2; i <= 5; i++) {
             final PermissionConfig perm = new PermissionConfig(PermissionType.MAP, "test" + i, "dev").addAction("all");
-            HazelcastInstance hzNew = createMember(OnJoinPermissionOperation.SEND, perm);
+            HazelcastInstance hzNew = createMember(OnJoinPermissionOperationName.SEND, perm);
             final HazelcastInstance hzTmp = hzOld;
             final int iTmp = i;
             assertTrueEventually(new AssertTask() {
@@ -266,11 +266,11 @@ public class ClientPermissionPropagationTest {
 
     @Test
     public void testReceiveMemberConnectToClusterWithNoneMember() {
-        HazelcastInstance hz1 = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_1);
+        HazelcastInstance hz1 = createMember(OnJoinPermissionOperationName.RECEIVE, PERMISSION_1);
         final HazelcastInstance client1 = createDumbClient(hz1);
-        HazelcastInstance hz2 = createMember(OnJoinPermissionOperation.NONE, PERMISSION_2);
+        HazelcastInstance hz2 = createMember(OnJoinPermissionOperationName.NONE, PERMISSION_2);
         final HazelcastInstance client2 = createDumbClient(hz2);
-        HazelcastInstance hz3 = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_2);
+        HazelcastInstance hz3 = createMember(OnJoinPermissionOperationName.RECEIVE, PERMISSION_2);
         final HazelcastInstance client3 = createDumbClient(hz3);
         assertClusterSize(3, hz1, hz2, hz3);
 
@@ -284,11 +284,11 @@ public class ClientPermissionPropagationTest {
 
     @Test
     public void testSendMemberConnectToClusterWithNoneMember() {
-        HazelcastInstance hz1 = createMember(OnJoinPermissionOperation.RECEIVE, PERMISSION_1);
+        HazelcastInstance hz1 = createMember(OnJoinPermissionOperationName.RECEIVE, PERMISSION_1);
         final HazelcastInstance client1 = createDumbClient(hz1);
-        HazelcastInstance hz2 = createMember(OnJoinPermissionOperation.NONE, PERMISSION_2);
+        HazelcastInstance hz2 = createMember(OnJoinPermissionOperationName.NONE, PERMISSION_2);
         final HazelcastInstance client2 = createDumbClient(hz2);
-        HazelcastInstance hz3 = createMember(OnJoinPermissionOperation.SEND, PERMISSION_1);
+        HazelcastInstance hz3 = createMember(OnJoinPermissionOperationName.SEND, PERMISSION_1);
         final HazelcastInstance client3 = createDumbClient(hz3);
         assertClusterSize(3, hz1, hz2, hz3);
 
@@ -321,13 +321,13 @@ public class ClientPermissionPropagationTest {
         }
     }
 
-    private HazelcastInstance createMember(OnJoinPermissionOperation onJoinPermissionOperation,
+    private HazelcastInstance createMember(OnJoinPermissionOperationName onJoinPermissionOperation,
             PermissionConfig... permissionConfigs) {
         Config config = createConfig(onJoinPermissionOperation, permissionConfigs);
         return factory.newHazelcastInstance(config);
     }
 
-    private Config createConfig(OnJoinPermissionOperation onJoinPermissionOperation, PermissionConfig... permissionConfigs) {
+    private Config createConfig(OnJoinPermissionOperationName onJoinPermissionOperation, PermissionConfig... permissionConfigs) {
         Config config = smallInstanceConfig();
         SecurityConfig securityConfig = config.getSecurityConfig().setEnabled(true);
         if (onJoinPermissionOperation != null) {

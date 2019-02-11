@@ -17,6 +17,7 @@ import com.hazelcast.nio.ssl.SSLConnectionTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -49,6 +50,7 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class})
+@Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2725")
 public class TlsFunctionalTest {
 
     private static final String KEY_FILE_SERVER = "server.pem";

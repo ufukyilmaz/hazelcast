@@ -19,6 +19,7 @@ import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -47,6 +48,7 @@ import static org.junit.Assume.assumeTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class})
+@Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2725")
 public class SSLConnectionTest {
 
     private final ILogger logger = Logger.getLogger(getClass());

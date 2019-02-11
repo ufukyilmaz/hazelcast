@@ -175,7 +175,7 @@ public class ClientPermissionPropagationTest {
     public void testNoneOperationScenario() {
         HazelcastInstance hz1 = createMember(null, PERMISSION_1);
         createMember(null, PERMISSION_1);
-        final HazelcastInstance client1 = factory.newHazelcastClient(createClientConfig(hz1));
+        final HazelcastInstance client1 = createDumbClient(hz1);
         assertEquals(0, client1.getMap("test1").size());
         assertMapAccessDenied(client1, "test2");
 

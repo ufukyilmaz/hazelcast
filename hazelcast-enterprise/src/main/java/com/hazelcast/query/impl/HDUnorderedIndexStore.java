@@ -6,28 +6,30 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.hazelcast.query.impl.AbstractIndex.NULL;
 import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
 
 /**
- * Unsorted index store for HD memory.
- *
+ * Unordered index store for HD memory.
+ * <p>
  * Contract:
  * - Whenever QueryableEntry is passed to it, expects the key & value to be NativeMemoryData
- * - Whenever Data is passed to it (removeIndexInternal), expects it to be NativeMemoryData
+ * - Whenever Data is passed to it (removeInternal), expects it to be NativeMemoryData
  * - Never returns any native memory - all returning objects are on-heap (QueryableEntry and its fields).
  * - There is no read & write locking since it's accessed from a single partition-thread only
  */
-class HDUnsortedIndexStore extends BaseIndexStore {
+class HDUnorderedIndexStore extends BaseIndexStore {
 
     private final EnterpriseSerializationService ess;
     private final HDIndexHashMap<QueryableEntry> recordsWithNullValue;
     private final HDIndexNestedHashMap<QueryableEntry> records;
 
-    HDUnsortedIndexStore(EnterpriseSerializationService ess, MemoryAllocator malloc,
-                         MapEntryFactory<QueryableEntry> entryFactory) {
+    HDUnorderedIndexStore(EnterpriseSerializationService ess, MemoryAllocator malloc,
+                          MapEntryFactory<QueryableEntry> entryFactory) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
         super(IndexCopyBehavior.NEVER);
         assertRunningOnPartitionThread();
@@ -38,9 +40,9 @@ class HDUnsortedIndexStore extends BaseIndexStore {
     }
 
     @Override
-    Object newIndexInternal(Comparable newValue, QueryableEntry entry) {
+    Object insertInternal(Comparable newValue, QueryableEntry entry) {
         assertRunningOnPartitionThread();
-        if (newValue instanceof IndexImpl.NullObject) {
+        if (newValue == NULL) {
             NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
             NativeMemoryData value = (NativeMemoryData) entry.getValueData();
             return recordsWithNullValue.put(key, value);
@@ -49,37 +51,14 @@ class HDUnsortedIndexStore extends BaseIndexStore {
         }
     }
 
-    private Object mapAttributeToEntry(Comparable attribute, QueryableEntry entry) {
-        NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
-        NativeMemoryData value = (NativeMemoryData) entry.getValueData();
-        return records.put(attribute, key, value);
-    }
-
     @Override
-    Object removeIndexInternal(Comparable oldValue, Data recordKey) {
+    Object removeInternal(Comparable value, Data recordKey) {
         assertRunningOnPartitionThread();
-        if (oldValue instanceof IndexImpl.NullObject) {
+        if (value == NULL) {
             return recordsWithNullValue.remove(recordKey);
         } else {
-            return removeMappingForAttribute(oldValue, recordKey);
+            return removeMappingForAttribute(value, recordKey);
         }
-    }
-
-    private Object removeMappingForAttribute(Comparable attribute, Data indexKey) {
-        return records.remove(attribute, (NativeMemoryData) indexKey);
-    }
-
-    @Override
-    public void clear() {
-        assertRunningOnPartitionThread();
-        recordsWithNullValue.clear();
-        records.clear();
-    }
-
-    private void dispose() {
-        assertRunningOnPartitionThread();
-        records.dispose();
-        recordsWithNullValue.dispose();
     }
 
     @Override
@@ -90,67 +69,16 @@ class HDUnsortedIndexStore extends BaseIndexStore {
     }
 
     @Override
-    public Set<QueryableEntry> getSubRecordsBetween(Comparable from, Comparable to) {
+    public void clear() {
         assertRunningOnPartitionThread();
-        Set<QueryableEntry> results = new HashSet<QueryableEntry>();
-        Comparable paramFrom = from;
-        Comparable paramTo = to;
-        int trend = paramFrom.compareTo(paramTo);
-        if (trend == 0) {
-            return records.get(paramFrom);
-        }
-        if (trend < 0) {
-            Comparable oldFrom = paramFrom;
-            paramFrom = to;
-            paramTo = oldFrom;
-        }
-        for (Data valueData : records.keySet()) {
-            Comparable value = ess.toObject(valueData);
-            if (value.compareTo(paramFrom) <= 0 && value.compareTo(paramTo) >= 0) {
-                results.addAll(records.get(value));
-            }
-        }
-        return results;
-    }
-
-    @Override
-    public Set<QueryableEntry> getSubRecords(ComparisonType comparisonType, Comparable searchedValue) {
-        assertRunningOnPartitionThread();
-        Set<QueryableEntry> results = new HashSet<QueryableEntry>();
-        for (Data valueData : records.keySet()) {
-            Comparable value = ess.toObject(valueData);
-            boolean valid;
-            int result = searchedValue.compareTo(value);
-            switch (comparisonType) {
-                case LESSER:
-                    valid = result > 0;
-                    break;
-                case LESSER_EQUAL:
-                    valid = result >= 0;
-                    break;
-                case GREATER:
-                    valid = result < 0;
-                    break;
-                case GREATER_EQUAL:
-                    valid = result <= 0;
-                    break;
-                case NOT_EQUAL:
-                    valid = result != 0;
-                    break;
-                default:
-                    throw new IllegalStateException("Unrecognized comparisonType: " + comparisonType);
-            }
-            if (valid) {
-                results.addAll(records.get(value));
-            }
-        }
-        return results;
+        recordsWithNullValue.clear();
+        records.clear();
     }
 
     @Override
     public Set<QueryableEntry> getRecords(Comparable value) {
         assertRunningOnPartitionThread();
-        if (value instanceof IndexImpl.NullObject) {
+        if (value == NULL) {
             return recordsWithNullValue.entrySet();
         } else {
             return records.get(value);
@@ -167,11 +95,78 @@ class HDUnsortedIndexStore extends BaseIndexStore {
         return results;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public String toString() {
-        return "HDSortedIndexStore{"
-                + "recordMap=" + records.hashCode()
-                + '}';
+    public Set<QueryableEntry> getRecords(Comparison comparison, Comparable value) {
+        assertRunningOnPartitionThread();
+        Set<QueryableEntry> results = new HashSet<QueryableEntry>();
+        for (Data valueData : records.keySet()) {
+            Comparable indexedValue = ess.toObject(valueData);
+            boolean valid;
+            int result = value.compareTo(indexedValue);
+            switch (comparison) {
+                case LESS:
+                    valid = result > 0;
+                    break;
+                case LESS_OR_EQUAL:
+                    valid = result >= 0;
+                    break;
+                case GREATER:
+                    valid = result < 0;
+                    break;
+                case GREATER_OR_EQUAL:
+                    valid = result <= 0;
+                    break;
+                case NOT_EQUAL:
+                    valid = result != 0;
+                    break;
+                default:
+                    throw new IllegalStateException("Unrecognized comparison: " + comparison);
+            }
+            if (valid) {
+                results.addAll(records.get(indexedValue));
+            }
+        }
+        return results;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Set<QueryableEntry> getRecords(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
+        assertRunningOnPartitionThread();
+        if (from.compareTo(to) == 0) {
+            if (!fromInclusive || !toInclusive) {
+                return Collections.emptySet();
+            }
+            return records.get(from);
+        }
+
+        Set<QueryableEntry> results = new HashSet<QueryableEntry>();
+        int fromBound = fromInclusive ? 0 : +1;
+        int toBound = toInclusive ? 0 : -1;
+        for (Data valueData : records.keySet()) {
+            Comparable value = ess.toObject(valueData);
+            if (value.compareTo(from) >= fromBound && value.compareTo(to) <= toBound) {
+                results.addAll(records.get(value));
+            }
+        }
+        return results;
+    }
+
+    private Object mapAttributeToEntry(Comparable attribute, QueryableEntry entry) {
+        NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
+        NativeMemoryData value = (NativeMemoryData) entry.getValueData();
+        return records.put(attribute, key, value);
+    }
+
+    private Object removeMappingForAttribute(Comparable attribute, Data indexKey) {
+        return records.remove(attribute, (NativeMemoryData) indexKey);
+    }
+
+    private void dispose() {
+        assertRunningOnPartitionThread();
+        records.dispose();
+        recordsWithNullValue.dispose();
     }
 
 }

@@ -15,6 +15,7 @@ import javax.cache.CacheManager;
 
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
+import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 
 /**
  * Support class to provide hd specific configuration for map tests
@@ -25,6 +26,10 @@ public final class HDTestSupport {
 
     public static Config getHDConfig() {
         return getHDConfig(new Config(), STANDARD);
+    }
+
+    public static Config getSmallInstanceHDConfig() {
+        return getHDConfig(smallInstanceConfig(), STANDARD);
     }
 
     public static Config getHDConfig(Config config) {

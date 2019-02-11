@@ -19,10 +19,10 @@ public class HDIndexImpl extends AbstractIndex {
 
     private int indexedPartition = UNINDEXED;
 
-    public HDIndexImpl(String attributeName, boolean ordered, EnterpriseSerializationService ss, Extractors extractors,
-                       PerIndexStats stats) {
+    public HDIndexImpl(String name, String[] components, boolean ordered, EnterpriseSerializationService ss,
+                       Extractors extractors, PerIndexStats stats) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
-        super(attributeName, ordered, ss, extractors, IndexCopyBehavior.NEVER, stats);
+        super(name, components, ordered, ss, extractors, IndexCopyBehavior.NEVER, stats);
     }
 
     @Override
@@ -30,7 +30,20 @@ public class HDIndexImpl extends AbstractIndex {
         EnterpriseSerializationService ess = (EnterpriseSerializationService) ss;
         MemoryAllocator malloc = stats.wrapMemoryAllocator(ess.getCurrentMemoryAllocator());
         MapEntryFactory<QueryableEntry> entryFactory = new OnHeapEntryFactory(ess, extractors);
-        return ordered ? new HDSortedIndexStore(ess, malloc, entryFactory) : new HDUnsortedIndexStore(ess, malloc, entryFactory);
+        return ordered ? new HDOrderedIndexStore(ess, malloc, entryFactory) : new HDUnorderedIndexStore(ess, malloc,
+                entryFactory);
+    }
+
+    @Override
+    public void clear() {
+        super.clear();
+        indexedPartition = UNINDEXED;
+    }
+
+    @Override
+    public void destroy() {
+        indexStore.destroy();
+        super.destroy();
     }
 
     @Override
@@ -49,22 +62,11 @@ public class HDIndexImpl extends AbstractIndex {
         indexedPartition = UNINDEXED;
     }
 
-    @Override
-    public void destroy() {
-        indexStore.destroy();
-        super.destroy();
-    }
-
-    @Override
-    public void clear() {
-        super.clear();
-        indexedPartition = UNINDEXED;
-    }
-
     /**
      * Converts off-heap key-value pairs back to on-heap queryable entries.
      */
     private static class OnHeapEntryFactory implements MapEntryFactory<QueryableEntry> {
+
         private final EnterpriseSerializationService ess;
         private final Extractors extractors;
 
@@ -90,5 +92,7 @@ public class HDIndexImpl extends AbstractIndex {
             }
             return data;
         }
+
     }
+
 }

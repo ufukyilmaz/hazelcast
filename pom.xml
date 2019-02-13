@@ -25,6 +25,8 @@
         <timestamp>${maven.build.timestamp}</timestamp>
         <extraVmArgs/>
         <vmHeapSettings>-Xms1g -Xmx1g -XX:MaxPermSize=1024M</vmHeapSettings>
+        <!-- Java 9+ module system args to be appended during surefire/failsafe executions. -->
+        <javaModuleArgs/>
 
         <hazelcast.distribution>Hazelcast Enterprise</hazelcast.distribution>
         <hazelcast.serialization.version>1</hazelcast.serialization.version>
@@ -255,6 +257,7 @@
                     <argLine>
                         ${vmHeapSettings}
                         ${extraVmArgs}
+                        ${javaModuleArgs}
                         -Dsun.nio.ch.bugLevel
                         -ea
                         -Dhazelcast.hidensity.check.freememory=false
@@ -451,6 +454,7 @@
                 <argLine>
                     ${vmHeapSettings}
                     ${extraVmArgs}
+                    ${javaModuleArgs}
                     -Dsun.nio.ch.bugLevel
                     -ea
                     -Dhazelcast.hidensity.check.freememory=false
@@ -526,6 +530,7 @@
                                     <argLine>
                                         ${vmHeapSettings}
                                         ${extraVmArgs}
+                                        ${javaModuleArgs}
                                         -Dsun.nio.ch.bugLevel
                                         -ea
                                         -Dhazelcast.operation.thread.count=16
@@ -571,6 +576,7 @@
                                     <argLine>
                                         ${vmHeapSettings}
                                         ${extraVmArgs}
+                                        ${javaModuleArgs}
                                         -Dsun.nio.ch.bugLevel
                                         -ea
                                         -Dhazelcast.operation.thread.count=16
@@ -610,6 +616,7 @@
                 <argLine>
                     ${vmHeapSettings}
                     ${extraVmArgs}
+                    ${javaModuleArgs}
                     -Dsun.nio.ch.bugLevel
                     -ea
                     -Dhazelcast.hidensity.check.freememory=false
@@ -645,65 +652,35 @@
             <activation>
                 <jdk>[9,)</jdk>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${maven.surefire.plugin.version}</version>
-                        <configuration>
-                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                            <trimStackTrace>false</trimStackTrace>
-                            <!--
-                            Hot Restart related arguments:
-                                export java.base/jdk.internal.ref
-                                open java.base/java.nio
-                                open java.base/sun.nio.ch
-                            Operating system metrics related:
-                                open jdk.management/com.sun.management.internal
+            <properties>
+                <!--
+                Hot Restart related arguments:
+                    export java.base/jdk.internal.ref
+                    open java.base/java.nio
+                    open java.base/sun.nio.ch
+                Operating system metrics related:
+                    open jdk.management/com.sun.management.internal
 
-                            Avoid warnings caused by reflection in
-                            FilteringClassLoader:
-                                open java.base/java.lang
-                            TimedMemberStateFactoryHelper:
-                                open java.management/sun.management
+                Avoid warnings caused by reflection in
+                FilteringClassLoader:
+                    open java.base/java.lang
+                TimedMemberStateFactoryHelper:
+                    open java.management/sun.management
 
-                            Powermock issue workaround (https://github.com/powermock/powermock/issues/905):
-                                export java.xml/jdk.xml.internal
-                             -->
-                            <argLine>
-                                ${vmHeapSettings}
-                                ${extraVmArgs}
-                                -Dsun.nio.ch.bugLevel
-                                -ea
-                                --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
-                                --add-opens java.base/java.nio=ALL-UNNAMED
-                                --add-opens java.base/sun.nio.ch=ALL-UNNAMED
-                                --add-opens java.base/java.lang=ALL-UNNAMED
-                                --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
-                                --add-opens java.management/sun.management=ALL-UNNAMED
-                                --add-exports java.xml/jdk.xml.internal=ALL-UNNAMED
-                                --illegal-access=warn
-                                -Dhazelcast.hidensity.check.freememory=false
-                                -Dhazelcast.phone.home.enabled=false
-                                -Dhazelcast.mancenter.enabled=false
-                                -Dhazelcast.test.use.network=false
-                                -Dlog4j.skipJansi=true
-                            </argLine>
-                            <includes>
-                                <include>**/**.java</include>
-                            </includes>
-                            <groups>
-                                com.hazelcast.test.annotation.QuickTest
-                            </groups>
-                            <excludedGroups>
-                                com.hazelcast.test.annotation.SlowTest,
-                                com.hazelcast.test.annotation.NightlyTest
-                            </excludedGroups>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
+                Powermock issue workaround (https://github.com/powermock/powermock/issues/905):
+                    export java.xml/jdk.xml.internal
+                 -->
+                <javaModuleArgs>
+                    --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
+                    --add-opens java.base/java.nio=ALL-UNNAMED
+                    --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+                    --add-opens java.base/java.lang=ALL-UNNAMED
+                    --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
+                    --add-opens java.management/sun.management=ALL-UNNAMED
+                    --add-exports java.xml/jdk.xml.internal=ALL-UNNAMED
+                    --illegal-access=warn
+                </javaModuleArgs>
+            </properties>
             <modules>
                 <module>enterprise-modulepath-tests</module>
             </modules>
@@ -727,6 +704,7 @@
                             <argLine>
                                 ${vmHeapSettings}
                                 ${extraVmArgs}
+                                ${javaModuleArgs}
                                 -Dsun.nio.ch.bugLevel
                                 -ea
                                 -Dhazelcast.phone.home.enabled=false
@@ -773,6 +751,7 @@
                             <argLine>
                                 ${vmHeapSettings}
                                 ${extraVmArgs}
+                                ${javaModuleArgs}
                                 -Dsun.nio.ch.bugLevel
                                 -ea
                                 -Dhazelcast.hidensity.check.freememory=false

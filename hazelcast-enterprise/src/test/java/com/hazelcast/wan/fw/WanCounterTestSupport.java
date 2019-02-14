@@ -2,7 +2,6 @@ package com.hazelcast.wan.fw;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.PartitionWanEventContainer;
-import com.hazelcast.enterprise.wan.PublisherQueueContainer;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.instance.HazelcastInstanceProxy;
 import com.hazelcast.internal.partition.InternalPartition;
@@ -11,7 +10,6 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.test.AssertTask;
 
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
@@ -113,16 +111,15 @@ public class WanCounterTestSupport {
     }
 
     private static int getQueueSizes(HazelcastInstance instance, WanBatchReplication endpoint, boolean onlyPrimaries) {
-        PublisherQueueContainer b = endpoint.getPublisherQueueContainer();
         int queueSizes = 0;
 
         InternalPartitionService partitionService = ((HazelcastInstanceProxy) instance).getOriginal().node.getPartitionService();
-
-        for (Map.Entry<Integer, PartitionWanEventContainer> eventEntry : b.getPublisherEventQueueMap().entrySet()) {
-            Integer partitionId = eventEntry.getKey();
+        PartitionWanEventContainer[] containers = endpoint.getPublisherQueueContainer()
+                                                          .getContainers();
+        for (int partitionId = 0; partitionId < containers.length; partitionId++) {
+            PartitionWanEventContainer container = containers[partitionId];
             InternalPartition partition = partitionService.getPartition(partitionId);
             if (!onlyPrimaries || partition.isLocal()) {
-                PartitionWanEventContainer container = eventEntry.getValue();
                 queueSizes += container.size();
             }
         }
@@ -132,8 +129,8 @@ public class WanCounterTestSupport {
 
     private static long getTotalPublishedEventCount(HazelcastInstance instance, String replicaName, String targetName) {
         return wanReplicationService(instance).getStats()
-                                        .get(replicaName).getLocalWanPublisherStats()
-                                        .get(targetName).getTotalPublishedEventCount();
+                                              .get(replicaName).getLocalWanPublisherStats()
+                                              .get(targetName).getTotalPublishedEventCount();
     }
 
     private static int getPrimaryOutboundQueueSize(HazelcastInstance instance, String replicaName, String targetName) {

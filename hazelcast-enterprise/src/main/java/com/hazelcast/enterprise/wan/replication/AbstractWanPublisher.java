@@ -19,8 +19,6 @@ import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
 import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEvent;
-import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEventResult;
-import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.partition.InternalPartition;
@@ -34,18 +32,12 @@ import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.spi.InternalCompletableFuture;
-import com.hazelcast.spi.LiveOperations;
-import com.hazelcast.spi.LiveOperationsTracker;
 import com.hazelcast.spi.ObjectNamespace;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ServiceNamespace;
-import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.util.Clock;
-import com.hazelcast.util.EmptyStatement;
-import com.hazelcast.util.QueueUtil;
-import com.hazelcast.util.function.Predicate;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -57,15 +49,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.MapUtil.isNullOrEmpty;
-import static java.lang.Thread.currentThread;
-import static java.util.Collections.newSetFromMap;
 import static java.util.Collections.unmodifiableMap;
 
 /**
@@ -75,23 +62,9 @@ import static java.util.Collections.unmodifiableMap;
  */
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
 public abstract class AbstractWanPublisher implements WanReplicationPublisher,
-        WanReplicationEndpoint, LiveOperationsTracker, WanEventQueueMigrationListener {
+        WanReplicationEndpoint, WanEventQueueMigrationListener {
 
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
-    private static final int DEFAULT_STAGING_QUEUE_SIZE = 100;
-
-    /**
-     * Filter which checks if the WAN replication event is part of WAN sync
-     */
-    private static final Predicate<WanReplicationEvent> NO_WAN_SYNC_EVENT_FILTER =
-            new Predicate<WanReplicationEvent>() {
-                @Override
-                public boolean test(WanReplicationEvent wanReplicationEvent) {
-                    ReplicationEventObject event = wanReplicationEvent.getEventObject();
-                    return !(event instanceof EnterpriseMapReplicationSync)
-                            && !(event instanceof EnterpriseMapReplicationMerkleTreeNode);
-                }
-            };
 
     protected final WanElementCounter wanCounter = new WanElementCounter();
 
@@ -109,19 +82,11 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     protected WANQueueFullBehavior queueFullBehavior;
     protected WanConfigurationContext configurationContext;
     protected PollSynchronizerPublisherQueueContainer eventQueueContainer;
-    /**
-     * Queue for multiplexed map/cache partition WAN events that are about to
-     * be transmitted to the target cluster
-     */
-    protected BlockingQueue<WanReplicationEvent> stagingQueue;
+    protected WanPublisherSyncSupport syncSupport;
 
     private EnterpriseWanReplicationService wanService;
     private WanQueueMigrationSupport wanQueueMigrationSupport;
-    private WanPublisherSyncSupport syncSupport;
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
-    private final Set<Operation> liveOperations = newSetFromMap(new ConcurrentHashMap<Operation, Boolean>());
-    private final BlockingQueue<WanAntiEntropyEvent> antiEntropyEvents
-            = new ArrayBlockingQueue<WanAntiEntropyEvent>(DEFAULT_STAGING_QUEUE_SIZE);
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
@@ -131,11 +96,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         this.wanPublisherId = EnterpriseWanReplicationService.getPublisherIdOrGroupName(publisherConfig);
         this.logger = node.getLogger(getClass());
         this.queueCapacity = publisherConfig.getQueueCapacity();
-        this.localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
+        this.localGroupName = node.getNodeEngine().getConfig().getGroupConfig().getName();
         this.eventQueueContainer = new PollSynchronizerPublisherQueueContainer(node);
-        this.stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(getStagingQueueSize());
         this.queueFullBehavior = publisherConfig.getQueueFullBehavior();
-        this.wanService = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
+        this.wanService = (EnterpriseWanReplicationService) node.getNodeEngine().getWanReplicationService();
 
         final DistributedServiceWanEventCounters mapCounters = wanService.getSentEventCounters(
                 wanReplicationName, wanPublisherId, MapService.SERVICE_NAME);
@@ -146,26 +110,13 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         this.wanQueueMigrationSupport = new WanQueueMigrationSupport(eventQueueContainer, wanCounter);
         this.state = publisherConfig.getInitialPublisherState();
         this.syncSupport = createWanSyncSupport();
-
-        node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller());
-    }
-
-    /**
-     * Returns the capacity of the WAN staging queue. The staging queue is a
-     * queue for multiplexed map/cache partition WAN events that are about to
-     * be transmitted to the target cluster.
-     *
-     * @see AbstractWanPublisher#stagingQueue
-     */
-    public int getStagingQueueSize() {
-        return DEFAULT_STAGING_QUEUE_SIZE;
     }
 
     /**
      * Returns the partition ID for the partition owning the {@code key}
      */
     protected int getPartitionId(Object key) {
-        return node.nodeEngine.getPartitionService().getPartitionId(key);
+        return node.getNodeEngine().getPartitionService().getPartitionId(key);
     }
 
     @Override
@@ -217,10 +168,11 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     /**
-     * Publishes the {@code eventObject}
+     * Publishes the {@code eventObject} onto the WAN replication queues. WAN
+     * sync events should not be published using this method.
      *
-     * @param serviceName
-     * @param eventObject
+     * @param serviceName the name of the service to which this event belongs
+     * @param eventObject the WAN event
      * @return {@code true} if the event has been published, otherwise returns {@code false}
      */
     private boolean publishEventInternal(String serviceName, ReplicationEventObject eventObject) {
@@ -298,8 +250,9 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     /**
-     * Updates the WAN statistics (remaining map sync events, synced partitions, queued event count, latencies, sent events)
-     * and removes the backup events on the replicas.
+     * Updates the WAN statistics (remaining map sync events, synced partitions,
+     * queued event count, latencies, sent events) and removes the backup events
+     * on the replicas.
      *
      * @param wanReplicationEvent the completed replication event
      * @throws HazelcastSerializationException when the event fails to serialization
@@ -313,7 +266,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         }
         updateStats(wanReplicationEvent);
         final Data wanReplicationEventData = node.getSerializationService().toData(wanReplicationEvent);
-        final OperationService operationService = node.nodeEngine.getOperationService();
+        final OperationService operationService = node.getNodeEngine().getOperationService();
         final EnterpriseReplicationEventObject evObj = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
         final int maxAllowedBackupCount = node.getPartitionService().getMaxAllowedBackupCount();
         final int backupCount = evObj.getBackupCount();
@@ -482,8 +435,8 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      */
     private void invokeOnPartition(String serviceName, Data key, Operation operation) {
         try {
-            int partitionId = node.nodeEngine.getPartitionService().getPartitionId(key);
-            node.nodeEngine.getOperationService()
+            int partitionId = node.getNodeEngine().getPartitionService().getPartitionId(key);
+            node.getNodeEngine().getOperationService()
                            .invokeOnPartition(serviceName, operation, partitionId).get();
         } catch (Throwable t) {
             throw rethrow(t);
@@ -497,32 +450,17 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     @Override
-    public void populate(LiveOperations liveOperations) {
-        for (Operation op : this.liveOperations) {
-            liveOperations.add(op.getCallerAddress(), op.getCallId());
-        }
-    }
-
-    @Override
     public void publishSyncEvent(WanSyncEvent event) {
         publishAntiEntropyEvent(event);
     }
 
     /**
-     * Publishes an anti-entropy event.
-     * This method does not wait for the event processing to complete.
+     * Publishes a WAN anti-entropy event. This method may also process the
+     * event or trigger processing.
      *
      * @param event the WAN anti-entropy event
      */
-    public void publishAntiEntropyEvent(WanAntiEntropyEvent event) {
-        try {
-            antiEntropyEvents.put(event);
-            liveOperations.add(event.getOp());
-        } catch (InterruptedException e) {
-            currentThread().interrupt();
-            throw rethrow(e);
-        }
-    }
+    public abstract void publishAntiEntropyEvent(WanAntiEntropyEvent event);
 
     /**
      * Releases all resources for the map with the given {@code mapName}.
@@ -548,14 +486,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     private void clearQueuesInternal() {
-        final int drainedFromStagingQueue = QueueUtil.drainQueue(stagingQueue, NO_WAN_SYNC_EVENT_FILTER);
-        // the elements in the staging queue were polled from queues
-        // belong to owned partitions, therefore we should decrement the
-        // primary counter
-        // sync events must not be counted against the drained count
-        // because they are not part of the primary element counter
-        wanCounter.decrementPrimaryElementCounter(drainedFromStagingQueue);
-        int totalDrained = drainedFromStagingQueue;
+        int totalDrained = 0;
 
         Map<Integer, Integer> drainedPerPartition = eventQueueContainer.drainQueues();
         for (Map.Entry<Integer, Integer> entry : drainedPerPartition.entrySet()) {
@@ -617,7 +548,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     @Override
     public void collectAllServiceNamespaces(PartitionReplicationEvent event, Set<ServiceNamespace> namespaces) {
         final int partitionId = event.getPartitionId();
-        final PartitionWanEventContainer partitionContainer = eventQueueContainer.getPublisherEventQueue(partitionId);
+        final PartitionWanEventContainer partitionContainer = eventQueueContainer.getEventQueue(partitionId);
 
         if (partitionContainer == null) {
             return;
@@ -638,7 +569,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
                                        PartitionReplicationEvent event,
                                        Collection<ServiceNamespace> namespaces,
                                        EWRMigrationContainer migrationDataContainer) {
-        final PartitionWanEventContainer partitionContainer = eventQueueContainer.getPublisherEventQueue(event.getPartitionId());
+        final PartitionWanEventContainer partitionContainer = eventQueueContainer.getEventQueue(event.getPartitionId());
         if (partitionContainer != null) {
             final PartitionWanEventQueueMap mapQueues = collectNamespaces(
                     partitionContainer.getMapEventQueueMapByBackupCount(event.getReplicaIndex()),
@@ -689,141 +620,16 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     /**
-     * Offer a single event to the staging queue, blocking if necessary
-     *
-     * @return {@code true} if the event was accepted by the queue. This will
-     * always be {@code true} unless the WAN publisher is shutting down.
+     * Creates the instance implementing WAN sync features. This method must
+     * not return {@code null}.
      */
-    boolean offerToStagingQueue(WanReplicationEvent event) {
-        while (running) {
-            try {
-                stagingQueue.put(event);
-                return true;
-            } catch (InterruptedException ignored) {
-                currentThread().interrupt();
-            }
-        }
-        return false;
-    }
+    protected abstract WanPublisherSyncSupport createWanSyncSupport();
 
     /**
-     * Sends a response to the {@link WanAntiEntropyEvent#getOp()}
+     * Returns the WAN configuration context for the configuration used to
+     * instantiate this publisher.
      */
-    private void sendResponse(WanAntiEntropyEvent event,
-                              WanAntiEntropyEventResult result) {
-        try {
-            event.getOp().sendResponse(result);
-        } catch (Exception ex) {
-            logger.warning(ex);
-        }
-    }
-
-    /**
-     * Creates a support instance for processing WAN merkle tree anti-entropy
-     * events. This method may return {@code null} if merkle tree WAN sync is
-     * not supported.
-     */
-    protected WanPublisherSyncSupport createWanSyncSupport() {
-        return new WanPublisherFullSyncSupport(node, this);
-    }
-
-    /**
-     * This runnable is responsible for multiplexing the WAN events from the
-     * WAN replication queues with WAN events triggered by a
-     * {@link WanSyncEvent}. It then fills the staging queue with WAN events
-     * on specific entries.
-     * If this publisher is {@link #pause()}'d or if there are no events in the
-     * WAN queues, it will backoff by sleeping the poller thread up to
-     * {@link QueuePoller#MAX_SLEEP_MS}
-     */
-    private class QueuePoller implements Runnable {
-        /**
-         * The maximum time to sleep the queue poller thread if there are no
-         * events or the publisher is paused
-         */
-        private static final int MAX_SLEEP_MS = 2000;
-        private static final int SLEEP_INTERVAL_MS = 200;
-        private int emptyIterationCount;
-
-        @Override
-        public void run() {
-            while (running) {
-                if (tryProcessAntiEntropyEvent()) {
-                    continue;
-                }
-
-                boolean offered = false;
-                if (state.isReplicateEnqueuedEvents()) {
-                    offered = tryWanReplicationQueues();
-                    emptyIterationCount = 0;
-                }
-
-                if (!offered && running) {
-                    int sleepMsSuggestion = ++emptyIterationCount * SLEEP_INTERVAL_MS;
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(Math.min(sleepMsSuggestion, MAX_SLEEP_MS));
-                    } catch (InterruptedException ignored) {
-                        EmptyStatement.ignore(ignored);
-                    }
-                }
-            }
-        }
-
-        /**
-         * Checks if there is an anti-entropy request and processes the request.
-         *
-         * @return {@code true} if the method processed a WAN anti-entropy event
-         */
-        private boolean tryProcessAntiEntropyEvent() {
-            WanAntiEntropyEvent event = antiEntropyEvents.poll();
-            if (event != null) {
-                final WanAntiEntropyEventResult result = new WanAntiEntropyEventResult();
-                try {
-                    if (event instanceof WanSyncEvent) {
-                        syncSupport.processEvent((WanSyncEvent) event, result);
-                        return true;
-                    }
-                    if (event instanceof WanConsistencyCheckEvent) {
-                        syncSupport.processEvent((WanConsistencyCheckEvent) event, result);
-                        return true;
-                    }
-
-                    logger.info("Ignoring unknown WAN anti-entropy event " + event);
-                } catch (Exception ex) {
-                    logger.warning("WAN anti-entropy event processing failed", ex);
-                } finally {
-                    sendResponse(event, result);
-                    liveOperations.remove(event.getOp());
-                }
-            }
-            return false;
-        }
-
-        /**
-         * Polls a random replication event for every owned partition and adds it
-         * to the staging queue.
-         * If there is an event polled from a partition, it will be added to the
-         * staging queue, blocking if necessary.
-         *
-         * @return {@code true} if any event was offered to the staging queue. This
-         * may be {@code false} if there were no events or if the publisher is
-         * shutting down
-         * @see #stagingQueue
-         */
-        private boolean tryWanReplicationQueues() {
-            boolean offered = false;
-            for (IPartition partition : node.getPartitionService().getPartitions()) {
-                if (!partition.isLocal()) {
-                    continue;
-                }
-
-                WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
-
-                if (event != null) {
-                    offered |= offerToStagingQueue(event);
-                }
-            }
-            return offered;
-        }
+    WanConfigurationContext getConfigurationContext() {
+        return configurationContext;
     }
 }

@@ -57,8 +57,8 @@ class WanEventProcessor implements LiveOperationsTracker {
         final int partitionId = eventList.isEmpty()
                 ? DEFAULT_KEY_FOR_STRIPED_EXECUTORS
                 : getPartitionId(eventList.iterator().next().getEventObject().getKey());
-        final BatchWanEventRunnable processingRunnable
-                = new BatchWanEventRunnable(replicationEvent, op, partitionId, node.nodeEngine, liveOperations, logger);
+        final BatchWanEventRunnable processingRunnable = new BatchWanEventRunnable(
+                replicationEvent, op, partitionId, node.getNodeEngine(), liveOperations, logger);
         executeAndNotify(processingRunnable, op);
     }
 
@@ -73,13 +73,13 @@ class WanEventProcessor implements LiveOperationsTracker {
     public void handleRepEvent(final WanReplicationEvent replicationEvent, WanOperation op) {
         final int partitionId = getPartitionId(replicationEvent.getEventObject().getKey());
         final WanEventRunnable processingRunnable
-                = new WanEventRunnable(replicationEvent, op, partitionId, node.nodeEngine, liveOperations, logger);
+                = new WanEventRunnable(replicationEvent, op, partitionId, node.getNodeEngine(), liveOperations, logger);
         executeAndNotify(processingRunnable, op);
     }
 
     public void handleEvent(WanReplicationEvent event) {
         String serviceName = event.getServiceName();
-        ReplicationSupportingService service = node.nodeEngine.getService(serviceName);
+        ReplicationSupportingService service = node.getNodeEngine().getService(serviceName);
         service.onReplicationEvent(event);
     }
 
@@ -123,7 +123,7 @@ class WanEventProcessor implements LiveOperationsTracker {
 
     /** Returns the partition ID for the partition owning the {@code key} */
     private int getPartitionId(Data key) {
-        return node.nodeEngine.getPartitionService().getPartitionId(key);
+        return node.getNodeEngine().getPartitionService().getPartitionId(key);
     }
 
     @Override

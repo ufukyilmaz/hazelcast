@@ -20,7 +20,7 @@ public class WanReplication {
     private final ConsistencyCheckStrategy consistencyCheckStrategy;
     private final WanPublisherState initialPublisherState;
     private final int replicationBatchSize;
-    private final int executorThreadCount;
+    private final int maxConcurrentInvocations;
     private final boolean snapshotEnabled;
     private WanReplicationPublisher wanPublisher;
     private Class<? extends WanReplicationPublisher> wanPublisherClass;
@@ -35,8 +35,8 @@ public class WanReplication {
         this.consistencyCheckStrategy = builder.consistencyCheckStrategy;
         this.initialPublisherState = builder.initialPublisherState;
         this.replicationBatchSize = builder.replicationBatchSize;
-        this.executorThreadCount = builder.executorThreadCount;
         this.snapshotEnabled = builder.snapshotEnabled;
+        this.maxConcurrentInvocations = builder.maxConcurrentInvocations;
     }
 
     public static WanReplicationBuilder replicate() {
@@ -104,9 +104,9 @@ public class WanReplication {
         props.put(WanReplicationProperties.ENDPOINTS.key(), (getClusterEndPoints(config, targetCluster.size())));
         props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
         props.put(WanReplicationProperties.SNAPSHOT_ENABLED.key(), snapshotEnabled);
+        props.put(WanReplicationProperties.MAX_CONCURRENT_INVOCATIONS.key(), maxConcurrentInvocations);
         props.put(WanReplicationProperties.BATCH_SIZE.key(), replicationBatchSize);
         props.put(WanReplicationProperties.BATCH_MAX_DELAY_MILLIS.key(), 1000);
-        props.put(WanReplicationProperties.EXECUTOR_THREAD_COUNT.key(), executorThreadCount);
 
         return target;
     }
@@ -131,7 +131,7 @@ public class WanReplication {
         private ConsistencyCheckStrategy consistencyCheckStrategy;
         private WanPublisherState initialPublisherState;
         private int replicationBatchSize = WanConfigurationContext.DEFAULT_BATCH_SIZE;
-        private int executorThreadCount = WanConfigurationContext.DEFAULT_EXECUTOR_THREAD_COUNT;
+        private int maxConcurrentInvocations = WanConfigurationContext.DEFAULT_MAX_CONCURRENT_INVOCATIONS;
         private boolean snapshotEnabled = false;
 
         private WanReplicationBuilder() {
@@ -177,13 +177,13 @@ public class WanReplication {
             return this;
         }
 
-        public WanReplicationBuilder withExecutorThreadCount(int executorThreadCount) {
-            this.executorThreadCount = executorThreadCount;
+        public WanReplicationBuilder withSnapshotEnabled(boolean snapshotEnabled) {
+            this.snapshotEnabled = snapshotEnabled;
             return this;
         }
 
-        public WanReplicationBuilder withSnapshotEnabled(boolean snapshotEnabled) {
-            this.snapshotEnabled = snapshotEnabled;
+        public WanReplicationBuilder withMaxConcurrentInvocations(int maxConcurrentInvocations) {
+            this.maxConcurrentInvocations = maxConcurrentInvocations;
             return this;
         }
 

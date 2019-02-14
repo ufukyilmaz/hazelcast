@@ -79,6 +79,10 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         return false;
     }
 
+    protected int getMaxConcurrentInvocations() {
+        return -1;
+    }
+
     @Override
     protected Config getConfig() {
         Config config = smallInstanceConfig();
@@ -155,6 +159,8 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         props.put(WanReplicationProperties.ENDPOINTS.key(), (getClusterEndPoints(config, count)));
         props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
         props.put(WanReplicationProperties.SNAPSHOT_ENABLED.key(), isSnapshotEnabled());
+        props.put(WanReplicationProperties.BATCH_MAX_DELAY_MILLIS.key(), "10");
+        props.put(WanReplicationProperties.MAX_CONCURRENT_INVOCATIONS.key(), getMaxConcurrentInvocations());
 
         target.getWanSyncConfig().setConsistencyCheckStrategy(consistencyCheckStrategy);
         return target;

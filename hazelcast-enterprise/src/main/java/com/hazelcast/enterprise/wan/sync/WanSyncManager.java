@@ -78,7 +78,7 @@ public class WanSyncManager {
         }
         activeWanConfig = wanReplicationName;
         activePublisher = targetGroupName;
-        node.nodeEngine.getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
+        node.getNodeEngine().getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
             @Override
             public void run() {
                 Operation operation = new WanAntiEntropyEventStarterOperation(wanReplicationName, targetGroupName, event);

@@ -1,17 +1,21 @@
 package com.hazelcast.enterprise.wan.replication;
 
+import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
-import com.hazelcast.logging.ILogger;
+import com.hazelcast.instance.Node;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.serialization.SerializationService;
+import com.hazelcast.util.executor.CompletedFuture;
+
+import java.util.concurrent.Executor;
 
 /**
  * The default implementation of the {@link WanBatchSender}.
@@ -21,52 +25,38 @@ import com.hazelcast.spi.serialization.SerializationService;
  * operation.
  */
 public class DefaultWanBatchSender implements WanBatchSender {
-    private final WanConnectionManager connectionManager;
-    private final ILogger logger;
-    private final SerializationService serializationService;
-    private final OperationService operationService;
-    private final WanConfigurationContext configurationContext;
+    private WanConnectionManager connectionManager;
+    private SerializationService serializationService;
+    private OperationService operationService;
+    private WanConfigurationContext configurationContext;
+    private Executor wanExecutor;
 
-    public DefaultWanBatchSender(WanConnectionManager connectionManager,
-                                 ILogger logger,
-                                 SerializationService serializationService,
-                                 OperationService operationService,
-                                 WanConfigurationContext configurationContext) {
-        this.connectionManager = connectionManager;
-        this.logger = logger;
-        this.serializationService = serializationService;
-        this.operationService = operationService;
-        this.configurationContext = configurationContext;
+    @Override
+    public void init(Node node, WanBatchReplication publisher) {
+        this.connectionManager = publisher.getConnectionManager();
+        this.serializationService = node.getNodeEngine().getSerializationService();
+        this.operationService = node.getNodeEngine().getOperationService();
+        this.configurationContext = publisher.getConfigurationContext();
+        this.wanExecutor = publisher.getWanExecutor();
     }
 
     @Override
-    public boolean send(BatchWanReplicationEvent batchReplicationEvent, Address target) {
-        WanConnectionWrapper connectionWrapper = null;
-        try {
-            connectionWrapper = connectionManager.getConnection(target);
-            if (connectionWrapper != null) {
-                return invokeOnWanTarget(connectionWrapper.getConnection().getEndPoint(), batchReplicationEvent);
-            }
-        } catch (Throwable t) {
-            logger.warning(t);
-            if (connectionWrapper != null) {
-                final Address address = connectionWrapper.getTargetAddress();
-                connectionManager.removeTargetEndpoint(address,
-                        "Error occurred when sending WAN events to " + address, t);
-            }
+    public ICompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent,
+                                            Address target) {
+        WanConnectionWrapper connectionWrapper = connectionManager.getConnection(target);
+        if (connectionWrapper != null) {
+            return invokeOnWanTarget(connectionWrapper.getConnection().getEndPoint(), batchReplicationEvent);
+        } else {
+            return new CompletedFuture<Boolean>(serializationService, false, wanExecutor);
         }
-        return false;
     }
 
-    private boolean invokeOnWanTarget(Address target, DataSerializable event) {
-        final Operation wanOperation = new WanOperation(serializationService.toData(event),
+    private InternalCompletableFuture<Boolean> invokeOnWanTarget(Address target, DataSerializable event) {
+        Operation wanOperation = new WanOperation(serializationService.toData(event),
                 configurationContext.getAcknowledgeType());
-        final String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
-        final InternalCompletableFuture<Boolean> future =
-                operationService.createInvocationBuilder(serviceName, wanOperation, target)
-                                .setTryCount(1)
-                                .setCallTimeout(configurationContext.getResponseTimeoutMillis())
-                                .invoke();
-        return future.join();
+        String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
+        return operationService.createInvocationBuilder(serviceName, wanOperation, target)
+                               .setTryCount(1)
+                               .invoke();
     }
 }

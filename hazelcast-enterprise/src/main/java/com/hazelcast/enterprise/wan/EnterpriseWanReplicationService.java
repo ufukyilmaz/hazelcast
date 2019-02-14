@@ -154,7 +154,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      * @param wanOperation the operation sent by the source cluster
      */
     public void handleEvent(Data data, WanOperation wanOperation) {
-        final Object event = node.nodeEngine.toObject(data);
+        final Object event = node.getNodeEngine().toObject(data);
         if (event instanceof BatchWanReplicationEvent) {
             eventProcessor.handleRepEvent((BatchWanReplicationEvent) event, wanOperation);
         } else {
@@ -323,7 +323,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
         // add stats from uninitialized but configured WAN replications
         final Map<String, WanReplicationConfig> wanReplicationConfigs
-                = node.nodeEngine.getConfig().getWanReplicationConfigs();
+                = node.getNodeEngine().getConfig().getWanReplicationConfigs();
         final LocalWanPublisherStatsImpl stoppedPublisherStats = new LocalWanPublisherStatsImpl();
         stoppedPublisherStats.setState(WanPublisherState.STOPPED);
 

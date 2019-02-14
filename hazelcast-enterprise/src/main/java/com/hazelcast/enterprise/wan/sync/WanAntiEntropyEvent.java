@@ -23,6 +23,8 @@ public abstract class WanAntiEntropyEvent implements IdentifiedDataSerializable 
      */
     private transient WanAntiEntropyEventPublishOperation op;
 
+    private transient WanAntiEntropyEventResult processingResult;
+
     @SuppressWarnings("unused")
     public WanAntiEntropyEvent() {
     }
@@ -51,6 +53,25 @@ public abstract class WanAntiEntropyEvent implements IdentifiedDataSerializable 
         this.op = op;
     }
 
+    public WanAntiEntropyEventResult getProcessingResult() {
+        return processingResult;
+    }
+
+    public void setProcessingResult(WanAntiEntropyEventResult processingResult) {
+        this.processingResult = processingResult;
+    }
+
+    /**
+     * Sends the response with the {@link #getProcessingResult() processing result}
+     * to the event sender.
+     */
+    public void sendResponse() {
+        try {
+            op.sendResponse(processingResult);
+        } catch (Exception ex) {
+            op.getNodeEngine().getLogger(WanAntiEntropyEvent.class).warning(ex);
+        }
+    }
 
     @Override
     public int getFactoryId() {

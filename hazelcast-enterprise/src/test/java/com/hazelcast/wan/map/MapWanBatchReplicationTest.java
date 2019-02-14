@@ -77,27 +77,38 @@ import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({ParallelTest.class, QuickTest.class})
 public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
-    @Parameterized.Parameter
+    @Parameterized.Parameter(0)
     public InMemoryFormat inMemoryFormat;
 
-    @Parameterized.Parameters(name = "inMemoryFormat:{0}")
+    @Parameterized.Parameter(1)
+    public int maxConcurrentInvocations;
+
+    @Parameterized.Parameters(name = "inMemoryFormat:{0}, maxConcurrentInvocations:{1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY},
-                {InMemoryFormat.OBJECT},
-                {InMemoryFormat.NATIVE},
+                {InMemoryFormat.BINARY, -1},
+                {InMemoryFormat.BINARY, 1},
+                {InMemoryFormat.BINARY, 100},
+                {InMemoryFormat.OBJECT, -1},
+                {InMemoryFormat.NATIVE, -1},
         });
     }
 
     @Override
     public final InMemoryFormat getMemoryFormat() {
         return inMemoryFormat;
+    }
+
+    @Override
+    protected int getMaxConcurrentInvocations() {
+        return maxConcurrentInvocations;
     }
 
     @Override
@@ -160,8 +171,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
     @Test
     public void mapWanEventFilter_prevents_replication_of_loaded_entries_by_default() {
-        String mapName = "default";
-        int loadedEntryCount = 1111;
+        final String mapName = "default";
+        final int loadedEntryCount = 1111;
 
         // 1. MapWanEventFilter is null to see default behaviour of filtering
         setupReplicateFrom(configA, configB, singleNodeB.length, "atob",
@@ -491,6 +502,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
     @Test
     public void wan_events_should_be_processed_in_order() {
+        assumeTrue("maxConcurrentInvocations higher than 1 does not guarantee ordering", maxConcurrentInvocations < 2);
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();

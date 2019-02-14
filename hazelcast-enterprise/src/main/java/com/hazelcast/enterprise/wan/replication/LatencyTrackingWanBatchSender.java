@@ -1,6 +1,9 @@
 package com.hazelcast.enterprise.wan.replication;
 
+import com.hazelcast.core.ExecutionCallback;
+import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
+import com.hazelcast.instance.Node;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin.LatencyProbe;
 import com.hazelcast.nio.Address;
@@ -8,6 +11,7 @@ import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 /**
  * A wrapper around a {@link WanBatchSender} implementation that additionally tracks
@@ -19,6 +23,7 @@ public class LatencyTrackingWanBatchSender implements WanBatchSender {
     private final StoreLatencyPlugin storeLatencyPlugin;
     private final ConcurrentHashMap<Address, LatencyProbe> latencyProbes;
     private final String wanPublisherId;
+    private final Executor responseExecutor;
     private final ConstructorFunction<Address, LatencyProbe> createLatencyProbe
             = new ConstructorFunction<Address, LatencyProbe>() {
         @Override
@@ -27,21 +32,44 @@ public class LatencyTrackingWanBatchSender implements WanBatchSender {
         }
     };
 
-    public LatencyTrackingWanBatchSender(WanBatchSender delegate, StoreLatencyPlugin plugin, String wanPublisherId) {
+    public LatencyTrackingWanBatchSender(WanBatchSender delegate,
+                                         StoreLatencyPlugin plugin,
+                                         String wanPublisherId,
+                                         Executor responseExecutor) {
         this.delegate = delegate;
         this.storeLatencyPlugin = plugin;
         this.latencyProbes = new ConcurrentHashMap<Address, LatencyProbe>();
         this.wanPublisherId = wanPublisherId;
+        this.responseExecutor = responseExecutor;
     }
 
     @Override
-    public boolean send(BatchWanReplicationEvent batchReplicationEvent, Address target) {
+    public void init(Node node, WanBatchReplication publisher) {
+        throw new UnsupportedOperationException(
+                "Not supported as a standalone sender, use constructor for initialisation");
+    }
+
+    @Override
+    public ICompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent,
+                                            final Address target) {
         final long startNanos = System.nanoTime();
-        try {
-            return delegate.send(batchReplicationEvent, target);
-        } finally {
-            final LatencyProbe probe = ConcurrencyUtil.getOrPutIfAbsent(latencyProbes, target, createLatencyProbe);
-            probe.recordValue(System.nanoTime() - startNanos);
-        }
+        ICompletableFuture<Boolean> result = delegate.send(batchReplicationEvent, target);
+        result.andThen(new ExecutionCallback<Boolean>() {
+            @Override
+            public void onResponse(Boolean response) {
+                recordLatency(target, startNanos);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                recordLatency(target, startNanos);
+            }
+        }, responseExecutor);
+        return result;
+    }
+
+    private void recordLatency(Address target, long startNanos) {
+        LatencyProbe probe = ConcurrencyUtil.getOrPutIfAbsent(latencyProbes, target, createLatencyProbe);
+        probe.recordValue(System.nanoTime() - startNanos);
     }
 }

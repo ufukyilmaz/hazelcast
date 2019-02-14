@@ -135,7 +135,7 @@ class WanReplicationMigrationAwareService implements FragmentedMigrationAwareSer
                     final PublisherQueueContainer publisherQueueContainer
                             = endpoint.getPublisherQueueContainer();
                     final PartitionWanEventContainer eventQueueContainer
-                            = publisherQueueContainer.getPublisherEventQueueMap().get(partitionId);
+                            = publisherQueueContainer.getEventQueue(partitionId);
 
                     // queue depth cannot change between invocations of the size() and the clear() methods, since
                     // 1) we are on a partition operation thread -> no operations can emit WAN events

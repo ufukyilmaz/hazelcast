@@ -1,12 +1,12 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.instance.Node;
-import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.WanReplicationEvent;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * WAN event queue container for WAN replication publishers. Each WAN queue
@@ -14,15 +14,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * push/pull WAN events to/from queues.
  */
 public class PublisherQueueContainer {
-    /**
-     * Partition ID to event container map
-     */
-    private Map<Integer, PartitionWanEventContainer> publisherEventQueueMap
-            = new ConcurrentHashMap<Integer, PartitionWanEventContainer>();
+    private final PartitionWanEventContainer[] containers;
 
     public PublisherQueueContainer(Node node) {
-        for (IPartition partition : node.getPartitionService().getPartitions()) {
-            publisherEventQueueMap.put(partition.getPartitionId(), new PartitionWanEventContainer());
+        int partitionCount = node.getPartitionService().getPartitionCount();
+
+        containers = new PartitionWanEventContainer[partitionCount];
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
+            containers[partitionId] = new PartitionWanEventContainer();
         }
     }
 
@@ -35,8 +34,8 @@ public class PublisherQueueContainer {
      * @return the wan replication event
      */
     public WanReplicationEvent pollCacheWanEvent(String nameWithPrefix, int partitionId) {
-        PartitionWanEventContainer wanEventContainer = publisherEventQueueMap.get(partitionId);
-        return wanEventContainer.pollCacheWanEvent(nameWithPrefix);
+        return getEventQueue(partitionId)
+                .pollCacheWanEvent(nameWithPrefix);
     }
 
     /**
@@ -49,8 +48,8 @@ public class PublisherQueueContainer {
      * @return {@code true} if the element was added to this queue, else {@code false}
      */
     public boolean publishCacheWanEvent(String nameWithPrefix, int partitionId, WanReplicationEvent replicationEvent) {
-        PartitionWanEventContainer wanEventContainer = publisherEventQueueMap.get(partitionId);
-        return wanEventContainer.publishCacheWanEvent(nameWithPrefix, replicationEvent);
+        return getEventQueue(partitionId)
+                .publishCacheWanEvent(nameWithPrefix, replicationEvent);
     }
 
     /**
@@ -62,8 +61,8 @@ public class PublisherQueueContainer {
      * @return the wan replication event
      */
     public WanReplicationEvent pollMapWanEvent(String mapName, int partitionId) {
-        PartitionWanEventContainer wanEventContainer = publisherEventQueueMap.get(partitionId);
-        return wanEventContainer.pollMapWanEvent(mapName);
+        return getEventQueue(partitionId)
+                .pollMapWanEvent(mapName);
     }
 
     /**
@@ -78,26 +77,23 @@ public class PublisherQueueContainer {
      * {@code false}
      */
     public boolean publishMapWanEvent(String mapName, int partitionId, WanReplicationEvent replicationEvent) {
-        PartitionWanEventContainer wanEventContainer = publisherEventQueueMap.get(partitionId);
-        return wanEventContainer.publishMapWanEvent(mapName, replicationEvent);
+        return getEventQueue(partitionId)
+                .publishMapWanEvent(mapName, replicationEvent);
     }
 
     /**
-     * Returns a random replication event for the {@code partitionId}.
+     * Removes at most the given number of available elements from a random WAN
+     * queue and for the given partition and adds them to the given collection.
      *
-     * @param partitionId the partition ID for the replication event
-     * @return a random replication event for the given partition ID
+     * @param partitionId     the partition ID for which a random WAN queue should be drained
+     * @param drainTo         the collection to which to drain events to
+     * @param elementsToDrain the maximum number of events to drain
      */
-    public WanReplicationEvent pollRandomWanEvent(int partitionId) {
-        return publisherEventQueueMap.get(partitionId).pollRandomWanEvent();
-    }
-
-    /**
-     * Returns the map of partition ID to {@link PartitionWanEventContainer}
-     * for the specific partition
-     */
-    public Map<Integer, PartitionWanEventContainer> getPublisherEventQueueMap() {
-        return publisherEventQueueMap;
+    public void drainRandomWanQueue(int partitionId,
+                                    Collection<WanReplicationEvent> drainTo,
+                                    int elementsToDrain) {
+        getEventQueue(partitionId)
+                .drainRandomWanQueue(drainTo, elementsToDrain);
     }
 
     /**
@@ -107,17 +103,18 @@ public class PublisherQueueContainer {
      * @param partitionId the partition ID for the WAN event container
      * @return the WAN event container
      */
-    public PartitionWanEventContainer getPublisherEventQueue(int partitionId) {
-        return publisherEventQueueMap.get(partitionId);
+    public PartitionWanEventContainer getEventQueue(int partitionId) {
+        return containers[partitionId];
     }
 
     /**
      * Returns the size of all WAN queues for the given {@code partitionId}.
+     *
      * @param partitionId the partition ID
      * @return the size of the WAN queue
      */
     public int size(int partitionId) {
-        return publisherEventQueueMap.get(partitionId).size();
+        return getEventQueue(partitionId).size();
     }
 
     /**
@@ -127,14 +124,21 @@ public class PublisherQueueContainer {
      * @return the number of drained elements per partition
      */
     public Map<Integer, Integer> drainQueues() {
-        Map<Integer, Integer> partitionDrainsMap = MapUtil.createHashMap(publisherEventQueueMap.size());
-        for (Map.Entry<Integer, PartitionWanEventContainer> partitionEntry : publisherEventQueueMap.entrySet()) {
-            Integer partitionId = partitionEntry.getKey();
-            PartitionWanEventContainer partitionWanEventContainer = partitionEntry.getValue();
+        Map<Integer, Integer> partitionDrainsMap = MapUtil.createHashMap(containers.length);
+        for (int partitionId = 0; partitionId < containers.length; partitionId++) {
+            PartitionWanEventContainer partitionWanEventContainer = getEventQueue(partitionId);
             int drained = partitionWanEventContainer.drain();
             partitionDrainsMap.put(partitionId, drained);
         }
 
         return partitionDrainsMap;
+    }
+
+    /**
+     * Returns all of the partition WAN event queue containers.
+     */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP")
+    public PartitionWanEventContainer[] getContainers() {
+        return containers;
     }
 }

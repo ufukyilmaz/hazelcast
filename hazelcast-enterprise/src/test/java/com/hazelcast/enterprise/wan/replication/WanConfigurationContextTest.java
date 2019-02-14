@@ -25,7 +25,6 @@ public class WanConfigurationContextTest {
         publisherConfig.setProperties(props);
         final WanConfigurationContext context = new WanConfigurationContext(publisherConfig);
         assertEquals(WanConfigurationContext.DEFAULT_IS_SNAPSHOT_ENABLED, context.isSnapshotEnabled());
-        assertEquals(WanConfigurationContext.DEFAULT_EXECUTOR_THREAD_COUNT, context.getExecutorThreadCount());
         assertEquals(WanConfigurationContext.DEFAULT_BATCH_SIZE, context.getBatchSize());
         assertEquals(WanConfigurationContext.DEFAULT_BATCH_MAX_DELAY_MILLIS, context.getBatchMaxDelayMillis());
         assertEquals(WanConfigurationContext.DEFAULT_RESPONSE_TIMEOUT_MILLIS, context.getResponseTimeoutMillis());
@@ -57,7 +56,6 @@ public class WanConfigurationContextTest {
         final WanConfigurationContext context = new WanConfigurationContext(publisherConfig);
 
         assertTrue(context.isSnapshotEnabled());
-        assertEquals(100, context.getExecutorThreadCount());
         assertEquals(1, context.getBatchSize());
         assertEquals(1, context.getBatchMaxDelayMillis());
         assertEquals(1, context.getResponseTimeoutMillis());

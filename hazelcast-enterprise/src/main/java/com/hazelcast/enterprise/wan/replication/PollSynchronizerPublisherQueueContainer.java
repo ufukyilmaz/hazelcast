@@ -3,12 +3,10 @@ package com.hazelcast.enterprise.wan.replication;
 import com.hazelcast.enterprise.wan.PublisherQueueContainer;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.util.ConcurrencyUtil;
-import com.hazelcast.util.ConstructorFunction;
 import com.hazelcast.wan.WanReplicationEvent;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -16,11 +14,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * This class is an extension to {@link PublisherQueueContainer} that
  * offers synchronization between polling the WAN event queues and other
  * processes such as migration via per-partition locks.
- *
+ * <p>
  * For the time a polling a partition's WAN events is blocked, the
- * {@link #pollRandomWanEvent} returns null instead of blocking the poller
- * thread to enable that the poller thread may continue with other not
- * blocked partitions.
+ * {@link #drainRandomWanQueue(int, Collection, int)} will not drain any
+ * events.
  */
 public class PollSynchronizerPublisherQueueContainer extends PublisherQueueContainer {
     /**
@@ -29,34 +26,27 @@ public class PollSynchronizerPublisherQueueContainer extends PublisherQueueConta
      * overlap since it may corrupt the internal state of the WAN
      * replication related objects
      */
-    private final ConcurrentMap<Integer, ReentrantLock> partitionPollLocksMap = new ConcurrentHashMap<Integer, ReentrantLock>();
-    private final ConstructorFunction<Integer, ReentrantLock> pollLockConstructorFunction =
-            new ConstructorFunction<Integer, ReentrantLock>() {
-        @Override
-        public ReentrantLock createNew(Integer partitionId) {
-            return new ReentrantLock();
-        }
-    };
+    private final AtomicReferenceArray<ReentrantLock> partitionPollLocks;
 
     private final ILogger logger;
 
     PollSynchronizerPublisherQueueContainer(Node node) {
         super(node);
+        int partitionCount = node.getNodeEngine().getPartitionService().getPartitionCount();
+        partitionPollLocks = new AtomicReferenceArray<ReentrantLock>(partitionCount);
         logger = node.getLogger(PollSynchronizerPublisherQueueContainer.class);
     }
 
     @Override
-    public WanReplicationEvent pollRandomWanEvent(int partitionId) {
+    public void drainRandomWanQueue(int partitionId, Collection<WanReplicationEvent> drainTo, int elementsToDrain) {
         Lock partitionPollLock = getPartitionPollLock(partitionId);
         if (partitionPollLock.tryLock()) {
             try {
-                return super.pollRandomWanEvent(partitionId);
+                super.drainRandomWanQueue(partitionId, drainTo, elementsToDrain);
             } finally {
                 partitionPollLock.unlock();
             }
         }
-
-        return null;
     }
 
     /**
@@ -91,6 +81,11 @@ public class PollSynchronizerPublisherQueueContainer extends PublisherQueueConta
     }
 
     private ReentrantLock getPartitionPollLock(int partitionId) {
-        return ConcurrencyUtil.getOrPutIfAbsent(partitionPollLocksMap, partitionId, pollLockConstructorFunction);
+        ReentrantLock lock = partitionPollLocks.get(partitionId);
+        if (lock != null) {
+            return lock;
+        }
+        partitionPollLocks.compareAndSet(partitionId, null, new ReentrantLock());
+        return partitionPollLocks.get(partitionId);
     }
 }

@@ -52,7 +52,7 @@ public class WanMisconfigurationTest extends HazelcastTestSupport {
         final WanPublisherConfig wanPublisherConfig = new WanPublisherConfig()
                 .setDiscoveryConfig(discoveryConfig)
                 .setClassName(WanBatchReplication.class.getName());
-        wanPublisherConfig.getProperties().put(WanReplicationProperties.EXECUTOR_THREAD_COUNT.key(), "");
+        wanPublisherConfig.getProperties().put(WanReplicationProperties.MAX_ENDPOINTS.key(), "");
         wanPublisherConfig.getProperties().put(WanReplicationProperties.GROUP_PASSWORD.key(), "");
         final WanReplicationConfig wanConfig = new WanReplicationConfig()
                 .setName(wanReplicationName)

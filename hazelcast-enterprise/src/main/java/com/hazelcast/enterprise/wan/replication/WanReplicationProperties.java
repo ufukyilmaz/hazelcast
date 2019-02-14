@@ -83,18 +83,58 @@ public final class WanReplicationProperties {
     public static final PropertyDefinition MAX_ENDPOINTS = property("maxEndpoints", PropertyTypeConverter.INTEGER);
 
     /**
-     * The number of threads that the {@link WanBatchReplication} executor will have.
-     * The executor is used to send WAN events to the endpoints and ideally you want
-     * to have one thread per endpoint. If this property is omitted and you have
-     * specified the {@link #ENDPOINTS} property, this will be the case.
-     * If, on the other hand, you are using WAN with the discovery SPI and you have
-     * not specified this property, the executor will be sized to the initial number
-     * of discovered endpoints. This can lead to performance issues if the number of
-     * endpoints changes in the future - either contention on a too small number of
-     * threads or wasted threads that will not be performing any work.
+     * Deprecated: this property is not used anymore.
+     *
+     * @see #MAX_CONCURRENT_INVOCATIONS
      */
+    @Deprecated
     public static final PropertyDefinition EXECUTOR_THREAD_COUNT = property("executorThreadCount", PropertyTypeConverter.INTEGER);
 
+    /**
+     * Maximum number of WAN event batches being sent to the target cluster
+     * concurrently.
+     * <p>
+     * Setting this property to anything less than {@code 2} will only allow a
+     * single batch of events to be sent to each target endpoint and will
+     * maintain causality of events for a single partition.
+     * <p>
+     * Setting this property to {@code 2} or higher will allow multiple batches
+     * of WAN events to be sent to each target endpoint. Since this allows
+     * reordering or batches due to network conditions, causality and ordering
+     * of events for a single partition is lost and batches for a single
+     * partition are now sent randomly to any available target endpoint.
+     * This, however, does present faster WAN replication for certain scenarios
+     * such as replicating immutable, independent map entries which are only
+     * added once and where ordering of when these entries are added is not
+     * necessary.
+     * Keep in mind that if you set this property to a value which is less than
+     * the target endpoint count, you will lose performance as not all target
+     * endpoints will be used at any point in time to process WAN event batches.
+     * So, for instance, if you have a target cluster with 3 members (target
+     * endpoints) and you want to use this property, it makes sense to set it
+     * to a value higher than {@code 3}. Otherwise, you can simply disable it
+     * by setting it to less than {@code 2} in which case WAN will use the
+     * default replication strategy and adapt to the target endpoint count
+     * while maintaining causality.
+     */
+    public static final PropertyDefinition MAX_CONCURRENT_INVOCATIONS
+            = property("max.concurrent.invocations", PropertyTypeConverter.INTEGER);
+
+    /**
+     * Minimum duration in nanoseconds that the WAN replication thread will be
+     * parked if there are no events to replicate.
+     * The default value is {@link WanConfigurationContext#DEFAULT_IDLE_MIN_PARK_NS}.
+     */
+    public static final PropertyDefinition IDLE_MIN_PARK_NS
+            = property("replication.idle.minParkNs", PropertyTypeConverter.LONG);
+
+    /**
+     * Maximum duration in nanoseconds that the WAN replication thread will be
+     * parked if there are no events to replicate.
+     * The default value is {@link WanConfigurationContext#DEFAULT_IDLE_MAX_PARK_NS}.
+     */
+    public static final PropertyDefinition IDLE_MAX_PARK_NS
+            = property("replication.idle.maxParkNs", PropertyTypeConverter.LONG);
 
     /**
      * Determines whether the WAN connection manager should connect to the

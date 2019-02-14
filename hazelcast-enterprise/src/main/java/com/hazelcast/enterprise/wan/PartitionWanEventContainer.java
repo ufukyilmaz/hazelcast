@@ -4,6 +4,7 @@ import com.hazelcast.util.QueueUtil;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -55,21 +56,22 @@ public class PartitionWanEventContainer {
     }
 
     /**
-     * Returns an event from a random map or cache queue or {@code null} if
-     * there are no events.
+     * Removes at most the given number of available elements from a random WAN
+     * queue and adds them to the given collection.
      *
-     * @return a WAN event or {@code null} if there are none
+     * @param drainTo         the collection to which to drain events to
+     * @param elementsToDrain the maximum number of events to drain
      */
-    public WanReplicationEvent pollRandomWanEvent() {
-        WanReplicationEvent event = pollRandomWanEvent(current);
-        if (event != null) {
+    public void drainRandomWanQueue(Collection<WanReplicationEvent> drainTo, int elementsToDrain) {
+        int drained = drainRandomWanQueue(current, drainTo, elementsToDrain);
+
+        if (drained == 0) {
             PartitionWanEventQueueMap temp = current;
             current = next;
             next = temp;
         } else {
-            event = pollRandomWanEvent(next);
+            drainRandomWanQueue(next, drainTo, elementsToDrain);
         }
-        return event;
     }
 
     public int size() {
@@ -92,21 +94,26 @@ public class PartitionWanEventContainer {
     }
 
     /**
-     * Returns an event from a random queue in the {@code eventQueueMap} or
-     * {@code null} if there are no events.
+     * Removes at most the given number of available elements from a random WAN
+     * queue in the {@code eventQueueMap} and adds them to the given collection.
      *
-     * @return a WAN event or {@code null} if there are none
+     * @param eventQueueMap   the map containing WAN event queues as values
+     * @param drainTo         the collection to which to drain events to
+     * @param elementsToDrain the maximum number of events to drain
+     * @return the number of elements transferred
      */
-    private WanReplicationEvent pollRandomWanEvent(PartitionWanEventQueueMap eventQueueMap) {
+    private int drainRandomWanQueue(PartitionWanEventQueueMap eventQueueMap,
+                                    Collection<WanReplicationEvent> drainTo,
+                                    int elementsToDrain) {
         for (WanReplicationEventQueue eventQueue : eventQueueMap.values()) {
             if (eventQueue != null) {
-                WanReplicationEvent wanReplicationEvent = eventQueue.poll();
-                if (wanReplicationEvent != null) {
-                    return wanReplicationEvent;
+                int drained = eventQueue.drainTo(drainTo, elementsToDrain);
+                if (drained > 0) {
+                    return drained;
                 }
             }
         }
-        return null;
+        return 0;
     }
 
     /**

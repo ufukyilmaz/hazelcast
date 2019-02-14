@@ -8,14 +8,17 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.util.executor.CompletedFuture;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.net.UnknownHostException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -36,25 +39,33 @@ public class LatencyTrackingWanBatchSenderTest extends HazelcastTestSupport {
         final HazelcastInstance hz = createHazelcastInstance();
         plugin = new StoreLatencyPlugin(getNodeEngineImpl(hz));
         delegate = mock(WanBatchSender.class);
-        wanBatchSender = new LatencyTrackingWanBatchSender(delegate, plugin, GROUP_NAME);
+        wanBatchSender = new LatencyTrackingWanBatchSender(delegate, plugin, GROUP_NAME,
+                Executors.newSingleThreadExecutor());
     }
 
     @Test
-    public void send() throws UnknownHostException {
+    public void send() throws UnknownHostException, ExecutionException, InterruptedException {
         final Address successfulHost = new Address("localhost", 1234);
         final Address failingHost = new Address("localhost", 1235);
         final BatchWanReplicationEvent batchEvent = new BatchWanReplicationEvent(false);
-        when(delegate.send(batchEvent, successfulHost)).thenReturn(true);
-        when(delegate.send(batchEvent, failingHost)).thenReturn(false);
+        when(delegate.send(batchEvent, successfulHost))
+                .thenReturn(new CompletedFuture<Boolean>(null, true, null));
+        when(delegate.send(batchEvent, failingHost))
+                .thenReturn(new CompletedFuture<Boolean>(null, false, null));
 
-        assertTrue(wanBatchSender.send(batchEvent, successfulHost));
-        assertFalse(wanBatchSender.send(batchEvent, failingHost));
-        assertProbeCalled(failingHost, 1);
-        assertProbeCalled(successfulHost, 1);
+        assertTrue(wanBatchSender.send(batchEvent, successfulHost).get());
+        assertFalse(wanBatchSender.send(batchEvent, failingHost).get());
+        assertProbeCalledEventually(failingHost, 1);
+        assertProbeCalledEventually(successfulHost, 1);
     }
 
-    public void assertProbeCalled(Address address, int times) {
-        assertEquals(times,
-                plugin.count(LatencyTrackingWanBatchSender.KEY, GROUP_NAME, address.toString()));
+    private void assertProbeCalledEventually(final Address address, long times) {
+        assertEqualsEventually(new Callable<Long>() {
+            @Override
+            public Long call() {
+                return plugin.count(LatencyTrackingWanBatchSender.KEY, GROUP_NAME, address.toString());
+
+            }
+        }, times);
     }
 }

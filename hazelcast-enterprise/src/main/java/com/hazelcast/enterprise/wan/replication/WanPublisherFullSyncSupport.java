@@ -49,10 +49,10 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
     private final Map<Integer, AtomicInteger> counterMap = new ConcurrentHashMap<Integer, AtomicInteger>();
 
     private final WanSyncManager syncManager;
-    private final AbstractWanPublisher publisher;
+    private final WanBatchReplication publisher;
     private final Map<String, WanSyncStats> lastSyncStats = new ConcurrentHashMap<String, WanSyncStats>();
 
-    WanPublisherFullSyncSupport(Node node, AbstractWanPublisher publisher) {
+    WanPublisherFullSyncSupport(Node node, WanBatchReplication publisher) {
         this.nodeEngine = node.getNodeEngine();
         this.mapService = nodeEngine.getService(MapService.SERVICE_NAME);
         this.publisher = publisher;
@@ -67,15 +67,17 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
     }
 
     /**
+     * {@inheritDoc}
      * Processes the WAN sync event and updates the {@code result} with the
      * processing results.
      *
-     * @param event  WAN sync event
-     * @param result the processing result
+     * @param event WAN sync event
      */
-    public void processEvent(WanSyncEvent event, WanAntiEntropyEventResult result) {
+    @Override
+    public void processEvent(WanSyncEvent event) {
         final Collection<String> mapNames = getMapsToSynchronize(event);
         Map<String, FullWanSyncStats> mapSyncStats = MapUtil.createHashMap(mapNames.size());
+        WanAntiEntropyEventResult result = event.getProcessingResult();
 
         beforeSync(mapNames, mapSyncStats);
 
@@ -154,7 +156,7 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
     }
 
     @Override
-    public void processEvent(WanConsistencyCheckEvent event, WanAntiEntropyEventResult result) {
+    public void processEvent(WanConsistencyCheckEvent event) {
         // NOOP
     }
 
@@ -245,7 +247,7 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         for (SimpleEntryView<Data, Data> simpleEntryView : set) {
             EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(mapName, simpleEntryView, partitionId);
             WanReplicationEvent event = new WanReplicationEvent(MapService.SERVICE_NAME, sync);
-            publisher.offerToStagingQueue(event);
+            publisher.putToSyncEventQueue(event);
         }
 
         syncStats.onSyncPartition();

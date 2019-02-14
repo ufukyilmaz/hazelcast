@@ -3,7 +3,7 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.cache.filter.DummyCacheWanFilter;
@@ -12,10 +12,28 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+import java.util.Collection;
+
+import static java.util.Arrays.asList;
+
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class})
 public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTest {
+
+    @Parameterized.Parameter
+    public int maxConcurrentInvocations;
+
+    @Parameterized.Parameters(name = "maxConcurrentInvocations:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {-1},
+                {1},
+                {100},
+        });
+    }
 
     @BeforeClass
     public static void initJCache() {
@@ -27,6 +45,11 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
         JsrTestUtil.cleanup();
     }
 
+    @Override
+    protected int getMaxConcurrentInvocations() {
+        return maxConcurrentInvocations;
+    }
+
     @Test
     public void recoverFromConnectionFailure() {
         initConfigA();
@@ -35,7 +58,7 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
         initCluster(singleNodeA, configA);
         // exceed the size of event queue
-        createCacheDataIn(singleNodeA, DEFAULT_CACHE_NAME,  0, 10000, false);
+        createCacheDataIn(singleNodeA, DEFAULT_CACHE_NAME, 0, 10000, false);
         sleepSeconds(20);
         // at least the last 100 should be on target
         startClusterB();

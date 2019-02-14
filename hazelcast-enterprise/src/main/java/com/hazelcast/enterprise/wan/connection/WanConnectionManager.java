@@ -111,7 +111,7 @@ public class WanConnectionManager {
             }
         }
 
-        node.nodeEngine.getExecutionService().scheduleWithRepetition(new TargetEndpointDiscoveryTask(),
+        node.getNodeEngine().getExecutionService().scheduleWithRepetition(new TargetEndpointDiscoveryTask(),
                 DISCOVERY_TASK_START_DELAY, configurationContext.getDiscoveryPeriodSeconds(), TimeUnit.SECONDS);
     }
 
@@ -181,15 +181,15 @@ public class WanConnectionManager {
     /**
      * Returns either the connection wrapper for the requested {@code target}
      * or for the first target in the endpoint list if the provided
-     * {@code target} is not in the endpoint list. The method may return null if
-     * this method fails to create a connection, either because it cannot
-     * connect in the expected time or it has failed to authorize.
+     * {@code target} is not in the endpoint list. The method may return
+     * {@code null} if this method fails to create a connection, either because
+     * it cannot connect in the expected time or it has failed to authorize.
      * The method will check if the connection is alive before returning the
      * wrapper.
      *
      * @param target the address for which a connection is requested
      * @return connection to the target address, the first endpoint if the
-     * target is not in the endpoint list or null
+     * target is not in the endpoint list or {@code null}
      */
     public WanConnectionWrapper getConnection(Address target) {
         final Address targetAddress = selectTarget(target);
@@ -340,7 +340,7 @@ public class WanConnectionManager {
      */
     private boolean checkAuthorization(String groupName, String groupPassword, Address target) {
         Operation authorizationCall = new AuthorizationOp(groupName, groupPassword);
-        Future<Boolean> future = node.nodeEngine.getOperationService()
+        Future<Boolean> future = node.getNodeEngine().getOperationService()
                                                 .createInvocationBuilder(SERVICE_NAME, authorizationCall, target)
                                                 .setTryCount(1)
                                                 .invoke();

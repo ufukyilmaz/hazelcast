@@ -7,7 +7,7 @@ import com.hazelcast.nio.serialization.SerializableByConvention;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.io.IOException;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static com.hazelcast.nio.serialization.SerializableByConvention.Reason.PUBLIC_API;
 
@@ -16,7 +16,7 @@ import static com.hazelcast.nio.serialization.SerializableByConvention.Reason.PU
  * of backup replicas for the events in this queue.
  */
 @SerializableByConvention(PUBLIC_API)
-public class WanReplicationEventQueue extends ConcurrentLinkedQueue<WanReplicationEvent> implements DataSerializable {
+public class WanReplicationEventQueue extends LinkedBlockingQueue<WanReplicationEvent> implements DataSerializable {
 
     /**
      * The number of backup replicas on which WAN events from this queue are

@@ -1,6 +1,5 @@
 package com.hazelcast.enterprise.wan.replication;
 
-import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEventResult;
 import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
@@ -24,20 +23,18 @@ public interface WanPublisherSyncSupport {
     /**
      * Processes the WAN sync event.
      *
-     * @param event  WAN sync event
-     * @param result the result of the processing
+     * @param event WAN sync event
      * @throws Exception if there was an exception while processing the event
      */
-    void processEvent(WanSyncEvent event, WanAntiEntropyEventResult result) throws Exception;
+    void processEvent(WanSyncEvent event) throws Exception;
 
     /**
      * Processes the WAN consistency check event.
      *
-     * @param event  WAN consistency check  event
-     * @param result the result of the processing
+     * @param event WAN consistency check  event
      * @throws Exception if there was an exception while processing the event
      */
-    void processEvent(WanConsistencyCheckEvent event, WanAntiEntropyEventResult result) throws Exception;
+    void processEvent(WanConsistencyCheckEvent event) throws Exception;
 
     /**
      * Returns the results of the last WAN consistency checks, grouped by map name.

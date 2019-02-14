@@ -59,11 +59,15 @@ import static org.junit.Assert.fail;
 @Category({QuickTest.class, ParallelTest.class})
 public class MapWanSyncAPITest {
 
-    @Parameters(name = "consistencyCheckStrategy:{0}")
+    @Parameters(name = "consistencyCheckStrategy:{0}, maxConcurrentInvocations:{1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {NONE},
-                {MERKLE_TREES}
+                {NONE, -1},
+                {NONE, 1},
+                {NONE, 100},
+                {MERKLE_TREES, -1},
+                {MERKLE_TREES, 1},
+                {MERKLE_TREES, 100}
         });
     }
 
@@ -116,8 +120,11 @@ public class MapWanSyncAPITest {
         }
     }
 
-    @Parameter
+    @Parameter(0)
     public ConsistencyCheckStrategy consistencyCheckStrategy;
+
+    @Parameter(1)
+    public int maxConcurrentInvocations;
 
     @Test
     public void basicSyncTest() {
@@ -128,6 +135,7 @@ public class MapWanSyncAPITest {
                 .to(clusterB)
                 .withSetupName(REPLICATION_NAME)
                 .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withMaxConcurrentInvocations(maxConcurrentInvocations)
                 .setup();
         clusterA.addWanReplication(toBReplication);
 
@@ -165,6 +173,7 @@ public class MapWanSyncAPITest {
                 .to(clusterB)
                 .withSetupName(REPLICATION_NAME)
                 .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withMaxConcurrentInvocations(maxConcurrentInvocations)
                 .setup();
         clusterA.addWanReplication(toBReplication);
 
@@ -213,6 +222,7 @@ public class MapWanSyncAPITest {
         final WanReplication toBReplication = replicate()
                 .to(clusterB)
                 .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withMaxConcurrentInvocations(maxConcurrentInvocations)
                 .withSetupName(newReplicationName)
                 .setup();
 
@@ -248,6 +258,7 @@ public class MapWanSyncAPITest {
                 .to(clusterB)
                 .withSetupName(REPLICATION_NAME)
                 .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withMaxConcurrentInvocations(maxConcurrentInvocations)
                 .withReplicationBatchSize(1)
                 .setup();
         clusterA.addWanReplication(toBReplication);
@@ -265,6 +276,7 @@ public class MapWanSyncAPITest {
         final WanReplication nonExistantReplication = replicate()
                 .to(clusterB)
                 .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withMaxConcurrentInvocations(maxConcurrentInvocations)
                 .withSetupName(REPLICATION_NAME)
                 .setup();
 
@@ -280,6 +292,7 @@ public class MapWanSyncAPITest {
         final WanReplication toBReplication = replicate()
                 .to(clusterB)
                 .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withMaxConcurrentInvocations(maxConcurrentInvocations)
                 .withSetupName(REPLICATION_NAME)
                 .setup();
         AddWanConfigResult result = clusterA.addWanReplication(toBReplication);

@@ -59,7 +59,7 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         assertKeysInEventually(singleNodeB, mapName1, 0, end);
         assertKeysInEventually(singleNodeB, mapName2, 0, end);
 
-        assertWanQueuesEventuallyEmpty(singleNodeA, replicaName, configB);
+        assertWanQueueSizesEventually(singleNodeA, replicaName, configB.getGroupConfig().getName(), 0);
     }
 
     @Test
@@ -85,8 +85,8 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         assertDataSizeEventually(clusterB, mapName, 0);
         assertDataSizeEventually(clusterC, mapName, 0);
 
-        assertWanQueuesEventuallyEmpty(clusterA, replicaName, configB);
-        assertWanQueuesEventuallyEmpty(clusterA, replicaName, configC);
+        assertWanQueueSizesEventually(clusterA, replicaName, configB.getGroupConfig().getName(),  0);
+        assertWanQueueSizesEventually(clusterA, replicaName, configC.getGroupConfig().getName(),  0);
     }
 
     @Test
@@ -121,8 +121,8 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         // cluster should still should have the keys mapped to 'dummy' as we have the Put-If-Absent policy
         assertKeyRangeMappedToValueAllTheTime("dummy", 0, 200, mapC, 10);
 
-        assertWanQueuesEventuallyEmpty(clusterA, atocReplicationName, configC);
-        assertWanQueuesEventuallyEmpty(clusterB, btocReplicationName, configC);
+        assertWanQueueSizesEventually(clusterA, atocReplicationName, configC.getGroupConfig().getName(),  0);
+        assertWanQueueSizesEventually(clusterB, btocReplicationName, configC.getGroupConfig().getName(),  0);
     }
 
     private static <V> void assertKeyRangeMappedToValue(V expectedValue, int rangeFromInclusive, int rangeToExclusive,

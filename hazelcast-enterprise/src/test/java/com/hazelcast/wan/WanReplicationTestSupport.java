@@ -246,23 +246,6 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         }
     }
 
-    protected void assertWanQueuesEventuallyEmpty(final HazelcastInstance[] nodes,
-                                                  final String wanReplicationConfigName,
-                                                  final Config toConfig) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                for (HazelcastInstance node : nodes) {
-                    final LocalWanStats localWanStats = getWanReplicationService(node).getStats().get(wanReplicationConfigName);
-                    final LocalWanPublisherStats publisherStats = localWanStats.getLocalWanPublisherStats()
-                                                                               .get(toConfig.getGroupConfig().getName());
-                    final int actualQueueSize = publisherStats.getOutboundQueueSize();
-                    assertEquals(0, actualQueueSize);
-                }
-            }
-        });
-    }
-
     protected boolean isNativeMemoryEnabled() {
         return getMemoryFormat() == InMemoryFormat.NATIVE;
     }

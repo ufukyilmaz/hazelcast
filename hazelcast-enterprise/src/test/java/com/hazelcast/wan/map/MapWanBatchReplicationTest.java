@@ -558,8 +558,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         // waiting for all puts to complete and the replication queues to drain in both clusters
         // needed to guarantee that puts happen before removes
         putLatch.await();
-        assertOutboundQueueDrainedEventually(clusterA, "atob", "B");
-        assertOutboundQueueDrainedEventually(clusterB, "btoa", "A");
+        assertWanQueueSizesEventually(clusterA, "atob", "B", 0);
+        assertWanQueueSizesEventually(clusterB, "btoa", "A", 0);
 
         assertDataInFromEventually(clusterB, "map", 0, 500, clusterA);
         assertDataInFromEventually(clusterA, "map", 1000, 1500, clusterB);
@@ -1083,21 +1083,6 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
         clusterA[0].getMap("map")
                 .put(1, 1);
-    }
-
-    private void assertOutboundQueueDrainedEventually(final HazelcastInstance[] cluster, final String wanPublisherName,
-                                                      final String targetGroupName) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                for (HazelcastInstance instance : cluster) {
-                    WanReplicationService wanReplicationService = getNodeEngineImpl(instance).getWanReplicationService();
-                    EnterpriseWanReplicationService ewrs = (EnterpriseWanReplicationService) wanReplicationService;
-                    assert ewrs.getStats().get(wanPublisherName).getLocalWanPublisherStats().get(targetGroupName)
-                            .getOutboundQueueSize() == 0;
-                }
-            }
-        });
     }
 
     private static WanReplicationRef getWanReplicationRefFrom(Config config, boolean persistWanReplicatedData) {

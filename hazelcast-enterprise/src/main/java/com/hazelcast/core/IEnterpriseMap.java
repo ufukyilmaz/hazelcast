@@ -1,7 +1,5 @@
 package com.hazelcast.core;
 
-import com.hazelcast.spi.annotation.Beta;
-
 /**
  * Contains enterprise extensions for {@link IMap} interface.
  * Since 3.8 Continuous Query Cache featured was moved to open source, so this interface does not provide any
@@ -12,7 +10,6 @@ import com.hazelcast.spi.annotation.Beta;
  * @see IMap
  * @since 3.5
  */
-@Beta
 public interface IEnterpriseMap<K, V> extends IMap<K, V> {
 
 }

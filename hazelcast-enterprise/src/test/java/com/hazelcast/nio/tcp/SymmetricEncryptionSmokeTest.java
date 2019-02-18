@@ -1,30 +1,41 @@
 package com.hazelcast.nio.tcp;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConfigAccessor;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.test.annotation.QuickTest;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 
 /**
  * Quick symmetric encryption tests.
  */
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({ QuickTest.class })
 @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2725")
 public class SymmetricEncryptionSmokeTest extends AbstractSymmetricEncryptionTestBase {
 
+    @Parameterized.Parameters(name = "advancedNetworking:{0}")
+    public static Collection<Boolean> parameters() {
+        return Arrays.asList(false, true);
+    }
+
+    @Parameterized.Parameter
+    public boolean advancedNetworking;
+
     @Test
     public void testPbeJoining() {
-        Config config = createPbeConfig("password", 123);
+        Config config = createPbeConfig("password", 123, advancedNetworking);
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, h1, h2);
@@ -33,7 +44,7 @@ public class SymmetricEncryptionSmokeTest extends AbstractSymmetricEncryptionTes
     @Test
     public void testAesJoining() {
         assumeCipherSupported(CIPHER_AES);
-        Config config = createPbeConfig("password", 123);
+        Config config = createPbeConfig("password", 123, advancedNetworking);
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, h1, h2);
@@ -48,8 +59,8 @@ public class SymmetricEncryptionSmokeTest extends AbstractSymmetricEncryptionTes
         byte[] key = generateRandomKey(16);
         Config config1 = createConfig(key, CIPHER_AES);
         Config config2 = createConfig(key, CIPHER_AES);
-        config1.getNetworkConfig().getSymmetricEncryptionConfig().setPassword("pass1");
-        config2.getNetworkConfig().getSymmetricEncryptionConfig().setPassword("pass2");
+        ConfigAccessor.getActiveMemberNetworkConfig(config1).getSymmetricEncryptionConfig().setPassword("pass1");
+        ConfigAccessor.getActiveMemberNetworkConfig(config2).getSymmetricEncryptionConfig().setPassword("pass2");
         HazelcastInstance h1 = factory.newHazelcastInstance(config1);
         HazelcastInstance h2 = factory.newHazelcastInstance(config2);
         assertClusterSize(2, h1, h2);
@@ -61,15 +72,15 @@ public class SymmetricEncryptionSmokeTest extends AbstractSymmetricEncryptionTes
     @Test
     public void testPbeJoiningIfKeyDiffers() {
         assumeCipherSupported(CIPHER_AES);
-        Config config1 = createPbeConfig("pass", 7);
-        Config config2 = createPbeConfig("pass", 7);
+        Config config1 = createPbeConfig("pass", 7, advancedNetworking);
+        Config config2 = createPbeConfig("pass", 7, advancedNetworking);
 
         byte[] key1 = generateRandomKey(16);
         byte[] key2 = Arrays.copyOf(key1, key1.length);
         // XOR the first byte to make it different
         key2[0] ^= 0xff;
-        config1.getNetworkConfig().getSymmetricEncryptionConfig().setKey(key1);
-        config2.getNetworkConfig().getSymmetricEncryptionConfig().setKey(key2);
+        ConfigAccessor.getActiveMemberNetworkConfig(config1).getSymmetricEncryptionConfig().setKey(key1);
+        ConfigAccessor.getActiveMemberNetworkConfig(config1).getSymmetricEncryptionConfig().setKey(key2);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config1);
         HazelcastInstance h2 = factory.newHazelcastInstance(config2);
@@ -91,16 +102,16 @@ public class SymmetricEncryptionSmokeTest extends AbstractSymmetricEncryptionTes
 
     @Test
     public void testPbeNotJoiningIfPasswordsDiffer() {
-        HazelcastInstance h1 = factory.newHazelcastInstance(createPbeConfig("pass1", 1));
-        HazelcastInstance h2 = factory.newHazelcastInstance(createPbeConfig("pass2", 1));
+        HazelcastInstance h1 = factory.newHazelcastInstance(createPbeConfig("pass1", 1, advancedNetworking));
+        HazelcastInstance h2 = factory.newHazelcastInstance(createPbeConfig("pass2", 1, advancedNetworking));
 
         assertClusterSize(1, h1, h2);
     }
 
     @Test
     public void testPbeNotJoiningIfIterationsDiffer() {
-        HazelcastInstance h1 = factory.newHazelcastInstance(createPbeConfig("pass", 1));
-        HazelcastInstance h2 = factory.newHazelcastInstance(createPbeConfig("pass", 2));
+        HazelcastInstance h1 = factory.newHazelcastInstance(createPbeConfig("pass", 1, advancedNetworking));
+        HazelcastInstance h2 = factory.newHazelcastInstance(createPbeConfig("pass", 2, advancedNetworking));
 
         assertClusterSize(1, h1, h2);
     }

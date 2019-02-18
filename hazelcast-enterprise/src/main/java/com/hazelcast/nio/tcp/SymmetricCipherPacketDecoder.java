@@ -1,5 +1,6 @@
 package com.hazelcast.nio.tcp;
 
+import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.internal.networking.HandlerStatus;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Bits;
@@ -26,10 +27,11 @@ public class SymmetricCipherPacketDecoder extends PacketDecoder {
     private ByteBuffer cipherBuffer;
     private int size = -1;
 
-    public SymmetricCipherPacketDecoder(TcpIpConnection connection, IOService ioService, Consumer<Packet> dst) {
+    public SymmetricCipherPacketDecoder(SymmetricEncryptionConfig sic, TcpIpConnection connection,
+                                        IOService ioService, Consumer<Packet> dst) {
         super(connection, dst);
         this.logger = ioService.getLoggingService().getLogger(getClass());
-        this.cipher = createSymmetricReaderCipher(ioService.getSymmetricEncryptionConfig(), connection);
+        this.cipher = createSymmetricReaderCipher(sic, connection);
     }
 
     @Override

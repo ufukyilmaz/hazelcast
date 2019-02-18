@@ -942,7 +942,11 @@ public class ClusterMetadataManager {
             if (newAddress == null) {
                 updatedMembers.add(member);
             } else {
-                updatedMembers.add(new MemberImpl(newAddress, member.getVersion(), member.localMember(), member.getUuid()));
+                updatedMembers.add(new MemberImpl.Builder(newAddress)
+                        .version(member.getVersion())
+                        .localMember(member.localMember())
+                        .uuid(member.getUuid())
+                        .build());
             }
         }
         restoredMembersRef.set(updatedMembers);

@@ -3,12 +3,11 @@ package com.hazelcast.instance;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.config.AdvancedNetworkConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
@@ -37,8 +36,7 @@ import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.networking.Channel;
-import com.hazelcast.internal.networking.ChannelInitializer;
+import com.hazelcast.internal.networking.ChannelInitializerProvider;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.internal.serialization.InternalSerializationService;
@@ -60,14 +58,11 @@ import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.CipherByteArrayProcessor;
+import com.hazelcast.nio.EnterpriseChannelInitializerProvider;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.ssl.ChannelHandlerPair;
-import com.hazelcast.nio.ssl.TLSChannelInitializer;
-import com.hazelcast.nio.tcp.ProtocolDecoder;
-import com.hazelcast.nio.tcp.ProtocolEncoder;
 import com.hazelcast.nio.tcp.SymmetricCipherPacketDecoder;
 import com.hazelcast.nio.tcp.SymmetricCipherPacketEncoder;
 import com.hazelcast.nio.tcp.TcpIpConnection;
@@ -87,19 +82,21 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.ByteArrayProcessor;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.Preconditions;
-import com.hazelcast.util.function.Function;
 import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Level;
 
+import static com.hazelcast.instance.EndpointQualifier.MEMBER;
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
 import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
@@ -131,7 +128,8 @@ public class EnterpriseNodeExtension
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile HazelcastMemoryManager memoryManager;
-    private volatile MemberSocketInterceptor memberSocketInterceptor;
+    private final ConcurrentMap<EndpointQualifier, MemberSocketInterceptor> socketInterceptors
+            = new ConcurrentHashMap<EndpointQualifier, MemberSocketInterceptor>();
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
@@ -178,7 +176,6 @@ public class EnterpriseNodeExtension
 
         createSecurityContext(node);
         createMemoryManager(node);
-        createSocketInterceptor(node.config.getNetworkConfig());
     }
 
     private boolean isRollingUpgradeLicensed() {
@@ -193,16 +190,25 @@ public class EnterpriseNodeExtension
         }
     }
 
-    private void createSocketInterceptor(NetworkConfig networkConfig) {
-        SocketInterceptorConfig sic = networkConfig.getSocketInterceptorConfig();
+    @SuppressWarnings("checkstyle:npathcomplexity")
+    @SuppressFBWarnings("RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED")
+    private MemberSocketInterceptor createOrGetSocketInterceptor(EndpointQualifier qualifier) {
+        qualifier = qualifier == null ? MEMBER : qualifier;
+        MemberSocketInterceptor si = socketInterceptors.get(qualifier);
+        if (si != null) {
+            return si;
+        }
+
         SocketInterceptor implementation = null;
-        if (sic != null && sic.isEnabled()) {
-            implementation = (SocketInterceptor) sic.getImplementation();
-            if (implementation == null && sic.getClassName() != null) {
+        SocketInterceptorConfig socketInterceptorConfig = getSocketInterceptorConfig(qualifier);
+
+        if (socketInterceptorConfig != null && socketInterceptorConfig.isEnabled()) {
+            implementation = (SocketInterceptor) socketInterceptorConfig.getImplementation();
+            if (implementation == null && socketInterceptorConfig.getClassName() != null) {
                 try {
-                    implementation = (SocketInterceptor) Class.forName(sic.getClassName()).newInstance();
+                    implementation = (SocketInterceptor) Class.forName(socketInterceptorConfig.getClassName()).newInstance();
                 } catch (Throwable e) {
-                    logger.severe("SocketInterceptor class cannot be instantiated!" + sic.getClassName(), e);
+                    logger.severe("SocketInterceptor class cannot be instantiated!" + socketInterceptorConfig.getClassName(), e);
                 }
             }
             if (implementation != null) {
@@ -213,11 +219,14 @@ public class EnterpriseNodeExtension
             }
         }
 
-        memberSocketInterceptor = (MemberSocketInterceptor) implementation;
-        if (memberSocketInterceptor != null) {
+        si = (MemberSocketInterceptor) implementation;
+        if (si != null) {
             logger.info("SocketInterceptor is enabled");
-            memberSocketInterceptor.init(sic.getProperties());
+            si.init(socketInterceptorConfig.getProperties());
+            socketInterceptors.putIfAbsent(qualifier, si);
         }
+
+        return si;
     }
 
     @Override
@@ -323,7 +332,7 @@ public class EnterpriseNodeExtension
      */
     private void initWanConsumers() {
         WanReplicationService wanReplicationService = node.nodeEngine.getWanReplicationService();
-        if (wanReplicationService != null && wanReplicationService instanceof EnterpriseWanReplicationService) {
+        if (wanReplicationService instanceof EnterpriseWanReplicationService) {
             ((EnterpriseWanReplicationService) wanReplicationService).initializeCustomConsumers();
         }
     }
@@ -424,61 +433,41 @@ public class EnterpriseNodeExtension
     }
 
     @Override
-    public MemberSocketInterceptor getMemberSocketInterceptor() {
-        return memberSocketInterceptor;
+    public MemberSocketInterceptor getSocketInterceptor(EndpointQualifier endpointQualifier) {
+        return createOrGetSocketInterceptor(endpointQualifier);
     }
 
     @Override
-    public InboundHandler[] createInboundHandlers(TcpIpConnection connection, IOService ioService) {
-        SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
+    public InboundHandler[] createInboundHandlers(EndpointQualifier qualifier, TcpIpConnection connection, IOService ioService) {
+        SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig(qualifier);
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
-            logger.info("Reader started with SymmetricEncryption");
-            SymmetricCipherPacketDecoder decoder = new SymmetricCipherPacketDecoder(
+            logger.info(qualifier + " reader started with SymmetricEncryption");
+            SymmetricCipherPacketDecoder decoder = new SymmetricCipherPacketDecoder(symmetricEncryptionConfig,
                     connection, ioService, node.nodeEngine.getPacketDispatcher());
             return new InboundHandler[]{decoder};
         }
 
-        return super.createInboundHandlers(connection, ioService);
+        return super.createInboundHandlers(qualifier, connection, ioService);
     }
 
     @Override
-    public OutboundHandler[] createOutboundHandlers(TcpIpConnection connection, IOService ioService) {
-        SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
+    public OutboundHandler[] createOutboundHandlers(EndpointQualifier qualifier,
+                                                    TcpIpConnection connection, IOService ioService) {
+        SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig(qualifier);
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
-            logger.info("Writer started with SymmetricEncryption");
+            logger.info(qualifier + " writer started with SymmetricEncryption");
             SymmetricCipherPacketEncoder encoder = new SymmetricCipherPacketEncoder(connection, symmetricEncryptionConfig);
             return new OutboundHandler[]{encoder};
         }
 
-        return super.createOutboundHandlers(connection, ioService);
+        return super.createOutboundHandlers(qualifier, connection, ioService);
     }
 
     @Override
-    public ChannelInitializer createChannelInitializer(final IOService ioService) {
-        final NetworkConfig networkConfig = node.config.getNetworkConfig();
-        SSLConfig sslConfig = networkConfig.getSSLConfig();
-        if (sslConfig != null && sslConfig.isEnabled()) {
-            SymmetricEncryptionConfig symmetricEncryptionConfig = networkConfig.getSymmetricEncryptionConfig();
-            if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
-                throw new RuntimeException("SSL and SymmetricEncryption cannot be both enabled!");
-            }
-            logger.info("SSL is enabled");
-
-            Executor executor = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();
-
-            return new TLSChannelInitializer(sslConfig, node.getProperties(), executor,
-                    new Function<Channel, ChannelHandlerPair>() {
-                        @Override
-                        public ChannelHandlerPair apply(Channel channel) {
-                            ProtocolEncoder encoder = new ProtocolEncoder(ioService);
-                            ProtocolDecoder decoder = new ProtocolDecoder(ioService, encoder);
-                            return new ChannelHandlerPair(decoder, encoder);
-                        }
-                    });
-        }
-        return super.createChannelInitializer(ioService);
+    public ChannelInitializerProvider createChannelInitializerProvider(IOService ioService) {
+        return new EnterpriseChannelInitializerProvider(ioService, node);
     }
 
     @Override
@@ -779,7 +768,7 @@ public class EnterpriseNodeExtension
 
     @Override
     public ByteArrayProcessor createMulticastInputProcessor(IOService ioService) {
-        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
+        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig(MEMBER);
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Multicast is starting with SymmetricEncryption on input processor");
@@ -791,7 +780,7 @@ public class EnterpriseNodeExtension
 
     @Override
     public ByteArrayProcessor createMulticastOutputProcessor(IOService ioService) {
-        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig();
+        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig(MEMBER);
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Multicast is starting with SymmetricEncryption on output processor");
@@ -828,5 +817,16 @@ public class EnterpriseNodeExtension
     @Override
     protected void createAndSetPhoneHome() {
         super.phoneHome = new EnterprisePhoneHome(node);
+    }
+
+    private SocketInterceptorConfig getSocketInterceptorConfig(EndpointQualifier qualifier) {
+        AdvancedNetworkConfig advancedNetworkConfig = node.getConfig().getAdvancedNetworkConfig();
+        SocketInterceptorConfig socketInterceptorConfig;
+        if (advancedNetworkConfig.isEnabled()) {
+            socketInterceptorConfig = advancedNetworkConfig.getEndpointConfigs().get(qualifier).getSocketInterceptorConfig();
+        } else {
+            socketInterceptorConfig = node.getConfig().getNetworkConfig().getSocketInterceptorConfig();
+        }
+        return socketInterceptorConfig;
     }
 }

@@ -25,7 +25,7 @@ public class EncryptionTest extends AbstractSymmetricEncryptionTestBase {
 
     @Test
     public void testSymmetricEncryption_withPbe() {
-        testSymmetricEncryption(createPbeConfig("secret password", 555));
+        testSymmetricEncryption(createPbeConfig("secret password", 555, false));
     }
 
     @Test

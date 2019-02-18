@@ -1,16 +1,16 @@
 package com.hazelcast.nio.tcp;
 
-import java.security.GeneralSecurityException;
-import java.util.Random;
-
-import javax.crypto.Cipher;
-
-import org.junit.After;
-import org.junit.AssumptionViolatedException;
-
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.test.TestAwareInstanceFactory;
+import org.junit.After;
+import org.junit.AssumptionViolatedException;
+
+import javax.crypto.Cipher;
+import java.security.GeneralSecurityException;
+import java.util.Random;
+
+import static com.hazelcast.instance.EndpointQualifier.MEMBER;
 
 /**
  * Abstract parent for symmetric encryption tests.
@@ -41,7 +41,7 @@ public abstract class AbstractSymmetricEncryptionTestBase {
     /**
      * Creates a configuration with PBE cipher based symmetric encryption. Default salt is used.
      */
-    protected Config createPbeConfig(String password, int iterationCount) {
+    protected Config createPbeConfig(String password, int iterationCount, boolean advanced) {
         SymmetricEncryptionConfig encryptionConfig = new SymmetricEncryptionConfig()
                 .setEnabled(true)
                 .setAlgorithm(CIPHER_PBE_WITH_MD5_AND_DES)
@@ -49,7 +49,12 @@ public abstract class AbstractSymmetricEncryptionTestBase {
                 .setIterationCount(iterationCount);
 
         Config config = new Config();
-        config.getNetworkConfig().setSymmetricEncryptionConfig(encryptionConfig);
+        if (advanced) {
+            config.getAdvancedNetworkConfig().setEnabled(true);
+            config.getAdvancedNetworkConfig().getEndpointConfigs().get(MEMBER).setSymmetricEncryptionConfig(encryptionConfig);
+        } else {
+            config.getNetworkConfig().setSymmetricEncryptionConfig(encryptionConfig);
+        }
         return config;
     }
 

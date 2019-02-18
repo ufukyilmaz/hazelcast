@@ -2,12 +2,13 @@ package com.hazelcast.enterprise.wan.connection;
 
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.enterprise.wan.replication.WanConfigurationContext;
+import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.impl.operations.AuthorizationOp;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Connection;
-import com.hazelcast.nio.ConnectionManager;
+import com.hazelcast.nio.EndpointManager;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
@@ -25,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.instance.ProtocolType.WAN;
 import static com.hazelcast.util.ConcurrencyUtil.getOrPutSynchronized;
 import static com.hazelcast.wan.WanReplicationService.SERVICE_NAME;
 import static java.lang.Math.min;
@@ -74,6 +76,7 @@ public class WanConnectionManager {
                 }
             };
     private WanConfigurationContext configurationContext;
+    private EndpointQualifier endpointQualifier;
     private volatile boolean running = true;
 
     public WanConnectionManager(Node node, DiscoveryService discoveryService) {
@@ -90,6 +93,9 @@ public class WanConnectionManager {
      */
     public void init(WanConfigurationContext configurationContext) {
         this.configurationContext = configurationContext;
+        String endpointIdentifier = configurationContext.getPublisherConfig().getEndpoint();
+        this.endpointQualifier = endpointIdentifier == null ? EndpointQualifier.MEMBER
+                : EndpointQualifier.resolve(WAN, endpointIdentifier);
 
         try {
             addToTargetEndpoints(discoverEndpointAddresses());
@@ -311,13 +317,16 @@ public class WanConnectionManager {
      */
     private Connection initConnection(Address targetAddress) {
         try {
-            final ConnectionManager connectionManager = node.getConnectionManager();
-            Connection conn = connectionManager.getOrConnect(targetAddress);
+            EndpointManager endpointManager = node.getEndpointManager(endpointQualifier);
+            if (endpointManager == null) {
+                endpointManager = node.getEndpointManager();
+            }
+            Connection conn = endpointManager.getOrConnect(targetAddress);
             for (int i = 0; i < RETRY_CONNECTION_MAX; i++) {
                 if (conn == null) {
                     MILLISECONDS.sleep(RETRY_CONNECTION_SLEEP_MILLIS);
                 }
-                conn = connectionManager.getConnection(targetAddress);
+                conn = endpointManager.getConnection(targetAddress);
             }
             if (conn != null) {
                 return authorizeConnection(conn);
@@ -343,6 +352,7 @@ public class WanConnectionManager {
         Future<Boolean> future = node.getNodeEngine().getOperationService()
                                                 .createInvocationBuilder(SERVICE_NAME, authorizationCall, target)
                                                 .setTryCount(1)
+                                                .setEndpointManager(node.getEndpointManager(endpointQualifier))
                                                 .invoke();
         try {
             return future.get();

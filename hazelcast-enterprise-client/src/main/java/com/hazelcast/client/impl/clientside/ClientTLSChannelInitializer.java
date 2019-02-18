@@ -8,6 +8,7 @@ import com.hazelcast.client.impl.protocol.util.ClientMessageEncoder;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.nio.ssl.AbstractTLSChannelInitializer;
+import com.hazelcast.nio.ssl.UnifiedTLSChannelInitializer;
 import com.hazelcast.util.function.Consumer;
 
 import java.util.concurrent.Executor;
@@ -28,7 +29,7 @@ import static com.hazelcast.internal.networking.ChannelOption.TCP_NODELAY;
  *
  * This {@link com.hazelcast.internal.networking.ChannelInitializer} is used on
  * the size of the client. On the member side the
- * {@link com.hazelcast.nio.ssl.TLSChannelInitializer} is used.
+ * {@link UnifiedTLSChannelInitializer} is used.
  */
 public class ClientTLSChannelInitializer extends AbstractTLSChannelInitializer {
 

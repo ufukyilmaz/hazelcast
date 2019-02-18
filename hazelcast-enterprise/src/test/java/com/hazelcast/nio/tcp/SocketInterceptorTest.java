@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
@@ -12,24 +12,47 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.instance.EndpointQualifier.MEMBER;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(QuickTest.class)
 public class SocketInterceptorTest extends HazelcastTestSupport {
+
+    @Parameterized.Parameters(name = "advancedNetworking:{0}")
+    public static Collection<Boolean> parameters() {
+        return Arrays.asList(false, true);
+    }
+
+    @Parameterized.Parameter
+    public boolean advancedNetworking;
 
     @After
     public void killAllHazelcastInstances() {
         Hazelcast.shutdownAll();
+    }
+
+    private void updateNetworkingConfig(Config config, SocketInterceptorConfig sic) {
+        config.getAdvancedNetworkConfig().setEnabled(advancedNetworking);
+        if (advancedNetworking) {
+            config.getAdvancedNetworkConfig().getEndpointConfigs()
+                  .get(MEMBER).setSocketInterceptorConfig(sic);
+        } else {
+            config.getNetworkConfig().setSocketInterceptorConfig(sic);
+        }
     }
 
     @Test(timeout = 120000)
@@ -39,7 +62,7 @@ public class SocketInterceptorTest extends HazelcastTestSupport {
         SocketInterceptorConfig socketInterceptorConfig = new SocketInterceptorConfig();
         MySocketInterceptor mySocketInterceptor = new MySocketInterceptor(true);
         socketInterceptorConfig.setImplementation(mySocketInterceptor).setEnabled(true);
-        config.getNetworkConfig().setSocketInterceptorConfig(socketInterceptorConfig);
+        updateNetworkingConfig(config, socketInterceptorConfig);
 
         HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
@@ -61,7 +84,7 @@ public class SocketInterceptorTest extends HazelcastTestSupport {
         SocketInterceptorConfig sic = new SocketInterceptorConfig();
         MySocketInterceptor mySocketInterceptor = new MySocketInterceptor(false);
         sic.setImplementation(mySocketInterceptor).setEnabled(true);
-        config.getNetworkConfig().setSocketInterceptorConfig(sic);
+        updateNetworkingConfig(config, sic);
 
         HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);

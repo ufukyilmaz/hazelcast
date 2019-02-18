@@ -29,13 +29,13 @@ import static com.hazelcast.spi.properties.GroupProperty.SOCKET_SEND_BUFFER_SIZE
  * https://www.ibm.com/support/knowledgecenter/en/
  * SSYKE2_7.1.0/com.ibm.java.security.component.71.doc/security-component/jsse2Docs/ssleng.html
  */
-public class TLSChannelInitializer extends AbstractTLSChannelInitializer {
+public class UnifiedTLSChannelInitializer extends AbstractTLSChannelInitializer {
 
     private final Function<Channel, ChannelHandlerPair> handlerProvider;
     private final HazelcastProperties props;
 
     /**
-     * Creates a {@link TLSChannelInitializer}
+     * Creates a {@link UnifiedTLSChannelInitializer}
      *
      * @param sslConfig       the SSLConfig
      * @param props           the HazelcastProperties used to configure the channel
@@ -44,10 +44,10 @@ public class TLSChannelInitializer extends AbstractTLSChannelInitializer {
      * @param handlerProvider a provided to create the pair of inbound and
      *                        outbound handler.
      */
-    public TLSChannelInitializer(SSLConfig sslConfig,
-                                 HazelcastProperties props,
-                                 Executor executor,
-                                 Function<Channel, ChannelHandlerPair> handlerProvider) {
+    public UnifiedTLSChannelInitializer(SSLConfig sslConfig,
+                                        HazelcastProperties props,
+                                        Executor executor,
+                                        Function<Channel, ChannelHandlerPair> handlerProvider) {
         super(sslConfig, executor);
         this.handlerProvider = handlerProvider;
         this.props = props;

@@ -3,7 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.MerkleTreeWanSyncStats;
 import com.hazelcast.enterprise.wan.sync.SyncFailedException;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -11,7 +11,6 @@ import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.RootCauseMatcher;
 import com.hazelcast.wan.AddWanConfigResult;
@@ -55,8 +54,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelTest.class})
+@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
+@Category({QuickTest.class})
 public class MapWanSyncAPITest {
 
     @Parameters(name = "consistencyCheckStrategy:{0}, maxConcurrentInvocations:{1}")
@@ -84,7 +83,7 @@ public class MapWanSyncAPITest {
 
     @After
     public void cleanup() {
-        factory.shutdownAll();
+        factory.terminateAll();
     }
 
     @Before

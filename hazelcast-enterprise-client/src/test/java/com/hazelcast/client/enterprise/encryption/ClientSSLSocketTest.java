@@ -14,6 +14,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -278,6 +279,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         assertEquals(2, map.get(1));
     }
 
+    @Ignore("See https://github.com/hazelcast/hazelcast-enterprise/issues/2736")
     @Test
     public void testMalformedKeystore_onClient() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");

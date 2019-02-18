@@ -321,11 +321,12 @@ public class SSLConnectionTest {
         config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).setConnectionTimeoutSeconds(3000);
 
         config.getNetworkConfig()
                 .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(sslProperties))
-                .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+                .getJoin().getTcpIpConfig()
+                            .setEnabled(true)
+                            .setConnectionTimeoutSeconds(30);
         return config;
     }
 

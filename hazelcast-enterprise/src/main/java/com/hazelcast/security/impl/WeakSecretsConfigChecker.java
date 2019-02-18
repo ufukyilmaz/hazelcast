@@ -1,6 +1,7 @@
 package com.hazelcast.security.impl;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConfigAccessor;
 import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.logging.ILogger;
@@ -61,7 +62,7 @@ public class WeakSecretsConfigChecker {
             result.put("Group Password", groupPwdWeaknesses);
         }
 
-        SymmetricEncryptionConfig sec = config.getNetworkConfig().getSymmetricEncryptionConfig();
+        SymmetricEncryptionConfig sec = ConfigAccessor.getActiveMemberNetworkConfig(config).getSymmetricEncryptionConfig();
         if (sec != null) {
             EnumSet<WeakSecretError> symEncPwdWeaknesses = getWeaknesses(sec.getPassword());
             if (!symEncPwdWeaknesses.isEmpty()) {

@@ -56,7 +56,7 @@ public class RamStoreImpl implements RamStore {
         Data key = new HeapData(((KeyOnHeap) kh).bytes());
         Record record = storage.get(key);
         if (record == null) {
-            record = recordStore.createRecord(value, -1, -1, Clock.currentTimeMillis());
+            record = recordStore.createRecord(key, value, -1, -1, Clock.currentTimeMillis());
             storage.putTransient(key, record);
         } else {
             storage.updateTransient(key, record, value);

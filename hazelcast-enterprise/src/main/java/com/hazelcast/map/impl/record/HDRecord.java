@@ -4,6 +4,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.query.Metadata;
 import com.hazelcast.util.Clock;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
@@ -77,7 +78,7 @@ public class HDRecord
         SIZE = SEQUENCE_OFFSET + INT_SIZE_IN_BYTES;
     }
 
-    private final HiDensityRecordAccessor<HDRecord> recordAccessor;
+    protected final HiDensityRecordAccessor<HDRecord> recordAccessor;
 
     public HDRecord(HiDensityRecordAccessor<HDRecord> recordAccessor) {
         super(AMEM);
@@ -329,6 +330,16 @@ public class HDRecord
         }
 
         setWithBaseTime(EXPIRATION_TIME_OFFSET, expirationTime);
+    }
+
+    @Override
+    public void setMetadata(Metadata metadata) {
+        // no-op
+    }
+
+    @Override
+    public Metadata getMetadata() {
+        return null;
     }
 
     @Override

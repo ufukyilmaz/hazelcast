@@ -26,14 +26,15 @@ public class HDRecordFactory implements RecordFactory<Data> {
     private final EnterpriseSerializationService serializationService;
     private final HazelcastMemoryManager memoryManager;
 
-    public HDRecordFactory(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
+    public HDRecordFactory(HiDensityRecordProcessor<HDRecord> recordProcessor,
+                           SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
         this.serializationService = ((EnterpriseSerializationService) serializationService);
         this.memoryManager = this.serializationService.getMemoryManager();
     }
 
     @Override
-    public Record<Data> newRecord(Object value) {
+    public Record<Data> newRecord(Data key, Object value) {
         long address = NULL_PTR;
         Data dataValue = null;
         try {

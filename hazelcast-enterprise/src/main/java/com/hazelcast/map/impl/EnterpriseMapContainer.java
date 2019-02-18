@@ -71,7 +71,8 @@ public class EnterpriseMapContainer extends MapContainer {
     }
 
     @Override
-    ConstructorFunction<Void, RecordFactory> createRecordFactoryConstructor(final SerializationService serializationService) {
+    ConstructorFunction<Void, RecordFactory> createRecordFactoryConstructor(final SerializationService serializationService,
+                                                                            final MetadataInitializer metadataInitializer) {
         if (NATIVE == mapConfig.getInMemoryFormat()) {
             return new ConstructorFunction<Void, RecordFactory>() {
                 @Override
@@ -81,7 +82,7 @@ public class EnterpriseMapContainer extends MapContainer {
                 }
             };
         } else {
-            return super.createRecordFactoryConstructor(serializationService);
+            return super.createRecordFactoryConstructor(serializationService, metadataInitializer);
         }
     }
 

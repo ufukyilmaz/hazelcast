@@ -91,7 +91,7 @@ public class RamStoreHDImpl implements RamStore {
         NativeMemoryData keyData = storage.toNative(new HeapData(key));
         long sequenceId = recordStore.incrementSequence();
         SimpleHandleOffHeap handleOffHeap = new SimpleHandleOffHeap(keyData.address(), sequenceId);
-        HDRecord record = recordStore.createRecord(null, handleOffHeap.sequenceId());
+        HDRecord record = recordStore.createRecord(keyData, null, handleOffHeap.sequenceId());
         storage.putTransient(keyData, record);
         return handleOffHeap;
     }

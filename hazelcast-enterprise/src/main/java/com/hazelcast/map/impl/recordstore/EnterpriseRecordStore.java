@@ -120,17 +120,18 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         return super.createStorage(recordFactory, memoryFormat);
     }
 
-    public HDRecord createRecord(Object value, long sequence) {
-        return (HDRecord) createRecordInternal(value, DEFAULT_TTL, DEFAULT_MAX_IDLE, Clock.currentTimeMillis(), sequence);
+    public HDRecord createRecord(Data keyData, Object value, long sequence) {
+        return (HDRecord) createRecordInternal(keyData, value, DEFAULT_TTL, DEFAULT_MAX_IDLE,
+                                               Clock.currentTimeMillis(), sequence);
     }
 
     @Override
-    public Record createRecord(Object value, long ttlMillis, long maxIdleMillis, long now) {
-        return createRecordInternal(value, ttlMillis, maxIdleMillis, now, incrementSequence());
+    public Record createRecord(Data key, Object value, long ttlMillis, long maxIdleMillis, long now) {
+        return createRecordInternal(key, value, ttlMillis, maxIdleMillis, now, incrementSequence());
     }
 
-    private Record createRecordInternal(Object value, long ttlMillis, long maxIdleMillis, long now, long sequence) {
-        Record record = super.createRecord(value, ttlMillis, maxIdleMillis, now);
+    private Record createRecordInternal(Data key, Object value, long ttlMillis, long maxIdleMillis, long now, long sequence) {
+        Record record = super.createRecord(key, value, ttlMillis, maxIdleMillis, now);
         if (NATIVE == inMemoryFormat) {
             record.setSequence(sequence);
         }

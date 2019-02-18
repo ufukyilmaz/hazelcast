@@ -17,6 +17,7 @@ import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import org.junit.Test;
@@ -40,7 +41,7 @@ import static org.junit.Assert.assertNotNull;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({QuickTest.class})
+@Category({QuickTest.class, ParallelTest.class})
 public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
 
     private static final String BATCH_IMPL = WanBatchReplication.class.getName();

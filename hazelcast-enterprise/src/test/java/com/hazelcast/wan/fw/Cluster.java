@@ -257,9 +257,9 @@ public class Cluster {
             config.setClassLoader(classLoader);
 
             JoinConfig joinConfig = config.getNetworkConfig().getJoin();
-            joinConfig.getMulticastConfig().setEnabled(true);
-//            joinConfig.getTcpIpConfig().setEnabled(false);
-//            joinConfig.getTcpIpConfig().addMember("127.0.0.1");
+            joinConfig.getMulticastConfig().setEnabled(false);
+            joinConfig.getTcpIpConfig().setEnabled(true);
+            joinConfig.getTcpIpConfig().addMember("127.0.0.1");
 
             return new Cluster(factory, clusterSize, config);
         }

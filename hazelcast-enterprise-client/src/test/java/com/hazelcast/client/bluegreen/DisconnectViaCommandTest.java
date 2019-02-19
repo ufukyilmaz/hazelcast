@@ -24,6 +24,7 @@ import com.hazelcast.client.impl.ClientSelectors;
 import com.hazelcast.client.test.ClientTestSupport;
 import com.hazelcast.client.test.IdentifiedDataSerializableFactory;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.config.SerializationConfig;
@@ -465,6 +466,7 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         getClientEngineImpl(instance1).applySelector(ClientSelectors.none());
 
         assertOpenEventually(countDownLatch);
+        assertEquals(0, queryCache.size());
 
         map.put(2, 2);
         assertOpenEventually(entryAddedLatch);
@@ -547,12 +549,48 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         } catch (ExecutionException e) {
             throw e.getCause();
         }
-
     }
 
     private void addDataSerializableFactory(SerializationConfig serializationConfig) {
         serializationConfig.addDataSerializableFactory(IdentifiedDataSerializableFactory.FACTORY_ID,
                 new IdentifiedDataSerializableFactory());
+    }
+
+    @Test(expected = InvalidConfigurationException.class)
+    public void clientWontStartWithIllegalConfig() {
+        Config config1 = new Config();
+        config1.getGroupConfig().setName("dev1");
+        config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
+        HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
+
+        Config config2 = new Config();
+        config2.getGroupConfig().setName("dev2");
+        config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
+
+        HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getGroupConfig().setName("dev1");
+        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
+        Member member1 = toMember(instance1);
+        Address address1 = member1.getAddress();
+        networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
+
+        ClientConfig clientConfig2 = new ClientConfig();
+        clientConfig2.getGroupConfig().setName("dev2");
+        ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
+        Member member2 = (Member) instance2.getLocalEndpoint();
+        Address address2 = member2.getAddress();
+        networkConfig2.setAddresses(Collections.singletonList(address2.getHost() + ":" + address2.getPort()));
+
+        ClientFailoverConfig clientFailoverConfig = new ClientFailoverConfig();
+        //illegal change on the config that will cause the exception
+        clientConfig2.setProperty("newProperty", "newValue");
+
+        clientFailoverConfig.addClientConfig(clientConfig).addClientConfig(clientConfig2);
+        HazelcastClient.newHazelcastFailoverClient(clientFailoverConfig);
+
     }
 }
 

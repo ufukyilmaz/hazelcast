@@ -1,11 +1,13 @@
 package com.hazelcast.nio.ssl;
 
+import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.networking.ChannelInitializer;
 
 import javax.net.ssl.SSLEngine;
+import java.io.IOException;
 import java.util.concurrent.Executor;
 
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.getProperty;
@@ -45,6 +47,8 @@ public abstract class AbstractTLSChannelInitializer implements ChannelInitialize
             return sslEngineFactory;
         } catch (HazelcastException e) {
             throw e;
+        } catch (IOException e) {
+            throw new ConfigurationException("Error while loading SSL engine for: " + getClass().getSimpleName(), e);
         } catch (Exception e) {
             throw new HazelcastException(e);
         }

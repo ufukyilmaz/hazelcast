@@ -51,6 +51,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     private final HazelcastMemoryManager memoryManager;
 
     private RamStore ramStore;
+    private MetadataStore metadataStore = new MetadataStore();
 
     public EnterpriseRecordStore(MapContainer mapContainer, int partitionId, MapKeyLoader keyLoader, ILogger logger,
                                  HotRestartConfig hotRestartConfig, long prefix) {
@@ -179,6 +180,10 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);
         }
+    }
+
+    public MetadataStore getMetadataStore() {
+        return metadataStore;
     }
 
     public long getPrefix() {

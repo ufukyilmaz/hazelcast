@@ -3,6 +3,10 @@ package com.hazelcast.map.impl.query;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
+import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
+import com.hazelcast.map.impl.recordstore.RecordStore;
+import com.hazelcast.query.Metadata;
 
 /**
  * Used only with Hi-Density memory.
@@ -28,4 +32,12 @@ public class HDPartitionScanRunner extends PartitionScanRunner {
         return mapServiceContext.toData(input);
     }
 
+    @Override
+    protected Metadata getMetadataFromRecord(RecordStore recordStore, Record record) {
+        if (recordStore instanceof EnterpriseRecordStore) {
+            return ((EnterpriseRecordStore) recordStore).getMetadataStore().get(record.getKey());
+        } else {
+            return super.getMetadataFromRecord(recordStore, record);
+        }
+    }
 }

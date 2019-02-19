@@ -9,7 +9,6 @@ import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.MetadataInitializer;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -58,7 +57,7 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
 
     @Test
     public void testGetRecordProcessor() {
-        newRecordFactory(false, CacheDeserializedValues.ALWAYS, null);
+        newRecordFactory(false, CacheDeserializedValues.ALWAYS);
 
         assertEquals(recordProcessor, ((HDRecordFactory) factory).getRecordProcessor());
     }
@@ -87,7 +86,7 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
     }
 
     @Override
-    void newRecordFactory(boolean isStatisticsEnabled, CacheDeserializedValues cacheDeserializedValues, MetadataInitializer metadataInitializer) {
+    void newRecordFactory(boolean isStatisticsEnabled, CacheDeserializedValues cacheDeserializedValues) {
         recordProcessor = createHiDensityRecordProcessor();
         factory = new HDRecordFactory(recordProcessor, serializationService);
     }

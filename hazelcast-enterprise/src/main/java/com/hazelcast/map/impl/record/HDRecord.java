@@ -332,11 +332,23 @@ public class HDRecord
         setWithBaseTime(EXPIRATION_TIME_OFFSET, expirationTime);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * Note: Metadata is stored on-heap
+     * @param metadata
+     */
     @Override
     public void setMetadata(Metadata metadata) {
         // no-op
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * Note: Metadata is stored on-heap
+     * @return
+     */
     @Override
     public Metadata getMetadata() {
         return null;

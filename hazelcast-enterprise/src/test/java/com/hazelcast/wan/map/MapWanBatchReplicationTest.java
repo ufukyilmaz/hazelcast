@@ -646,6 +646,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
     }
 
     @Test
+    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2731")
     public void setTtl_twoWay() {
         String mergePolicy = com.hazelcast.spi.merge.PassThroughMergePolicy.class.getName();
         setupReplicateFrom(configA, configB, clusterB.length, "atob", mergePolicy);

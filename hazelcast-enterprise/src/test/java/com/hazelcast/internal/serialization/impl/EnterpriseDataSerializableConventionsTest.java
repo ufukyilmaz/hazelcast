@@ -30,6 +30,8 @@ public class EnterpriseDataSerializableConventionsTest extends DataSerializableC
             "com.hazelcast.com.fasterxml.jackson.core.util.MinimalPrettyPrinter",
             "com.hazelcast.com.fasterxml.jackson.core.util.RequestPayload",
             "com.hazelcast.com.fasterxml.jackson.core.util.Separators",
+            "com.hazelcast.org.snakeyaml.engine.v1.exceptions.Mark",
+            "com.hazelcast.org.snakeyaml.engine.v1.representer.BaseRepresenter$1"
     };
 
     @Override

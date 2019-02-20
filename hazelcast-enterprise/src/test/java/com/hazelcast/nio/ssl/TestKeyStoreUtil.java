@@ -81,7 +81,8 @@ public final class TestKeyStoreUtil {
             file.deleteOnExit();
 
             ClassLoader cl = TestKeyStoreUtil.class.getClassLoader();
-            in = new BufferedInputStream(cl.getResourceAsStream(resource));
+            InputStream resourceAsStream = cl.getResourceAsStream(resource);
+            in = new BufferedInputStream(resourceAsStream);
             out = new BufferedOutputStream(new FileOutputStream(file));
             int b;
             while ((b = in.read()) > -1) {

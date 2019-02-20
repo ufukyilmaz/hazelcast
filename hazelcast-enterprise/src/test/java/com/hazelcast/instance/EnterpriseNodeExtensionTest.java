@@ -99,7 +99,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
     @Test
     public void test_nodeJoinRequestAllowed_whenClusterSameVersion() {
         JoinRequest joinRequest = new JoinRequest(Packet.VERSION, buildNumber, nodeVersion, joinAddress, newUnsecureUuidString(),
-                false, null, null, null, null);
+                false, null, null, null, null, null);
 
         nodeExtension.validateJoinRequest(joinRequest);
     }

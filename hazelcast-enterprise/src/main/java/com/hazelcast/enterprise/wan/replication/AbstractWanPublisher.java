@@ -7,6 +7,7 @@ import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.enterprise.wan.DistributedObjectIdentifier;
 import com.hazelcast.enterprise.wan.EWRMigrationContainer;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
@@ -18,9 +19,11 @@ import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
+import com.hazelcast.enterprise.wan.operation.RemoveWanEventBackupsOperation;
 import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
@@ -46,8 +49,10 @@ import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -250,6 +255,157 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     /**
+     * Finalizes WAN replication by updating the statistics and removing WAN
+     * events on backup replicas.
+     *
+     * @param eventCollections the collections containing the replicated WAN events
+     */
+    void finalizeWanEventReplication(Collection<WanReplicationEvent>... eventCollections) {
+        // RU_COMPAT_3_11
+        if (node.getClusterService().getClusterVersion().isLessThan(Versions.V3_12)) {
+            for (Collection<WanReplicationEvent> events : eventCollections) {
+                for (WanReplicationEvent event : events) {
+                    removeReplicationEvent(event);
+                }
+            }
+            return;
+        }
+
+        Map<Integer, Map<DistributedObjectIdentifier, Integer>> eventCounts
+                = updateStatsAndCountEvents(eventCollections);
+        if (eventCounts.isEmpty()) {
+            return;
+        }
+
+        List<InternalCompletableFuture> futures = invokeBackupRemovalOperations(eventCounts);
+        try {
+            for (InternalCompletableFuture future : futures) {
+                future.get();
+            }
+        } catch (Exception ex) {
+            logger.warning("Exception occurred while removing wan backups", ex);
+        }
+    }
+
+    private List<InternalCompletableFuture> invokeBackupRemovalOperations(
+            Map<Integer, Map<DistributedObjectIdentifier, Integer>> eventCounts) {
+        List<InternalCompletableFuture> futures = new ArrayList<InternalCompletableFuture>(eventCounts.size());
+
+        for (Entry<Integer, Map<DistributedObjectIdentifier, Integer>> partitionEntry : eventCounts.entrySet()) {
+            Integer partitionId = partitionEntry.getKey();
+            Map<DistributedObjectIdentifier, Integer> partitionEventCounts = partitionEntry.getValue();
+
+            int backupCount = 0;
+            for (DistributedObjectIdentifier id : partitionEventCounts.keySet()) {
+                backupCount = Math.max(backupCount, id.getTotalBackupCount());
+            }
+
+            int maxAllowedBackupCount = node.getPartitionService().getMaxAllowedBackupCount();
+            for (int i = 0; i < backupCount && i < maxAllowedBackupCount; i++) {
+                RemoveWanEventBackupsOperation op = new RemoveWanEventBackupsOperation(
+                        wanReplicationName, wanPublisherId, partitionEventCounts);
+                InternalCompletableFuture<Object> future =
+                        node.getNodeEngine()
+                            .getOperationService()
+                            .createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME, op, partitionId)
+                            .setResultDeserialized(false)
+                            .setReplicaIndex(i + 1)
+                            .invoke();
+                futures.add(future);
+            }
+        }
+        return futures;
+    }
+
+    /**
+     * Removes a {@code count} number of events from a WAN replication queue
+     * belonging to the provided service, object and partition.
+     *
+     * @param serviceName the service name for the WAN replication queue
+     * @param objectName  the object name for the WAN replication queue
+     * @param partitionId the partition ID of the WAN replication queue
+     * @param count       the number of events to remove from the queue
+     */
+    public void removeBackups(String serviceName, String objectName, int partitionId, int count) {
+        boolean isMapService = MapService.SERVICE_NAME.equals(serviceName);
+        if (!isMapService && !CacheService.SERVICE_NAME.equals(serviceName)) {
+            logger.warning("Unexpected replication event service name: " + serviceName);
+            return;
+        }
+
+        for (int i = 0; i < count; i++) {
+            WanReplicationEvent event = isMapService
+                    ? eventQueueContainer.pollMapWanEvent(objectName, partitionId)
+                    : eventQueueContainer.pollCacheWanEvent(objectName, partitionId);
+            if (event != null) {
+                wanCounter.decrementBackupElementCounter();
+            }
+        }
+    }
+
+    /**
+     * Updates the statistics for the provided replicated WAN events and counts
+     * them by partition ID and distributed object.
+     *
+     * @param eventCollections collections of replicated WAN events
+     * @return the number of replicated events, per partition and distributed object
+     */
+    private Map<Integer, Map<DistributedObjectIdentifier, Integer>> updateStatsAndCountEvents(
+            Collection<WanReplicationEvent>... eventCollections) {
+        Map<Integer, Map<DistributedObjectIdentifier, Integer>> eventCounts
+                = new HashMap<Integer, Map<DistributedObjectIdentifier, Integer>>();
+
+        for (Collection<WanReplicationEvent> events : eventCollections) {
+            for (WanReplicationEvent event : events) {
+                ReplicationEventObject eventObject = event.getEventObject();
+                if (eventObject instanceof EnterpriseMapReplicationSync
+                        || eventObject instanceof EnterpriseMapReplicationMerkleTreeNode) {
+                    syncSupport.removeReplicationEvent((EnterpriseMapReplicationObject) eventObject);
+                    continue;
+                }
+                updateStats(event);
+
+                int partitionId = getPartitionId(eventObject.getKey());
+                if (!eventCounts.containsKey(partitionId)) {
+                    eventCounts.put(partitionId, new HashMap<DistributedObjectIdentifier, Integer>());
+                }
+
+                Map<DistributedObjectIdentifier, Integer> partitionEventCounts = eventCounts.get(partitionId);
+
+                DistributedObjectIdentifier id = getDistributedObjectIdentifier(eventObject);
+
+                Integer eventCount = partitionEventCounts.get(id);
+                partitionEventCounts.put(id, eventCount != null ? eventCount + 1 : 1);
+            }
+        }
+        return eventCounts;
+    }
+
+    /**
+     * Returns the identifier for the distributed object for which the provided
+     * event is pertained to.
+     *
+     * @param eventObject the WAN replication event
+     * @return the identifier for the distributed object on which the event happened
+     */
+    private DistributedObjectIdentifier getDistributedObjectIdentifier(ReplicationEventObject eventObject) {
+        DistributedObjectIdentifier id = null;
+        if (eventObject instanceof EnterpriseMapReplicationObject) {
+            EnterpriseMapReplicationObject mapEvent = (EnterpriseMapReplicationObject) eventObject;
+            id = new DistributedObjectIdentifier(
+                    MapService.SERVICE_NAME, mapEvent.getMapName(), mapEvent.getBackupCount());
+        } else if (eventObject instanceof CacheReplicationObject) {
+            CacheReplicationObject cacheEvent = (CacheReplicationObject) eventObject;
+            id = new DistributedObjectIdentifier(
+                    CacheService.SERVICE_NAME, cacheEvent.getNameWithPrefix(), cacheEvent.getBackupCount());
+        } else {
+            logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
+        }
+        return id;
+    }
+
+
+    /**
      * Updates the WAN statistics (remaining map sync events, synced partitions,
      * queued event count, latencies, sent events) and removes the backup events
      * on the replicas.
@@ -437,7 +593,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         try {
             int partitionId = node.getNodeEngine().getPartitionService().getPartitionId(key);
             node.getNodeEngine().getOperationService()
-                           .invokeOnPartition(serviceName, operation, partitionId).get();
+                .invokeOnPartition(serviceName, operation, partitionId).get();
         } catch (Throwable t) {
             throw rethrow(t);
         }

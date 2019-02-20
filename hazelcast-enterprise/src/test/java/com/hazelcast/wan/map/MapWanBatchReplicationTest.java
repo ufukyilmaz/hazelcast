@@ -624,6 +624,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         map.putAll(inputMap);
 
         assertKeysInEventually(clusterB, "map", 0, 10);
+        assertWanQueueSizesEventually(clusterA, "atob", configB.getGroupConfig().getName(), 0);
     }
 
     @Test

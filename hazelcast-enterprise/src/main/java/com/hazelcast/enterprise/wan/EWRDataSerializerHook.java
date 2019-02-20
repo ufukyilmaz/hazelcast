@@ -11,6 +11,7 @@ import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
 import com.hazelcast.enterprise.wan.operation.MerkleTreeNodeValueComparison;
 import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
+import com.hazelcast.enterprise.wan.operation.RemoveWanEventBackupsOperation;
 import com.hazelcast.enterprise.wan.operation.WanMerkleTreeNodeCompareOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.enterprise.wan.sync.GetMapPartitionDataOperation;
@@ -68,6 +69,7 @@ public class EWRDataSerializerHook implements DataSerializerHook {
     public static final int ADD_WAN_CONFIG_OPERATION_FACTORY = 22;
     public static final int ADD_WAN_CONFIG_OPERATION = 23;
     public static final int ADD_WAN_CONFIG_BACKUP_OPERATION = 24;
+    public static final int REMOVE_WAN_EVENT_BACKUPS_OPERATION = 25;
 
     @Override
     public int getFactoryId() {
@@ -131,6 +133,8 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                         return new AddWanConfigOperation();
                     case ADD_WAN_CONFIG_BACKUP_OPERATION:
                         return new AddWanConfigBackupOperation();
+                    case REMOVE_WAN_EVENT_BACKUPS_OPERATION:
+                        return new RemoveWanEventBackupsOperation();
                     default:
                         throw new IllegalArgumentException("Unknown type ID: " + typeId);
                 }

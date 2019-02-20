@@ -279,15 +279,12 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                                         Address endpoint,
                                         boolean response) {
         if (response) {
+
             for (WanReplicationEvent sentEvent : batch.getEvents()) {
                 incrementEventCount(sentEvent);
-                removeReplicationEvent(sentEvent);
-            }
-            // removing the coalesced events
-            for (WanReplicationEvent coalescedEvent : batch.getCoalescedEvents()) {
-                removeReplicationEvent(coalescedEvent);
             }
 
+            finalizeWanEventReplication(batch.getEvents(), batch.getCoalescedEvents());
             replicationStrategy.complete(endpoint);
             wanCounter.decrementPrimaryElementCounter(batch.getPrimaryEventCount());
         } else {

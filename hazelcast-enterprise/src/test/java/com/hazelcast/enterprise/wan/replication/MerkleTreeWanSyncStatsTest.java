@@ -91,7 +91,7 @@ public class MerkleTreeWanSyncStatsTest {
     public void testSyncDuration() {
         MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
 
-        HazelcastTestSupport.sleepSeconds(1);
+        HazelcastTestSupport.sleepAtLeastSeconds(1);
         stats.onSyncComplete();
 
         assertTrue(stats.getDurationSecs() >= 1);

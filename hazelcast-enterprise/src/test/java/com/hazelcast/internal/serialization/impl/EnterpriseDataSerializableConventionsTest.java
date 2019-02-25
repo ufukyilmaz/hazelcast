@@ -1,6 +1,7 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.cache.wan.WanCacheEntryView;
+import com.hazelcast.internal.util.JavaVersion;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
@@ -30,8 +31,12 @@ public class EnterpriseDataSerializableConventionsTest extends DataSerializableC
             "com.hazelcast.com.fasterxml.jackson.core.util.MinimalPrettyPrinter",
             "com.hazelcast.com.fasterxml.jackson.core.util.RequestPayload",
             "com.hazelcast.com.fasterxml.jackson.core.util.Separators",
+    };
+
+    // snakeyaml classes are compiled for java target 1.8
+    private static final String[] WHITELISTED_JDK8_CLASS_NAMES = new String[] {
             "com.hazelcast.org.snakeyaml.engine.v1.exceptions.Mark",
-            "com.hazelcast.org.snakeyaml.engine.v1.representer.BaseRepresenter$1"
+            "com.hazelcast.org.snakeyaml.engine.v1.representer.BaseRepresenter$1",
     };
 
     @Override
@@ -40,6 +45,12 @@ public class EnterpriseDataSerializableConventionsTest extends DataSerializableC
         classes.add(WanCacheEntryView.class);
         for (String className : WHITELISTED_CLASS_NAMES) {
             addToWhiteList(classes, className);
+        }
+        if (JavaVersion.isAtLeast(JavaVersion.JAVA_1_8)) {
+            // only resolve those classes when tests are executed with Java 8 or later
+            for (String className : WHITELISTED_JDK8_CLASS_NAMES) {
+                addToWhiteList(classes, className);
+            }
         }
         return classes;
     }

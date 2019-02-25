@@ -12,6 +12,7 @@ import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Metadata;
 import com.hazelcast.spi.impl.NodeEngineImpl;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -51,27 +52,34 @@ public class NativeJsonMetadataCreationTest extends JsonMetadataCreationTest {
 
     @Test
     public void testClearRemovesAllMetadata() {
+        final int entryCount = 1000;
         IMap map = instances[0].getMap(randomName());
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < entryCount; i++) {
             map.put(createJsonValue("key", i), createJsonValue("value", i));
         }
         map.clear();
-        for (int i = 0; i < factory.getCount(); i++) {
-            for (int j = 0; j < 1000; j++) {
-                assertNull(getMetadata(map.getName(), createJsonValue("key", j), i));
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                for (int i = 0; i < factory.getCount(); i++) {
+                    for (int j = 0; j < entryCount; j++) {
+                        assertNull(getMetadata(map.getName(), createJsonValue("key", j), i));
+                    }
+                }
             }
-        }
+        });
     }
 
     @Test
     public void testDestroyRemovesAllMetadata() {
+        final int entryCount = 1000;
         IMap map = instances[0].getMap(randomName());
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < entryCount; i++) {
             map.put(createJsonValue("key", i), createJsonValue("value", i));
         }
         map.destroy();
         for (int i = 0; i < factory.getCount(); i++) {
-            for (int j = 0; j < 1000; j++) {
+            for (int j = 0; j < entryCount; j++) {
                 assertNull(getMetadata(map.getName(), createJsonValue("key", j), i));
             }
         }

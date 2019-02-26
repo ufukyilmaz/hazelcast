@@ -669,7 +669,6 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
     }
 
     @Test
-    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2753")
     public void entryOperation() throws Exception {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
@@ -679,6 +678,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         for (int i = 0; i < 20; i++) {
             map.put(i, i);
         }
+
+        assertKeysInEventually(clusterB, "map", 0, 10);
 
         MapProxyImpl mapProxy = (MapProxyImpl) map;
         MapServiceContext mapServiceContext = ((MapService) mapProxy.getService()).getMapServiceContext();

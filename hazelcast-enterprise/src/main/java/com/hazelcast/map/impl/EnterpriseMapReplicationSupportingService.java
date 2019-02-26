@@ -20,6 +20,7 @@ import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
+import com.hazelcast.spi.properties.HazelcastProperty;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 
@@ -29,7 +30,7 @@ import static com.hazelcast.util.ExceptionUtil.rethrow;
 /**
  * This class handles incoming map WAN replication events.
  */
-class EnterpriseMapReplicationSupportingService implements ReplicationSupportingService {
+public class EnterpriseMapReplicationSupportingService implements ReplicationSupportingService {
     /**
      * Uses map delete instead of map remove when processing remove events. This has the benefit
      * that the old value will not be sent from the partition owner (since this member does not use it)
@@ -39,15 +40,18 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
      * The downside to this is that map listeners will not receive the old value (since we are performing
      * delete instead of remove).
      */
-    public static final String USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS = "hazelcast.wan.map.useDeleteWhenProcessingRemoveEvents";
+    public static final String PROP_USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS
+            = "hazelcast.wan.map.useDeleteWhenProcessingRemoveEvents";
+    private static final HazelcastProperty USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS
+            = new HazelcastProperty(PROP_USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS, false);
     private static final String DEFAULT_MERGE_POLICY = PassThroughMergePolicy.class.getName();
 
-    private final MapServiceContext mapServiceContext;
-    private final NodeEngine nodeEngine;
-    private final SplitBrainMergePolicy<Data, MapMergeTypes> defaultSyncMergePolicy;
-    private final ProxyService proxyService;
     private final boolean useDeleteWhenProcessingRemoveEvents;
+    private final NodeEngine nodeEngine;
+    private final ProxyService proxyService;
+    private final MapServiceContext mapServiceContext;
     private final DistributedServiceWanEventCounters wanEventCounters;
+    private final SplitBrainMergePolicy<Data, MapMergeTypes> defaultSyncMergePolicy;
 
     EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
         this.mapServiceContext = mapServiceContext;
@@ -55,11 +59,13 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         MergePolicyProvider mergePolicyProvider = mapServiceContext.getMergePolicyProvider();
         //noinspection unchecked
         this.defaultSyncMergePolicy
-                = (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicyProvider.getMergePolicy(DEFAULT_MERGE_POLICY);
+                = (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicyProvider
+                .getMergePolicy(DEFAULT_MERGE_POLICY);
         this.proxyService = nodeEngine.getProxyService();
-        this.useDeleteWhenProcessingRemoveEvents = Boolean.getBoolean(USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS);
+        this.useDeleteWhenProcessingRemoveEvents = nodeEngine.getProperties()
+                .getBoolean(USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS);
         this.wanEventCounters = nodeEngine.getWanReplicationService()
-                                          .getReceivedEventCounters(MapService.SERVICE_NAME);
+                .getReceivedEventCounters(MapService.SERVICE_NAME);
     }
 
     @Override
@@ -220,7 +226,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             return nodeEngine.getOperationService()
-                             .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
+                    .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
             throw rethrow(t);
         }

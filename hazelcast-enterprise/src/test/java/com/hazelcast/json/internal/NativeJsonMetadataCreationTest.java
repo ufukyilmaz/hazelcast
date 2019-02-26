@@ -53,7 +53,7 @@ public class NativeJsonMetadataCreationTest extends JsonMetadataCreationTest {
     @Test
     public void testClearRemovesAllMetadata() {
         final int entryCount = 1000;
-        IMap map = instances[0].getMap(randomName());
+        final IMap map = instances[0].getMap(randomName());
         for (int i = 0; i < entryCount; i++) {
             map.put(createJsonValue("key", i), createJsonValue("value", i));
         }

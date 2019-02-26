@@ -21,7 +21,6 @@ public class Cluster {
     private HazelcastInstance[] clusterMembers;
     private final String instanceNamePrefix;
     private final TestHazelcastInstanceFactory factory;
-    private final int basePort;
     final Config config;
 
     Cluster(TestHazelcastInstanceFactory factory, int clusterSize, Config config) {
@@ -29,7 +28,6 @@ public class Cluster {
         this.config = config;
         this.factory = factory;
         this.instanceNamePrefix = config.getInstanceName();
-        this.basePort = config.getNetworkConfig().getPort();
     }
 
     public HazelcastInstance getAMember() {
@@ -94,7 +92,6 @@ public class Cluster {
         }
 
         config.setInstanceName(instanceNamePrefix + index);
-        config.getNetworkConfig().setPort(basePort + index);
         clusterMembers[index] = factory.newHazelcastInstance(config);
         waitAllForSafeState(clusterMembers);
         return clusterMembers[index];

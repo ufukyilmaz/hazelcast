@@ -94,7 +94,6 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {InMemoryFormat.BINARY, -1},
-                {InMemoryFormat.BINARY, 1},
                 {InMemoryFormat.BINARY, 100},
                 {InMemoryFormat.OBJECT, -1},
                 {InMemoryFormat.NATIVE, -1},

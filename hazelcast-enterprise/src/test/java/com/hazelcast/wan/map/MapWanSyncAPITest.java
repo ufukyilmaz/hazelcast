@@ -64,10 +64,8 @@ public class MapWanSyncAPITest {
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {NONE, -1},
-                {NONE, 1},
                 {NONE, 100},
                 {MERKLE_TREES, -1},
-                {MERKLE_TREES, 1},
                 {MERKLE_TREES, 100}
         });
     }

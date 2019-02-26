@@ -17,6 +17,7 @@ import org.junit.runners.Parameterized;
 import java.util.Collection;
 
 import static java.util.Arrays.asList;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
@@ -30,7 +31,6 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {-1},
-                {1},
                 {100},
         });
     }
@@ -91,6 +91,12 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
         initCluster(clusterB, configB);
 
         checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 200, singleNodeA);
+    }
+
+    @Override
+    public void cache_wan_events_should_be_processed_in_order() {
+        assumeTrue("maxConcurrentInvocations higher than 1 does not guarantee ordering", maxConcurrentInvocations < 2);
+        super.cache_wan_events_should_be_processed_in_order();
     }
 
     @Override

@@ -5,9 +5,12 @@ import com.hazelcast.client.impl.protocol.util.ClientMessageEncoder;
 import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.nio.IOService;
+import com.hazelcast.nio.tcp.SingleProtocolDecoder;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 
 import java.util.concurrent.Executor;
+
+import static com.hazelcast.instance.ProtocolType.CLIENT;
 
 public class ClientTLSChannelInitializer extends AbstractMultiSocketTLSChannelInitializer {
 
@@ -18,8 +21,10 @@ public class ClientTLSChannelInitializer extends AbstractMultiSocketTLSChannelIn
     @Override
     protected void initPipeline(Channel channel) {
         TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
+        SingleProtocolDecoder protocolDecoder = new SingleProtocolDecoder(CLIENT,
+                new ClientMessageDecoder(connection, ioService.getClientEngine()));
 
         channel.outboundPipeline().addLast(new ClientMessageEncoder());
-        channel.inboundPipeline().addLast(new ClientMessageDecoder(connection, ioService.getClientEngine()));
+        channel.inboundPipeline().addLast(protocolDecoder);
     }
 }

@@ -1,5 +1,6 @@
 package com.hazelcast.nio.ssl;
 
+import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -11,14 +12,14 @@ import io.netty.internal.tcnative.SSL;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
 import static io.netty.handler.ssl.SslProvider.OPENSSL;
 import static java.lang.String.format;
-
-import java.io.File;
 
 /**
  * {@link SSLEngineFactory} for OpenSSL.
@@ -168,7 +169,32 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
             engine.setEnabledProtocols(new String[]{protocol});
             return engine;
         } catch (SSLException e) {
+            // When OpenSSL is in-use SslContext creation throws
+            // an SSLException("failed to set cipher suite: [...]") when cipher suites are invalid
+            //
+            // When Basic SSL is in-use, the SSLEngineImpl will throw an IllegalArgumentException("Unsupported ciphersuite ...")
+            // upon initialization by NioChannel
+
+            // For the plain SSL, we do the extra effort of cross-checking the supported cipher suites
+            // in SSLEngineFactoryAdaptor and when a mismatch is detected, we throw a ConfigurationException
+            // as a fail-fast mechanism.
+            //
+            // However, the same can not easily be done for OpenSSL, because we can not
+            // even create the context to enquire for the supported cipher suites.
+            // Therefore, we rely on the following translation:
+            if (e.getMessage() != null && e.getMessage().contains("cipher suite")) {
+                throw new ConfigurationException(e.getMessage(), e);
+            }
+
             throw new RuntimeException(e);
+        } catch (IllegalArgumentException e) {
+            // Similarly to above, the two engines behave differently
+            // The following translation allows for a fail-fast connection breaker
+            if (e.getMessage() != null && e.getMessage().contains("Protocol") && e.getMessage().contains("is not supported")) {
+                throw new ConfigurationException(e.getMessage(), e);
+            }
+
+            return sneakyThrow(e);
         }
     }
 

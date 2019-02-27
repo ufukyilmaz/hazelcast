@@ -480,7 +480,9 @@ public class EnterpriseNodeExtension
 
     @Override
     public ChannelInitializerProvider createChannelInitializerProvider(IOService ioService) {
-        return new EnterpriseChannelInitializerProvider(ioService, node);
+        EnterpriseChannelInitializerProvider provider = new EnterpriseChannelInitializerProvider(ioService, node);
+        provider.init();
+        return provider;
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.hazelcast.internal.networking.ChannelInitializer;
 
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Executor;
 
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.getProperty;
@@ -47,6 +48,8 @@ public abstract class AbstractTLSChannelInitializer implements ChannelInitialize
             return sslEngineFactory;
         } catch (HazelcastException e) {
             throw e;
+        } catch (NoSuchAlgorithmException e) {
+            throw new ConfigurationException("Error while loading SSL engine for: " + getClass().getSimpleName(), e);
         } catch (IOException e) {
             throw new ConfigurationException("Error while loading SSL engine for: " + getClass().getSimpleName(), e);
         } catch (Exception e) {

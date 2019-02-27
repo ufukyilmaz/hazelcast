@@ -4,20 +4,25 @@ import com.hazelcast.TestEnvironmentUtil;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.test.TestAwareClientFactory;
+import com.hazelcast.config.AdvancedNetworkConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConfigurationException;
+import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
+import com.hazelcast.config.ServerSocketEndpointConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.nio.ssl.SSLConnectionTest;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -38,6 +43,7 @@ import static com.hazelcast.TestEnvironmentUtil.assumeJdk8OrNewer;
 import static com.hazelcast.TestEnvironmentUtil.assumeNoIbmJvm;
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
+import static com.hazelcast.config.ConfigAccessor.getActiveMemberNetworkConfig;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
@@ -50,7 +56,6 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class})
-@Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2725")
 public class TlsFunctionalTest {
 
     private static final String KEY_FILE_SERVER = "server.pem";
@@ -64,6 +69,8 @@ public class TlsFunctionalTest {
     private static final String CERT_FILE_UNTRUSTED = "untrusted.crt";
     private static final String TRUSTSTORE_UNTRUSTED = "untrusted.truststore";
     private static final String TRUST_ALL = "all.crt";
+    private static final int CONNECTION_TIMEOUT_SECONDS = 5;
+    private static final String CLUSTER_JOIN_MAX_SECONDS = "5";
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -76,13 +83,20 @@ public class TlsFunctionalTest {
     @Parameter(value = 1)
     public boolean openSsl;
 
-    @Parameters(name = "mutualAuthentication:{0} openSsl:{1}")
+    @Parameter(value = 2)
+    public boolean advanced;
+
+    @Parameters(name = "mutualAuthentication:{0} openSsl:{1} advanced:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {false, false},
-                {false, true},
-                {true, false},
-                {true, true},
+                {false, false, false},
+                {false, true, false},
+                {true, false, false},
+                {true, true, false},
+                {false, false, true},
+                {false, true, true},
+                {true, false, true},
+                {true, true, true},
         });
     }
 
@@ -94,6 +108,37 @@ public class TlsFunctionalTest {
     @Before
     public void before() {
         assumeTrue("OpenSSL enabled but not available", !openSsl || isOpenSslSupported());
+    }
+
+    private SSLConfig getSSLConfig(Config config) {
+        if (advanced) {
+            config.getAdvancedNetworkConfig().setEnabled(true);
+            EndpointConfig mssec = config.getAdvancedNetworkConfig()
+                                         .getEndpointConfigs().get(EndpointQualifier.MEMBER);
+            return mssec.getSSLConfig();
+        }
+
+        return config.getNetworkConfig().getSSLConfig();
+    }
+
+    private void setSSLConfig(Config config, SSLConfig sslConfig) {
+        if (advanced) {
+            config.getAdvancedNetworkConfig().setEnabled(true);
+            EndpointConfig mssec = config.getAdvancedNetworkConfig()
+                                         .getEndpointConfigs().get(EndpointQualifier.MEMBER);
+            mssec.setSSLConfig(sslConfig);
+
+            EndpointConfig cssec = config.getAdvancedNetworkConfig()
+                                         .getEndpointConfigs().get(EndpointQualifier.CLIENT);
+            if (cssec == null) {
+                cssec = new ServerSocketEndpointConfig();
+                config.getAdvancedNetworkConfig().setClientEndpointConfig((ServerSocketEndpointConfig) cssec);
+            }
+
+            cssec.setSSLConfig(sslConfig);
+        } else {
+            config.getNetworkConfig().setSSLConfig(sslConfig);
+        }
     }
 
     /**
@@ -148,7 +193,7 @@ public class TlsFunctionalTest {
     @Test
     public void testOnlyClientHasTls() throws IOException {
         Config config = createMemberConfig();
-        config.getNetworkConfig().setSSLConfig(null);
+        setSSLConfig(config, null);
         factory.newHazelcastInstance(config);
         try {
             factory.newHazelcastClient(createClientConfig());
@@ -171,7 +216,7 @@ public class TlsFunctionalTest {
     @Test
     public void testUntrustedConfiguration() throws IOException {
         Config config = createMemberConfig();
-        SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
+        SSLConfig sslConfig = getSSLConfig(config);
         String trustPropertyName;
         String trustPropertyValue;
         if (openSsl) {
@@ -184,8 +229,14 @@ public class TlsFunctionalTest {
         sslConfig.setProperty(trustPropertyName, trustPropertyValue);
 
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
-        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        assertClusterSize(1, hz1, hz2);
+        try {
+           factory.newHazelcastInstance(config);
+           fail("Member should not be able to join existing cluster");
+        } catch (IllegalStateException expected) {
+            // expected
+        }
+
+        assertClusterSize(1, hz1);
         try {
             ClientConfig clientConfig = createClientConfig();
             sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
@@ -207,7 +258,9 @@ public class TlsFunctionalTest {
      * </pre>
      */
     @Test
+    //TODO: Review allowed OpenSSL cipher suites
     public void testSupportedCipherSuiteNames() throws IOException {
+        assumeFalse("Test skipped for OpenSSL configuration", openSsl);
         String cipherSuites =
                 // OpenJDK
                 "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
@@ -218,7 +271,7 @@ public class TlsFunctionalTest {
                         + "SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA256,"
                         + "SSL_RSA_WITH_AES_128_CBC_SHA,SSL_RSA_WITH_AES_128_CBC_SHA256";
         Config config = createMemberConfig();
-        SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
+        SSLConfig sslConfig = getSSLConfig(config);
         sslConfig.setProperty("ciphersuites", cipherSuites);
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
@@ -241,7 +294,7 @@ public class TlsFunctionalTest {
     @Test(expected = HazelcastException.class)
     public void testUnsupportedCipherSuiteNames() throws IOException {
         Config config = createMemberConfig();
-        SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
+        SSLConfig sslConfig = getSSLConfig(config);
         sslConfig.setProperty("ciphersuites", "foo,bar");
         factory.newHazelcastInstance(config);
     }
@@ -255,7 +308,7 @@ public class TlsFunctionalTest {
      * Then: Client fails to start
      * </pre>
      */
-    @Test(expected = HazelcastException.class)
+    @Test(expected = ConfigurationException.class)
     public void testUnsupportedClientCipherSuiteNames() throws IOException {
         factory.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();
@@ -276,7 +329,7 @@ public class TlsFunctionalTest {
     @Test
     public void testSupportedProtocolName() throws IOException {
         Config config = createMemberConfig();
-        config.getNetworkConfig().getSSLConfig().setProperty("protocol", "TLS");
+        getSSLConfig(config).setProperty("protocol", "TLS");
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
@@ -302,7 +355,7 @@ public class TlsFunctionalTest {
         assumeFalse(openSsl);
         assumeJavaVersionAtLeast(11);
         Config config = createMemberConfig();
-        SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
+        SSLConfig sslConfig = getSSLConfig(config);
         sslConfig.setProperty("protocol", "TLSv1.3");
         sslConfig.setProperty("ciphersuites", "TLS_AES_128_GCM_SHA256");
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
@@ -349,9 +402,15 @@ public class TlsFunctionalTest {
         }
 
         Config config = new Config();
-        NetworkConfig networkConfig = config.getNetworkConfig();
-        networkConfig.setSSLConfig(sslConfig);
-        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+        setSSLConfig(config, sslConfig);
+        if (advanced) {
+            AdvancedNetworkConfig anc = config.getAdvancedNetworkConfig();
+            anc.setEnabled(true)
+               .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
+        } else {
+            NetworkConfig networkConfig = config.getNetworkConfig();
+            networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
+        }
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
@@ -377,9 +436,15 @@ public class TlsFunctionalTest {
         }
 
         Config config = new Config();
-        NetworkConfig networkConfig = config.getNetworkConfig();
-        networkConfig.setSSLConfig(sslConfig);
-        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+        setSSLConfig(config, sslConfig);
+        if (advanced) {
+            AdvancedNetworkConfig anc = config.getAdvancedNetworkConfig();
+            anc.setEnabled(true)
+               .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
+        } else {
+            NetworkConfig networkConfig = config.getNetworkConfig();
+            networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
+        }
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
@@ -422,9 +487,15 @@ public class TlsFunctionalTest {
         }
 
         Config config = new Config();
-        NetworkConfig networkConfig = config.getNetworkConfig();
-        networkConfig.setSSLConfig(sslConfig);
-        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+        setSSLConfig(config, sslConfig);
+        if (advanced) {
+            AdvancedNetworkConfig anc = config.getAdvancedNetworkConfig();
+            anc.setEnabled(true)
+               .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
+        } else {
+            NetworkConfig networkConfig = config.getNetworkConfig();
+            networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
+        }
         ClientConfig clientConfig = new ClientConfig();
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         clientConfig.getNetworkConfig().setSSLConfig(clientSSLConfig);
@@ -442,7 +513,7 @@ public class TlsFunctionalTest {
      * </pre>
      */
     @Test
-    public void testDefaultTruststore_configuredExplicitly() throws IOException {
+    public void testDefaultTruststore_configuredExplicitly() {
         // older Java versions don't have the Let's Encrypt CA certificate in their truststores
         assumeJavaVersionAtLeast(8);
         assumeFalse(openSsl && TestEnvironmentUtil.isIbmJvm());
@@ -458,12 +529,29 @@ public class TlsFunctionalTest {
                 + "        </ssl>\r\n"
                 + "    </network>\n"
                 + "</hazelcast>\n";
+
+        if (advanced) {
+            xml = "<hazelcast xmlns=\"http://www.hazelcast.com/schema/config\">\n"
+                    + "    <advanced-network enabled=\"true\">\n"
+                    + "      <member-server-socket-endpoint-config>"
+                    + "        <ssl enabled=\"true\">\r\n"
+                    + "          <properties>\r\n"
+                    + "            <property name=\"keyStore\">" + letsEncryptKeystore.getAbsolutePath() + "</property>\r\n"
+                    + "            <property name=\"keyStorePassword\">123456</property>\r\n"
+                    + "            <property name=\"trustStore\">${java.home}/lib/security/cacerts</property>\r\n"
+                    + "          </properties>\r\n"
+                    + "        </ssl>\r\n"
+                    + "      </member-server-socket-endpoint-config>"
+                    + "    </advanced-network>\n"
+                    + "</hazelcast>\n";
+        }
+
         ByteArrayInputStream bis = new ByteArrayInputStream(xml.getBytes());
         XmlConfigBuilder configBuilder = new XmlConfigBuilder(bis);
         Config config = configBuilder.build();
-        config.getNetworkConfig().getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+        getActiveMemberNetworkConfig(config).getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
         if (mutualAuthentication) {
-            config.getNetworkConfig().getSSLConfig().setProperty("mutualAuthentication", "REQUIRED");
+            getSSLConfig(config).setProperty("mutualAuthentication", "REQUIRED");
         }
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
@@ -482,7 +570,7 @@ public class TlsFunctionalTest {
     @Test(expected = HazelcastException.class)
     public void testUnsupportedProtocolName() throws IOException {
         Config config = createMemberConfig();
-        SSLConfig sslConfig = config.getNetworkConfig().getSSLConfig();
+        SSLConfig sslConfig = getSSLConfig(config);
         sslConfig.setProperty("protocol", "hazelcast");
         factory.newHazelcastInstance(config);
     }
@@ -524,9 +612,25 @@ public class TlsFunctionalTest {
         }
 
         Config config = new Config();
-        NetworkConfig networkConfig = config.getNetworkConfig();
-        networkConfig.setSSLConfig(sslConfig);
-        networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
+        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), CLUSTER_JOIN_MAX_SECONDS);
+        if (advanced) {
+            AdvancedNetworkConfig advancedNetworkConfig = config.getAdvancedNetworkConfig();
+            advancedNetworkConfig.setEnabled(true);
+
+            ServerSocketEndpointConfig mec = new ServerSocketEndpointConfig();
+            mec.setSSLConfig(sslConfig);
+            advancedNetworkConfig.setMemberEndpointConfig(mec);
+
+            ServerSocketEndpointConfig cec = new ServerSocketEndpointConfig();
+            cec.setSSLConfig(sslConfig);
+            advancedNetworkConfig.setClientEndpointConfig(cec);
+
+            advancedNetworkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
+        } else {
+            NetworkConfig networkConfig = config.getNetworkConfig();
+            networkConfig.setSSLConfig(sslConfig);
+            networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
+        }
         return config;
     }
 

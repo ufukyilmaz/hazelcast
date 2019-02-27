@@ -637,6 +637,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         createDataIn(clusterA, "map", 0, 100, "value");
         IMap<Integer, Integer> map = getMap(clusterA, "map");
 
+        assertWanQueueSizesEventually(clusterA, "atob", configB.getGroupConfig().getName(), 0);
+
         for (int i = 0; i < 100; i++) {
             map.setTtl(i, 1, TimeUnit.SECONDS);
         }

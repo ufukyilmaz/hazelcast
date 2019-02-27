@@ -71,6 +71,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.hazelcast.config.WanPublisherState.PAUSED;
 import static com.hazelcast.config.WanPublisherState.STOPPED;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
+import static com.hazelcast.map.impl.EnterpriseMapReplicationSupportingService.PROP_USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_CLEANUP_PERCENTAGE;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
@@ -180,7 +181,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         // 2. Ensure WAN events are enqueued but not replicated
         // PAUSED state let WAN events offered to the queues, but prevents replicating it
         configA.getWanReplicationConfig("atob")
-               .getWanPublisherConfigs().get(0).setInitialPublisherState(PAUSED);
+                .getWanPublisherConfigs().get(0).setInitialPublisherState(PAUSED);
 
         // 3. Add map-loader to cluster-A
         MapStoreConfig mapStoreConfig = new MapStoreConfig()
@@ -966,6 +967,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
                 .setImplementation(store);
         configB.getMapConfig(mapName).setMapStoreConfig(mapStoreConfig);
 
+        setUseMapDeletePropertyIfReplicationConcurrent(configB, maxConcurrentInvocations);
+
         // 3. Start cluster-A and cluster-B
         startClusterA();
         startClusterB();
@@ -985,8 +988,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         assertTrueAllTheTime(new AssertTask() {
             @Override
             public void run() {
-                assertEquals(0, store.storeCount.get());
-                assertEquals(0, store.deleteCount.get());
+                assertEquals("unexpected store count", 0, store.storeCount.get());
+                assertEquals("unexpected delete count", 0, store.deleteCount.get());
             }
         }, 5);
     }
@@ -1008,6 +1011,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         mapConfig.setWanReplicationRef(getWanReplicationRefFrom(configB, true));
         mapConfig.setMapStoreConfig(mapStoreConfig);
 
+        setUseMapDeletePropertyIfReplicationConcurrent(configB, maxConcurrentInvocations);
+
         // 3. Start cluster-A and cluster-B
         startClusterA();
         startClusterB();
@@ -1027,10 +1032,27 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
-                assertEquals(mapEntryCount, store.storeCount.get());
-                assertEquals(mapEntryCount, store.deleteCount.get());
+                assertEquals("missing store operations", mapEntryCount, store.storeCount.get());
+                assertEquals("missing delete operations", mapEntryCount, store.deleteCount.get());
             }
         });
+    }
+
+    /**
+     * Use map#delete to process events on target cluster when
+     * maxConcurrentInvocations > 1 because, in contrast with
+     * map#remove, map#delete always calls mapstore#delete
+     * without pre-checking existence of key.
+     *
+     * Below setting is needed due to the out of order nature of
+     * wan concurrent invocations. In this test updates can be
+     * reordered with removes when maxConcurrentInvocations > 1.
+     */
+    private static void setUseMapDeletePropertyIfReplicationConcurrent(Config config,
+                                                                       int maxConcurrentInvocations) {
+        if (maxConcurrentInvocations > 1) {
+            config.setProperty(PROP_USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS, "true");
+        }
     }
 
     @Test

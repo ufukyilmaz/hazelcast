@@ -52,4 +52,9 @@ public interface BatchReplicationStrategy {
      * target endpoint
      */
     int getPartitionIdStep(Address endpoint, List<Address> endpoints);
+
+    /**
+     * Returns true if there is an ongoing replication process.
+     */
+    boolean hasOngoingReplication();
 }

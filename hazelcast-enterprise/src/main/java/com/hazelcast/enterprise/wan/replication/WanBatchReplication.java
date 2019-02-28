@@ -419,4 +419,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
             throw rethrow(e);
         }
     }
+
+    // for testing
+    public BatchReplicationStrategy getReplicationStrategy() {
+        return replicationStrategy;
+    }
 }

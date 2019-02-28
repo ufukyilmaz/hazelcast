@@ -52,6 +52,10 @@ public class SerialBatchReplicationStrategy implements BatchReplicationStrategy 
         return endpoints.size();
     }
 
+    @Override
+    public boolean hasOngoingReplication() {
+        return !currentEndpointInvocations.isEmpty();
+    }
 
     @Override
     public String toString() {

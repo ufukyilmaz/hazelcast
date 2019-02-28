@@ -16,10 +16,12 @@ import java.util.concurrent.Semaphore;
 public class ConcurrentBatchReplicationStrategy implements BatchReplicationStrategy {
 
     private final Semaphore concurrentInvocations;
+    private final int maxConcurrentInvocations;
     private final Random random;
 
     public ConcurrentBatchReplicationStrategy(int maxConcurrentInvocations) {
         this.concurrentInvocations = new Semaphore(maxConcurrentInvocations);
+        this.maxConcurrentInvocations = maxConcurrentInvocations;
         this.random = new Random();
     }
 
@@ -51,6 +53,11 @@ public class ConcurrentBatchReplicationStrategy implements BatchReplicationStrat
     @Override
     public int getPartitionIdStep(Address endpoint, List<Address> endpoints) {
         return 1;
+    }
+
+    @Override
+    public boolean hasOngoingReplication() {
+        return concurrentInvocations.availablePermits() < maxConcurrentInvocations;
     }
 
     @Override

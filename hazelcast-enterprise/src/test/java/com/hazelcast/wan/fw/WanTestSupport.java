@@ -27,20 +27,6 @@ public class WanTestSupport {
         return (EnterpriseWanReplicationService) nodeEngine.getWanReplicationService();
     }
 
-    public static void pauseWanReplication(Cluster cluster, String setupName, String targetGroupName) {
-        for (HazelcastInstance instance : cluster.getMembers()) {
-            if (instance != null) {
-                wanReplicationService(instance).pause(setupName, targetGroupName);
-            }
-        }
-    }
-
-    public static void resumeWanReplication(Cluster cluster, String setupName, String targetGroupName) {
-        for (HazelcastInstance instance : cluster.getMembers()) {
-            wanReplicationService(instance).resume(setupName, targetGroupName);
-        }
-    }
-
     public static WanBatchReplication wanReplicationEndpoint(HazelcastInstance instance, WanReplication wanReplication) {
         WanReplicationPublisherDelegate delegate = (WanReplicationPublisherDelegate) wanReplicationService(instance)
                 .getWanReplicationPublisher(wanReplication.getSetupName());

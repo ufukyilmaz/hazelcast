@@ -3,6 +3,8 @@ package com.hazelcast.wan.fw;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.wan.AddWanConfigResult;
 
@@ -12,10 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 import static com.hazelcast.util.Preconditions.checkPositive;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
+import static org.junit.Assert.assertTrue;
 
 public class Cluster {
     private HazelcastInstance[] clusterMembers;
@@ -138,11 +142,16 @@ public class Cluster {
     }
 
     public void pauseWanReplicationOnAllMembers(WanReplication wanReplication) {
+        final String setupName = wanReplication.getSetupName();
+        final String targetClusterName = wanReplication.getTargetClusterName();
         for (HazelcastInstance instance : clusterMembers) {
             if (instance != null) {
-                wanReplicationService(instance).pause(wanReplication.getSetupName(), wanReplication.getTargetClusterName());
+                wanReplicationService(instance).pause(setupName, targetClusterName);
             }
         }
+
+        // wait until WAN replication threads have observed the paused state
+        waitForNoOngoingReplication(wanReplication);
     }
 
     public void resumeWanReplicationOnAllMembers(WanReplication wanReplication) {
@@ -154,11 +163,33 @@ public class Cluster {
     }
 
     public void stopWanReplicationOnAllMembers(WanReplication wanReplication) {
+        final String setupName = wanReplication.getSetupName();
+        final String targetClusterName = wanReplication.getTargetClusterName();
         for (HazelcastInstance instance : clusterMembers) {
             if (instance != null) {
-                wanReplicationService(instance).stop(wanReplication.getSetupName(), wanReplication.getTargetClusterName());
+                wanReplicationService(instance).stop(setupName, targetClusterName);
             }
         }
+
+        // wait until WAN replication threads have observed the stopped state
+        waitForNoOngoingReplication(wanReplication);
+    }
+
+    public void waitForNoOngoingReplication(WanReplication wanReplication) {
+        final String setupName = wanReplication.getSetupName();
+        final String targetClusterName = wanReplication.getTargetClusterName();
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                for (HazelcastInstance member : clusterMembers) {
+                    if (member != null) {
+                        WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
+                                .getEndpointOrFail(setupName, targetClusterName);
+                        assertTrue(!endpoint.getReplicationStrategy().hasOngoingReplication());
+                    }
+                }
+            }
+        });
     }
 
     public void clearWanQueuesOnAllMembers(WanReplication wanReplication) {

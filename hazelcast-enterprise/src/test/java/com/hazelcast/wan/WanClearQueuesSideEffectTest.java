@@ -60,6 +60,8 @@ public class WanClearQueuesSideEffectTest {
         sourceCluster.getAMember()
                      .getMap(MAP_NAME)
                      .put("42", "42");
+
+        targetCluster.startCluster();
     }
 
     @Test

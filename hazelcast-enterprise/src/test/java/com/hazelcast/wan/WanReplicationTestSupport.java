@@ -13,6 +13,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
+import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
@@ -34,7 +35,9 @@ import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
+import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     private static final ILogger LOGGER = Logger.getLogger(WanReplicationTestSupport.class);
@@ -228,16 +231,44 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         return (EnterpriseWanReplicationService) getNodeEngineImpl(instance).getWanReplicationService();
     }
 
-    protected void stopWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetGroupName) {
+    protected void stopWanReplication(final HazelcastInstance[] cluster,
+                                      final String wanRepName,
+                                      final String targetGroupName) {
         for (HazelcastInstance instance : cluster) {
             getWanReplicationService(instance).stop(wanRepName, targetGroupName);
         }
+
+        // wait until WAN replication threads have observed the stopped state
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                for (HazelcastInstance member : cluster) {
+                    WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
+                            .getEndpointOrFail(wanRepName, targetGroupName);
+                    assertTrue(!endpoint.getReplicationStrategy().hasOngoingReplication());
+                }
+            }
+        });
     }
 
-    protected void pauseWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetGroupName) {
+    protected void pauseWanReplication(final HazelcastInstance[] cluster,
+                                       final String wanRepName,
+                                       final String targetGroupName) {
         for (HazelcastInstance instance : cluster) {
             getWanReplicationService(instance).pause(wanRepName, targetGroupName);
         }
+
+        // wait until WAN replication threads have observed the paused state
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                for (HazelcastInstance member : cluster) {
+                    WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
+                            .getEndpointOrFail(wanRepName, targetGroupName);
+                    assertTrue(!endpoint.getReplicationStrategy().hasOngoingReplication());
+                }
+            }
+        });
     }
 
     protected void resumeWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetGroupName) {

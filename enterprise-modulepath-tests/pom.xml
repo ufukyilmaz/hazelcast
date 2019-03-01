@@ -50,7 +50,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin.version}</version>
                 <configuration combine.self="override">
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <!-- 
                     Hot Restart related arguments:
                         export java.base/jdk.internal.ref

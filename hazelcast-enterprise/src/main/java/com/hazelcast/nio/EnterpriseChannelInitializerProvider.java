@@ -60,7 +60,7 @@ public class EnterpriseChannelInitializerProvider extends DefaultChannelInitiali
         if (endpointSslEnabled(endpointConfig)) {
             return new TextTLSChannelInitializer(endpointConfig, sslExecutor, ioService, rest);
         } else {
-            return super.provideClientChannelInitializer(endpointConfig);
+            return super.provideTextChannelInitializer(endpointConfig, rest);
         }
     }
 

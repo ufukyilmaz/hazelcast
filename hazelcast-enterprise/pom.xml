@@ -322,5 +322,11 @@
             <version>2.1.8</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>net.spy</groupId>
+            <artifactId>spymemcached</artifactId>
+            <version>2.12.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

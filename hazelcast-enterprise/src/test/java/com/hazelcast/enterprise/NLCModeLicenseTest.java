@@ -173,6 +173,7 @@ public class NLCModeLicenseTest extends HazelcastTestSupport {
         allFeaturesEnableList.add(Feature.HD_MEMORY);
         allFeaturesEnableList.add(Feature.HOT_RESTART);
         allFeaturesEnableList.add(Feature.ROLLING_UPGRADE);
+        allFeaturesEnableList.add(Feature.CLIENT_FILTERING);
         return allFeaturesEnableList;
     }
 }

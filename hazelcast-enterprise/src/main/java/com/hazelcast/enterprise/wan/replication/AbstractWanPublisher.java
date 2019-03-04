@@ -49,6 +49,7 @@ import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -712,11 +713,13 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         final int replicaIndex = event.getReplicaIndex();
         final PartitionWanEventQueueMap mapQueues = partitionContainer.getMapEventQueueMapByBackupCount(replicaIndex);
         final PartitionWanEventQueueMap cacheQueues = partitionContainer.getCacheEventQueueMapByBackupCount(replicaIndex);
-        for (String mapName : mapQueues.keySet()) {
-            namespaces.add(MapService.getObjectNamespace(mapName));
+        // Use ConcurrentHashMap#keys() instead of ConcurrentHashMap#keySet(). It is not byte-code compatible with JDK7
+        // Return type of keySet() method does not exist in Java 7
+        for (Enumeration<String> mapNames = mapQueues.keys(); mapNames.hasMoreElements();) {
+            namespaces.add(MapService.getObjectNamespace(mapNames.nextElement()));
         }
-        for (String cacheName : cacheQueues.keySet()) {
-            namespaces.add(CacheService.getObjectNamespace(cacheName));
+        for (Enumeration<String> cacheNames = cacheQueues.keys(); cacheNames.hasMoreElements();) {
+            namespaces.add(CacheService.getObjectNamespace(cacheNames.nextElement()));
         }
     }
 

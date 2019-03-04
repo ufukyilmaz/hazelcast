@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.recordstore;
 
+import com.hazelcast.core.EntryView;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
@@ -10,6 +11,7 @@ import com.hazelcast.map.impl.NativeMapEntryCostEstimator;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
+import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
@@ -238,8 +240,14 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     }
 
     @Override
-    public MapEntriesWithCursor fetchEntries(int tableIndex, int size, SerializationService serializationService) {
+    public MapEntriesWithCursor fetchEntries(int tableIndex, int size,
+                                             SerializationService serializationService) {
         return map.fetchEntries(tableIndex, size);
+    }
+
+    @Override
+    public Record extractRecordFromLazy(EntryView entryView) {
+        return ((HDStorageSCHM.LazyEntryViewFromRecord) entryView).getRecord();
     }
 
     public long getNativeKeyAddress(Data key) {

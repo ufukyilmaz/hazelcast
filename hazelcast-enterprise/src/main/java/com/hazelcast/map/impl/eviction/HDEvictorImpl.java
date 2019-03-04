@@ -98,10 +98,9 @@ public class HDEvictorImpl extends EvictorImpl {
         Storage storage = recordStore.getStorage();
 
         if (storage instanceof HotRestartHDStorageImpl) {
-            return (Iterable<EntryView>) ((HotRestartHDStorageImpl) storage).getStorageImpl().getRandomSamples(SAMPLE_COUNT);
+            return ((HotRestartHDStorageImpl) storage).getStorageImpl().getRandomSamples(SAMPLE_COUNT);
         }
-
-        return (Iterable<EntryView>) storage.getRandomSamples(SAMPLE_COUNT);
+        return (Iterable<EntryView>)  storage.getRandomSamples(SAMPLE_COUNT);
     }
 
     private static int calculateRemovalSize(RecordStore recordStore) {

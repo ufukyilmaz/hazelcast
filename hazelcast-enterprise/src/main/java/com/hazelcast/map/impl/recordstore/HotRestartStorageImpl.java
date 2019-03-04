@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EntryCostEstimator;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
@@ -150,7 +151,7 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     }
 
     @Override
-    public Iterable<LazyEntryViewFromRecord> getRandomSamples(int sampleCount) {
+    public Iterable<EntryView> getRandomSamples(int sampleCount) {
         return storage.getRandomSamples(sampleCount);
     }
 
@@ -162,6 +163,11 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     @Override
     public MapEntriesWithCursor fetchEntries(int tableIndex, int size, SerializationService serializationService) {
         return storage.fetchEntries(tableIndex, size, serializationService);
+    }
+
+    @Override
+    public Record extractRecordFromLazy(EntryView entryView) {
+        return storage.extractRecordFromLazy(entryView);
     }
 
     public HotRestartKey createHotRestartKey(R record) {

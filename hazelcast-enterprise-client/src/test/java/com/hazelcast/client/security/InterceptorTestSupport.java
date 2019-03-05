@@ -42,7 +42,7 @@ public abstract class InterceptorTestSupport extends HazelcastTestSupport {
 
     @Before
     public void before() {
-        Config config = createConfig(interceptor);
+        Config config = createConfig();
         instance = factory.newHazelcastInstance(config);
         client = factory.newHazelcastClient();
     }
@@ -70,7 +70,7 @@ public abstract class InterceptorTestSupport extends HazelcastTestSupport {
         return null;
     }
 
-    private static Config createConfig(TestSecurityInterceptor interceptor) {
+    Config createConfig() {
         Config config = new Config();
         PermissionConfig perm = new PermissionConfig(PermissionConfig.PermissionType.ALL, "", null);
         SecurityConfig securityConfig = config.getSecurityConfig();

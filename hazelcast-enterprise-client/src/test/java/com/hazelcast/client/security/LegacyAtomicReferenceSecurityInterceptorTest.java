@@ -1,8 +1,7 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.config.Config;
+import com.hazelcast.concurrent.atomicreference.AtomicReferenceService;
 import com.hazelcast.core.IAtomicReference;
-import com.hazelcast.cp.internal.datastructures.atomicref.RaftAtomicRefService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -13,26 +12,16 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class AtomicReferenceSecurityInterceptorTest extends InterceptorTestSupport {
+@Deprecated
+public class LegacyAtomicReferenceSecurityInterceptorTest extends InterceptorTestSupport {
 
-    private String objectName;
-    private IAtomicReference atomicReference;
+    String objectName;
+    IAtomicReference atomicReference;
 
     @Before
     public void setup() {
-        Config config = createConfig();
-        factory.newHazelcastInstance(config);
-        factory.newHazelcastInstance(config);
-
         objectName = randomString();
-        atomicReference = client.getCPSubsystem().getAtomicReference(objectName);
-    }
-
-    @Override
-    Config createConfig() {
-        Config config = super.createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
-        return config;
+        atomicReference = client.getAtomicReference(objectName);
     }
 
     @Test
@@ -93,7 +82,7 @@ public class AtomicReferenceSecurityInterceptorTest extends InterceptorTestSuppo
 
     @Test
     public void clear() {
-        interceptor.setExpectation(getObjectType(), objectName, "set", (Object) null);
+        interceptor.setExpectation(getObjectType(), objectName, "clear");
         atomicReference.clear();
     }
 
@@ -106,12 +95,12 @@ public class AtomicReferenceSecurityInterceptorTest extends InterceptorTestSuppo
 
     @Test
     public void isNull() {
-        interceptor.setExpectation(getObjectType(), objectName, "contains", (Object) null);
+        interceptor.setExpectation(getObjectType(), objectName, "isNull");
         atomicReference.isNull();
     }
 
     @Override
     String getObjectType() {
-        return RaftAtomicRefService.SERVICE_NAME;
+        return AtomicReferenceService.SERVICE_NAME;
     }
 }

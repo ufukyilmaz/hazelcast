@@ -4,6 +4,7 @@ import com.hazelcast.concurrent.lock.LockService;
 import com.hazelcast.core.ICondition;
 import com.hazelcast.core.ILock;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,8 +14,9 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category(QuickTest.class)
-public class LockSecurityInterceptorTest extends InterceptorTestSupport {
+@Category({QuickTest.class, ParallelTest.class})
+@Deprecated
+public class LegacyLockSecurityInterceptorTest extends InterceptorTestSupport {
 
     String objectName;
     ILock lock;

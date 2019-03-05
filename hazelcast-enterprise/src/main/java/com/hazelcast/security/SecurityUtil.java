@@ -4,6 +4,7 @@ import com.hazelcast.concurrent.idgen.IdGeneratorService;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.security.permission.AllPermissions;
 import com.hazelcast.security.permission.AtomicLongPermission;
+import com.hazelcast.security.permission.AtomicReferencePermission;
 import com.hazelcast.security.permission.CachePermission;
 import com.hazelcast.security.permission.CardinalityEstimatorPermission;
 import com.hazelcast.security.permission.ClusterPermission;
@@ -47,6 +48,8 @@ public final class SecurityUtil {
                 return new QueuePermission(permissionConfig.getName(), actions);
             case ATOMIC_LONG:
                 return new AtomicLongPermission(permissionConfig.getName(), actions);
+            case ATOMIC_REFERENCE:
+                return new AtomicReferencePermission(permissionConfig.getName(), actions);
             case COUNTDOWN_LATCH:
                 return new CountDownLatchPermission(permissionConfig.getName(), actions);
             case EXECUTOR_SERVICE:

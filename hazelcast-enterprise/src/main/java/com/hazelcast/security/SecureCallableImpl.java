@@ -28,7 +28,11 @@ import com.hazelcast.core.LifecycleService;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.core.PartitionService;
 import com.hazelcast.core.ReplicatedMap;
+import com.hazelcast.cp.CPMember;
 import com.hazelcast.cp.CPSubsystem;
+import com.hazelcast.cp.CPSubsystemManagementService;
+import com.hazelcast.cp.lock.FencedLock;
+import com.hazelcast.cp.session.CPSessionManagementService;
 import com.hazelcast.crdt.pncounter.PNCounter;
 import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.hazelcast.flakeidgen.FlakeIdGenerator;
@@ -238,7 +242,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Override
         public ILock getLock(String key) {
             checkPermission(new LockPermission(key, ActionConstants.ACTION_CREATE));
-            return getProxy(new ILockInvocationHandler(instance.getLock(key)));
+            return getProxy(new LockInvocationHandler(instance.getLock(key)));
         }
 
         @Override
@@ -475,7 +479,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
 
         @Override
         public CPSubsystem getCPSubsystem() {
-            return instance.getCPSubsystem();
+            return new CPSubsystemDelegate(instance.getCPSubsystem());
         }
     }
 
@@ -532,9 +536,9 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
     }
 
-    private class ILockInvocationHandler extends SecureInvocationHandler {
+    private class LockInvocationHandler extends SecureInvocationHandler {
 
-        ILockInvocationHandler(DistributedObject distributedObject) {
+        LockInvocationHandler(DistributedObject distributedObject) {
             super(distributedObject);
         }
 
@@ -965,6 +969,59 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Override
         public String getStructureName() {
             return "PNCounter";
+        }
+    }
+
+    private class CPSubsystemDelegate implements CPSubsystem {
+        private final CPSubsystem cpSubsystem;
+
+        CPSubsystemDelegate(CPSubsystem cpSubsystem) {
+            this.cpSubsystem = cpSubsystem;
+        }
+
+        @Override
+        public IAtomicLong getAtomicLong(String name) {
+            checkPermission(new AtomicLongPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new IAtomicLongInvocationHandler(cpSubsystem.getAtomicLong(name)));
+        }
+
+        @Override
+        public <E> IAtomicReference<E> getAtomicReference(String name) {
+            checkPermission(new AtomicReferencePermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new IAtomicReferenceInvocationHandler(cpSubsystem.getAtomicReference(name)));
+        }
+
+        @Override
+        public ICountDownLatch getCountDownLatch(String name) {
+            checkPermission(new CountDownLatchPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ICountDownLatchInvocationHandler(cpSubsystem.getCountDownLatch(name)));
+        }
+
+        @Override
+        public FencedLock getLock(String name) {
+            checkPermission(new LockPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new LockInvocationHandler(cpSubsystem.getLock(name)));
+        }
+
+        @Override
+        public ISemaphore getSemaphore(String name) {
+            checkPermission(new SemaphorePermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ISemaphoreInvocationHandler(cpSubsystem.getSemaphore(name)));
+        }
+
+        @Override
+        public CPMember getLocalCPMember() {
+            return cpSubsystem.getLocalCPMember();
+        }
+
+        @Override
+        public CPSubsystemManagementService getCPSubsystemManagementService() {
+            throw new UnsupportedOperationException("CPSubsystemManagementService is not available!");
+        }
+
+        @Override
+        public CPSessionManagementService getCPSessionManagementService() {
+            throw new UnsupportedOperationException("CPSessionManagementService is not available!");
         }
     }
 }

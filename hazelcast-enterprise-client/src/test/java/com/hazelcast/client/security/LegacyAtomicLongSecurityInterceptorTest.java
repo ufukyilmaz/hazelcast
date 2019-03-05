@@ -1,8 +1,7 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.config.Config;
+import com.hazelcast.concurrent.atomiclong.AtomicLongService;
 import com.hazelcast.core.IAtomicLong;
-import com.hazelcast.cp.internal.datastructures.atomiclong.RaftAtomicLongService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -13,26 +12,16 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class AtomicLongSecurityInterceptorTest extends InterceptorTestSupport {
+@Deprecated
+public class LegacyAtomicLongSecurityInterceptorTest extends InterceptorTestSupport {
 
-    private String objectName;
-    private IAtomicLong atomicLong;
+    String objectName;
+    IAtomicLong atomicLong;
 
     @Before
     public void setup() {
-        Config config = createConfig();
-        factory.newHazelcastInstance(config);
-        factory.newHazelcastInstance(config);
-
         objectName = randomString();
-        atomicLong = client.getCPSubsystem().getAtomicLong(objectName);
-    }
-
-    @Override
-    Config createConfig() {
-        Config config = super.createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
-        return config;
+        atomicLong = client.getAtomicLong(objectName);
     }
 
     @Test
@@ -45,7 +34,7 @@ public class AtomicLongSecurityInterceptorTest extends InterceptorTestSupport {
     @Test
     public void alter() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
-        interceptor.setExpectation(getObjectType(), objectName, "alterAndGet", dummyFunction);
+        interceptor.setExpectation(getObjectType(), objectName, "alter", dummyFunction);
         atomicLong.alter(dummyFunction);
     }
 
@@ -80,7 +69,7 @@ public class AtomicLongSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Test
     public void decrementAndGet() {
-        interceptor.setExpectation(getObjectType(), objectName, "addAndGet", -1L);
+        interceptor.setExpectation(getObjectType(), objectName, "decrementAndGet");
         atomicLong.decrementAndGet();
     }
 
@@ -106,26 +95,26 @@ public class AtomicLongSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Test
     public void incrementAndGet() {
-        interceptor.setExpectation(getObjectType(), objectName, "addAndGet", 1L);
+        interceptor.setExpectation(getObjectType(), objectName, "incrementAndGet");
         atomicLong.incrementAndGet();
     }
 
     @Test
     public void getAndIncrement() {
-        interceptor.setExpectation(getObjectType(), objectName, "getAndAdd", 1L);
+        interceptor.setExpectation(getObjectType(), objectName, "getAndIncrement");
         atomicLong.getAndIncrement();
     }
 
     @Test
     public void set() {
         final long count = randomLong();
-        interceptor.setExpectation(getObjectType(), objectName, "getAndSet", count);
+        interceptor.setExpectation(getObjectType(), objectName, "set", count);
         atomicLong.set(count);
     }
 
     @Override
     String getObjectType() {
-        return RaftAtomicLongService.SERVICE_NAME;
+        return AtomicLongService.SERVICE_NAME;
     }
 
 }

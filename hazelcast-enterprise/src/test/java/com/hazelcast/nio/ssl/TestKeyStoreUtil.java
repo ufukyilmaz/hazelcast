@@ -63,7 +63,6 @@ public final class TestKeyStoreUtil {
         return props;
     }
 
-
     public static synchronized String getOrCreateTempFile(String filePath) {
         String tempFilePath = tempFilePaths.get(filePath);
         if (tempFilePath == null || !new File(tempFilePath).exists()) {
@@ -73,7 +72,7 @@ public final class TestKeyStoreUtil {
         return tempFilePath;
     }
 
-    private static File createTempFile(String resource) {
+    public static File createTempFile(String resource) {
         InputStream in = null;
         OutputStream out = null;
         try {

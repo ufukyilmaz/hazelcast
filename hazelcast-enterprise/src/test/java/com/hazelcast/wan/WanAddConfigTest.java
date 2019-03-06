@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
@@ -192,6 +193,8 @@ public class WanAddConfigTest {
                 break;
             } catch (HazelcastInstanceNotActiveException e) {
                 // invoked on a shutdown member, pick another member
+            } catch (RejectedExecutionException e) {
+                // member running the operation is shutting down when executing the callback of the invocation
             }
         }
 

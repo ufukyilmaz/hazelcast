@@ -8,11 +8,13 @@ import com.hazelcast.internal.cluster.impl.operations.AuthorizationOp;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Connection;
+import com.hazelcast.nio.ConnectionListener;
 import com.hazelcast.nio.EndpointManager;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
 import com.hazelcast.spi.discovery.integration.DiscoveryService;
+import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.util.ConstructorFunction;
 import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.wan.WanReplicationPublisher;
@@ -20,6 +22,7 @@ import com.hazelcast.wan.WanReplicationPublisher;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,13 +34,14 @@ import static com.hazelcast.util.ConcurrencyUtil.getOrPutSynchronized;
 import static com.hazelcast.wan.WanReplicationService.SERVICE_NAME;
 import static java.lang.Math.min;
 import static java.lang.Thread.currentThread;
+import static java.util.Collections.newSetFromMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Maintains connections for WAN replication for a single
  * {@link WanReplicationPublisher}.
  */
-public class WanConnectionManager {
+public class WanConnectionManager implements ConnectionListener {
     /**
      * Delay in seconds between the initialisation of the connection manager and
      * the time the discovery task is first run.
@@ -63,6 +67,7 @@ public class WanConnectionManager {
             new ConcurrentHashMap<Address, WanConnectionWrapper>();
     private final List<Address> targetEndpoints = new CopyOnWriteArrayList<Address>();
     private final DiscoveryService discoveryService;
+    private final Set<Address> connectionsInProgress = newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
     private final ConstructorFunction<Address, WanConnectionWrapper> connectionConstructor =
             new ConstructorFunction<Address, WanConnectionWrapper>() {
                 @Override
@@ -96,6 +101,7 @@ public class WanConnectionManager {
         String endpointIdentifier = configurationContext.getPublisherConfig().getEndpoint();
         this.endpointQualifier = endpointIdentifier == null ? EndpointQualifier.MEMBER
                 : EndpointQualifier.resolve(WAN, endpointIdentifier);
+        node.networkingService.getEndpointManager(endpointQualifier).addConnectionListener(this);
 
         try {
             addToTargetEndpoints(discoverEndpointAddresses());
@@ -317,6 +323,7 @@ public class WanConnectionManager {
      */
     private Connection initConnection(Address targetAddress) {
         try {
+            connectionsInProgress.add(targetAddress);
             EndpointManager endpointManager = node.getEndpointManager(endpointQualifier);
             if (endpointManager == null) {
                 endpointManager = node.getEndpointManager();
@@ -326,7 +333,7 @@ public class WanConnectionManager {
                 if (conn == null) {
                     MILLISECONDS.sleep(RETRY_CONNECTION_SLEEP_MILLIS);
                 }
-                conn = endpointManager.getConnection(targetAddress);
+                conn = endpointManager.getOrConnect(targetAddress);
             }
             if (conn != null) {
                 return authorizeConnection(conn);
@@ -334,6 +341,8 @@ public class WanConnectionManager {
         } catch (InterruptedException ie) {
             currentThread().interrupt();
             logger.finest("Sleep interrupted", ie);
+        } finally {
+            connectionsInProgress.remove(targetAddress);
         }
         return null;
     }
@@ -397,6 +406,21 @@ public class WanConnectionManager {
      */
     public List<Address> getTargetEndpoints() {
         return new ArrayList<Address>(targetEndpoints);
+    }
+
+    @Override
+    public void connectionAdded(Connection connection) {
+        // NOOP
+    }
+
+    @Override
+    public void connectionRemoved(Connection connection) {
+        Address endpoint = connection.getEndPoint();
+        WanConnectionWrapper wrapper = connectionPool.remove(endpoint);
+        InternalOperationService operationService = node.nodeEngine.getOperationService();
+        if (wrapper != null || connectionsInProgress.contains(endpoint)) {
+            operationService.onEndpointLeft(endpoint);
+        }
     }
 
     /**

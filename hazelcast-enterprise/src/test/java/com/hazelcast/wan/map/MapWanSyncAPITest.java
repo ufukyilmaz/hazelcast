@@ -21,7 +21,6 @@ import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -126,7 +125,6 @@ public class MapWanSyncAPITest {
     public int maxConcurrentInvocations;
 
     @Test
-    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2635")
     public void basicSyncTest() {
         clusterA.startCluster();
         clusterB.startCluster();

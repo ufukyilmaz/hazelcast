@@ -32,6 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
@@ -57,6 +59,7 @@ import static java.util.Collections.newSetFromMap;
  * The WAN batch collection mechanism needs to be run by one thread only
  * for a single publisher.
  */
+@SuppressWarnings("checkstyle:classdataabstractioncoupling")
 public class WanBatchReplication extends AbstractWanReplication implements Runnable, LiveOperationsTracker {
     /**
      * JVM argument for changing the implementation of the base implementation
@@ -80,6 +83,18 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
 
     private final AtomicLong failedTransmitCount = new AtomicLong();
     private final Set<Operation> liveOperations = newSetFromMap(new ConcurrentHashMap<Operation, Boolean>());
+
+    /**
+     * Lock for coordinating WAN sync process with dequeueing WAN events from
+     * the WAN queues. This lock should prevent adverse effects such as a sync
+     * event being enqueued after which a remove event is dequeued for that
+     * entry from the WAN queues. If the remove event was replicated to the
+     * target cluster first, after which the sync event was replicated, the
+     * entry would be resurrected.
+     * For the duration of WAN sync, we don't allow dequeueing WAN events from
+     * the WAN partition queues.
+     */
+    private final Lock syncLock = new ReentrantLock();
 
     private volatile long lastBatchSendTime = System.currentTimeMillis();
 
@@ -147,6 +162,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
      *
      * @return {@code true} if this method made any progress, {@code false} otherwise
      */
+    @SuppressWarnings("checkstyle:npathcomplexity")
     private boolean tryMakeProgress() {
         List<Address> endpoints = getTargetEndpoints();
         if (endpoints.isEmpty()) {
@@ -170,10 +186,19 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         }
 
         if (state.isReplicateEnqueuedEvents()) {
-            BatchWanReplicationEvent batch = collectEventBatch(endpoint, endpoints);
-            if (batch != null) {
-                sendBatch(endpoint, batch);
-                return true;
+            if (syncLock.tryLock()) {
+                BatchWanReplicationEvent batch = null;
+                try {
+                    if (syncEvents.isEmpty()) {
+                        batch = collectEventBatch(endpoint, endpoints);
+                    }
+                } finally {
+                    syncLock.unlock();
+                }
+                if (batch != null) {
+                    sendBatch(endpoint, batch);
+                    return true;
+                }
             }
         }
 
@@ -365,7 +390,12 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                 event.setProcessingResult(new WanAntiEntropyEventResult());
                 try {
                     if (event instanceof WanSyncEvent) {
-                        syncSupport.processEvent((WanSyncEvent) event);
+                        syncLock.lock();
+                        try {
+                            syncSupport.processEvent((WanSyncEvent) event);
+                        } finally {
+                            syncLock.unlock();
+                        }
                         return;
                     }
                     if (event instanceof WanConsistencyCheckEvent) {

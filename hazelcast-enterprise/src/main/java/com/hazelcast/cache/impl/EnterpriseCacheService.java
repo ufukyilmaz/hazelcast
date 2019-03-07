@@ -25,6 +25,7 @@ import com.hazelcast.cache.wan.CacheReplicationUpdate;
 import com.hazelcast.cache.wan.WanCacheEntryView;
 import com.hazelcast.cache.wan.filter.CacheWanEventFilter;
 import com.hazelcast.config.CacheConfig;
+import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
@@ -545,9 +546,14 @@ public class EnterpriseCacheService
         WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
         if (wanReplicationRef != null) {
             WanReplicationService wanReplicationService = nodeEngine.getWanReplicationService();
-            wanReplicationPublishers.putIfAbsent(
-                    config.getNameWithPrefix(),
-                    wanReplicationService.getWanReplicationPublisher(wanReplicationRef.getName()));
+            WanReplicationPublisher publisher = wanReplicationService.getWanReplicationPublisher(
+                    wanReplicationRef.getName());
+            if (publisher == null) {
+                String msg = String.format("Missing WAN replication config with name '%s' for cache '%s'",
+                        wanReplicationRef.getName(), config.getNameWithPrefix());
+                throw new ConfigurationException(msg);
+            }
+            wanReplicationPublishers.putIfAbsent(config.getNameWithPrefix(), publisher);
             cacheMergePolicies.putIfAbsent(config.getNameWithPrefix(), wanReplicationRef.getMergePolicy());
         }
         return localConfig;

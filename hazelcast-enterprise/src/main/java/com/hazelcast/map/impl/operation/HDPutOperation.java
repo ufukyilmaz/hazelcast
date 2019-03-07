@@ -15,12 +15,12 @@ public class HDPutOperation extends HDBasePutOperation implements IdentifiedData
 
     @Override
     protected void runInternal() {
-        dataOldValue = mapServiceContext.toData(recordStore.put(dataKey, dataValue, ttl, maxIdle));
+        oldValue = mapServiceContext.toData(recordStore.put(dataKey, dataValue, ttl, maxIdle));
     }
 
     @Override
     public Object getResponse() {
-        return dataOldValue;
+        return oldValue;
     }
 
     @Override

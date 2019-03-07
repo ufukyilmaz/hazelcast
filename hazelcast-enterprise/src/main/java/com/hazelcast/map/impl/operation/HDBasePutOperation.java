@@ -13,7 +13,7 @@ import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
 
 public abstract class HDBasePutOperation extends HDLockAwareOperation implements BackupAwareOperation {
 
-    protected transient Data dataOldValue;
+    protected transient Object oldValue;
     protected transient Data dataMergingValue;
     protected transient EntryEventType eventType;
     protected transient boolean putTransient;
@@ -34,7 +34,7 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
         mapServiceContext.interceptAfterPut(name, dataValue);
         Object value = isPostProcessing(recordStore) ? recordStore.getRecord(dataKey).getValue() : dataValue;
         mapEventPublisher.publishEvent(getCallerAddress(), name, getEventType(),
-                dataKey, dataOldValue, value, dataMergingValue);
+                dataKey, oldValue, value, dataMergingValue);
         invalidateNearCache(dataKey);
         publishWanUpdate(dataKey, value);
         evict(dataKey);
@@ -42,7 +42,7 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
 
     private EntryEventType getEventType() {
         if (eventType == null) {
-            eventType = dataOldValue == null ? ADDED : UPDATED;
+            eventType = oldValue == null ? ADDED : UPDATED;
         }
         return eventType;
     }

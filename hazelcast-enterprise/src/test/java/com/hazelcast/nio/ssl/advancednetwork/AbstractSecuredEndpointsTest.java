@@ -35,19 +35,19 @@ public class AbstractSecuredEndpointsTest {
     protected static final int REST_PORT = MEMBER_PORT + 3;
     protected static final int MEMCACHE_PORT = MEMBER_PORT + 4;
 
-    protected static final String MEMBER_A_KEYSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/memberA.keystore";
-    protected static final String MEMBER_A_TRUSTSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/memberA.truststore";
-    protected static final String MEMBER_B_KEYSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/memberB.keystore";
-    protected static final String MEMBER_B_TRUSTSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/memberB.truststore";
-    protected static final String MEMBER_FOR_CLIENT_KEYSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/memberForClient.keystore";
-    protected static final String CLIENT_TRUSTSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/client.truststore";
-    protected static final String MEMBER_FOR_WAN_KEYSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/memberForWan.keystore";
-    protected static final String WAN_TRUSTSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/wan.truststore";
-    protected static final String MEMBER_FOR_REST_KEYSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/memberForRest.keystore";
-    protected static final String REST_TRUSTSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/rest.truststore";
+    protected static final String MEMBER_A_KEYSTORE = "com/hazelcast/nio/ssl/advancednetwork/memberA.keystore";
+    protected static final String MEMBER_A_TRUSTSTORE = "com/hazelcast/nio/ssl/advancednetwork/memberA.truststore";
+    protected static final String MEMBER_B_KEYSTORE = "com/hazelcast/nio/ssl/advancednetwork/memberB.keystore";
+    protected static final String MEMBER_B_TRUSTSTORE = "com/hazelcast/nio/ssl/advancednetwork/memberB.truststore";
+    protected static final String MEMBER_FOR_CLIENT_KEYSTORE = "com/hazelcast/nio/ssl/advancednetwork/memberForClient.keystore";
+    protected static final String CLIENT_TRUSTSTORE = "com/hazelcast/nio/ssl/advancednetwork/client.truststore";
+    protected static final String MEMBER_FOR_WAN_KEYSTORE = "com/hazelcast/nio/ssl/advancednetwork/memberForWan.keystore";
+    protected static final String WAN_TRUSTSTORE = "com/hazelcast/nio/ssl/advancednetwork/wan.truststore";
+    protected static final String MEMBER_FOR_REST_KEYSTORE = "com/hazelcast/nio/ssl/advancednetwork/memberForRest.keystore";
+    protected static final String REST_TRUSTSTORE = "com/hazelcast/nio/ssl/advancednetwork/rest.truststore";
     protected static final String MEMBER_FOR_MEMCACHE_KEYSTORE
-            = "com/hazelcast/nio/ssl/AdvancedNetwork/memberForMemcache.keystore";
-    protected static final String MEMCACHE_TRUSTSTORE = "com/hazelcast/nio/ssl/AdvancedNetwork/memcache.truststore";
+            = "com/hazelcast/nio/ssl/advancednetwork/memberForMemcache.keystore";
+    protected static final String MEMCACHE_TRUSTSTORE = "com/hazelcast/nio/ssl/advancednetwork/memcache.truststore";
 
     protected static final String MEMBER_PASSWORD = "123456member";
     protected static final String CLIENT_PASSWORD = "123456client";

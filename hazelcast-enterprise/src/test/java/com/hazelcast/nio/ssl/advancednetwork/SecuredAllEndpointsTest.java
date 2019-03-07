@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -130,7 +129,6 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
     }
 
     @Test
-    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2783")
     public void testMemcacheEndpointWithMemcacheCertificate() throws Exception {
         testTextEndpoint(MEMCACHE_PORT, memcacheTruststore, MEMCACHE_PASSWORD, true);
     }

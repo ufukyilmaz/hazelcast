@@ -27,7 +27,7 @@ public class TextTLSChannelInitializer extends AbstractMultiSocketTLSChannelInit
 
         channel.outboundPipeline().addLast(encoder);
         channel.inboundPipeline().addLast(rest
-                ? new RestApiTextDecoder(connection, encoder, rest)
-                : new MemcacheTextDecoder(connection, encoder, rest));
+                ? new RestApiTextDecoder(connection, encoder, true)
+                : new MemcacheTextDecoder(connection, encoder, true));
     }
 }

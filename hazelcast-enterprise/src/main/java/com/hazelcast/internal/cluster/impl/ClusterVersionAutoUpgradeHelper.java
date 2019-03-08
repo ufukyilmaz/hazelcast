@@ -52,7 +52,7 @@ public class ClusterVersionAutoUpgradeHelper {
                                     ClusterServiceImpl clusterService) {
         NodeEngineImpl nodeEngine = clusterService.getNodeEngine();
         ILogger logger = nodeEngine.getLogger(ClusterVersionAutoUpgradeHelper.class);
-        MemberMap memberMap = getMemberMapToUpdateOrNull(clusterService, logger);
+        MemberMap memberMap = getCheckedMemberMapOrNull(clusterService, logger);
         if (memberMap != null) {
             scheduleTask(attemptNumber, delaySeconds, clusterService, logger);
         }
@@ -74,7 +74,7 @@ public class ClusterVersionAutoUpgradeHelper {
      * doing needed checks, otherwise return {@code null} to
      * indicate checks are failed and task cannot be executed at this time.
      */
-    public MemberMap getMemberMapToUpdateOrNull(ClusterServiceImpl clusterService, ILogger logger) {
+    public MemberMap getCheckedMemberMapOrNull(ClusterServiceImpl clusterService, ILogger logger) {
         HazelcastProperties properties = clusterService.getNodeEngine().getProperties();
 
         // Check if auto upgrade is enabled

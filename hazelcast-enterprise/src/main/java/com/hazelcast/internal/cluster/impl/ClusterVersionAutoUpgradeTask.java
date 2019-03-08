@@ -1,7 +1,7 @@
 package com.hazelcast.internal.cluster.impl;
 
+import com.hazelcast.instance.OutOfMemoryErrorDispatcher;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.version.Version;
 
 import java.util.Random;
@@ -37,34 +37,38 @@ class ClusterVersionAutoUpgradeTask implements Runnable {
 
     @Override
     public void run() {
-        MemberMap memberMap = autoUpgradeHelper.getMemberMapToUpdateOrNull(clusterService, logger);
+        MemberMap memberMap = autoUpgradeHelper.getCheckedMemberMapOrNull(clusterService, logger);
         if (memberMap == null) {
+            // didn't pass the checks.
             return;
         }
 
-        Throwable throwable = null;
         try {
-            Version nextClusterVersion = clusterService.getLocalMember().getVersion().asVersion();
-            clusterService.changeClusterVersion(nextClusterVersion, memberMap);
-
-            if (logger.isInfoEnabled()) {
-                logger.info(format("Cluster version has been upgraded to %s", nextClusterVersion));
-            }
-        } catch (Throwable t) {
-            throwable = t;
+            tryUpgradeClusterVersion(memberMap);
+        } catch (OutOfMemoryError e) {
+            OutOfMemoryErrorDispatcher.onOutOfMemory(e);
+        } catch (Throwable throwable) {
+            logger.warning(format("Scheduling new task, caught %s: %s",
+                    throwable.getClass().getName(), throwable.getMessage()));
+            rescheduleTaskWithBackoff();
         }
+    }
 
-        if (throwable != null) {
-            logger.warning("Exception during cluster version auto upgrade, scheduling new task...");
+    private void tryUpgradeClusterVersion(MemberMap memberMap) {
+        Version nextClusterVersion = clusterService.getLocalMember().getVersion().asVersion();
+        clusterService.changeClusterVersion(nextClusterVersion, memberMap);
 
-            // calculate delay seconds with backoff for the next attempt
-            int nextAttemptNumber = attemptNumber > MAX_BACKOFF_ATTEMPT_NUMBER ? MAX_BACKOFF_ATTEMPT_NUMBER : attemptNumber + 1;
-            int nextDelaySeconds = Math.max(MIN_BACKOFF_DELAY_SECONDS, random.nextInt(1 << nextAttemptNumber));
-
-            autoUpgradeHelper.scheduleNewAutoUpgradeTask(nextAttemptNumber, nextDelaySeconds, clusterService);
-
-            throw ExceptionUtil.rethrow(throwable);
+        if (logger.isInfoEnabled()) {
+            logger.info(format("Cluster version has been upgraded to %s", nextClusterVersion));
         }
+    }
+
+    private void rescheduleTaskWithBackoff() {
+        // calculate delay seconds with backoff for the next attempt
+        int nextAttemptNumber = attemptNumber > MAX_BACKOFF_ATTEMPT_NUMBER ? MAX_BACKOFF_ATTEMPT_NUMBER : attemptNumber + 1;
+        int nextDelaySeconds = Math.max(MIN_BACKOFF_DELAY_SECONDS, random.nextInt(1 << nextAttemptNumber));
+
+        autoUpgradeHelper.scheduleNewAutoUpgradeTask(nextAttemptNumber, nextDelaySeconds, clusterService);
     }
 
     @Override

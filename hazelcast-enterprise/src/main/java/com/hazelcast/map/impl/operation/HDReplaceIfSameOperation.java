@@ -24,7 +24,7 @@ public class HDReplaceIfSameOperation extends HDBasePutOperation implements Muta
     protected void runInternal() {
         successful = recordStore.replace(dataKey, expect, dataValue);
         if (successful) {
-            dataOldValue = expect;
+            oldValue = expect;
         }
     }
 

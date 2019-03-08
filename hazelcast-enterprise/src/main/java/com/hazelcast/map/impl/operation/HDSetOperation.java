@@ -20,18 +20,13 @@ public class HDSetOperation extends HDBasePutOperation implements IdentifiedData
 
     @Override
     protected void runInternal() {
-        Object oldValue = recordStore.set(dataKey, dataValue, ttl, maxIdle);
+        oldValue = recordStore.set(dataKey, dataValue, ttl, maxIdle);
         newRecord = oldValue == null;
-
-        if (recordStore.hasQueryCache()) {
-            dataOldValue = mapServiceContext.toData(oldValue);
-        }
     }
 
     @Override
     public void afterRun() throws Exception {
         eventType = newRecord ? ADDED : UPDATED;
-
         super.afterRun();
     }
 

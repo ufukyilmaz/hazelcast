@@ -17,7 +17,7 @@ public class HDReplaceOperation extends HDBasePutOperation implements MutatingOp
     @Override
     protected void runInternal() {
         Object oldValue = recordStore.replace(dataKey, dataValue);
-        dataOldValue = mapService.getMapServiceContext().toData(oldValue);
+        this.oldValue = mapService.getMapServiceContext().toData(oldValue);
         successful = oldValue != null;
     }
 
@@ -37,7 +37,7 @@ public class HDReplaceOperation extends HDBasePutOperation implements MutatingOp
 
     @Override
     public Object getResponse() {
-        return dataOldValue;
+        return oldValue;
     }
 
     @Override

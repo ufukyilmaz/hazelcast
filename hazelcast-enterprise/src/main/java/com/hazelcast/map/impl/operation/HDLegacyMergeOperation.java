@@ -33,7 +33,7 @@ public class HDLegacyMergeOperation extends HDBasePutOperation {
     protected void runInternal() {
         Record oldRecord = recordStore.getRecord(dataKey);
         if (oldRecord != null) {
-            dataOldValue = mapServiceContext.toData(oldRecord.getValue());
+            oldValue = mapServiceContext.toData(oldRecord.getValue());
         }
         merged = recordStore.merge(dataKey, mergingEntry, mergePolicy, getCallerProvenance());
         if (merged) {

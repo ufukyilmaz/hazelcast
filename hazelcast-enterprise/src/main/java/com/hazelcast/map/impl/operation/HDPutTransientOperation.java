@@ -14,7 +14,7 @@ public class HDPutTransientOperation extends HDBasePutOperation implements Mutat
 
     @Override
     protected void runInternal() {
-        dataOldValue = mapServiceContext.toData(recordStore.putTransient(dataKey, dataValue, ttl, maxIdle));
+        oldValue = mapServiceContext.toData(recordStore.putTransient(dataKey, dataValue, ttl, maxIdle));
         putTransient = true;
     }
 

@@ -45,6 +45,7 @@ import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
 import static com.hazelcast.config.ConfigAccessor.getActiveMemberNetworkConfig;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -401,7 +402,7 @@ public class TlsFunctionalTest {
             sslConfig.setProperty("mutualAuthentication", "REQUIRED");
         }
 
-        Config config = new Config();
+        Config config = smallInstanceConfig();
         setSSLConfig(config, sslConfig);
         if (advanced) {
             AdvancedNetworkConfig anc = config.getAdvancedNetworkConfig();

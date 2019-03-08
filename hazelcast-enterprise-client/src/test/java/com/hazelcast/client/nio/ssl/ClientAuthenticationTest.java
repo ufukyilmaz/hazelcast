@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
+import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -168,8 +169,7 @@ public class ClientAuthenticationTest {
             serverProps.setProperty("javax.net.ssl.mutualAuthentication", settings.mutualAuthentication);
         }
 
-        Config config = new Config()
-                .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        Config config = smallInstanceConfig().setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         NetworkConfig networkConfig = config.getNetworkConfig();
         networkConfig.setSSLConfig(new SSLConfig()
                 .setEnabled(true)

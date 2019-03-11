@@ -9,21 +9,22 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Shutdowns the cache service and destroy the caches with their segments.
  */
-public final class CacheSegmentShutdownOperation
-        extends Operation
+public final class CacheSegmentShutdownOperation extends Operation
         implements PartitionAwareOperation, AllowedDuringPassiveState, IdentifiedDataSerializable {
 
     private final CountDownLatch done = new CountDownLatch(1);
 
+    public CacheSegmentShutdownOperation() {
+    }
+
     @Override
-    public void run() throws Exception {
+    public void run() {
         try {
             int partitionId = getPartitionId();
             EnterpriseCacheService service = getService();
@@ -32,6 +33,16 @@ public final class CacheSegmentShutdownOperation
         } finally {
             done.countDown();
         }
+    }
+
+    @Override
+    public void onExecutionFailure(Throwable e) {
+        done.countDown();
+        super.onExecutionFailure(e);
+    }
+
+    public boolean awaitCompletion(long timeout, TimeUnit unit) throws InterruptedException {
+        return done.await(timeout, unit);
     }
 
     @Override
@@ -44,17 +55,13 @@ public final class CacheSegmentShutdownOperation
         return false;
     }
 
-    public boolean awaitCompletion(long timeout, TimeUnit unit) throws InterruptedException {
-        return done.await(timeout, unit);
-    }
-
     @Override
-    protected void writeInternal(ObjectDataOutput out) throws IOException {
+    protected void writeInternal(ObjectDataOutput out) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void readInternal(ObjectDataInput in) throws IOException {
+    protected void readInternal(ObjectDataInput in) {
         throw new UnsupportedOperationException();
     }
 

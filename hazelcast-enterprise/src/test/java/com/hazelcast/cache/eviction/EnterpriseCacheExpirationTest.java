@@ -48,7 +48,7 @@ public class EnterpriseCacheExpirationTest extends CacheExpirationTest {
                 {false, BINARY},
                 {false, OBJECT},
                 {false, NATIVE},
-                });
+        });
     }
 
     @Parameter

@@ -11,25 +11,26 @@ import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.util.function.Predicate;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Clears map's partition data. This operation is required because Hi-Density backed IMap can only be cleared by
- * corresponding partition threads.
+ * Clears map's partition data. This operation is
+ * required because Hi-Density backed IMap can only
+ * be cleared by corresponding partition threads.
  */
 public final class EnterpriseMapPartitionClearOperation extends Operation
         implements PartitionAwareOperation, AllowedDuringPassiveState, IdentifiedDataSerializable {
 
+    private final transient boolean onShutdown;
     private final CountDownLatch done = new CountDownLatch(1);
-    private boolean onShutdown;
 
     /**
-     * Do not use this constructor to obtain an instance of this class, introduced to conform to IdentifiedDataserializable
-     * conventions.
+     * Do not use this constructor to obtain an instance of this class,
+     * introduced to conform to IdentifiedDataserializable conventions.
      */
     public EnterpriseMapPartitionClearOperation() {
+        this(false);
     }
 
     public EnterpriseMapPartitionClearOperation(boolean onShutdown) {
@@ -47,6 +48,12 @@ public final class EnterpriseMapPartitionClearOperation extends Operation
         } finally {
             done.countDown();
         }
+    }
+
+    @Override
+    public void onExecutionFailure(Throwable e) {
+        done.countDown();
+        super.onExecutionFailure(e);
     }
 
     /**
@@ -76,12 +83,12 @@ public final class EnterpriseMapPartitionClearOperation extends Operation
     }
 
     @Override
-    protected void writeInternal(ObjectDataOutput out) throws IOException {
+    protected void writeInternal(ObjectDataOutput out) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void readInternal(ObjectDataInput in) throws IOException {
+    protected void readInternal(ObjectDataInput in) {
         throw new UnsupportedOperationException();
     }
 

@@ -20,7 +20,6 @@ import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.compatibility.SerializedObjectsAccessor.SerializedObject;
 import com.hazelcast.version.Version;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -53,7 +52,6 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore("https://github.com/hazelcast/hazelcast/issues/14672")
 public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
 
     private static final String CLASSPATH_RESOURCE_PATTERN = "com/hazelcast/test/compatibility/serialized-objects-%s";
@@ -63,8 +61,8 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     @Parameters(name = "samplesVersion: {0} testDeserializerVersion={1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {"3.10", "3.10"},
-                {"3.10.5", "3.10"},
+                {"3.11", "3.11"},
+                {"3.11.2", "3.11"},
         });
     }
 

@@ -1,7 +1,9 @@
 package com.hazelcast.client.bluegreen;
 
 import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.HazelcastClientOfflineException;
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.config.ClientConnectionStrategyConfig;
 import com.hazelcast.client.config.ClientFailoverConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.test.ClientTestSupport;
@@ -9,6 +11,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import com.hazelcast.core.LifecycleEvent;
 import com.hazelcast.core.LifecycleListener;
 import com.hazelcast.core.Member;
@@ -24,7 +27,9 @@ import org.junit.runner.RunWith;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -38,7 +43,7 @@ public class FailoverTest extends ClientTestSupport {
     }
 
     @Test
-    public void testFailover() {
+    public void testFailover_readOnlyOperationsRetried() {
         Config config1 = new Config();
         config1.getGroupConfig().setName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
@@ -82,14 +87,78 @@ public class FailoverTest extends ClientTestSupport {
         assertEquals(1, members.size());
         assertContains(members, member1);
 
+        final IMap<Object, Object> map = client.getMap("test");
+
+        final AtomicReference<Throwable> reference = new AtomicReference<Throwable>();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (countDownLatch.getCount() != 0) {
+                        map.get(1);
+                    }
+                } catch (Exception e) {
+                    reference.set(e);
+                }
+            }
+        }).start();
+
         instance1.shutdown();
 
         assertOpenEventually(countDownLatch);
+        assertNull(reference.get());
 
         members = client.getCluster().getMembers();
         assertEquals(1, members.size());
         assertContains(members, member2);
     }
+
+    @Test
+    public void testOperationsGetOfflineException_clientInReconnectAsyncMode_whenSearchingForNewCluster() {
+        Config config1 = new Config();
+        config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
+        HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
+
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getConnectionStrategyConfig().setReconnectMode(ClientConnectionStrategyConfig.ReconnectMode.ASYNC);
+        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
+        Member member1 = (Member) instance1.getLocalEndpoint();
+        Address address1 = member1.getAddress();
+        networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
+
+
+        ClientFailoverConfig clientFailoverConfig = new ClientFailoverConfig();
+        clientFailoverConfig.addClientConfig(clientConfig);
+        clientFailoverConfig.setTryCount(Integer.MAX_VALUE);
+        HazelcastInstance client = HazelcastClient.newHazelcastFailoverClient(clientFailoverConfig);
+
+        final IMap<Object, Object> map = client.getMap("test");
+
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final AtomicReference<Class> reference = new AtomicReference<Class>();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (true) {
+                        map.get(1);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    reference.set(e.getClass());
+                    countDownLatch.countDown();
+                }
+            }
+        }).start();
+
+        instance1.shutdown();
+
+        assertOpenEventually(countDownLatch);
+        assertEquals(HazelcastClientOfflineException.class, reference.get());
+
+    }
+
 
     @Test
     public void testFailover_differentPartitionCount_clientShouldClose() {

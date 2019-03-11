@@ -4,10 +4,11 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.SSLConfig;
+import com.hazelcast.config.ServerSocketEndpointConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.logging.ILogger;
@@ -19,18 +20,20 @@ import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import javax.net.ssl.SSLContext;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
+import static com.hazelcast.instance.EndpointQualifier.MEMBER;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
@@ -42,14 +45,25 @@ import static com.hazelcast.nio.ssl.TestKeyStoreUtil.keyStore;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.keyStore2;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.trustStore;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static com.hazelcast.test.HazelcastTestSupport.ignore;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class})
-@Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2725")
 public class SSLConnectionTest {
+
+    @Parameterized.Parameters(name = "advancedNetworking:{0}")
+    public static Collection<Boolean> parameters() {
+        return Arrays.asList(false, true);
+    }
+
+    @Parameterized.Parameter
+    public boolean advancedNetworking;
+
 
     private final ILogger logger = Logger.getLogger(getClass());
 
@@ -184,11 +198,14 @@ public class SSLConnectionTest {
 
         HazelcastInstance h1 = factory
                 .newHazelcastInstance(createConfigWithSslProperty("ciphersuites", firstHalf));
-        HazelcastInstance h2 = factory.newHazelcastInstance(
-                createConfigWithSslProperty(JAVA_NET_SSL_PREFIX + "ciphersuites", secondHalf));
+        try {
+            factory.newHazelcastInstance(createConfigWithSslProperty(JAVA_NET_SSL_PREFIX + "ciphersuites", secondHalf));
+            fail("Node should fail to start.");
+        } catch (IllegalStateException e) {
+            ignore(e);
+        }
 
-        // Size 1 for both! we expect the instances won't form a cluster.
-        assertClusterSize(1, h1, h2);
+        assertClusterSize(1, h1);
     }
 
     /**
@@ -212,6 +229,7 @@ public class SSLConnectionTest {
     @Test(expected = ConfigurationException.class)
     public void testUnsupportedCipherSuiteNames() {
         factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", "foo,bar"));
+        factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", "foo,bar"));
     }
 
     /**
@@ -219,6 +237,7 @@ public class SSLConnectionTest {
      */
     @Test(expected = ConfigurationException.class)
     public void testEmptyCipherSuiteProperty() {
+        factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", ""));
         factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", ""));
     }
 
@@ -267,11 +286,14 @@ public class SSLConnectionTest {
         assumeTrue("At least 2 supported TLS protocol versions necessary for this test", supportedTls.size() > 1);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(createConfigWithSslProperty("protocol", supportedTls.get(0)));
-        HazelcastInstance h2 = factory
-                .newHazelcastInstance(createConfigWithSslProperty(JAVA_NET_SSL_PREFIX + "protocol", supportedTls.get(1)));
+        try {
+            factory.newHazelcastInstance(createConfigWithSslProperty(JAVA_NET_SSL_PREFIX + "protocol", supportedTls.get(1)));
+            fail("Node should fail to start");
+        } catch (IllegalStateException e) {
+            ignore(e);
+        }
 
-        // Size 1 for both! we expect the instances won't form a cluster.
-        assertClusterSize(1, h1, h2);
+        assertClusterSize(1, h1);
     }
 
     @Test(timeout = 1000 * 180)
@@ -319,14 +341,30 @@ public class SSLConnectionTest {
     private Config getConfig(Properties sslProperties) {
         Config config = new Config();
         config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
 
-        config.getNetworkConfig()
-                .setSSLConfig(new SSLConfig().setEnabled(true).setProperties(sslProperties))
-                .getJoin().getTcpIpConfig()
-                            .setEnabled(true)
-                            .setConnectionTimeoutSeconds(30);
+        if (advancedNetworking) {
+            config.getAdvancedNetworkConfig().setEnabled(true);
+            ServerSocketEndpointConfig memberEndpoint
+                    = (ServerSocketEndpointConfig) config.getAdvancedNetworkConfig()
+                                                         .getEndpointConfigs().get(MEMBER);
+            memberEndpoint.setSSLConfig(
+                    new SSLConfig().setEnabled(true)
+                                   .setProperties(sslProperties));
+
+            config.getAdvancedNetworkConfig().getJoin()
+                  .getTcpIpConfig().setEnabled(true)
+                                   .setConnectionTimeoutSeconds(30);
+        } else {
+            config.getNetworkConfig().setSSLConfig(
+                    new SSLConfig().setEnabled(true)
+                                   .setProperties(sslProperties))
+                                    .getJoin().getTcpIpConfig().setEnabled(true)
+                                                               .setConnectionTimeoutSeconds(30);
+        }
+
         return config;
     }
 
@@ -339,9 +377,16 @@ public class SSLConnectionTest {
                 .setProperties(props);
 
         Config config = new Config();
-        config.getNetworkConfig()
-                .setSSLConfig(sslConfig)
-                .getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
+        if (advancedNetworking) {
+            config.getAdvancedNetworkConfig().setEnabled(true);
+            ServerSocketEndpointConfig memberEndpoint =
+                    (ServerSocketEndpointConfig) config.getAdvancedNetworkConfig().getEndpointConfigs().get(MEMBER);
+            memberEndpoint.setSSLConfig(sslConfig);
+            config.getAdvancedNetworkConfig().getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+        } else {
+            config.getNetworkConfig().setSSLConfig(sslConfig).getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(30);
+        }
 
         return config;
     }

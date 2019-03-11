@@ -4,24 +4,35 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.test.annotation.NightlyTest;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import static org.junit.Assert.assertEquals;
+import java.util.Arrays;
+import java.util.Collection;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Nightly basic symmetric encryption tests.
  */
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category(NightlyTest.class)
 public class EncryptionTest extends AbstractSymmetricEncryptionTestBase {
+
+    @Parameterized.Parameters(name = "advancedNetworking:{0}")
+    public static Collection<Boolean> parameters() {
+        return Arrays.asList(false, true);
+    }
+
+    @Parameterized.Parameter
+    public boolean advancedNetworking;
 
     @Test
     public void testSymmetricEncryption_withPbe() {
@@ -32,7 +43,7 @@ public class EncryptionTest extends AbstractSymmetricEncryptionTestBase {
     public void testSymmetricEncryption_withAes() {
         assumeCipherSupported(CIPHER_AES);
         // AES key has 128 bits - 16bytes
-        testSymmetricEncryption(createConfig(generateRandomKey(16), CIPHER_AES));
+        testSymmetricEncryption(createConfig(generateRandomKey(16), CIPHER_AES, advancedNetworking));
     }
 
     private void testSymmetricEncryption(Config config) {

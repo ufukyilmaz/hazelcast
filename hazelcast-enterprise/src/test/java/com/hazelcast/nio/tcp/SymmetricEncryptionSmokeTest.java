@@ -5,7 +5,6 @@ import com.hazelcast.config.ConfigAccessor;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -15,6 +14,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static com.hazelcast.test.HazelcastTestSupport.ignore;
+import static org.junit.Assert.fail;
 
 /**
  * Quick symmetric encryption tests.
@@ -22,7 +23,6 @@ import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({ QuickTest.class })
-@Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/2725")
 public class SymmetricEncryptionSmokeTest extends AbstractSymmetricEncryptionTestBase {
 
     @Parameterized.Parameters(name = "advancedNetworking:{0}")
@@ -57,8 +57,8 @@ public class SymmetricEncryptionSmokeTest extends AbstractSymmetricEncryptionTes
     public void testAesJoiningIfPasswordsDiffer() {
         assumeCipherSupported(CIPHER_AES);
         byte[] key = generateRandomKey(16);
-        Config config1 = createConfig(key, CIPHER_AES);
-        Config config2 = createConfig(key, CIPHER_AES);
+        Config config1 = createConfig(key, CIPHER_AES, advancedNetworking);
+        Config config2 = createConfig(key, CIPHER_AES, advancedNetworking);
         ConfigAccessor.getActiveMemberNetworkConfig(config1).getSymmetricEncryptionConfig().setPassword("pass1");
         ConfigAccessor.getActiveMemberNetworkConfig(config2).getSymmetricEncryptionConfig().setPassword("pass2");
         HazelcastInstance h1 = factory.newHazelcastInstance(config1);
@@ -95,24 +95,43 @@ public class SymmetricEncryptionSmokeTest extends AbstractSymmetricEncryptionTes
         // XOR the first byte to make it different
         key2[0] ^= 0xff;
 
-        HazelcastInstance h1 = factory.newHazelcastInstance(createConfig(key1, CIPHER_AES));
-        HazelcastInstance h2 = factory.newHazelcastInstance(createConfig(key2, CIPHER_AES));
-        assertClusterSize(1, h1, h2);
+        HazelcastInstance h1 = factory.newHazelcastInstance(createConfig(key1, CIPHER_AES, advancedNetworking));
+
+        try {
+            factory.newHazelcastInstance(createConfig(key2, CIPHER_AES, advancedNetworking));
+            fail("Node should not be able to start.");
+        } catch (IllegalStateException ex) {
+            ignore(ex);
+        }
+
+        assertClusterSize(1, h1);
     }
 
     @Test
     public void testPbeNotJoiningIfPasswordsDiffer() {
         HazelcastInstance h1 = factory.newHazelcastInstance(createPbeConfig("pass1", 1, advancedNetworking));
-        HazelcastInstance h2 = factory.newHazelcastInstance(createPbeConfig("pass2", 1, advancedNetworking));
 
-        assertClusterSize(1, h1, h2);
+        try {
+            factory.newHazelcastInstance(createPbeConfig("pass2", 1, advancedNetworking));
+            fail("Node should not be able to start.");
+        } catch (IllegalStateException ex) {
+            ignore(ex);
+        }
+
+        assertClusterSize(1, h1);
     }
 
     @Test
     public void testPbeNotJoiningIfIterationsDiffer() {
         HazelcastInstance h1 = factory.newHazelcastInstance(createPbeConfig("pass", 1, advancedNetworking));
-        HazelcastInstance h2 = factory.newHazelcastInstance(createPbeConfig("pass", 2, advancedNetworking));
 
-        assertClusterSize(1, h1, h2);
+        try {
+            factory.newHazelcastInstance(createPbeConfig("pass", 2, advancedNetworking));
+            fail("Node should not be able to start.");
+        } catch (IllegalStateException ex) {
+            ignore(ex);
+        }
+
+        assertClusterSize(1, h1);
     }
 }

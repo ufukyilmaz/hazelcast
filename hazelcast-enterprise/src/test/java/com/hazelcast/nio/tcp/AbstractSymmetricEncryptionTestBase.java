@@ -2,6 +2,7 @@ package com.hazelcast.nio.tcp;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SymmetricEncryptionConfig;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestAwareInstanceFactory;
 import org.junit.After;
 import org.junit.AssumptionViolatedException;
@@ -49,6 +50,7 @@ public abstract class AbstractSymmetricEncryptionTestBase {
                 .setIterationCount(iterationCount);
 
         Config config = new Config();
+        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
         if (advanced) {
             config.getAdvancedNetworkConfig().setEnabled(true);
             config.getAdvancedNetworkConfig().getEndpointConfigs().get(MEMBER).setSymmetricEncryptionConfig(encryptionConfig);
@@ -61,14 +63,21 @@ public abstract class AbstractSymmetricEncryptionTestBase {
     /**
      * Creates a configuration with key based encryption using the given algorithm. Default salt is used.
      */
-    protected Config createConfig(byte[] key, String algorithm) {
+    protected Config createConfig(byte[] key, String algorithm, boolean advanced) {
         SymmetricEncryptionConfig encryptionConfig = new SymmetricEncryptionConfig()
                 .setEnabled(true)
                 .setAlgorithm(algorithm)
                 .setKey(key);
 
         Config config = new Config();
-        config.getNetworkConfig().setSymmetricEncryptionConfig(encryptionConfig);
+        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
+        if (advanced) {
+            config.getAdvancedNetworkConfig().setEnabled(true);
+            config.getAdvancedNetworkConfig().getEndpointConfigs().get(MEMBER).setSymmetricEncryptionConfig(encryptionConfig);
+        } else {
+            config.getNetworkConfig().setSymmetricEncryptionConfig(encryptionConfig);
+        }
+
         return config;
     }
 

@@ -226,8 +226,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         BatchWanReplicationEvent batch = null;
 
         boolean collectionPeriodPassed = false;
-
+        boolean collectedAnyEvent;
         do {
+            collectedAnyEvent = false;
             for (int partitionId = replicationStrategy.getFirstPartitionId(endpoint, endpoints);
                  partitionId < partitionService.getPartitionCount() && !collectionPeriodPassed;
                  partitionId += replicationStrategy.getPartitionIdStep(endpoint, endpoints)) {
@@ -246,6 +247,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                                 configurationContext.isSnapshotEnabled());
                     }
                     batch.addEvent(event);
+                    collectedAnyEvent = true;
                 }
 
                 int entryCount = batch == null ? 0 : batch.getTotalEntryCount();
@@ -254,8 +256,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                         || (sendingPeriodPassed() && entryCount > 0)
                         || !running;
             }
-        } while (!(collectionPeriodPassed || sendingPeriodPassed()));
-
+        } while (!(collectionPeriodPassed || sendingPeriodPassed()) && collectedAnyEvent);
 
         return batch;
     }

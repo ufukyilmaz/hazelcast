@@ -6,6 +6,7 @@ import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.security.AccessControlException;
@@ -249,8 +250,8 @@ public class ClientPermissionPropagationTest {
                     Set<PermissionConfig> masterPermissions = hzTmp.getConfig().getSecurityConfig()
                             .getClientPermissionConfigs();
                     assertEquals("Permission set size check failed in loop " + iTmp, 1, masterPermissions.size());
-                    assertEquals("Permission name check failed in loop " + iTmp, "test" + iTmp,
-                            masterPermissions.iterator().next().getName());
+                    assertTrue("Permissions set doesn't contain expected permission in loop " + iTmp,
+                            masterPermissions.contains(perm));
                 }
             });
             factory.terminate(hzOld);

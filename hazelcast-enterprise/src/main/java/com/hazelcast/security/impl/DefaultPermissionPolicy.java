@@ -44,6 +44,8 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     private static final PermissionCollection ALLOW_ALL = new AllPermissionsCollection(true);
     private static final String PRINCIPAL_STRING_SEP = ",";
 
+    private static final Collection<String> ALL_ENDPOINTS = Collections.singleton("*.*.*.*");
+
     // configured permissions
     final ConcurrentMap<PrincipalKey, PermissionCollection> configPermissions
             = new ConcurrentHashMap<PrincipalKey, PermissionCollection>();
@@ -71,10 +73,10 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
                     ? permCfg.getPrincipal().split(PRINCIPAL_STRING_SEP)
                     : new String[] { "*" };
 
-            final Set<String> endpoints = permCfg.getEndpoints();
+            Collection<String> endpoints = permCfg.getEndpoints();
             if (endpoints.isEmpty()) {
                 // allow all endpoints
-                endpoints.add("*.*.*.*");
+                endpoints = ALL_ENDPOINTS;
             }
 
             PermissionCollection coll;

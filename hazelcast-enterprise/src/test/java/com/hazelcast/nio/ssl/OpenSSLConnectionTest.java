@@ -31,6 +31,7 @@ import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -114,7 +115,7 @@ public class OpenSSLConnectionTest {
         SSLConfig sslConfig = new SSLConfig().setEnabled(true).setFactoryImplementation(new OpenSSLEngineFactory())
                 .setProperties(sslProperties);
 
-        Config config = new Config().setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        Config config = smallInstanceConfig().setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         config.getNetworkConfig().setSSLConfig(sslConfig);
         return config;
     }

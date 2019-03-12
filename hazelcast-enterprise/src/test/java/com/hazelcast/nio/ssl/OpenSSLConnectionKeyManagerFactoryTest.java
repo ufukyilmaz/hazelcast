@@ -13,6 +13,7 @@ import java.io.File;
 
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.TestEnvironmentUtil.isIbmJvm;
+import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static org.junit.Assume.assumeFalse;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -33,7 +34,7 @@ public class OpenSSLConnectionKeyManagerFactoryTest extends OpenSSLConnectionTes
                 .setProperty("trustStore", letsEncryptKeystore.getAbsolutePath())
                 .setProperty("trustStorePassword", "123456");
 
-        Config config = new Config().setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        Config config = smallInstanceConfig().setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         config.getNetworkConfig().setSSLConfig(sslConfig);
         return config;
     }

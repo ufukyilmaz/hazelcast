@@ -135,6 +135,36 @@ public class PublisherQueueContainer {
     }
 
     /**
+     * Drains all the queues maintained for the given partition.
+     *
+     * @param partitionId the partition ID for which queues need to be drained
+     * @return the number of drained elements
+     */
+    public int drainQueues(int partitionId) {
+        return getEventQueue(partitionId).drain();
+    }
+
+    /**
+     * Drains all the map queues maintained for the given partition.
+     *
+     * @param partitionId the partition ID for which queues need to be drained
+     * @return the number of drained elements
+     */
+    public int drainMapQueues(int partitionId) {
+        return getEventQueue(partitionId).drainMap();
+    }
+
+    /**
+     * Drains all the cache queues maintained for the given partition.
+     *
+     * @param partitionId the partition ID for which queues need to be drained
+     * @return the number of drained elements
+     */
+    public int drainCacheQueues(int partitionId) {
+        return getEventQueue(partitionId).drainCache();
+    }
+
+    /**
      * Returns all of the partition WAN event queue containers.
      */
     @SuppressFBWarnings(value = "EI_EXPOSE_REP")

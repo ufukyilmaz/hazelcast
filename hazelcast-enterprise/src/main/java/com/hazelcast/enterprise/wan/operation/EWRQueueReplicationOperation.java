@@ -5,8 +5,10 @@ import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.enterprise.wan.EWRMigrationContainer;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.PartitionWanEventQueueMap;
+import com.hazelcast.enterprise.wan.PublisherQueueContainer;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
+import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
 import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -24,6 +26,8 @@ import java.util.Map;
  * Migration operation.
  */
 public class EWRQueueReplicationOperation extends Operation implements IdentifiedDataSerializable, Versioned {
+    private static final boolean MAP = true;
+    private static final boolean CACHE = false;
 
     private Collection<WanReplicationConfig> wanConfigs;
     private EWRMigrationContainer ewrMigrationContainer;
@@ -49,6 +53,8 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
         }
 
         if (ewrMigrationContainer != null) {
+            clearEventQueues(ewrMigrationContainer.getMapMigrationContainer(), MAP);
+            clearEventQueues(ewrMigrationContainer.getCacheMigrationContainer(), CACHE);
             handleEventQueues(ewrMigrationContainer.getMapMigrationContainer());
             handleEventQueues(ewrMigrationContainer.getCacheMigrationContainer());
         }
@@ -104,6 +110,31 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
                 WanReplicationEndpoint publisher = getWanReplicationService().getEndpointOrFail(wanRepName, publisherName);
                 for (Map.Entry<String, WanReplicationEventQueue> entry : eventQueueMap.entrySet()) {
                     publishReplicationEventQueue(entry.getValue(), publisher);
+                }
+            }
+        }
+    }
+
+    private void clearEventQueues(Map<String, Map<String, PartitionWanEventQueueMap>> migrationContainer, boolean map) {
+        int partitionId = getPartitionId();
+        boolean isPrimaryReplica = getNodeEngine().getPartitionService()
+                                                  .getPartition(getPartitionId())
+                                                  .isLocal();
+        for (Map.Entry<String, Map<String, PartitionWanEventQueueMap>> wanRepEntry : migrationContainer.entrySet()) {
+            String wanRepName = wanRepEntry.getKey();
+            for (String publisherName : wanRepEntry.getValue().keySet()) {
+                WanReplicationEndpoint publisher = getWanReplicationService().getEndpointOrFail(wanRepName, publisherName);
+
+                PublisherQueueContainer publisherQueueContainer = publisher.getPublisherQueueContainer();
+                final int drained;
+                if (map) {
+                    drained = publisherQueueContainer.drainMapQueues(partitionId);
+                } else {
+                    drained = publisherQueueContainer.drainCacheQueues(partitionId);
+                }
+
+                if (publisher instanceof AbstractWanPublisher) {
+                    ((AbstractWanPublisher) publisher).decrementCounter(drained, isPrimaryReplica);
                 }
             }
         }

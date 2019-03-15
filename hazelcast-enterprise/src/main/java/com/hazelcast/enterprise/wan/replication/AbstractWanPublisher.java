@@ -642,6 +642,21 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         }
     }
 
+    /**
+     * Decrements the primary or backup counter by the given {@code delta}.
+     *
+     * @param delta     the delta by which we need to decrement the counter
+     * @param isPrimary {@code true} if the primary WAN event queue counter needs to be decremented,
+     *                  {@code false} if the backup WAN event queue counter needs to be decremented
+     */
+    public void decrementCounter(int delta, boolean isPrimary) {
+        if (isPrimary) {
+            wanCounter.decrementPrimaryElementCounter(delta);
+        } else {
+            wanCounter.decrementBackupElementCounter(delta);
+        }
+    }
+
     private void clearQueuesInternal() {
         int totalDrained = 0;
 
@@ -653,11 +668,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
             InternalPartition partition = node.getPartitionService().getPartition(partitionId);
 
-            if (partition.isLocal()) {
-                wanCounter.decrementPrimaryElementCounter(drainedElements);
-            } else {
-                wanCounter.decrementBackupElementCounter(drainedElements);
-            }
+            decrementCounter(drainedElements, partition.isLocal());
         }
 
         logger.info("Cleared " + totalDrained + " elements from the WAN queues. Current element counts:"

@@ -189,22 +189,32 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     protected static void assertWanQueueSizesEventually(final HazelcastInstance[] cluster,
                                                         final String wanReplicationConfigName,
                                                         final String endpointGroupName,
-                                                        final int eventCount) {
+                                                        final int totalEvents) {
+        assertWanQueueSizesEventually(cluster, wanReplicationConfigName, endpointGroupName, totalEvents, totalEvents);
+    }
+
+    protected static void assertWanQueueSizesEventually(final HazelcastInstance[] cluster,
+                                                        final String wanReplicationConfigName,
+                                                        final String endpointGroupName,
+                                                        final int primaryEvents,
+                                                        final int backupEvents) {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() {
                 int totalBackupEvents = 0;
                 int totalEvents = 0;
                 for (HazelcastInstance instance : cluster) {
-                    final EnterpriseWanReplicationService s = getWanReplicationService(instance);
-                    final WanReplicationPublisherDelegate delegate
-                            = (WanReplicationPublisherDelegate) s.getWanReplicationPublisher(wanReplicationConfigName);
-                    final AbstractWanPublisher endpoint = (AbstractWanPublisher) delegate.getEndpoint(endpointGroupName);
-                    totalEvents += endpoint.getCurrentElementCount();
-                    totalBackupEvents += endpoint.getCurrentBackupElementCount();
+                    if (instance != null && instance.getLifecycleService().isRunning()) {
+                        EnterpriseWanReplicationService s = getWanReplicationService(instance);
+                        WanReplicationPublisherDelegate delegate
+                                = (WanReplicationPublisherDelegate) s.getWanReplicationPublisher(wanReplicationConfigName);
+                        AbstractWanPublisher endpoint = (AbstractWanPublisher) delegate.getEndpoint(endpointGroupName);
+                        totalEvents += endpoint.getCurrentElementCount();
+                        totalBackupEvents += endpoint.getCurrentBackupElementCount();
+                    }
                 }
-                assertEquals(eventCount, totalEvents);
-                assertEquals(eventCount, totalBackupEvents);
+                assertEquals(primaryEvents, totalEvents);
+                assertEquals(backupEvents, totalBackupEvents);
             }
         });
     }

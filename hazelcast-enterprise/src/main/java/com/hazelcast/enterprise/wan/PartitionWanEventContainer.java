@@ -184,21 +184,43 @@ public class PartitionWanEventContainer {
      * @return the number of drained elements
      */
     int drain() {
+        return drainMap() + drainCache();
+    }
+
+    /**
+     * Drains all the queues holding map WAN events maintained for the
+     * given partition. It is different from {@code clear} in the way
+     * that this method removes elements from all the queues equal to
+     * the size of the queue known upfront. This means this method
+     * doesn't guarantee that the queues will be empty on return.
+     *
+     * @return the number of drained elements
+     */
+    int drainMap() {
+        return drain(mapWanEventQueueMap);
+    }
+
+    /**
+     * Drains all the queues holding cache WAN events maintained for the
+     * given partition. It is different from {@code clear} in the way
+     * that this method removes elements from all the queues equal to
+     * the size of the queue known upfront. This means this method
+     * doesn't guarantee that the queues will be empty on return.
+     *
+     * @return the number of drained elements
+     */
+    int drainCache() {
+        return drain(cacheWanEventQueueMap);
+    }
+
+    private int drain(PartitionWanEventQueueMap queueMap) {
         int size = 0;
-        for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : mapWanEventQueueMap.entrySet()) {
+        for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : queueMap.entrySet()) {
             WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue();
             if (eventQueue != null) {
                 size += QueueUtil.drainQueue(eventQueue);
             }
         }
-
-        for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : cacheWanEventQueueMap.entrySet()) {
-            WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue();
-            if (eventQueue != null) {
-                size += QueueUtil.drainQueue(eventQueue);
-            }
-        }
-
         return size;
     }
 }

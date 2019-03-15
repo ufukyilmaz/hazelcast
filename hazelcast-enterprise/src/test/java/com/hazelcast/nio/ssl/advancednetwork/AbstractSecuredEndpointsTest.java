@@ -23,6 +23,7 @@ import org.junit.BeforeClass;
 
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_MUTUAL_AUTHENTICATION;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
 import static org.junit.Assert.fail;
@@ -122,6 +123,7 @@ public class AbstractSecuredEndpointsTest {
         if (truststore != null && truststorePassword != null) {
             props.setProperty(JAVAX_NET_SSL_TRUST_STORE, truststore.getAbsolutePath());
             props.setProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD, truststorePassword);
+            props.setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "REQUIRED");
         }
         return props;
     }

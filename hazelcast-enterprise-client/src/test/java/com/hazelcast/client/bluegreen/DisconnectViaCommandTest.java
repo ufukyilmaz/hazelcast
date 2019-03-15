@@ -576,5 +576,115 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         HazelcastClient.newHazelcastFailoverClient(clientFailoverConfig);
 
     }
+
+    @Test
+    public void blacklistViaCommand_connectBackToSingleClusterAfterRemovingBlacklist() {
+        HazelcastInstance instance = Hazelcast.newHazelcastInstance();
+
+        ClientConfig clientConfig = new ClientConfig();
+        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
+        Member member1 = toMember(instance);
+        Address address1 = member1.getAddress();
+        networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
+
+
+        ClientFailoverConfig clientFailoverConfig = new ClientFailoverConfig();
+        clientFailoverConfig.addClientConfig(clientConfig);
+        final HazelcastInstance client = HazelcastClient.newHazelcastFailoverClient(clientFailoverConfig);
+
+        final CountDownLatch disconnectedLatch = new CountDownLatch(1);
+        final CountDownLatch changedClusterLatch = new CountDownLatch(1);
+        client.getLifecycleService().addLifecycleListener(new LifecycleListener() {
+            @Override
+            public void stateChanged(LifecycleEvent event) {
+                if (LifecycleEvent.LifecycleState.CLIENT_DISCONNECTED.equals(event.getState())) {
+                    disconnectedLatch.countDown();
+                }
+
+                if (LifecycleEvent.LifecycleState.CLIENT_CHANGED_CLUSTER.equals(event.getState())) {
+                    changedClusterLatch.countDown();
+                }
+            }
+        });
+        Set<Member> members = client.getCluster().getMembers();
+        assertEquals(1, members.size());
+        assertContains(members, member1);
+
+        getClientEngineImpl(instance).applySelector(ClientSelectors.none());
+
+        assertOpenEventually(disconnectedLatch);
+
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                assertEquals(0, client.getCluster().getMembers().size());
+            }
+        });
+
+        getClientEngineImpl(instance).applySelector(ClientSelectors.any());
+
+        assertOpenEventually(changedClusterLatch);
+
+        members = client.getCluster().getMembers();
+        assertEquals(1, members.size());
+        assertContains(members, member1);
+    }
+
+    @Test
+    public void testBlue_toGreen_toBackToBlue() throws InterruptedException {
+        Config config1 = new Config();
+        config1.getGroupConfig().setName("dev1");
+        config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        config1.getNetworkConfig().getJoin().getTcpIpConfig().addMember("127.0.0.1:5701").setEnabled(true);
+        HazelcastInstance cluster1 = Hazelcast.newHazelcastInstance(config1);
+
+        Config config2 = new Config();
+        config2.getGroupConfig().setName("dev2");
+        config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        config2.getNetworkConfig().getJoin().getTcpIpConfig().addMember("127.0.0.1:5702").setEnabled(true);
+        HazelcastInstance cluster2 = Hazelcast.newHazelcastInstance(config2);
+
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getGroupConfig().setName("dev1");
+        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
+        networkConfig.addAddress("127.0.0.1:5701");
+
+        ClientConfig clientConfig2 = new ClientConfig();
+        clientConfig2.getGroupConfig().setName("dev2");
+        ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
+        networkConfig2.addAddress("127.0.0.1:5702");
+
+        ClientFailoverConfig clientFailoverConfig = new ClientFailoverConfig();
+        clientFailoverConfig.addClientConfig(clientConfig).addClientConfig(clientConfig2).setTryCount(1);
+        HazelcastInstance client = HazelcastClient.newHazelcastFailoverClient(clientFailoverConfig);
+
+        final CountDownLatch firstClusterChange = new CountDownLatch(1);
+        final CountDownLatch secondCLusterChange = new CountDownLatch(1);
+        final AtomicInteger atomicInteger = new AtomicInteger();
+        client.getLifecycleService().addLifecycleListener(new LifecycleListener() {
+            @Override
+            public void stateChanged(LifecycleEvent event) {
+                if (LifecycleEvent.LifecycleState.CLIENT_CHANGED_CLUSTER.equals(event.getState())) {
+                    int changedCount = atomicInteger.incrementAndGet();
+                    if (changedCount == 1) {
+                        firstClusterChange.countDown();
+                    } else if (changedCount == 2) {
+                        secondCLusterChange.countDown();
+                    }
+                }
+            }
+        });
+
+        getClientEngineImpl(cluster1).applySelector(ClientSelectors.none());
+        assertOpenEventually(firstClusterChange);
+
+        getClientEngineImpl(cluster1).applySelector(ClientSelectors.any());
+        getClientEngineImpl(cluster2).applySelector(ClientSelectors.none());
+        assertOpenEventually(secondCLusterChange);
+
+        Set<Member> members = client.getCluster().getMembers();
+        assertEquals(1, members.size());
+        assertContains(members, cluster1.getCluster().getLocalMember());
+    }
 }
 

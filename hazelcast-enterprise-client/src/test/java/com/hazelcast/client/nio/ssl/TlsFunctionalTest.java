@@ -70,8 +70,8 @@ public class TlsFunctionalTest {
     private static final String CERT_FILE_UNTRUSTED = "untrusted.crt";
     private static final String TRUSTSTORE_UNTRUSTED = "untrusted.truststore";
     private static final String TRUST_ALL = "all.crt";
-    private static final int CONNECTION_TIMEOUT_SECONDS = 5;
-    private static final String CLUSTER_JOIN_MAX_SECONDS = "5";
+    private static final int CONNECTION_TIMEOUT_SECONDS = 15;
+    private static final String CLUSTER_JOIN_MAX_SECONDS = "15";
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();

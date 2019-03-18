@@ -2,28 +2,27 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.toFileName;
+import static com.hazelcast.internal.cluster.impl.ClusterJoinManager.STALE_JOIN_PREVENTION_DURATION_PROP;
+import static com.hazelcast.test.OverridePropertyRule.clear;
 import static org.junit.Assert.fail;
 
 @RunWith(HazelcastSerialClassRunner.class)
@@ -31,28 +30,24 @@ import static org.junit.Assert.fail;
 public class HotRestartAutoForceStartTest extends HazelcastTestSupport {
 
     @Rule
-    public TestName testName = new TestName();
+    public final OverridePropertyRule ruleStaleJoinPreventionDuration = clear(STALE_JOIN_PREVENTION_DURATION_PROP);
+
+    @Rule
+    public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule(true);
 
     private File baseDir;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory;
 
     @Before
     public void before() {
-        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(baseDir);
-        if (!baseDir.mkdir()) {
-            throw new IllegalStateException("Failed to create hot-restart directory!");
-        }
-    }
-
-    @After
-    public void after() {
-        factory.terminateAll();
-        delete(baseDir);
+        baseDir = hotRestartFolderRule.getBaseDir();
+        factory = createHazelcastInstanceFactory();
     }
 
     @Test
     public void whenJoiningActiveCluster_thenForceStart() {
+        ruleStaleJoinPreventionDuration.setOrClearProperty("5");
+
         HazelcastInstance[] instances = new HazelcastInstance[4];
         Address[] addresses = new Address[instances.length];
 
@@ -60,7 +55,55 @@ public class HotRestartAutoForceStartTest extends HazelcastTestSupport {
         for (int i = 0; i < instances.length; i++) {
             Address address = factory.nextAddress();
             addresses[i] = address;
-            instances[i] = factory.newHazelcastInstance(address, newConfig(address));
+            instances[i] = factory.newHazelcastInstance(address, newConfig());
+        }
+
+        assertClusterSizeEventually(instances);
+        warmUpPartitions(instances);
+        waitAllForSafeState(instances);
+
+        instances[1].shutdown();
+        instances[1] = factory.newHazelcastInstance(addresses[1], newConfig());
+
+        assertClusterSizeEventually(instances);
+    }
+
+    @Test
+    public void whenFormerMasterJoiningActiveCluster_thenForceStart() {
+        ruleStaleJoinPreventionDuration.setOrClearProperty("5");
+
+        HazelcastInstance[] instances = new HazelcastInstance[4];
+        Address[] addresses = new Address[instances.length];
+
+        // start cluster
+        for (int i = 0; i < instances.length; i++) {
+            Address address = factory.nextAddress();
+            addresses[i] = address;
+            instances[i] = factory.newHazelcastInstance(address, newConfig());
+        }
+
+        assertClusterSizeEventually(instances);
+        warmUpPartitions(instances);
+        waitAllForSafeState(instances);
+
+        instances[0].shutdown();
+        instances[0] = factory.newHazelcastInstance(addresses[0], newConfig());
+
+        assertClusterSizeEventually(instances);
+    }
+
+    @Test
+    public void whenMultipleMembersJoiningActiveCluster_thenForceStart() {
+        ruleStaleJoinPreventionDuration.setOrClearProperty("5");
+
+        HazelcastInstance[] instances = new HazelcastInstance[4];
+        Address[] addresses = new Address[instances.length];
+
+        // start cluster
+        for (int i = 0; i < instances.length; i++) {
+            Address address = factory.nextAddress();
+            addresses[i] = address;
+            instances[i] = factory.newHazelcastInstance(address, newConfig());
         }
 
         assertClusterSizeEventually(instances);
@@ -69,9 +112,8 @@ public class HotRestartAutoForceStartTest extends HazelcastTestSupport {
 
         instances[0].shutdown();
         instances[1].shutdown();
-
-        instances[0] = factory.newHazelcastInstance(addresses[0], newConfig(addresses[0]));
-        instances[1] = factory.newHazelcastInstance(addresses[1], newConfig(addresses[1]));
+        instances[0] = factory.newHazelcastInstance(addresses[0], newConfig());
+        instances[1] = factory.newHazelcastInstance(addresses[1], newConfig());
 
         assertClusterSizeEventually(instances);
     }
@@ -85,7 +127,7 @@ public class HotRestartAutoForceStartTest extends HazelcastTestSupport {
         for (int i = 0; i < instances.length; i++) {
             Address address = factory.nextAddress();
             addresses[i] = address;
-            instances[i] = factory.newHazelcastInstance(address, newConfig(address));
+            instances[i] = factory.newHazelcastInstance(address, newConfig());
         }
 
         assertClusterSizeEventually(instances);
@@ -97,8 +139,8 @@ public class HotRestartAutoForceStartTest extends HazelcastTestSupport {
         instances[1].shutdown();
 
         changeClusterStateEventually(instances[instances.length - 1], ClusterState.ACTIVE);
-        instances[0] = factory.newHazelcastInstance(addresses[0], newConfig(addresses[0]));
-        instances[1] = factory.newHazelcastInstance(addresses[1], newConfig(addresses[1]));
+        instances[0] = factory.newHazelcastInstance(addresses[0], newConfig());
+        instances[1] = factory.newHazelcastInstance(addresses[1], newConfig());
 
         assertClusterSizeEventually(instances);
     }
@@ -112,7 +154,7 @@ public class HotRestartAutoForceStartTest extends HazelcastTestSupport {
         for (int i = 0; i < instances.length; i++) {
             Address address = factory.nextAddress();
             addresses[i] = address;
-            instances[i] = factory.newHazelcastInstance(address, newConfig(address));
+            instances[i] = factory.newHazelcastInstance(address, newConfig());
         }
 
         assertClusterSizeEventually(instances);
@@ -124,7 +166,7 @@ public class HotRestartAutoForceStartTest extends HazelcastTestSupport {
         changeClusterStateEventually(instances[1], ClusterState.FROZEN);
 
         try {
-            instances[0] = factory.newHazelcastInstance(addresses[0], newConfig(addresses[0]));
+            instances[0] = factory.newHazelcastInstance(addresses[0], newConfig());
             fail("Should not be able to join the cluster!");
         } catch (IllegalStateException ignored) {
         }
@@ -134,12 +176,11 @@ public class HotRestartAutoForceStartTest extends HazelcastTestSupport {
         assertClusterSizeEventually(instances.length, instances);
     }
 
-    private Config newConfig(Address address) {
+    private Config newConfig() {
         Config config = new Config().setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
 
         config.getHotRestartPersistenceConfig().setEnabled(true)
-                .setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())))
-                .setClusterDataRecoveryPolicy(HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE)
+                .setBaseDir(baseDir)
                 .setValidationTimeoutSeconds(10).setDataLoadTimeoutSeconds(10)
                 .setAutoRemoveStaleData(true);
 

@@ -497,10 +497,16 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
     private void overwriteUpdatedPartitionTable(HazelcastInstance instance) {
         PartitionReplica[] replicas0 = PartitionTableUtil.getReplicas(instance, 0);
-        PartitionReplica[] replicas1 = PartitionTableUtil.getReplicas(instance, 1);
-        // Replace replicas of partitions to get an updated partition table
-        PartitionTableUtil.updateReplicas(instance, 0, replicas1);
-        PartitionTableUtil.updateReplicas(instance, 1, replicas0);
+        for (int i = 1, j = instance.getPartitionService().getPartitions().size(); i < j; i++) {
+            PartitionReplica[] otherReplicas = PartitionTableUtil.getReplicas(instance, i);
+            if (Arrays.equals(replicas0, otherReplicas)) {
+                continue;
+            }
+            // Replace replicas of partitions to get an updated partition table
+            PartitionTableUtil.updateReplicas(instance, 0, otherReplicas);
+            PartitionTableUtil.updateReplicas(instance, i, replicas0);
+            break;
+        }
     }
 
     private void terminateWithOverwrittenUpdatedPartitionTable(HazelcastInstance instance) {

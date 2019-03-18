@@ -21,10 +21,10 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
+import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -73,9 +73,9 @@ public class HDMapWanSyncTest extends MapWanReplicationTestSupport {
         warmUpPartitions(clusterB);
 
         final CountDownLatch startLatch = new CountDownLatch(1);
+        final IMap<Integer, byte[]> map = getNode(clusterA).getMap("map");
 
-        final IMap map = getNode(clusterA).getMap("map");
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
+        spawn(new Runnable() {
             @Override
             public void run() {
                 while (running) {
@@ -90,13 +90,12 @@ public class HDMapWanSyncTest extends MapWanReplicationTestSupport {
             }
         });
 
-        final EnterpriseWanReplicationService wanReplicationService
-                = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
+        final EnterpriseWanReplicationService wanReplicationService = wanReplicationService(clusterA[0]);
         for (int i = 0; i < 100; i++) {
             wanReplicationService.syncMap("atob", "B", "map");
             assertTrueEventually(new AssertTask() {
                 @Override
-                public void run() throws Exception {
+                public void run() {
                     assertEquals(WanSyncStatus.READY, wanReplicationService.getWanSyncState().getStatus());
                 }
             });

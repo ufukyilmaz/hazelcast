@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
@@ -94,7 +93,8 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
      * For the duration of WAN sync, we don't allow dequeueing WAN events from
      * the WAN partition queues.
      */
-    private final Lock syncLock = new ReentrantLock();
+    private final ReentrantLock syncLock = new ReentrantLock();
+    private AtomicLong ongoingSyncInvocations = new AtomicLong();
 
     private volatile long lastBatchSendTime = System.currentTimeMillis();
 
@@ -181,7 +181,10 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
             for (WanReplicationEvent event : batchList) {
                 batch.addEvent(event);
             }
-            sendBatch(endpoint, batch);
+            boolean sent = sendBatch(endpoint, batch, true);
+            if (sent) {
+                ongoingSyncInvocations.incrementAndGet();
+            }
             return true;
         }
 
@@ -189,14 +192,14 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
             if (syncLock.tryLock()) {
                 BatchWanReplicationEvent batch = null;
                 try {
-                    if (syncEvents.isEmpty()) {
+                    if (!hasOngoingSync()) {
                         batch = collectEventBatch(endpoint, endpoints);
                     }
                 } finally {
                     syncLock.unlock();
                 }
                 if (batch != null) {
-                    sendBatch(endpoint, batch);
+                    sendBatch(endpoint, batch, false);
                     return true;
                 }
             }
@@ -204,6 +207,19 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
 
         replicationStrategy.complete(endpoint);
         return false;
+    }
+
+    /**
+     * Returns {@code true} if there are any pending WAN sync events to be
+     * replicated or a batch with WAN sync events is currently being replicated
+     * to the target cluster. This method must be called while holding the
+     * {@link #syncLock}.
+     *
+     * @return {@code true} if there is an ongoing WAN sync
+     */
+    private boolean hasOngoingSync() {
+        assert syncLock.isHeldByCurrentThread();
+        return !syncEvents.isEmpty() || ongoingSyncInvocations.get() > 0;
     }
 
     /**
@@ -268,10 +284,11 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         return elapsedMillis > maxDelayMillis;
     }
 
-    private void sendBatch(final Address endpoint,
-                           final BatchWanReplicationEvent batch) {
+    private boolean sendBatch(final Address endpoint,
+                              final BatchWanReplicationEvent batch,
+                              final boolean isSyncBatch) {
         if (!running) {
-            return;
+            return false;
         }
 
         try {
@@ -279,18 +296,19 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
             future.andThen(new ExecutionCallback<Boolean>() {
                 @Override
                 public void onResponse(Boolean response) {
-                    handleWanBatchResponse(batch, endpoint, response);
+                    handleWanBatchResponse(batch, endpoint, response, isSyncBatch);
                 }
 
                 @Override
                 public void onFailure(Throwable t) {
-                    handleWanBatchError(batch, endpoint, t);
+                    handleWanBatchError(batch, endpoint, t, isSyncBatch);
                 }
             }, wanExecutor);
             lastBatchSendTime = System.currentTimeMillis();
         } catch (Throwable t) {
-            handleWanBatchError(batch, endpoint, t);
+            handleWanBatchError(batch, endpoint, t, isSyncBatch);
         }
+        return true;
     }
 
 
@@ -303,9 +321,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
      */
     private void handleWanBatchResponse(BatchWanReplicationEvent batch,
                                         Address endpoint,
-                                        boolean response) {
+                                        boolean response,
+                                        boolean isSyncBatch) {
         if (response) {
-
             for (WanReplicationEvent sentEvent : batch.getEvents()) {
                 incrementEventCount(sentEvent);
             }
@@ -313,9 +331,12 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
             finalizeWanEventReplication(batch.getEvents(), batch.getCoalescedEvents());
             replicationStrategy.complete(endpoint);
             wanCounter.decrementPrimaryElementCounter(batch.getPrimaryEventCount());
+            if (isSyncBatch) {
+                ongoingSyncInvocations.decrementAndGet();
+            }
         } else {
             failedTransmitCount.incrementAndGet();
-            sendBatch(endpoint, batch);
+            sendBatch(endpoint, batch, isSyncBatch);
         }
     }
 
@@ -328,12 +349,13 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
      */
     private void handleWanBatchError(BatchWanReplicationEvent batch,
                                      Address endpoint,
-                                     Throwable error) {
+                                     Throwable error,
+                                     boolean isSyncBatch) {
         logger.warning("Error occurred when sending WAN events to " + endpoint, error);
         connectionManager.removeTargetEndpoint(endpoint,
                 "Error occurred when sending WAN events to " + endpoint, error);
         failedTransmitCount.incrementAndGet();
-        sendBatch(endpoint, batch);
+        sendBatch(endpoint, batch, isSyncBatch);
     }
 
     @Override

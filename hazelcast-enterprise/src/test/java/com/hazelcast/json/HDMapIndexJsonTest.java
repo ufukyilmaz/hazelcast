@@ -47,11 +47,11 @@ public class HDMapIndexJsonTest extends MapIndexJsonTest {
     }
 
     @Override
-    protected Set<QueryableEntry> getRecordsFromInternalIndex(Collection<HazelcastInstance> instances, String mapName, String attribute, Comparable value) {
+    protected Set<QueryableEntry> getRecordsFromInternalIndex(Collection<HazelcastInstance> instances, String mapName, String attribute, final Comparable value) {
         Set<QueryableEntry> records = new HashSet<QueryableEntry>();
         for (HazelcastInstance instance: instances) {
             List<Index> indexes = getIndexOfAttributeForMap(instance, mapName, attribute);
-            for (Index index : indexes) {
+            for (final Index index : indexes) {
                 Set<QueryableEntry> set = TestTaskExecutorUtil.runOnPartitionThread(instance, new Callable<Set<QueryableEntry>>() {
                     @Override
                     public Set<QueryableEntry> call() throws Exception {

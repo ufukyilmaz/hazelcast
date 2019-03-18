@@ -2,8 +2,11 @@ package com.hazelcast.wan;
 
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.ConsistencyCheckStrategy;
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -46,6 +49,7 @@ public class WanCounterSyncTest {
     private ScheduledExecutorService executorService;
     private WanReplication wanReplication;
     private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private ILogger logger = Logger.getLogger(WanCounterSyncTest.class);
 
     @Parameter
     public ConsistencyCheckStrategy consistencyCheckStrategy;
@@ -95,9 +99,9 @@ public class WanCounterSyncTest {
                          .setDepth(4);
         }
 
-        executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService = Executors.newScheduledThreadPool(2);
         // uncomment to dump the counters when debugging locally
-        //        dumpWanCounters(wanReplication, executorService);
+        // dumpWanCounters(wanReplication, executorService);
     }
 
     @Test
@@ -105,7 +109,8 @@ public class WanCounterSyncTest {
         sourceCluster.startCluster();
         targetCluster.startCluster();
 
-        executorService.scheduleAtFixedRate(new SyncTask(), 10, 100, MILLISECONDS);
+        HazelcastInstance syncCoordinatorMember = sourceCluster.getAMember();
+        executorService.scheduleAtFixedRate(new SyncTask(syncCoordinatorMember), 10, 200, MILLISECONDS);
         executorService.submit(new LoadTask())
                        .get();
 
@@ -132,11 +137,18 @@ public class WanCounterSyncTest {
 
     private class SyncTask implements Runnable {
 
+        private final HazelcastInstance syncCoordinatorMember;
+
+        public SyncTask(HazelcastInstance syncCoordinatorMember) {
+            this.syncCoordinatorMember = syncCoordinatorMember;
+        }
+
         @Override
         public void run() {
             try {
-                sourceCluster.syncMap(wanReplication, MAP_NAME);
+                sourceCluster.syncMapOnMember(wanReplication, MAP_NAME, syncCoordinatorMember);
             } catch (Exception ex) {
+                logger.warning("Ignoring exception: " + ex.getMessage(), ex);
                 EmptyStatement.ignore(ex);
             }
         }

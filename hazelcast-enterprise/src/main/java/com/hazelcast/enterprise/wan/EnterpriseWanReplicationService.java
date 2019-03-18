@@ -183,7 +183,6 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         WanReplicationConfig existingConfig = wanConfigs.putIfAbsent(scheme, newConfig);
 
         if (existingConfig == null) {
-            emitManagementCenterEvent(new WanConfigurationAddedEvent(scheme));
             return;
         }
 
@@ -192,7 +191,6 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
             missingPublisherConfigs.remove(getPublisherIdOrGroupName(existingPublisherConfig));
         }
         if (missingPublisherConfigs.isEmpty()) {
-            emitManagementCenterEvent(AddWanConfigIgnoredEvent.alreadyExists(newConfig.getName()));
             return;
         }
 
@@ -216,12 +214,10 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
             mergedConfig.setName(existingConfig.getName());
             mergedConfig.setWanPublisherConfigs(mergedPublisherConfigs);
             wanConfigs.put(scheme, mergedConfig);
-
-            emitManagementCenterEvent(new WanConfigurationExtendedEvent(scheme, missingPublisherConfigs.keySet()));
         }
     }
 
-    private void emitManagementCenterEvent(Event event) {
+    void emitManagementCenterEvent(Event event) {
         // management center service may be temporarily null
         // while node is joining the cluster
         if (node.getManagementCenterService() != null) {
@@ -487,8 +483,31 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public AddWanConfigResult addWanReplicationConfig(final WanReplicationConfig wanConfig) {
-        AddWanConfigResult result = getAddWanConfigResult(wanConfig);
+        Event mancenterEvent;
+        WanReplicationConfig existingConfig = node.getConfig().getWanReplicationConfig(wanConfig.getName());
+        AddWanConfigResult result;
+        HashSet<String> newPublisherIds = new HashSet<String>(getPublisherConfigMap(wanConfig).keySet());
+        if (existingConfig != null) {
+            HashSet<String> ignoredPublisherIds = new HashSet<String>(getPublisherConfigMap(existingConfig).keySet());
+            ignoredPublisherIds.retainAll(newPublisherIds);
+            newPublisherIds.removeAll(ignoredPublisherIds);
+            result = new AddWanConfigResult(newPublisherIds, ignoredPublisherIds);
+            if (newPublisherIds.isEmpty()) {
+                mancenterEvent = AddWanConfigIgnoredEvent.alreadyExists(wanConfig.getName());
+            } else {
+                mancenterEvent = new WanConfigurationExtendedEvent(wanConfig.getName(), newPublisherIds);
+            }
+        } else {
+            mancenterEvent = new WanConfigurationAddedEvent(wanConfig.getName());
+            result = new AddWanConfigResult(newPublisherIds, Collections.<String>emptySet());
+        }
 
+        invokeAddWanReplicationConfig(wanConfig);
+        emitManagementCenterEvent(mancenterEvent);
+        return result;
+    }
+
+    private void invokeAddWanReplicationConfig(final WanReplicationConfig wanConfig) {
         try {
             Version clusterVersion = node.getNodeEngine().getClusterService().getClusterVersion();
             if (clusterVersion.isGreaterOrEqual(Versions.V3_12)) {
@@ -504,35 +523,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
                             }
                         }, ADD_WAN_CONFIG_MAX_RETRIES).get();
             }
-            return result;
         } catch (Throwable t) {
             throw rethrow(t);
         }
-    }
-
-    /**
-     * Returns what will be the result of the WAN config addition, based on the
-     * existing local WAN replication config and the provided {@code configToAdd}.
-     * The result may not be exact as different members may have different WAN
-     * replication configurations and there might be concurrent WAN replication
-     * configurations being added but it is good enough for most cases.
-     *
-     * @param configToAdd the WAN replication config to add
-     * @return the result of the WAN replication config addition once it will be completed
-     */
-    private AddWanConfigResult getAddWanConfigResult(WanReplicationConfig configToAdd) {
-        WanReplicationConfig existingConfig = node.getConfig().getWanReplicationConfig(configToAdd.getName());
-        AddWanConfigResult result;
-        HashSet<String> newPublisherIds = new HashSet<String>(getPublisherConfigMap(configToAdd).keySet());
-        if (existingConfig != null) {
-            HashSet<String> ignoredPublisherIds = new HashSet<String>(getPublisherConfigMap(existingConfig).keySet());
-            ignoredPublisherIds.retainAll(newPublisherIds);
-            newPublisherIds.removeAll(ignoredPublisherIds);
-            result = new AddWanConfigResult(newPublisherIds, ignoredPublisherIds);
-        } else {
-            result = new AddWanConfigResult(newPublisherIds, Collections.<String>emptySet());
-        }
-        return result;
     }
 
     @Override

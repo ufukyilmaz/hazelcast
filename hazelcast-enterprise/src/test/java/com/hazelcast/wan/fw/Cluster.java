@@ -207,9 +207,14 @@ public class Cluster {
     }
 
     public void syncMap(WanReplication wanReplication, String mapName) {
+        HazelcastInstance aMember = getAMember();
+        syncMapOnMember(wanReplication, mapName, aMember);
+    }
+
+    public void syncMapOnMember(WanReplication wanReplication, String mapName, HazelcastInstance aMember) {
         String wanReplicationName = wanReplication.getSetupName();
         String targetClusterName = wanReplication.getTargetClusterName();
-        wanReplicationService(getAMember()).syncMap(wanReplicationName, targetClusterName, mapName);
+        wanReplicationService(aMember).syncMap(wanReplicationName, targetClusterName, mapName);
     }
 
     public void syncAllMaps(WanReplication wanReplication) {

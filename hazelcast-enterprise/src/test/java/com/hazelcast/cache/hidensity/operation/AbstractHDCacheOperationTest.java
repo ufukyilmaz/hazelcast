@@ -220,13 +220,13 @@ public abstract class AbstractHDCacheOperationTest {
      */
     void verifyRecordStoreAfterRun(OperationType operationType, boolean isBackupDone) {
         boolean verifyBackups = syncBackupCount > 0 && isBackupDone;
+        verify(recordStore, atLeastOnce()).getConfig();
 
         switch (operationType) {
             case PUT_ALL:
                 // RecordStore.put() is called again for each entry which threw a NativeOOME
                 verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).put(any(Data.class), any(Data.class),
                         any(ExpiryPolicy.class), anyString(), anyInt());
-                verify(recordStore, atLeastOnce()).getConfig();
                 if (verifyBackups) {
                     verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class),
                             anyLong(), any(ExpiryPolicy.class));

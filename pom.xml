@@ -57,8 +57,8 @@
         <mockito.version>2.19.0</mockito.version>
         <powermock.version>2.0.0-beta.5</powermock.version>
         <bytebuddy.version>1.8.17</bytebuddy.version>
-        <netty.version>4.1.33.Final</netty.version>
-        <netty-tcnative.version>2.0.20.Final</netty-tcnative.version>
+        <netty.version>4.1.30.Final</netty.version>
+        <netty-tcnative.version>2.0.15.Final</netty-tcnative.version>
         <netty-tcnative.artifactId>netty-tcnative-boringssl-static</netty-tcnative.artifactId>
         <netty-tcnative.classifier/>
         <findbugs.annotations.version>3.0.0</findbugs.annotations.version>

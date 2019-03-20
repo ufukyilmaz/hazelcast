@@ -93,7 +93,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         test(false, false);
     }
 
-    public void test(boolean serverOpenSSL, boolean clientOpenSSL) throws Exception {
+    public void test(boolean clientOpenSSL, boolean serverOpenSSL) throws Exception {
         Config serverConfig = new Config();
         // we need to provide TLS version explicitly in mixed scenarios on IBM Java
         boolean forceProtocol = TestEnvironmentUtil.isIbmJvm() && (serverOpenSSL ^ clientOpenSSL);

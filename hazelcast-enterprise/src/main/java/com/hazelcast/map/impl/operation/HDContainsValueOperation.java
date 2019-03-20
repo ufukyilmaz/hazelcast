@@ -1,6 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.map.impl.LocalMapStatsProvider;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -25,11 +24,6 @@ public class HDContainsValueOperation extends HDMapOperation implements Partitio
     @Override
     protected void runInternal() {
         contains = recordStore.containsValue(testValue);
-
-        if (mapContainer.getMapConfig().isStatisticsEnabled()) {
-            LocalMapStatsProvider localMapStatsProvider = mapServiceContext.getLocalMapStatsProvider();
-            localMapStatsProvider.getLocalMapStatsImpl(name).incrementOtherOperations();
-        }
     }
 
     @Override

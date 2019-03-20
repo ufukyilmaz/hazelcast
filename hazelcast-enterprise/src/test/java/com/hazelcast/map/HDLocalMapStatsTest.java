@@ -6,7 +6,6 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -64,20 +63,4 @@ public class HDLocalMapStatsTest extends LocalMapStatsTest {
         instance.getCluster().changeClusterState(state);
         map.getLocalMapStats();
     }
-
-    @Test
-    @Ignore("see https://github.com/hazelcast/hazelcast-enterprise/issues/2704")
-    public void testOtherOperationCount_entrySet() {
-    }
-
-    @Test
-    @Ignore("see https://github.com/hazelcast/hazelcast-enterprise/issues/2704")
-    public void testOtherOperationCount_keySet() {
-    }
-
-    @Test
-    @Ignore("see https://github.com/hazelcast/hazelcast-enterprise/issues/2704")
-    public void testOtherOperationCount_values() {
-    }
-
 }

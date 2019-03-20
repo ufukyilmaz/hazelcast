@@ -8,6 +8,7 @@ import com.hazelcast.client.config.ClientFailoverConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.test.ClientTestSupport;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -213,6 +214,18 @@ public class FailoverTest extends ClientTestSupport {
         instance1.shutdown();
 
         assertOpenEventually(countDownLatch);
+    }
+
+    @Test(expected = InvalidConfigurationException.class)
+    public void testFailover_illegalConfigChangeOnFailoverClientConfigs() {
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.setExecutorPoolSize(2);
+        ClientConfig clientConfig2 = new ClientConfig();
+        clientConfig2.setExecutorPoolSize(4);
+
+        ClientFailoverConfig clientFailoverConfig = new ClientFailoverConfig();
+        clientFailoverConfig.addClientConfig(clientConfig).addClientConfig(clientConfig2);
+        HazelcastClient.newHazelcastFailoverClient(clientFailoverConfig);
     }
 }
 

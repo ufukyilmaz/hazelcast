@@ -6,7 +6,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.ServerSocketEndpointConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.After;
@@ -50,16 +50,16 @@ public class AdvancedNetworkClientCompatibilityTest {
         String[] clientVersions = new String[] {"3.11.2", "3.10.6", "3.9.4", "3.8.6", "3.7.8", "3.6.8"};
         HazelcastInstance[] clients = new HazelcastInstance[clientVersions.length];
         for (int i = 0; i < clientVersions.length; i++) {
-            clients[i] = factory.newHazelcastClient(getClientConfig());
+            clients[i] = factory.newHazelcastClient(clientVersions[i], getClientConfig());
         }
 
         for (int i = 0; i < clientVersions.length; i++) {
-            IMap<Integer, Integer> map = clients[i].getMap("test");
-            map.clear();
+            IAtomicLong atomicLong = clients[i].getAtomicLong(clientVersions[i]);
+
             for (int j = 0; j < 1000; j++) {
-                map.put(j, j);
+                atomicLong.incrementAndGet();
             }
-            assertEquals(1000, map.size());
+            assertEquals(1000, atomicLong.get());
         }
     }
 

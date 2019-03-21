@@ -5,6 +5,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.query.impl.Comparables;
 
 /**
  * Comparator of the off-heap comparable values given to the compare methods as native addresses and sizes.
@@ -51,7 +52,7 @@ public class ComparableComparator implements OffHeapComparator {
                 right = ess.toObject(rightData);
             }
             if (left != null && right != null) {
-                return left.compareTo(right);
+                return Comparables.compare(left, right);
             } else if (left == null) {
                 return 1;
             } else {
@@ -61,7 +62,6 @@ public class ComparableComparator implements OffHeapComparator {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public int compare(byte[] lBlob, byte[] rBlob) {
         Data leftData = new HeapData(lBlob);
         Data rightData = new HeapData(rBlob);
@@ -72,7 +72,7 @@ public class ComparableComparator implements OffHeapComparator {
             if (leftData.totalSize() > 0 && rightData.totalSize() > 0) {
                 Comparable left = ess.toObject(leftData);
                 Comparable right = ess.toObject(rightData);
-                return left.compareTo(right);
+                return Comparables.compare(left, right);
             } else if (leftData.totalSize() > 0) {
                 return 1;
             } else {

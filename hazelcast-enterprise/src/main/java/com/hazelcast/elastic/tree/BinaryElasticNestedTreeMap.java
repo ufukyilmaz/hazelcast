@@ -12,8 +12,8 @@ import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.query.impl.Comparables;
 
-import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,19 +30,19 @@ import static com.hazelcast.nio.serialization.DataType.HEAP;
  * First tier maps keys to segments. Each segment maps keys to values.
  * First tier is sorted by keys using the key comparator passed to the constructor.
  * Second tier is unsorted.
- *
+ * <p>
  * Uses OffHeapTreeStore Red-Black-Tree as the underlying store for the segments.
  * Each segment is stored under a segmentKey passed as Data (may be on-heap of off-heap Data).
  * OffHeapComparator is used to compare and sort the segments according to the comparison order returned by the comparator.
  * There is one segment per segmentKey.
- *
+ * <p>
  * Each segment uses BinaryElasticHashMap as the underlying segment storage.
- *
+ * <p>
  * Contract of each segment:
  * - Expects the key & value to be in the NativeMemoryData,
  * - Returns NativeMemoryData,
  * - Never disposes any NativeMemoryData passed to it,
- *
+ * <p>
  * Each method that returns MapEntry instances uses MapEntryFactory to create them.
  *
  * @param <T> type of the Map.Entry returned by the tree.
@@ -137,7 +137,6 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
 
     }
 
-    @SuppressWarnings("unchecked")
     public Set<T> get(Data segmentKey) {
 
         checkNotNullOrEmpty(segmentKey, "segmentKey can't be null or empty");
@@ -231,7 +230,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
                 while (true) {
                     iterator.next();
                     Comparable currentSegment = ess.toObject(iterator.getKey());
-                    if (currentSegment.compareTo(fromSegment) >= 0) {
+                    if (Comparables.compare(currentSegment, fromSegment) >= 0) {
                         break;
                     } else if (!iterator.hasNext()) {
                         return Collections.emptySet();
@@ -260,7 +259,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
                         toSegment = ess.toObject(toSegmentKey);
                     }
                     Comparable currentSegment = ess.toObject(iterator.key);
-                    int comparisionResult = currentSegment.compareTo(toSegment);
+                    int comparisionResult = Comparables.compare(currentSegment, toSegment);
                     if (comparisionResult > 0) {
                         return result;
                     }
@@ -275,7 +274,9 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
                         // in this case we just mark fromInclusive to true since we skipped one element not to evaluate
                         // this if again
                         fromInclusive = true;
-                        if (iterator.key.equals(fromSegmentKey)) {
+                        // The equal call below may produce a deserialization, but
+                        // only a single one per query.
+                        if (equal(iterator.key, fromSegmentKey)) {
                             if (iterator.hasNext()) {
                                 iterator.next();
                                 continue;
@@ -325,7 +326,12 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         Set<T> result = new HashSet<T>();
         while (iterator.hasNext()) {
             BinaryElasticHashMap<NativeMemoryData> map = iterator.next();
-            if (exceptSegmentKey != null && exceptSegmentKey.equals(iterator.getKey())) {
+            // The equal call below may produce a deserialization on every
+            // iteration, but luckily enough exceptMap is not used by the query
+            // engine currently: NotEqualPredicate is marked as unindexed, so
+            // it's never hitting the indexes; basically, Comparison.NOT_EQUAL
+            // is never used by any part of Hazelcast except tests.
+            if (exceptSegmentKey != null && equal(exceptSegmentKey, iterator.getKey())) {
                 continue;
             }
             for (Map.Entry<Data, NativeMemoryData> entry : map.entrySet()) {
@@ -333,6 +339,21 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
             }
         }
         return result;
+    }
+
+    private boolean equal(Data lhs, Data rhs) {
+        if (lhs.equals(rhs)) {
+            return true;
+        }
+
+        Comparable lhsComparable = ess.toObject(lhs);
+        Comparable rhsComparable = ess.toObject(rhs);
+
+        if (lhsComparable == null || rhsComparable == null) {
+            return lhsComparable == rhsComparable;
+        }
+
+        return Comparables.compare(lhsComparable, rhsComparable) == 0;
     }
 
     private class EntryIterator implements Iterator<BinaryElasticHashMap<NativeMemoryData>> {
@@ -364,7 +385,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
             }
         }
 
-        private void advanceValueIterator() throws IOException {
+        private void advanceValueIterator() {
             if (valueIterator.hasNext()) {
                 MemoryBlock valueBlob = valueIterator.next();
                 value = loadFromOffHeapHeader(ess, malloc, valueBlob.address());
@@ -387,23 +408,19 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
 
         @Override
         public BinaryElasticHashMap<NativeMemoryData> next() {
-            try {
-                if (valueIterator == null) {
-                    throw new NoSuchElementException();
-                } else if (valueIterator.hasNext()) {
+            if (valueIterator == null) {
+                throw new NoSuchElementException();
+            } else if (valueIterator.hasNext()) {
+                advanceValueIterator();
+                return value;
+            } else {
+                advanceKeyIterator();
+                if (valueIterator.hasNext()) {
                     advanceValueIterator();
                     return value;
                 } else {
-                    advanceKeyIterator();
-                    if (valueIterator.hasNext()) {
-                        advanceValueIterator();
-                        return value;
-                    } else {
-                        throw new NoSuchElementException();
-                    }
+                    throw new NoSuchElementException();
                 }
-            } catch (IOException e) {
-                throw new HazelcastException(e);
             }
         }
 
@@ -415,6 +432,7 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
         public void remove() {
             throw new UnsupportedOperationException();
         }
+
     }
 
     /**
@@ -495,11 +513,13 @@ public class BinaryElasticNestedTreeMap<T extends Map.Entry> {
     }
 
     private static class DefaultMapEntryFactory<T extends Map.Entry> implements MapEntryFactory<T> {
+
         @Override
         @SuppressWarnings("unchecked")
         public T create(Data key, Data value) {
             return (T) new AbstractMap.SimpleEntry(key, value);
         }
+
     }
 
 }

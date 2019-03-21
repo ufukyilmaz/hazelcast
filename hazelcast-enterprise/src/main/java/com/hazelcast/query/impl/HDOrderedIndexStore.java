@@ -66,6 +66,21 @@ class HDOrderedIndexStore extends BaseIndexStore {
     }
 
     @Override
+    public Comparable canonicalizeQueryArgumentScalar(Comparable value) {
+        // We still need to canonicalize query arguments for ordered indexes to
+        // support InPredicate queries.
+        return Comparables.canonicalizeForHashLookup(value);
+    }
+
+    @Override
+    public Comparable canonicalizeScalarForStorage(Comparable value) {
+        // Returning the original value since ordered indexes are not supporting
+        // hash lookups on their stored values, so there is no need in providing
+        // canonical representations.
+        return value;
+    }
+
+    @Override
     public void clear() {
         assertRunningOnPartitionThread();
         recordsWithNullValue.clear();

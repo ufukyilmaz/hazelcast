@@ -69,6 +69,44 @@ class HDUnorderedIndexStore extends BaseIndexStore {
     }
 
     @Override
+    public Comparable canonicalizeQueryArgumentScalar(Comparable value) {
+        // Using a storage representation for arguments here to save on
+        // conversions later.
+        return canonicalizeScalarForStorage(value);
+    }
+
+    @Override
+    public Comparable canonicalizeScalarForStorage(Comparable value) {
+        // Assuming off-heap overhead of 13 bytes (12 for the NativeMemoryData
+        // and 1 for the pooling manager) and allocation granularity by powers
+        // of 2, there is no point in trying to represent a value in less than 2
+        // bytes.
+
+        if (!(value instanceof Number)) {
+            return value;
+        }
+
+        Class clazz = value.getClass();
+
+        Number number = (Number) value;
+
+        if (Numbers.isDoubleRepresentable(clazz)) {
+            double doubleValue = number.doubleValue();
+
+            long longValue = number.longValue();
+            if (Numbers.equalDoubles(doubleValue, (double) longValue)) {
+                return canonicalizeLongRepresentable(longValue);
+            } else if (clazz == Float.class) {
+                return doubleValue;
+            }
+        } else if (Numbers.isLongRepresentable(clazz)) {
+            return canonicalizeLongRepresentable(number.longValue());
+        }
+
+        return value;
+    }
+
+    @Override
     public void clear() {
         assertRunningOnPartitionThread();
         recordsWithNullValue.clear();
@@ -77,12 +115,7 @@ class HDUnorderedIndexStore extends BaseIndexStore {
 
     @Override
     public Set<QueryableEntry> getRecords(Comparable value) {
-        assertRunningOnPartitionThread();
-        if (value == NULL) {
-            return recordsWithNullValue.entrySet();
-        } else {
-            return records.get(value);
-        }
+        return getRecordsInternal(canonicalize(value));
     }
 
     @Override
@@ -90,12 +123,12 @@ class HDUnorderedIndexStore extends BaseIndexStore {
         assertRunningOnPartitionThread();
         Set<QueryableEntry> results = new HashSet<QueryableEntry>();
         for (Comparable value : values) {
-            results.addAll(getRecords(value));
+            // value is already canonicalized by the associated index
+            results.addAll(getRecordsInternal(value));
         }
         return results;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Set<QueryableEntry> getRecords(Comparison comparison, Comparable value) {
         assertRunningOnPartitionThread();
@@ -103,7 +136,7 @@ class HDUnorderedIndexStore extends BaseIndexStore {
         for (Data valueData : records.keySet()) {
             Comparable indexedValue = ess.toObject(valueData);
             boolean valid;
-            int result = value.compareTo(indexedValue);
+            int result = Comparables.compare(value, indexedValue);
             switch (comparison) {
                 case LESS:
                     valid = result > 0;
@@ -130,15 +163,14 @@ class HDUnorderedIndexStore extends BaseIndexStore {
         return results;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Set<QueryableEntry> getRecords(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
         assertRunningOnPartitionThread();
-        if (from.compareTo(to) == 0) {
+        if (Comparables.compare(from, to) == 0) {
             if (!fromInclusive || !toInclusive) {
                 return Collections.emptySet();
             }
-            return records.get(from);
+            return records.get(canonicalize(from));
         }
 
         Set<QueryableEntry> results = new HashSet<QueryableEntry>();
@@ -146,11 +178,20 @@ class HDUnorderedIndexStore extends BaseIndexStore {
         int toBound = toInclusive ? 0 : -1;
         for (Data valueData : records.keySet()) {
             Comparable value = ess.toObject(valueData);
-            if (value.compareTo(from) >= fromBound && value.compareTo(to) <= toBound) {
-                results.addAll(records.get(value));
+            if (Comparables.compare(value, from) >= fromBound && Comparables.compare(value, to) <= toBound) {
+                results.addAll(records.get(canonicalize(value)));
             }
         }
         return results;
+    }
+
+    private Set<QueryableEntry> getRecordsInternal(Comparable canonicalValue) {
+        assertRunningOnPartitionThread();
+        if (canonicalValue == NULL) {
+            return recordsWithNullValue.entrySet();
+        } else {
+            return records.get(canonicalValue);
+        }
     }
 
     private Object mapAttributeToEntry(Comparable attribute, QueryableEntry entry) {
@@ -167,6 +208,26 @@ class HDUnorderedIndexStore extends BaseIndexStore {
         assertRunningOnPartitionThread();
         records.dispose();
         recordsWithNullValue.dispose();
+    }
+
+    private Comparable canonicalize(Comparable value) {
+        if (value instanceof CompositeValue) {
+            Comparable[] components = ((CompositeValue) value).getComponents();
+            for (int i = 0; i < components.length; ++i) {
+                components[i] = canonicalizeScalarForStorage(components[i]);
+            }
+            return value;
+        } else {
+            return canonicalizeScalarForStorage(value);
+        }
+    }
+
+    private static Comparable canonicalizeLongRepresentable(long value) {
+        if (value == (long) (short) value) {
+            return (short) value;
+        } else {
+            return value;
+        }
     }
 
 }

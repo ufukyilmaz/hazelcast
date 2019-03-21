@@ -1,8 +1,7 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.config.Config;
+import com.hazelcast.concurrent.countdownlatch.CountDownLatchService;
 import com.hazelcast.core.ICountDownLatch;
-import com.hazelcast.cp.internal.datastructures.countdownlatch.RaftCountDownLatchService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -15,26 +14,16 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class CountDownLatchSecurityInterceptor extends InterceptorTestSupport {
+@Deprecated
+public class LegacyCountDownLatchSecurityInterceptor extends InterceptorTestSupport {
 
-    private String objectName;
-    private ICountDownLatch countDownLatch;
+    String objectName;
+    ICountDownLatch countDownLatch;
 
     @Before
     public void setup() {
-        Config config = createConfig();
-        factory.newHazelcastInstance(config);
-        factory.newHazelcastInstance(config);
-
         objectName = randomString();
-        countDownLatch = client.getCPSubsystem().getCountDownLatch(objectName);
-    }
-
-    @Override
-    Config createConfig() {
-        Config config = super.createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
-        return config;
+        countDownLatch = client.getCountDownLatch(objectName);
     }
 
     @Test
@@ -65,6 +54,6 @@ public class CountDownLatchSecurityInterceptor extends InterceptorTestSupport {
 
     @Override
     String getObjectType() {
-        return RaftCountDownLatchService.SERVICE_NAME;
+        return CountDownLatchService.SERVICE_NAME;
     }
 }

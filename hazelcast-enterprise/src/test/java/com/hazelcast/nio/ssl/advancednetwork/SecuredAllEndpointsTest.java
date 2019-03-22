@@ -14,12 +14,15 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.SlowTest;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -38,6 +41,16 @@ import static org.junit.Assert.fail;
 public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
 
     private static final String REPLICATED_MAP = "replicatedMap";
+
+    // When using IBM JSSE2 and getting the SSLContext with "TLS" as protocol
+    // JSSE2 will only enable usage of TLS V1.0 even though other protocols are
+    // supported. To bring it in line with the Oracle implementation and allow
+    // TLS V1.1 and TLS V1.2, we need to set this property.
+    // see:
+    // https://github.com/hazelcast/hazelcast-enterprise/issues/2824
+    // https://www.ibm.com/support/knowledgecenter/en/SSYKE2_7.1.0/com.ibm.java.security.component.71.doc/security-component/jsse2Docs/matchsslcontext_tls.html#matchsslcontext_tls
+    @Rule
+    public OverridePropertyRule rule = OverridePropertyRule.set("com.ibm.jsse2.overrideDefaultTLS", "true");
 
     @Test
     public void testMemberEndpointWithMemberCertificate() {

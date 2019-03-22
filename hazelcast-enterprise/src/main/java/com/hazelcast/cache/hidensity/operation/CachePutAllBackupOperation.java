@@ -15,9 +15,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import static com.hazelcast.cache.impl.record.CacheRecord.TIME_NOT_AVAILABLE;
-import static com.hazelcast.internal.cluster.Versions.V3_11;
-
 /**
  * Cache PutAllBackup Operation is the backup operation used by load all operation. Provides backup of
  * multiple entries.
@@ -82,10 +79,7 @@ public class CachePutAllBackupOperation extends HiDensityCacheOperation
             for (CacheBackupRecordStore.CacheBackupRecord cacheBackupRecord : cacheBackupRecords) {
                 out.writeData(cacheBackupRecord.key);
                 out.writeData(cacheBackupRecord.value);
-                // RU_COMPAT_3_10
-                if (out.getVersion().isGreaterOrEqual(V3_11)) {
-                    out.writeLong(cacheBackupRecord.creationTime);
-                }
+                out.writeLong(cacheBackupRecord.creationTime);
             }
         }
     }
@@ -101,13 +95,8 @@ public class CachePutAllBackupOperation extends HiDensityCacheOperation
             for (int i = 0; i < size; i++) {
                 Data key = HiDensityCacheOperation.readNativeMemoryOperationData(in);
                 Data value = HiDensityCacheOperation.readNativeMemoryOperationData(in);
-                // RU_COMPAT_3_10
-                if (in.getVersion().isGreaterOrEqual(V3_11)) {
-                    long creationTime = in.readLong();
-                    cacheBackupRecordStore.addBackupRecord(key, value, creationTime);
-                } else {
-                    cacheBackupRecordStore.addBackupRecord(key, value, TIME_NOT_AVAILABLE);
-                }
+                long creationTime = in.readLong();
+                cacheBackupRecordStore.addBackupRecord(key, value, creationTime);
             }
         }
     }

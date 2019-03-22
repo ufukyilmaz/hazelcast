@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import static com.hazelcast.cache.impl.record.CacheRecord.TIME_NOT_AVAILABLE;
-import static com.hazelcast.internal.cluster.Versions.V3_11;
 
 /**
  * Replicates records from one off-heap source to an off-heap destination.
@@ -158,10 +157,7 @@ public final class HiDensityCacheReplicationOperation
 
                 long remainingTtl = getRemainingTtl(record, now);
                 out.writeLong(remainingTtl);
-                // RU_COMPAT_3_10
-                if (out.getVersion().isGreaterOrEqual(V3_11)) {
-                    out.writeLong(record.getCreationTime());
-                }
+                out.writeLong(record.getCreationTime());
                 subCount--;
             }
             if (subCount != 0) {
@@ -196,14 +192,8 @@ public final class HiDensityCacheReplicationOperation
                 if (key != null) {
                     Data value = HiDensityCacheOperation.readNativeMemoryOperationData(in);
                     long ttlMillis = in.readLong();
-                    // RU_COMPAT_3_10
-                    CacheRecordHolder holder;
-                    if (in.getVersion().isGreaterOrEqual(V3_11)) {
-                        long creationTime = in.readLong();
-                        holder = new CacheRecordHolder(value, creationTime, ttlMillis);
-                    } else {
-                        holder = new CacheRecordHolder(value, ttlMillis);
-                    }
+                    long creationTime = in.readLong();
+                    CacheRecordHolder holder = new CacheRecordHolder(value, creationTime, ttlMillis);
                     m.put(key, holder);
                 }
             }

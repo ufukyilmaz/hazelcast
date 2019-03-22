@@ -1,6 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordInfo;
@@ -61,11 +60,7 @@ public class HDPutAllBackupOperation extends HDMapOperation
         for (RecordInfo recordInfo : recordInfos) {
             recordInfo.writeData(out);
         }
-
-        // RU_COMPAT_3_10
-        if (out.getVersion().isGreaterOrEqual(Versions.V3_11)) {
-            out.writeBoolean(disableWanReplicationEvent);
-        }
+        out.writeBoolean(disableWanReplicationEvent);
     }
 
     @Override
@@ -81,11 +76,7 @@ public class HDPutAllBackupOperation extends HDMapOperation
             recordInfo.readData(in);
             recordInfos.add(recordInfo);
         }
-
-        // RU_COMPAT_3_10
-        if (in.getVersion().isGreaterOrEqual(Versions.V3_11)) {
-            disableWanReplicationEvent = in.readBoolean();
-        }
+        disableWanReplicationEvent = in.readBoolean();
     }
 
     @Override

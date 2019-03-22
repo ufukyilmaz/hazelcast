@@ -14,7 +14,6 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 import static com.hazelcast.cache.impl.record.CacheRecord.TIME_NOT_AVAILABLE;
-import static com.hazelcast.internal.cluster.Versions.V3_11;
 
 /**
  * Creates a backup for a JCache entry.
@@ -85,10 +84,7 @@ public class CachePutBackupOperation
         out.writeObject(expiryPolicy);
         out.writeData(value);
         out.writeBoolean(wanOriginated);
-        // RU_COMPAT_3_10
-        if (out.getVersion().isGreaterOrEqual(V3_11)) {
-            out.writeLong(creationTime);
-        }
+        out.writeLong(creationTime);
     }
 
     @Override
@@ -97,10 +93,7 @@ public class CachePutBackupOperation
         expiryPolicy = in.readObject();
         value = readNativeMemoryOperationData(in);
         wanOriginated = in.readBoolean();
-        // RU_COMPAT_3_10
-        if (in.getVersion().isGreaterOrEqual(V3_11)) {
-            creationTime = in.readLong();
-        }
+        creationTime = in.readLong();
     }
 
     @Override

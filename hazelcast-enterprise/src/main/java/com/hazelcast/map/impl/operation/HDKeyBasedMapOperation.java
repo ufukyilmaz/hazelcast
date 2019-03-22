@@ -1,6 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -99,10 +98,7 @@ public abstract class HDKeyBasedMapOperation
         out.writeLong(threadId);
         out.writeData(dataValue);
         out.writeLong(ttl);
-        //RU_COMPAT_3_10
-        if (out.getVersion().isGreaterOrEqual(Versions.V3_11)) {
-            out.writeLong(maxIdle);
-        }
+        out.writeLong(maxIdle);
     }
 
     @Override
@@ -112,9 +108,6 @@ public abstract class HDKeyBasedMapOperation
         threadId = in.readLong();
         dataValue = in.readData();
         ttl = in.readLong();
-        //RU_COMPAT_3_10
-        if (in.getVersion().isGreaterOrEqual(Versions.V3_11)) {
-            maxIdle = in.readLong();
-        }
+        maxIdle = in.readLong();
     }
 }

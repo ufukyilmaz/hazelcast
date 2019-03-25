@@ -20,11 +20,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.hazelcast.nio.IOUtil.close;
+import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.loadKeyManagerFactory;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.loadTrustManagerFactory;
 import static com.hazelcast.test.HazelcastTestSupport.ignore;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
-import static org.mockito.internal.util.io.IOUtil.close;
 
 public class SimpleTlsProxy {
 
@@ -195,8 +196,8 @@ public class SimpleTlsProxy {
                 } catch (IOException e) {
                     throw rethrow(new IllegalStateException(pipeDirection, e));
                 } finally {
-                    close(in);
-                    close(out);
+                    closeResource(in);
+                    closeResource(out);
                 }
             }
         }

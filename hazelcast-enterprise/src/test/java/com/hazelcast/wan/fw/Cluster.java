@@ -6,6 +6,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.util.function.Supplier;
 import com.hazelcast.wan.AddWanConfigResult;
 
 import java.net.URL;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
+import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 import static com.hazelcast.util.Preconditions.checkPositive;
@@ -299,33 +301,43 @@ public class Cluster {
     }
 
     public static ClusterBuilder clusterA(TestHazelcastInstanceFactory factory, int clusterSize) {
-        return clusterA(factory, clusterSize, UUID.randomUUID().toString());
-    }
-
-    public static ClusterBuilder clusterA(TestHazelcastInstanceFactory factory, int clusterSize, String clusterPostfix) {
-        return createDefaultClusterConfig(factory, clusterSize, "ClusterA", "A", 5701, clusterPostfix);
+        return clusterA(factory, clusterSize, null);
     }
 
     public static ClusterBuilder clusterB(TestHazelcastInstanceFactory factory, int clusterSize) {
-        return clusterB(factory, clusterSize, UUID.randomUUID().toString());
-    }
-
-    public static ClusterBuilder clusterB(TestHazelcastInstanceFactory factory, int clusterSize, String clusterPostfix) {
-        return createDefaultClusterConfig(factory, clusterSize, "ClusterB", "B", 5801, clusterPostfix);
+        return clusterB(factory, clusterSize, null);
     }
 
     public static ClusterBuilder clusterC(TestHazelcastInstanceFactory factory, int clusterSize) {
-        return clusterC(factory, clusterSize, UUID.randomUUID().toString());
+        return clusterC(factory, clusterSize, null);
     }
 
-    public static ClusterBuilder clusterC(TestHazelcastInstanceFactory factory, int clusterSize, String clusterPostfix) {
-        return createDefaultClusterConfig(factory, clusterSize, "ClusterC", "C", 5901, clusterPostfix);
+    public static ClusterBuilder clusterA(TestHazelcastInstanceFactory factory, int clusterSize, Supplier<Config> configSupplier) {
+        return createDefaultClusterConfig(factory, clusterSize,
+                configSupplier, "ClusterA", "A", 5701, UUID.randomUUID().toString());
     }
 
-    private static ClusterBuilder createDefaultClusterConfig(TestHazelcastInstanceFactory factory, int clusterSize,
-                                                             String clusterName, String groupName, int port,
+    public static ClusterBuilder clusterB(TestHazelcastInstanceFactory factory, int clusterSize, Supplier<Config> configSupplier) {
+        return createDefaultClusterConfig(factory, clusterSize,
+                configSupplier, "ClusterB", "B", 5801, UUID.randomUUID().toString());
+    }
+
+    public static ClusterBuilder clusterC(TestHazelcastInstanceFactory factory, int clusterSize, Supplier<Config> configSupplier) {
+        return createDefaultClusterConfig(factory, clusterSize,
+                configSupplier, "ClusterC", "C", 5901, UUID.randomUUID().toString());
+    }
+
+    private static ClusterBuilder createDefaultClusterConfig(TestHazelcastInstanceFactory factory,
+                                                             int clusterSize,
+                                                             Supplier<Config> configSupplier,
+                                                             String clusterName,
+                                                             String groupName,
+                                                             int port,
                                                              String clusterPostfix) {
-        Config config = createDefaultConfig(clusterName + "-" + clusterPostfix);
+        Config config = configSupplier != null
+                ? configSupplier.get()
+                : smallInstanceConfig();
+        config.setInstanceName(clusterName + "-" + clusterPostfix);
         return setupClusterBase(factory, config, clusterSize)
                 .groupName(groupName)
                 .port(port);
@@ -337,10 +349,6 @@ public class Cluster {
                 .config(config)
                 .classLoader(createCacheManagerClassLoader())
                 .clusterSize(clusterSize);
-    }
-
-    private static Config createDefaultConfig(String clusterName) {
-        return new Config(clusterName);
     }
 
     private static CacheManagerClassLoader createCacheManagerClassLoader() {

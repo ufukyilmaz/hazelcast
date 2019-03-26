@@ -36,7 +36,7 @@ public class WanTestSupport {
     public static void waitForSyncToComplete(final Cluster cluster) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 boolean syncFinished = true;
                 for (HazelcastInstance instance : cluster.getMembers()) {
                     syncFinished &= wanReplicationService(instance).getWanSyncState().getStatus() == WanSyncStatus.READY;
@@ -51,7 +51,7 @@ public class WanTestSupport {
                                                  final String mapName) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 for (HazelcastInstance instance : sourceCluster.getMembers()) {
                     Map<String, LocalWanStats> stats = wanReplicationService(instance).getStats();
                     Map<String, DistributedObjectWanEventCounters> allMapEventCounters = stats

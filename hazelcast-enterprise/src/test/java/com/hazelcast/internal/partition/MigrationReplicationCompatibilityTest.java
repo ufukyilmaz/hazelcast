@@ -311,6 +311,36 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
         validate(latest);
     }
 
+    @Test
+    public void testMasterTerminate_AfterVersionUpgrade() {
+        HazelcastInstance[] instances = factory.newInstances(createConfig(), getKnownPreviousVersionsCount());
+        final HazelcastInstance latest = HazelcastInstanceFactory.newHazelcastInstance(createConfig());
+
+        for (HazelcastInstance instance : instances) {
+            assertClusterSizeEventually(getKnownPreviousVersionsCount() + 1, instance);
+        }
+
+        initValidators(latest);
+
+        for (HazelcastInstance instance : instances) {
+            instance.shutdown();
+        }
+
+        // start latest version members
+        HazelcastInstance instance = HazelcastInstanceFactory.newHazelcastInstance(createConfig());
+        HazelcastInstance instance2 = HazelcastInstanceFactory.newHazelcastInstance(createConfig());
+
+        assertClusterSizeEventually(3, latest);
+
+        Version currentVersion = getNode(latest).getVersion().asVersion();
+        changeClusterVersionEventually(latest, currentVersion);
+
+        validate(latest);
+
+        latest.getLifecycleService().terminate();
+        waitAllForSafeState(instance, instance2);
+    }
+
     private void validate(HazelcastInstance instance) {
         for (DataStructureValidator validator : validators) {
             validator.validate(instance);

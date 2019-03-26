@@ -22,6 +22,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.Properties;
 
+import static com.hazelcast.TestEnvironmentUtil.assumeJavaVersionLessThan;
 import static com.hazelcast.TestEnvironmentUtil.assumeJdk8OrNewer;
 import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_FILE;
@@ -230,6 +231,10 @@ public class ClientSSLSocketTest extends ClientTestSupport {
 
     @Test
     public void testOptionalClientAuth_clientHaveWrongKeystore() throws Exception {
+        // see. https://github.com/hazelcast/hazelcast-enterprise/issues/2710#issuecomment-475596023
+        // The test is only valid for TLS 1.2 (i.e. JDK < 11)
+        assumeJavaVersionLessThan(11);
+
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
         Config serverConfig = new Config();
         NetworkConfig networkConfig = serverConfig.getNetworkConfig();

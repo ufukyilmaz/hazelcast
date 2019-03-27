@@ -503,7 +503,6 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
         HotRestartStore[] stores = new HotRestartStore[storeCount];
         for (int i = 0; i < storeCount; i++) {
-            newHotRestartStoreConfig(i, true);
             stores[i] = newOnHeapHotRestartStore(newHotRestartStoreConfig(i, true), node.getProperties());
         }
         onHeapStores = stores;

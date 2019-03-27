@@ -26,6 +26,8 @@ import static org.mockito.Mockito.mock;
 @Category(QuickTest.class)
 public class MapSecurityInterceptorTest extends InterceptorTestSupport {
 
+    private static final int MIN_ALLOWED_MAX_IDLE_IN_MILLIS = 2000;
+
     String objectName;
     IMap map;
 
@@ -78,7 +80,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
-        final long maxIdle = randomLong();
+        final long maxIdle = randomInt(MIN_ALLOWED_MAX_IDLE_IN_MILLIS, Integer.MAX_VALUE);
         interceptor.setExpectation(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS,
                 maxIdle, TimeUnit.MILLISECONDS);
         map.put(key, val, ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS);
@@ -142,7 +144,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
-        final long maxIdle = randomLong();
+        final long maxIdle = randomInt(MIN_ALLOWED_MAX_IDLE_IN_MILLIS, Integer.MAX_VALUE);
         interceptor.setExpectation(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS,
                 maxIdle, TimeUnit.MILLISECONDS);
         map.putAsync(key, val, ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS).get();
@@ -186,7 +188,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
-        final long maxIdle = randomLong();
+        final long maxIdle = randomInt(MIN_ALLOWED_MAX_IDLE_IN_MILLIS, Integer.MAX_VALUE);
         interceptor.setExpectation(getObjectType(), objectName, "putTransient", key, val,
                 ttl, TimeUnit.MILLISECONDS,
                 maxIdle, TimeUnit.MILLISECONDS);
@@ -206,7 +208,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
-        final long maxIdle = randomLong();
+        final long maxIdle = randomInt(MIN_ALLOWED_MAX_IDLE_IN_MILLIS, Integer.MAX_VALUE);
         interceptor.setExpectation(getObjectType(), objectName, "putIfAbsent", key, val,
                 ttl, TimeUnit.MILLISECONDS,
                 maxIdle, TimeUnit.MILLISECONDS);
@@ -252,7 +254,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
-        final long maxIdle = randomLong();
+        final long maxIdle = randomInt(MIN_ALLOWED_MAX_IDLE_IN_MILLIS, Integer.MAX_VALUE);
         interceptor.setExpectation(getObjectType(), objectName, "set", key, val,
                 ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS);
         map.set(key, val, ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS);

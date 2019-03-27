@@ -1059,7 +1059,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
     public void maxIdleFromTargetClusterIsUsedForReceivedEntries() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob",
                 PassThroughMergePolicy.class.getName());
-        configA.getMapConfig("default").setMaxIdleSeconds(1);
+        configA.getMapConfig("default").setMaxIdleSeconds(2);
         configA.setProperty(PROP_CLEANUP_PERCENTAGE, "100")
                 .setProperty(PROP_TASK_PERIOD_SECONDS, "1");
         startClusterA();

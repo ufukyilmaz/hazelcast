@@ -160,7 +160,7 @@ public class WanSyncManager {
      *
      * @param wanReplicationName name of WAN replication configuration (scheme)
      * @param targetGroupName    WAN target cluster group name
-     * @param event              the WAN anti-antropy event
+     * @param event              the WAN anti-entropy event
      * @param partitionsToSync   keys for which this this event applies to,
      */
     private void broadcastEvent(String wanReplicationName,

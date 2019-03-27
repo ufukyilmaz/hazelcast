@@ -2,13 +2,13 @@ package com.hazelcast.wan.fw;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.DefaultTaskProgress;
+import com.hazelcast.test.ProgressCheckerTask;
+import com.hazelcast.test.TaskProgress;
 
 import java.util.concurrent.CountDownLatch;
 
-import static com.hazelcast.test.HazelcastTestSupport.ASSERT_TRUE_EVENTUALLY_TIMEOUT;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static org.junit.Assert.assertTrue;
+import static com.hazelcast.test.HazelcastTestSupport.assertCompletesEventually;
 
 public class WanMapTestSupport {
     private WanMapTestSupport() {
@@ -53,21 +53,30 @@ public class WanMapTestSupport {
         HazelcastInstance targetClusterInstance = targetCluster.getAMember();
         final IMap<Object, Object> targetMap = targetClusterInstance.getMap(mapName);
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertTrue(verifyMapReplicatedInternal(sourceMap, targetMap));
-            }
-        }, ASSERT_TRUE_EVENTUALLY_TIMEOUT);
+        assertCompletesEventually(new ReplicationProgressCheckerTask(sourceMap, targetMap));
     }
 
-    private static boolean verifyMapReplicatedInternal(IMap<Object, Object> sourceMap, IMap<Object, Object> targetMap) {
-        for (Object key : sourceMap.keySet()) {
-            if (!targetMap.containsKey(key)) {
-                return false;
-            }
+    private static class ReplicationProgressCheckerTask implements ProgressCheckerTask {
+        private final IMap<Object, Object> sourceMap;
+        private final IMap<Object, Object> targetMap;
+
+        private ReplicationProgressCheckerTask(IMap<Object, Object> sourceMap, IMap<Object, Object> targetMap) {
+            this.sourceMap = sourceMap;
+            this.targetMap = targetMap;
         }
 
-        return true;
+        @Override
+        public TaskProgress checkProgress() {
+            int totalKeys = 0;
+            int replicatedKeys = 0;
+            for (Object key : sourceMap.keySet()) {
+                totalKeys++;
+                if (targetMap.containsKey(key)) {
+                    replicatedKeys++;
+                }
+            }
+
+            return new DefaultTaskProgress(totalKeys, replicatedKeys);
+        }
     }
 }

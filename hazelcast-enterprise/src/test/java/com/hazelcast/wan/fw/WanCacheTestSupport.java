@@ -6,6 +6,9 @@ import com.hazelcast.cache.impl.AbstractHazelcastCacheManager;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.DefaultTaskProgress;
+import com.hazelcast.test.ProgressCheckerTask;
+import com.hazelcast.test.TaskProgress;
 
 import javax.cache.Cache;
 import javax.cache.Caching;
@@ -80,4 +83,29 @@ public class WanCacheTestSupport {
         return true;
     }
 
+    private static class ReplicationProgressCheckerTask implements ProgressCheckerTask {
+        private final ICache<Object, Object> sourceCache;
+        private final ICache<Object, Object> targetCache;
+
+        private ReplicationProgressCheckerTask(ICache<Object, Object> sourceCache, ICache<Object, Object> targetCache) {
+            this.sourceCache = sourceCache;
+            this.targetCache = targetCache;
+        }
+
+        @Override
+        public TaskProgress checkProgress() {
+            int totalKeys = 0;
+            int replicatedKeys = 0;
+
+            for (Cache.Entry<Object, Object> entry : sourceCache) {
+                totalKeys++;
+                Object key = entry.getKey();
+                if (!targetCache.containsKey(key)) {
+                    replicatedKeys++;
+                }
+            }
+
+            return new DefaultTaskProgress(totalKeys, replicatedKeys);
+        }
+    }
 }

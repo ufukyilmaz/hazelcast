@@ -73,6 +73,7 @@ import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.security.SecurityService;
 import com.hazelcast.security.impl.SecurityServiceImpl;
 import com.hazelcast.security.impl.WeakSecretsConfigChecker;
+import com.hazelcast.security.jsm.HazelcastRuntimePermission;
 import com.hazelcast.spi.TaskScheduler;
 import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
@@ -359,6 +360,11 @@ public class EnterpriseNodeExtension
     }
 
     public License getLicense() {
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            sm.checkPermission(
+                    new HazelcastRuntimePermission("com.hazelcast.instance.EnterpriseNodeExtension.getLicense"));
+        }
         return license;
     }
 

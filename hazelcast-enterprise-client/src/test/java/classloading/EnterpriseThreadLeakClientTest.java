@@ -10,14 +10,19 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.util.Set;
+
+import static classloading.ThreadLeakTestUtils.assertHazelcastThreadShutdown;
+import static classloading.ThreadLeakTestUtils.getThreads;
 import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class EnterpriseThreadLeakClientTest extends AbstractThreadLeakTest {
+public class EnterpriseThreadLeakClientTest extends ThreadLeakClientTest {
 
     @Test
     public void testThreadLeak() {
+        Set<Thread> testStartThreads = getThreads();
         Config config = getHDConfig();
 
         HazelcastInstance member = Hazelcast.newHazelcastInstance(config);
@@ -25,5 +30,7 @@ public class EnterpriseThreadLeakClientTest extends AbstractThreadLeakTest {
 
         client.shutdown();
         member.shutdown();
+
+        assertHazelcastThreadShutdown(testStartThreads);
     }
 }

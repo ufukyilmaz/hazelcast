@@ -408,7 +408,6 @@ public class BinaryElasticHashMapTest {
         }
 
         values = map.values();
-        assertEquals(expected.size(), values.size());
 
         Iterator<NativeMemoryData> iter = values.iterator();
         while (iter.hasNext()) {
@@ -1116,7 +1115,7 @@ public class BinaryElasticHashMapTest {
     }
 
     private NativeMemoryData newValue() {
-        byte[] bytes = new byte[random.nextInt(1000) + 1];
+        byte[] bytes = new byte[random.nextInt(1000) + 100];
         random.nextBytes(bytes);
         return serializationService.toData(bytes, DataType.NATIVE);
     }

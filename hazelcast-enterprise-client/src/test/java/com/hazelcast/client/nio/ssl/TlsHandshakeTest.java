@@ -43,7 +43,6 @@ import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.IOUtil;
-import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -59,6 +58,9 @@ public class TlsHandshakeTest {
     private static final String KEYSTORE_SERVER = "server.keystore";
     private static final String TRUSTSTORE_SERVER = "server.truststore";
     private static final String TRUSTSTORE_CLIENT = "client.truststore";
+    private static final String KEY_FILE_SERVER = "server.pem";
+    private static final String CERT_FILE_SERVER = "server.crt";
+    private static final String TRUST_ALL = "all.crt";
     private static final String TLS_1_CLIENT_HELLO = "tls1-client-hello.bin";
     private static final String TLS_11_CLIENT_HELLO = "tls11-client-hello.bin";
     private static final String TLS_12_CLIENT_HELLO = "tls12-client-hello.bin";
@@ -135,12 +137,19 @@ public class TlsHandshakeTest {
     }
 
     private Config createMemberConfig() throws IOException {
-        SSLConfig sslConfig = new SSLConfig().setEnabled(true)
-                .setFactoryClassName((openSsl ? OpenSSLEngineFactory.class : BasicSSLContextFactory.class).getName())
-                .setProperty("keyStore", copyResource(KEYSTORE_SERVER).getAbsolutePath())
-                .setProperty("keyStorePassword", "123456")
-                .setProperty("trustStore", copyResource(TRUSTSTORE_SERVER).getAbsolutePath())
-                .setProperty("trustStorePassword", "123456");
+        SSLConfig sslConfig = new SSLConfig().setEnabled(true);
+        if (openSsl) {
+            sslConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName())
+            .setProperty("keyFile", copyResource(KEY_FILE_SERVER).getAbsolutePath())
+            .setProperty("keyCertChainFile", copyResource(CERT_FILE_SERVER).getAbsolutePath())
+            .setProperty("trustCertCollectionFile", copyResource(TRUST_ALL).getAbsolutePath());
+        } else {
+            sslConfig
+            .setProperty("keyStore", copyResource(KEYSTORE_SERVER).getAbsolutePath())
+            .setProperty("keyStorePassword", "123456")
+            .setProperty("trustStore", copyResource(TRUSTSTORE_SERVER).getAbsolutePath())
+            .setProperty("trustStorePassword", "123456");
+        }
 
         Config config = smallInstanceConfig();
         NetworkConfig networkConfig = config.getNetworkConfig();
@@ -150,10 +159,15 @@ public class TlsHandshakeTest {
     }
 
     private ClientConfig createClientConfig() throws IOException {
-        SSLConfig sslConfig = new SSLConfig().setEnabled(true)
-                .setFactoryClassName((openSsl ? OpenSSLEngineFactory.class : BasicSSLContextFactory.class).getName())
-                .setProperty("trustStore", copyResource(TRUSTSTORE_CLIENT).getAbsolutePath())
-                .setProperty("trustStorePassword", "123456");
+        SSLConfig sslConfig = new SSLConfig().setEnabled(true);
+        if (openSsl) {
+            sslConfig.setFactoryClassName(OpenSSLEngineFactory.class.getName())
+            .setProperty("trustCertCollectionFile", copyResource(CERT_FILE_SERVER).getAbsolutePath());
+        } else {
+            sslConfig
+            .setProperty("trustStore", copyResource(TRUSTSTORE_CLIENT).getAbsolutePath())
+            .setProperty("trustStorePassword", "123456");
+        }
 
         ClientConfig config = new ClientConfig();
         ClientNetworkConfig networkConfig = config.getNetworkConfig();

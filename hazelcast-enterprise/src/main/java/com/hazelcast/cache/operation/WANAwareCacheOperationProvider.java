@@ -7,6 +7,7 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationFactory;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
+import com.hazelcast.util.function.Function;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -23,14 +24,14 @@ import java.util.Set;
 public class WANAwareCacheOperationProvider extends EnterpriseCacheOperationProvider {
 
     private final EnterpriseCacheOperationProvider delegate;
-    private final WanReplicationPublisher publisher;
+    private final Function<String, WanReplicationPublisher> publisherLookupFunction;
 
     public WANAwareCacheOperationProvider(String nameWithPrefix,
                                           EnterpriseCacheOperationProvider delegate,
-                                          WanReplicationPublisher publisher) {
+                                          Function<String, WanReplicationPublisher> publisherLookupFunction) {
         super(nameWithPrefix);
         this.delegate = delegate;
-        this.publisher = publisher;
+        this.publisherLookupFunction = publisherLookupFunction;
     }
 
     @Override
@@ -145,6 +146,7 @@ public class WANAwareCacheOperationProvider extends EnterpriseCacheOperationProv
     }
 
     private void checkWANReplicationQueues() {
+        WanReplicationPublisher publisher = publisherLookupFunction.apply(nameWithPrefix);
         publisher.checkWanReplicationQueues();
     }
 }

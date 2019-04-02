@@ -52,6 +52,7 @@ import com.hazelcast.util.Clock;
 import com.hazelcast.util.CollectionUtil;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.util.function.Function;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
@@ -492,7 +493,7 @@ public class EnterpriseCacheService
 
         if (isWanReplicationEnabled(cacheNameWithPrefix)) {
             return new WANAwareCacheOperationProvider(cacheNameWithPrefix,
-                    operationProvider, wanReplicationPublishers.get(cacheNameWithPrefix));
+                    operationProvider, new WanPublisherLookup());
         } else {
             return operationProvider;
         }
@@ -573,8 +574,7 @@ public class EnterpriseCacheService
     public void publishWanEvent(CacheEventContext cacheEventContext) {
         String cacheName = cacheEventContext.getCacheName();
         CacheEventType eventType = cacheEventContext.getEventType();
-        WanReplicationPublisher wanReplicationPublisher =
-                wanReplicationPublishers.get(cacheEventContext.getCacheName());
+        WanReplicationPublisher wanReplicationPublisher = getOrLookupWanPublisher(cacheEventContext.getCacheName());
         if (wanReplicationPublisher != null && cacheEventContext.getOrigin() == null) {
             CacheConfig config = configs.get(cacheName);
             WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
@@ -672,10 +672,25 @@ public class EnterpriseCacheService
      * @param wanReplicationEvent the WAN event to be published
      */
     public void publishWanEvent(String cacheNameWithPrefix, WanReplicationEvent wanReplicationEvent) {
-        final WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheNameWithPrefix);
+        final WanReplicationPublisher wanReplicationPublisher = getOrLookupWanPublisher(cacheNameWithPrefix);
         if (wanReplicationPublisher != null) {
             wanReplicationPublisher.publishReplicationEvent(wanReplicationEvent);
         }
+    }
+
+    private WanReplicationPublisher getOrLookupWanPublisher(String cacheNameWithPrefix) {
+        WanReplicationPublisher publisher = wanReplicationPublishers.get(cacheNameWithPrefix);
+        if (publisher == null) {
+            CacheConfig cacheConfig = getCacheConfig(cacheNameWithPrefix);
+            WanReplicationRef wanReplicationRef = cacheConfig.getWanReplicationRef();
+            publisher = nodeEngine.getWanReplicationService().getWanReplicationPublisher(wanReplicationRef.getName());
+            WanReplicationPublisher replacedPublisher = wanReplicationPublishers.putIfAbsent(cacheNameWithPrefix, publisher);
+            if (replacedPublisher != null) {
+                return replacedPublisher;
+            }
+        }
+
+        return publisher;
     }
 
     @Override
@@ -696,5 +711,13 @@ public class EnterpriseCacheService
     @Override
     public CacheWanEventPublisher getCacheWanEventPublisher() {
         return cacheWanEventPublisher;
+    }
+
+    private class WanPublisherLookup implements Function<String, WanReplicationPublisher> {
+
+        @Override
+        public WanReplicationPublisher apply(String cacheNameWithPrefix) {
+            return getOrLookupWanPublisher(cacheNameWithPrefix);
+        }
     }
 }

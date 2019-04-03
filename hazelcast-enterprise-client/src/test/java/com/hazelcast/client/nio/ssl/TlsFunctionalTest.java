@@ -683,7 +683,7 @@ public class TlsFunctionalTest {
             return;
         }
         copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt.jks");
-        InputStream resourceStream = SSLConnectionTest.class.getResourceAsStream("letsencrypt-chain.pem");
+        InputStream resourceStream = SSLConnectionTest.class.getResourceAsStream("letsencrypt-cert.pem");
         try {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             X509Certificate x509Cert = (X509Certificate) cf.generateCertificate(resourceStream);

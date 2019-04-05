@@ -41,8 +41,6 @@ import static com.hazelcast.nio.ssl.TestKeyStoreUtil.wrongKeyStore;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static com.hazelcast.TestEnvironmentUtil.assumeJavaVersionLessThan;
-
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class ClientSSLSocketTest extends ClientTestSupport {

@@ -20,6 +20,7 @@ import com.hazelcast.map.impl.operation.EnterpriseMapPartitionClearOperation;
 import com.hazelcast.map.impl.operation.HDBasePutOperation;
 import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
 import com.hazelcast.map.impl.operation.HDGetOperation;
+import com.hazelcast.map.impl.operation.HDSetOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.operation.MapOperationProviders;
 import com.hazelcast.map.impl.query.HDPartitionScanExecutor;
@@ -255,20 +256,17 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     public void incrementOperationStats(long startTime, LocalMapStatsImpl localMapStats, String mapName, Operation operation) {
         if (getInMemoryFormat(mapName) != NATIVE) {
             super.incrementOperationStats(startTime, localMapStats, mapName, operation);
-        }
-
-        if (operation instanceof HDBasePutOperation) {
-            localMapStats.incrementPutLatencyNanos(System.nanoTime() - startTime);
             return;
         }
-
-        if (operation instanceof HDBaseRemoveOperation) {
-            localMapStats.incrementRemoveLatencyNanos(System.nanoTime() - startTime);
-            return;
-        }
-
-        if (operation instanceof HDGetOperation) {
-            localMapStats.incrementGetLatencyNanos(System.nanoTime() - startTime);
+        final long durationNanos = System.nanoTime() - startTime;
+        if (operation instanceof HDSetOperation) {
+            localMapStats.incrementSetLatencyNanos(durationNanos);
+        } else if (operation instanceof HDBasePutOperation) {
+            localMapStats.incrementPutLatencyNanos(durationNanos);
+        } else if (operation instanceof HDBaseRemoveOperation) {
+            localMapStats.incrementRemoveLatencyNanos(durationNanos);
+        } else if (operation instanceof HDGetOperation) {
+            localMapStats.incrementGetLatencyNanos(durationNanos);
         }
     }
 

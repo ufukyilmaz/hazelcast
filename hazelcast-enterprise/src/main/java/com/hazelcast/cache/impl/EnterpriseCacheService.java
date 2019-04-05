@@ -418,31 +418,6 @@ public class EnterpriseCacheService
     }
 
     /**
-     * Does forced eviction on all caches. Runs on the operation threads.
-     *
-     * @param originalPartitionId the partition ID of the record store that stores the records of cache
-     * @return the number of evicted records
-     */
-    public int forceEvictOnAll(int originalPartitionId) {
-        int evicted = 0;
-        int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
-        int threadCount = getPartitionThreadCount();
-        int mod = originalPartitionId % threadCount;
-        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
-            if (partitionId % threadCount == mod) {
-                for (CacheConfig cacheConfig : getCacheConfigs()) {
-                    String cacheName = cacheConfig.getNameWithPrefix();
-                    ICacheRecordStore cache = getRecordStore(cacheName, partitionId);
-                    if (cache instanceof HiDensityCacheRecordStore) {
-                        evicted += ((HiDensityCacheRecordStore) cache).forceEvict();
-                    }
-                }
-            }
-        }
-        return evicted;
-    }
-
-    /**
      * Clears all record stores on the partitions owned by partition thread of original partition.
      *
      * @param originalPartitionId the ID of original partition

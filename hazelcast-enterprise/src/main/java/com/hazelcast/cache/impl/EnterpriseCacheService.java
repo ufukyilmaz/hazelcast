@@ -507,16 +507,12 @@ public class EnterpriseCacheService
     }
 
     @Override
-    public CacheConfig putCacheConfigIfAbsent(CacheConfig config) {
-        CacheConfig localConfig = super.putCacheConfigIfAbsent(config);
-        if (localConfig == null) {
+    protected void additionalCacheConfigSetup(CacheConfig config, boolean existingConfig) {
+        if (!existingConfig) {
             if (hotRestartService != null && config.getHotRestartConfig().isEnabled()) {
                 hotRestartService.ensureHasConfiguration(SERVICE_NAME, config.getNameWithPrefix(),
                         new PreJoinCacheConfig(config, false));
             }
-        } else {
-            //there is already a configuration object for a given cache. let's use it instead
-            config = localConfig;
         }
 
         WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
@@ -532,7 +528,6 @@ public class EnterpriseCacheService
             wanReplicationPublishers.putIfAbsent(config.getNameWithPrefix(), publisher);
             cacheMergePolicies.putIfAbsent(config.getNameWithPrefix(), wanReplicationRef.getMergePolicy());
         }
-        return localConfig;
     }
 
     @Override
@@ -551,7 +546,7 @@ public class EnterpriseCacheService
         CacheEventType eventType = cacheEventContext.getEventType();
         WanReplicationPublisher wanReplicationPublisher = getOrLookupWanPublisher(cacheEventContext.getCacheName());
         if (wanReplicationPublisher != null && cacheEventContext.getOrigin() == null) {
-            CacheConfig config = configs.get(cacheName);
+            CacheConfig config = getCacheConfig(cacheName);
             WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
             List<String> filters = getFiltersFrom(wanReplicationRef);
 

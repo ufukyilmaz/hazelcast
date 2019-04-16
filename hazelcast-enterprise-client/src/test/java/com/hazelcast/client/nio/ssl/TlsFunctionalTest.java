@@ -691,7 +691,7 @@ public class TlsFunctionalTest {
         } catch (CertificateExpiredException e) {
             throw new AssumptionViolatedException("Expired Let's Encrypt certificate", e);
         } catch (CertificateException e) {
-            throw new AssertionError("Unexpected CertificateException", e);
+            throw new RuntimeException("Unexpected CertificateException", e);
         } finally {
             IOUtil.closeResource(resourceStream);
         }

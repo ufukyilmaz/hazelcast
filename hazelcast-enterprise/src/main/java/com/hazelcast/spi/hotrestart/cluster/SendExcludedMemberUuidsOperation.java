@@ -28,7 +28,7 @@ public class SendExcludedMemberUuidsOperation extends Operation implements JoinO
     }
 
     public SendExcludedMemberUuidsOperation(Set<String> excludedMemberUuids) {
-        this.excludedMemberUuids = excludedMemberUuids != null ? excludedMemberUuids : Collections.<String>emptySet();
+        this.excludedMemberUuids = excludedMemberUuids != null ? excludedMemberUuids : Collections.emptySet();
     }
 
     @Override
@@ -51,7 +51,7 @@ public class SendExcludedMemberUuidsOperation extends Operation implements JoinO
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        Set<String> excludedMemberUuids = new HashSet<String>();
+        Set<String> excludedMemberUuids = new HashSet<>();
         for (int i = 0; i < size; i++) {
             excludedMemberUuids.add(in.readUTF());
         }

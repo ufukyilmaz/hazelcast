@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.core.Member;
 import com.hazelcast.internal.cluster.ClusterService;
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -55,21 +54,12 @@ public class SendMemberClusterStartInfoOperation extends Operation implements Jo
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        if (out.getVersion().isGreaterOrEqual(Versions.V3_12)) {
-            out.writeObject(memberClusterStartInfo);
-        } else {
-            memberClusterStartInfo.writeData(out);
-        }
+        out.writeObject(memberClusterStartInfo);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        if (in.getVersion().isGreaterOrEqual(Versions.V3_12)) {
-            memberClusterStartInfo = in.readObject();
-        } else {
-            memberClusterStartInfo = new MemberClusterStartInfo();
-            memberClusterStartInfo.readData(in);
-        }
+        memberClusterStartInfo = in.readObject();
     }
 
     @Override

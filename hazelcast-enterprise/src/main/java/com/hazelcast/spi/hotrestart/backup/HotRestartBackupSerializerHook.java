@@ -29,28 +29,9 @@ public class HotRestartBackupSerializerHook implements DataSerializerHook {
     public DataSerializableFactory createFactory() {
         @SuppressWarnings("unchecked")
         final ConstructorFunction<Integer, IdentifiedDataSerializable>[] constructors = new ConstructorFunction[LEN];
-
-        constructors[BACKUP_TRANSACTION_LOG_RECORD] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HotRestartBackupTransactionLogRecord();
-            }
-        };
-
-        constructors[BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HotRestartBackupOperation();
-            }
-        };
-
-        constructors[BACKUP_INTERRUPT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HotRestartBackupInterruptOperation();
-            }
-        };
-
+        constructors[BACKUP_TRANSACTION_LOG_RECORD] = arg -> new HotRestartBackupTransactionLogRecord();
+        constructors[BACKUP] = arg -> new HotRestartBackupOperation();
+        constructors[BACKUP_INTERRUPT] = arg -> new HotRestartBackupInterruptOperation();
         return new ArrayDataSerializableFactory(constructors);
     }
 }

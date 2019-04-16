@@ -27,7 +27,7 @@ class MemberListReader extends AbstractMetadataReader {
     void doRead(DataInput in) throws IOException {
         localMember = readMember(in);
         int size = in.readInt();
-        members = new HashSet<MemberImpl>(size);
+        members = new HashSet<>(size);
         for (int i = 0; i < size; i++) {
             MemberImpl member = readMember(in);
             members.add(member);

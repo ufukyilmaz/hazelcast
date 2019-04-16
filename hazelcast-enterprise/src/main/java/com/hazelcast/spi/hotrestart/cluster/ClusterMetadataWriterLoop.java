@@ -30,10 +30,8 @@ final class ClusterMetadataWriterLoop implements Runnable {
     private static final long SLOW_PERSISTENCE_THRESHOLD_NANOS = SECONDS.toNanos(1);
 
     private final ILogger logger;
-    private final MPSCQueue<Runnable> taskQueue = new MPSCQueue<Runnable>(null);
+    private final MPSCQueue<Runnable> taskQueue = new MPSCQueue<>(null);
     private final MemberListHandler memberListHandler;
-    // RU_COMPAT_3_11
-    private final PartitionTableHandler legacyPartitionTableHandler;
     private final PartitionTableHandler partitionTableHandler;
     private final ClusterStateHandler clusterStateHandler;
     private final ClusterVersionHandler clusterVersionHandler;
@@ -46,7 +44,6 @@ final class ClusterMetadataWriterLoop implements Runnable {
 
         logger = node.getLogger(getClass());
         memberListHandler = new MemberListHandler(new MemberListWriter(homeDir, node));
-        legacyPartitionTableHandler = new PartitionTableHandler(new LegacyPartitionTableWriter(homeDir));
         partitionTableHandler = new PartitionTableHandler(new PartitionTableWriter(homeDir));
         clusterStateHandler = new ClusterStateHandler(new ClusterStateWriter(homeDir));
         clusterVersionHandler = new ClusterVersionHandler(new ClusterVersionWriter(homeDir));
@@ -108,12 +105,6 @@ final class ClusterMetadataWriterLoop implements Runnable {
         taskQueue.offer(partitionTableHandler);
     }
 
-    // RU_COMPAT_3_11
-    void writePartitionTableLegacy(PartitionTableView partitionTable) {
-        legacyPartitionTableHandler.set(partitionTable);
-        taskQueue.offer(legacyPartitionTableHandler);
-    }
-
     void writeClusterState(ClusterState state) {
         clusterStateHandler.set(state);
         taskQueue.offer(clusterStateHandler);
@@ -135,7 +126,7 @@ final class ClusterMetadataWriterLoop implements Runnable {
     }
 
     private abstract class StatefulTask<T> implements Runnable {
-        private final AtomicReference<T> state = new AtomicReference<T>();
+        private final AtomicReference<T> state = new AtomicReference<>();
 
         final void set(T value) {
             state.set(value);

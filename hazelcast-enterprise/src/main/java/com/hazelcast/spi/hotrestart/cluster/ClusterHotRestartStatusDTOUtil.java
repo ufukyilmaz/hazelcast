@@ -41,8 +41,7 @@ public final class ClusterHotRestartStatusDTOUtil {
             ClusterMetadataManager clusterMetadataManager) {
 
         Collection<MemberImpl> restoredMembers = clusterMetadataManager.getRestoredMembers();
-        Map<String, MemberHotRestartStatus> memberHotRestartStatusMap =
-                new HashMap<String, MemberHotRestartStatus>(restoredMembers.size());
+        Map<String, MemberHotRestartStatus> memberHotRestartStatusMap = new HashMap<>(restoredMembers.size());
 
         for (MemberImpl member : restoredMembers) {
             Address address = member.getAddress();

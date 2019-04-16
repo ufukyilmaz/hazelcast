@@ -68,8 +68,8 @@ public class HotRestartBackupTransactionLogRecord implements TargetAwareTransact
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeLong(backupSeq);
-        initiator.writeData(out);
-        target.writeData(out);
+        out.writeObject(initiator);
+        out.writeObject(target);
         out.writeUTF(txnId);
         out.writeLong(leaseTime);
     }
@@ -77,10 +77,8 @@ public class HotRestartBackupTransactionLogRecord implements TargetAwareTransact
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         backupSeq = in.readLong();
-        initiator = new Address();
-        initiator.readData(in);
-        target = new Address();
-        target.readData(in);
+        initiator = in.readObject();
+        target = in.readObject();
         txnId = in.readUTF();
         leaseTime = in.readLong();
     }

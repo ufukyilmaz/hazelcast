@@ -50,6 +50,7 @@
         <maven.enforcer.plugin.version>3.0.0-M2</maven.enforcer.plugin.version>
 
         <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
+        <maven.animal.sniffer.plugin.version>1.15</maven.animal.sniffer.plugin.version>
 
         <log4j2.version>2.3</log4j2.version>
         <junit.version>4.12</junit.version>

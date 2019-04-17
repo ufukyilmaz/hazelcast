@@ -134,7 +134,7 @@ public class EntryLoadedListenerCompatibilityTest extends HazelcastTestSupport {
 
         private final AtomicInteger addEventCount;
 
-        public Version_3_10_AddListener() {
+        Version_3_10_AddListener() {
             this.addEventCount = new AtomicInteger();
         }
 
@@ -161,7 +161,7 @@ public class EntryLoadedListenerCompatibilityTest extends HazelcastTestSupport {
         private final AtomicInteger loadEventCount;
         private final AtomicInteger addEventCount;
 
-        public Version_3_11_LoadAndAddListener() {
+        Version_3_11_LoadAndAddListener() {
             this.loadEventCount = new AtomicInteger();
             this.addEventCount = new AtomicInteger();
         }
@@ -202,7 +202,7 @@ public class EntryLoadedListenerCompatibilityTest extends HazelcastTestSupport {
 
         AtomicInteger sequence = new AtomicInteger();
 
-        public TestMapLoader() {
+        TestMapLoader() {
         }
 
         @Override

@@ -134,7 +134,7 @@ public class ChunkManager implements Disposable {
         private final ActiveChunk closed;
         private final boolean isTombChunk;
 
-        public ReplaceActiveChunk(ActiveChunk fresh, ActiveChunk closed) {
+        ReplaceActiveChunk(ActiveChunk fresh, ActiveChunk closed) {
             this.fresh = fresh;
             this.closed = closed;
             this.isTombChunk = fresh instanceof WriteThroughTombChunk;
@@ -166,7 +166,7 @@ public class ChunkManager implements Disposable {
         private final int size;
         private final boolean isTombstone;
 
-        public AddRecord(HotRestartKey hrKey, long recordSeq, int size, boolean isTombstone) {
+        AddRecord(HotRestartKey hrKey, long recordSeq, int size, boolean isTombstone) {
             this.prefix = hrKey.prefix();
             this.keyHandle = hrKey.handle();
             this.recordSeq = recordSeq;

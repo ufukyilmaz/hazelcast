@@ -13,7 +13,7 @@ final class EnterpriseByteArrayInputOutputFactory implements InputOutputFactory 
 
     private final ByteOrder byteOrder;
 
-    public EnterpriseByteArrayInputOutputFactory(ByteOrder byteOrder) {
+    EnterpriseByteArrayInputOutputFactory(ByteOrder byteOrder) {
         this.byteOrder = byteOrder;
     }
 

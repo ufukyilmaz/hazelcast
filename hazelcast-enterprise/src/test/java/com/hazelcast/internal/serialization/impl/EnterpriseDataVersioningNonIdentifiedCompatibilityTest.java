@@ -387,10 +387,10 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         private Version deserializationVersion;
         private Version serializationVersion;
 
-        public TestDataSerializable() {
+        TestDataSerializable() {
         }
 
-        public TestDataSerializable(int value) {
+        TestDataSerializable(int value) {
             this.value = value;
         }
 
@@ -412,10 +412,10 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         private Version deserializationVersion;
         private Version serializationVersion;
 
-        public TestVersionedDataSerializable() {
+        TestVersionedDataSerializable() {
         }
 
-        public TestVersionedDataSerializable(int value) {
+        TestVersionedDataSerializable(int value) {
             this.value = value;
         }
 

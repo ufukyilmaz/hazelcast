@@ -61,7 +61,7 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         private transient String endpoint;
         private String secret;
 
-        public CustomCredentials(String secret) {
+        CustomCredentials(String secret) {
             this.secret = secret;
         }
 

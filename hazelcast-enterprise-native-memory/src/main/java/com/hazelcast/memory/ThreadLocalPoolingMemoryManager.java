@@ -554,7 +554,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         private long lastGC;
         private long lastResize;
 
-        public ThreadAddressQueue(int index, int memorySize) {
+        ThreadAddressQueue(int index, int memorySize) {
             if (memorySize <= 0) {
                 throw new IllegalArgumentException();
             }

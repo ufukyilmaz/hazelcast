@@ -22,7 +22,7 @@ abstract class AbstractElasticQueue<E> extends AbstractQueue<E> implements Elast
     private final EnterpriseSerializationService ss;
     private final Queue<NativeMemoryData> localBinaryQ = new ArrayDeque<NativeMemoryData>(1024);
 
-    public AbstractElasticQueue(EnterpriseSerializationService ss, int capacity, MemoryAllocator malloc) {
+    AbstractElasticQueue(EnterpriseSerializationService ss, int capacity, MemoryAllocator malloc) {
         this.ss = ss;
         queue = createQueue(malloc, capacity, 0L);
     }

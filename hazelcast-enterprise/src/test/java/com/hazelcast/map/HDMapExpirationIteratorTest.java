@@ -89,7 +89,7 @@ public class HDMapExpirationIteratorTest extends HazelcastTestSupport {
         private class InternalLogger extends AbstractLogger {
             private ILogger delegate;
 
-            public InternalLogger(ILogger logger) {
+            InternalLogger(ILogger logger) {
                 delegate = logger;
             }
 

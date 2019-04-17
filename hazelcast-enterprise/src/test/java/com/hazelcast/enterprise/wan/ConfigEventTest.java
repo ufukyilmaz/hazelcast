@@ -207,7 +207,7 @@ public class ConfigEventTest extends HazelcastTestSupport {
 
         EnterpriseWanReplicationService wanReplicationService;
 
-        public WanSpyingNodeExtension(Node node) {
+        WanSpyingNodeExtension(Node node) {
             super(node);
             wanReplicationService = spy(new EnterpriseWanReplicationService(node));
         }

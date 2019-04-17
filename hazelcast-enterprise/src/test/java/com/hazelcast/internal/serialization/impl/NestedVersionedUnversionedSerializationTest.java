@@ -120,10 +120,10 @@ public class NestedVersionedUnversionedSerializationTest {
 
         private ChildDataSerializable child;
 
-        public ParentVersionedDataSerializable() {
+        ParentVersionedDataSerializable() {
         }
 
-        public ParentVersionedDataSerializable(ChildDataSerializable child) {
+        ParentVersionedDataSerializable(ChildDataSerializable child) {
             this.child = child;
         }
 
@@ -144,7 +144,7 @@ public class NestedVersionedUnversionedSerializationTest {
 
     static class ChildDataSerializable implements DataSerializable {
 
-        public ChildDataSerializable() {
+        ChildDataSerializable() {
         }
 
         @Override
@@ -162,10 +162,10 @@ public class NestedVersionedUnversionedSerializationTest {
 
     static class ParentVersionedIDS extends ParentVersionedDataSerializable implements IdentifiedDataSerializable {
 
-        public ParentVersionedIDS() {
+        ParentVersionedIDS() {
         }
 
-        public ParentVersionedIDS(ChildDataSerializable child) {
+        ParentVersionedIDS(ChildDataSerializable child) {
             super(child);
         }
 
@@ -196,10 +196,10 @@ public class NestedVersionedUnversionedSerializationTest {
         private ParentVersionedDataSerializable parent;
         private ChildDataSerializable child;
 
-        public CompositeNotVersionedDS() {
+        CompositeNotVersionedDS() {
         }
 
-        public CompositeNotVersionedDS(ParentVersionedDataSerializable parent, ChildDataSerializable child) {
+        CompositeNotVersionedDS(ParentVersionedDataSerializable parent, ChildDataSerializable child) {
             this.parent = parent;
             this.child = child;
         }

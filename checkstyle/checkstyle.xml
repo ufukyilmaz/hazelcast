@@ -107,9 +107,6 @@
     </module>
 
     <module name="TreeWalker">
-        <!-- Activate comment suppression filters -->
-        <module name="FileContentsHolder"/>
-
         <!-- Needed for SuppressWarningsFilter to work -->
         <module name="SuppressWarningsHolder"/>
 
@@ -252,6 +249,7 @@
         <module name="InnerAssignment"/>
         <module name="ReturnCount">
             <property name="max" value="8"/>
+            <property name="maxForVoid" value="8"/>
         </module>
         <module name="NestedIfDepth">
             <property name="max" value="2"/>
@@ -298,9 +296,7 @@
             <property name="severity" value="error"/>
             <property name="max" value="12"/>
         </module>
-        <module name="NPathComplexity">
-            <property name="max" value="50"/>
-        </module>
+        <module name="NPathComplexity"/>
 
         <!-- Miscellaneous other checks.                   -->
         <!-- See http://checkstyle.sf.net/config_misc.html -->

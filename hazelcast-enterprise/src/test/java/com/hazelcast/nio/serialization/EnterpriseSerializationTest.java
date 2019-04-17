@@ -303,7 +303,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
 
         public Bar bar;
 
-        public Foo() {
+        Foo() {
             this.bar = new Bar();
         }
 

@@ -233,7 +233,7 @@ public class TlsHandshakeTest {
         private final CyclicBarrier cbAfterWrite;
         private final CyclicBarrier cbBeforeClose;
 
-        public SendBytesRunnable(SocketFactory socketFactory, int port, byte[] payload, CyclicBarrier cbAfterWrite,
+        SendBytesRunnable(SocketFactory socketFactory, int port, byte[] payload, CyclicBarrier cbAfterWrite,
                 CyclicBarrier cbBeforeClose) {
             super();
             this.socketFactory = socketFactory;

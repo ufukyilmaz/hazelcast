@@ -37,5 +37,5 @@ public interface ElasticMap<K, V> extends Map<K, V>, Disposable {
 
     V replace(K key, V value);
 
-    boolean remove(final Object key, final Object value);
+    boolean remove(Object key, Object value);
 }

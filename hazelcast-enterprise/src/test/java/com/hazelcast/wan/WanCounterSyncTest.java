@@ -139,7 +139,7 @@ public class WanCounterSyncTest {
 
         private final HazelcastInstance syncCoordinatorMember;
 
-        public SyncTask(HazelcastInstance syncCoordinatorMember) {
+        SyncTask(HazelcastInstance syncCoordinatorMember) {
             this.syncCoordinatorMember = syncCoordinatorMember;
         }
 

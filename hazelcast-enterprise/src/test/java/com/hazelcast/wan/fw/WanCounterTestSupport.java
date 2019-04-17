@@ -127,7 +127,7 @@ public class WanCounterTestSupport {
         private final Cluster cluster;
         private final WanReplication wanReplication;
 
-        public QueueDrainingProgressCheckerTask(Cluster cluster, WanReplication wanReplication) {
+        QueueDrainingProgressCheckerTask(Cluster cluster, WanReplication wanReplication) {
             this.cluster = cluster;
             this.wanReplication = wanReplication;
         }
@@ -149,7 +149,7 @@ public class WanCounterTestSupport {
         private final int currentBackup;
         private final int totalPrimaryEvents;
 
-        public WanCounterTaskProgress(int totalPublished, int currentPrimary, int currentBackup) {
+        WanCounterTaskProgress(int totalPublished, int currentPrimary, int currentBackup) {
             this.totalPublished = totalPublished;
             this.currentPrimary = currentPrimary;
             this.currentBackup = currentBackup;

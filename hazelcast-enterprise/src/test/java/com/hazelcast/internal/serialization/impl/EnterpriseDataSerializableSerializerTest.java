@@ -368,7 +368,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
         private int value;
 
-        public TestDataSerializable() {
+        TestDataSerializable() {
         }
 
         TestDataSerializable(int value) {
@@ -390,7 +390,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
         private int value;
 
-        public TestVersionedDataSerializable() {
+        TestVersionedDataSerializable() {
         }
 
         TestVersionedDataSerializable(int value) {
@@ -412,7 +412,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
         private int value;
 
-        public TestIdentifiedDataSerializable() {
+        TestIdentifiedDataSerializable() {
         }
 
         TestIdentifiedDataSerializable(int value) {
@@ -444,7 +444,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
         private int value;
 
-        public TestUncompressableIdentifiedDataSerializable() {
+        TestUncompressableIdentifiedDataSerializable() {
         }
 
         TestUncompressableIdentifiedDataSerializable(int value) {
@@ -474,7 +474,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
     private static class TestNotInstantiableDataSerializable implements DataSerializable {
 
-        public TestNotInstantiableDataSerializable() {
+        TestNotInstantiableDataSerializable() {
             throw new HazelcastException("expected");
         }
 

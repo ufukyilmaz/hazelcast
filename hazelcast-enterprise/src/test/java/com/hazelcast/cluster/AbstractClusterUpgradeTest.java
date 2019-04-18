@@ -33,6 +33,7 @@ import static com.hazelcast.license.domain.Feature.ROLLING_UPGRADE;
 import static com.hazelcast.spi.properties.GroupProperty.ENTERPRISE_LICENSE_KEY;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeNotNull;
 
 /**
  * Creates a cluster, then change cluster version.
@@ -44,12 +45,12 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("WeakerAccess")
 public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
 
-    static final Version CLUSTER_VERSION_PREVIOUS_MINOR;
+    static final Version CLUSTER_VERSION_PREVIOUS_MINOR; // may be null if current minor is 0
     static final Version CLUSTER_VERSION_CURRENT;
     static final Version CLUSTER_VERSION_NEXT_MINOR;
     static final Version CLUSTER_VERSION_2NEXT_MINOR;
 
-    static final MemberVersion MEMBER_VERSION_PREVIOUS_MINOR;
+    static final MemberVersion MEMBER_VERSION_PREVIOUS_MINOR; // may be null if current minor is 0
     static final MemberVersion MEMBER_VERSION_CURRENT;
     static final MemberVersion MEMBER_VERSION_NEXT_PATCH;
     static final MemberVersion MEMBER_VERSION_NEXT_MINOR;
@@ -65,14 +66,14 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
         CLUSTER_VERSION_CURRENT = CURRENT_CLUSTER_VERSION;
         CLUSTER_VERSION_NEXT_MINOR = Version.of(currentMajor, currentMinor + 1);
         CLUSTER_VERSION_2NEXT_MINOR = Version.of(currentMajor, currentMinor + 2);
-        CLUSTER_VERSION_PREVIOUS_MINOR = Version.of(currentMajor, currentMinor - 1);
+        CLUSTER_VERSION_PREVIOUS_MINOR = currentMinor == 0 ? null : Version.of(currentMajor, currentMinor - 1);
 
         MEMBER_VERSION_CURRENT = MemberVersion.of(currentMajor, currentMinor, 0);
         MEMBER_VERSION_NEXT_PATCH = MemberVersion.of(currentMajor, currentMinor, 1);
         MEMBER_VERSION_NEXT_MINOR = MemberVersion.of(currentMajor, currentMinor + 1, 0);
         MEMBER_VERSION_2NEXT_MINOR = MemberVersion.of(currentMajor, currentMinor + 2, 0);
         MEMBER_VERSION_NEXT_MAJOR = MemberVersion.of(currentMajor + 1, 0, 0);
-        MEMBER_VERSION_PREVIOUS_MINOR = MemberVersion.of(currentMajor, currentMinor - 1, 0);
+        MEMBER_VERSION_PREVIOUS_MINOR = currentMinor == 0 ? null : MemberVersion.of(currentMajor, currentMinor - 1, 0);
     }
 
     @Rule
@@ -152,12 +153,14 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
 
     @Test
     public void test_addNodeOfLesserThanClusterVersion_notAllowed() {
+        assumeNotNull(MEMBER_VERSION_PREVIOUS_MINOR);
         expectedException.expect(IllegalStateException.class);
         createHazelcastInstance(MEMBER_VERSION_PREVIOUS_MINOR, getConfig());
     }
 
     @Test
     public void test_decreaseClusterVersion_allowedForCompatibleMinorVersions() {
+        assumeNotNull(CLUSTER_VERSION_PREVIOUS_MINOR);
         if (!isRollingUpgradeLicensed()) {
             // when RU is not licensed, we expect upgraded node startup to fail with:
             // java.lang.IllegalStateException: Node failed to start!
@@ -170,6 +173,7 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
 
     @Test
     public void test_decreaseClusterVersion_disallowedForIncompatibleMinorVersions() {
+        assumeNotNull(CLUSTER_VERSION_PREVIOUS_MINOR);
         if (!isRollingUpgradeLicensed()) {
             // when RU is not licensed, we expect upgraded node startup to fail with:
             // java.lang.IllegalStateException: Node failed to start!

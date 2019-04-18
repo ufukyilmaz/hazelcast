@@ -18,6 +18,7 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -53,6 +54,7 @@ public class EnterpriseClusterVersionTest extends HazelcastTestSupport {
     public void test_clusterVersionUpgradeSucceeds_whenNodeMinorVersionPlusOne() {
         // since Node.version is private final, manipulate cluster version to current minor-1
         Version originalVersion = cluster.getClusterVersion();
+        assumeTrue(originalVersion.getMinor() > 0);
         // directly set cluster version to {major, minor-1, patch}
         Version olderVersion = Version.of(originalVersion.getMajor(), originalVersion.getMinor() - 1);
         // supplant with older version

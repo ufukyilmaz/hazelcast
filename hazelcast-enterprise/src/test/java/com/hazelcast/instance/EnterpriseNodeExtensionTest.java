@@ -37,6 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Test for EnterpriseNodeExtension.isNodeCompatibleWith(clusterVersion) &
@@ -74,6 +75,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
 
     @Test
     public void test_nodeCurrentVersionCompatibleWith_clusterPreviousMinorVersion() {
+        assumeTrue(nodeVersion.getMinor() > 0);
         Version minorMinusOne = Version.of(nodeVersion.getMajor(), nodeVersion.getMinor() - 1);
         assertTrue(nodeExtension.isNodeVersionCompatibleWith(minorMinusOne));
     }

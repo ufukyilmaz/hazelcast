@@ -26,6 +26,7 @@ import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertNodesVersion;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeNotNull;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -41,9 +42,8 @@ public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStart
         MemberVersion nextMinorVersion = MemberVersion.of(currentVersion.getMajor(),
                 currentVersion.getMinor() + 1,
                 currentVersion.getPatch());
-        MemberVersion previousMinorVersion = MemberVersion.of(currentVersion.getMajor(),
-                currentVersion.getMinor() - 1,
-                currentVersion.getPatch());
+        MemberVersion previousMinorVersion = currentVersion.getMinor() == 0 ? null
+                : MemberVersion.of(currentVersion.getMajor(), currentVersion.getMinor() - 1, currentVersion.getPatch());
         MemberVersion nextMajorVersion = MemberVersion.of(currentVersion.getMajor() + 1, 0, 0);
 
         MEMBER_VERSION = currentVersion;
@@ -115,6 +115,7 @@ public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStart
     // V-1 member does not start because its version is incompatible with the stored cluster version
     @Test
     public void test_hotRestartPartialSucceeds_whenOneMember_hasIncompatibleCodebaseVersion() {
+        assumeNotNull(PREVIOUS_MINOR_MEMBER_VERSION);
         final HazelcastInstance[] instances = startNewInstances(2, FULL_RECOVERY_ONLY, MEMBER_VERSION);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         invokeDummyOperationOnAllPartitions(instances);
@@ -145,6 +146,7 @@ public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStart
     // V+1 member does not start because its missing one member of the cluster
     @Test
     public void test_hotRestartFullRecoveryFails_whenOneMember_hasIncompatibleCodebaseVersion() {
+        assumeNotNull(PREVIOUS_MINOR_MEMBER_VERSION);
         final HazelcastInstance[] instances = startNewInstances(2, FULL_RECOVERY_ONLY, MEMBER_VERSION);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         invokeDummyOperationOnAllPartitions(instances);

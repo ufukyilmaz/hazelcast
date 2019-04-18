@@ -10,7 +10,6 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
-import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
@@ -36,7 +35,6 @@ import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.CURRE
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -207,14 +205,6 @@ public class HotRestartCompatibilityTest extends HazelcastTestSupport {
             PartitionTableView partitionTableView = getPartitionService(instance).createPartitionTableView();
             assertThat(partitionTableView.getVersion(), greaterThanOrEqualTo(partitionStateVersion));
             assertEquals(partitionTableView0, partitionTableView);
-            for (int i = 0; i < partitionTableView.getLength(); i++) {
-                PartitionReplica[] members = partitionTableView.getReplicas(i);
-                for (PartitionReplica member : members) {
-                    if (member != null) {
-                        assertNotEquals(PartitionReplica.UNKNOWN_UID, member.uuid());
-                    }
-                }
-            }
         }
     }
 

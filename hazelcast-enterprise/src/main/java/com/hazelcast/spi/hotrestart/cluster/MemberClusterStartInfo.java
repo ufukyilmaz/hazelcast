@@ -23,6 +23,9 @@ import static com.hazelcast.spi.hotrestart.cluster.PartitionTableWriter.writePar
 @SerializableByConvention(PUBLIC_API)
 public class MemberClusterStartInfo implements DataSerializable, Versioned {
 
+    // RU_COMPAT_3_11
+    private static final String UNKNOWN_UID = "<unknown-uuid>";
+
     /**
      * Data load status for eache member during Hot Restart
      */
@@ -117,7 +120,7 @@ public class MemberClusterStartInfo implements DataSerializable, Versioned {
                 if (exists) {
                     Address address = new Address();
                     address.readData(in);
-                    replicas[i][j] = new PartitionReplica(address, PartitionReplica.UNKNOWN_UID);
+                    replicas[i][j] = new PartitionReplica(address, UNKNOWN_UID);
                 }
             }
         }

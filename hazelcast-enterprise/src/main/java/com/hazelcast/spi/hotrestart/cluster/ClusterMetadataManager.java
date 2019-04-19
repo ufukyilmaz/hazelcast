@@ -7,7 +7,6 @@ import com.hazelcast.core.Member;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.ClusterService;
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
@@ -87,15 +86,13 @@ public class ClusterMetadataManager {
     private final ILogger logger;
     private final long validationTimeout;
     private final long dataLoadTimeout;
-    private final AtomicReference<PartitionTableView> partitionTableRef = new AtomicReference<PartitionTableView>();
+    private final AtomicReference<PartitionTableView> partitionTableRef = new AtomicReference<>();
     private final HotRestartClusterDataRecoveryPolicy clusterDataRecoveryPolicy;
     private final ReentrantLock hotRestartStatusLock = new ReentrantLock();
-    private final ConcurrentMap<String, MemberClusterStartInfo> memberClusterStartInfos =
-            new ConcurrentHashMap<String, MemberClusterStartInfo>();
-    private final AtomicReference<Collection<MemberImpl>> restoredMembersRef = new AtomicReference<Collection<MemberImpl>>();
-    private final AtomicReference<Map<String, Address>> expectedMembersRef = new AtomicReference<Map<String, Address>>();
-    private final List<ClusterHotRestartEventListener> hotRestartEventListeners =
-            new CopyOnWriteArrayList<ClusterHotRestartEventListener>();
+    private final ConcurrentMap<String, MemberClusterStartInfo> memberClusterStartInfos = new ConcurrentHashMap<>();
+    private final AtomicReference<Collection<MemberImpl>> restoredMembersRef = new AtomicReference<>();
+    private final AtomicReference<Map<String, Address>> expectedMembersRef = new AtomicReference<>();
+    private final List<ClusterHotRestartEventListener> hotRestartEventListeners = new CopyOnWriteArrayList<>();
     private Thread pingThread;
 
     private volatile ClusterMetadataWriterLoop metadataWriterLoop;
@@ -145,11 +142,11 @@ public class ClusterMetadataManager {
                 setClusterVersion(node.clusterService, clusterVersion);
             }
             final Collection<MemberImpl> members = restoreMemberList();
-            final PartitionTableView table = restorePartitionTable(members);
+            final PartitionTableView table = restorePartitionTable();
             if (startWithHotRestart) {
                 ClusterServiceImpl clusterService = node.clusterService;
                 setClusterState(clusterService, ClusterState.PASSIVE, true);
-                List<MemberImpl> membersRemovedInNotActiveState = new ArrayList<MemberImpl>(members);
+                List<MemberImpl> membersRemovedInNotActiveState = new ArrayList<>(members);
                 membersRemovedInNotActiveState.remove(clusterService.getLocalMember());
                 setMissingMembers(clusterService, membersRemovedInNotActiveState);
             }
@@ -188,7 +185,7 @@ public class ClusterMetadataManager {
     public Set<String> getExcludedMemberUuids() {
         // this is on purpose. We can start filling excludedMemberUuids before status is finalized
         // but we only publish it when the final status is set
-        return hotRestartStatus == CLUSTER_START_SUCCEEDED ? excludedMemberUuids : Collections.<String>emptySet();
+        return hotRestartStatus == CLUSTER_START_SUCCEEDED ? excludedMemberUuids : Collections.emptySet();
     }
 
     /**
@@ -264,7 +261,7 @@ public class ClusterMetadataManager {
         if (hotRestartEventListeners.isEmpty()) {
             return;
         }
-        Collection<MemberImpl> members = new ArrayList<MemberImpl>();
+        Collection<MemberImpl> members = new ArrayList<>();
         Map<String, Address> expectedMembers = expectedMembersRef.get();
         if (expectedMembers != null) {
             for (MemberImpl member : restoredMembersRef.get()) {
@@ -463,12 +460,6 @@ public class ClusterMetadataManager {
             logger.fine("Will persist cluster version: " + newClusterVersion);
         }
         metadataWriterLoop.writeClusterVersion(newClusterVersion);
-
-        // RU_COMPAT_3_11
-        if (newClusterVersion.isEqualTo(Versions.V3_12)) {
-            // persist partitions with the new format
-            persistPartitions();
-        }
     }
 
     File getHomeDir() {
@@ -487,7 +478,7 @@ public class ClusterMetadataManager {
                 logger.warning("cannot trigger force start since cluster start status is " + hotRestartStatus);
                 return false;
             }
-            Set<String> excludedMemberUuids = new HashSet<String>();
+            Set<String> excludedMemberUuids = new HashSet<>();
             for (Member member : restoredMembersRef.get()) {
                 excludedMemberUuids.add(member.getUuid());
             }
@@ -538,7 +529,7 @@ public class ClusterMetadataManager {
             return false;
         }
         ClusterServiceImpl clusterService = node.getClusterService();
-        Map<String, Address> expectedMembers = new HashMap<String, Address>();
+        Map<String, Address> expectedMembers = new HashMap<>();
         for (MemberImpl restoredMember : restoredMembersRef.get()) {
             MemberImpl currentMember = clusterService.getMember(restoredMember.getUuid());
             if (currentMember != null) {
@@ -652,7 +643,6 @@ public class ClusterMetadataManager {
             return false;
         }
 
-        boolean compatibilityMode = node.getClusterService().getClusterVersion().isLessThan(Versions.V3_12);
         for (int partitionId = 0; partitionId < localPartitionTable.getLength(); partitionId++) {
             for (int replicaIndex = 0; replicaIndex < InternalPartition.MAX_REPLICA_COUNT; replicaIndex++) {
                 PartitionReplica localReplica = localPartitionTable.getReplica(partitionId, replicaIndex);
@@ -670,15 +660,7 @@ public class ClusterMetadataManager {
                             + " but sender's replica is null. partitionId=" + partitionId + ", replicaIndex=" + replicaIndex);
                     return false;
                 }
-                // RU_COMPAT_3_11
-                if (compatibilityMode) {
-                    if (!localReplica.address().equals(remoteReplica.address())) {
-                        logger.fine("Partition table validation failed! Local replica is " + localReplica
-                                + " but sender's replica is " + remoteReplica
-                                + ". partitionId=" + partitionId + ", replicaIndex=" + replicaIndex);
-                        return false;
-                    }
-                } else if (!localReplica.uuid().equals(remoteReplica.uuid())) {
+                if (!localReplica.uuid().equals(remoteReplica.uuid())) {
                     logger.fine("Partition table validation failed! Local replica is " + localReplica
                             + " but sender's replica is " + remoteReplica
                             + ". partitionId=" + partitionId + ", replicaIndex=" + replicaIndex);
@@ -841,7 +823,7 @@ public class ClusterMetadataManager {
 
                 // ORDER IS IMPORTANT. excludedMemberUuids is set before hotRestartStatus since hotRestartStatus can be read
                 // without acquiring the lock and excludedMemberUuids should be there once it is success.
-                this.excludedMemberUuids = unmodifiableSet(new HashSet<String>(excludedMemberUuids));
+                this.excludedMemberUuids = unmodifiableSet(new HashSet<>(excludedMemberUuids));
                 node.getClusterService().shrinkMissingMembers(this.excludedMemberUuids);
                 if (result == CLUSTER_START_SUCCEEDED && !excludedMemberUuids.contains(node.getThisUuid())) {
                     this.clusterState = clusterState;
@@ -867,20 +849,11 @@ public class ClusterMetadataManager {
         node.partitionService.setInitialState(partitionTable);
     }
 
-    private PartitionTableView restorePartitionTable(Collection<MemberImpl> members) throws IOException {
+    private PartitionTableView restorePartitionTable() throws IOException {
         int partitionCount = node.getProperties().getInteger(GroupProperty.PARTITION_COUNT);
-        PartitionTableView table;
-        if (node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V3_12)) {
-            PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
-            partitionTableReader.read();
-            table = partitionTableReader.getPartitionTable();
-        } else {
-            // RU_COMPAT_3_11
-            LegacyPartitionTableReader partitionTableReader = new LegacyPartitionTableReader(homeDir, partitionCount);
-            partitionTableReader.read();
-            PartitionReplica[] replicas = PartitionReplica.from(members.toArray(new Member[0]));
-            table = partitionTableReader.getPartitionTable(replicas);
-        }
+        PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
+        partitionTableReader.read();
+        PartitionTableView table = partitionTableReader.getPartitionTable();
 
         partitionTableRef.set(table);
         if (logger.isFineEnabled()) {
@@ -936,7 +909,7 @@ public class ClusterMetadataManager {
         if (addressMapping.isEmpty()) {
             return;
         }
-        Collection<MemberImpl> updatedMembers = new HashSet<MemberImpl>();
+        Collection<MemberImpl> updatedMembers = new HashSet<>();
         for (MemberImpl member : restoredMembersRef.get()) {
             Address newAddress = addressMapping.get(member.getAddress());
             if (newAddress == null) {
@@ -1004,7 +977,7 @@ public class ClusterMetadataManager {
     private void awaitUntilExpectedMembersJoin() throws InterruptedException {
         final Set<String> restoredMemberUuids = getRestoredMemberUuids();
         final ClusterServiceImpl clusterService = node.getClusterService();
-        Map<String, Address> expectedMembers = new HashMap<String, Address>();
+        Map<String, Address> expectedMembers = new HashMap<>();
 
         while (expectedMembersRef.get() == null) {
             if (node.isMaster()) {
@@ -1049,7 +1022,7 @@ public class ClusterMetadataManager {
     }
 
     private Set<String> getRestoredMemberUuids() {
-        Set<String> restoredMemberUuids = new HashSet<String>();
+        Set<String> restoredMemberUuids = new HashSet<>();
         for (MemberImpl member : restoredMembersRef.get()) {
             restoredMemberUuids.add(member.getUuid());
         }
@@ -1125,7 +1098,7 @@ public class ClusterMetadataManager {
                     + ", Local member: " + localMember);
         }
 
-        Map<Address, Address> addressMapping = new HashMap<Address, Address>();
+        Map<Address, Address> addressMapping = new HashMap<>();
         for (Member restoredMember : restoredMembersRef.get()) {
             Address expectedAddress = expectedMembers.get(restoredMember.getUuid());
             if (expectedAddress == null) {
@@ -1239,7 +1212,7 @@ public class ClusterMetadataManager {
             } else {
                 // cluster start is success. just send the current member list except the excluded ones
                 ClusterServiceImpl clusterService = node.getClusterService();
-                Map<String, Address> expectedMembers = new HashMap<String, Address>();
+                Map<String, Address> expectedMembers = new HashMap<>();
                 for (Member member : clusterService.getActiveAndMissingMembers()) {
                     if (excludedMemberUuids.contains(member.getUuid())) {
                         continue;
@@ -1298,7 +1271,7 @@ public class ClusterMetadataManager {
     }
 
     private Map<Integer, List<String>> collectLoadSucceededMemberUuidsByPartitionTableVersion() {
-        Map<Integer, List<String>> membersUuidsByPartitionTableVersion = new HashMap<Integer, List<String>>();
+        Map<Integer, List<String>> membersUuidsByPartitionTableVersion = new HashMap<>();
         final Map<String, Address> expectedMembers = expectedMembersRef.get();
         for (MemberImpl member : restoredMembersRef.get()) {
             if (!expectedMembers.containsKey(member.getUuid())) {
@@ -1309,11 +1282,8 @@ public class ClusterMetadataManager {
                 continue;
             }
             int partitionTableVersion = memberClusterStartInfo.getPartitionTableVersion();
-            List<String> members = membersUuidsByPartitionTableVersion.get(partitionTableVersion);
-            if (members == null) {
-                members = new ArrayList<String>();
-                membersUuidsByPartitionTableVersion.put(partitionTableVersion, members);
-            }
+            List<String> members =
+                    membersUuidsByPartitionTableVersion.computeIfAbsent(partitionTableVersion, k -> new ArrayList<>());
 
             members.add(member.getUuid());
         }
@@ -1348,7 +1318,7 @@ public class ClusterMetadataManager {
         logger.info("Picking members " + selectedMembers
                 + " with partition table version: " + selectedPartitionTableVersion);
 
-        Set<String> excludedMemberUuids = new HashSet<String>();
+        Set<String> excludedMemberUuids = new HashSet<>();
         for (Member member : restoredMembersRef.get()) {
             if (!selectedMembers.contains(member.getUuid())) {
                 excludedMemberUuids.add(member.getUuid());
@@ -1391,12 +1361,7 @@ public class ClusterMetadataManager {
         if (logger.isFinestEnabled()) {
             logger.finest("Will persist partition table version: " + partitionTable.getVersion());
         }
-        if (node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V3_12)) {
-            metadataWriterLoop.writePartitionTable(partitionTable);
-        } else {
-            // RU_COMPAT_3_11
-            metadataWriterLoop.writePartitionTableLegacy(partitionTable);
-        }
+        metadataWriterLoop.writePartitionTable(partitionTable);
     }
 
     private void broadcast(Operation operation) {

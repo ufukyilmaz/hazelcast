@@ -135,7 +135,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
         super.writeInternal(out);
         out.writeUTF(transactionPhase.toString());
         out.writeLong(backupSeq);
-        initiator.writeData(out);
+        out.writeObject(initiator);
         out.writeUTF(txnId);
         out.writeLong(leaseTime);
     }
@@ -150,8 +150,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
             EmptyStatement.ignore(ignored);
         }
         backupSeq = in.readLong();
-        initiator = new Address();
-        initiator.readData(in);
+        initiator = in.readObject();
         txnId = in.readUTF();
         leaseTime = in.readLong();
     }

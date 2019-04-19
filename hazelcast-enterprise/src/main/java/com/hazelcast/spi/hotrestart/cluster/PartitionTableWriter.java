@@ -64,7 +64,7 @@ final class PartitionTableWriter extends AbstractMetadataWriter<PartitionTableVi
     @SuppressWarnings("checkstyle:illegaltype")
     // Returns a LinkedHashMap with insertion order on purpose.
     private static LinkedHashMap<PartitionReplica, Integer> createReplicaIdToIndexMap(PartitionTableView partitionTable) {
-        LinkedHashMap<PartitionReplica, Integer> map = new LinkedHashMap<PartitionReplica, Integer>();
+        LinkedHashMap<PartitionReplica, Integer> map = new LinkedHashMap<>();
         int addressIndex = 0;
         for (int partitionId = 0; partitionId < partitionTable.getLength(); partitionId++) {
             for (int replicaIndex = 0; replicaIndex < MAX_REPLICA_COUNT; replicaIndex++) {

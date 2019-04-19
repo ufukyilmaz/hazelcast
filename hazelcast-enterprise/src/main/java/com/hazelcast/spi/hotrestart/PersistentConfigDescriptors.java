@@ -10,7 +10,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +36,11 @@ public class PersistentConfigDescriptors {
     /**
      * Mappings from a combination of service name and distributed object name to cache descriptor
      */
-    private final Map<String, ConfigDescriptor> nameToDesc = new ConcurrentHashMap<String, ConfigDescriptor>();
+    private final Map<String, ConfigDescriptor> nameToDesc = new ConcurrentHashMap<>();
     /**
      * Mappings from a combination of cache ID to cache descriptor
      */
-    private final Map<Integer, ConfigDescriptor> idToDesc = new ConcurrentHashMap<Integer, ConfigDescriptor>();
+    private final Map<Integer, ConfigDescriptor> idToDesc = new ConcurrentHashMap<>();
     private final File configsDir;
     private volatile int cacheIdSeq;
 
@@ -181,12 +180,7 @@ public class PersistentConfigDescriptors {
             if (cacheIdSeq != 0) {
                 return;
             }
-            File[] configFiles = configsDir.listFiles(new FilenameFilter() {
-                @Override
-                public boolean accept(File file, String name) {
-                    return name.endsWith(CONFIG_SUFFIX);
-                }
-            });
+            File[] configFiles = configsDir.listFiles((file, name) -> name.endsWith(CONFIG_SUFFIX));
             if (configFiles == null) {
                 return;
             }

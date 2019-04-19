@@ -59,7 +59,7 @@ public class SendExpectedMembersOperation extends Operation implements JoinOpera
             throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        expectedMembers = new HashMap<String, Address>(size);
+        expectedMembers = new HashMap<>(size);
         for (int i = 0; i < size; i++) {
             String uuid = in.readUTF();
             Address address = in.readObject();

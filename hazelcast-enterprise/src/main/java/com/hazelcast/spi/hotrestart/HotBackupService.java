@@ -43,7 +43,7 @@ public class HotBackupService implements HotRestartService, TransactionalService
     private static final long LOCK_LEASE_EXTENSION_MILLIS = TimeUnit.SECONDS.toMillis(20);
     private final Node node;
     private final Lock serviceLock = new ReentrantLock();
-    private final AtomicReference<LockGuard> lockGuardRef = new AtomicReference<LockGuard>(LockGuard.NOT_LOCKED);
+    private final AtomicReference<LockGuard> lockGuardRef = new AtomicReference<>(LockGuard.NOT_LOCKED);
     private final HotRestartIntegrationService hotRestartService;
 
     public HotBackupService(Node node, HotRestartIntegrationService hotRestartService) {

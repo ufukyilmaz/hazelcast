@@ -37,7 +37,7 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
                                            Set<String> excludedMemberUuids,
                                            ClusterState clusterState) {
         this.result = result;
-        this.excludedMemberUuids = excludedMemberUuids == null ? Collections.<String>emptySet() : excludedMemberUuids;
+        this.excludedMemberUuids = excludedMemberUuids == null ? Collections.emptySet() : excludedMemberUuids;
         this.clusterState = clusterState;
     }
 
@@ -83,7 +83,7 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
         super.readInternal(in);
         result = HotRestartClusterStartStatus.valueOf(in.readUTF());
         int uuidCount = in.readInt();
-        excludedMemberUuids = new HashSet<String>();
+        excludedMemberUuids = new HashSet<>();
         for (int i = 0; i < uuidCount; i++) {
             excludedMemberUuids.add(in.readUTF());
         }

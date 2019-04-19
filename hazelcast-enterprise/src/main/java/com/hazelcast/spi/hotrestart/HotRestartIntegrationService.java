@@ -35,7 +35,6 @@ import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 import com.hazelcast.util.UuidUtil;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -87,8 +86,8 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private static final char OFFHEAP_SUFFIX = '1';
     private static final String STORE_NAME_PATTERN = STORE_PREFIX + "\\d+" + ONHEAP_SUFFIX;
 
-    private final Map<String, RamStoreRegistry> ramStoreRegistryServiceMap = new ConcurrentHashMap<String, RamStoreRegistry>();
-    private final Map<Long, RamStoreRegistry> ramStoreRegistryPrefixMap = new ConcurrentHashMap<Long, RamStoreRegistry>();
+    private final Map<String, RamStoreRegistry> ramStoreRegistryServiceMap = new ConcurrentHashMap<>();
+    private final Map<Long, RamStoreRegistry> ramStoreRegistryPrefixMap = new ConcurrentHashMap<>();
     private final File hotRestartHome;
     private final File hotRestartBackupDir;
     private final Node node;
@@ -119,9 +118,10 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         this.clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, config);
         this.persistentConfigDescriptors = new PersistentConfigDescriptors(hotRestartHome);
         this.dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(config.getDataLoadTimeoutSeconds());
-        this.loadedConfigurationListeners = new ArrayList<LoadedConfigurationListener>();
+        this.loadedConfigurationListeners = new ArrayList<>();
     }
 
+    @SuppressWarnings("checkstyle:npathcomplexity")
     private DirectoryLock acquireHotRestartDir(HotRestartPersistenceConfig config) {
         File baseDir = config.getBaseDir();
         if (!baseDir.exists() && !baseDir.mkdirs() && !baseDir.exists()) {
@@ -135,15 +135,12 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             logger.info("Found legacy hot-restart directory: " + baseDir.getAbsolutePath());
             return lockForDirectory(baseDir, logger);
         }
-        File[] dirs = baseDir.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File f) {
-                boolean hotRestartDirectory = isHotRestartDirectory(f);
-                if (!hotRestartDirectory) {
-                    logger.fine(f.getAbsolutePath() + " is not a valid hot-restart directory.");
-                }
-                return hotRestartDirectory;
+        File[] dirs = baseDir.listFiles(f -> {
+            boolean hotRestartDirectory = isHotRestartDirectory(f);
+            if (!hotRestartDirectory) {
+                logger.fine(f.getAbsolutePath() + " is not a valid hot-restart directory.");
             }
+            return hotRestartDirectory;
         });
         if (dirs == null) {
             return newHotRestartDir(baseDir);
@@ -535,12 +532,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         if (!hotRestartHome.exists()) {
             return 0;
         }
-        File[] stores = hotRestartHome.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File f) {
-                return f.isDirectory() && f.getName().matches(STORE_NAME_PATTERN);
-            }
-        });
+        File[] stores = hotRestartHome.listFiles(f -> f.isDirectory() && f.getName().matches(STORE_NAME_PATTERN));
         return stores != null ? stores.length : 0;
     }
 
@@ -603,7 +595,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         assert stores.length == storeCount;
         long deadline = cappedSum(currentTimeMillis(), dataLoadTimeoutMillis);
         final RamStoreRestartLoop loop = new RamStoreRestartLoop(stores.length, partitionThreadCount, this, logger);
-        final AtomicReference<Throwable> failure = new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
         Thread[] restartThreads = new Thread[stores.length];
         for (int i = 0; i < stores.length; i++) {
             final int storeIndex = i;
@@ -625,16 +617,13 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             t.start();
         }
         final CountDownLatch doneLatch = new CountDownLatch(partitionThreadCount);
-        getOperationExecutor().executeOnPartitionThreads(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    loop.run(((OperationThread) currentThread()).getThreadId());
-                } catch (Throwable t) {
-                    failure.compareAndSet(null, t);
-                } finally {
-                    doneLatch.countDown();
-                }
+        getOperationExecutor().executeOnPartitionThreads(() -> {
+            try {
+                loop.run(((OperationThread) currentThread()).getThreadId());
+            } catch (Throwable t) {
+                failure.compareAndSet(null, t);
+            } finally {
+                doneLatch.countDown();
             }
         });
         try {

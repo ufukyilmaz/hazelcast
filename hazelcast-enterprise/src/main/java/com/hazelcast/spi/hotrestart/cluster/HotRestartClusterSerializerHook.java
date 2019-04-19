@@ -34,48 +34,13 @@ public class HotRestartClusterSerializerHook implements DataSerializerHook {
     public DataSerializableFactory createFactory() {
         ConstructorFunction<Integer, IdentifiedDataSerializable>[] constructors = new ConstructorFunction[LEN];
 
-        constructors[ASK_FOR_CLUSTER_START_RESULT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new AskForClusterStartResultOperation();
-            }
-        };
-        constructors[ASK_FOR_EXPECTED_MEMBERS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new AskForExpectedMembersOperation();
-            }
-        };
-        constructors[SEND_CLUSTER_START_RESULT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SendClusterStartResultOperation();
-            }
-        };
-        constructors[SEND_MEMBER_CLUSTER_START_INFO] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SendMemberClusterStartInfoOperation();
-            }
-        };
-        constructors[TRIGGER_FORCE_START] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new TriggerForceStartOnMasterOperation();
-            }
-        };
-        constructors[SEND_EXPECTED_MEMBERS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SendExpectedMembersOperation();
-            }
-        };
-        constructors[SEND_EXCLUDED_MEMBER_UUIDS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SendExcludedMemberUuidsOperation();
-            }
-        };
+        constructors[ASK_FOR_CLUSTER_START_RESULT] = arg -> new AskForClusterStartResultOperation();
+        constructors[ASK_FOR_EXPECTED_MEMBERS] = arg -> new AskForExpectedMembersOperation();
+        constructors[SEND_CLUSTER_START_RESULT] = arg -> new SendClusterStartResultOperation();
+        constructors[SEND_MEMBER_CLUSTER_START_INFO] = arg -> new SendMemberClusterStartInfoOperation();
+        constructors[TRIGGER_FORCE_START] = arg -> new TriggerForceStartOnMasterOperation();
+        constructors[SEND_EXPECTED_MEMBERS] = arg -> new SendExpectedMembersOperation();
+        constructors[SEND_EXCLUDED_MEMBER_UUIDS] = arg -> new SendExcludedMemberUuidsOperation();
 
         return new ArrayDataSerializableFactory(constructors);
     }

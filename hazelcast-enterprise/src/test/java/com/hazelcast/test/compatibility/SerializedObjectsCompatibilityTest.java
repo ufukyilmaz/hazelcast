@@ -37,6 +37,7 @@ import java.util.Set;
 
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_ENTERPRISE;
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
+import static com.hazelcast.internal.cluster.Versions.CURRENT_CLUSTER_VERSION;
 import static com.hazelcast.internal.cluster.Versions.PREVIOUS_CLUSTER_VERSION;
 import static com.hazelcast.test.compatibility.SamplingSerializationService.isTestClass;
 import static com.hazelcast.util.StringUtil.LINE_SEPARATOR;
@@ -78,6 +79,8 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
 
     @Before
     public void setup() {
+        assumeTrue("This test must be updated for execution during 4.1 development cycle "
+                + "with serialized objects samples from 4.0", Version.of("4.1").equals(CURRENT_CLUSTER_VERSION));
         serializedObjectsResource = format(CLASSPATH_RESOURCE_PATTERN, samplesVersion);
         eeSerializedObjectsResource = format(EE_CLASSPATH_RESOURCE_PATTERN, samplesVersion);
     }

@@ -11,7 +11,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.ReadonlyOperation;
 import com.hazelcast.util.collection.InflatableSet;
 import com.hazelcast.util.collection.InflatableSet.Builder;
-import com.hazelcast.util.function.Consumer;
 import com.hazelcast.wan.merkletree.MerkleTree;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -19,6 +18,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Consumer;
 
 /**
  * Operation for fetching map entries for any number of merkle tree nodes.

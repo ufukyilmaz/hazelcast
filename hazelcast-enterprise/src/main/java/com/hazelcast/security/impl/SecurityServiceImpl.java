@@ -8,11 +8,11 @@ import com.hazelcast.security.SecurityService;
 import com.hazelcast.spi.CoreService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PreJoinAwareService;
-import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.Version;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.hazelcast.internal.cluster.Versions.V3_9;
 import static com.hazelcast.internal.util.InvocationUtil.invokeOnStableClusterSerial;

@@ -4,9 +4,9 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.networking.ChannelInitializer;
 import com.hazelcast.spi.properties.HazelcastProperties;
-import com.hazelcast.util.function.Function;
 
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 import static com.hazelcast.internal.networking.ChannelOption.DIRECT_BUF;
 import static com.hazelcast.internal.networking.ChannelOption.SO_KEEPALIVE;

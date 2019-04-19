@@ -16,9 +16,9 @@ import com.hazelcast.nio.ssl.UnifiedTLSChannelInitializer;
 import com.hazelcast.nio.tcp.DefaultChannelInitializerProvider;
 import com.hazelcast.nio.tcp.UnifiedProtocolDecoder;
 import com.hazelcast.nio.tcp.UnifiedProtocolEncoder;
-import com.hazelcast.util.function.Function;
 
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 public class EnterpriseChannelInitializerProvider extends DefaultChannelInitializerProvider {
 

@@ -10,12 +10,12 @@ import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.util.function.Supplier;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 

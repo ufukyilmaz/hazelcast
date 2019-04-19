@@ -7,11 +7,11 @@ import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.Packet;
 import com.hazelcast.nio.PacketIOHelper;
-import com.hazelcast.util.function.Consumer;
 
 import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;

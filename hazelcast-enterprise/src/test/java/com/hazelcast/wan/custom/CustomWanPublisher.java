@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 public class CustomWanPublisher extends AbstractWanPublisher implements Runnable {
 
-    static final BlockingQueue<WanReplicationEvent> EVENT_QUEUE = new ArrayBlockingQueue<WanReplicationEvent>(100);
+    static final BlockingQueue<WanReplicationEvent> EVENT_QUEUE = new ArrayBlockingQueue<>(100);
 
     private volatile boolean running = true;
 
@@ -53,7 +53,7 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
         while (running) {
             try {
                 int batchSize = configurationContext.getBatchSize();
-                ArrayList<WanReplicationEvent> batchList = new ArrayList<WanReplicationEvent>(batchSize);
+                ArrayList<WanReplicationEvent> batchList = new ArrayList<>(batchSize);
 
                 for (IPartition partition : node.getPartitionService().getPartitions()) {
                     if (partition.isLocal()) {
@@ -62,9 +62,9 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
                         for (WanReplicationEvent event : batchList) {
                             if (event != null) {
                                 EVENT_QUEUE.put(event);
-                                removeReplicationEvent(event);
                             }
                         }
+                        finalizeWanEventReplication(batchList);
                     }
                 }
                 TimeUnit.MILLISECONDS.sleep(100);
@@ -81,12 +81,12 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
         }
 
         @Override
-        public void processEvent(WanSyncEvent event) throws Exception {
+        public void processEvent(WanSyncEvent event) {
 
         }
 
         @Override
-        public void processEvent(WanConsistencyCheckEvent event) throws Exception {
+        public void processEvent(WanConsistencyCheckEvent event) {
 
         }
 

@@ -9,7 +9,6 @@ import com.hazelcast.enterprise.wan.PublisherQueueContainer;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -74,12 +73,9 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         out.writeObject(ewrMigrationContainer);
 
-        // RU_COMPAT_3_11
-        if (out.getVersion().isGreaterOrEqual(Versions.V3_12)) {
-            out.writeInt(wanConfigs.size());
-            for (WanReplicationConfig wanConfig : wanConfigs) {
-                out.writeObject(wanConfig);
-            }
+        out.writeInt(wanConfigs.size());
+        for (WanReplicationConfig wanConfig : wanConfigs) {
+            out.writeObject(wanConfig);
         }
     }
 
@@ -87,13 +83,10 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
     protected void readInternal(ObjectDataInput in) throws IOException {
         ewrMigrationContainer = in.readObject();
 
-        // RU_COMPAT_3_11
-        if (in.getVersion().isGreaterOrEqual(Versions.V3_12)) {
-            int wanConfigCount = in.readInt();
-            wanConfigs = new ArrayList<WanReplicationConfig>(wanConfigCount);
-            for (int i = 0; i < wanConfigCount; i++) {
-                wanConfigs.add(in.<WanReplicationConfig>readObject());
-            }
+        int wanConfigCount = in.readInt();
+        wanConfigs = new ArrayList<>(wanConfigCount);
+        for (int i = 0; i < wanConfigCount; i++) {
+            wanConfigs.add(in.readObject());
         }
     }
 
@@ -145,8 +138,8 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
         WanReplicationEvent event = eventQueue.poll();
         while (event != null) {
             boolean isPrimaryReplica = getNodeEngine().getPartitionService()
-                                               .getPartition(getPartitionId())
-                                               .isLocal();
+                                                      .getPartition(getPartitionId())
+                                                      .isLocal();
             // whether the event is published as a backup or primary only
             // affects if the event is counted as a backup or primary event
             // we check the local (transient) partition table and publish accordingly

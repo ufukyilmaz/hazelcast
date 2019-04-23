@@ -42,7 +42,7 @@ public class WanReplicationEventQueue extends LinkedBlockingQueue<WanReplication
         WanReplicationEvent[] events = toArray(new WanReplicationEvent[0]);
         out.writeInt(events.length);
         for (WanReplicationEvent event : events) {
-            event.writeData(out);
+            out.writeObject(event);
         }
     }
 
@@ -51,8 +51,7 @@ public class WanReplicationEventQueue extends LinkedBlockingQueue<WanReplication
         backupCount = in.readInt();
         int size = in.readInt();
         for (int i = 0; i < size; i++) {
-            WanReplicationEvent event = new WanReplicationEvent();
-            event.readData(in);
+            WanReplicationEvent event = in.readObject();
             if (event.getServiceName() != null) {
                 offer(event);
             }

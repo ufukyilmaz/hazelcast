@@ -15,14 +15,11 @@ import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.management.events.AddWanConfigIgnoredEvent;
 import com.hazelcast.internal.management.events.Event;
 import com.hazelcast.internal.management.events.WanConfigurationAddedEvent;
 import com.hazelcast.internal.management.events.WanConfigurationExtendedEvent;
 import com.hazelcast.internal.management.events.WanConsistencyCheckIgnoredEvent;
-import com.hazelcast.internal.management.operation.AddWanConfigLegacyOperation;
-import com.hazelcast.internal.util.InvocationUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.WanSyncState;
@@ -39,8 +36,6 @@ import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.ServiceNamespace;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.util.MapUtil;
-import com.hazelcast.util.function.Supplier;
-import com.hazelcast.version.Version;
 import com.hazelcast.wan.AddWanConfigResult;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
@@ -440,19 +435,6 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public void consistencyCheck(String wanReplicationName, String wanPublisherId, String mapName) {
-        // RU_COMPAT_3_11
-        Version clusterVersion = node.getNodeEngine().getClusterService().getClusterVersion();
-        if (!clusterVersion.isGreaterOrEqual(Versions.V3_11)) {
-            emitManagementCenterEvent(new WanConsistencyCheckIgnoredEvent(wanReplicationName,
-                    wanPublisherId, mapName, "Cluster version is not 3.11."));
-            logger.info(String.format(
-                    "Consistency check request for WAN replication '%s',"
-                            + " target group name '%s' and map '%s'"
-                            + " ignored because cluster version is not 3.11",
-                    wanReplicationName, wanPublisherId, mapName));
-            return;
-        }
-
         MerkleTreeConfig merkleTreeConfig = node.getConfig().findMapMerkleTreeConfig(mapName);
         if (!merkleTreeConfig.isEnabled()) {
             emitManagementCenterEvent(new WanConsistencyCheckIgnoredEvent(wanReplicationName,
@@ -509,20 +491,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     private void invokeAddWanReplicationConfig(final WanReplicationConfig wanConfig) {
         try {
-            Version clusterVersion = node.getNodeEngine().getClusterService().getClusterVersion();
-            if (clusterVersion.isGreaterOrEqual(Versions.V3_12)) {
-                InternalOperationService operationService = node.getNodeEngine().getOperationService();
-                operationService.invokeOnAllPartitions(null, new AddWanConfigOperationFactory(wanConfig));
-            } else {
-                // RU_COMPAT_3_11
-                InvocationUtil.invokeOnStableClusterSerial(node.getNodeEngine(),
-                        new Supplier<Operation>() {
-                            @Override
-                            public Operation get() {
-                                return new AddWanConfigLegacyOperation(wanConfig);
-                            }
-                        }, ADD_WAN_CONFIG_MAX_RETRIES).get();
-            }
+            InternalOperationService operationService = node.getNodeEngine().getOperationService();
+            operationService.invokeOnAllPartitions(null, new AddWanConfigOperationFactory(wanConfig));
         } catch (Throwable t) {
             throw rethrow(t);
         }

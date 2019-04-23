@@ -18,12 +18,10 @@ import com.hazelcast.enterprise.wan.WanEventQueueMigrationListener;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
-import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
 import com.hazelcast.enterprise.wan.operation.RemoveWanEventBackupsOperation;
 import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.instance.Node;
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
@@ -33,11 +31,9 @@ import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.ObjectNamespace;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ServiceNamespace;
 import com.hazelcast.util.Clock;
@@ -261,17 +257,8 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      *
      * @param eventCollections the collections containing the replicated WAN events
      */
-    void finalizeWanEventReplication(Collection<WanReplicationEvent>... eventCollections) {
-        // RU_COMPAT_3_11
-        if (node.getClusterService().getClusterVersion().isLessThan(Versions.V3_12)) {
-            for (Collection<WanReplicationEvent> events : eventCollections) {
-                for (WanReplicationEvent event : events) {
-                    removeReplicationEvent(event);
-                }
-            }
-            return;
-        }
-
+    // public for testing purposes
+    public void finalizeWanEventReplication(Collection<WanReplicationEvent>... eventCollections) {
         Map<Integer, Map<DistributedObjectIdentifier, Integer>> eventCounts
                 = updateStatsAndCountEvents(eventCollections);
         if (eventCounts.isEmpty()) {
@@ -403,52 +390,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
             logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
         }
         return id;
-    }
-
-
-    /**
-     * Updates the WAN statistics (remaining map sync events, synced partitions,
-     * queued event count, latencies, sent events) and removes the backup events
-     * on the replicas.
-     *
-     * @param wanReplicationEvent the completed replication event
-     * @throws HazelcastSerializationException when the event fails to serialization
-     */
-    public void removeReplicationEvent(WanReplicationEvent wanReplicationEvent) {
-        if (wanReplicationEvent.getEventObject() instanceof EnterpriseMapReplicationSync
-                || wanReplicationEvent.getEventObject() instanceof EnterpriseMapReplicationMerkleTreeNode) {
-            syncSupport.removeReplicationEvent(
-                    (EnterpriseMapReplicationObject) wanReplicationEvent.getEventObject());
-            return;
-        }
-        updateStats(wanReplicationEvent);
-        final Data wanReplicationEventData = node.getSerializationService().toData(wanReplicationEvent);
-        final OperationService operationService = node.getNodeEngine().getOperationService();
-        final EnterpriseReplicationEventObject evObj = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
-        final int maxAllowedBackupCount = node.getPartitionService().getMaxAllowedBackupCount();
-        final int backupCount = evObj.getBackupCount();
-        final int partitionId = getPartitionId(evObj.getKey());
-        final List<InternalCompletableFuture> futures = new ArrayList<InternalCompletableFuture>(backupCount);
-
-        try {
-            for (int i = 0; i < backupCount && i < maxAllowedBackupCount; i++) {
-                Operation ewrRemoveOperation
-                        = new EWRRemoveBackupOperation(wanReplicationName, wanPublisherId, wanReplicationEventData);
-                InternalCompletableFuture<Object> future = operationService
-                        .createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
-                                ewrRemoveOperation,
-                                partitionId)
-                        .setResultDeserialized(false)
-                        .setReplicaIndex(i + 1)
-                        .invoke();
-                futures.add(future);
-            }
-            for (InternalCompletableFuture future : futures) {
-                future.get();
-            }
-        } catch (Exception ex) {
-            logger.warning("Exception while removing wan backup", ex);
-        }
     }
 
     /**
@@ -726,10 +667,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         final PartitionWanEventQueueMap cacheQueues = partitionContainer.getCacheEventQueueMapByBackupCount(replicaIndex);
         // Use ConcurrentHashMap#keys() instead of ConcurrentHashMap#keySet(). It is not byte-code compatible with JDK7
         // Return type of keySet() method does not exist in Java 7
-        for (Enumeration<String> mapNames = mapQueues.keys(); mapNames.hasMoreElements();) {
+        for (Enumeration<String> mapNames = mapQueues.keys(); mapNames.hasMoreElements(); ) {
             namespaces.add(MapService.getObjectNamespace(mapNames.nextElement()));
         }
-        for (Enumeration<String> cacheNames = cacheQueues.keys(); cacheNames.hasMoreElements();) {
+        for (Enumeration<String> cacheNames = cacheQueues.keys(); cacheNames.hasMoreElements(); ) {
             namespaces.add(CacheService.getObjectNamespace(cacheNames.nextElement()));
         }
     }

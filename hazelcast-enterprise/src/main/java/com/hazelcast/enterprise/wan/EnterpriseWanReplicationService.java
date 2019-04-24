@@ -25,7 +25,7 @@ import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.monitor.impl.LocalWanStatsImpl;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.FragmentedMigrationAwareService;
 import com.hazelcast.spi.LiveOperations;
 import com.hazelcast.spi.LiveOperationsTracker;
@@ -143,13 +143,12 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     /**
      * Processes the replication event sent from the source cluster.
      *
-     * @param data         the serialized event, can be of type
+     * @param event        the event, can be of type
      *                     {@link WanReplicationEvent} or
      *                     {@link BatchWanReplicationEvent}
      * @param wanOperation the operation sent by the source cluster
      */
-    public void handleEvent(Data data, WanOperation wanOperation) {
-        final Object event = node.getNodeEngine().toObject(data);
+    public void handleEvent(IdentifiedDataSerializable event, WanOperation wanOperation) {
         if (event instanceof BatchWanReplicationEvent) {
             eventProcessor.handleRepEvent((BatchWanReplicationEvent) event, wanOperation);
         } else {

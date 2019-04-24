@@ -1,20 +1,17 @@
 package com.hazelcast.cache.wan;
 
 import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.impl.CacheDataSerializerHook;
+import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.BinaryInterface;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
 import java.io.IOException;
 
 /**
- * WAN heap based implementation of {@link CacheEntryView} for keeping
- * compatibility when sending to older (3.8+) clusters.
+ * WAN heap based implementation of {@link CacheEntryView}.
  */
-@BinaryInterface
 public class WanCacheEntryView implements CacheEntryView<Data, Data>, IdentifiedDataSerializable {
 
     private Data key;
@@ -24,7 +21,10 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
     private long lastAccessTime;
     private long accessHit;
 
-    public WanCacheEntryView(CacheEntryView<Data, Data> entryView) {
+    public WanCacheEntryView() {
+    }
+
+    WanCacheEntryView(CacheEntryView<Data, Data> entryView) {
         this.key = entryView.getKey();
         this.value = entryView.getValue();
         this.creationTime = entryView.getCreationTime();
@@ -90,20 +90,21 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        throw new UnsupportedOperationException(getClass().getName() + " should not be deserialized!");
+        creationTime = in.readLong();
+        expirationTime = in.readLong();
+        lastAccessTime = in.readLong();
+        accessHit = in.readLong();
+        key = in.readData();
+        value = in.readData();
     }
 
     @Override
     public int getFactoryId() {
-        // needs to have same factoryId and ID as DefaultCacheEntryView
-        // for backwards compatibility when sending to a 3.8+ cluster
-        return CacheDataSerializerHook.F_ID;
+        return EWRDataSerializerHook.F_ID;
     }
 
     @Override
     public int getId() {
-        // needs to have same factoryId and ID as DefaultCacheEntryView
-        // for backwards compatibility when sending to a 3.8+ cluster
-        return CacheDataSerializerHook.DEFAULT_CACHE_ENTRY_VIEW;
+        return EWRDataSerializerHook.WAN_CACHE_ENTRY_VIEW;
     }
 }

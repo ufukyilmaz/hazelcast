@@ -21,7 +21,7 @@ public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject
         if (entryView instanceof WanMapEntryView) {
             this.entryView = (WanMapEntryView<Data, Data>) entryView;
         } else {
-            this.entryView = new WanMapEntryView<Data, Data>(entryView);
+            this.entryView = new WanMapEntryView<>(entryView);
         }
         this.partitionId = partitionId;
     }
@@ -46,12 +46,7 @@ public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         super.readData(in);
-        EntryView<Data, Data> entryView = in.readObject();
-        if (entryView instanceof WanMapEntryView) {
-            this.entryView = (WanMapEntryView<Data, Data>) entryView;
-        } else {
-            this.entryView = new WanMapEntryView<Data, Data>(entryView);
-        }
+        entryView = in.readObject();
     }
 
     @Override

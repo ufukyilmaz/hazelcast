@@ -26,7 +26,7 @@ public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObje
         if (entryView instanceof WanMapEntryView) {
             this.entryView = (WanMapEntryView<Data, Data>) entryView;
         } else {
-            this.entryView = new WanMapEntryView<Data, Data>(entryView);
+            this.entryView = new WanMapEntryView<>(entryView);
         }
     }
 
@@ -57,13 +57,7 @@ public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObje
     public void readData(ObjectDataInput in) throws IOException {
         super.readData(in);
         mergePolicy = in.readObject();
-        EntryView<Data, Data> entryView = in.readObject();
-
-        if (entryView instanceof WanMapEntryView) {
-            this.entryView = (WanMapEntryView<Data, Data>) entryView;
-        } else {
-            this.entryView = new WanMapEntryView<Data, Data>(entryView);
-        }
+        entryView = in.readObject();
     }
 
     @Override

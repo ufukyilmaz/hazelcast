@@ -8,7 +8,6 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.ServiceNamespace;
@@ -24,22 +23,24 @@ import java.io.IOException;
 public class EWRPutBackupOperation extends EWRBaseOperation
         implements BackupOperation, IdentifiedDataSerializable, ServiceNamespaceAware {
     private ServiceNamespace objectNamespace;
-    private WanReplicationEvent deserializedEvent;
-    private Data serializedEvent;
+    private WanReplicationEvent event;
 
     public EWRPutBackupOperation() {
     }
 
-    public EWRPutBackupOperation(String wanReplicationName, String targetName, Data event, ServiceNamespace namespace) {
+    public EWRPutBackupOperation(String wanReplicationName,
+                                 String targetName,
+                                 WanReplicationEvent event,
+                                 ServiceNamespace namespace) {
         super(wanReplicationName, targetName);
-        this.serializedEvent = event;
+        this.event = event;
         this.objectNamespace = namespace;
     }
 
     @Override
     public void run() throws Exception {
         WanReplicationEndpoint endpoint = getEWRService().getEndpointOrFail(wanReplicationName, wanPublisherId);
-        endpoint.putBackup(getEvent());
+        endpoint.putBackup(event);
         response = true;
     }
 
@@ -51,15 +52,13 @@ public class EWRPutBackupOperation extends EWRBaseOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        // see comment in EWRPutOperation.writeInternal
-        out.writeData(getSerializedEvent());
+        out.writeObject(event);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        // see comment in EWRPutOperation.writeInternal
-        serializedEvent = in.readData();
+        event = in.readObject();
     }
 
     @Override
@@ -67,7 +66,6 @@ public class EWRPutBackupOperation extends EWRBaseOperation
         if (objectNamespace != null) {
             return objectNamespace;
         }
-        final WanReplicationEvent event = getEvent();
         final String serviceName = event.getServiceName();
         final Object service = getNodeEngine().getService(serviceName);
 
@@ -81,21 +79,5 @@ public class EWRPutBackupOperation extends EWRBaseOperation
             getLogger().warning("Forwarding WAN event for unknown service: " + serviceName);
         }
         return objectNamespace;
-    }
-
-    /** Returns the serialised format of the {@link WanReplicationEvent} for this operation */
-    private Data getSerializedEvent() {
-        if (serializedEvent == null) {
-            serializedEvent = getNodeEngine().toData(deserializedEvent);
-        }
-        return serializedEvent;
-    }
-
-    /** Returns the deserialised format of the {@link WanReplicationEvent} for this operation */
-    private WanReplicationEvent getEvent() {
-        if (deserializedEvent == null) {
-            deserializedEvent = getNodeEngine().toObject(serializedEvent);
-        }
-        return deserializedEvent;
     }
 }

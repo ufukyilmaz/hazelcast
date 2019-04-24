@@ -48,7 +48,6 @@ import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
-import com.hazelcast.util.Clock;
 import com.hazelcast.util.CollectionUtil;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
@@ -578,7 +577,7 @@ public class EnterpriseCacheService
                 }
             } else if (eventType == CacheEventType.REMOVED) {
                 CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
-                        Clock.currentTimeMillis(), config.getManagerPrefix(), config.getTotalBackupCount());
+                        config.getManagerPrefix(), config.getTotalBackupCount());
                 if (backup) {
                     wanReplicationPublisher.publishReplicationEventBackup(SERVICE_NAME, remove);
                 } else {

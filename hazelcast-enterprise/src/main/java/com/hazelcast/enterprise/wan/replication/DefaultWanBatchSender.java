@@ -9,7 +9,7 @@ import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.instance.Node;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.EndpointManager;
-import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
@@ -48,16 +48,15 @@ public class DefaultWanBatchSender implements WanBatchSender {
         if (connectionWrapper != null) {
             return invokeOnWanTarget(connectionWrapper, batchReplicationEvent);
         } else {
-            return new CompletedFuture<Boolean>(serializationService, false, wanExecutor);
+            return new CompletedFuture<>(serializationService, false, wanExecutor);
         }
     }
 
     private InternalCompletableFuture<Boolean> invokeOnWanTarget(WanConnectionWrapper connectionWrapper,
-                                                                 DataSerializable event) {
+                                                                 IdentifiedDataSerializable event) {
         EndpointManager endpointManager = connectionWrapper.getConnection().getEndpointManager();
         Address target = connectionWrapper.getConnection().getEndPoint();
-        Operation wanOperation = new WanOperation(serializationService.toData(event),
-                configurationContext.getAcknowledgeType());
+        Operation wanOperation = new WanOperation(event, configurationContext.getAcknowledgeType());
         String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
         return operationService.createInvocationBuilder(serviceName, wanOperation, target)
                 .setTryCount(1)

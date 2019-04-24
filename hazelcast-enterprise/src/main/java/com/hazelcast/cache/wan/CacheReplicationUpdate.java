@@ -56,13 +56,7 @@ public class CacheReplicationUpdate extends CacheReplicationObject {
     public void readData(ObjectDataInput in) throws IOException {
         super.readData(in);
         mergePolicy = in.readUTF();
-        CacheEntryView<Data, Data> entryView = in.readObject();
-
-        if (entryView instanceof WanCacheEntryView) {
-            this.entryView = (WanCacheEntryView) entryView;
-        } else {
-            this.entryView = new WanCacheEntryView(entryView);
-        }
+        entryView = in.readObject();
     }
 
     @Override

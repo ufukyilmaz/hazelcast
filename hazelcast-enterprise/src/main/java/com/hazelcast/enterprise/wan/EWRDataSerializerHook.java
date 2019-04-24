@@ -2,6 +2,7 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.cache.wan.CacheReplicationRemove;
 import com.hazelcast.cache.wan.CacheReplicationUpdate;
+import com.hazelcast.cache.wan.WanCacheEntryView;
 import com.hazelcast.enterprise.wan.operation.AddWanConfigBackupOperation;
 import com.hazelcast.enterprise.wan.operation.AddWanConfigOperation;
 import com.hazelcast.enterprise.wan.operation.AddWanConfigOperationFactory;
@@ -67,6 +68,7 @@ public class EWRDataSerializerHook implements DataSerializerHook {
     public static final int ADD_WAN_CONFIG_OPERATION = 22;
     public static final int ADD_WAN_CONFIG_BACKUP_OPERATION = 23;
     public static final int REMOVE_WAN_EVENT_BACKUPS_OPERATION = 24;
+    public static final int WAN_CACHE_ENTRY_VIEW = 25;
 
     @Override
     public int getFactoryId() {
@@ -127,6 +129,8 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                     return new AddWanConfigBackupOperation();
                 case REMOVE_WAN_EVENT_BACKUPS_OPERATION:
                     return new RemoveWanEventBackupsOperation();
+                case WAN_CACHE_ENTRY_VIEW:
+                    return new WanCacheEntryView();
                 default:
                     throw new IllegalArgumentException("Unknown type ID: " + typeId);
             }

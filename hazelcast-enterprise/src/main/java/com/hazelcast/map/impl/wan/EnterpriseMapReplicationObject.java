@@ -16,7 +16,7 @@ import java.util.Set;
  * objects.
  */
 public abstract class EnterpriseMapReplicationObject implements EnterpriseReplicationEventObject, IdentifiedDataSerializable {
-    private Set<String> groupNames = new HashSet<String>();
+    private Set<String> groupNames = new HashSet<>();
     private String mapName;
     private int backupCount;
     private long creationTime;
@@ -53,14 +53,20 @@ public abstract class EnterpriseMapReplicationObject implements EnterpriseReplic
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeUTF(mapName);
         out.writeInt(backupCount);
-        out.writeObject(groupNames);
+        out.writeInt(groupNames.size());
+        for (String groupName : groupNames) {
+            out.writeUTF(groupName);
+        }
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         mapName = in.readUTF();
         backupCount = in.readInt();
-        groupNames = in.readObject();
+        int groupNameCount = in.readInt();
+        for (int i = 0; i < groupNameCount; i++) {
+            groupNames.add(in.readUTF());
+        }
     }
 
     @Override

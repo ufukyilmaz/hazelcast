@@ -13,19 +13,13 @@ import java.io.IOException;
  */
 public class EnterpriseMapReplicationRemove extends EnterpriseMapReplicationObject {
     private Data key;
-    private long removeTime;
 
-    public EnterpriseMapReplicationRemove(String mapName, Data key, long removeTime, int backupCount) {
+    public EnterpriseMapReplicationRemove(String mapName, Data key, int backupCount) {
         super(mapName, backupCount);
         this.key = key;
-        this.removeTime = removeTime;
     }
 
     public EnterpriseMapReplicationRemove() {
-    }
-
-    public long getRemoveTime() {
-        return removeTime;
     }
 
     @Override
@@ -36,14 +30,12 @@ public class EnterpriseMapReplicationRemove extends EnterpriseMapReplicationObje
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         super.writeData(out);
-        out.writeLong(removeTime);
         out.writeData(key);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         super.readData(in);
-        removeTime = in.readLong();
         key = in.readData();
     }
 

@@ -1,12 +1,8 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.MutatingOperation;
-
-import java.io.IOException;
 
 public class HDTryRemoveOperation extends HDBaseRemoveOperation implements MutatingOperation {
 
@@ -49,16 +45,6 @@ public class HDTryRemoveOperation extends HDBaseRemoveOperation implements Mutat
     @Override
     public void onWaitExpire() {
         sendResponse(false);
-    }
-
-    @Override
-    protected void writeInternal(ObjectDataOutput out) throws IOException {
-        super.writeInternal(out);
-    }
-
-    @Override
-    protected void readInternal(ObjectDataInput in) throws IOException {
-        super.readInternal(in);
     }
 
     @Override

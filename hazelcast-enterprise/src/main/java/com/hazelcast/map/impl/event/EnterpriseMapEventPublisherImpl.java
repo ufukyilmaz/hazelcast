@@ -18,7 +18,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.util.Clock;
 import com.hazelcast.util.CollectionUtil;
 
 import java.util.Collections;
@@ -105,8 +104,7 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         int totalBackupCount = mapContainer.getTotalBackupCount();
         EnterpriseMapReplicationRemove event
-                = new EnterpriseMapReplicationRemove(mapName, toHeapData(key),
-                Clock.currentTimeMillis(), totalBackupCount);
+                = new EnterpriseMapReplicationRemove(mapName, toHeapData(key), totalBackupCount);
 
         if (!isEventFiltered(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
             publishWanEvent(mapName, event);

@@ -47,14 +47,12 @@ public class HDRemoveOperation extends HDBaseRemoveOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-
         out.writeBoolean(disableWanReplicationEvent);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-
         disableWanReplicationEvent = in.readBoolean();
     }
 }

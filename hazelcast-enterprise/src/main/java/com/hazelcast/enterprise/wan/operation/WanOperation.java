@@ -6,7 +6,6 @@ import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.internal.cluster.impl.operations.WanReplicationOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.Operation;
 
@@ -21,13 +20,13 @@ import java.io.IOException;
  */
 public class WanOperation extends Operation implements WanReplicationOperation, IdentifiedDataSerializable {
 
-    private Data event;
+    private IdentifiedDataSerializable event;
     private WanAcknowledgeType acknowledgeType;
 
     public WanOperation() {
     }
 
-    public WanOperation(Data event, WanAcknowledgeType acknowledgeType) {
+    public WanOperation(IdentifiedDataSerializable event, WanAcknowledgeType acknowledgeType) {
         this.event = event;
         this.acknowledgeType = acknowledgeType;
     }
@@ -56,13 +55,13 @@ public class WanOperation extends Operation implements WanReplicationOperation, 
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        out.writeData(event);
+        out.writeObject(event);
         out.writeInt(acknowledgeType.getId());
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        event = in.readData();
+        event = in.readObject();
         acknowledgeType = WanAcknowledgeType.getById(in.readInt());
     }
 

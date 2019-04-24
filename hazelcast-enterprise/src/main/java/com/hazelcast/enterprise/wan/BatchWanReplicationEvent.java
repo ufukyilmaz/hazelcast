@@ -18,6 +18,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static com.hazelcast.internal.serialization.impl.SerializationUtil.readCollection;
+import static com.hazelcast.internal.serialization.impl.SerializationUtil.writeCollection;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
@@ -35,7 +37,7 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
     private transient int primaryEventCount;
     private transient int totalEntryCount;
 
-    private List<WanReplicationEvent> eventList;
+    private Collection<WanReplicationEvent> eventList;
 
 
     public BatchWanReplicationEvent() {
@@ -44,10 +46,10 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
     public BatchWanReplicationEvent(boolean snapshotEnabled) {
         this.snapshotEnabled = snapshotEnabled;
         if (snapshotEnabled) {
-            eventMap = new HashMap<DistributedObjectEntryIdentifier, WanReplicationEvent>();
-            coalescedEvents = new LinkedList<WanReplicationEvent>();
+            eventMap = new HashMap<>();
+            coalescedEvents = new LinkedList<>();
         } else {
-            eventList = new ArrayList<WanReplicationEvent>();
+            eventList = new ArrayList<>();
             coalescedEvents = Collections.emptyList();
         }
     }
@@ -137,11 +139,11 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
     public Collection<WanReplicationEvent> getEvents() {
         if (snapshotEnabled) {
             return eventMap == null
-                    ? Collections.<WanReplicationEvent>emptyList()
+                    ? Collections.emptyList()
                     : eventMap.values();
         }
         return eventList == null
-                ? Collections.<WanReplicationEvent>emptyList()
+                ? Collections.emptyList()
                 : eventList;
     }
 
@@ -157,26 +159,12 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        // we write out false for backwards compatibility when replicating to a
-        // 3.8+ cluster. We choose false as the target cluster does not need
-        // to be concerned with event coalescing on the source cluster
-        out.writeBoolean(false);
-        // this should be optimised in the future release to only
-        // write out the size+items, instead of type+size+items.
-        // right now we keep this for compatibility with 3.8+ clusters
-        // Also, we can then make the getEvents() return Collection then
-        // Now the writeObject cannot serialise the Map.values() type
-        final Collection<WanReplicationEvent> events = getEvents();
-        final ArrayList<WanReplicationEvent> eventList = events instanceof ArrayList
-                ? (ArrayList<WanReplicationEvent>) events
-                : new ArrayList<WanReplicationEvent>(events);
-        out.writeObject(eventList);
+        writeCollection(getEvents(), out);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        in.readBoolean();
-        eventList = in.readObject();
+        eventList = readCollection(in);
     }
 
     /**

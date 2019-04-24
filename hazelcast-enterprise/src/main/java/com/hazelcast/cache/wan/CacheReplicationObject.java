@@ -18,7 +18,7 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
 
     private String cacheName;
     private String managerPrefix;
-    private Set<String> groupNames = new HashSet<String>();
+    private Set<String> groupNames = new HashSet<>();
     private int backupCount;
     private long creationTime;
 
@@ -64,7 +64,10 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
         out.writeUTF(cacheName);
         out.writeUTF(managerPrefix);
         out.writeInt(backupCount);
-        out.writeObject(groupNames);
+        out.writeInt(groupNames.size());
+        for (String groupName : groupNames) {
+            out.writeUTF(groupName);
+        }
     }
 
     @Override
@@ -72,7 +75,10 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
         cacheName = in.readUTF();
         managerPrefix = in.readUTF();
         backupCount = in.readInt();
-        groupNames = in.readObject();
+        int groupNameCount = in.readInt();
+        for (int i = 0; i < groupNameCount; i++) {
+            groupNames.add(in.readUTF());
+        }
     }
 
     @Override

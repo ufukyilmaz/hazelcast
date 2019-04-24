@@ -14,12 +14,10 @@ import java.io.IOException;
 public class CacheReplicationRemove extends CacheReplicationObject {
 
     private Data key;
-    private long removeTime;
 
-    public CacheReplicationRemove(String cacheName, Data key, long removeTime, String managerPrefix, int backupCount) {
+    public CacheReplicationRemove(String cacheName, Data key, String managerPrefix, int backupCount) {
         super(cacheName, managerPrefix, backupCount);
         this.key = key;
-        this.removeTime = removeTime;
     }
 
     public CacheReplicationRemove() {
@@ -30,21 +28,15 @@ public class CacheReplicationRemove extends CacheReplicationObject {
         return key;
     }
 
-    public long getRemoveTime() {
-        return removeTime;
-    }
-
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         super.writeData(out);
-        out.writeLong(removeTime);
         out.writeData(key);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         super.readData(in);
-        removeTime = in.readLong();
         key = in.readData();
     }
 

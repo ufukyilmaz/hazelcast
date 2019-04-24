@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 public class PortableHookTest {
 
     private final Set<String> enterpriseAllSet = new HashSet<String>();
-    private final String ossRevision = BuildInfoProvider.getBuildInfo().getUpstreamBuildInfo().getRevision();
+    private final String ossCommitId = BuildInfoProvider.getBuildInfo().getUpstreamBuildInfo().getCommitId();
     private final String eeAllPath = "src/main/resources/META-INF/services/com.hazelcast.PortableHook";
 
     private BufferedReader ossIn;
@@ -38,7 +38,7 @@ public class PortableHookTest {
             }
         }
 
-        URL ossURL = new URL("https://raw.githubusercontent.com/hazelcast/hazelcast/" + ossRevision
+        URL ossURL = new URL("https://raw.githubusercontent.com/hazelcast/hazelcast/" + ossCommitId
                 + "/hazelcast/src/main/resources/META-INF/services/com.hazelcast.PortableHook"
         );
         ossIn = new BufferedReader(new InputStreamReader(ossURL.openStream()));

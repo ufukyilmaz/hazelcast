@@ -20,6 +20,7 @@ public final class GeneratedEnterpriseBuildProperties {
     public static final String VERSION = "${project.version}";
     public static final String BUILD = "${timestamp}";
     public static final String REVISION = "${git.commit.id.abbrev}";
+    public static final String COMMIT_ID = "${git.commit.id}";
     public static final String DISTRIBUTION = "${hazelcast.distribution}";
     public static final String SERIALIZATION_VERSION = "${hazelcast.serialization.version}";
 

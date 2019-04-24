@@ -1,6 +1,8 @@
 package com.hazelcast.wan.cache;
 
 import com.hazelcast.cache.HazelcastExpiryPolicy;
+import com.hazelcast.cache.ICache;
+import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.merge.HigherHitsCacheMergePolicy;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
@@ -24,6 +26,7 @@ import javax.cache.integration.CacheWriter;
 import javax.cache.integration.CacheWriterException;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -159,7 +162,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     }
 
     @Test
-    public void createEntryWithExpiry() {
+    public void testEntryWithReplicationExpiresOnTargetCluster() {
         initConfigA();
         initConfigB();
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
@@ -168,9 +171,26 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterB();
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(10000, 10000, 10000);
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false, expiryPolicy);
-        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
-        sleepSeconds(20);
+
+        ICache<Object, Object> cache = getNode(clusterA).getCacheManager().getCache(DEFAULT_CACHE_NAME);
+        assertReceivedEventCountEventually(clusterB, CacheService.SERVICE_NAME, cache.getPrefixedName(),
+                0, 50, 0);
         checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 0, 50);
+    }
+
+    @Test
+    public void testEntryWithExpirationIsReplicated() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+                DEFAULT_CACHE_NAME);
+        startClusterA();
+        startClusterB();
+        long oneHourMillis = TimeUnit.HOURS.toMillis(1);
+        ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(oneHourMillis, oneHourMillis, oneHourMillis);
+        createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false, expiryPolicy);
+
+        checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
     }
 
     @Test

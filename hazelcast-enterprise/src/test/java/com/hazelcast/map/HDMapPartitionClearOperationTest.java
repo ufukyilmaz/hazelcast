@@ -8,7 +8,6 @@ import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -26,7 +25,6 @@ public class HDMapPartitionClearOperationTest extends HazelcastTestSupport {
      * This test calls internally {@link com.hazelcast.map.impl.operation.EnterpriseMapPartitionClearOperation}.
      */
     @Test
-    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/835")
     public void testMapShutdown_finishesSuccessfully() throws Exception {
         HazelcastInstance node = createHazelcastInstance(getConfig());
         IMap map = node.getMap("default");

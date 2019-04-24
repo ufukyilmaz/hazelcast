@@ -568,7 +568,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         }
     }
 
-    private static class CacheMemorySizeAssertTask extends AssertTask {
+    private static class CacheMemorySizeAssertTask implements AssertTask {
 
         private final HazelcastInstance instance;
         private final String cacheNameWithPrefix;

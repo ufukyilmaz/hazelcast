@@ -112,7 +112,7 @@ public final class NativeMemoryTestUtil {
         consumer.printAllocations();
     }
 
-    private static class AssertFreeMemoryTask extends AssertTask {
+    private static class AssertFreeMemoryTask implements AssertTask {
 
         private final MemoryStats[] memoryStats;
 

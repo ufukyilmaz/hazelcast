@@ -131,7 +131,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
         cache.put(0, randomString());
     }
 
-    private static class CacheOwnedEntryAssertTask extends AssertTask {
+    private static class CacheOwnedEntryAssertTask implements AssertTask {
 
         private final HazelcastInstance[] instances;
         private final String nameWithPrefix;

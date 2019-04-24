@@ -16,11 +16,11 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.util.function.Supplier;
 import org.junit.runners.Parameterized.Parameter;
 
 import javax.cache.CacheManager;
 import javax.cache.configuration.Configuration;
+import java.util.function.Supplier;
 
 import static com.hazelcast.HDTestSupport.getICache;
 import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;

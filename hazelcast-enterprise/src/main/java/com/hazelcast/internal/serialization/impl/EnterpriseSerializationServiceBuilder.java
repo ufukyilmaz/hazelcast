@@ -13,9 +13,9 @@ import com.hazelcast.nio.serialization.ClassDefinition;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.PortableFactory;
-import com.hazelcast.util.function.Supplier;
 
 import java.nio.ByteOrder;
+import java.util.function.Supplier;
 
 public class EnterpriseSerializationServiceBuilder extends DefaultSerializationServiceBuilder
         implements SerializationServiceBuilder {

@@ -85,7 +85,6 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.ByteArrayProcessor;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.Preconditions;
-import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationService;
@@ -98,6 +97,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Level;
+import java.util.function.Supplier;
 
 import static com.hazelcast.instance.EndpointQualifier.MEMBER;
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;

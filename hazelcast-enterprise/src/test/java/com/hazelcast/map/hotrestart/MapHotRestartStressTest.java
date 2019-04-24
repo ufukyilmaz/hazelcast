@@ -13,7 +13,6 @@ import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.NightlyTest;
-import com.hazelcast.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -157,12 +156,7 @@ public class MapHotRestartStressTest extends HotRestartTestSupport {
     }
 
     private void resetFixture() {
-        restartCluster(INSTANCE_COUNT, new Supplier<Config>() {
-            @Override
-            public Config get() {
-                return makeConfig();
-            }
-        });
+        restartCluster(INSTANCE_COUNT, this::makeConfig);
         if (memoryFormat == NATIVE) {
             map = getFirstInstance().getMap("native-" + name);
         } else {

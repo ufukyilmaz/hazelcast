@@ -9,7 +9,6 @@ import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.function.Supplier;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import org.junit.After;
@@ -24,6 +23,7 @@ import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.InMemoryFormat.BINARY;

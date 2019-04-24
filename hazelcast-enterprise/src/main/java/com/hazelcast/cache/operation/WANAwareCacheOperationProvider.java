@@ -7,7 +7,6 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationFactory;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
-import com.hazelcast.util.function.Function;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -15,6 +14,7 @@ import javax.cache.processor.EntryProcessor;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * This class is responsible for WAN replication related checks for supported mutating operations.

@@ -5,7 +5,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Rule;
 
@@ -13,6 +12,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Supplier;
 
 public abstract class HotRestartTestSupport extends HazelcastTestSupport {
 

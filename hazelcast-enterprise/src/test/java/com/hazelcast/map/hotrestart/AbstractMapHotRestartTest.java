@@ -12,8 +12,9 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.util.function.Supplier;
 import org.junit.runners.Parameterized.Parameter;
+
+import java.util.function.Supplier;
 
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;

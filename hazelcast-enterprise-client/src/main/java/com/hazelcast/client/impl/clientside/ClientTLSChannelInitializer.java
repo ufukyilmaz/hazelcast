@@ -9,9 +9,9 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.nio.ssl.AbstractTLSChannelInitializer;
 import com.hazelcast.nio.ssl.UnifiedTLSChannelInitializer;
-import com.hazelcast.util.function.Consumer;
 
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import static com.hazelcast.client.config.SocketOptions.KILO_BYTE;
 import static com.hazelcast.internal.networking.ChannelOption.DIRECT_BUF;

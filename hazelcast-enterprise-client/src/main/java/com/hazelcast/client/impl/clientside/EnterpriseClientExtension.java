@@ -35,10 +35,10 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ExceptionUtil;
-import com.hazelcast.util.function.Supplier;
 import com.hazelcast.version.Version;
 
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 /**
  * Enterprise implementation of {@code ClientExtension}.

@@ -73,12 +73,9 @@ public class EnterpriseMapContainer extends MapContainer {
     @Override
     ConstructorFunction<Void, RecordFactory> createRecordFactoryConstructor(final SerializationService serializationService) {
         if (NATIVE == mapConfig.getInMemoryFormat()) {
-            return new ConstructorFunction<Void, RecordFactory>() {
-                @Override
-                public RecordFactory createNew(Void notUsedArg) {
-                    HiDensityRecordProcessor<HDRecord> recordProcessor = createHiDensityRecordProcessor();
-                    return new HDRecordFactory(recordProcessor, serializationService);
-                }
+            return notUsedArg -> {
+                HiDensityRecordProcessor<HDRecord> recordProcessor = createHiDensityRecordProcessor();
+                return new HDRecordFactory(recordProcessor, serializationService);
             };
         } else {
             return super.createRecordFactoryConstructor(serializationService);
@@ -101,7 +98,7 @@ public class EnterpriseMapContainer extends MapContainer {
         HiDensityRecordAccessor<HDRecord> recordAccessor
                 = new HDRecordAccessor(serializationService);
         HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
-        return new DefaultHiDensityRecordProcessor<HDRecord>(serializationService, recordAccessor,
+        return new DefaultHiDensityRecordProcessor<>(serializationService, recordAccessor,
                 memoryManager, storageInfo);
     }
 

@@ -11,7 +11,7 @@ public class MetadataStore {
     private final ConcurrentMap<Data, Metadata> store;
 
     public MetadataStore() {
-        this.store = new ConcurrentHashMap<Data, Metadata>();
+        this.store = new ConcurrentHashMap<>();
     }
 
     public Metadata get(Data key) {

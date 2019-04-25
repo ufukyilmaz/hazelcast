@@ -70,7 +70,7 @@ public class HDPutAllBackupOperation extends HDMapOperation
         entries = new MapEntries();
         entries.readData(in);
         int size = entries.size();
-        recordInfos = new ArrayList<RecordInfo>(size);
+        recordInfos = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             RecordInfo recordInfo = new RecordInfo();
             recordInfo.readData(in);

@@ -55,7 +55,7 @@ public class HDEvictorImpl extends EvictorImpl {
         Storage<Data, Record> storage = recordStore.getStorage();
         Iterator<Record> recordIterator = ((ForcedEvictable<Record>) storage).newForcedEvictionValuesIterator();
 
-        Queue<Data> keysToRemove = new LinkedList<Data>();
+        Queue<Data> keysToRemove = new LinkedList<>();
         while (recordIterator.hasNext()) {
             Record record = recordIterator.next();
             Data key = record.getKey();

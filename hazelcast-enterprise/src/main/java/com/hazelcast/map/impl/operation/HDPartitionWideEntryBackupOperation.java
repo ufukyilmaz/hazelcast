@@ -43,7 +43,7 @@ public class HDPartitionWideEntryBackupOperation extends AbstractHDMultipleEntry
             EntryEventType eventType = operator.getEventType();
             if (eventType != null) {
                 if (outComes == null) {
-                    outComes = new LinkedList<Object>();
+                    outComes = new LinkedList<>();
                 }
 
                 outComes.add(dataKey);

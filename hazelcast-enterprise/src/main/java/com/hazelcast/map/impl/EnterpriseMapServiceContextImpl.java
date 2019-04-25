@@ -81,13 +81,10 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS = 10;
 
     private final ConstructorFunction<String, MapContainer> constructorFunction =
-            new ConstructorFunction<String, MapContainer>() {
-                @Override
-                public MapContainer createNew(String mapName) {
-                    MapServiceContext mapServiceContext = getService().getMapServiceContext();
-                    Config config = mapServiceContext.getNodeEngine().getConfig();
-                    return new EnterpriseMapContainer(mapName, config, mapServiceContext);
-                }
+            mapName -> {
+                MapServiceContext mapServiceContext = getService().getMapServiceContext();
+                Config config = mapServiceContext.getNodeEngine().getConfig();
+                return new EnterpriseMapContainer(mapName, config, mapServiceContext);
             };
 
     private final QueryRunner hdMapQueryRunner;
@@ -220,7 +217,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     protected void removeAllRecordStoresOfAllMaps(boolean onShutdown, boolean onRecordStoreDestroy) {
         InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
 
-        List<EnterpriseMapPartitionClearOperation> operations = new ArrayList<EnterpriseMapPartitionClearOperation>();
+        List<EnterpriseMapPartitionClearOperation> operations = new ArrayList<>();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         for (int i = 0; i < partitionCount; i++) {
             PartitionContainer partitionContainer = getPartitionContainer(i);
@@ -311,7 +308,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
 
     @Override
     public Collection<RecordStoreMutationObserver<Record>> createRecordStoreMutationObservers(String mapName, int partitionId) {
-        Collection<RecordStoreMutationObserver<Record>> observers = new LinkedList<RecordStoreMutationObserver<Record>>();
+        Collection<RecordStoreMutationObserver<Record>> observers = new LinkedList<>();
         addMerkleTreeUpdaterObserver(observers, mapName, partitionId);
 
         observers.addAll(super.createRecordStoreMutationObservers(mapName, partitionId));
@@ -351,7 +348,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
         EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) partitionContainers[partitionId];
         MerkleTree merkleTree = partitionContainer.getOrCreateMerkleTree(mapName);
         if (merkleTree != null) {
-            observers.add(new MerkleTreeUpdaterRecordStoreMutationObserver<Record>(merkleTree,
+            observers.add(new MerkleTreeUpdaterRecordStoreMutationObserver<>(merkleTree,
                     getNodeEngine().getSerializationService()));
         }
     }

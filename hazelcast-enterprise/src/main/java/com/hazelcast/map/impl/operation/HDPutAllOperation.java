@@ -55,10 +55,10 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         this.hasInvalidation = mapContainer.hasInvalidationListener();
 
         if (hasBackups) {
-            this.backupRecordInfos = new ArrayList<RecordInfo>(mapEntries.size());
+            this.backupRecordInfos = new ArrayList<>(mapEntries.size());
         }
         if (hasInvalidation) {
-            this.invalidationKeys = new ArrayList<Data>(mapEntries.size());
+            this.invalidationKeys = new ArrayList<>(mapEntries.size());
         }
     }
 

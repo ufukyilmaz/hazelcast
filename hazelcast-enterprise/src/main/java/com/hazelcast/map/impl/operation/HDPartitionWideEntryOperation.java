@@ -76,7 +76,7 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
 
                 // we can pass null as predicate since it's all happening on partition thread so no data-changes may occur
                 operator = operator(this, entryProcessor, null);
-                keysFromIndex = new HashSet<Data>(entries.size());
+                keysFromIndex = new HashSet<>(entries.size());
                 for (QueryableEntry entry : entries) {
                     keysFromIndex.add(entry.getKeyData());
                     Data response = operator.operateOnKey(entry.getKeyData()).doPostOperateOps().getResult();
@@ -110,7 +110,7 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
             EntryEventType eventType = operator.getEventType();
             if (eventType != null) {
                 if (outComes == null) {
-                    outComes = new LinkedList<Object>();
+                    outComes = new LinkedList<>();
                 }
 
                 outComes.add(dataKey);

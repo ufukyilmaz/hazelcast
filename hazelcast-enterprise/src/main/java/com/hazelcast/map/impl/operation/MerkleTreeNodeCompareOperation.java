@@ -94,7 +94,7 @@ public class MerkleTreeNodeCompareOperation extends MapOperation implements Read
      */
     private int[] compareTrees(MerkleTree localMerkleTree,
                                int[] remotePartitionNodes) {
-        ArrayList<Integer> diffNodes = new ArrayList<Integer>();
+        ArrayList<Integer> diffNodes = new ArrayList<>();
         int localTreeDepth = localMerkleTree.depth();
         for (int idx = 0; idx < remotePartitionNodes.length; idx += 2) {
             int nodeOrder = remotePartitionNodes[idx];

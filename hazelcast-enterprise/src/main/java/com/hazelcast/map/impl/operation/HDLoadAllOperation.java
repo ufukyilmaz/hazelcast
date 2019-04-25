@@ -55,7 +55,7 @@ public class HDLoadAllOperation extends HDMapOperation implements PartitionAware
         for (Data key : keys) {
             if (partitionId == partitionService.getPartitionId(key)) {
                 if (dataKeys == null) {
-                    dataKeys = new ArrayList<Data>();
+                    dataKeys = new ArrayList<>();
                 }
                 dataKeys.add(key);
             }
@@ -82,7 +82,7 @@ public class HDLoadAllOperation extends HDMapOperation implements PartitionAware
         super.readInternal(in);
         final int size = in.readInt();
         if (size > 0) {
-            keys = new ArrayList<Data>(size);
+            keys = new ArrayList<>(size);
         }
         for (int i = 0; i < size; i++) {
             Data data = in.readData();

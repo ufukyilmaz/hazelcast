@@ -18,16 +18,11 @@ import java.util.concurrent.ConcurrentMap;
  * @since 3.11
  */
 public class EnterprisePartitionContainer extends PartitionContainer {
-    private final ConcurrentMap<String, MerkleTree> merkleTrees = new ConcurrentHashMap<String, MerkleTree>(1000);
+    private final ConcurrentMap<String, MerkleTree> merkleTrees = new ConcurrentHashMap<>(1000);
     private final ContextMutexFactory merkleTreesMutexFactory = new ContextMutexFactory();
 
     private final ConstructorFunction<String, MerkleTree> merkleTreeConstructor
-            = new ConstructorFunction<String, MerkleTree>() {
-        @Override
-        public MerkleTree createNew(String mapName) {
-            return new ArrayMerkleTree(getMerkleTreeConfig(mapName).getDepth());
-        }
-    };
+            = mapName -> new ArrayMerkleTree(getMerkleTreeConfig(mapName).getDepth());
 
     public EnterprisePartitionContainer(MapService mapService, int partitionId) {
         super(mapService, partitionId);

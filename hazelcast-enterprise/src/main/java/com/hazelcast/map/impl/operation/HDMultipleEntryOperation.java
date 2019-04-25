@@ -86,7 +86,7 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
         super.readInternal(in);
         entryProcessor = in.readObject();
         int size = in.readInt();
-        keys = new HashSet<Data>(size);
+        keys = new HashSet<>(size);
         for (int i = 0; i < size; i++) {
             Data key = in.readData();
             keys.add(key);

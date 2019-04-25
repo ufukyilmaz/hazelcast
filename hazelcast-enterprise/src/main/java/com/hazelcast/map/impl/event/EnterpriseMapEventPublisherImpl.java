@@ -149,7 +149,7 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         }
 
         List<String> filters = wanReplicationRef.getFilters();
-        return CollectionUtil.isEmpty(filters) ? Collections.<String>emptyList() : filters;
+        return CollectionUtil.isEmpty(filters) ? Collections.emptyList() : filters;
     }
 
     private EnterpriseMapServiceContext getEnterpriseMapServiceContext() {

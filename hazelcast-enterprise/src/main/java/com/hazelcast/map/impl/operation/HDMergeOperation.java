@@ -66,10 +66,10 @@ public class HDMergeOperation extends HDMapOperation
 
         if (hasBackups) {
             mapEntries = new MapEntries(size);
-            backupRecordInfos = new ArrayList<RecordInfo>(size);
+            backupRecordInfos = new ArrayList<>(size);
         }
         if (hasInvalidation) {
-            invalidationKeys = new ArrayList<Data>(size);
+            invalidationKeys = new ArrayList<>(size);
         }
     }
 
@@ -171,7 +171,7 @@ public class HDMergeOperation extends HDMapOperation
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        mergingEntries = new ArrayList<MapMergeTypes>(size);
+        mergingEntries = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             MapMergeTypes mergingEntry = in.readObject();
             mergingEntries.add(mergingEntry);

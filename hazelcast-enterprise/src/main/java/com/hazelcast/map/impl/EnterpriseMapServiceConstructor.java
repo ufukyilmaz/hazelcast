@@ -9,15 +9,12 @@ import com.hazelcast.util.ConstructorFunction;
 public final class EnterpriseMapServiceConstructor {
 
     private static final ConstructorFunction<NodeEngine, MapService> ENTERPRISE_MAP_SERVICE_CONSTRUCTOR
-            = new ConstructorFunction<NodeEngine, MapService>() {
-        @Override
-        public MapService createNew(NodeEngine nodeEngine) {
-            EnterpriseMapServiceContext enterpriseMapServiceContext = new EnterpriseMapServiceContextImpl(nodeEngine);
-            MapServiceFactory factory
-                    = new EnterpriseMapServiceFactory(nodeEngine, enterpriseMapServiceContext);
-            return factory.createMapService();
-        }
-    };
+            = nodeEngine -> {
+                EnterpriseMapServiceContext enterpriseMapServiceContext = new EnterpriseMapServiceContextImpl(nodeEngine);
+                MapServiceFactory factory
+                        = new EnterpriseMapServiceFactory(nodeEngine, enterpriseMapServiceContext);
+                return factory.createMapService();
+            };
 
     private EnterpriseMapServiceConstructor() {
     }

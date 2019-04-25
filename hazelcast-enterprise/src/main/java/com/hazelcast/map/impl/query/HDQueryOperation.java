@@ -59,7 +59,7 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
         BitSet localPartitions = localPartitions();
         if (localPartitions.cardinality() == 0) {
             // important to deal with situation of not having any partitions
-            this.result = queryRunner.populateEmptyResult(query, Collections.<Integer>emptyList());
+            this.result = queryRunner.populateEmptyResult(query, Collections.emptyList());
             return DONE_RESPONSE;
         }
 
@@ -148,7 +148,7 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
     }
 
     private class QueryFuture extends AbstractCompletableFuture {
-        private final AtomicReferenceArray<Result> resultArray = new AtomicReferenceArray<Result>(partitionCount());
+        private final AtomicReferenceArray<Result> resultArray = new AtomicReferenceArray<>(partitionCount());
         private final AtomicInteger remaining;
 
         QueryFuture(int localPartitionCount) {
@@ -227,7 +227,7 @@ public class HDQueryOperation extends MapOperation implements ReadonlyOperation 
         @Override
         public void onResponse(AtomicReferenceArray<Result> response) {
             try {
-                Result combinedResult = queryRunner.populateEmptyResult(query, Collections.<Integer>emptyList());
+                Result combinedResult = queryRunner.populateEmptyResult(query, Collections.emptyList());
                 populateResult(response, combinedResult);
                 HDQueryOperation.this.sendResponse(combinedResult);
             } catch (Exception e) {

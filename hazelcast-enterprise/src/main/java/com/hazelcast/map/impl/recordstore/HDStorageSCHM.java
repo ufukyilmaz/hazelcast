@@ -50,7 +50,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
     public MapKeysWithCursor fetchKeys(int tableIndex, int size) {
         SlottableIterator<Entry<Data, HDRecord>> iter = entryIter(tableIndex);
-        List<Data> keys = new ArrayList<Data>(size);
+        List<Data> keys = new ArrayList<>(size);
         for (int i = 0; i < size && iter.hasNext(); i++) {
             Map.Entry<Data, HDRecord> entry = iter.next();
             Data key = entry.getKey();
@@ -61,14 +61,14 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
     public MapEntriesWithCursor fetchEntries(int tableIndex, int size) {
         SlottableIterator<Entry<Data, HDRecord>> iter = entryIter(tableIndex);
-        List<Map.Entry<Data, Data>> entries = new ArrayList<Map.Entry<Data, Data>>(size);
+        List<Map.Entry<Data, Data>> entries = new ArrayList<>(size);
         for (int i = 0; i < size && iter.hasNext(); i++) {
             Map.Entry<Data, HDRecord> entry = iter.next();
             Data key = entry.getKey();
             Data value = entry.getValue().getValue();
             Data heapKeyData = memoryBlockProcessor.convertData(key, DataType.HEAP);
             Data heapValueData = memoryBlockProcessor.convertData(value, DataType.HEAP);
-            entries.add(new AbstractMap.SimpleEntry<Data, Data>(heapKeyData, heapValueData));
+            entries.add(new AbstractMap.SimpleEntry<>(heapKeyData, heapValueData));
         }
         return new MapEntriesWithCursor(entries, iter.getNextSlot());
     }

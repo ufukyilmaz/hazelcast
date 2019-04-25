@@ -34,7 +34,7 @@ public final class MapFilterProvider {
 
     public MapFilterProvider(NodeEngine nodeEngine) {
         this.nodeEngine = nodeEngine;
-        this.filterByClassName = new ConcurrentHashMap<String, MapWanEventFilter>();
+        this.filterByClassName = new ConcurrentHashMap<>();
     }
 
     public MapWanEventFilter getFilter(String className) {

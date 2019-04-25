@@ -23,7 +23,7 @@ public class EnterpriseMapNearCacheManager extends MapNearCacheManager {
         if (nearCacheConfig.getInMemoryFormat() == NATIVE) {
             EnterpriseSerializationService ess = (EnterpriseSerializationService) serializationService;
             HazelcastProperties properties = nodeEngine.getProperties();
-            return new HiDensityNearCache<K, V>(name, nearCacheConfig,
+            return new HiDensityNearCache<>(name, nearCacheConfig,
                     this, ess, scheduler, classLoader, properties);
         }
         return super.createNearCache(name, nearCacheConfig);

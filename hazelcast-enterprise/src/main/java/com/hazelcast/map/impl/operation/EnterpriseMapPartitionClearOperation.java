@@ -60,12 +60,7 @@ public final class EnterpriseMapPartitionClearOperation extends Operation
      * @return predicate that matches with partitions of all maps
      */
     private static Predicate<RecordStore> allRecordStores() {
-        return new Predicate<RecordStore>() {
-            @Override
-            public boolean test(RecordStore recordStore) {
-                return true;
-            }
-        };
+        return recordStore -> true;
     }
 
     @Override

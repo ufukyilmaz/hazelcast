@@ -5,7 +5,7 @@ import com.hazelcast.core.OperationTimeoutException;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BlockingOperation;
-import com.hazelcast.spi.DefaultObjectNamespace;
+import com.hazelcast.spi.DistributedObjectNamespace;
 import com.hazelcast.spi.ReadonlyOperation;
 import com.hazelcast.spi.WaitNotifyKey;
 
@@ -40,7 +40,7 @@ public class HDContainsKeyOperation extends HDKeyBasedMapOperation implements Re
 
     @Override
     public WaitNotifyKey getWaitKey() {
-        DefaultObjectNamespace namespace = new DefaultObjectNamespace(MapService.SERVICE_NAME, name);
+        DistributedObjectNamespace namespace = new DistributedObjectNamespace(MapService.SERVICE_NAME, name);
         return new LockWaitNotifyKey(namespace, dataKey);
     }
 

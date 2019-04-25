@@ -15,7 +15,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.BlockingOperation;
-import com.hazelcast.spi.DefaultObjectNamespace;
+import com.hazelcast.spi.DistributedObjectNamespace;
 import com.hazelcast.spi.ExecutionService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationAccessor;
@@ -120,23 +120,19 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
     @SuppressWarnings("unchecked")
     private void runOffloadedReadOnlyEntryProcessor(final Object previousValue, String executorName) {
         ops.onStartAsyncOperation(this);
-        exs.execute(executorName, new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Data result = operator(HDEntryOperation.this, entryProcessor)
-                            .operateOnKeyValue(dataKey, previousValue).getResult();
-                    getOperationResponseHandler().sendResponse(HDEntryOperation.this, result);
-                } catch (Throwable t) {
-                    getOperationResponseHandler().sendResponse(HDEntryOperation.this, t);
-                } finally {
-                    ops.onCompletionAsyncOperation(HDEntryOperation.this);
-                }
+        exs.execute(executorName, () -> {
+            try {
+                Data result = operator(HDEntryOperation.this, entryProcessor)
+                        .operateOnKeyValue(dataKey, previousValue).getResult();
+                getOperationResponseHandler().sendResponse(HDEntryOperation.this, result);
+            } catch (Throwable t) {
+                getOperationResponseHandler().sendResponse(HDEntryOperation.this, t);
+            } finally {
+                ops.onCompletionAsyncOperation(HDEntryOperation.this);
             }
         });
     }
 
-    @SuppressWarnings("unchecked")
     private void runOffloadedModifyingEntryProcessor(final Object previousValue, String executorName) {
         // callerId is random since the local locks are NOT re-entrant
         // using a randomID every time prevents from re-entering the already acquired lock
@@ -152,23 +148,20 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
         try {
             ops.onStartAsyncOperation(this);
-            exs.execute(executorName, new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        EntryOperator operator = EntryOperator.operator(HDEntryOperation.this, entryProcessor);
-                        Data result = operator.operateOnKeyValue(dataKey, previousValue).getResult();
-                        EntryEventType modificationType = operator.getEventType();
-                        if (modificationType != null) {
-                            Data newValue = toData(operator.getNewValue());
-                            updateAndUnlock(toData(previousValue), newValue, modificationType, finalCaller, finalThreadId,
-                                    result, finalBegin);
-                        } else {
-                            unlockOnly(result, finalCaller, finalThreadId, finalBegin);
-                        }
-                    } catch (Throwable t) {
-                        unlockOnly(t, finalCaller, finalThreadId, finalBegin);
+            exs.execute(executorName, () -> {
+                try {
+                    EntryOperator operator = EntryOperator.operator(HDEntryOperation.this, entryProcessor);
+                    Data result = operator.operateOnKeyValue(dataKey, previousValue).getResult();
+                    EntryEventType modificationType = operator.getEventType();
+                    if (modificationType != null) {
+                        Data newValue = toData(operator.getNewValue());
+                        updateAndUnlock(toData(previousValue), newValue, modificationType, finalCaller, finalThreadId,
+                                result, finalBegin);
+                    } else {
+                        unlockOnly(result, finalCaller, finalThreadId, finalBegin);
                     }
+                } catch (Throwable t) {
+                    unlockOnly(t, finalCaller, finalThreadId, finalBegin);
                 }
             });
         } catch (Throwable t) {
@@ -198,7 +191,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
         }
     }
 
-    @SuppressWarnings({"unchecked", "checkstyle:methodlength"})
+    @SuppressWarnings({"checkstyle:methodlength"})
     private void updateAndUnlock(Data previousValue, Data newValue, EntryEventType modificationType, String caller,
                                  long threadId, final Object result, long now) {
         Operation setUnlockOperation = new HDEntryOffloadableSetUnlockOperation(name, modificationType,
@@ -266,7 +259,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
 
     @Override
     public final WaitNotifyKey getWaitKey() {
-        return new LockWaitNotifyKey(new DefaultObjectNamespace(MapService.SERVICE_NAME, name), dataKey);
+        return new LockWaitNotifyKey(new DistributedObjectNamespace(MapService.SERVICE_NAME, name), dataKey);
     }
 
     @Override
@@ -378,12 +371,7 @@ public class HDEntryOperation extends HDKeyBasedMapOperation
         private void retry(final Operation op) {
             setUnlockRetryCount++;
             if (isFastRetryLimitReached()) {
-                exs.schedule(new Runnable() {
-                    @Override
-                    public void run() {
-                        ops.execute(op);
-                    }
-                }, DEFAULT_TRY_PAUSE_MILLIS, TimeUnit.MILLISECONDS);
+                exs.schedule(() -> ops.execute(op), DEFAULT_TRY_PAUSE_MILLIS, TimeUnit.MILLISECONDS);
             } else {
                 ops.execute(op);
             }

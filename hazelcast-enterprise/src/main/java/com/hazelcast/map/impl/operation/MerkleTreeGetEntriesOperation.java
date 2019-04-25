@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.function.Consumer;
 
 /**
  * Operation for fetching map entries for any number of merkle tree nodes.
@@ -53,17 +52,14 @@ public class MerkleTreeGetEntriesOperation extends MapOperation implements Reado
             return;
         }
 
-        result = new ArrayList<MerkleTreeNodeEntries>(merkleTreeOrderValuePairs.length / 2);
+        result = new ArrayList<>(merkleTreeOrderValuePairs.length / 2);
         for (int i = 0; i < merkleTreeOrderValuePairs.length; i += 2) {
             int order = merkleTreeOrderValuePairs[i];
             final Builder<EntryView<Data, Data>> entriesBuilder = InflatableSet.newBuilder(1);
 
-            localMerkleTree.forEachKeyOfNode(order, new Consumer<Object>() {
-                @Override
-                public void accept(Object key) {
-                    Record record = recordStore.getRecord((Data) key);
-                    entriesBuilder.add(createSimpleEntryView(record));
-                }
+            localMerkleTree.forEachKeyOfNode(order, key -> {
+                Record record = recordStore.getRecord((Data) key);
+                entriesBuilder.add(createSimpleEntryView(record));
             });
             result.add(new MerkleTreeNodeEntries(order, entriesBuilder.build()));
         }

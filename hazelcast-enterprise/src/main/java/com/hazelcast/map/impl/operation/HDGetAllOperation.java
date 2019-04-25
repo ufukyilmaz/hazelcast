@@ -16,7 +16,7 @@ import java.util.Set;
 
 public class HDGetAllOperation extends HDMapOperation implements ReadonlyOperation, PartitionAwareOperation {
 
-    private List<Data> keys = new ArrayList<Data>();
+    private List<Data> keys = new ArrayList<>();
     private MapEntries entries;
 
     public HDGetAllOperation() {
@@ -32,7 +32,7 @@ public class HDGetAllOperation extends HDMapOperation implements ReadonlyOperati
         IPartitionService partitionService = getNodeEngine().getPartitionService();
         int partitionId = getPartitionId();
         recordStore = mapService.getMapServiceContext().getRecordStore(partitionId, name);
-        Set<Data> partitionKeySet = new HashSet<Data>(keys.size());
+        Set<Data> partitionKeySet = new HashSet<>(keys.size());
         for (Data key : keys) {
             if (partitionId == partitionService.getPartitionId(key)) {
                 partitionKeySet.add(key);

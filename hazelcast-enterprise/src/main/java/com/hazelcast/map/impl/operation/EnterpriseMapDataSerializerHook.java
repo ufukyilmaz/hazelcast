@@ -123,488 +123,88 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public DataSerializableFactory createFactory() {
         ConstructorFunction<Integer, IdentifiedDataSerializable>[] constructors = new ConstructorFunction[LEN];
 
-        constructors[PUT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPutOperation();
-            }
-        };
-        constructors[GET] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDGetOperation();
-            }
-        };
-        constructors[REMOVE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDRemoveOperation();
-            }
-        };
-        constructors[PUT_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPutBackupOperation();
-            }
-        };
-        constructors[REMOVE_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDRemoveBackupOperation();
-            }
-        };
-        constructors[EVICT_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDEvictBackupOperation();
-            }
-        };
-        constructors[CONTAINS_KEY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDContainsKeyOperation();
-            }
-        };
-        constructors[SET] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDSetOperation();
-            }
-        };
-        constructors[LOAD_MAP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDLoadMapOperation();
-            }
-        };
-        constructors[LOAD_ALL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDLoadAllOperation();
-            }
-        };
-        constructors[ENTRY_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDEntryBackupOperation();
-            }
-        };
-        constructors[ENTRY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDEntryOperation();
-            }
-        };
-        constructors[PUT_ALL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPutAllOperation();
-            }
-        };
-        constructors[PUT_ALL_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPutAllBackupOperation();
-            }
-        };
-        constructors[REMOVE_IF_SAME] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDRemoveIfSameOperation();
-            }
-        };
-        constructors[REPLACE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDReplaceOperation();
-            }
-        };
-        constructors[SIZE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMapSizeOperation();
-            }
-        };
-        constructors[CLEAR_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDClearBackupOperation();
-            }
-        };
-        constructors[CLEAR] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDClearOperation();
-            }
-        };
-        constructors[DELETE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDDeleteOperation();
-            }
-        };
-        constructors[EVICT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDEvictOperation();
-            }
-        };
-        constructors[EVICT_ALL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDEvictAllOperation();
-            }
-        };
-        constructors[EVICT_ALL_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDEvictAllBackupOperation();
-            }
-        };
-        constructors[GET_ALL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDGetAllOperation();
-            }
-        };
-        constructors[LEGACY_MERGE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDLegacyMergeOperation();
-            }
-        };
-        constructors[PARTITION_WIDE_ENTRY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPartitionWideEntryOperation();
-            }
-        };
-        constructors[PARTITION_WIDE_ENTRY_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPartitionWideEntryBackupOperation();
-            }
-        };
-        constructors[PARTITION_WIDE_PREDICATE_ENTRY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPartitionWideEntryWithPredicateOperation();
-            }
-        };
-        constructors[PARTITION_WIDE_PREDICATE_ENTRY_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPartitionWideEntryWithPredicateBackupOperation();
-            }
-        };
+        constructors[PUT] = arg -> new HDPutOperation();
+        constructors[GET] = arg -> new HDGetOperation();
+        constructors[REMOVE] = arg -> new HDRemoveOperation();
+        constructors[PUT_BACKUP] = arg -> new HDPutBackupOperation();
+        constructors[REMOVE_BACKUP] = arg -> new HDRemoveBackupOperation();
+        constructors[EVICT_BACKUP] = arg -> new HDEvictBackupOperation();
+        constructors[CONTAINS_KEY] = arg -> new HDContainsKeyOperation();
+        constructors[SET] = arg -> new HDSetOperation();
+        constructors[LOAD_MAP] = arg -> new HDLoadMapOperation();
+        constructors[LOAD_ALL] = arg -> new HDLoadAllOperation();
+        constructors[ENTRY_BACKUP] = arg -> new HDEntryBackupOperation();
+        constructors[ENTRY] = arg -> new HDEntryOperation();
+        constructors[PUT_ALL] = arg -> new HDPutAllOperation();
+        constructors[PUT_ALL_BACKUP] = arg -> new HDPutAllBackupOperation();
+        constructors[REMOVE_IF_SAME] = arg -> new HDRemoveIfSameOperation();
+        constructors[REPLACE] = arg -> new HDReplaceOperation();
+        constructors[SIZE] = arg -> new HDMapSizeOperation();
+        constructors[CLEAR_BACKUP] = arg -> new HDClearBackupOperation();
+        constructors[CLEAR] = arg -> new HDClearOperation();
+        constructors[DELETE] = arg -> new HDDeleteOperation();
+        constructors[EVICT] = arg -> new HDEvictOperation();
+        constructors[EVICT_ALL] = arg -> new HDEvictAllOperation();
+        constructors[EVICT_ALL_BACKUP] = arg -> new HDEvictAllBackupOperation();
+        constructors[GET_ALL] = arg -> new HDGetAllOperation();
+        constructors[LEGACY_MERGE] = arg -> new HDLegacyMergeOperation();
+        constructors[PARTITION_WIDE_ENTRY] = arg -> new HDPartitionWideEntryOperation();
+        constructors[PARTITION_WIDE_ENTRY_BACKUP] = arg -> new HDPartitionWideEntryBackupOperation();
+        constructors[PARTITION_WIDE_PREDICATE_ENTRY] = arg -> new HDPartitionWideEntryWithPredicateOperation();
+        constructors[PARTITION_WIDE_PREDICATE_ENTRY_BACKUP] = arg -> new HDPartitionWideEntryWithPredicateBackupOperation();
 
-        constructors[CONTAINS_VALUE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDContainsValueOperation();
-            }
-        };
-        constructors[GET_ENTRY_VIEW] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDGetEntryViewOperation();
-            }
-        };
-        constructors[FETCH_ENTRIES] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMapFetchEntriesOperation();
-            }
-        };
-        constructors[FETCH_KEYS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMapFetchKeysOperation();
-            }
-        };
-        constructors[FLUSH_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMapFlushBackupOperation();
-            }
-        };
-        constructors[FLUSH] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMapFlushOperation();
-            }
-        };
-        constructors[MULTIPLE_ENTRY_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMultipleEntryBackupOperation();
-            }
-        };
-        constructors[MULTIPLE_ENTRY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMultipleEntryOperation();
-            }
-        };
-        constructors[MULTIPLE_ENTRY_PREDICATE_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMultipleEntryWithPredicateBackupOperation();
-            }
-        };
-        constructors[MULTIPLE_ENTRY_PREDICATE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMultipleEntryWithPredicateOperation();
-            }
-        };
-        constructors[PUT_IF_ABSENT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPutIfAbsentOperation();
-            }
-        };
-        constructors[PUT_FROM_LOAD_ALL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPutFromLoadAllOperation();
-            }
-        };
-        constructors[PUT_FROM_LOAD_ALL_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPutFromLoadAllBackupOperation();
-            }
-        };
-        constructors[PUT_TRANSIENT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPutTransientOperation();
-            }
-        };
-        constructors[REPLACE_IF_SAME] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDReplaceIfSameOperation();
-            }
-        };
-        constructors[TRY_PUT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDTryPutOperation();
-            }
-        };
-        constructors[TRY_REMOVE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDTryRemoveOperation();
-            }
-        };
-        constructors[TXN_LOCK_AND_GET] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDTxnLockAndGetOperation();
-            }
-        };
-        constructors[TXN_DELETE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDTxnDeleteOperation();
-            }
-        };
-        constructors[TXN_SET] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDTxnSetOperation();
-            }
-        };
-        constructors[MADE_PUBLISHABLE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new MadePublishableOperation();
-            }
-        };
-        constructors[PUBLISHER_CREATE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new PublisherCreateOperation();
-            }
-        };
-        constructors[READ_AND_RESET_ACCUMULATOR] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new ReadAndResetAccumulatorOperation();
-            }
-        };
-        constructors[SET_READ_CURSOR] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SetReadCursorOperation();
-            }
-        };
-        constructors[DESTROY_QUERY_CACHE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new DestroyQueryCacheOperation();
-            }
-        };
-        constructors[CLEAR_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDClearOperationFactory();
-            }
-        };
-        constructors[CONTAINS_VALUE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDContainsValueOperationFactory();
-            }
-        };
-        constructors[EVICT_ALL_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDEvictAllOperationFactory();
-            }
-        };
-        constructors[FLUSH_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMapFlushOperationFactory();
-            }
-        };
-        constructors[GET_ALL_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMapGetAllOperationFactory();
-            }
-        };
-        constructors[LOAD_ALL_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMapLoadAllOperationFactory();
-            }
-        };
-        constructors[MULTIPLE_ENTRY_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMultipleEntryOperationFactory();
-            }
-        };
-        constructors[PARTITION_WIDE_ENTRY_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPartitionWideEntryOperationFactory();
-            }
-        };
-        constructors[PARTITION_WIDE_PREDICATE_ENTRY_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPartitionWideEntryWithPredicateOperationFactory();
-            }
-        };
-        constructors[SIZE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDSizeOperationFactory();
-            }
-        };
-        constructors[MADE_PUBLISHABLE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new MadePublishableOperationFactory();
-            }
-        };
-        constructors[MAP_REPLICATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new EnterpriseMapReplicationOperation();
-            }
-        };
-        constructors[ACCUMULATOR_CONSUMER] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new AccumulatorConsumerOperation();
-            }
-        };
-        constructors[PUT_ALL_PARTITION_AWARE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDPutAllPartitionAwareOperationFactory();
-            }
-        };
-        constructors[ENTRY_OFFLOADABLE_SET_UNLOCK] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDEntryOffloadableSetUnlockOperation();
-            }
-        };
-        constructors[FETCH_WITH_QUERY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMapFetchWithQueryOperation();
-            }
-        };
-        constructors[QUERY_OP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDQueryOperation();
-            }
-        };
-        constructors[QUERY_PARTITION_OP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDQueryPartitionOperation();
-            }
-        };
-        constructors[MERGE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMergeOperationFactory();
-            }
-        };
-        constructors[MERGE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDMergeOperation();
-            }
-        };
-        constructors[SET_TTL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDSetTtlOperation();
-            }
-        };
-        constructors[SET_TTL_BACKUP] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new HDSetTtlBackupOperation();
-            }
-        };
-        constructors[MERKLE_TREE_NODE_COMPARE_OPERATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new MerkleTreeNodeCompareOperation();
-            }
-        };
+        constructors[CONTAINS_VALUE] = arg -> new HDContainsValueOperation();
+        constructors[GET_ENTRY_VIEW] = arg -> new HDGetEntryViewOperation();
+        constructors[FETCH_ENTRIES] = arg -> new HDMapFetchEntriesOperation();
+        constructors[FETCH_KEYS] = arg -> new HDMapFetchKeysOperation();
+        constructors[FLUSH_BACKUP] = arg -> new HDMapFlushBackupOperation();
+        constructors[FLUSH] = arg -> new HDMapFlushOperation();
+        constructors[MULTIPLE_ENTRY_BACKUP] = arg -> new HDMultipleEntryBackupOperation();
+        constructors[MULTIPLE_ENTRY] = arg -> new HDMultipleEntryOperation();
+        constructors[MULTIPLE_ENTRY_PREDICATE_BACKUP] = arg -> new HDMultipleEntryWithPredicateBackupOperation();
+        constructors[MULTIPLE_ENTRY_PREDICATE] = arg -> new HDMultipleEntryWithPredicateOperation();
+        constructors[PUT_IF_ABSENT] = arg -> new HDPutIfAbsentOperation();
+        constructors[PUT_FROM_LOAD_ALL] = arg -> new HDPutFromLoadAllOperation();
+        constructors[PUT_FROM_LOAD_ALL_BACKUP] = arg -> new HDPutFromLoadAllBackupOperation();
+        constructors[PUT_TRANSIENT] = arg -> new HDPutTransientOperation();
+        constructors[REPLACE_IF_SAME] = arg -> new HDReplaceIfSameOperation();
+        constructors[TRY_PUT] = arg -> new HDTryPutOperation();
+        constructors[TRY_REMOVE] = arg -> new HDTryRemoveOperation();
+        constructors[TXN_LOCK_AND_GET] = arg -> new HDTxnLockAndGetOperation();
+        constructors[TXN_DELETE] = arg -> new HDTxnDeleteOperation();
+        constructors[TXN_SET] = arg -> new HDTxnSetOperation();
+        constructors[MADE_PUBLISHABLE] = arg -> new MadePublishableOperation();
+        constructors[PUBLISHER_CREATE] = arg -> new PublisherCreateOperation();
+        constructors[READ_AND_RESET_ACCUMULATOR] = arg -> new ReadAndResetAccumulatorOperation();
+        constructors[SET_READ_CURSOR] = arg -> new SetReadCursorOperation();
+        constructors[DESTROY_QUERY_CACHE] = arg -> new DestroyQueryCacheOperation();
+        constructors[CLEAR_FACTORY] = arg -> new HDClearOperationFactory();
+        constructors[CONTAINS_VALUE_FACTORY] = arg -> new HDContainsValueOperationFactory();
+        constructors[EVICT_ALL_FACTORY] = arg -> new HDEvictAllOperationFactory();
+        constructors[FLUSH_FACTORY] = arg -> new HDMapFlushOperationFactory();
+        constructors[GET_ALL_FACTORY] = arg -> new HDMapGetAllOperationFactory();
+        constructors[LOAD_ALL_FACTORY] = arg -> new HDMapLoadAllOperationFactory();
+        constructors[MULTIPLE_ENTRY_FACTORY] = arg -> new HDMultipleEntryOperationFactory();
+        constructors[PARTITION_WIDE_ENTRY_FACTORY] = arg -> new HDPartitionWideEntryOperationFactory();
+        constructors[PARTITION_WIDE_PREDICATE_ENTRY_FACTORY] = arg -> new HDPartitionWideEntryWithPredicateOperationFactory();
+        constructors[SIZE_FACTORY] = arg -> new HDSizeOperationFactory();
+        constructors[MADE_PUBLISHABLE_FACTORY] = arg -> new MadePublishableOperationFactory();
+        constructors[MAP_REPLICATION] = arg -> new EnterpriseMapReplicationOperation();
+        constructors[ACCUMULATOR_CONSUMER] = arg -> new AccumulatorConsumerOperation();
+        constructors[PUT_ALL_PARTITION_AWARE_FACTORY] = arg -> new HDPutAllPartitionAwareOperationFactory();
+        constructors[ENTRY_OFFLOADABLE_SET_UNLOCK] = arg -> new HDEntryOffloadableSetUnlockOperation();
+        constructors[FETCH_WITH_QUERY] = arg -> new HDMapFetchWithQueryOperation();
+        constructors[QUERY_OP] = arg -> new HDQueryOperation();
+        constructors[QUERY_PARTITION_OP] = arg -> new HDQueryPartitionOperation();
+        constructors[MERGE_FACTORY] = arg -> new HDMergeOperationFactory();
+        constructors[MERGE] = arg -> new HDMergeOperation();
+        constructors[SET_TTL] = arg -> new HDSetTtlOperation();
+        constructors[SET_TTL_BACKUP] = arg -> new HDSetTtlBackupOperation();
+        constructors[MERKLE_TREE_NODE_COMPARE_OPERATION] = arg -> new MerkleTreeNodeCompareOperation();
         constructors[MERKLE_TREE_NODE_COMPARE_OPERATION_FACTORY] =
-                new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-                    @Override
-                    public IdentifiedDataSerializable createNew(Integer arg) {
-                        return new MerkleTreeNodeCompareOperationFactory();
-                    }
-                };
-        constructors[MERKLE_TREE_GET_ENTRIES_OPERATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new MerkleTreeGetEntriesOperation();
-            }
-        };
-        constructors[MERKLE_TREE_GET_ENTRY_COUNT_OPERATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new MerkleTreeGetEntryCountOperation();
-            }
-        };
+                arg -> new MerkleTreeNodeCompareOperationFactory();
+        constructors[MERKLE_TREE_GET_ENTRIES_OPERATION] = arg -> new MerkleTreeGetEntriesOperation();
+        constructors[MERKLE_TREE_GET_ENTRY_COUNT_OPERATION] = arg -> new MerkleTreeGetEntryCountOperation();
 
         return new ArrayDataSerializableFactory(constructors);
     }

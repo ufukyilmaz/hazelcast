@@ -13,9 +13,13 @@ import java.io.IOException;
  * WAN replication object for map update operations.
  */
 public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObject {
-    /** The policy how to merge the entry on the receiving cluster */
+    /**
+     * The policy how to merge the entry on the receiving cluster
+     */
     private Object mergePolicy;
-    /** The updated entry */
+    /**
+     * The updated entry
+     */
     private WanMapEntryView<Data, Data> entryView;
 
     public EnterpriseMapReplicationUpdate(String mapName, Object mergePolicy,

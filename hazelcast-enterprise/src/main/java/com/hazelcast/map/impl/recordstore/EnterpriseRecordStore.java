@@ -147,13 +147,13 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     @Override
     protected Collection<Record> getNotLockedRecords() {
-        Set<Data> lockedKeySet = lockStore == null ? Collections.<Data>emptySet() : lockStore.getLockedKeys();
+        Set<Data> lockedKeySet = lockStore == null ? Collections.emptySet() : lockStore.getLockedKeys();
         int notLockedKeyCount = storage.size() - lockedKeySet.size();
         if (notLockedKeyCount <= 0) {
             return emptyList();
         }
 
-        List<Record> notLockedRecords = new ArrayList<Record>(notLockedKeyCount);
+        List<Record> notLockedRecords = new ArrayList<>(notLockedKeyCount);
         Collection<Record> records = storage.values();
         for (Record record : records) {
             if (!lockedKeySet.contains(record.getKey())) {

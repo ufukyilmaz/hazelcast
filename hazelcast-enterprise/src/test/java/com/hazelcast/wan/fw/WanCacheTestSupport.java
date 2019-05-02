@@ -23,10 +23,21 @@ import static org.junit.Assert.assertTrue;
 public class WanCacheTestSupport {
     private static final String CACHE_MANAGER = "cache-manager";
 
+    public static int fillCache(HazelcastInstance instance, String cacheName, int start, int end) {
+        ICache<Integer, String> cache = getOrCreateCache(instance, cacheName);
+
+        String valuePrefix = instance.getConfig().getGroupConfig().getName();
+        return fillCache(start, end, cache, valuePrefix);
+    }
+
     public static int fillCache(Cluster cluster, String cacheName, int start, int end) {
         ICache<Integer, String> cache = getOrCreateCache(cluster, cacheName);
 
         String valuePrefix = cluster.config.getGroupConfig().getName();
+        return fillCache(start, end, cache, valuePrefix);
+    }
+
+    public static int fillCache(int start, int end, ICache<Integer, String> cache, String valuePrefix) {
         for (; start < end; start++) {
             String value = valuePrefix + start;
             cache.put(start, value);
@@ -36,12 +47,11 @@ public class WanCacheTestSupport {
 
     public static ICache<Integer, String> getOrCreateCache(Cluster cluster, String cacheName) {
         HazelcastInstance instance = cluster.getAMember();
-        ClassLoader classLoader = cluster.getConfig().getClassLoader();
-        return getOrCreateCache(instance, cacheName, classLoader);
+        return getOrCreateCache(instance, cacheName);
     }
 
-    private static ICache<Integer, String> getOrCreateCache(HazelcastInstance instance, String cacheName,
-                                                            ClassLoader classLoader) {
+    public static ICache<Integer, String> getOrCreateCache(HazelcastInstance instance, String cacheName) {
+        ClassLoader classLoader = instance.getConfig().getClassLoader();
         CachingProvider provider = Caching.getCachingProvider();
         Properties properties = HazelcastCachingProvider.propertiesByInstanceName(instance.getConfig().getInstanceName());
         try {

@@ -67,9 +67,8 @@ public class WanCounterTestSupport {
     public static void verifyEventCountersAreZero(Cluster sourceCluster, WanReplication wanReplication) {
         for (HazelcastInstance instance : sourceCluster.getMembers()) {
             if (instance != null && instance.getLifecycleService().isRunning()) {
-                int primaryQueueSize = getPrimaryOutboundQueueSize(instance, wanReplication);
-
                 WanBatchReplication endpoint = wanReplicationEndpoint(instance, wanReplication);
+                int primaryQueueSize = getPrimaryOutboundQueueSize(instance, wanReplication);
                 int backupQueueSize = endpoint.getCurrentBackupElementCount();
 
                 String instanceName = instance.getName();

@@ -42,9 +42,6 @@ import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationEndpoint;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assume.assumeThat;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
@@ -59,8 +56,9 @@ public class WanCounterMigrationTest {
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 // ignored cases for now, known to be broken
-                //                {0, false},
-                //                {0, true},
+                // see issue EE #2091
+                // {0, false},
+                // {0, true},
                 {1, false},
                 {1, true},
                 {2, false},
@@ -242,9 +240,6 @@ public class WanCounterMigrationTest {
 
     @Test
     public void testCountersReachZeroAfterBouncingSourceCluster() {
-        // TODO remove me once backupCount issue is fixed
-        assumeThat(backupCount, not(equalTo(3)));
-
         sourceCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(4));
 
         sourceCluster.startCluster();

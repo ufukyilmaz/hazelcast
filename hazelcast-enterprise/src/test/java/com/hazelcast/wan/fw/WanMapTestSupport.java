@@ -29,6 +29,15 @@ public class WanMapTestSupport {
     public static void fillMap(Cluster cluster, String mapName, int start, int end, String valuePrefix,
                                CountDownLatch loadLatch) {
         HazelcastInstance aClusterInstance = cluster.getAMember();
+        fillMap(aClusterInstance, mapName, start, end, valuePrefix, loadLatch);
+    }
+
+    public static void fillMap(HazelcastInstance aClusterInstance, String mapName, int start, int end) {
+        fillMap(aClusterInstance, mapName, start, end, null, null);
+    }
+
+    public static void fillMap(HazelcastInstance aClusterInstance, String mapName, int start, int end, String valuePrefix,
+                               CountDownLatch loadLatch) {
         IMap<Integer, String> m = aClusterInstance.getMap(mapName);
         for (int key = start; key < end; key++) {
             m.put(key, valuePrefix + key);

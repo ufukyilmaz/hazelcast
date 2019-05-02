@@ -171,4 +171,13 @@ public class PublisherQueueContainer {
     public PartitionWanEventContainer[] getContainers() {
         return containers;
     }
+
+    /**
+     * Clears all WAN queues in all containers.
+     */
+    public void clear() {
+        for (PartitionWanEventContainer container : containers) {
+            container.clear();
+        }
+    }
 }

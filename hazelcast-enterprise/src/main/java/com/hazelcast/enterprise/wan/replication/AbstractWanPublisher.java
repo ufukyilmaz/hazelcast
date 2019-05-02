@@ -697,6 +697,16 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     /**
+     * Resets the publisher. Removes all WAN events from the partition queues
+     * and resets the WAN counters.
+     */
+    public void reset() {
+        eventQueueContainer.clear();
+        wanCounter.setPrimaryElementCounter(0);
+        wanCounter.setBackupElementCounter(0);
+    }
+
+    /**
      * Returns the count for the number of events currently in the WAN
      * map/cache partition queues for partitions owned by this node.
      */

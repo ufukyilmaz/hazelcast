@@ -8,6 +8,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.operation.AddWanConfigOperationFactory;
 import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
+import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
@@ -32,6 +33,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.FragmentedMigrationAwareService;
 import com.hazelcast.spi.LiveOperations;
 import com.hazelcast.spi.LiveOperationsTracker;
+import com.hazelcast.spi.ManagedService;
+import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionMigrationEvent;
 import com.hazelcast.spi.PartitionReplicationEvent;
@@ -55,6 +58,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -66,7 +70,7 @@ import static com.hazelcast.util.StringUtil.isNullOrEmptyAfterTrim;
  */
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity", "checkstyle:classdataabstractioncoupling"})
 public class EnterpriseWanReplicationService implements WanReplicationService, FragmentedMigrationAwareService,
-        PostJoinAwareService, LiveOperationsTracker {
+                                                        PostJoinAwareService, LiveOperationsTracker, ManagedService {
 
     private static final int ADD_WAN_CONFIG_MAX_RETRIES = 10;
     private final Node node;
@@ -562,5 +566,27 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     @Override
     public void rollbackMigration(PartitionMigrationEvent event) {
         migrationAwareService.rollbackMigration(event);
+    }
+
+    @Override
+    public void init(NodeEngine nodeEngine, Properties properties) {
+        // NOP
+    }
+
+    @Override
+    public void reset() {
+        final Collection<WanReplicationPublisherDelegate> publishers = getWanReplications().values();
+        for (WanReplicationPublisherDelegate publisherDelegate : publishers) {
+            for (WanReplicationEndpoint endpoint : publisherDelegate.getEndpoints()) {
+                if (endpoint instanceof AbstractWanPublisher) {
+                    ((AbstractWanPublisher) endpoint).reset();
+                }
+            }
+        }
+    }
+
+    @Override
+    public void shutdown(boolean terminate) {
+        reset();
     }
 }

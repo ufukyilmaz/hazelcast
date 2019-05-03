@@ -107,7 +107,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
                                                      SerializationService serializationService) {
         NearCachePreloaderConfig preloaderConfig = nearCacheConfig.getPreloaderConfig();
         if (preloaderConfig.isEnabled()) {
-            return new NearCachePreloader<Data>(name, preloaderConfig, nearCacheStats, serializationService);
+            return new NearCachePreloader<>(name, preloaderConfig, nearCacheStats, serializationService);
         }
         return null;
     }
@@ -204,8 +204,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public int forceEvict() {
         int evictedCount = 0;
-        for (int i = 0; i < segments.length; i++) {
-            NativeMemoryNearCacheRecordStore segment = segments[i];
+        for (NativeMemoryNearCacheRecordStore segment : segments) {
             evictedCount += segment.forceEvict();
         }
         return evictedCount;
@@ -214,11 +213,10 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public void doExpiration() {
         Thread currentThread = Thread.currentThread();
-        for (int i = 0; i < segments.length; i++) {
+        for (NativeMemoryNearCacheRecordStore<K, V> segment : segments) {
             if (currentThread.isInterrupted()) {
                 return;
             }
-            NativeMemoryNearCacheRecordStore segment = segments[i];
             segment.doExpiration();
         }
     }
@@ -231,11 +229,10 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
 
         Thread currentThread = Thread.currentThread();
-        for (int i = 0; i < segments.length; i++) {
+        for (NativeMemoryNearCacheRecordStore<K, V> segment : segments) {
             if (currentThread.isInterrupted()) {
                 return;
             }
-            NativeMemoryNearCacheRecordStore segment = segments[i];
             segment.doEviction(withoutMaxSizeCheck);
         }
     }

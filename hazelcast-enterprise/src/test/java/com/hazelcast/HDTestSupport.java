@@ -6,8 +6,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 
@@ -58,10 +56,6 @@ public final class HDTestSupport {
                 .addMapConfig(mapConfig)
                 .setNativeMemoryConfig(memoryConfig)
                 .setLicenseKey(UNLIMITED_LICENSE);
-    }
-
-    public static <K, V> IEnterpriseMap<K, V> getEnterpriseMap(HazelcastInstance instance, String mapName) {
-        return (IEnterpriseMap<K, V>) instance.<K, V>getMap(mapName);
     }
 
     public static <K, V> ICache<K, V> getICache(CacheManager manager, CacheConfiguration<K, V> config, String cacheName) {

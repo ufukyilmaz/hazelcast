@@ -7,7 +7,6 @@ import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.listener.EntryUpdatedListener;
@@ -16,8 +15,6 @@ import com.hazelcast.query.Predicate;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Map;
-
-import static com.hazelcast.HDTestSupport.getEnterpriseMap;
 
 // TODO: print stacktrace predicate to see where the event listener is triggered
 
@@ -37,24 +34,21 @@ public class NearCacheReplacement implements Serializable {
         final HazelcastInstance client = createHazelcastClientInstance();
 
         // add listener
-        IEnterpriseMap<Integer, Integer> clientMap = getEnterpriseMap(client, mapName);
+        IMap<Integer, Integer> clientMap = client.getMap(mapName);
         QueryCache<Integer, Integer> queryCache = clientMap.getQueryCache(cacheName);
         queryCache.addEntryListener(new MyEntryUpdatedListener(), true);
 
         // run updater inside server
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    IMap<Object, Object> map = server.getMap(mapName);
-                    String date = new Date().toString();
-                    map.set("1", date);
-                    System.out.println("Putting: " + date);
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+        new Thread(() -> {
+            while (true) {
+                IMap<Object, Object> map = server.getMap(mapName);
+                String date = new Date().toString();
+                map.set("1", date);
+                System.out.println("Putting: " + date);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }).start();

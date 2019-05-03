@@ -18,8 +18,7 @@ public class HiDensityNearCacheManager extends DefaultNearCacheManager {
 
     @Override
     protected <K, V> NearCache<K, V> createNearCache(String name, NearCacheConfig nearCacheConfig) {
-        HiDensityNearCache<K, V> nearCache = new HiDensityNearCache<K, V>(name, nearCacheConfig, this,
+        return new HiDensityNearCache<>(name, nearCacheConfig, this,
                 ((EnterpriseSerializationService) serializationService), scheduler, classLoader, properties);
-        return nearCache;
     }
 }

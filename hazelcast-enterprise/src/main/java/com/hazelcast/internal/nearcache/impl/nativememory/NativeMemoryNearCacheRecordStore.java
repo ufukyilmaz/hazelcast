@@ -100,7 +100,7 @@ public class NativeMemoryNearCacheRecordStore<K, V>
         }
 
         if (recordProcessor == null) {
-            this.recordProcessor = new CacheHiDensityRecordProcessor<NativeMemoryNearCacheRecord>(serializationService,
+            this.recordProcessor = new CacheHiDensityRecordProcessor<>(serializationService,
                     recordAccessor, memoryManager, storageInfo);
         }
     }

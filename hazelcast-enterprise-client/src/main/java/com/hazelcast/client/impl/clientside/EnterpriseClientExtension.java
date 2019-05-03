@@ -4,9 +4,7 @@ import com.hazelcast.client.HazelcastClientNotActiveException;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.config.SocketOptions;
-import com.hazelcast.client.map.impl.proxy.EnterpriseMapClientProxyFactory;
 import com.hazelcast.client.spi.ClientExecutionService;
-import com.hazelcast.client.spi.ClientProxyFactory;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
@@ -22,7 +20,6 @@ import com.hazelcast.internal.networking.ChannelInitializer;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionAware;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.FreeMemoryChecker;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
@@ -171,14 +168,6 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
         HazelcastProperties properties = client.getProperties();
 
         return new HiDensityNearCacheManager(((EnterpriseSerializationService) ss), es, classLoader, properties);
-    }
-
-    @Override
-    public <T> ClientProxyFactory createServiceProxyFactory(Class<T> service) {
-        if (MapService.class.isAssignableFrom(service)) {
-            return new EnterpriseMapClientProxyFactory(client.getClientConfig());
-        }
-        throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);
     }
 
     @Override

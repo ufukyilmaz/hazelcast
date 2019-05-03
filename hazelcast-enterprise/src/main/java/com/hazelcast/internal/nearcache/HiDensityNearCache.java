@@ -67,7 +67,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     protected NearCacheRecordStore<K, V> createNearCacheRecordStore(String name, NearCacheConfig nearCacheConfig) {
         if (NATIVE == nearCacheConfig.getInMemoryFormat()) {
             EnterpriseSerializationService ss = (EnterpriseSerializationService) serializationService;
-            return new SegmentedNativeMemoryNearCacheRecordStore<K, V>(name, nearCacheConfig, ss, classLoader);
+            return new SegmentedNativeMemoryNearCacheRecordStore<>(name, nearCacheConfig, ss, classLoader);
         }
 
         return super.createNearCacheRecordStore(name, nearCacheConfig);

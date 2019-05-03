@@ -1,10 +1,12 @@
-package com.hazelcast.core;
+package com.hazelcast.internal.eviction;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceProxy;
 import com.hazelcast.internal.metrics.LongGauge;
@@ -20,13 +22,12 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.HDTestSupport.getEnterpriseMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({SlowTest.class})
-public class IEnterpriseMapForcedEvictionTest extends HazelcastTestSupport {
+public class HDMapForcedEvictionTest extends HazelcastTestSupport {
 
     private static final String MAP_NAME = "enterpriseMap";
 
@@ -55,7 +56,7 @@ public class IEnterpriseMapForcedEvictionTest extends HazelcastTestSupport {
         int testDurationSeconds = 30;
 
         long deadLine = System.currentTimeMillis() + (testDurationSeconds * 1000);
-        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(hazelcastInstance, MAP_NAME);
+        IMap<Integer, Integer> map = hazelcastInstance.getMap(MAP_NAME);
         for (int i = 0; System.currentTimeMillis() < deadLine; i++) {
             map.put(i, i);
         }

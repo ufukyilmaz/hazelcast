@@ -5,8 +5,8 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
-import com.hazelcast.map.impl.proxy.EnterpriseMapProxyImpl;
-import com.hazelcast.map.impl.proxy.EnterpriseNearCachedMapProxyImpl;
+import com.hazelcast.map.impl.proxy.MapProxyImpl;
+import com.hazelcast.map.impl.proxy.NearCachedMapProxyImpl;
 import com.hazelcast.map.merge.MergePolicyProvider;
 
 import static com.hazelcast.config.NearCacheConfigAccessor.initDefaultMaxSizeForOnHeapMaps;
@@ -29,6 +29,7 @@ class EnterpriseMapRemoteService extends MapRemoteService {
         hdMapConfigValidator = new HDMapConfigValidator(hotRestartEvictionHelper);
     }
 
+    // TODO: check if OS method can be used directly without override?
     @Override
     public DistributedObject createDistributedObject(String name) {
         Config config = nodeEngine.getConfig();
@@ -47,9 +48,9 @@ class EnterpriseMapRemoteService extends MapRemoteService {
         if (mapConfig.isNearCacheEnabled()) {
             checkNearCacheConfig(name, mapConfig.getNearCacheConfig(), nativeMemoryConfig, false);
             initDefaultMaxSizeForOnHeapMaps(mapConfig.getNearCacheConfig());
-            return new EnterpriseNearCachedMapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);
+            return new NearCachedMapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);
         } else {
-            return new EnterpriseMapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);
+            return new MapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);
         }
     }
 }

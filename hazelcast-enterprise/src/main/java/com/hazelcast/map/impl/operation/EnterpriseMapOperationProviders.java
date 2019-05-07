@@ -13,12 +13,11 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
  */
 public class EnterpriseMapOperationProviders extends MapOperationProviders {
 
-    private final MapOperationProvider hdWanAwareProvider;
+    private final MapServiceContext mapServiceContext;
     private final MapOperationProvider hdMapOperationProvider = new HDMapOperationProvider();
 
     public EnterpriseMapOperationProviders(MapServiceContext mapServiceContext) {
-        super(mapServiceContext);
-        this.hdWanAwareProvider = new WANAwareOperationProvider(mapServiceContext, hdMapOperationProvider);
+        this.mapServiceContext = mapServiceContext;
     }
 
     @Override
@@ -28,28 +27,9 @@ public class EnterpriseMapOperationProviders extends MapOperationProviders {
         InMemoryFormat inMemoryFormat = mapConfig.getInMemoryFormat();
 
         if (NATIVE == inMemoryFormat) {
-            return mapContainer.isWanReplicationEnabled() ? hdWanAwareProvider : hdMapOperationProvider;
+            return hdMapOperationProvider;
         } else {
             return super.getOperationProvider(name);
-        }
-    }
-
-    /**
-     * Returns a {@link MapOperationProvider} instance, depending on whether the provided {@code MapConfig} has a
-     * WAN replication policy configured or not.
-     *
-     * @param mapConfig the map configuration to query whether WAN replication is configured
-     * @return {@link DefaultMapOperationProvider} or {@link WANAwareOperationProvider} depending on the WAN replication
-     * config of the map configuration provided as parameter
-     */
-    @Override
-    public MapOperationProvider getOperationProvider(MapConfig mapConfig) {
-        InMemoryFormat inMemoryFormat = mapConfig.getInMemoryFormat();
-
-        if (NATIVE == inMemoryFormat) {
-            return mapConfig.getWanReplicationRef() == null ? hdMapOperationProvider : hdWanAwareProvider;
-        } else {
-            return super.getOperationProvider(mapConfig);
         }
     }
 }

@@ -22,9 +22,10 @@ keytool -import -v -trustcacerts -alias hazelcast  -keypass 123456 -file hazelca
 OpenSSL was used to generate demo CA key material. See [create_demo_ca_key_material.sh](create_demo_ca_key_material.sh)
 script for details.
 
-### Let's Encrypt CA signed certificates
+### Comodo CA signed certificates
 
-There are also Let's Encrypt CA signed certificate (with 90days validity) for a hostname `member1.hazelcast-test.download`:
+There are also Comodo CA signed certificate (valid to April 24, 2021) for the hostname `foobar.hazelcast.com`. 
+Following files have `letsencrypt` prefix in their filename due to backward compatibility reasons with the older non-java clients.
 
 `letsencrypt-privkey.pem`  : the private key for your certificate.
 `letsencrypt-privkey.enc.pem`: the private key encrypted using `PBE-SHA1-3DES` PKCS#5 v1.5 algorithm (password: hazelcast)

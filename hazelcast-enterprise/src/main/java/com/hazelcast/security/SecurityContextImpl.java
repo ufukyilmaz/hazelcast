@@ -32,7 +32,7 @@ import static com.hazelcast.security.impl.SecurityServiceImpl.clonePermissionCon
 
 public class SecurityContextImpl implements SecurityContext {
 
-    private static final ThreadLocal<ParametersImpl> THREAD_LOCAL_PARAMETERS = new ThreadLocal<ParametersImpl>();
+    private static final ThreadLocal<ParametersImpl> THREAD_LOCAL_PARAMETERS = new ThreadLocal<>();
 
     private final ILogger logger;
     private final Node node;
@@ -80,7 +80,7 @@ public class SecurityContextImpl implements SecurityContext {
         clientConfiguration = new LoginConfigurationDelegate(node.config,
                 getLoginModuleConfigs(securityConfig.getClientLoginModuleConfigs()));
         final List<SecurityInterceptorConfig> interceptorConfigs = securityConfig.getSecurityInterceptorConfigs();
-        interceptors = new ArrayList<SecurityInterceptor>(interceptorConfigs.size());
+        interceptors = new ArrayList<>(interceptorConfigs.size());
         for (SecurityInterceptorConfig interceptorConfig : interceptorConfigs) {
             addInterceptors(interceptorConfig);
         }
@@ -162,7 +162,12 @@ public class SecurityContextImpl implements SecurityContext {
 
     @Override
     public <V> SecureCallable<V> createSecureCallable(Subject subject, Callable<V> callable) {
-        return new SecureCallableImpl<V>(subject, callable);
+        return new SecureCallableImpl<>(subject, callable);
+    }
+
+    @Override
+    public <V> SecureCallable<?> createSecureCallable(Subject subject, Runnable runnable) {
+        return new SecureCallableImpl<V>(subject, runnable);
     }
 
     @Override

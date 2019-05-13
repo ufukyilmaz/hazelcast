@@ -128,7 +128,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             String method = key.substring(dotIndex + 1);
             Map<String, String> methodMap = SERVICE_TO_METHODMAP.get(structure);
             if (methodMap == null) {
-                methodMap = new HashMap<String, String>();
+                methodMap = new HashMap<>();
                 SERVICE_TO_METHODMAP.put(structure, methodMap);
             }
             methodMap.put(method, action);
@@ -136,7 +136,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     }
 
     private Subject subject;
-    private Callable<V> callable;
+    private Object taskObject;
     private boolean blockUnmappedActions;
 
     private transient Node node;
@@ -144,19 +144,28 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     public SecureCallableImpl() {
     }
 
-    public SecureCallableImpl(Subject subject, Callable<V> callable) {
+    public SecureCallableImpl(Subject subject, Callable<V> taskObject) {
         this.subject = subject;
-        this.callable = callable;
+        this.taskObject = taskObject;
+    }
+
+    public SecureCallableImpl(Subject subject, Runnable runnable) {
+        this.subject = subject;
+        this.taskObject = runnable;
     }
 
     @Override
     public V call() throws Exception {
-        return callable.call();
+        if (taskObject instanceof Runnable) {
+            ((Runnable) taskObject).run();
+            return null;
+        }
+        return ((Callable<V>) taskObject).call();
     }
 
     @Override
     public String toString() {
-        return "SecureCallable [subject=" + subject + ", callable=" + callable + "]";
+        return "SecureCallable [subject=" + subject + ", taskObject=" + taskObject + "]";
     }
 
     @Override
@@ -171,7 +180,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeObject(callable);
+        out.writeObject(taskObject);
         boolean hasSubject = subject != null;
         out.writeBoolean(hasSubject);
         if (hasSubject) {
@@ -185,7 +194,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        callable = in.readObject();
+        taskObject = in.readObject();
         boolean hasSubject = in.readBoolean();
         if (hasSubject) {
             subject = new Subject();
@@ -200,8 +209,8 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
 
     @Override
     public void setHazelcastInstance(HazelcastInstance hazelcastInstance) {
-        if (callable instanceof HazelcastInstanceAware) {
-            ((HazelcastInstanceAware) callable).setHazelcastInstance(new HazelcastInstanceDelegate(hazelcastInstance));
+        if (taskObject instanceof HazelcastInstanceAware) {
+            ((HazelcastInstanceAware) taskObject).setHazelcastInstance(new HazelcastInstanceDelegate(hazelcastInstance));
         }
     }
 

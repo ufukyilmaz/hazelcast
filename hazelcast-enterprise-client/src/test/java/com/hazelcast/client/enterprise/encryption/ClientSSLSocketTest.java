@@ -54,7 +54,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
 
     @Test(timeout = 60000, expected = IllegalStateException.class)
     public void testClientThrowsExceptionIfNodesAreUsingSSLButClientIsNot() throws Exception {
-        Config serverConfig = new Config();
+        Config serverConfig = smallInstanceConfig();
         NetworkConfig networkConfig = serverConfig.getNetworkConfig();
         networkConfig.setSSLConfig(getSslConfig());
         networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
@@ -95,7 +95,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
     }
 
     public void test(boolean clientOpenSSL, boolean serverOpenSSL) throws Exception {
-        Config serverConfig = new Config();
+        Config serverConfig = smallInstanceConfig();
         // we need to provide TLS version explicitly in mixed scenarios on IBM Java
         boolean forceProtocol = TestEnvironmentUtil.isIbmJvm() && (serverOpenSSL ^ clientOpenSSL);
 
@@ -143,7 +143,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
     @Test
     public void testServerRequiresClientAuth_clientHaveKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "REQUIRED");
-        Config serverConfig = new Config();
+        Config serverConfig = smallInstanceConfig();
         NetworkConfig networkConfig = serverConfig.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
         networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
@@ -166,7 +166,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
     @Test(expected = IllegalStateException.class)
     public void testServerRequiresClientAuth_clientDoesNotHaveKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "REQUIRED");
-        Config serverConfig = new Config();
+        Config serverConfig = smallInstanceConfig();
         NetworkConfig networkConfig = serverConfig.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
         networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
@@ -189,7 +189,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
     @Test(expected = IllegalStateException.class)
     public void testServerRequiresClientAuth_clientHaveWrongKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "REQUIRED");
-        Config serverConfig = new Config();
+        Config serverConfig = smallInstanceConfig();
         NetworkConfig networkConfig = serverConfig.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
         networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
@@ -209,7 +209,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
     @Test
     public void testOptionalClientAuth_clientHaveKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
-        Config serverConfig = new Config();
+        Config serverConfig = smallInstanceConfig();
         NetworkConfig networkConfig = serverConfig.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
         networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
@@ -236,7 +236,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         assumeJavaVersionLessThan(11);
 
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
-        Config serverConfig = new Config();
+        Config serverConfig = smallInstanceConfig();
         NetworkConfig networkConfig = serverConfig.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
         networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
@@ -261,7 +261,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
     @Test
     public void testOptionalClientAuth_clientDoesNotHaveKeystore() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
-        Config serverConfig = new Config();
+        Config serverConfig = smallInstanceConfig();
         NetworkConfig networkConfig = serverConfig.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
         networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
@@ -288,7 +288,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
     @Test
     public void testMalformedKeystore_onClient() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");
-        Config serverConfig = new Config();
+        Config serverConfig = smallInstanceConfig();
         NetworkConfig networkConfig = serverConfig.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
         networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);
@@ -345,7 +345,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
 
     private Config getConfig(Properties sslProperties) {
         SSLConfig sslConfig = getSslConfig(sslProperties);
-        Config serverConfig = new Config();
+        Config serverConfig = smallInstanceConfig();
         NetworkConfig networkConfig = serverConfig.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
         networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(15);

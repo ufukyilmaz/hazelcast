@@ -10,8 +10,8 @@ import com.hazelcast.monitor.impl.WanSyncStateImpl;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
-import com.hazelcast.util.collection.InflatableSet;
-import com.hazelcast.util.collection.InflatableSet.Builder;
+import com.hazelcast.internal.util.collection.InflatableSet;
+import com.hazelcast.internal.util.collection.InflatableSet.Builder;
 import com.hazelcast.wan.WanSyncStatus;
 
 import java.util.ArrayList;

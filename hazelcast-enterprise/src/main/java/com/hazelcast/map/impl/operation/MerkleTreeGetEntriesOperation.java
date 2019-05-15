@@ -9,8 +9,8 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.ReadonlyOperation;
-import com.hazelcast.util.collection.InflatableSet;
-import com.hazelcast.util.collection.InflatableSet.Builder;
+import com.hazelcast.internal.util.collection.InflatableSet;
+import com.hazelcast.internal.util.collection.InflatableSet.Builder;
 import com.hazelcast.wan.merkletree.MerkleTree;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 

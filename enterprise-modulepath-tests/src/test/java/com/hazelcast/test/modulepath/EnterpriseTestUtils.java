@@ -13,7 +13,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
-import com.hazelcast.core.PartitionService;
+import com.hazelcast.partition.PartitionService;
 
 /**
  * Helper utils for Enterprise tests. It copies some methods from

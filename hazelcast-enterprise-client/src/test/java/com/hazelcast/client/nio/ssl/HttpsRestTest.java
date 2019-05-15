@@ -75,7 +75,7 @@ public class HttpsRestTest extends HazelcastTestSupport {
         String value = "value";
 
         assertEquals(HTTP_OK, communicator.mapPut(name, key, value));
-        assertEquals(value, communicator.mapGet(name, key));
+        assertEquals(value, communicator.mapGetAndResponse(name, key));
         assertTrue(instance.getMap(name).containsKey(key));
     }
 

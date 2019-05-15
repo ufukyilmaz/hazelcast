@@ -26,7 +26,7 @@ public class EnterprisePhoneHomeTest extends HazelcastTestSupport {
         PhoneHome phoneHome = new EnterprisePhoneHome(node);
         String licenseKey = node.getConfig().getLicenseKey();
 
-        Map<String, String> parameters = phoneHome.phoneHome(node);
+        Map<String, String> parameters = phoneHome.phoneHome(node, true);
         assertEquals(parameters.get("e"), "true");
         assertEquals(parameters.get("oem"), "false");
         assertEquals(parameters.get("l"), MD5Util.toMD5String(licenseKey));

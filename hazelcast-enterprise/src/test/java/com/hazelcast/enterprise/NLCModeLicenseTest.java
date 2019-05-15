@@ -130,7 +130,7 @@ public class NLCModeLicenseTest extends HazelcastTestSupport {
         Node node = getNode(hz);
         PhoneHome phoneHome = new EnterprisePhoneHome(node);
 
-        Map<String, String> parameters = phoneHome.phoneHome(node);
+        Map<String, String> parameters = phoneHome.phoneHome(node, true);
         assertEquals(parameters.get("e"), "true");
         assertEquals(parameters.get("oem"), "true");
         assertEquals(parameters.get("l"), "");

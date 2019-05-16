@@ -2,6 +2,8 @@ package com.hazelcast.wan.fw;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.test.DefaultTaskProgress;
 import com.hazelcast.test.ProgressCheckerTask;
 import com.hazelcast.test.TaskProgress;
@@ -11,6 +13,8 @@ import java.util.concurrent.CountDownLatch;
 import static com.hazelcast.test.HazelcastTestSupport.assertCompletesEventually;
 
 public class WanMapTestSupport {
+    private static final ILogger LOGGER = Logger.getLogger(WanMapTestSupport.class);
+
     private WanMapTestSupport() {
     }
 
@@ -38,6 +42,7 @@ public class WanMapTestSupport {
 
     public static void fillMap(HazelcastInstance aClusterInstance, String mapName, int start, int end, String valuePrefix,
                                CountDownLatch loadLatch) {
+        LOGGER.info("Filling map " + mapName + " [" + start + "," + end + ")");
         IMap<Integer, String> m = aClusterInstance.getMap(mapName);
         for (int key = start; key < end; key++) {
             m.put(key, valuePrefix + key);

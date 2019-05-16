@@ -21,10 +21,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 
 public class WanCounterTestSupport {
+    private static final ILogger LOGGER = Logger.getLogger(WanCounterTestSupport.class);
+
     private WanCounterTestSupport() {
     }
 
     public static void verifyEventCountersAreEventuallyZero(final Cluster cluster, final WanReplication wanReplication) {
+        LOGGER.info("Start verifying that WAN counters reach zero");
         assertCompletesEventually(new QueueDrainingProgressCheckerTask(cluster, wanReplication));
     }
 

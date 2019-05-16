@@ -92,6 +92,16 @@ public class Cluster {
         throw new IllegalStateException("All members of cluster " + groupName + " have already been started");
     }
 
+    public void startClusterMembers(int members) {
+        int membersStarted = 0;
+        for (int i = 0; i < clusterMembers.length && membersStarted < members; i++) {
+            if (clusterMembers[i] == null || !clusterMembers[i].getLifecycleService().isRunning()) {
+                startClusterMember(i);
+                membersStarted++;
+            }
+        }
+    }
+
     public HazelcastInstance startClusterMember(int index) {
         if (clusterMembers[index] != null && clusterMembers[index].getLifecycleService().isRunning()) {
             throw new IllegalArgumentException("Cluster member with index " + index + " has already started");

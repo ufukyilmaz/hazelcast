@@ -5,6 +5,8 @@ import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.AbstractHazelcastCacheManager;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.DefaultTaskProgress;
 import com.hazelcast.test.ProgressCheckerTask;
@@ -21,6 +23,7 @@ import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static org.junit.Assert.assertTrue;
 
 public class WanCacheTestSupport {
+    private static final ILogger LOGGER = Logger.getLogger(WanCacheTestSupport.class);
     private static final String CACHE_MANAGER = "cache-manager";
 
     public static int fillCache(HazelcastInstance instance, String cacheName, int start, int end) {
@@ -38,6 +41,7 @@ public class WanCacheTestSupport {
     }
 
     public static int fillCache(int start, int end, ICache<Integer, String> cache, String valuePrefix) {
+        LOGGER.info("Filling cache " + cache.getName() + " [" + start + "," + end + ")");
         for (; start < end; start++) {
             String value = valuePrefix + start;
             cache.put(start, value);

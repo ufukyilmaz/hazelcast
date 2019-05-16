@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.instance.MemberImpl;
+import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.nio.Address;
 import com.hazelcast.version.MemberVersion;
 

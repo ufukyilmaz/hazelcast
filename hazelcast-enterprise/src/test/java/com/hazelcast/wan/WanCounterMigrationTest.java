@@ -4,6 +4,7 @@ import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
@@ -108,6 +109,7 @@ public class WanCounterMigrationTest {
                 .withSetupName(REPLICATION_NAME)
                 .withWanPublisher(MigrationBreakerWanPublisher.class)
                 .withSnapshotEnabled(snapshotEnabled)
+                .withInitialPublisherState(WanPublisherState.PAUSED)
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
@@ -140,7 +142,6 @@ public class WanCounterMigrationTest {
     @Test
     public void testCountersReachZeroAfterMigrationCommit() {
         sourceCluster.startAClusterMember();
-        sourceCluster.pauseWanReplicationOnAllMembers(wanReplication);
         targetCluster.startCluster();
 
         fillMap(sourceCluster, MAP_NAME, 0, 1000);
@@ -163,7 +164,6 @@ public class WanCounterMigrationTest {
     @Test
     public void testCountersReachZeroAfterMigrateToNewAndBack() {
         sourceCluster.startAClusterMember();
-        sourceCluster.pauseWanReplicationOnAllMembers(wanReplication);
         targetCluster.startCluster();
 
         fillMap(sourceCluster, MAP_NAME, 0, 1000);
@@ -188,13 +188,12 @@ public class WanCounterMigrationTest {
     @Test
     public void testCountersReachZeroAfterMigrationTargetDisappears() {
         sourceCluster.startAClusterMember();
-        sourceCluster.pauseWanReplicationOnAllMembers(wanReplication);
         targetCluster.startCluster();
 
         fillMap(sourceCluster, MAP_NAME, 0, 1000);
         fillCache(sourceCluster, CACHE_NAME, 0, 1000);
 
-        sourceCluster.startClusterMembers(2, new PausingClusterMemberStartAction());
+        sourceCluster.startClusterMembers(2);
         HazelcastInstance startedMember = sourceCluster.startAClusterMember();
         startedMember.getLifecycleService().terminate();
         waitAllForSafeState(sourceCluster.getMembers());
@@ -214,13 +213,12 @@ public class WanCounterMigrationTest {
     @Test
     public void testCountersReachZeroAfterMigrationRollback() {
         HazelcastInstance master = sourceCluster.startAClusterMember();
-        sourceCluster.pauseWanReplicationOnAllMembers(wanReplication);
         targetCluster.startCluster();
 
         fillMap(sourceCluster, MAP_NAME, 0, 1000);
         fillCache(sourceCluster, CACHE_NAME, 0, 1000);
 
-        sourceCluster.startClusterMembers(2, new PausingClusterMemberStartAction());
+        sourceCluster.startClusterMembers(2);
         ((MigrationBreakerWanPublisher) wanReplicationEndpoint(master, wanReplication)).failMigration();
         HazelcastInstance startedMember = sourceCluster.startAClusterMember();
         startedMember.getLifecycleService().terminate();
@@ -245,13 +243,13 @@ public class WanCounterMigrationTest {
         sourceCluster.startCluster();
         targetCluster.startCluster();
 
-        sourceCluster.pauseWanReplicationOnAllMembers(wanReplication);
         fillMap(sourceCluster, MAP_NAME, 0, 8);
 
         for (HazelcastInstance member : sourceCluster.getMembers()) {
             member.shutdown();
             sourceCluster.startAClusterMember();
         }
+        sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
         overwriteIfSnapshotEnabled();
 

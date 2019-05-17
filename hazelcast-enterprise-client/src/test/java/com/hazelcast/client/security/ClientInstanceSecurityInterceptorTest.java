@@ -1,7 +1,7 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.core.DistributedObjectListener;
-import com.hazelcast.core.PartitionService;
+import com.hazelcast.partition.PartitionService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.partition.PartitionLostListener;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;

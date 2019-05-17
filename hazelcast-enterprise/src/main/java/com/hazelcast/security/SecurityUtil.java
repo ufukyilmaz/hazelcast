@@ -115,11 +115,4 @@ public final class SecurityUtil {
     public static boolean addressMatches(String address, String pattern) {
         return AddressUtil.matchInterface(address, pattern);
     }
-
-    public static String getCredentialsFullName(Credentials credentials) {
-        if (credentials == null) {
-            return null;
-        }
-        return credentials.getPrincipal() + '@' + credentials.getEndpoint();
-    }
 }

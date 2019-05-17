@@ -2,9 +2,15 @@ package com.hazelcast.security.impl;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.security.ClusterLoginModule;
-import com.hazelcast.security.SecurityConstants;
-import com.hazelcast.security.UsernamePasswordCredentials;
+import com.hazelcast.security.ConfigCallback;
 
+import java.io.IOException;
+import java.util.Arrays;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
@@ -17,35 +23,38 @@ import javax.security.auth.spi.LoginModule;
 @SuppressWarnings("unused")
 public class DefaultLoginModule extends ClusterLoginModule implements LoginModule {
 
+    private String name;
+
     @Override
     public boolean onLogin() throws LoginException {
-        if (credentials instanceof UsernamePasswordCredentials) {
-            final UsernamePasswordCredentials usernamePasswordCredentials = (UsernamePasswordCredentials) credentials;
-            final Config cfg = (Config) options.get(SecurityConstants.ATTRIBUTE_CONFIG);
-            final String group = cfg.getGroupConfig().getName();
-            final String pass = cfg.getGroupConfig().getPassword();
+        NameCallback ncb = new NameCallback("Name");
+        PasswordCallback pcb = new PasswordCallback("Password", false);
+        ConfigCallback ccb = new ConfigCallback();
 
-            if (group.equals(usernamePasswordCredentials.getUsername())
-                    && pass.equals(usernamePasswordCredentials.getPassword())) {
-                return true;
-            }
-            throw new FailedLoginException("Username or password doesn't match expected value.");
+        try {
+            callbackHandler.handle(new Callback[] { ncb, pcb, ccb });
+        } catch (IOException | UnsupportedCallbackException e) {
+            logger.warning("Retrieving the password failed.", e);
+            throw new LoginException("Unable to retrieve the password");
         }
-        return false;
+        name = ncb.getName();
+        char[] pass = pcb.getPassword();
+        Config cfg = ccb.getConfig();
+        if (cfg == null || cfg.getGroupConfig() == null) {
+            throw new LoginException("Group Configuration is not available.");
+        }
+        String group = cfg.getGroupConfig().getName();
+        String expectedPass = cfg.getGroupConfig().getPassword();
+        if (group != null && group.equals(name)
+                && expectedPass != null && Arrays.equals(pass, expectedPass.toCharArray())) {
+            addRole(name);
+            return true;
+        }
+        throw new FailedLoginException("Username/password provided don't match the expected values.");
     }
 
     @Override
-    public boolean onCommit() {
-        return loginSucceeded;
-    }
-
-    @Override
-    protected boolean onAbort() {
-        return true;
-    }
-
-    @Override
-    protected boolean onLogout() {
-        return true;
+    protected String getName() {
+        return name;
     }
 }

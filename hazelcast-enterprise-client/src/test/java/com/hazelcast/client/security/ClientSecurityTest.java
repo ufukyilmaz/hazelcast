@@ -95,7 +95,8 @@ public class ClientSecurityTest {
     public void testMultiplePrincipalsInSubject() {
         Properties properties = new Properties();
         properties.setProperty(TestLoginModule.PROPERTY_PRINCIPALS_SIMPLE, testObjectName);
-        properties.setProperty(TestLoginModule.PROPERTY_PRINCIPALS_CLUSTER, "dev,admin");
+        properties.setProperty(TestLoginModule.PROPERTY_PRINCIPALS_ROLE, "dev,admin");
+        properties.setProperty(TestLoginModule.PROPERTY_PRINCIPALS_IDENTITY, "josef");
         final Config config = createTestLoginModuleConfig(properties);
         addPermission(config, PermissionType.MAP, "production", "admin,dev")
                 .addAction(ActionConstants.ACTION_CREATE);

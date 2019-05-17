@@ -8,5 +8,5 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class ClientReconnectTestEnterprise extends ClientReconnectTest {
+public class EnterpriseClientReconnectTest extends ClientReconnectTest {
 }

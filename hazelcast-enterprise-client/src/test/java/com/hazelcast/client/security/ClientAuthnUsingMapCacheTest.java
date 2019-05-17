@@ -6,12 +6,14 @@ import static com.hazelcast.core.Hazelcast.getHazelcastInstanceByName;
 import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -51,8 +53,11 @@ import com.hazelcast.internal.jmx.ManagementService;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.security.ClusterPrincipal;
+import com.hazelcast.security.ClusterEndpointPrincipal;
+import com.hazelcast.security.ClusterIdentityPrincipal;
+import com.hazelcast.security.ClusterRolePrincipal;
 import com.hazelcast.security.CredentialsCallback;
+import com.hazelcast.security.EndpointCallback;
 import com.hazelcast.security.UsernamePasswordCredentials;
 import com.hazelcast.test.TestAwareInstanceFactory;
 import com.hazelcast.test.annotation.NightlyTest;
@@ -141,7 +146,7 @@ public class ClientAuthnUsingMapCacheTest {
                 .setUsage(LoginModuleUsage.REQUIRED);
         loginModuleConfig.getProperties().setProperty(OPT_INSTANCE_NAME, instanceName);
         config.getSecurityConfig().setEnabled(true).addClientLoginModuleConfig(loginModuleConfig)
-                .addClientPermissionConfig(new PermissionConfig(ALL, "", null));
+                .addClientPermissionConfig(new PermissionConfig(ALL, "*", null));
 
         return factory.newHazelcastInstance(config);
     }
@@ -197,6 +202,7 @@ public class ClientAuthnUsingMapCacheTest {
         private Subject subject;
         private CallbackHandler callbackHandler;
         private String userName;
+        private String endpoint;
         private UsernamePasswordCredentials usernamePasswordCredentials;
         private String instanceName;
 
@@ -211,8 +217,9 @@ public class ClientAuthnUsingMapCacheTest {
         @Override
         public boolean login() throws LoginException {
             final CredentialsCallback cb = new CredentialsCallback();
+            final EndpointCallback ecb = new EndpointCallback();
             try {
-                callbackHandler.handle(new Callback[] { cb });
+                callbackHandler.handle(new Callback[] { cb, ecb });
                 usernamePasswordCredentials = (UsernamePasswordCredentials) cb.getCredentials();
             } catch (Exception e) {
                 throw new LoginException(e.getClass().getName() + ":" + e.getMessage());
@@ -220,7 +227,7 @@ public class ClientAuthnUsingMapCacheTest {
             try {
                 HazelcastInstance hazelcastInstance = Hazelcast.getHazelcastInstanceByName(instanceName);
                 IMap<String, String> userCredentialsMap = hazelcastInstance.getMap(USER_MAP);
-                userName = userCredentialsMap.get(usernamePasswordCredentials.getUsername());
+                userName = userCredentialsMap.get(usernamePasswordCredentials.getName());
             } catch (Exception e) {
                 LOGGER.warning("IMap Authentication failed", e);
             }
@@ -230,10 +237,10 @@ public class ClientAuthnUsingMapCacheTest {
                     Thread.sleep(500L);
                 } catch (InterruptedException e) {
                 }
-                userName = usernamePasswordCredentials.getUsername();
+                userName = usernamePasswordCredentials.getName();
             }
-
-            if (!usernamePasswordCredentials.getUsername().equals(userName)
+            endpoint = ecb.getEndpoint();
+            if (!usernamePasswordCredentials.getName().equals(userName)
                     || !usernamePasswordCredentials.getPassword().equals(userName)) {
                 userName = null;
                 throw new FailedLoginException();
@@ -243,8 +250,13 @@ public class ClientAuthnUsingMapCacheTest {
 
         @Override
         public boolean commit() throws LoginException {
+            Set<Principal> principals = subject.getPrincipals();
             if (userName != null) {
-                subject.getPrincipals().add(new ClusterPrincipal(usernamePasswordCredentials));
+                principals.add(new ClusterIdentityPrincipal(userName));
+                principals.add(new ClusterRolePrincipal(userName));
+            }
+            if (endpoint != null) {
+                principals.add(new ClusterEndpointPrincipal(endpoint));
             }
             return true;
         }

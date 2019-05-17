@@ -6,7 +6,8 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.security.ClusterPrincipal;
+import com.hazelcast.security.ClusterEndpointPrincipal;
+import com.hazelcast.security.ClusterRolePrincipal;
 import com.hazelcast.security.IPermissionPolicy;
 import com.hazelcast.security.permission.AllPermissions;
 import com.hazelcast.security.permission.AllPermissions.AllPermissionsCollection;
@@ -19,7 +20,7 @@ import java.security.Permission;
 import java.security.PermissionCollection;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
@@ -39,12 +40,14 @@ import static java.lang.Thread.currentThread;
 @SuppressWarnings("unused")
 public class DefaultPermissionPolicy implements IPermissionPolicy {
 
+    private static final String REGEX_ANY_ENDPOINT = "*.*.*.*";
+    private static final String REGEX_ANY_PRINCIPAL = "*";
     private static final ILogger LOGGER = Logger.getLogger(DefaultPermissionPolicy.class.getName());
     private static final PermissionCollection DENY_ALL = new DenyAllPermissionCollection();
     private static final PermissionCollection ALLOW_ALL = new AllPermissionsCollection(true);
     private static final String PRINCIPAL_STRING_SEP = ",";
 
-    private static final Collection<String> ALL_ENDPOINTS = Collections.singleton("*.*.*.*");
+    private static final Collection<String> ALL_ENDPOINTS = Collections.singleton(REGEX_ANY_ENDPOINT);
 
     // configured permissions
     final ConcurrentMap<PrincipalKey, PermissionCollection> configPermissions
@@ -71,7 +74,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
             // allow all principals
             final String[] principals = permCfg.getPrincipal() != null
                     ? permCfg.getPrincipal().split(PRINCIPAL_STRING_SEP)
-                    : new String[] { "*" };
+                    : new String[] { REGEX_ANY_PRINCIPAL };
 
             Collection<String> endpoints = permCfg.getEndpoints();
             if (endpoints.isEmpty()) {
@@ -95,24 +98,27 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     }
 
     /**
-     * Returns permission collection of given type for all {@link ClusterPrincipal} instances in the given JAAS Subject.
+     * Returns permission collection of given type for all {@link ClusterRolePrincipal} instances in the given JAAS Subject.
      *
      * @see com.hazelcast.security.IPermissionPolicy#getPermissions(javax.security.auth.Subject, java.lang.Class)
      */
     @Override
     @SuppressWarnings("checkstyle:npathcomplexity")
     public PermissionCollection getPermissions(Subject subject, Class<? extends Permission> type) {
-        final Set<ClusterPrincipal> principals = new HashSet<ClusterPrincipal>(subject.getPrincipals(ClusterPrincipal.class));
+        final Set<ClusterRolePrincipal> principals = subject.getPrincipals(ClusterRolePrincipal.class);
+        final Set<ClusterEndpointPrincipal> endpointPrincipals = subject.getPrincipals(ClusterEndpointPrincipal.class);
         if (principals.isEmpty()) {
             return DENY_ALL;
         }
-
+        Iterator<ClusterEndpointPrincipal> endpointIterator = endpointPrincipals.iterator();
+        String endpoint = endpointIterator.hasNext() ? endpointIterator.next().getName() : null;
         ClusterPermissionCollection allPrincipalsPermissionCollection = new ClusterPermissionCollection(type);
-        for (ClusterPrincipal principal : principals) {
+        for (ClusterRolePrincipal principal : principals) {
             PrincipalPermissionsHolder permissionsHolder;
             do {
-                ensurePrincipalPermissions(principal);
-                permissionsHolder = principalPermissions.get(principal.getName());
+                ensurePrincipalPermissions(principal, endpoint);
+                String roleEndpointKey = getRoleEndpointKey(principal.getName(), endpoint);
+                permissionsHolder = principalPermissions.get(roleEndpointKey);
             } while (permissionsHolder == null);
             if (!permissionsHolder.prepared) {
                 try {
@@ -151,29 +157,28 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
-    private void ensurePrincipalPermissions(ClusterPrincipal principal) {
+    private void ensurePrincipalPermissions(ClusterRolePrincipal principal, String endpoint) {
         if (principal == null) {
             return;
         }
 
-        final String fullName = principal.getName();
-        if (principalPermissions.containsKey(fullName)) {
+        String name = principal.getName();
+        String roleEndpointKey = getRoleEndpointKey(name, endpoint);
+        if (principalPermissions.containsKey(roleEndpointKey)) {
             return;
         }
         final PrincipalPermissionsHolder permissionsHolder = new PrincipalPermissionsHolder();
-        if (principalPermissions.putIfAbsent(fullName, permissionsHolder) != null) {
+        if (principalPermissions.putIfAbsent(roleEndpointKey, permissionsHolder) != null) {
             return;
         }
 
-        final String endpoint = principal.getEndpoint();
-        final String principalName = principal.getPrincipal();
         try {
-            LOGGER.log(Level.FINEST, "Preparing permissions for: " + fullName);
+            LOGGER.log(Level.FINEST, "Preparing permissions for: " + roleEndpointKey);
             final ClusterPermissionCollection allMatchingPermissionsCollection = new ClusterPermissionCollection();
             synchronized (configUpdateMutex) {
                 for (Entry<PrincipalKey, PermissionCollection> e : configPermissions.entrySet()) {
                     final PrincipalKey key = e.getKey();
-                    if (nameMatches(principalName, key.principal) && addressMatches(endpoint, key.endpoint)) {
+                    if (nameMatches(name, key.principal) && endpointMatches(endpoint, key.endpoint)) {
                         allMatchingPermissionsCollection.add(e.getValue());
                     }
                 }
@@ -183,7 +188,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
                 if (perm instanceof AllPermissions) {
                     permissionsHolder.permissions.clear();
                     permissionsHolder.hasAllPermissions = true;
-                    LOGGER.log(Level.FINEST, "Granted all-permissions to: " + fullName);
+                    LOGGER.log(Level.FINEST, "Granted all-permissions to: " + roleEndpointKey);
                     return;
                 }
                 Class<? extends Permission> type = perm.getClass();
@@ -195,7 +200,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
                 coll.add(perm);
             }
 
-            LOGGER.log(Level.FINEST, "Compacting permissions for: " + fullName);
+            LOGGER.log(Level.FINEST, "Compacting permissions for: " + roleEndpointKey);
             final Collection<PermissionCollection> principalCollections = permissionsHolder.permissions.values();
             for (PermissionCollection coll : principalCollections) {
                 ((ClusterPermissionCollection) coll).compact();
@@ -209,7 +214,17 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
         }
     }
 
+    private boolean endpointMatches(String endpoint, String pattern) {
+        if (endpoint == null) {
+            return REGEX_ANY_ENDPOINT.equals(pattern);
+        }
+        return addressMatches(endpoint, pattern);
+    }
+
     private boolean nameMatches(String name, String pattern) {
+        if (name == null) {
+            return REGEX_ANY_PRINCIPAL.equals(pattern);
+        }
         if (name.equals(pattern)) {
             return true;
         }
@@ -261,4 +276,9 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
         principalPermissions.clear();
         configPermissions.clear();
     }
+
+    private static String getRoleEndpointKey(String roleName, String endpoint) {
+        return roleName + "@" + (endpoint != null ? endpoint : "");
+    }
+
 }

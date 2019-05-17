@@ -1,7 +1,8 @@
 package com.hazelcast.security.loginmodules;
 
-import com.hazelcast.security.ClusterPrincipal;
-import com.hazelcast.security.Credentials;
+import com.hazelcast.security.ClusterEndpointPrincipal;
+import com.hazelcast.security.ClusterIdentityPrincipal;
+import com.hazelcast.security.ClusterRolePrincipal;
 import com.hazelcast.util.StringUtil;
 
 import javax.security.auth.Subject;
@@ -16,7 +17,7 @@ import java.util.Set;
  * Login module for testing behavior of different login phases.
  * <p>
  * Based on configured properties it's able to throw a {@link LoginException} in methods covering the login phases.
- * This login module allows to add set of principals as either {@link ClusterPrincipal} instances or just a simple
+ * This login module allows to add set of principals as either {@link ClusterRolePrincipal} instances or just a simple
  * Principal implementations.
  */
 public class TestLoginModule implements LoginModule {
@@ -54,10 +55,12 @@ public class TestLoginModule implements LoginModule {
      */
     public static final String PROPERTY_PRINCIPALS_SIMPLE = "principals.simple";
     /**
-     * Login module option name which holds comma separated list of principal names ({@link ClusterPrincipal} instances) to be
+     * Login module option name which holds comma separated list of principal names ({@link ClusterRolePrincipal} instances) to be
      * assigned to JAAS Subject during {@link #commit()}.
      */
-    public static final String PROPERTY_PRINCIPALS_CLUSTER = "principals.cluster";
+    public static final String PROPERTY_PRINCIPALS_ROLE = "principals.role";
+    public static final String PROPERTY_PRINCIPALS_IDENTITY = "principals.identity";
+    public static final String PROPERTY_PRINCIPALS_ENDPOINT = "principals.endpoint";
 
     private Map<String, ?> options;
     private Subject subject;
@@ -81,8 +84,14 @@ public class TestLoginModule implements LoginModule {
             for (String name : getPrincipals(PROPERTY_PRINCIPALS_SIMPLE)) {
                 principals.add(new SimplePrincipal(name));
             }
-            for (String name : getPrincipals(PROPERTY_PRINCIPALS_CLUSTER)) {
-                principals.add(new ClusterPrincipal(new SimpleCredentials(name)));
+            for (String name : getPrincipals(PROPERTY_PRINCIPALS_ROLE)) {
+                principals.add(new ClusterRolePrincipal(name));
+            }
+            for (String name : getPrincipals(PROPERTY_PRINCIPALS_IDENTITY)) {
+                principals.add(new ClusterIdentityPrincipal(name));
+            }
+            for (String name : getPrincipals(PROPERTY_PRINCIPALS_ENDPOINT)) {
+                principals.add(new ClusterEndpointPrincipal(name));
             }
         }
         return result;
@@ -127,33 +136,6 @@ public class TestLoginModule implements LoginModule {
 
         @Override
         public String getName() {
-            return name;
-        }
-    }
-
-    /**
-     * Simple Hazelcast {@link Credentials} implementation, which just holds the principal name and returns always the endpoint
-     * equal to 127.0.0.1.
-     */
-    public static class SimpleCredentials implements Credentials {
-
-        private final String name;
-
-        public SimpleCredentials(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getEndpoint() {
-            return "127.0.0.1";
-        }
-
-        @Override
-        public void setEndpoint(String endpoint) {
-        }
-
-        @Override
-        public String getPrincipal() {
             return name;
         }
     }

@@ -5,7 +5,9 @@ import com.hazelcast.internal.serialization.impl.ArrayDataSerializableFactory;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.security.ClusterPrincipal;
+import com.hazelcast.security.ClusterEndpointPrincipal;
+import com.hazelcast.security.ClusterIdentityPrincipal;
+import com.hazelcast.security.ClusterRolePrincipal;
 import com.hazelcast.security.SecureCallableImpl;
 import com.hazelcast.util.ConstructorFunction;
 
@@ -21,9 +23,11 @@ public class SecurityDataSerializerHook implements DataSerializerHook {
             ENTERPRISE_SECURITY_DS_FACTORY_ID);
 
     public static final int SECURE_CALLABLE = 0;
-    public static final int CLUSTER_PRINCIPAL = 1;
+    public static final int IDENTITY_PRINCIPAL = 1;
+    public static final int ROLE_PRINCIPAL = 2;
+    public static final int ENDPOINT_PRINCIPAL = 3;
 
-    private static final int LEN = CLUSTER_PRINCIPAL + 1;
+    private static final int LEN = ENDPOINT_PRINCIPAL + 1;
 
     @Override
     public int getFactoryId() {
@@ -40,10 +44,22 @@ public class SecurityDataSerializerHook implements DataSerializerHook {
                 return new SecureCallableImpl();
             }
         };
-        constructors[CLUSTER_PRINCIPAL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+        constructors[IDENTITY_PRINCIPAL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
-                return new ClusterPrincipal();
+                return new ClusterIdentityPrincipal();
+            }
+        };
+        constructors[ROLE_PRINCIPAL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new ClusterRolePrincipal();
+            }
+        };
+        constructors[ENDPOINT_PRINCIPAL] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new ClusterEndpointPrincipal();
             }
         };
 

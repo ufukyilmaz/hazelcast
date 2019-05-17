@@ -1,7 +1,6 @@
 package com.hazelcast.security;
 
 import com.hazelcast.config.CredentialsFactoryConfig;
-import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.config.PermissionConfig;
@@ -11,6 +10,7 @@ import com.hazelcast.config.SecurityInterceptorConfig;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.ClassLoaderUtil;
+import com.hazelcast.nio.Connection;
 import com.hazelcast.security.impl.SecurityServiceImpl;
 import com.hazelcast.util.ExceptionUtil;
 
@@ -75,9 +75,9 @@ public class SecurityContextImpl implements SecurityContext {
         credentialsFactory = credsFact;
         credentialsFactory.configure(node.config.getGroupConfig(), credsCfg.getProperties());
 
-        memberConfiguration = new LoginConfigurationDelegate(node.config,
+        memberConfiguration = new LoginConfigurationDelegate(
                 getLoginModuleConfigs(securityConfig.getMemberLoginModuleConfigs()));
-        clientConfiguration = new LoginConfigurationDelegate(node.config,
+        clientConfiguration = new LoginConfigurationDelegate(
                 getLoginModuleConfigs(securityConfig.getClientLoginModuleConfigs()));
         final List<SecurityInterceptorConfig> interceptorConfigs = securityConfig.getSecurityInterceptorConfigs();
         interceptors = new ArrayList<>(interceptorConfigs.size());
@@ -118,14 +118,14 @@ public class SecurityContextImpl implements SecurityContext {
     }
 
     @Override
-    public LoginContext createMemberLoginContext(Credentials credentials) throws LoginException {
-        logger.log(Level.FINEST, "Creating Member LoginContext for: " + SecurityUtil.getCredentialsFullName(credentials));
+    public LoginContext createMemberLoginContext(Credentials credentials, Connection connection) throws LoginException {
+        logger.log(Level.FINEST, "Creating Member LoginContext for: " + credentials);
         Thread thread = Thread.currentThread();
         ClassLoader tccl = thread.getContextClassLoader();
         try {
             thread.setContextClassLoader(SecurityContextImpl.class.getClassLoader());
             String name = node.getConfig().getGroupConfig().getName();
-            ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(credentials);
+            ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(credentials, connection, node);
             return new LoginContext(name, new Subject(), callbackHandler, memberConfiguration);
         } finally {
             thread.setContextClassLoader(tccl);
@@ -133,13 +133,13 @@ public class SecurityContextImpl implements SecurityContext {
     }
 
     @Override
-    public LoginContext createClientLoginContext(Credentials credentials) throws LoginException {
-        logger.log(Level.FINEST, "Creating Client LoginContext for: " + SecurityUtil.getCredentialsFullName(credentials));
+    public LoginContext createClientLoginContext(Credentials credentials, Connection connection) throws LoginException {
+        logger.log(Level.FINEST, "Creating Client LoginContext for: " + credentials);
         Thread thread = Thread.currentThread();
         ClassLoader tccl = thread.getContextClassLoader();
         try {
             String name = node.getConfig().getGroupConfig().getName();
-            ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(credentials);
+            ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(credentials, connection, node);
             return new LoginContext(name, new Subject(), callbackHandler, clientConfiguration);
         } finally {
             thread.setContextClassLoader(tccl);
@@ -243,11 +243,8 @@ public class SecurityContextImpl implements SecurityContext {
     }
 
     private LoginModuleConfig getDefaultLoginModuleConfig() {
-        final GroupConfig groupConfig = node.config.getGroupConfig();
         final LoginModuleConfig module = new LoginModuleConfig(SecurityConstants.DEFAULT_LOGIN_MODULE,
                 LoginModuleUsage.REQUIRED);
-        module.getProperties().setProperty(SecurityConstants.ATTRIBUTE_CONFIG_GROUP, groupConfig.getName());
-        module.getProperties().setProperty(SecurityConstants.ATTRIBUTE_CONFIG_PASS, groupConfig.getPassword());
         return module;
     }
 }

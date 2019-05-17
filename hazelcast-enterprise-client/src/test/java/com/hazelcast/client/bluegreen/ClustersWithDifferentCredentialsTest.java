@@ -23,6 +23,8 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.CredentialsCallback;
 import com.hazelcast.security.ICredentialsFactory;
+import com.hazelcast.security.SerializationServiceCallback;
+import com.hazelcast.security.TokenCredentials;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Test;
@@ -66,17 +68,7 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         }
 
         @Override
-        public String getEndpoint() {
-            return endpoint;
-        }
-
-        @Override
-        public void setEndpoint(String endpoint) {
-            this.endpoint = endpoint;
-        }
-
-        @Override
-        public String getPrincipal() {
+        public String getName() {
             return secret;
         }
     }
@@ -85,7 +77,6 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
 
         CallbackHandler callbackHandler;
         Subject subject;
-        Credentials credentials;
         Map<String, ?> options;
 
         public void initialize(Subject subject, CallbackHandler callbackHandler,
@@ -97,17 +88,21 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
 
         public final boolean login() throws LoginException {
             CredentialsCallback callback = new CredentialsCallback();
+            SerializationServiceCallback sscallback = new SerializationServiceCallback();
             try {
-                callbackHandler.handle(new Callback[]{callback});
-                credentials = callback.getCredentials();
-                if ((credentials).getPrincipal().equals(options.get("secret"))) {
+                callbackHandler.handle(new Callback[]{sscallback, callback});
+                Credentials credentials = callback.getCredentials();
+                if (credentials instanceof TokenCredentials) {
+                    TokenCredentials tokenCreds = (TokenCredentials) credentials;
+                    credentials = sscallback.getSerializationService().toObject(tokenCreds.asData());
+                }
+                if (credentials.getName().equals(options.get("secret"))) {
                     return true;
                 }
             } catch (Exception e) {
                 throw new LoginException(e.getMessage());
             }
             throw new LoginException();
-
         }
 
         @Override

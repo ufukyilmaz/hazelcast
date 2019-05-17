@@ -106,18 +106,8 @@ public class ClientAuthnSplitBrainTest {
         }
 
         @Override
-        protected boolean onCommit() throws LoginException {
-            return true;
-        }
-
-        @Override
-        protected boolean onAbort() throws LoginException {
-            return true;
-        }
-
-        @Override
-        protected boolean onLogout() throws LoginException {
-            return true;
+        protected String getName() {
+            return null;
         }
     }
 }

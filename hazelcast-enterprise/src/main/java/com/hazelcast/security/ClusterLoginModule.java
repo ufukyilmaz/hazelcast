@@ -3,33 +3,42 @@ package com.hazelcast.security;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 import java.security.Principal;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
-import static com.hazelcast.security.SecurityUtil.getCredentialsFullName;
-
+@SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
 public abstract class ClusterLoginModule implements LoginModule {
+
+    public static final String OPTION_SKIP_IDENTITY = "skipIdentity";
+    public static final String OPTION_SKIP_ROLE = "skipRole";
+    public static final String OPTION_SKIP_ENDPOINT = "skipEndpoint";
 
     protected final ILogger logger = Logger.getLogger(getClass().getName());
 
-    protected Credentials credentials;
+    protected String endpoint;
     protected Subject subject;
-    protected Map options;
-    protected Map sharedState;
+    protected Map<String, ?> options;
+    protected Map<String, ?> sharedState;
     protected boolean loginSucceeded;
     protected boolean commitSucceeded;
+    protected CallbackHandler callbackHandler;
 
-    private CallbackHandler callbackHandler;
+    private Set<String> assignedRoles = new HashSet<>();
 
     @Override
-    public final void initialize(Subject subject, CallbackHandler callbackHandler,
-                                 Map<String, ?> sharedState, Map<String, ?> options) {
+    public final void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState,
+            Map<String, ?> options) {
         this.subject = subject;
         this.callbackHandler = callbackHandler;
         this.sharedState = sharedState;
@@ -38,19 +47,21 @@ public abstract class ClusterLoginModule implements LoginModule {
 
     @Override
     public final boolean login() throws LoginException {
-        final CredentialsCallback cb = new CredentialsCallback();
-        try {
-            callbackHandler.handle(new Callback[]{cb});
-            credentials = cb.getCredentials();
-        } catch (Exception e) {
-            throw new LoginException(e.getClass().getName() + ":" + e.getMessage());
+        if (!getBoolOption(OPTION_SKIP_ENDPOINT, false)) {
+            EndpointCallback ecb = new EndpointCallback();
+            try {
+                callbackHandler.handle(new Callback[] { ecb });
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "Retrieving the remote address failed", e);
+            }
+            endpoint = ecb.getEndpoint();
+            if (endpoint == null) {
+                logger.log(Level.WARNING, "Remote address is empty!");
+            }
         }
-        if (credentials == null) {
-            logger.log(Level.WARNING, "Credentials could not be retrieved!");
-            return false;
+        if (logger.isFinestEnabled()) {
+            logger.log(Level.FINEST, "Authenticating request from " + getEndpointString());
         }
-        logger.log(Level.FINEST, "Authenticating " + getCredentialsFullName(credentials));
-        sharedState.put(SecurityConstants.ATTRIBUTE_CREDENTIALS, credentials);
         loginSucceeded = onLogin();
         return loginSucceeded;
     }
@@ -58,21 +69,30 @@ public abstract class ClusterLoginModule implements LoginModule {
     @Override
     public final boolean commit() throws LoginException {
         if (!loginSucceeded) {
-            logger.log(Level.WARNING, "Authentication has been failed! =>" + (credentials != null
-                    ? getCredentialsFullName(credentials) : "unknown"));
+            logger.log(Level.WARNING, "Authentication has been failed! Endpoint " + getEndpointString());
             return false;
         }
-        logger.log(Level.FINEST, "Committing authentication of " + getCredentialsFullName(credentials));
-        final Principal principal = new ClusterPrincipal(credentials);
-        subject.getPrincipals().add(principal);
-        sharedState.put(SecurityConstants.ATTRIBUTE_PRINCIPAL, principal);
+        String name = getName();
+        logger.log(Level.FINEST, "Committing authentication from " + name);
+        Set<Principal> principals = subject.getPrincipals();
+        if (name != null && !getBoolOption(OPTION_SKIP_IDENTITY, false)) {
+            principals.add(new ClusterIdentityPrincipal(name));
+        }
+        if (endpoint != null && !getBoolOption(OPTION_SKIP_ENDPOINT, false)) {
+            principals.add(new ClusterEndpointPrincipal(endpoint));
+        }
+        if (!getBoolOption(OPTION_SKIP_ROLE, false)) {
+            for (String role : assignedRoles) {
+                principals.add(new ClusterRolePrincipal(role));
+            }
+        }
         commitSucceeded = onCommit();
         return commitSucceeded;
     }
 
     @Override
     public final boolean abort() throws LoginException {
-        logger.log(Level.FINEST, "Aborting authentication of " + getCredentialsFullName(credentials));
+        logger.log(Level.FINEST, "Aborting authentication");
         final boolean abort = onAbort();
         clearSubject();
         loginSucceeded = false;
@@ -82,7 +102,7 @@ public abstract class ClusterLoginModule implements LoginModule {
 
     @Override
     public final boolean logout() throws LoginException {
-        logger.log(Level.FINEST, "Logging out " + getCredentialsFullName(credentials));
+        logger.log(Level.FINEST, "Logging out");
         final boolean logout = onLogout();
         clearSubject();
         loginSucceeded = false;
@@ -91,17 +111,52 @@ public abstract class ClusterLoginModule implements LoginModule {
     }
 
     private void clearSubject() {
-        subject.getPrincipals().clear();
-        subject.getPrivateCredentials().clear();
-        subject.getPublicCredentials().clear();
+        for (Iterator<Principal> it = subject.getPrincipals().iterator(); it.hasNext();) {
+            if (it.next() instanceof HazelcastPrincipal) {
+                it.remove();
+            }
+        }
     }
 
     protected abstract boolean onLogin() throws LoginException;
 
-    protected abstract boolean onCommit() throws LoginException;
+    protected abstract String getName();
 
-    protected abstract boolean onAbort() throws LoginException;
+    protected boolean onCommit() throws LoginException {
+        return true;
+    }
 
-    protected abstract boolean onLogout() throws LoginException;
+    protected boolean onAbort() throws LoginException {
+        return true;
+    }
 
+    protected boolean onLogout() throws LoginException {
+        return true;
+    }
+
+    protected void addRole(String roleName) {
+        assignedRoles.add(roleName);
+    }
+
+    protected String getStringOption(String optionName, String defaultValue) {
+        String option = getOptionInternal(optionName);
+        return option != null ? option.toString() : defaultValue;
+    }
+
+    protected boolean getBoolOption(String optionName, boolean defaultValue) {
+        String option = getOptionInternal(optionName);
+        return option != null ? Boolean.parseBoolean(option) : defaultValue;
+    }
+
+    private String getOptionInternal(String optionName) {
+        if (options == null) {
+            return null;
+        }
+        Object option = options.get(optionName);
+        return option != null ? option.toString() : null;
+    }
+
+    private String getEndpointString() {
+        return endpoint == null ? "<undefined>" : endpoint;
+    }
 }

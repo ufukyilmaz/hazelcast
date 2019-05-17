@@ -31,9 +31,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
@@ -121,20 +119,5 @@ public class SecurityUtilTest extends HazelcastTestSupport {
     public void testAddressMatches() {
         assertTrue(SecurityUtil.addressMatches("127.0.0.1", "127.0.0.*"));
         assertFalse(SecurityUtil.addressMatches("192.168.0.1", "127.0.0.*"));
-    }
-
-    @Test
-    public void testGetCredentialsFullName() {
-        Credentials credentials = new UsernamePasswordCredentials("name", "password");
-        credentials.setEndpoint("127.0.0.1:5701");
-
-        String fullName = SecurityUtil.getCredentialsFullName(credentials);
-
-        assertEquals("name@127.0.0.1:5701", fullName);
-    }
-
-    @Test
-    public void testGetCredentialsFullName_whenNull_thenReturnNull() {
-        assertNull(SecurityUtil.getCredentialsFullName(null));
     }
 }

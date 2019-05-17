@@ -8,8 +8,6 @@ import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.nio.serialization.PortableReader;
-import com.hazelcast.nio.serialization.PortableWriter;
 import com.hazelcast.security.impl.DefaultLoginModule;
 import com.hazelcast.security.loginmodules.TestLoginModule;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -218,31 +216,6 @@ public class MemberSecurityTest extends HazelcastTestSupport {
         loginModuleConfig.setProperties(properties);
         secCfg.addMemberLoginModuleConfig(loginModuleConfig);
         return config;
-    }
-
-    public static class InValidCredentials extends AbstractCredentials {
-
-        public InValidCredentials() {
-            super("invalid-group-name");
-        }
-
-        @Override
-        protected void writePortableInternal(PortableWriter writer) {
-        }
-
-        @Override
-        protected void readPortableInternal(PortableReader reader) {
-        }
-
-        @Override
-        public int getFactoryId() {
-            return 1234;
-        }
-
-        @Override
-        public int getClassId() {
-            return 1;
-        }
     }
 
     @Test(expected = IllegalStateException.class)

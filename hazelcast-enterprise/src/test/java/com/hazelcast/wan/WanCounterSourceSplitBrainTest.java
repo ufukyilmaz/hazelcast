@@ -25,6 +25,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
+import javax.cache.Caching;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -94,6 +95,7 @@ public class WanCounterSourceSplitBrainTest {
 
     @After
     public void cleanup() {
+        Caching.getCachingProvider().close();
         factory.shutdownAll();
     }
 

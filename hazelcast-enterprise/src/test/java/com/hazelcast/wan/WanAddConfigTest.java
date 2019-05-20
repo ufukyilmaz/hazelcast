@@ -26,6 +26,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import javax.cache.Caching;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
@@ -90,6 +91,7 @@ public class WanAddConfigTest {
 
     @After
     public void cleanup() {
+        Caching.getCachingProvider().close();
         factory.shutdownAll();
     }
 

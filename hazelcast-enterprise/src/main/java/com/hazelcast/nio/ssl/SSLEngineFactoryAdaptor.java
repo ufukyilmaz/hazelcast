@@ -1,6 +1,7 @@
 package com.hazelcast.nio.ssl;
 
 import com.hazelcast.config.ConfigurationException;
+import com.hazelcast.internal.util.JavaVersion;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 
@@ -20,6 +21,8 @@ import static com.hazelcast.util.StringUtil.splitByComma;
  */
 public class SSLEngineFactoryAdaptor implements SSLEngineFactory {
 
+    private static final Object LOCK = new Object();
+
     private final ILogger logger = Logger.getLogger(SSLEngineFactoryAdaptor.class);
 
     private final SSLContextFactory sslContextFactory;
@@ -32,8 +35,7 @@ public class SSLEngineFactoryAdaptor implements SSLEngineFactory {
 
     @Override
     public SSLEngine create(boolean clientMode) {
-        SSLContext sslContext = sslContextFactory.getSSLContext();
-        SSLEngine sslEngine = sslContext.createSSLEngine();
+        SSLEngine sslEngine = createSSLEngine();
         sslEngine.setUseClientMode(clientMode);
         sslEngine.setEnableSessionCreation(true);
         if (cipherSuites != null) {
@@ -58,7 +60,7 @@ public class SSLEngineFactoryAdaptor implements SSLEngineFactory {
         String[] configuredCipherSuites = splitByComma(getProperty(properties, "ciphersuites"), false);
         if (configuredCipherSuites != null) {
             // force using configured cipher suites
-            SSLEngine sslEngine = sslContextFactory.getSSLContext().createSSLEngine();
+            SSLEngine sslEngine = createSSLEngine();
             String[] supportedCipherSuites = sslEngine.getSupportedCipherSuites();
             // find intersection between configured and supported ciphersuites
             cipherSuites = intersection(configuredCipherSuites, supportedCipherSuites);
@@ -88,5 +90,17 @@ public class SSLEngineFactoryAdaptor implements SSLEngineFactory {
             }
         }
         return enabled.toArray(new String[enabled.size()]);
+    }
+
+    private SSLEngine createSSLEngine() {
+        SSLContext sslContext = sslContextFactory.getSSLContext();
+        if (JavaVersion.isAtMost(JavaVersion.JAVA_1_6)) {
+            //Fix for possible NPE due to race condition. Details: https://bugs.openjdk.java.net/browse/JDK-7043514.
+            synchronized (LOCK) {
+                return sslContext.createSSLEngine();
+            }
+        } else {
+            return sslContext.createSSLEngine();
+        }
     }
 }

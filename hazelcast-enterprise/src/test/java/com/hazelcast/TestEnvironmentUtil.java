@@ -2,6 +2,7 @@ package com.hazelcast;
 
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
+
 import io.netty.handler.ssl.OpenSsl;
 
 import java.io.File;
@@ -10,6 +11,7 @@ import java.io.InputStream;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.IOUtil.copy;
+import static com.hazelcast.nio.IOUtil.toByteArray;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -98,5 +100,19 @@ public class TestEnvironmentUtil {
             }
         }
         return targetFile;
+    }
+
+    /**
+     * Reads resource by using {@link Class#getResourceAsStream(String)} for given class.
+     * @param clazz class used to load the resource
+     * @param resourcePath path to the resource
+     * @return resource content as byte array
+     */
+    public static byte[] readResource(Class<?> clazz, String resourcePath) {
+        try (InputStream is = clazz.getResourceAsStream(resourcePath)) {
+            return toByteArray(is);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

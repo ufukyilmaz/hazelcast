@@ -5,14 +5,17 @@ import com.hazelcast.internal.networking.OutboundHandler;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
+
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.internal.networking.HandlerStatus.BLOCKED;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
 import static com.hazelcast.nio.IOUtil.compactOrClear;
 import static com.hazelcast.nio.ssl.TLSHandshakeDecoder.newSSLException;
+import static com.hazelcast.nio.ssl.TLSUtil.publishRemoteCertificates;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_OVERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
 import static javax.net.ssl.SSLEngineResult.Status.OK;
@@ -33,11 +36,13 @@ public class TLSHandshakeEncoder extends OutboundHandler<Void, ByteBuffer> {
     private final SSLEngine sslEngine;
     private final ByteBuffer emptyBuffer = ByteBuffer.allocate(0);
     private final TLSExecutor tlsExecutor;
+    private final ConcurrentMap attributeMap;
 
     TLSHandshakeEncoder(SSLEngine sslEngine,
-                        TLSExecutor tlsExecutor) {
+                        TLSExecutor tlsExecutor, ConcurrentMap attributeMap) {
         this.sslEngine = sslEngine;
         this.tlsExecutor = tlsExecutor;
+        this.attributeMap = attributeMap;
     }
 
     @Override
@@ -97,7 +102,7 @@ public class TLSHandshakeEncoder extends OutboundHandler<Void, ByteBuffer> {
                             // we need to wait till the buffer is drained before replacing the handlers
                             return DIRTY;
                         }
-
+                        publishRemoteCertificates(sslEngine, attributeMap);
                         // The handshake is complete, therefor the TLSHandshakeEncoder is removed
                         channel.outboundPipeline().replace(this, new TLSEncoder(sslEngine));
                         // Inbound traffic was blocked; so the inbound pipeline is woken up.

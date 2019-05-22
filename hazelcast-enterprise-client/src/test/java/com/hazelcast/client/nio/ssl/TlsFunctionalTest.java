@@ -8,7 +8,11 @@ import com.hazelcast.config.AdvancedNetworkConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.config.InvalidConfigurationException;
+import com.hazelcast.config.LoginModuleConfig;
+import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
+import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
 import com.hazelcast.config.XmlConfigBuilder;
@@ -20,6 +24,7 @@ import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.nio.ssl.SSLConnectionTest;
+import com.hazelcast.security.impl.X509CertificateLoginModule;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -626,6 +631,13 @@ public class TlsFunctionalTest {
             NetworkConfig networkConfig = config.getNetworkConfig();
             networkConfig.setSSLConfig(sslConfig);
             networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
+        }
+        if (mutualAuthentication) {
+            LoginModuleConfig loginModuleConfig = new LoginModuleConfig(X509CertificateLoginModule.class.getName(), LoginModuleUsage.REQUIRED);
+            config.getSecurityConfig().setEnabled(true)
+                .addMemberLoginModuleConfig(loginModuleConfig)
+                .addClientLoginModuleConfig(loginModuleConfig)
+                .addClientPermissionConfig(new PermissionConfig(PermissionType.ALL, "*", "client"));
         }
         return config;
     }

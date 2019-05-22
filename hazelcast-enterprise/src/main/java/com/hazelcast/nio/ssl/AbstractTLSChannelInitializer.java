@@ -82,12 +82,12 @@ public abstract class AbstractTLSChannelInitializer implements ChannelInitialize
         sslEngine.beginHandshake();
 
         // the TLSHandshakeDecoder is the first handler.
-        channel.inboundPipeline().addLast(new TLSHandshakeDecoder(sslEngine, tlsExecutor));
+        channel.inboundPipeline().addLast(new TLSHandshakeDecoder(sslEngine, tlsExecutor, channel.attributeMap()));
 
         initPipeline(channel);
 
         // the TLSHandshakeEncoder is the last handler
-        channel.outboundPipeline().addLast(new TLSHandshakeEncoder(sslEngine, tlsExecutor));
+        channel.outboundPipeline().addLast(new TLSHandshakeEncoder(sslEngine, tlsExecutor, channel.attributeMap()));
     }
 
     /**

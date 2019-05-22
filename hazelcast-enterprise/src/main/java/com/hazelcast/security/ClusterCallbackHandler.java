@@ -29,24 +29,33 @@ public class ClusterCallbackHandler implements CallbackHandler {
     @Override
     public void handle(Callback[] callbacks) throws UnsupportedCallbackException {
         for (Callback cb : callbacks) {
-            if (cb instanceof NameCallback) {
-                ((NameCallback) cb).setName(credentials.getName());
-            } else if (cb instanceof PasswordCallback) {
-                handlePasswordCallback((PasswordCallback) cb);
-            } else if (cb instanceof CredentialsCallback) {
-                ((CredentialsCallback) cb).setCredentials(credentials);
-            } else if (cb instanceof EndpointCallback) {
-                if (connection != null) {
-                    ((EndpointCallback) cb).setEndpoint(connection.getInetAddress().getHostAddress());
-                }
-            } else if (cb instanceof ConfigCallback) {
-                ((ConfigCallback) cb).setConfig(node != null ? node.getConfig() : null);
-            } else if (cb instanceof SerializationServiceCallback) {
-                ((SerializationServiceCallback) cb)
-                        .setSerializationService(node != null ? node.getSerializationService() : null);
-            } else {
-                throw new UnsupportedCallbackException(cb);
-            }
+            handleCallback(cb);
+        }
+    }
+
+    private void handleCallback(Callback cb) throws UnsupportedCallbackException {
+        if (cb instanceof NameCallback) {
+            ((NameCallback) cb).setName(credentials.getName());
+        } else if (cb instanceof PasswordCallback) {
+            handlePasswordCallback((PasswordCallback) cb);
+        } else if (cb instanceof CredentialsCallback) {
+            ((CredentialsCallback) cb).setCredentials(credentials);
+        } else if (cb instanceof EndpointCallback) {
+            handleEndpointCallback((EndpointCallback) cb);
+        } else if (cb instanceof ConfigCallback) {
+            ((ConfigCallback) cb).setConfig(node != null ? node.getConfig() : null);
+        } else if (cb instanceof SerializationServiceCallback) {
+            ((SerializationServiceCallback) cb).setSerializationService(node != null ? node.getSerializationService() : null);
+        } else if (cb instanceof CertificatesCallback) {
+            ((CertificatesCallback) cb).setCertificates(connection != null ? connection.getRemoteCertificates() : null);
+        } else {
+            throw new UnsupportedCallbackException(cb);
+        }
+    }
+
+    private void handleEndpointCallback(EndpointCallback cb) {
+        if (connection != null) {
+            cb.setEndpoint(connection.getInetAddress().getHostAddress());
         }
     }
 

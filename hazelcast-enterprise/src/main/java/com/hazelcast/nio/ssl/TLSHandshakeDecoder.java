@@ -6,8 +6,10 @@ import com.hazelcast.internal.networking.InboundHandler;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
+
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.internal.networking.HandlerStatus.BLOCKED;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
@@ -15,6 +17,7 @@ import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
 import static com.hazelcast.nio.IOUtil.compactOrClear;
 import static com.hazelcast.nio.IOUtil.newByteBuffer;
 import static com.hazelcast.nio.IOUtil.toDebugString;
+import static com.hazelcast.nio.ssl.TLSUtil.publishRemoteCertificates;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
@@ -36,13 +39,15 @@ public class TLSHandshakeDecoder extends InboundHandler<ByteBuffer, Void> {
     private final SSLEngine sslEngine;
     private final TLSExecutor tlsExecutor;
     private final ByteBuffer appBuffer;
+    private final ConcurrentMap attributeMap;
 
     public TLSHandshakeDecoder(SSLEngine sslEngine,
-                               TLSExecutor tlsExecutor) {
+                               TLSExecutor tlsExecutor, ConcurrentMap attributeMap) {
         this.sslEngine = sslEngine;
         this.tlsExecutor = tlsExecutor;
         // direct buffer isn't needed since it is just a handshake.
         this.appBuffer = newByteBuffer(sslEngine.getSession().getApplicationBufferSize(), false);
+        this.attributeMap = attributeMap;
     }
 
     @Override
@@ -113,6 +118,7 @@ public class TLSHandshakeDecoder extends InboundHandler<ByteBuffer, Void> {
                             throw new IllegalStateException("Unexpected data in the appBuffer, it should be empty "
                                     + toDebugString("appBuffer", appBuffer));
                         }
+                        publishRemoteCertificates(sslEngine, attributeMap);
                         TLSDecoder tlsDecoder = new TLSDecoder(sslEngine);
                         channel.inboundPipeline().replace(this, tlsDecoder);
                         // the src buffer could contain unencrypted data not needed for the handshake

@@ -18,7 +18,6 @@ import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static com.hazelcast.internal.diagnostics.Diagnostics.PREFIX;
 import static com.hazelcast.util.MapUtil.isNullOrEmpty;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -35,7 +34,8 @@ public class WANPlugin extends DiagnosticsPlugin {
      * The period in seconds this plugin runs.
      * If set to 0, the plugin is disabled.
      */
-    public static final HazelcastProperty PERIOD_SECONDS = new HazelcastProperty(PREFIX + ".wan.period.seconds", 0, SECONDS);
+    public static final HazelcastProperty PERIOD_SECONDS
+            = new HazelcastProperty("hazelcast.diagnostics.wan.period.seconds", 0, SECONDS);
 
     private static final String WAN_SECTION_NAME = "WAN";
 

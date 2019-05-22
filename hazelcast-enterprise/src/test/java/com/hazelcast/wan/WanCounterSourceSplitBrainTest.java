@@ -6,6 +6,8 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.LifecycleEvent;
+import com.hazelcast.core.LifecycleListener;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -28,9 +30,12 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.core.LifecycleEvent.LifecycleState.MERGED;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
+import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
 import static com.hazelcast.test.SplitBrainTestSupport.blockCommunicationBetween;
 import static com.hazelcast.test.SplitBrainTestSupport.unblockCommunicationBetween;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
@@ -151,6 +156,11 @@ public class WanCounterSourceSplitBrainTest {
 
     @Test
     public void testCountersReachZeroAfterHealingFullSplit() {
+        // using this latch temporarily to synchronize resuming WAN replication and split-brain
+        // healing in the test as a workaround to the known #2987 issue
+        // TODO remove this latch if the issue #2987 is fixed
+        CountDownLatch isolatedNodesMergeLatch = new CountDownLatch(numberOfIsolatedNodes);
+
         sourceCluster.startClusterAndWaitForSafeState();
         sourceCluster.pauseWanReplicationOnAllMembers(wanReplication);
         targetCluster.startCluster();
@@ -166,14 +176,29 @@ public class WanCounterSourceSplitBrainTest {
         fillMap(isolatedNodes.get(0), MAP_NAME, 100, 150);
         fillCache(isolatedNodes.get(0), CACHE_NAME, 100, 150);
 
+        registerIsolatedNodeMergeListener(isolatedNodesMergeLatch);
         healFullSplit();
         waitForExpectedSplitHealedClusterSize();
+        assertOpenEventually(isolatedNodesMergeLatch);
 
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
         verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
         verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
         verifyCacheReplicated(sourceCluster, targetCluster, CACHE_NAME);
+    }
+
+    private void registerIsolatedNodeMergeListener(final CountDownLatch mergedLatch) {
+        for (HazelcastInstance instance : isolatedNodes) {
+            instance.getLifecycleService().addLifecycleListener(new LifecycleListener() {
+                @Override
+                public void stateChanged(LifecycleEvent lifecycleEvent) {
+                    if (MERGED == lifecycleEvent.getState()) {
+                        mergedLatch.countDown();
+                    }
+                }
+            });
+        }
     }
 
     private void pickIsolatedNodes() {

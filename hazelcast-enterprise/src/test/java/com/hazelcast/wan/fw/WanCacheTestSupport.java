@@ -7,7 +7,6 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.DefaultTaskProgress;
 import com.hazelcast.test.ProgressCheckerTask;
 import com.hazelcast.test.TaskProgress;
@@ -18,9 +17,7 @@ import javax.cache.spi.CachingProvider;
 import java.net.URI;
 import java.util.Properties;
 
-import static com.hazelcast.test.HazelcastTestSupport.ASSERT_TRUE_EVENTUALLY_TIMEOUT;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static org.junit.Assert.assertTrue;
+import static com.hazelcast.test.HazelcastTestSupport.assertCompletesEventually;
 
 public class WanCacheTestSupport {
     private static final ILogger LOGGER = Logger.getLogger(WanCacheTestSupport.class);
@@ -71,37 +68,21 @@ public class WanCacheTestSupport {
     }
 
     private static CacheConfig<Integer, String> createCacheConfig(String cacheName, HazelcastInstance node) throws Exception {
-        return new CacheConfig<Integer, String>(node.getConfig().getCacheConfig(cacheName));
+        return new CacheConfig<>(node.getConfig().getCacheConfig(cacheName));
     }
 
     public static void verifyCacheReplicated(Cluster sourceCluster, Cluster targetCluster, String cacheName) {
         final ICache<Integer, String> sourceCache = getOrCreateCache(sourceCluster, cacheName);
         final ICache<Integer, String> targetCache = getOrCreateCache(targetCluster, cacheName);
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertTrue(verifyCacheReplicatedInternal(sourceCache, targetCache));
-            }
-        }, ASSERT_TRUE_EVENTUALLY_TIMEOUT);
-    }
-
-    private static boolean verifyCacheReplicatedInternal(ICache<Integer, String> source, ICache<Integer, String> target) {
-        for (Cache.Entry<Integer, String> entry : source) {
-            Integer key = entry.getKey();
-            if (!target.containsKey(key)) {
-                return false;
-            }
-        }
-
-        return true;
+        assertCompletesEventually(new ReplicationProgressCheckerTask(sourceCache, targetCache));
     }
 
     private static class ReplicationProgressCheckerTask implements ProgressCheckerTask {
-        private final ICache<Object, Object> sourceCache;
-        private final ICache<Object, Object> targetCache;
+        private final ICache<Integer, String> sourceCache;
+        private final ICache<Integer, String> targetCache;
 
-        private ReplicationProgressCheckerTask(ICache<Object, Object> sourceCache, ICache<Object, Object> targetCache) {
+        private ReplicationProgressCheckerTask(ICache<Integer, String> sourceCache, ICache<Integer, String> targetCache) {
             this.sourceCache = sourceCache;
             this.targetCache = targetCache;
         }
@@ -111,10 +92,10 @@ public class WanCacheTestSupport {
             int totalKeys = 0;
             int replicatedKeys = 0;
 
-            for (Cache.Entry<Object, Object> entry : sourceCache) {
+            for (Cache.Entry<Integer, String> entry : sourceCache) {
                 totalKeys++;
-                Object key = entry.getKey();
-                if (!targetCache.containsKey(key)) {
+                Integer key = entry.getKey();
+                if (targetCache.containsKey(key)) {
                     replicatedKeys++;
                 }
             }

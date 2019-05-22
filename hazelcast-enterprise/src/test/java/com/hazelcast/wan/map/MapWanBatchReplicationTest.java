@@ -37,7 +37,7 @@ import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.OperationFactory;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
@@ -698,7 +698,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         OperationFactory operationFactory
                 = operationProvider.createMultipleEntryOperationFactory(mapProxy.getName(), keySet, new UpdatingEntryProcessor());
 
-        InternalOperationService operationService = getOperationService(clusterA[0]);
+        OperationService operationService = getOperationService(clusterA[0]);
         operationService.invokeOnAllPartitions(MapService.SERVICE_NAME, operationFactory);
 
         assertDataInFromEventually(clusterB, "map", 0, 10, "EP");

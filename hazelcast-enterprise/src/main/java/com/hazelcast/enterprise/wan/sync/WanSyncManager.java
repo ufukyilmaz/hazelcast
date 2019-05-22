@@ -8,7 +8,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.WanSyncStateImpl;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.internal.util.collection.InflatableSet;
 import com.hazelcast.internal.util.collection.InflatableSet.Builder;
@@ -185,7 +185,7 @@ public class WanSyncManager {
         addResultOfOps(futures, partitionsToSync);
     }
 
-    private InternalOperationService getOperationService() {
+    private OperationService getOperationService() {
         return node.getNodeEngine().getOperationService();
     }
 

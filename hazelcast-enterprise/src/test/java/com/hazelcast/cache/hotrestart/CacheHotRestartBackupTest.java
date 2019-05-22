@@ -8,7 +8,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -152,7 +152,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
 
             for (HazelcastInstance instance : instances) {
                 NodeEngineImpl nodeEngine = getNodeEngineImpl(instance);
-                InternalOperationService operationService = nodeEngine.getOperationService();
+                OperationService operationService = nodeEngine.getOperationService();
                 EnterpriseCacheService service = nodeEngine.getService(EnterpriseCacheService.SERVICE_NAME);
 
                 for (int i = 0; i < partitionCount; i++) {

@@ -37,7 +37,7 @@ import com.hazelcast.spi.PartitionMigrationEvent;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.ServiceNamespace;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.AddWanConfigResult;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -494,7 +494,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     private void invokeAddWanReplicationConfig(final WanReplicationConfig wanConfig) {
         try {
-            InternalOperationService operationService = node.getNodeEngine().getOperationService();
+            OperationService operationService = node.getNodeEngine().getOperationService();
             operationService.invokeOnAllPartitions(null, new AddWanConfigOperationFactory(wanConfig));
         } catch (Throwable t) {
             throw rethrow(t);

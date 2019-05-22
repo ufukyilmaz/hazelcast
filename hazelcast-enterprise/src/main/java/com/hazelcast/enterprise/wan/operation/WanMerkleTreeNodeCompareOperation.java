@@ -12,7 +12,7 @@ import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.CallStatus;
 import com.hazelcast.spi.Offload;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 
 import java.io.IOException;
 import java.util.Map;

@@ -26,7 +26,7 @@ import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.AssertTask;
@@ -573,7 +573,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         private final HazelcastInstance instance;
         private final String cacheNameWithPrefix;
         private final int partitionCount;
-        private final InternalOperationService operationService;
+        private final OperationService operationService;
         private final EnterpriseCacheService cacheService;
 
         private CacheMemorySizeAssertTask(HazelcastInstance instance, String cacheNameWithPrefix) {

@@ -13,7 +13,7 @@ import com.hazelcast.spi.exception.TargetNotMemberException;
 import com.hazelcast.spi.hotrestart.backup.HotRestartBackupInterruptOperation;
 import com.hazelcast.spi.hotrestart.backup.HotRestartBackupTransactionLogRecord;
 import com.hazelcast.spi.impl.NodeEngineImpl;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.transaction.TransactionException;
 import com.hazelcast.transaction.TransactionOptions;
 import com.hazelcast.transaction.TransactionOptions.TransactionType;
@@ -112,7 +112,7 @@ public class HotBackupService implements HotRestartService, TransactionalService
     }
 
     private void broadcast(Operation operation) {
-        final InternalOperationService operationService = node.getNodeEngine().getOperationService();
+        final OperationService operationService = node.getNodeEngine().getOperationService();
         for (Member member : node.getClusterService().getMembers()) {
             final Address target = member.getAddress();
             if (!node.getThisAddress().equals(target)) {

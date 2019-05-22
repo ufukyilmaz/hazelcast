@@ -11,7 +11,7 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.properties.HazelcastProperty;
 
@@ -248,7 +248,7 @@ public abstract class HDMapOperation extends MapOperation {
     private void forceEvictionOnOthers() {
         NodeEngine nodeEngine = getNodeEngine();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
-        InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
+        OperationService operationService = nodeEngine.getOperationService();
         int threadCount = operationService.getPartitionThreadCount();
         int mod = getPartitionId() % threadCount;
 
@@ -268,7 +268,7 @@ public abstract class HDMapOperation extends MapOperation {
     private void evictAll(boolean isBackup) {
         NodeEngine nodeEngine = getNodeEngine();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
-        InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
+        OperationService operationService = nodeEngine.getOperationService();
         int threadCount = operationService.getPartitionThreadCount();
         int mod = getPartitionId() % threadCount;
 

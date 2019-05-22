@@ -14,7 +14,7 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
 import com.hazelcast.spi.discovery.integration.DiscoveryService;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.util.ConstructorFunction;
 import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.wan.WanReplicationPublisher;
@@ -417,7 +417,7 @@ public class WanConnectionManager implements ConnectionListener {
     public void connectionRemoved(Connection connection) {
         Address endpoint = connection.getEndPoint();
         WanConnectionWrapper wrapper = connectionPool.remove(endpoint);
-        InternalOperationService operationService = node.nodeEngine.getOperationService();
+        OperationService operationService = node.nodeEngine.getOperationService();
         if (wrapper != null || connectionsInProgress.contains(endpoint)) {
             operationService.onEndpointLeft(endpoint);
         }

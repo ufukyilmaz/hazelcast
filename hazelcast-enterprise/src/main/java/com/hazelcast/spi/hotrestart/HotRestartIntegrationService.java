@@ -30,7 +30,7 @@ import com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationThread;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 import com.hazelcast.util.UuidUtil;
 
@@ -480,7 +480,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
     @Override
     public boolean triggerForceStart() {
-        InternalOperationService operationService = node.nodeEngine.getOperationService();
+        OperationService operationService = node.nodeEngine.getOperationService();
         Address masterAddress = node.getMasterAddress();
         if (node.isMaster()) {
             logger.info("Force start has been requested. Handling request...");
@@ -496,7 +496,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
     @Override
     public boolean triggerPartialStart() {
-        InternalOperationService operationService = node.nodeEngine.getOperationService();
+        OperationService operationService = node.nodeEngine.getOperationService();
         Address masterAddress = node.getMasterAddress();
         if (node.isMaster()) {
             logger.info("Partial start has been requested. Handling request...");
@@ -869,7 +869,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     @Override
     public void notifyExcludedMember(Address memberAddress) {
         Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
-        InternalOperationService operationService = node.nodeEngine.getOperationService();
+        OperationService operationService = node.nodeEngine.getOperationService();
         operationService.send(new SendExcludedMemberUuidsOperation(excludedMemberUuids), memberAddress);
     }
 
@@ -900,7 +900,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
         int success = 0;
         Collection<Member> members = clusterService.getMembers(DATA_MEMBER_SELECTOR);
-        InternalOperationService operationService = node.nodeEngine.getOperationService();
+        OperationService operationService = node.nodeEngine.getOperationService();
         for (Member member : members) {
             while ((System.nanoTime() - startTimeNanos) < timeoutNanos) {
                 Operation operation = new SafeStateCheckOperation();

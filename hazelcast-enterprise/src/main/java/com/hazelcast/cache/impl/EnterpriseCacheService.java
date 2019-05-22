@@ -46,7 +46,7 @@ import com.hazelcast.spi.hotrestart.LoadedConfigurationListener;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.util.CollectionUtil;
 import com.hazelcast.util.ConcurrencyUtil;
@@ -281,7 +281,7 @@ public class EnterpriseCacheService
      * @param cacheNameWithPrefix the name of the cache (including manager prefix)
      */
     private void destroySegmentsInternal(String cacheNameWithPrefix) {
-        InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
+        OperationService operationService = nodeEngine.getOperationService();
         List<LocalRetryableExecution> executions = new ArrayList<LocalRetryableExecution>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasRecordStore(cacheNameWithPrefix)) {
@@ -323,7 +323,7 @@ public class EnterpriseCacheService
      */
     @Override
     public void shutdown(boolean terminate) {
-        InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
+        OperationService operationService = nodeEngine.getOperationService();
         List<CacheSegmentShutdownOperation> ops = new ArrayList<CacheSegmentShutdownOperation>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasAnyRecordStore()) {
@@ -384,8 +384,7 @@ public class EnterpriseCacheService
     }
 
     private int getPartitionThreadCount() {
-        InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
-        return operationService.getPartitionThreadCount();
+        return nodeEngine.getOperationService().getPartitionThreadCount();
     }
 
     /**

@@ -20,7 +20,7 @@ import com.hazelcast.spi.hotrestart.ForceStartException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus;
 import com.hazelcast.spi.impl.executionservice.InternalExecutionService;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.Clock;
 import com.hazelcast.version.Version;
@@ -673,7 +673,7 @@ public class ClusterMetadataManager {
 
     private void sendIfNotThisMember(Operation operation, Address target) {
         if (!node.getThisAddress().equals(target)) {
-            InternalOperationService operationService = node.getNodeEngine().getOperationService();
+            OperationService operationService = node.getNodeEngine().getOperationService();
             operationService.send(operation, target);
         }
     }
@@ -1132,7 +1132,7 @@ public class ClusterMetadataManager {
         } else if (logger.isFineEnabled()) {
             logger.fine("Sending partition table to: " + masterAddress + ", Version: " + partitionTable.getVersion());
         }
-        InternalOperationService operationService = node.getNodeEngine().getOperationService();
+        OperationService operationService = node.getNodeEngine().getOperationService();
         operationService.send(new SendMemberClusterStartInfoOperation(memberClusterStartInfo), masterAddress);
     }
 

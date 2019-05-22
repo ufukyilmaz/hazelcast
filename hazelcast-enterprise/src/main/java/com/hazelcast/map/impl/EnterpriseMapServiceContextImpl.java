@@ -53,7 +53,7 @@ import com.hazelcast.spi.hotrestart.PersistentConfigDescriptors;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
@@ -215,7 +215,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
 
     @Override
     protected void removeAllRecordStoresOfAllMaps(boolean onShutdown, boolean onRecordStoreDestroy) {
-        InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
+        OperationService operationService = nodeEngine.getOperationService();
 
         List<EnterpriseMapPartitionClearOperation> operations = new ArrayList<>();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();

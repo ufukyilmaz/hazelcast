@@ -12,7 +12,7 @@ import com.hazelcast.nio.EndpointManager;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.executor.CompletedFuture;
 

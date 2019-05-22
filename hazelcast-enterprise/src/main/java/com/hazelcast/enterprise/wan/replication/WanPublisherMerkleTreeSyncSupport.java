@@ -28,7 +28,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.NodeEngineImpl;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
@@ -393,7 +393,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
 
     private Map<Integer, int[]> invokeLocal(String mapName, Map<Integer, int[]> diff)
             throws Exception {
-        InternalOperationService operationService = nodeEngine.getOperationService();
+        OperationService operationService = nodeEngine.getOperationService();
         MerkleTreeNodeCompareOperationFactory factory = new MerkleTreeNodeCompareOperationFactory(mapName,
                 new MerkleTreeNodeValueComparison(diff));
 
@@ -501,7 +501,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             WanConnectionWrapper connectionWrapper = publisher.getConnectionManager().getConnection(target);
             if (connectionWrapper != null) {
                 String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
-                InternalOperationService operationService = nodeEngine.getOperationService();
+                OperationService operationService = nodeEngine.getOperationService();
                 InternalCompletableFuture<T> future = operationService
                         .createInvocationBuilder(serviceName, operation, connectionWrapper.getConnection().getEndPoint())
                         .setTryCount(1)

@@ -17,7 +17,7 @@ import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.exception.TargetNotMemberException;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -304,7 +304,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
             }
         }
 
-        InternalOperationService operationService = getOperationService(instances[0]);
+        OperationService operationService = getOperationService(instances[0]);
         for (int i = 0; i < newPartitionTable.getLength(); i++) {
             operationService.invokeOnPartition(null, new NonRetryablePartitionOperation(), i).join();
         }
@@ -368,7 +368,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
             }
         }
 
-        InternalOperationService operationService = getOperationService(instances[0]);
+        OperationService operationService = getOperationService(instances[0]);
         for (int i = 0; i < newPartitionTable.getLength(); i++) {
             operationService.invokeOnPartition(null, new NonRetryablePartitionOperation(), i).join();
         }
@@ -427,7 +427,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
             }
         }
 
-        InternalOperationService operationService = getOperationService(instances[0]);
+        OperationService operationService = getOperationService(instances[0]);
         for (int i = 0; i < newPartitionTable0.getLength(); i++) {
             InternalCompletableFuture<Object> f =
                     operationService.invokeOnPartition(null, new NonRetryablePartitionOperation(), i);

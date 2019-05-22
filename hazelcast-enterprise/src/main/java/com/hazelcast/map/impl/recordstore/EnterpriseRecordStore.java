@@ -18,7 +18,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
 
@@ -172,7 +172,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
             return super.readBackupData(key);
         }
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
-        InternalOperationService opService = (InternalOperationService) nodeEngine.getOperationService();
+        OperationService opService = nodeEngine.getOperationService();
         ReadBackupDataTask readBackupDataTask = new ReadBackupDataTask(key);
         opService.execute(readBackupDataTask);
         try {

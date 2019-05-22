@@ -16,6 +16,7 @@ import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.mapstore.MapDataStore;
 import com.hazelcast.map.impl.nearcache.EnterpriseMapNearCacheManager;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -23,7 +24,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
 import org.junit.Before;
 import org.mockito.stubbing.OngoingStubbing;
@@ -85,7 +85,7 @@ public abstract class AbstractHDMapOperationTest {
         IPartitionService partitionService = mock(IPartitionService.class);
         when(partitionService.getPartitionCount()).thenReturn(PARTITION_COUNT);
 
-        InternalOperationService operationService = mock(InternalOperationService.class);
+        OperationService operationService = mock(OperationService.class);
         when(operationService.getPartitionThreadCount()).thenReturn(PARTITION_COUNT);
 
         nodeEngine = mock(NodeEngine.class);

@@ -26,7 +26,7 @@ import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.ExpectedRuntimeException;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
@@ -310,7 +310,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
             int partitionCount = nodeEngineImpl.getPartitionService().getPartitionCount();
             final CountDownLatch latch = new CountDownLatch(partitionCount);
-            InternalOperationService operationService = nodeEngineImpl.getOperationService();
+            OperationService operationService = nodeEngineImpl.getOperationService();
 
             for (int i = 0; i < partitionCount; i++) {
                 final int partitionId = i;

@@ -7,7 +7,7 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -54,7 +54,7 @@ import static com.hazelcast.wan.map.MapWanReplicationTestSupport.assertKeysNotIn
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class WanAddConfigTest {
     @Rule

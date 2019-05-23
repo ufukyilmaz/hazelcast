@@ -17,9 +17,11 @@ import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.EnterprisePhoneHome;
 import com.hazelcast.enterprise.monitor.impl.jmx.EnterpriseManagementService;
+import com.hazelcast.enterprise.monitor.impl.jmx.LicenseInfoMBean;
 import com.hazelcast.enterprise.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
 import com.hazelcast.enterprise.monitor.impl.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.enterprise.monitor.impl.rest.EnterpriseTextCommandServiceImpl;
+import com.hazelcast.enterprise.monitor.impl.rest.LicenseInfoImpl;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
@@ -33,6 +35,7 @@ import com.hazelcast.internal.diagnostics.Diagnostics;
 import com.hazelcast.internal.diagnostics.WANPlugin;
 import com.hazelcast.internal.dynamicconfig.DynamicConfigListener;
 import com.hazelcast.internal.dynamicconfig.HotRestartConfigListener;
+import com.hazelcast.internal.jmx.HazelcastMBean;
 import com.hazelcast.internal.jmx.ManagementService;
 import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
@@ -92,8 +95,11 @@ import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
@@ -117,6 +123,17 @@ public class EnterpriseNodeExtension
         extends DefaultNodeExtension
         implements NodeExtension, MetricsProvider {
 
+    /**
+     * A map of compatible license feature replacements introduced per license version. Used when updating
+     * from an older version license to a newer version license.
+     */
+    private static final Map<LicenseVersion, Map<Feature, Feature>> LICENSE_FEATURE_REPLACEMENTS
+            = new HashMap<LicenseVersion, Map<Feature, Feature>>();
+    static {
+        LICENSE_FEATURE_REPLACEMENTS.put(LicenseVersion.V5,
+                Collections.singletonMap(Feature.WEB_SESSION, Feature.CLIENT_FILTERING));
+    }
+
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
     private static final NoopInternalHotRestartService NOOP_INTERNAL_HOT_RESTART_SERVICE = new NoopInternalHotRestartService();
     private static final NoOpHotRestartService NO_OP_HOT_RESTART_SERVICE = new NoOpHotRestartService();
@@ -133,6 +150,7 @@ public class EnterpriseNodeExtension
     private volatile HazelcastMemoryManager memoryManager;
     private final ConcurrentMap<EndpointQualifier, MemberSocketInterceptor> socketInterceptors
             = new ConcurrentHashMap<EndpointQualifier, MemberSocketInterceptor>();
+    private volatile LicenseExpirationReminderTask licenseExpirationReminderTask;
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
@@ -170,15 +188,96 @@ public class EnterpriseNodeExtension
             if (licenseKey == null || licenseKey.isEmpty()) {
                 licenseKey = node.getConfig().getLicenseKey();
             }
-            node.config.setLicenseKey(licenseKey);
-            license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
-            logger.log(Level.INFO, license.toString());
+            setLicenseInternal(LicenseHelper.getLicense(licenseKey, buildInfo.getVersion()), licenseKey);
         } else {
             logger.log(Level.FINE, "This is an OEM version of Hazelcast Enterprise.");
         }
 
         createSecurityContext(node);
         createMemoryManager(node);
+    }
+
+    private void setLicenseInternal(License lic, String licenseKey) {
+        license = lic;
+        node.config.setLicenseKey(licenseKey);
+        logger.log(Level.INFO, license.toString());
+    }
+
+    @Override
+    public void setLicenseKey(String licenseKey) {
+        License userLicense = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
+        checkLicenseCompatible(license, userLicense);
+
+        synchronized (this) {
+            setLicenseInternal(userLicense, licenseKey);
+            onLicenseChanged(userLicense);
+        }
+
+        /* No need to recreate the security context and the memory manager
+           since the licensed features don't change. */
+
+        logger.log(Level.WARNING, "License updated at run time - please make sure to update the license "
+                + "in the persistent configuration to avoid losing the changes on restart.");
+    }
+
+    private void onLicenseChanged(License newLicense) {
+        // license reminder task
+        initLicenseExpReminder(newLicense);
+
+        // license info MBean
+        initLicenseMBean(newLicense);
+    }
+
+    private static void checkLicenseCompatible(License current, License newLicense) {
+        if (newLicense.getExpiryDate().getTime() < current.getExpiryDate().getTime()) {
+            throw new InvalidLicenseException("License expires before the current license");
+        }
+
+        if (current.getVersion().getCode() > newLicense.getVersion().getCode()) {
+            throw new InvalidLicenseException("Cannot update to an older version license");
+        }
+
+        if (newLicense.getAllowedNumberOfNodes() < current.getAllowedNumberOfNodes()) {
+            throw new InvalidLicenseException("License allows a smaller number of nodes "
+                    + newLicense.getAllowedNumberOfNodes() + " than the current license " + current.getAllowedNumberOfNodes());
+        }
+        checkFeaturesCompatible(current, newLicense);
+    }
+
+    private static void checkFeaturesCompatible(License current, License newLicense) {
+        Set<Feature> newFeatures = newLicense.getFeatures() == null ? Collections.<Feature>emptySet()
+                : new HashSet<Feature>(newLicense.getFeatures());
+        Set<Feature> currentFeatures
+                = current.getFeatures() == null ? Collections.<Feature>emptySet() : new HashSet<Feature>(current.getFeatures());
+        Set<Feature> currentFeaturesReplaced
+                = processLicenseFeatureReplacements(currentFeatures, current.getVersion(), newLicense.getVersion());
+        if (!newFeatures.equals(currentFeaturesReplaced)) {
+            throw new InvalidLicenseException("License has incompatible features "
+                    + newLicense.getFeatures() + " with the current license " + current.getFeatures());
+        }
+    }
+
+    private static Set<Feature> processLicenseFeatureReplacements(Set<Feature> features, LicenseVersion fromVersion,
+                                                                  LicenseVersion toVersion) {
+        if (fromVersion.getCode() >= toVersion.getCode()) {
+            return features;
+        }
+        Set<Feature> replaced = new HashSet<Feature>(features);
+        for (int step = fromVersion.getCode() + 1; step <= toVersion.getCode(); step++) {
+            LicenseVersion stepVersion = LicenseVersion.getLicenseVersion(step);
+            Map<Feature, Feature> replacements = LICENSE_FEATURE_REPLACEMENTS.get(stepVersion);
+            if (replacements != null) {
+                for (Map.Entry<Feature, Feature> entry : replacements.entrySet()) {
+                    if (entry.getKey() != null) {
+                        replaced.remove(entry.getKey());
+                    }
+                    if (entry.getValue() != null) {
+                        replaced.add(entry.getValue());
+                    }
+                }
+            }
+        }
+        return replaced;
     }
 
     private boolean isRollingUpgradeLicensed() {
@@ -311,7 +410,7 @@ public class EnterpriseNodeExtension
         }
 
         initWanConsumers();
-        initLicenseExpReminder();
+        initLicenseExpReminder(license);
     }
 
     private void refreshClusterPermissions() {
@@ -322,19 +421,36 @@ public class EnterpriseNodeExtension
         }
     }
 
-    private void initLicenseExpReminder() {
-        // don't start reminder task in case of "built-in license" (NLC mode)
-        if (LicenseHelper.isBuiltInLicense(license)) {
-            return;
-        }
-
-        TaskScheduler scheduler = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();
+    private void initLicenseExpReminder(License lic) {
+        boolean builtInLicense = LicenseHelper.isBuiltInLicense(lic);
         try {
-            LicenseExpirationReminderTask.scheduleWith(scheduler, license);
+            if (licenseExpirationReminderTask == null) {
+                // schedule a new task
+                if (!builtInLicense) {
+                    TaskScheduler taskScheduler = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();
+                    licenseExpirationReminderTask = LicenseExpirationReminderTask.scheduleWith(taskScheduler, lic);
+                }
+            } else {
+                // cancel/reschedule the current task
+                licenseExpirationReminderTask
+                        = licenseExpirationReminderTask.rescheduleWithNewLicense(builtInLicense ? null : lic);
+            }
         } catch (RejectedExecutionException e) {
             if (node.isRunning()) {
                 throw e;
             }
+        }
+    }
+
+    private void initLicenseMBean(License lic) {
+        // if a license MBean exists, unregisters it and register a new one
+        ManagementService managementService = node.hazelcastInstance.getManagementService();
+        EnterpriseManagementService.EnterpriseInstanceMBean instanceMBean
+                = (EnterpriseManagementService.EnterpriseInstanceMBean) managementService.getInstanceMBean();
+        if (instanceMBean != null) {
+            LicenseInfoMBean licenseInfoMBean = instanceMBean.getLicenseInfoMBean();
+            HazelcastMBean.unregister(licenseInfoMBean);
+            HazelcastMBean.register(new LicenseInfoMBean(new LicenseInfoImpl(lic), node, managementService));
         }
     }
 
@@ -855,4 +971,5 @@ public class EnterpriseNodeExtension
     public boolean isClientFailoverSupported() {
         return true;
     }
+
 }

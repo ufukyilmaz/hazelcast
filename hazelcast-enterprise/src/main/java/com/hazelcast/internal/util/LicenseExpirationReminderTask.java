@@ -8,6 +8,7 @@ import com.hazelcast.spi.TaskScheduler;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.concurrent.ScheduledFuture;
 
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.NONE;
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.of;
@@ -20,7 +21,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Scheduled task responsible to send log-notifications regarding license info, regarding expiration.
  * <p>
- * Note. This task is not be started in NLC mode. See {@link com.hazelcast.instance.EnterpriseNodeExtension}.
+ * Note. This task is not to be started in NLC mode. See {@link com.hazelcast.instance.EnterpriseNodeExtension}.
  */
 public class LicenseExpirationReminderTask implements Runnable {
 
@@ -78,15 +79,13 @@ public class LicenseExpirationReminderTask implements Runnable {
 
     private final License license;
     private final TaskScheduler scheduler;
+    private boolean cancelRequested;
+    private ScheduledFuture<?> future;
     private final ILogger logger = Logger.getLogger(LicenseExpirationReminderTask.class);
     // only used for testing
     private final long nowInMillis;
 
-    private LicenseExpirationReminderTask(TaskScheduler scheduler, License license) {
-        this(scheduler, license, -1);
-    }
-
-    // this constructor is only used for testing purposes
+    // this constructor is not private only because of testing purposes
     LicenseExpirationReminderTask(TaskScheduler scheduler, License license, long nowInMillis) {
         this.license = license;
         this.scheduler = scheduler;
@@ -104,16 +103,39 @@ public class LicenseExpirationReminderTask implements Runnable {
                 logger.warning(assembleLicenseInfoBanner(period, nowInMillis));
             }
         } finally {
-            long rescheduleDelay = calcSchedulingDelay(period, nowInMillis);
-            scheduler.schedule(this, rescheduleDelay, SECONDS);
-            logger.fine("Current period " + period + ". Rescheduling check, in " + rescheduleDelay + " seconds. "
-                    + "Expiration " + license.getExpiryDate());
+            synchronized (this) {
+                if (!cancelRequested) {
+                    long rescheduleDelay = calcSchedulingDelay(period, nowInMillis);
+                    future = scheduler.schedule(this, rescheduleDelay, SECONDS);
+                    logger.fine("Current period " + period + ". Rescheduling check, in " + rescheduleDelay + " seconds. "
+                            + "Expiration " + license.getExpiryDate());
+                }
+            }
         }
     }
 
-    public static void scheduleWith(final TaskScheduler scheduler, final License license) {
-        LicenseExpirationReminderTask task = new LicenseExpirationReminderTask(scheduler, license);
+    public static LicenseExpirationReminderTask scheduleWith(final TaskScheduler scheduler, final License license) {
+        LicenseExpirationReminderTask task = Factory.newInstance(scheduler, license);
         scheduler.schedule(task, 0, SECONDS);
+        return task;
+    }
+
+    /**
+     * Cancels the execution of the current task (if any) and schedules a new task using the provided {@code license}.
+     * If {@code license} is {@code null}, cancels the current task but does not schedule a new one.
+     * @param license the license to use or {@code null}
+     * @return the newly scheduled new task or {@code null} if no task was scheduled
+     */
+    public LicenseExpirationReminderTask rescheduleWithNewLicense(License license) {
+        cancel();
+        return license == null ? null : scheduleWith(scheduler, license);
+    }
+
+    private synchronized void cancel() {
+        cancelRequested = true;
+        if (future != null) {
+            future.cancel(true);
+        }
     }
 
     NotificationPeriod calculateNotificationPeriod(long nowInMillis) {
@@ -188,4 +210,12 @@ public class LicenseExpirationReminderTask implements Runnable {
         return format("WILL EXPIRE IN A FEW SECONDS.%n"
                 + "Your Hazelcast cluster will stop working on next re-start after expiry.%n%n");
     }
+
+    // introduced for mock constructor testing
+    static final class Factory {
+        static LicenseExpirationReminderTask newInstance(TaskScheduler scheduler, License license) {
+            return new LicenseExpirationReminderTask(scheduler, license, -1);
+        }
+    }
+
 }

@@ -23,7 +23,10 @@ public class EnterpriseManagementService
         return new EnterpriseInstanceMBean(instance, this);
     }
 
-    private static class EnterpriseInstanceMBean
+    /**
+     * EE management bean for {@link com.hazelcast.core.HazelcastInstance}
+     */
+    public static class EnterpriseInstanceMBean
             extends InstanceMBean {
 
         private LicenseInfoMBean licenseInfoMBean;
@@ -38,6 +41,10 @@ public class EnterpriseManagementService
             LicenseInfo licenseInfo = new LicenseInfoImpl(nodeExtension.getLicense());
             this.licenseInfoMBean = new LicenseInfoMBean(licenseInfo, hazelcastInstance.node, managementService);
             register(licenseInfoMBean);
+        }
+
+        public LicenseInfoMBean getLicenseInfoMBean() {
+            return licenseInfoMBean;
         }
 
     }

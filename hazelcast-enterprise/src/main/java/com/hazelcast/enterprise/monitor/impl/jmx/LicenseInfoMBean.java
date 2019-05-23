@@ -16,7 +16,7 @@ import static com.hazelcast.util.MapUtil.createHashMap;
 public class LicenseInfoMBean
         extends HazelcastMBean<LicenseInfo> {
 
-    LicenseInfoMBean(LicenseInfo licenseInfo, Node node, ManagementService service) {
+    public LicenseInfoMBean(LicenseInfo licenseInfo, Node node, ManagementService service) {
         super(licenseInfo, service);
 
         final Map<String, String> properties = createHashMap(2);

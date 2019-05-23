@@ -4,7 +4,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.DistributedObject;
-import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
 import com.hazelcast.map.impl.proxy.NearCachedMapProxyImpl;
 import com.hazelcast.map.merge.MergePolicyProvider;
@@ -21,12 +20,8 @@ import static com.hazelcast.internal.config.MergePolicyValidator.checkMergePolic
  */
 class EnterpriseMapRemoteService extends MapRemoteService {
 
-    private final HDMapConfigValidator hdMapConfigValidator;
-
     EnterpriseMapRemoteService(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
-        HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(nodeEngine.getProperties());
-        hdMapConfigValidator = new HDMapConfigValidator(hotRestartEvictionHelper);
     }
 
     // TODO: check if OS method can be used directly without override?
@@ -38,8 +33,7 @@ class EnterpriseMapRemoteService extends MapRemoteService {
 
         MergePolicyProvider mergePolicyProvider = mapServiceContext.getMergePolicyProvider();
 
-        checkMapConfig(mapConfig, mergePolicyProvider);
-        hdMapConfigValidator.checkHDConfig(mapConfig, nativeMemoryConfig);
+        checkMapConfig(mapConfig, nativeMemoryConfig, mergePolicyProvider, nodeEngine.getProperties());
 
         Object mergePolicy = mergePolicyProvider.getMergePolicy(mapConfig.getMergePolicyConfig().getPolicy());
         checkMergePolicySupportsInMemoryFormat(name, mergePolicy, mapConfig.getInMemoryFormat(),

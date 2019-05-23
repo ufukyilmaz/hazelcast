@@ -9,7 +9,6 @@ import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -27,8 +26,8 @@ import com.hazelcast.util.Clock;
 
 import java.util.Iterator;
 
-import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.nio.serialization.DataType.NATIVE;
+import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 
 /**
  * NativeMemory cache record store with Hot Restart support.
@@ -54,8 +53,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     public HotRestartHiDensityNativeMemoryCacheRecordStore(
             int partitionId, String cacheNameWithPrefix, EnterpriseCacheService cacheService,
-            NodeEngine nodeEngine, boolean fsync, long keyPrefix
-    ) {
+            NodeEngine nodeEngine, boolean fsync, long keyPrefix) {
         super(partitionId, cacheNameWithPrefix, cacheService, nodeEngine);
         this.fsync = fsync;
         this.prefix = keyPrefix;
@@ -88,25 +86,25 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
         long maxNativeMemory = ((EnterpriseSerializationService) nodeEngine.getSerializationService())
                 .getMemoryManager().getMemoryStats().getMaxNative();
-        final HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(nodeEngine.getProperties());
-        final int hotRestartMinFreeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
+        final int hotRestartMinFreeNativeMemoryPercentage
+                = nodeEngine.getProperties().getInteger(HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE);
         if (EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy) {
             if (size < hotRestartMinFreeNativeMemoryPercentage) {
                 throw new IllegalArgumentException(String.format(
                         "There is a global limit on the minimum free native memory, settable by the system property"
                                 + " %s, whose value is currently %d percent. The cache %s has Hot Restart enabled, but is "
                                 + " configured with %d percent, lower than the allowed minimum.",
-                        HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE.getName(), hotRestartMinFreeNativeMemoryPercentage,
+                        HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE, hotRestartMinFreeNativeMemoryPercentage,
                         getConfig().getNameWithPrefix(), size)
                 );
             }
-             // Invariants at this point:
-             //
-             // - this cache is configured with the FREE_NATIVE_MEMORY_PERCENTAGE policy
-             // - this cache's configured percentage is at least as high as the global setting
-             //   imposed by the Hot Restart configuration.
-             //
-             // therefore no need to set up a composite policy checker, only the local one is enough
+            // Invariants at this point:
+            //
+            // - this cache is configured with the FREE_NATIVE_MEMORY_PERCENTAGE policy
+            // - this cache's configured percentage is at least as high as the global setting
+            //   imposed by the Hot Restart configuration.
+            //
+            // therefore no need to set up a composite policy checker, only the local one is enough
             return new HiDensityFreeNativeMemoryPercentageEvictionChecker(memoryManager, size, maxNativeMemory);
         } else {
             // the configured policy is other than FREE_NATIVE_MEMORY_PERCENTAGE,
@@ -127,7 +125,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected HiDensityNativeMemoryCacheRecord doPutRecord(Data key, HiDensityNativeMemoryCacheRecord record,
-            String source, boolean updateJournal) {
+                                                           String source, boolean updateJournal) {
         HiDensityNativeMemoryCacheRecord oldRecord = super.doPutRecord(key, record, source, updateJournal);
         putToHotRestart(key, record);
         return oldRecord;

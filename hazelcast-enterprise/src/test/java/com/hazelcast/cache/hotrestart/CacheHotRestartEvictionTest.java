@@ -8,12 +8,12 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
-import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.EvictionPolicy.LRU;
+import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.synchronizedList;
 import static org.junit.Assert.assertArrayEquals;
@@ -121,8 +122,8 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
         assumeTrue("This test is just for NATIVE in-memory configuration", memoryFormat == InMemoryFormat.NATIVE);
 
         HazelcastInstance hz = newHazelcastInstance();
-        HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(getNode(hz).getProperties());
-        int freeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
+        HazelcastProperties properties = getNode(hz).getProperties();
+        int freeNativeMemoryPercentage = properties.getInteger(HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE);
         EvictionConfig evictionConfig = new EvictionConfig(freeNativeMemoryPercentage / 2, FREE_NATIVE_MEMORY_PERCENTAGE, LRU);
         ICache<Integer, byte[]> cache = createCache(hz, evictionConfig);
         try {
@@ -139,8 +140,8 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
 
         HazelcastInstance hz = newHazelcastInstance();
         Node node = getNode(hz);
-        HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(node.getProperties());
-        int freeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
+        HazelcastProperties properties = getNode(hz).getProperties();
+        int freeNativeMemoryPercentage = properties.getInteger(HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE);
         ICache<String, byte[]> cache = createCache(hz);
 
         int partitionCount = node.getPartitionService().getPartitionCount();

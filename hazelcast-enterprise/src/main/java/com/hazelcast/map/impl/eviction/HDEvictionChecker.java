@@ -11,10 +11,12 @@ import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.MemoryInfoAccessor;
 
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
+import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 
 /**
  * Checks whether a specific threshold is exceeded or not
@@ -29,10 +31,10 @@ public class HDEvictionChecker extends EvictionChecker {
     private final MemoryStats memoryStats;
 
     public HDEvictionChecker(MemoryInfoAccessor memoryInfoAccessor,
-                             MapServiceContext mapServiceContext,
-                             HotRestartEvictionHelper hotRestartEvictionHelper) {
+                             MapServiceContext mapServiceContext) {
         super(memoryInfoAccessor, mapServiceContext);
-        this.hotRestartMinFreeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
+        HazelcastProperties properties = mapServiceContext.getNodeEngine().getProperties();
+        this.hotRestartMinFreeNativeMemoryPercentage = properties.getInteger(HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE);
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
         HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
         this.memoryStats = memoryManager.getMemoryStats();

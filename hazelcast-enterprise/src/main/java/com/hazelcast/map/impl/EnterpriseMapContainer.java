@@ -12,7 +12,6 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.eviction.MapEvictionPolicy;
 import com.hazelcast.map.impl.eviction.HDEvictionChecker;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
-import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
@@ -54,10 +53,7 @@ public class EnterpriseMapContainer extends MapContainer {
             if (mapEvictionPolicy != null) {
                 MemoryInfoAccessor memoryInfoAccessor = getMemoryInfoAccessor();
                 NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
-                HotRestartEvictionHelper hotRestartEvictionHelper =
-                        new HotRestartEvictionHelper(nodeEngine.getProperties());
-                HDEvictionChecker evictionChecker =
-                        new HDEvictionChecker(memoryInfoAccessor, mapServiceContext, hotRestartEvictionHelper);
+                HDEvictionChecker evictionChecker = new HDEvictionChecker(memoryInfoAccessor, mapServiceContext);
                 IPartitionService partitionService = nodeEngine.getPartitionService();
                 int batchSize = nodeEngine.getProperties().getInteger(MAP_EVICTION_BATCH_SIZE);
                 evictor = new HDEvictorImpl(mapEvictionPolicy, evictionChecker, partitionService, storageInfo,

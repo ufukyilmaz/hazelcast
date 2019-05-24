@@ -751,12 +751,9 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         closeHotRestartStores();
         clusterMetadataManager.stopPersistence();
 
-        logger.info("Deleting Hot Restart base-dir " + hotRestartHome);
+        logger.info("Deleting contents of Hot Restart base-dir " + hotRestartHome);
         directoryLock.release();
-        delete(hotRestartHome);
-        if (!hotRestartHome.mkdir()) {
-            throw new HotRestartException("Could not re-create base-dir " + hotRestartHome);
-        }
+        deletePersistedData();
         directoryLock = lockForDirectory(hotRestartHome, logger);
 
         logger.info("Resetting hot restart cluster metadata service...");
@@ -778,6 +775,15 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
                 runRestarterPipeline(offHeapStores, true);
             } catch (Throwable t) {
                 throw new HotRestartException("Starting hot restart threads failed!", t);
+            }
+        }
+    }
+
+    private void deletePersistedData() {
+        File[] subFiles = hotRestartHome.listFiles();
+        if (subFiles != null) {
+            for (File sf : subFiles) {
+                delete(sf);
             }
         }
     }

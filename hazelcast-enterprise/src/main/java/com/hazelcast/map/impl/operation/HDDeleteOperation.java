@@ -3,13 +3,11 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.spi.impl.MutatingOperation;
 
 import java.io.IOException;
 
-public class HDDeleteOperation extends HDBaseRemoveOperation
-        implements MutatingOperation, Versioned {
+public class HDDeleteOperation extends HDBaseRemoveOperation implements MutatingOperation {
 
     private boolean success;
 

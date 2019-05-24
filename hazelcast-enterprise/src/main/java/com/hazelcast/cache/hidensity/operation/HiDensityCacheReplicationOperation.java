@@ -14,7 +14,6 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
@@ -28,7 +27,7 @@ import static com.hazelcast.cache.impl.record.CacheRecord.TIME_NOT_AVAILABLE;
  * Replicates records from one off-heap source to an off-heap destination.
  */
 public final class HiDensityCacheReplicationOperation
-        extends CacheReplicationOperation implements IdentifiedDataSerializable, Versioned {
+        extends CacheReplicationOperation implements IdentifiedDataSerializable {
 
     private final Map<String, Map<Data, HiDensityCacheRecord>> source
             = new HashMap<String, Map<Data, HiDensityCacheRecord>>();

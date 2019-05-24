@@ -5,7 +5,6 @@ import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -16,7 +15,7 @@ import java.io.IOException;
  * Operation, which is used to send local partition table to master member
  * during cluster-wide validation phase.
  */
-public class SendMemberClusterStartInfoOperation extends Operation implements JoinOperation, Versioned {
+public class SendMemberClusterStartInfoOperation extends Operation implements JoinOperation {
 
     private MemberClusterStartInfo memberClusterStartInfo;
 

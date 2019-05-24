@@ -6,7 +6,6 @@ import com.hazelcast.map.impl.record.RecordInfo;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.PartitionAwareOperation;
 
@@ -17,7 +16,7 @@ import java.util.List;
 import static com.hazelcast.map.impl.record.Records.applyRecordInfo;
 
 public class HDPutAllBackupOperation extends HDMapOperation
-        implements PartitionAwareOperation, BackupOperation, Versioned {
+        implements PartitionAwareOperation, BackupOperation {
 
     private MapEntries entries;
     private List<RecordInfo> recordInfos;

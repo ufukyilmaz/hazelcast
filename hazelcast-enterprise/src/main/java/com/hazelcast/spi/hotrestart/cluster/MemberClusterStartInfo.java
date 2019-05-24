@@ -5,7 +5,6 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.SerializableByConvention;
-import com.hazelcast.nio.serialization.impl.Versioned;
 
 import java.io.IOException;
 
@@ -17,7 +16,7 @@ import static com.hazelcast.spi.hotrestart.cluster.PartitionTableWriter.writePar
  * Contains information about the state read from the disk and the progress of a node during cluster start
  */
 @SerializableByConvention(PUBLIC_API)
-public class MemberClusterStartInfo implements DataSerializable, Versioned {
+public class MemberClusterStartInfo implements DataSerializable {
 
     /**
      * Data load status for each member during Hot Restart

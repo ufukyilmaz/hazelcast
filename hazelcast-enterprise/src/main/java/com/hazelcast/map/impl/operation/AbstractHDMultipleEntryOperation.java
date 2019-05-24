@@ -3,13 +3,12 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.impl.MapEntries;
-import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
 abstract class AbstractHDMultipleEntryOperation extends HDMapOperation
-        implements MutatingOperation, PartitionAwareOperation, Versioned {
+        implements MutatingOperation, PartitionAwareOperation {
 
     protected MapEntries responses;
     protected EntryProcessor entryProcessor;

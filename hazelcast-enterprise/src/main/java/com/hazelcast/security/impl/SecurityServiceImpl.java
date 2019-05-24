@@ -8,13 +8,11 @@ import com.hazelcast.security.SecurityService;
 import com.hazelcast.spi.CoreService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PreJoinAwareService;
-import com.hazelcast.version.Version;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hazelcast.internal.cluster.Versions.V3_9;
 import static com.hazelcast.internal.util.InvocationUtil.invokeOnStableClusterSerial;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 
@@ -34,11 +32,6 @@ public class SecurityServiceImpl implements SecurityService, CoreService, PreJoi
 
     @Override
     public void refreshClientPermissions(Set<PermissionConfig> permissionConfigs) {
-        Version clusterVersion = node.getClusterService().getClusterVersion();
-        if (clusterVersion.isLessThan(V3_9)) {
-            throw new UnsupportedOperationException("Permissions can be only refreshed when cluster version is at least 3.9");
-        }
-
         Set<PermissionConfig> clonedConfigs = clonePermissionConfigs(permissionConfigs);
 
         Supplier<Operation> supplier = new UpdatePermissionConfigOperationSupplier(clonedConfigs);

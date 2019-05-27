@@ -68,7 +68,7 @@ public class WanCacheTestSupport {
     }
 
     private static CacheConfig<Integer, String> createCacheConfig(String cacheName, HazelcastInstance node) throws Exception {
-        return new CacheConfig<>(node.getConfig().getCacheConfig(cacheName));
+        return new CacheConfig<Integer, String>(node.getConfig().getCacheConfig(cacheName));
     }
 
     public static void verifyCacheReplicated(Cluster sourceCluster, Cluster targetCluster, String cacheName) {

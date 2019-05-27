@@ -87,18 +87,13 @@ public class HDPutAllOperationTest extends AbstractHDMapOperationTest {
         return MAP_NAME;
     }
 
-    public class TestHDPutAllOperation extends HDPutAllOperation {
+    public class TestHDPutAllOperation extends PutAllOperation {
 
         public TestHDPutAllOperation() {
         }
 
         public TestHDPutAllOperation(String name, MapEntries mapEntries) {
             super(name, mapEntries);
-        }
-
-        @Override
-        protected int getRetryCount() {
-            return HDMapOperation.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
         }
     }
 }

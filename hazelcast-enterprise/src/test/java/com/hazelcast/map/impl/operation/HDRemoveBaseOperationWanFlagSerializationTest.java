@@ -10,21 +10,21 @@ public class HDRemoveBaseOperationWanFlagSerializationTest extends RemoveBaseOpe
 
     @Test
     public void testRemoveOperation() throws IOException {
-        HDBaseRemoveOperation original = new HDRemoveOperation(MAP_NAME, keyMock, disableWanReplication);
-        HDBaseRemoveOperation deserialized = new HDRemoveOperation();
+        BaseRemoveOperation original = new RemoveOperation(MAP_NAME, keyMock, disableWanReplication);
+        BaseRemoveOperation deserialized = new RemoveOperation();
 
         testSerialization(original, deserialized);
     }
 
     @Test
     public void testDeleteOperation() throws IOException {
-        HDBaseRemoveOperation original = new HDDeleteOperation(MAP_NAME, keyMock, disableWanReplication);
-        HDBaseRemoveOperation deserialized = new HDDeleteOperation();
+        BaseRemoveOperation original = new DeleteOperation(MAP_NAME, keyMock, disableWanReplication);
+        BaseRemoveOperation deserialized = new DeleteOperation();
 
         testSerialization(original, deserialized);
     }
 
-    private void testSerialization(HDBaseRemoveOperation originalOp, HDBaseRemoveOperation deserializedOp) throws IOException {
+    private void testSerialization(BaseRemoveOperation originalOp, BaseRemoveOperation deserializedOp) throws IOException {
         serializeAndDeserialize(originalOp, deserializedOp);
 
         assertEquals(originalOp.disableWanReplicationEvent, deserializedOp.disableWanReplicationEvent);

@@ -9,8 +9,6 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.MapEntrySimple;
-import com.hazelcast.map.impl.operation.HDPutAllBackupOperation;
-import com.hazelcast.map.impl.operation.HDPutAllOperation;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;

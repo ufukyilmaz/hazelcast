@@ -39,7 +39,7 @@ public class MerkleTreeGetEntriesOperation extends MapOperation implements Reado
     }
 
     @Override
-    public void run() throws Exception {
+    protected void runInternal() {
         int partitionId = getPartitionId();
         EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) mapServiceContext
                 .getPartitionContainer(partitionId);

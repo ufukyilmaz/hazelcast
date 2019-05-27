@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.internal.nearcache.impl.invalidation.Invalidation;
@@ -16,18 +17,20 @@ import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.mapstore.MapDataStore;
 import com.hazelcast.map.impl.nearcache.EnterpriseMapNearCacheManager;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartitionService;
+import com.hazelcast.spi.properties.HazelcastProperties;
+import com.hazelcast.wan.impl.CallerProvenance;
 import org.junit.Before;
 import org.mockito.stubbing.OngoingStubbing;
 
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -73,10 +76,11 @@ public abstract class AbstractHDMapOperationTest {
     RecordStore recordStore;
     ConcurrentHashMap<String, RecordStore> partitionMaps;
     MapService mapService;
+    NodeEngine nodeEngine;
 
     private int numberOfNativeOOME;
 
-    private NodeEngine nodeEngine;
+
     private MapContainer mapContainer;
     private TestInvalidator nearCacheInvalidator;
 
@@ -92,9 +96,11 @@ public abstract class AbstractHDMapOperationTest {
         when(nodeEngine.getLogger(any(Class.class))).thenReturn(Logger.getLogger(getClass()));
         when(nodeEngine.getPartitionService()).thenReturn(partitionService);
         when(nodeEngine.getOperationService()).thenReturn(operationService);
+        when(nodeEngine.getProperties()).thenReturn(new HazelcastProperties(new Properties()));
 
         MapConfig mapConfig = new MapConfig(getMapName())
-                .setInMemoryFormat(InMemoryFormat.NATIVE);
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setEvictionPolicy(EvictionPolicy.LRU);
 
         evictor = mock(HDEvictorImpl.class);
 
@@ -241,8 +247,8 @@ public abstract class AbstractHDMapOperationTest {
     }
 
     /**
-     * Verifies the {@link RecordStore} mock after a call of {@link HDPutAllOperation#run()} or
-     * {@link HDPutAllBackupOperation#run()}.
+     * Verifies the {@link RecordStore} mock after a call of {@link PutAllOperation#run()} or
+     * {@link PutAllBackupOperation#run()}.
      *
      * @param isBackupDone {@code true} if backup operation has been called, {@code false} otherwise
      */

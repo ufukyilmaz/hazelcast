@@ -6,7 +6,6 @@ import com.hazelcast.spi.EventPublishingService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.RemoteService;
 import com.hazelcast.spi.ReplicationSupportingService;
-import com.hazelcast.spi.impl.CountingMigrationAwareService;
 
 /**
  * Enterprise implementation of {@link MapServiceFactory}.
@@ -24,12 +23,6 @@ class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
     ReplicationSupportingService createReplicationSupportingService() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
         return new EnterpriseMapReplicationSupportingService(mapServiceContext);
-    }
-
-    @Override
-    CountingMigrationAwareService createMigrationAwareService() {
-        EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
-        return new CountingMigrationAwareService(new EnterpriseMapMigrationAwareService(mapServiceContext));
     }
 
     @Override

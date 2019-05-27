@@ -17,9 +17,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
@@ -30,8 +28,6 @@ public class HDEntryProcessorTest extends EntryProcessorTest {
     @Parameters(name = "format:{0}")
     public static Collection<Object[]> data() {
         return asList(new Object[][]{
-                {BINARY},
-                {OBJECT},
                 {NATIVE},
         });
     }
@@ -53,5 +49,10 @@ public class HDEntryProcessorTest extends EntryProcessorTest {
 
         return getHDConfig()
                 .addMapConfig(mapConfig);
+    }
+
+    @Override
+    public void test_executeOnEntriesWithPredicate_runsOnBackup_whenIndexesAvailable() {
+        super.test_executeOnEntriesWithPredicate_runsOnBackup_whenIndexesAvailable();
     }
 }

@@ -35,7 +35,7 @@ public class MerkleTreeNodeCompareOperation extends MapOperation implements Read
     }
 
     @Override
-    public void run() throws Exception {
+    protected void runInternal() {
         int partitionId = getPartitionId();
         MerkleTree localMerkleTree = getMerkleTree(partitionId);
 

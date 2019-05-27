@@ -15,14 +15,8 @@ import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
 import com.hazelcast.map.impl.event.MapEventPublisherImpl;
 import com.hazelcast.map.impl.nearcache.EnterpriseMapNearCacheManager;
 import com.hazelcast.map.impl.nearcache.MapNearCacheManager;
-import com.hazelcast.map.impl.operation.EnterpriseMapOperationProviders;
 import com.hazelcast.map.impl.operation.EnterpriseMapPartitionClearOperation;
-import com.hazelcast.map.impl.operation.HDBasePutOperation;
-import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
-import com.hazelcast.map.impl.operation.HDGetOperation;
-import com.hazelcast.map.impl.operation.HDSetOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
-import com.hazelcast.map.impl.operation.MapOperationProviders;
 import com.hazelcast.map.impl.query.HDPartitionScanExecutor;
 import com.hazelcast.map.impl.query.HDPartitionScanRunner;
 import com.hazelcast.map.impl.query.PartitionScanExecutor;
@@ -38,7 +32,6 @@ import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStoreMutationObserver;
 import com.hazelcast.map.impl.wan.MerkleTreeUpdaterRecordStoreMutationObserver;
 import com.hazelcast.map.impl.wan.filter.MapFilterProvider;
-import com.hazelcast.monitor.impl.LocalMapStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -46,7 +39,6 @@ import com.hazelcast.query.impl.HDIndexProvider;
 import com.hazelcast.query.impl.IndexProvider;
 import com.hazelcast.query.impl.predicates.QueryOptimizer;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.PersistentConfigDescriptors;
@@ -107,11 +99,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
         this.hdMapQueryRunner = createHDMapQueryRunner(hdPartitionScanRunner, getQueryOptimizer(),
                 getResultProcessorRegistry());
         this.hdIndexProvider = new HDIndexProvider();
-    }
-
-    @Override
-    MapOperationProviders createOperationProviders() {
-        return new EnterpriseMapOperationProviders(this);
     }
 
     @Override
@@ -246,24 +233,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
                 currentThread().interrupt();
                 nodeEngine.getLogger(getClass()).warning(e);
             }
-        }
-    }
-
-    @Override
-    public void incrementOperationStats(long startTime, LocalMapStatsImpl localMapStats, String mapName, Operation operation) {
-        if (getInMemoryFormat(mapName) != NATIVE) {
-            super.incrementOperationStats(startTime, localMapStats, mapName, operation);
-            return;
-        }
-        final long durationNanos = System.nanoTime() - startTime;
-        if (operation instanceof HDSetOperation) {
-            localMapStats.incrementSetLatencyNanos(durationNanos);
-        } else if (operation instanceof HDBasePutOperation) {
-            localMapStats.incrementPutLatencyNanos(durationNanos);
-        } else if (operation instanceof HDBaseRemoveOperation) {
-            localMapStats.incrementRemoveLatencyNanos(durationNanos);
-        } else if (operation instanceof HDGetOperation) {
-            localMapStats.incrementGetLatencyNanos(durationNanos);
         }
     }
 

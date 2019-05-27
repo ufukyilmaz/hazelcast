@@ -33,7 +33,7 @@ public class MerkleTreeGetEntryCountOperation extends MapOperation implements Re
     }
 
     @Override
-    public void run() throws Exception {
+    protected void runInternal() {
         int partitionId = getPartitionId();
         EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) mapServiceContext
                 .getPartitionContainer(partitionId);

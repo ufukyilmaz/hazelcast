@@ -89,18 +89,13 @@ public class HDPutOperationTest extends AbstractHDMapOperationTest {
         return MAP_NAME;
     }
 
-    public class TestHDPutOperation extends HDPutOperation {
+    public class TestHDPutOperation extends PutOperation {
 
         public TestHDPutOperation() {
         }
 
         public TestHDPutOperation(String name, Data dataKey, Data value, long ttl) {
             super(name, dataKey, value, ttl, -1);
-        }
-
-        @Override
-        protected int getRetryCount() {
-            return HDMapOperation.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
         }
     }
 }

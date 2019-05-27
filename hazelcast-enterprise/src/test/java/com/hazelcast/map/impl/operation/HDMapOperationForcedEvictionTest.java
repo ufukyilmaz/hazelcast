@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.map.impl.operation.HDMapOperation.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
+import static com.hazelcast.map.impl.operation.WithForcedEviction.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
 import static java.util.Collections.singletonMap;
 import static org.mockito.AdditionalMatchers.geq;
 import static org.mockito.Matchers.eq;
@@ -174,7 +174,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             executeOperation(op, PARTITION_ID);
         } finally {
             verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(otherRecordStore, 0);
             verifyForcedEvictAll(recordStore, 1);
             verifyForcedEvictAll(otherRecordStore, 0);
             verifyForcedEviction(1, 0);
@@ -195,7 +195,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
             verifyForcedEvictAll(recordStore, 1);
             verifyForcedEvictAll(otherRecordStore, 1);
-            verifyForcedEviction(2, 1);
+            verifyForcedEviction(1, 1);
         }
     }
 
@@ -211,10 +211,10 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             executeOperation(op, PARTITION_ID);
         } finally {
             verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
+            verifyForcedEviction(otherRecordStore, 0);
             verifyForcedEvictAll(recordStore, 1);
             verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEviction(2, 0);
+            verifyForcedEviction(1, 0);
         }
     }
 
@@ -233,7 +233,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             verifyForcedEviction(otherRecordStore, 0);
             verifyForcedEvictAll(recordStore, 1);
             verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEviction(2, 0);
+            verifyForcedEviction(1, 0);
         }
     }
 
@@ -252,7 +252,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
             verifyForcedEvictAll(recordStore, 0);
             verifyForcedEvictAll(otherRecordStore, 1);
-            verifyForcedEviction(1, 1);
+            verifyForcedEviction(0, 1);
         }
     }
 
@@ -284,7 +284,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
         return recordStore;
     }
 
-    private class NativeOutOfMemoryOperation extends HDMapOperation {
+    private class NativeOutOfMemoryOperation extends MapOperation {
 
         private int throwExceptionCounter;
 
@@ -296,6 +296,9 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             super(MAP_NAME);
             this.throwExceptionCounter = throwExceptionCounter;
             this.createRecordStoreOnDemand = createRecordStoreOnDemand;
+            // we skip the normal afterRun() method, since it always triggers disposeDeferredBlocks(),
+            // but we want to use this as test if the NativeOutOfMemoryError was finally thrown or not
+            this.disposeDeferredBlocks = false;
         }
 
         @Override
@@ -303,17 +306,6 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
             if (throwExceptionCounter-- > 0) {
                 throw new NativeOutOfMemoryError("Expected NativeOutOfMemoryError");
             }
-        }
-
-        @Override
-        protected int getRetryCount() {
-            return HDMapOperation.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
-        }
-
-        @Override
-        public void afterRun() {
-            // we skip the normal afterRun() method, since it always triggers disposeDeferredBlocks(),
-            // but we want to use this as test if the NativeOutOfMemoryError was finally thrown or not
         }
 
         @Override

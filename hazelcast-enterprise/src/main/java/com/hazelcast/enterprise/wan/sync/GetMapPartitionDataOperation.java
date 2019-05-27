@@ -25,7 +25,7 @@ public class GetMapPartitionDataOperation extends MapOperation implements Readon
     }
 
     @Override
-    public void run() throws Exception {
+    protected void runInternal() {
         recordSet = SetUtil.createHashSet(recordStore.size());
         final Iterator<Record> iterator = recordStore.iterator();
         while (iterator.hasNext()) {

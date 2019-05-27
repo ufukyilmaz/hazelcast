@@ -45,6 +45,7 @@ public class HDEvictorImpl extends EvictorImpl {
         return ((HDStorageSCHM.LazyEntryViewFromRecord) selectedEntry).getRecord();
     }
 
+    @Override
     public void forceEvict(RecordStore recordStore) {
         if (recordStore.size() == 0) {
             return;

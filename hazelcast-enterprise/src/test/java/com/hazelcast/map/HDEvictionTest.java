@@ -10,6 +10,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.map.impl.operation.WithForcedEviction;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -28,7 +29,6 @@ import java.io.IOException;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionPolicy.LFU;
-import static com.hazelcast.map.impl.operation.HDMapOperation.FORCED_EVICTION_RETRY_COUNT;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
 import static java.lang.Math.max;
 import static java.lang.String.valueOf;
@@ -46,7 +46,7 @@ public class HDEvictionTest extends EvictionTest {
     @Override
     protected MapConfig newMapConfig(String mapName) {
         return super.newMapConfig(mapName)
-                    .setInMemoryFormat(InMemoryFormat.NATIVE);
+                .setInMemoryFormat(InMemoryFormat.NATIVE);
     }
 
     @Test
@@ -71,7 +71,8 @@ public class HDEvictionTest extends EvictionTest {
         String mapName = randomMapName();
 
         Config config = getConfig();
-        config.setProperty(FORCED_EVICTION_RETRY_COUNT.getName(), valueOf(forcedEvictionRetryCount));
+        config.setProperty(WithForcedEviction.PROP_FORCED_EVICTION_RETRY_COUNT,
+                valueOf(forcedEvictionRetryCount));
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "101");
 
         MapConfig mapConfig = config.getMapConfig(mapName);

@@ -4,7 +4,6 @@ import com.hazelcast.map.impl.event.MapEventPublishingService;
 import com.hazelcast.spi.ClientAwareService;
 import com.hazelcast.spi.EventPublishingService;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.RemoteService;
 import com.hazelcast.spi.ReplicationSupportingService;
 
 /**
@@ -35,12 +34,6 @@ class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
     EventPublishingService createEventPublishingService() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
         return new MapEventPublishingService(mapServiceContext);
-    }
-
-    @Override
-    RemoteService createRemoteService() {
-        EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
-        return new EnterpriseMapRemoteService(mapServiceContext);
     }
 
     private EnterpriseMapServiceContext getEnterpriseMapServiceContext() {

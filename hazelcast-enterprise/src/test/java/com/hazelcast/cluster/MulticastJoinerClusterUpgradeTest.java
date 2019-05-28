@@ -3,10 +3,12 @@ package com.hazelcast.cluster;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.annotation.SerializationSamplesExcluded;
 import com.hazelcast.version.MemberVersion;
 import org.junit.experimental.categories.Category;
+import org.junit.runners.Parameterized;
 
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static org.junit.Assert.assertEquals;
@@ -14,6 +16,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Creates a cluster configured with multicast joiner, then change cluster version.
  */
+@Parameterized.UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
 @Category({NightlyTest.class, SerializationSamplesExcluded.class})
 public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTest {
 

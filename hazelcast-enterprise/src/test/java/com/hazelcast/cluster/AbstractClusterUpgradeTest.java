@@ -8,7 +8,6 @@ import com.hazelcast.internal.cluster.ClusterVersionListener;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.util.LicenseHelper;
-import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
@@ -21,7 +20,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -41,7 +39,6 @@ import static org.junit.Assume.assumeNotNull;
  * This test uses artificial version numbers, to avoid dependence on any particular version.
  */
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @SuppressWarnings("WeakerAccess")
 public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
 

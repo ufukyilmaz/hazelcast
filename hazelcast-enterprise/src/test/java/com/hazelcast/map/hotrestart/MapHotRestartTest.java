@@ -11,7 +11,7 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.query.QueryConstants;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.spi.impl.proxyservice.InternalProxyService;
-import com.hazelcast.test.HazelcastParametersRunnerFactory;
+import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapHotRestartTest extends AbstractMapHotRestartTest {
 

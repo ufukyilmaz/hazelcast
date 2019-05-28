@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hotrestart;
 
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.test.HazelcastParametersRunnerFactory;
+import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
@@ -15,7 +15,7 @@ import java.util.Collection;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category({SlowTest.class, ParallelTest.class})
 public class CacheHotRestartExpirySlowTest extends CacheHotRestartExpiryTest {
 

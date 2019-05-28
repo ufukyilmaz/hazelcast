@@ -6,7 +6,7 @@ import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.internal.memory.impl.HeapMemoryManager;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.nio.Disposable;
-import com.hazelcast.test.HazelcastParametersRunnerFactory;
+import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -25,7 +25,7 @@ import static com.hazelcast.util.QuickMath.modPowerOfTwo;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MemoryAllocatorTest {
 

@@ -2,7 +2,7 @@ package com.hazelcast.nio;
 
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.nio.CipherHelper.SymmetricCipherBuilder;
-import com.hazelcast.test.HazelcastParametersRunnerFactory;
+import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -23,7 +23,7 @@ import static com.hazelcast.nio.CipherHelper.findKeyAlgorithm;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class SymmetricCipherBuilderTest {
 

@@ -664,11 +664,6 @@ public class EnterpriseCacheService
     @Override
     public boolean isWanReplicationEnabled(String cacheNameWithPrefix) {
         final CacheConfig config = getCacheConfig(cacheNameWithPrefix);
-        // config can be null due to "setupRef" special Cache -- to be removed in 4.0
-        // https://github.com/hazelcast/hazelcast/issues/11352
-        if (config == null) {
-            return false;
-        }
         final WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
         final WanReplicationService wanService = nodeEngine.getWanReplicationService();
 

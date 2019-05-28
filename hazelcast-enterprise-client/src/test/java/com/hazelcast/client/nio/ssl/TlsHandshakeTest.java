@@ -44,7 +44,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 
 /**
@@ -52,7 +52,7 @@ import com.hazelcast.test.annotation.QuickTest;
  */
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({ QuickTest.class, ParallelTest.class })
+@Category({ QuickTest.class, ParallelJVMTest.class })
 public class TlsHandshakeTest {
 
     private static final String KEYSTORE_SERVER = "server.keystore";

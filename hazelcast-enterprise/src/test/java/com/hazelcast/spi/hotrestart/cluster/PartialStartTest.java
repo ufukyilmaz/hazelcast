@@ -16,7 +16,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.partition.PartitionLostEvent;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.SlowTest;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -60,7 +60,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
-@Category({SlowTest.class, ParallelTest.class})
+@Category({SlowTest.class, ParallelJVMTest.class})
 public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
     private static final Map<Address, ClusterHotRestartEventListener> NO_LISTENERS = Collections.emptyMap();

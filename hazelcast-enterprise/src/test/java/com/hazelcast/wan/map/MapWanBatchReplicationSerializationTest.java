@@ -13,7 +13,7 @@ import com.hazelcast.internal.serialization.PortableHook;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.DynamicType;
@@ -29,7 +29,7 @@ import java.net.URLClassLoader;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTestSupport {
 
     private static void setUseDeleteWhenProcessingRemoveEvents(boolean value) {

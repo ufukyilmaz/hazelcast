@@ -8,7 +8,7 @@ import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.RequireAssertEnabled;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -22,7 +22,7 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class LongArrayTest {
 
     private static final int INITIAL_LEN = 32;

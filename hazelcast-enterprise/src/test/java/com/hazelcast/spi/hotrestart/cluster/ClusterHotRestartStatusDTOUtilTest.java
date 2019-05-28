@@ -9,7 +9,7 @@ import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.MemberHo
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.version.MemberVersion;
 import org.junit.Before;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class ClusterHotRestartStatusDTOUtilTest extends HazelcastTestSupport {
 
     private MemberImpl localMember;

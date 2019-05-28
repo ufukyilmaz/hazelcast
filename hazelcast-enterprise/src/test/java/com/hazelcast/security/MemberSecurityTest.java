@@ -14,7 +14,7 @@ import com.hazelcast.security.impl.DefaultLoginModule;
 import com.hazelcast.security.loginmodules.TestLoginModule;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 
 import org.junit.Rule;
@@ -31,7 +31,7 @@ import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESUL
 import static com.hazelcast.security.loginmodules.TestLoginModule.VALUE_ACTION_FAIL;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({ QuickTest.class, ParallelTest.class })
+@Category({ QuickTest.class, ParallelJVMTest.class })
 public class MemberSecurityTest extends HazelcastTestSupport {
 
     @Rule

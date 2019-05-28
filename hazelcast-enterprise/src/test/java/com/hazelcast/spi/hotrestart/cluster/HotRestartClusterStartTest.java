@@ -15,7 +15,7 @@ import com.hazelcast.partition.IndeterminateOperationStateExceptionTest.PrimaryO
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Assume;
 import org.junit.Test;
@@ -44,7 +44,7 @@ import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTest {
 
     @Parameters(name = "reuseAddress:{0}")

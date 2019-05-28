@@ -3,7 +3,7 @@ package com.hazelcast.memory;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.test.HazelcastParallelClassRunner;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -24,7 +24,7 @@ import static com.hazelcast.memory.ThreadLocalPoolingMemoryManager.markAsExterna
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastParallelClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class ThreadLocalMgrPointerValidationTest {
 
     private static final int BLOCK_OVERHEAD_WITH_OFFSET_STORED = MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;

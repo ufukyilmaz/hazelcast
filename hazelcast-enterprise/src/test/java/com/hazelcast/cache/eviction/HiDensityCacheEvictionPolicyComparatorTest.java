@@ -13,7 +13,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.QuickMath;
 import org.junit.Test;
@@ -24,7 +24,7 @@ import javax.cache.spi.CachingProvider;
 import java.util.concurrent.ConcurrentMap;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvictionPolicyComparatorTest {
 
     private static final MemorySize MEMORY_SIZE = new MemorySize(4, MemoryUnit.MEGABYTES);

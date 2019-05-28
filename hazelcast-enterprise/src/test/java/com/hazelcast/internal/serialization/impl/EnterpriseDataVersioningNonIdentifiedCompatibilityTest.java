@@ -10,7 +10,7 @@ import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.test.HazelcastParallelClassRunner;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.version.Version;
 import org.junit.Rule;
@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
  * - if the versioned serialization works between old-new & new-new serializers (when class annotated with @versioned or not)
  */
 @RunWith(HazelcastParallelClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
     private static final Version V3_8 = Version.of(3, 8);

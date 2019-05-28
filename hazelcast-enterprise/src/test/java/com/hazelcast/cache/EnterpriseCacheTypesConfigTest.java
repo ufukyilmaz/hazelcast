@@ -18,7 +18,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.CountingWanEndpoint;
 import org.junit.Rule;
@@ -33,7 +33,7 @@ import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_R
  * Test transfer of CacheConfig's with typed Caches along with EE features (HotRestart, WAN replication)
  */
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
 
     @Rule

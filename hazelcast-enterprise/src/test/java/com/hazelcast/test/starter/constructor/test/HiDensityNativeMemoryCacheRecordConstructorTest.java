@@ -4,7 +4,7 @@ import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCach
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.test.HazelcastParallelClassRunner;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.starter.constructor.HiDensityNativeMemoryCacheRecordConstructor;
 import org.junit.After;
@@ -16,7 +16,7 @@ import org.junit.runner.RunWith;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastParallelClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class HiDensityNativeMemoryCacheRecordConstructorTest {
 
     private static final LibMalloc MALLOC = new UnsafeMalloc();

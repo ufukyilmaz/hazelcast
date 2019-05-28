@@ -7,7 +7,7 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.version.MemberVersion;
 import org.junit.Before;
@@ -40,7 +40,7 @@ import static com.hazelcast.test.TestClusterUpgradeUtils.upgradeClusterMembers;
  * Keep this test as serial.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class ClusterVersionAutoUpgradeTest extends HazelcastTestSupport {
 
     private HazelcastInstance[] clusterMembers;

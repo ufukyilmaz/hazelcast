@@ -9,7 +9,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.custom.CustomWanConsumer;
 import com.hazelcast.wan.custom.CustomWanPublisher;
@@ -18,7 +18,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class MapCustomWanReplicationQuickTest extends MapWanReplicationTestSupport {
 
     private static final String CUSTOM_PUBLISHER = CustomWanPublisher.class.getName();

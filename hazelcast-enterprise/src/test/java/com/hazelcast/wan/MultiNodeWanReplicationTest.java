@@ -13,7 +13,7 @@ import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.map.MapWanReplicationTestSupport;
 import org.junit.Test;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertFalse;
  */
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
 
     private static final String MAP_NAME = "ZD1995";

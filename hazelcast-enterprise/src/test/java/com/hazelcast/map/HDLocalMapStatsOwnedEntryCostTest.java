@@ -7,7 +7,7 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceV
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.monitor.LocalMapStats;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -18,7 +18,7 @@ import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class HDLocalMapStatsOwnedEntryCostTest extends HazelcastTestSupport {
 
     // NOTE: all sizes below are as expected from the POOLED memory allocator

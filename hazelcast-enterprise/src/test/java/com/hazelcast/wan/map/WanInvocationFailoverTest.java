@@ -3,7 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
@@ -22,7 +22,7 @@ import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
 import static com.hazelcast.wan.map.MapWanBatchReplicationTest.isAllMembersConnected;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class WanInvocationFailoverTest {
 
     private static final String MAP_NAME = "map";

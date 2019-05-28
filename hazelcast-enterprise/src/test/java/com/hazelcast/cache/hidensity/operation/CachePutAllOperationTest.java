@@ -3,7 +3,7 @@ package com.hazelcast.cache.hidensity.operation;
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.cache.hidensity.operation.AbstractHDCacheOperationTest.OperationType.PUT_ALL;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class CachePutAllOperationTest extends AbstractHDCacheOperationTest {
 
     private static final String CACHE_NAME = "CachePutAllOperationTest";

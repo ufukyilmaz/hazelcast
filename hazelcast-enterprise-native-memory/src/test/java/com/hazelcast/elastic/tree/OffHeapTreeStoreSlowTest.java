@@ -9,7 +9,7 @@ import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Random;
 
 @RunWith(HazelcastSerialClassRunner.class)
-@Category({NightlyTest.class, ParallelTest.class})
+@Category({NightlyTest.class, ParallelJVMTest.class})
 public class OffHeapTreeStoreSlowTest extends OffHeapTreeTestSupport {
 
     @Test

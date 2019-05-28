@@ -9,7 +9,7 @@ import com.hazelcast.internal.diagnostics.DiagnosticsLogWriterImpl;
 import com.hazelcast.internal.diagnostics.WANPlugin;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,7 +20,7 @@ import java.io.CharArrayWriter;
 import java.io.PrintWriter;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class WANPluginTest extends MapWanReplicationTestSupport {
 
     private static final int EVENT_COUNTER = 1000;

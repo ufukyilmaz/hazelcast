@@ -8,7 +8,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastSerialClassRunner;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.version.MemberVersion;
 import org.hamcrest.Matchers;
@@ -29,7 +29,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeNotNull;
 
 @RunWith(HazelcastSerialClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStartTest {
 
     private static final MemberVersion MEMBER_VERSION;

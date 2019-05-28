@@ -19,7 +19,7 @@ import com.hazelcast.query.Predicate;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.merkletree.MerkleTree;
 import org.junit.Before;
@@ -47,7 +47,7 @@ import static org.junit.Assert.assertNotEquals;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     private static final String MAP_NAME = "mapWithMerkleTree";
     private static final int INSTANCE_COUNT = 1;

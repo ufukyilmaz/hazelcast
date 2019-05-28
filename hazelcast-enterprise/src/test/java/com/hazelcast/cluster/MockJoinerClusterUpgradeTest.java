@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.SerializationSamplesExcluded;
 import com.hazelcast.version.MemberVersion;
@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
  * Creates a cluster, then change cluster version.
  */
 @Parameterized.UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
-@Category({QuickTest.class, SerializationSamplesExcluded.class, ParallelTest.class})
+@Category({QuickTest.class, SerializationSamplesExcluded.class, ParallelJVMTest.class})
 public class MockJoinerClusterUpgradeTest extends AbstractClusterUpgradeTest {
 
     private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(10);

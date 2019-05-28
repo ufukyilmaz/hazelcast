@@ -19,7 +19,7 @@ import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.DiscoveryStrategy;
 import com.hazelcast.spi.discovery.DiscoveryStrategyFactory;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.executor.ManagedExecutorService;
 import org.junit.Before;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
  * configuration.
  */
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class WanMisconfigurationTest extends HazelcastTestSupport {
     private String wanReplicationName;
     private CountingDiscoveryStrategyFactory discoveryStrategyFactory;

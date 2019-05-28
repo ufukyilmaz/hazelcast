@@ -17,7 +17,7 @@ import com.hazelcast.nio.Packet;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
@@ -44,7 +44,7 @@ import static org.junit.Assume.assumeTrue;
  * EnterpriseNodeExtension.validateJoinRequest(joinMessage).
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
 
     private int buildNumber;

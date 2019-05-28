@@ -10,7 +10,7 @@ import com.hazelcast.spi.merge.PutIfAbsentMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.RootCauseMatcher;
 import org.junit.After;
@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
  * Tests for {@link com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider}.
  */
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class CacheMergePolicyProviderTest extends HazelcastTestSupport {
 
     @Rule

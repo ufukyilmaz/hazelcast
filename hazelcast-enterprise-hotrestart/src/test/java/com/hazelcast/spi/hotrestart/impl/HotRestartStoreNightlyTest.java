@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart.impl;
 import com.hazelcast.spi.hotrestart.impl.testsupport.TestProfile;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -19,7 +19,7 @@ import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.c
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 
 @RunWith(HazelcastSerialClassRunner.class)
-@Category({NightlyTest.class, ParallelTest.class})
+@Category({NightlyTest.class, ParallelJVMTest.class})
 public class HotRestartStoreNightlyTest {
 
     @Rule

@@ -5,7 +5,7 @@ import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.NightlyTest;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,7 +23,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertNull;
 
 @RunWith(HazelcastSerialClassRunner.class)
-@Category({NightlyTest.class, ParallelTest.class})
+@Category({NightlyTest.class, ParallelJVMTest.class})
 public class GlobalPoolingMemoryManagerStressTest extends HazelcastTestSupport {
 
     private GlobalPoolingMemoryManager globalPoolingMemoryManager;

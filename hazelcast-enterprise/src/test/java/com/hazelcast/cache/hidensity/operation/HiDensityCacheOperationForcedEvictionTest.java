@@ -3,7 +3,7 @@ package com.hazelcast.cache.hidensity.operation;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -16,7 +16,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class HiDensityCacheOperationForcedEvictionTest extends AbstractHDCacheOperationTest {
 
     private static final String CACHE_NAME = "HiDensityCacheOperationForcedEvictionTest";

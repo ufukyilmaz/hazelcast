@@ -1,7 +1,7 @@
 package com.hazelcast.cache;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -13,7 +13,7 @@ import org.junit.runners.Parameterized;
 
 @Ignore
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HiDensityCachePartitionIteratorMigrationTest extends CachePartitionIteratorMigrationTest {
 

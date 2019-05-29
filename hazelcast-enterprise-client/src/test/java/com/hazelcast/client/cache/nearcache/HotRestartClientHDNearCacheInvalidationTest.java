@@ -10,7 +10,7 @@ import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
@@ -33,7 +33,7 @@ import static java.util.Arrays.asList;
  * with hot restart enabled.
  */
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(NightlyTest.class)
 public class HotRestartClientHDNearCacheInvalidationTest extends ClientCacheNearCacheInvalidationTest {
 

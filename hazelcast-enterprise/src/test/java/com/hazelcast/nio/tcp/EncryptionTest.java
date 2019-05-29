@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -22,7 +22,7 @@ import static org.junit.Assert.assertEquals;
  * Nightly basic symmetric encryption tests.
  */
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(NightlyTest.class)
 public class EncryptionTest extends AbstractSymmetricEncryptionTestBase {
 

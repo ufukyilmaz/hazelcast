@@ -7,7 +7,7 @@ import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -41,7 +41,7 @@ import static org.junit.Assert.assertFalse;
  * See https://hazelcast.zendesk.com/agent/tickets/4195
  */
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
 

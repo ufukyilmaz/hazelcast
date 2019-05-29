@@ -9,7 +9,7 @@ import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -32,7 +32,7 @@ import static java.util.Arrays.asList;
  * Tests publishing of Near Cache invalidation events, when the cache is configured with NATIVE in-memory format.
  */
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({SlowTest.class, ParallelJVMTest.class})
 public class ClientHDCacheNearCacheInvalidationTest extends ClientCacheNearCacheInvalidationTest {
 

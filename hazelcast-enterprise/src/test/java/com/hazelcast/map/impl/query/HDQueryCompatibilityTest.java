@@ -6,7 +6,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.query.Predicates;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -35,7 +35,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(CompatibilityTest.class)
 public class HDQueryCompatibilityTest {
 

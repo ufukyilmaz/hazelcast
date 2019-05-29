@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MergePolicyConfig;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.merge.DiscardMergePolicy;
@@ -41,7 +41,7 @@ import static java.util.Arrays.asList;
  * tested with a data structure, which is only created in the smaller cluster.
  */
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDMapSplitBrainTest extends MapSplitBrainTest {
 

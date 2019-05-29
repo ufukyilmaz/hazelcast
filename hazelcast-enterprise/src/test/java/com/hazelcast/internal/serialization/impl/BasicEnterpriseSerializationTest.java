@@ -1,6 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class BasicEnterpriseSerializationTest extends AbstractSerializationServiceTest {
 

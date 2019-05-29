@@ -2,7 +2,7 @@ package com.hazelcast.elastic.map;
 
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.elastic.SlottableIterator;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(QuickTest.class)
 public class BinaryElasticHashMapTest {
 

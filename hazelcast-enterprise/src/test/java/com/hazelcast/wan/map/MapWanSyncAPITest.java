@@ -3,7 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.MerkleTreeWanSyncStats;
 import com.hazelcast.enterprise.wan.sync.SyncFailedException;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -55,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class MapWanSyncAPITest {
 

@@ -3,7 +3,7 @@ package com.hazelcast.nio.tcp;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigAccessor;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -21,8 +21,8 @@ import static org.junit.Assert.fail;
  * Quick symmetric encryption tests.
  */
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({ QuickTest.class })
+@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
+@Category(QuickTest.class)
 public class SymmetricEncryptionSmokeTest extends AbstractSymmetricEncryptionTestBase {
 
     @Parameterized.Parameters(name = "advancedNetworking:{0}")

@@ -1,10 +1,17 @@
 package com.hazelcast.client.enterprise;
 
-import static com.hazelcast.client.impl.clientside.ClientTestUtil.getHazelcastClientInstanceImpl;
-import static java.util.Arrays.asList;
-
-import java.util.Set;
-
+import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.impl.clientside.HazelcastClientInstanceImpl;
+import com.hazelcast.client.test.TestHazelcastFactory;
+import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.ParallelJVMTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -17,21 +24,13 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.client.impl.clientside.HazelcastClientInstanceImpl;
-import com.hazelcast.client.test.TestHazelcastFactory;
-import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.ParallelJVMTest;
-import com.hazelcast.test.annotation.QuickTest;
+import java.util.Set;
+
+import static com.hazelcast.client.impl.clientside.ClientTestUtil.getHazelcastClientInstanceImpl;
+import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
 

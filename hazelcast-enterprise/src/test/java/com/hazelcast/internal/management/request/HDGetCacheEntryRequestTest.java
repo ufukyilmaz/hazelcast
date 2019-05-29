@@ -3,7 +3,7 @@ package com.hazelcast.internal.management.request;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.management.GetCacheEntryRequestTest;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -18,7 +18,7 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDGetCacheEntryRequestTest extends GetCacheEntryRequestTest {
     @Parameterized.Parameters(name = "inMemoryFormat:{0}")

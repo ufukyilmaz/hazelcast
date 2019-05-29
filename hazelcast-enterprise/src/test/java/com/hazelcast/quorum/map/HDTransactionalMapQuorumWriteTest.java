@@ -1,6 +1,6 @@
 package com.hazelcast.quorum.map;
 
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
@@ -12,7 +12,7 @@ import org.junit.runners.Parameterized;
 import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(QuickTest.class)
 public class HDTransactionalMapQuorumWriteTest extends TransactionalMapQuorumWriteTest {
 

@@ -1,7 +1,7 @@
 package com.hazelcast.cache.merge;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
@@ -21,7 +21,7 @@ import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 @SuppressWarnings("WeakerAccess")
 public class HDCacheEventListenerSplitBrainTest extends CacheEventListenerSplitBrainTest {

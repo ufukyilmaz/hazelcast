@@ -6,7 +6,7 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -46,7 +46,7 @@ import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(QuickTest.class)
 public class WanCounterMigrationTest {
     private static final String MAP_NAME = "map";

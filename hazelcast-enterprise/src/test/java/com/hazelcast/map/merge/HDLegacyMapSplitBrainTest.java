@@ -2,7 +2,7 @@ package com.hazelcast.map.merge;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MergePolicyConfig;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
@@ -19,7 +19,7 @@ import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDLegacyMapSplitBrainTest extends LegacyMapSplitBrainTest {
 

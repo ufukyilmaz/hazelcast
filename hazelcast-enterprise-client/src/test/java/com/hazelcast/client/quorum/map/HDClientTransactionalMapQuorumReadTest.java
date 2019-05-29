@@ -2,7 +2,7 @@ package com.hazelcast.client.quorum.map;
 
 import com.hazelcast.client.quorum.PartitionedClusterClients;
 import com.hazelcast.client.test.TestHazelcastFactory;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.transaction.TransactionContext;
 import org.junit.AfterClass;
@@ -14,7 +14,7 @@ import org.junit.runners.Parameterized;
 import static com.hazelcast.HDTestSupport.getHDConfig;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category({QuickTest.class})
 public class HDClientTransactionalMapQuorumReadTest extends ClientTransactionalMapQuorumReadTest {
 

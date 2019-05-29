@@ -1,25 +1,19 @@
 package com.hazelcast.client.nio.ssl;
 
-import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
-import static com.hazelcast.nio.IOUtil.closeResource;
-import static com.hazelcast.nio.IOUtil.copy;
-import static com.hazelcast.nio.IOUtil.toByteArray;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
-import static com.hazelcast.test.HazelcastTestSupport.getAddress;
-import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.Socket;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-
-import javax.net.SocketFactory;
-
+import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.config.ClientNetworkConfig;
+import com.hazelcast.client.test.TestAwareClientFactory;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.config.SSLConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
+import com.hazelcast.nio.IOUtil;
+import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
+import com.hazelcast.test.annotation.ParallelJVMTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,26 +26,30 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.client.config.ClientNetworkConfig;
-import com.hazelcast.client.test.TestAwareClientFactory;
-import com.hazelcast.config.Config;
-import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.config.SSLConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.logging.Logger;
-import com.hazelcast.nio.IOUtil;
-import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
-import com.hazelcast.test.annotation.ParallelJVMTest;
-import com.hazelcast.test.annotation.QuickTest;
+import javax.net.SocketFactory;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.Socket;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+
+import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
+import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.nio.IOUtil.copy;
+import static com.hazelcast.nio.IOUtil.toByteArray;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static com.hazelcast.test.HazelcastTestSupport.getAddress;
+import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests if simultaneous TLS handshakes don't block IO.
  */
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({ QuickTest.class, ParallelJVMTest.class })
 public class TlsHandshakeTest {
 

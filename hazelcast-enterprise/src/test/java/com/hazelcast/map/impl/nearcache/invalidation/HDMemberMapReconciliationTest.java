@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.nearcache.invalidation;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.nearcache.NearCacheRecordStore;
 import com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector;
 import com.hazelcast.internal.nearcache.impl.nativememory.NativeMemoryNearCacheRecordStore;
@@ -23,7 +23,7 @@ import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDMemberMapReconciliationTest extends MemberMapReconciliationTest {
 

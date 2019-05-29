@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
@@ -28,7 +28,7 @@ import static com.hazelcast.instance.EndpointQualifier.MEMBER;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(QuickTest.class)
 public class SocketInterceptorTest extends HazelcastTestSupport {
 

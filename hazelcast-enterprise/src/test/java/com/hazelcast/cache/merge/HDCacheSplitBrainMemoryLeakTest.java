@@ -5,7 +5,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -30,13 +30,12 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
-import static com.hazelcast.instance.TestUtil.getHazelcastInstanceImpl;
 import static com.hazelcast.memory.MemorySize.toPrettyString;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDCacheSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
 

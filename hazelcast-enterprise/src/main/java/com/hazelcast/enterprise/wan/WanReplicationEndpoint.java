@@ -5,8 +5,8 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.instance.Node;
 import com.hazelcast.monitor.LocalWanPublisherStats;
-import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ServiceNamespace;
+import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 

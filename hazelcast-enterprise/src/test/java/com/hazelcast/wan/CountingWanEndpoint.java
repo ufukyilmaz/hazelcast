@@ -11,8 +11,8 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ServiceNamespace;
+import com.hazelcast.spi.partition.PartitionReplicationEvent;
 
 import java.util.Collection;
 import java.util.Set;

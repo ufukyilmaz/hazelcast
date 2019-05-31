@@ -9,8 +9,8 @@ import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.instance.Node;
 import com.hazelcast.monitor.LocalWanPublisherStats;
-import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ServiceNamespace;
+import com.hazelcast.spi.partition.PartitionReplicationEvent;
 
 import java.util.Collection;
 import java.util.Set;

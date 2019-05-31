@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.sync;
 
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.spi.AbstractLocalOperation;
+import com.hazelcast.spi.impl.operationservice.AbstractLocalOperation;
 
 /**
  * Operation to start coordination of WAN anti-entropy event publication on

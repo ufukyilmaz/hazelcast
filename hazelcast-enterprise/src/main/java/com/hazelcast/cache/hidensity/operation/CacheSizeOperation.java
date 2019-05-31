@@ -1,6 +1,6 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.spi.ReadonlyOperation;
+import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
 
 /**
  * Calculates the entry size of this store which reflects the partition size of the cache.

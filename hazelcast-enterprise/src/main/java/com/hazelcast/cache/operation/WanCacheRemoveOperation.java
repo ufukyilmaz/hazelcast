@@ -2,11 +2,11 @@ package com.hazelcast.cache.operation;
 
 import com.hazelcast.cache.impl.operation.CacheRemoveBackupOperation;
 import com.hazelcast.cache.impl.operation.MutatingCacheOperation;
+import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.wan.impl.CallerProvenance;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.Operation;
 
 import java.io.IOException;
 

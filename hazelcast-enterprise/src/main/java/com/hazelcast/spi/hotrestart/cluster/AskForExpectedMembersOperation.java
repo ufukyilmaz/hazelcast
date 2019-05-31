@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
-import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
+import com.hazelcast.spi.impl.operationservice.Operation;
 
 /**
  * Checks the master if this member is excluded in the final cluster start result,

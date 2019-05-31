@@ -6,8 +6,8 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.internal.management.operation.UpdatePermissionConfigOperation;
 import com.hazelcast.security.SecurityService;
 import com.hazelcast.spi.CoreService;
-import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PreJoinAwareService;
+import com.hazelcast.spi.impl.operationservice.Operation;
 
 import java.util.HashSet;
 import java.util.Set;

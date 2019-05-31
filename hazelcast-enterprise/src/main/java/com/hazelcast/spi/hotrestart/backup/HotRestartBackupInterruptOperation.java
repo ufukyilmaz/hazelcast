@@ -1,9 +1,9 @@
 package com.hazelcast.spi.hotrestart.backup;
 
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
+import com.hazelcast.spi.impl.operationservice.Operation;
 
 /**
  * Operation for interruption of the member hot restart backup task.

@@ -6,8 +6,8 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.LiveOperations;
 import com.hazelcast.spi.LiveOperationsTracker;
-import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.wan.WanReplicationEvent;
 

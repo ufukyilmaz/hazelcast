@@ -5,8 +5,8 @@ import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
+import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 
 import java.util.Set;

@@ -4,7 +4,7 @@ import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.spi.ReadonlyOperation;
+import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
 import com.hazelcast.util.SetUtil;
 
 import java.util.Iterator;

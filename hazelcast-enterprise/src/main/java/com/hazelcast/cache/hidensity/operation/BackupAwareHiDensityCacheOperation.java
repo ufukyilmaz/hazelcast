@@ -1,6 +1,7 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.spi.BackupAwareOperation;
+
+import com.hazelcast.spi.impl.operationservice.BackupAwareOperation;
 
 abstract class BackupAwareHiDensityCacheOperation extends HiDensityCacheOperation
         implements BackupAwareOperation {

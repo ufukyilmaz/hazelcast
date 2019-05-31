@@ -7,7 +7,7 @@ import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.WanSyncStateImpl;
-import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.internal.util.collection.InflatableSet;

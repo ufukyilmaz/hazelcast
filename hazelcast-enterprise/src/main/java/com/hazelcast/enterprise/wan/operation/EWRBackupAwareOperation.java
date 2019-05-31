@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan.operation;
 
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.spi.BackupAwareOperation;
+import com.hazelcast.spi.impl.operationservice.BackupAwareOperation;
 
 import java.io.IOException;
 

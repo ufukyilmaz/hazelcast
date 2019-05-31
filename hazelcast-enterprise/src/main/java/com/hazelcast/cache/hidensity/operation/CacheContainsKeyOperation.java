@@ -2,7 +2,7 @@ package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.ReadonlyOperation;
+import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
 
 /**
  * Determines if this store contains an entry for the specified key.

@@ -4,7 +4,7 @@ import com.hazelcast.enterprise.wan.operation.MerkleTreeNodeValueComparison;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.spi.ReadonlyOperation;
+import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
 import com.hazelcast.wan.merkletree.MerkleTree;
 import com.hazelcast.wan.merkletree.MerkleTreeUtil;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;

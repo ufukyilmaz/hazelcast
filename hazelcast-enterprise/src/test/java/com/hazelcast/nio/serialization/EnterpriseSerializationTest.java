@@ -23,7 +23,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.SerializationConcurrencyTest.Person;
-import com.hazelcast.spi.OperationAccessor;
+import com.hazelcast.spi.impl.operationservice.OperationAccessor;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.version.MemberVersion;

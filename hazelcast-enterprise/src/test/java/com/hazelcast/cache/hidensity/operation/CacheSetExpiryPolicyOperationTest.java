@@ -3,7 +3,7 @@ package com.hazelcast.cache.hidensity.operation;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -62,7 +62,7 @@ public class CacheSetExpiryPolicyOperationTest extends AbstractHDCacheOperationT
         Data dataKey = mock(HeapData.class);
         Data dataEP = mock(HeapData.class);
 
-        List<Operation> backupOperations = new ArrayList<Operation>(ENTRY_COUNT);
+        List<Operation> backupOperations = new ArrayList<>(ENTRY_COUNT);
         for (int i = 0; i < ENTRY_COUNT; i++) {
             CacheSetExpiryPolicyOperation operation = new CacheSetExpiryPolicyOperation(CACHE_NAME, Collections.singletonList(dataKey), dataEP);
             executeOperation(operation, PARTITION_ID);

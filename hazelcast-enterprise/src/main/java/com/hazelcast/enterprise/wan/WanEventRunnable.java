@@ -3,8 +3,8 @@ package com.hazelcast.enterprise.wan;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.Set;

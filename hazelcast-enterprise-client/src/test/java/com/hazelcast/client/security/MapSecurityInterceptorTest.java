@@ -3,7 +3,6 @@ package com.hazelcast.client.security;
 import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.MapInterceptor;
 import com.hazelcast.map.impl.MapService;
@@ -634,7 +633,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
         }
 
         @Override
-        public EntryBackupProcessor getBackupProcessor() {
+        public EntryProcessor getBackupProcessor() {
             return null;
         }
 

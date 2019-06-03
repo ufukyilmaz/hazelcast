@@ -341,26 +341,30 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         }
     }
 
-    private static class AdderEntryProcessor extends AbstractEntryProcessor<Integer, byte[]> {
+    private static class AdderEntryProcessor implements EntryProcessor<Integer, byte[], Integer> {
 
         private final byte[] value;
 
         AdderEntryProcessor(byte[] value) {
-            super(false);
             this.value = value;
         }
 
         @Override
-        public Object process(Map.Entry<Integer, byte[]> entry) {
+        public EntryProcessor<Integer, byte[], Integer> getBackupProcessor() {
+            return null;
+        }
+
+        @Override
+        public Integer process(Map.Entry<Integer, byte[]> entry) {
             entry.setValue(value);
             return entry.getKey();
         }
     }
 
-    private static class RemoverEntryProcessor extends AbstractEntryProcessor<Integer, byte[]> {
+    private static class RemoverEntryProcessor implements EntryProcessor<Integer, byte[], Boolean> {
 
         @Override
-        public Object process(Map.Entry<Integer, byte[]> entry) {
+        public Boolean process(Map.Entry<Integer, byte[]> entry) {
             entry.setValue(null);
             return Boolean.TRUE;
         }

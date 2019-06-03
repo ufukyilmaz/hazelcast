@@ -16,7 +16,6 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
 import com.hazelcast.query.Predicate;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -65,7 +64,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
                 {InMemoryFormat.BINARY},
                 {InMemoryFormat.OBJECT},
                 {InMemoryFormat.NATIVE},
-                });
+        });
     }
 
     @Before
@@ -385,13 +384,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
         final int rootHashBeforeReplace = rootHash();
-        map.executeOnKey("42", new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue("42x");
-                return null;
-            }
-        });
+        map.executeOnKey("42",
+                entry -> {
+                    entry.setValue("42x");
+                    return null;
+                });
         assertNotEquals(0, rootHash());
         assertNotEquals(rootHashBeforeReplace, rootHash());
     }
@@ -400,13 +397,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     public void executeOnKeyRemoveUpdatesMerkleTree() {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
-        map.executeOnKey("42", new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue(null);
-                return null;
-            }
-        });
+        map.executeOnKey("42",
+                entry -> {
+                    entry.setValue(null);
+                    return null;
+                });
         assertEquals(0, rootHash());
     }
 
@@ -415,13 +410,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
         final int rootHashBeforeReplace = rootHash();
-        map.executeOnKeys(Sets.newSet("42"), new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue("42x");
-                return null;
-            }
-        });
+        map.executeOnKeys(Sets.newSet("42"),
+                entry -> {
+                    entry.setValue("42x");
+                    return null;
+                });
         assertNotEquals(0, rootHash());
         assertNotEquals(rootHashBeforeReplace, rootHash());
     }
@@ -430,13 +423,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     public void executeOnKeysRemoveUpdatesMerkleTree() {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
-        map.executeOnKeys(Sets.newSet("42"), new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue(null);
-                return null;
-            }
-        });
+        map.executeOnKeys(Sets.newSet("42"),
+                entry -> {
+                    entry.setValue(null);
+                    return null;
+                });
         assertEquals(0, rootHash());
     }
 
@@ -445,13 +436,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
         final int rootHashBeforeReplace = rootHash();
-        ICompletableFuture future = map.submitToKey("42", new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue("42x");
-                return null;
-            }
-        });
+        ICompletableFuture future = map.submitToKey("42",
+                entry -> {
+                    entry.setValue("42x");
+                    return null;
+                });
         future.get();
         assertNotEquals(0, rootHash());
         assertNotEquals(rootHashBeforeReplace, rootHash());
@@ -463,13 +452,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         assertNotEquals(0, rootHash());
         final int rootHashBeforeReplace = rootHash();
         AwaitableExecutionCallback callback = new AwaitableExecutionCallback();
-        map.submitToKey("42", new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue("42x");
-                return null;
-            }
-        }, callback);
+        map.submitToKey("42",
+                entry -> {
+                    entry.setValue("42x");
+                    return null;
+                }, callback);
 
         callback.await();
         assertNotEquals(0, rootHash());
@@ -480,13 +467,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     public void submitToKeyRemoveUpdatesMerkleTree() throws Exception {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
-        ICompletableFuture future = map.submitToKey("42", new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue(null);
-                return null;
-            }
-        });
+        ICompletableFuture future = map.submitToKey("42",
+                entry -> {
+                    entry.setValue(null);
+                    return null;
+                });
         future.get();
         assertEquals(0, rootHash());
     }
@@ -496,13 +481,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
         AwaitableExecutionCallback callback = new AwaitableExecutionCallback();
-        map.submitToKey("42", new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue(null);
-                return null;
-            }
-        }, callback);
+        map.submitToKey("42",
+                entry -> {
+                    entry.setValue(null);
+                    return null;
+                }, callback);
 
         callback.await();
         assertEquals(0, rootHash());
@@ -513,13 +496,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
         int rootHashBeforeReplace = rootHash();
-        map.executeOnEntries(new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue("42x");
-                return null;
-            }
-        });
+        map.executeOnEntries(
+                entry -> {
+                    entry.setValue("42x");
+                    return null;
+                });
 
         assertNotEquals(rootHashBeforeReplace, rootHash());
         assertNotEquals(0, rootHash());
@@ -529,13 +510,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     public void executeOnEntriesRemoveUpdatesMerkleTree() {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
-        map.executeOnEntries(new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue(null);
-                return null;
-            }
-        });
+        map.executeOnEntries(
+                entry -> {
+                    entry.setValue(null);
+                    return null;
+                });
 
         assertEquals(0, rootHash());
     }
@@ -545,18 +524,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
         int rootHashBeforeReplace = rootHash();
-        map.executeOnEntries(new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue("42x");
-                return null;
-            }
-        }, new Predicate() {
-            @Override
-            public boolean apply(Map.Entry mapEntry) {
-                return mapEntry.getKey().equals("42");
-            }
-        });
+        map.executeOnEntries(
+                entry -> {
+                    entry.setValue("42x");
+                    return null;
+                }, (Predicate) mapEntry -> mapEntry.getKey().equals("42"));
 
         assertNotEquals(rootHashBeforeReplace, rootHash());
         assertNotEquals(0, rootHash());
@@ -566,18 +538,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     public void executeOnEntriesWithPredicateRemoveUpdatesMerkleTree() {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
-        map.executeOnEntries(new AbstractEntryProcessor<String, String>() {
-            @Override
-            public Object process(Map.Entry<String, String> entry) {
-                entry.setValue(null);
-                return null;
-            }
-        }, new Predicate() {
-            @Override
-            public boolean apply(Map.Entry mapEntry) {
-                return mapEntry.getKey().equals("42");
-            }
-        });
+        map.executeOnEntries(
+                entry -> {
+                    entry.setValue(null);
+                    return null;
+                }, (Predicate) mapEntry -> mapEntry.getKey().equals("42"));
 
         assertEquals(0, rootHash());
     }
@@ -644,12 +609,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     }
 
     private void waitForRecordLoaded() {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertEquals("42x", map.get("42"));
-            }
-        });
+        assertTrueEventually(() -> assertEquals("42x", map.get("42")));
     }
 
     @Test
@@ -719,7 +679,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
 
     private static class BasicMapStore implements MapStore<String, String> {
 
-        private ConcurrentMap<String, String> records = new ConcurrentHashMap<String, String>();
+        private ConcurrentMap<String, String> records = new ConcurrentHashMap<>();
 
         private BasicMapStore() {
         }
@@ -735,7 +695,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
 
         @Override
         public Map<String, String> loadAll(Collection<String> keys) {
-            Map<String, String> loadedRecords = new HashMap<String, String>();
+            Map<String, String> loadedRecords = new HashMap<>();
             for (Map.Entry<String, String> entry : records.entrySet()) {
                 if (keys.contains(entry.getKey())) {
                     loadedRecords.put(entry.getKey(), entry.getValue());
@@ -746,7 +706,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
 
         @Override
         public Iterable<String> loadAllKeys() {
-            HashSet<String> keys = new HashSet<String>();
+            HashSet<String> keys = new HashSet<>();
             keys.addAll(records.keySet());
             return keys;
         }

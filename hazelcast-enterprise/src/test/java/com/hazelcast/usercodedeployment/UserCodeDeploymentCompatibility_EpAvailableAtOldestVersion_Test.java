@@ -57,7 +57,9 @@ public class UserCodeDeploymentCompatibility_EpAvailableAtOldestVersion_Test ext
     }
 
     @Override
-    protected void executeSimpleTestScenario(Config config, Config epFilteredConfig, EntryProcessor<Integer, Integer> ep) {
+    protected void executeSimpleTestScenario(Config config,
+                                             Config epFilteredConfig,
+                                             EntryProcessor<Integer, Integer, Integer> ep) {
         int keyCount = 100;
 
         lowerOperationTimeouts(config);

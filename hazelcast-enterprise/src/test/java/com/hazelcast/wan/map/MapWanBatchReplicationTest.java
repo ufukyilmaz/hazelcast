@@ -21,7 +21,6 @@ import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.internal.jmx.MBeanDataHolder;
 import com.hazelcast.internal.serialization.InternalSerializationService;
-import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
@@ -40,7 +39,6 @@ import com.hazelcast.spi.impl.operationservice.OperationFactory;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.MapUtil;
@@ -116,7 +114,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         Config config = super.getConfig();
 
         config.getMapConfig("default")
-                .setInMemoryFormat(getMemoryFormat());
+              .setInMemoryFormat(getMemoryFormat());
 
         return config;
     }
@@ -181,7 +179,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         // 2. Ensure WAN events are enqueued but not replicated
         // PAUSED state let WAN events offered to the queues, but prevents replicating it
         configA.getWanReplicationConfig("atob")
-                .getWanPublisherConfigs().get(0).setInitialPublisherState(PAUSED);
+               .getWanPublisherConfigs().get(0).setInitialPublisherState(PAUSED);
 
         // 3. Add map-loader to cluster-A
         MapStoreConfig mapStoreConfig = new MapStoreConfig()
@@ -429,15 +427,12 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         createDataIn(clusterA4Node, "map", 0, 1000);
         assertKeysInEventually(clusterB, "map", 0, 1000);
         for (final HazelcastInstance instance : clusterA4Node) {
-            assertTrueEventually(new AssertTask() {
-                @Override
-                public void run() {
-                    Map<String, LocalWanStats> stats
-                            = getNode(instance).nodeEngine.getWanReplicationService().getStats();
-                    LocalWanPublisherStats publisherStats =
-                            stats.get("multiBackup").getLocalWanPublisherStats().get("B");
-                    assert 0 == publisherStats.getOutboundQueueSize();
-                }
+            assertTrueEventually(() -> {
+                Map<String, LocalWanStats> stats
+                        = getNode(instance).nodeEngine.getWanReplicationService().getStats();
+                LocalWanPublisherStats publisherStats =
+                        stats.get("multiBackup").getLocalWanPublisherStats().get("B");
+                assert 0 == publisherStats.getOutboundQueueSize();
             });
         }
     }
@@ -689,7 +684,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapProxy.getName());
 
         InternalSerializationService serializationService = getSerializationService(clusterA[0]);
-        Set<Data> keySet = new HashSet<Data>();
+        Set<Data> keySet = new HashSet<>();
         for (int i = 0; i < 10; i++) {
             keySet.add(serializationService.toData(i));
         }
@@ -765,13 +760,13 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         final int startKey = 0;
         final int endKey = 10;
 
-        final ConcurrentHashMap<Integer, String> initialStoreData = new ConcurrentHashMap<Integer, String>();
+        final ConcurrentHashMap<Integer, String> initialStoreData = new ConcurrentHashMap<>();
         for (int i = startKey; i < endKey; i++) {
             initialStoreData.put(i, "dummy");
         }
 
         MapStoreConfig mapStoreConfig = new MapStoreConfig()
-                .setImplementation(new SimpleStore<Integer, String>(initialStoreData))
+                .setImplementation(new SimpleStore<>(initialStoreData))
                 .setWriteDelaySeconds(0)
                 .setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
         configA.getMapConfig("stored-map").setMapStoreConfig(mapStoreConfig);
@@ -795,13 +790,10 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         createDataIn(clusterA, "map", 0, 10);
         assertDataInFromEventually(clusterB, "map", 0, 10, clusterA);
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                WanReplicationService wanReplicationService = getNodeEngineImpl(clusterA[0]).getWanReplicationService();
-                EnterpriseWanReplicationService ewrs = (EnterpriseWanReplicationService) wanReplicationService;
-                assert ewrs.getStats().get("atob").getLocalWanPublisherStats().get("B").getOutboundQueueSize() == 0;
-            }
+        assertTrueEventually(() -> {
+            WanReplicationService wanReplicationService = getNodeEngineImpl(clusterA[0]).getWanReplicationService();
+            EnterpriseWanReplicationService ewrs = (EnterpriseWanReplicationService) wanReplicationService;
+            assert ewrs.getStats().get("atob").getLocalWanPublisherStats().get("B").getOutboundQueueSize() == 0;
         });
     }
 
@@ -811,12 +803,9 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         startClusterA();
         startClusterB();
         createDataIn(clusterA, "map", 0, 10);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                Collection<DistributedObject> distributedObjects = clusterB[0].getDistributedObjects();
-                assertEquals(1, distributedObjects.size());
-            }
+        assertTrueEventually(() -> {
+            Collection<DistributedObject> distributedObjects = clusterB[0].getDistributedObjects();
+            assertEquals(1, distributedObjects.size());
         }, 10);
         assertDataInFromEventually(clusterB, "map", 0, 10, clusterA);
     }
@@ -878,8 +867,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
 
         final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
-                .getWanPublisherConfigs()
-                .get(0);
+                                                              .getWanPublisherConfigs()
+                                                              .get(0);
         targetClusterConfig.setInitialPublisherState(STOPPED);
 
         startClusterA();
@@ -905,8 +894,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
 
         final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
-                .getWanPublisherConfigs()
-                .get(0);
+                                                              .getWanPublisherConfigs()
+                                                              .get(0);
         targetClusterConfig.setInitialPublisherState(WanPublisherState.PAUSED);
 
         startClusterA();
@@ -985,12 +974,9 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         }
 
         // 6. Ensure no put or delete operation is passed to map-store
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertEquals("unexpected store count", 0, store.storeCount.get());
-                assertEquals("unexpected delete count", 0, store.deleteCount.get());
-            }
+        assertTrueAllTheTime(() -> {
+            assertEquals("unexpected store count", 0, store.storeCount.get());
+            assertEquals("unexpected delete count", 0, store.deleteCount.get());
         }, 5);
     }
 
@@ -1029,12 +1015,9 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         }
 
         // 6. Ensure all put and delete operations are passed to map-store
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertEquals("missing store operations", mapEntryCount, store.storeCount.get());
-                assertEquals("missing delete operations", mapEntryCount, store.deleteCount.get());
-            }
+        assertTrueEventually(() -> {
+            assertEquals("missing store operations", mapEntryCount, store.storeCount.get());
+            assertEquals("missing delete operations", mapEntryCount, store.deleteCount.get());
         });
     }
 
@@ -1043,7 +1026,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
      * maxConcurrentInvocations > 1 because, in contrast with
      * map#remove, map#delete always calls mapstore#delete
      * without pre-checking existence of key.
-     *
+     * <p>
      * Below setting is needed due to the out of order nature of
      * wan concurrent invocations. In this test updates can be
      * reordered with removes when maxConcurrentInvocations > 1.
@@ -1061,7 +1044,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
                 PassThroughMergePolicy.class.getName());
         configA.getMapConfig("default").setMaxIdleSeconds(2);
         configA.setProperty(PROP_CLEANUP_PERCENTAGE, "100")
-                .setProperty(PROP_TASK_PERIOD_SECONDS, "1");
+               .setProperty(PROP_TASK_PERIOD_SECONDS, "1");
         startClusterA();
         startClusterB();
 
@@ -1070,12 +1053,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         assertDataInFromEventually(clusterB, mapName, 0, 100, clusterA);
 
         assertSizeEventually(0, clusterA[0].getMap(mapName));
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertDataInFrom(clusterB, mapName, 0, 100, clusterA);
-            }
-        }, 10);
+        assertTrueAllTheTime(() -> assertDataInFrom(clusterB, mapName, 0, 100, clusterA), 10);
     }
 
     @Test
@@ -1088,7 +1066,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         setupReplicateFrom(configA, configC, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
 
         List<WanPublisherConfig> publisherConfigs = configA.getWanReplicationConfig(wanReplicationScheme)
-                .getWanPublisherConfigs();
+                                                           .getWanPublisherConfigs();
         assertEquals(2, publisherConfigs.size());
         publisherConfigs.get(0).setPublisherId("publisher1");
         publisherConfigs.get(1).setPublisherId("publisher2");
@@ -1104,14 +1082,14 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
 
         for (WanPublisherConfig publisherConfig : configA.getWanReplicationConfig(wanReplicationScheme)
-                .getWanPublisherConfigs()) {
+                                                         .getWanPublisherConfigs()) {
             publisherConfig.setClassName(UninitializableWanEndpoint.class.getName());
         }
 
         startClusterA();
 
         clusterA[0].getMap("map")
-                .put(1, 1);
+                   .put(1, 1);
     }
 
     private static WanReplicationRef getWanReplicationRefFrom(Config config, boolean persistWanReplicatedData) {
@@ -1132,15 +1110,12 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
     }
 
     static void waitForSyncToComplete(final HazelcastInstance[] cluster) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                boolean syncFinished = true;
-                for (HazelcastInstance instance : cluster) {
-                    syncFinished &= wanReplicationService(instance).getWanSyncState().getStatus() != WanSyncStatus.IN_PROGRESS;
-                }
-                assertTrue(syncFinished);
+        assertTrueEventually(() -> {
+            boolean syncFinished = true;
+            for (HazelcastInstance instance : cluster) {
+                syncFinished &= wanReplicationService(instance).getWanSyncState().getStatus() != WanSyncStatus.IN_PROGRESS;
             }
+            assertTrue(syncFinished);
         });
     }
 
@@ -1184,41 +1159,21 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         }
     }
 
-    private static class UpdatingEntryProcessor implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {
+    private static class UpdatingEntryProcessor implements EntryProcessor<Object, Object, String> {
 
         @Override
-        public Object process(Map.Entry<Object, Object> entry) {
+        public String process(Map.Entry<Object, Object> entry) {
             entry.setValue("EP" + entry.getValue());
             return "done";
         }
-
-        @Override
-        public EntryBackupProcessor<Object, Object> getBackupProcessor() {
-            return this;
-        }
-
-        @Override
-        public void processBackup(Map.Entry<Object, Object> entry) {
-            process(entry);
-        }
     }
 
-    private static class DeletingEntryProcessor implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {
+    private static class DeletingEntryProcessor implements EntryProcessor<Object, Object, String> {
 
         @Override
-        public Object process(Map.Entry<Object, Object> entry) {
+        public String process(Map.Entry<Object, Object> entry) {
             entry.setValue(null);
             return "done";
-        }
-
-        @Override
-        public EntryBackupProcessor<Object, Object> getBackupProcessor() {
-            return this;
-        }
-
-        @Override
-        public void processBackup(Map.Entry<Object, Object> entry) {
-            process(entry);
         }
     }
 
@@ -1227,7 +1182,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         private final ConcurrentMap<K, V> store;
 
         SimpleStore() {
-            this(new ConcurrentHashMap<K, V>());
+            this(new ConcurrentHashMap<>());
         }
 
         SimpleStore(ConcurrentMap<K, V> store) {
@@ -1261,7 +1216,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
         @Override
         public Map<K, V> loadAll(Collection<K> keys) {
-            Map<K, V> map = new HashMap<K, V>();
+            Map<K, V> map = new HashMap<>();
             for (K key : keys) {
                 V value = load(key);
                 map.put(key, value);

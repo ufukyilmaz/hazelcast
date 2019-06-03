@@ -2,8 +2,6 @@ package com.hazelcast.map.hotrestart;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.IMap;
-import com.hazelcast.map.AbstractEntryProcessor;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -18,6 +16,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
@@ -181,12 +180,7 @@ public class MapOperationsTest extends AbstractMapHotRestartTest {
     public void testPut_withExpiry() {
         map.put(0, randomString(), 1, TimeUnit.MILLISECONDS);
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertNull(map.get(0));
-            }
-        });
+        assertTrueEventually(() -> assertNull(map.get(0)));
     }
 
     @Test
@@ -216,12 +210,7 @@ public class MapOperationsTest extends AbstractMapHotRestartTest {
     public void testExecuteOnKey() {
         map.remove(0);
 
-        Object value = map.executeOnKey(0, new AbstractEntryProcessor() {
-            @Override
-            public Object process(Map.Entry entry) {
-                return entry.getValue();
-            }
-        });
+        Object value = map.executeOnKey(0, Entry::getValue);
         assertNull(value);
     }
 
@@ -236,7 +225,7 @@ public class MapOperationsTest extends AbstractMapHotRestartTest {
     public void testGetAll() {
         map.remove(0);
 
-        HashSet<Integer> keys = new HashSet<Integer>();
+        HashSet<Integer> keys = new HashSet<>();
         keys.add(0);
 
         Map<Integer, String> results = map.getAll(keys);

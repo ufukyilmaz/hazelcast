@@ -47,7 +47,6 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         INSECURE_SERVICES.add(com.hazelcast.topic.impl.reliable.ReliableTopicService.class);
         INSECURE_SERVICES.add(com.hazelcast.concurrent.idgen.IdGeneratorService.class);
         INSECURE_SERVICES.add(com.hazelcast.transaction.impl.xa.XAService.class);
-        INSECURE_SERVICES.add(com.hazelcast.mapreduce.impl.MapReduceService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.lock.RaftLockService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomiclong.RaftAtomicLongService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomicref.RaftAtomicRefService.class);
@@ -102,8 +101,6 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "list");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.concurrent.idgen.IdGeneratorService.class,
                 "idGenerator");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.mapreduce.impl.MapReduceService.class,
-                "mapReduce");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.collection.impl.set.SetService.class,
                 "set");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.replicatedmap.impl.ReplicatedMapService.class,

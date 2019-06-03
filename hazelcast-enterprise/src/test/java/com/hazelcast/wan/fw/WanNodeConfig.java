@@ -15,7 +15,6 @@ import com.hazelcast.config.ExecutorConfig;
 import com.hazelcast.config.FlakeIdGeneratorConfig;
 import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.HotRestartPersistenceConfig;
-import com.hazelcast.config.JobTrackerConfig;
 import com.hazelcast.config.ListConfig;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.config.LockConfig;
@@ -688,31 +687,6 @@ class WanNodeConfig extends Config {
     public Config setWanReplicationConfigs(
             Map<String, WanReplicationConfig> wanReplicationConfigs) {
         return wrappedConfig.setWanReplicationConfigs(wanReplicationConfigs);
-    }
-
-    @Override
-    public JobTrackerConfig findJobTrackerConfig(String name) {
-        return wrappedConfig.findJobTrackerConfig(name);
-    }
-
-    @Override
-    public JobTrackerConfig getJobTrackerConfig(String name) {
-        return wrappedConfig.getJobTrackerConfig(name);
-    }
-
-    @Override
-    public Config addJobTrackerConfig(JobTrackerConfig jobTrackerConfig) {
-        return wrappedConfig.addJobTrackerConfig(jobTrackerConfig);
-    }
-
-    @Override
-    public Map<String, JobTrackerConfig> getJobTrackerConfigs() {
-        return wrappedConfig.getJobTrackerConfigs();
-    }
-
-    @Override
-    public Config setJobTrackerConfigs(Map<String, JobTrackerConfig> jobTrackerConfigs) {
-        return wrappedConfig.setJobTrackerConfigs(jobTrackerConfigs);
     }
 
     @Override

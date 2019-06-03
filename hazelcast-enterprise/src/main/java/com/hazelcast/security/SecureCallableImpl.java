@@ -38,7 +38,6 @@ import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.hazelcast.flakeidgen.FlakeIdGenerator;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.LoggingService;
-import com.hazelcast.mapreduce.JobTracker;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -399,11 +398,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Override
         public ICacheManager getCacheManager() {
             return new CacheManagerDelegate(instance.getCacheManager());
-        }
-
-        @Override
-        public JobTracker getJobTracker(String name) {
-            return getProxy(new JobTrackerInvocationHandler(instance.getJobTracker(name)));
         }
 
         @Override
@@ -875,23 +869,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Override
         public String getStructureName() {
             return "replicatedMap";
-        }
-    }
-
-    private class JobTrackerInvocationHandler extends SecureInvocationHandler {
-
-        JobTrackerInvocationHandler(DistributedObject distributedObject) {
-            super(distributedObject);
-        }
-
-        @Override
-        public Permission getPermission(Method method, Object[] args) {
-            return null;
-        }
-
-        @Override
-        public String getStructureName() {
-            return "jobTracker";
         }
     }
 

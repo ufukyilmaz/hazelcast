@@ -4,6 +4,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.util.function.Supplier;
@@ -14,9 +16,14 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
+import static com.hazelcast.test.HazelcastTestSupport.spawn;
 import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 import static com.hazelcast.util.Preconditions.checkPositive;
@@ -73,6 +80,41 @@ public class Cluster {
     public void startCluster() {
         for (int i = 0; i < clusterMembers.length; i++) {
             startClusterMember(i);
+        }
+    }
+
+    public void bounceCluster() {
+        final ILogger logger = Logger.getLogger(Cluster.class);
+        getAMember().getCluster().shutdown();
+
+        final CountDownLatch membersLatch = new CountDownLatch(clusterMembers.length);
+        final AtomicReferenceArray<HazelcastInstance> bouncedMembers =
+                new AtomicReferenceArray<HazelcastInstance>(clusterMembers.length);
+        final AtomicBoolean allBouncedSuccessfully = new AtomicBoolean(true);
+
+        for (int i = 0; i < clusterMembers.length; i++) {
+            final int memberIndex = i;
+            spawn(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Config memberConfig = new WanNodeConfig(config);
+                        memberConfig.setInstanceName(instanceNamePrefix + memberIndex);
+                        HazelcastInstance member = factory.newHazelcastInstance(memberConfig);
+                        bouncedMembers.set(memberIndex, member);
+                    } catch (Exception ex) {
+                        logger.severe(ex.getMessage(), ex);
+                        allBouncedSuccessfully.set(false);
+                    } finally {
+                        membersLatch.countDown();
+                    }
+                }
+            });
+        }
+        assertOpenEventually(membersLatch);
+        assertTrue("Not all members could be started back successfully", allBouncedSuccessfully.get());
+        for (int i = 0; i < clusterMembers.length; i++) {
+            clusterMembers[i] = bouncedMembers.get(i);
         }
     }
 
@@ -322,17 +364,20 @@ public class Cluster {
         return clusterC(factory, clusterSize, null);
     }
 
-    public static ClusterBuilder clusterA(TestHazelcastInstanceFactory factory, int clusterSize, Supplier<Config> configSupplier) {
+    public static ClusterBuilder clusterA(TestHazelcastInstanceFactory factory, int clusterSize,
+                                          Supplier<Config> configSupplier) {
         return createDefaultClusterConfig(factory, clusterSize,
                 configSupplier, "ClusterA", "A", 5701, UUID.randomUUID().toString());
     }
 
-    public static ClusterBuilder clusterB(TestHazelcastInstanceFactory factory, int clusterSize, Supplier<Config> configSupplier) {
+    public static ClusterBuilder clusterB(TestHazelcastInstanceFactory factory, int clusterSize,
+                                          Supplier<Config> configSupplier) {
         return createDefaultClusterConfig(factory, clusterSize,
                 configSupplier, "ClusterB", "B", 5801, UUID.randomUUID().toString());
     }
 
-    public static ClusterBuilder clusterC(TestHazelcastInstanceFactory factory, int clusterSize, Supplier<Config> configSupplier) {
+    public static ClusterBuilder clusterC(TestHazelcastInstanceFactory factory, int clusterSize,
+                                          Supplier<Config> configSupplier) {
         return createDefaultClusterConfig(factory, clusterSize,
                 configSupplier, "ClusterC", "C", 5901, UUID.randomUUID().toString());
     }

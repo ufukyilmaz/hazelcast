@@ -83,16 +83,19 @@ public class WanAntiEntropyTestSupport {
                 int diffPartitions = 0;
                 int entriesToSync = 0;
                 for (HazelcastInstance instance : cluster.getMembers()) {
-                    assertEquals(WanSyncStatus.READY, wanReplicationService(instance).getWanSyncState().getStatus());
+                    if (instance.getLifecycleService().isRunning()) {
+                        assertEquals(WanSyncStatus.READY, wanReplicationService(instance).getWanSyncState().getStatus());
 
-                    Map<String, ConsistencyCheckResult> lastCheckResult = getLastCheckResult(instance, wanReplication);
-                    ConsistencyCheckResult result = lastCheckResult.get(mapName);
+                        Map<String, ConsistencyCheckResult> lastCheckResult = getLastCheckResult(instance, wanReplication);
+                        assertNotNull(lastCheckResult);
 
-                    assertNotNull(result);
+                        ConsistencyCheckResult result = lastCheckResult.get(mapName);
+                        assertNotNull(result);
 
-                    checkedPartitions += result.getLastCheckedPartitionCount();
-                    diffPartitions += result.getLastDiffPartitionCount();
-                    entriesToSync += result.getLastEntriesToSync();
+                        checkedPartitions += result.getLastCheckedPartitionCount();
+                        diffPartitions += result.getLastDiffPartitionCount();
+                        entriesToSync += result.getLastEntriesToSync();
+                    }
                 }
 
                 assertEquals(partitions, checkedPartitions);
@@ -110,7 +113,7 @@ public class WanAntiEntropyTestSupport {
                 .get(wanReplication.getTargetClusterName()).getLastConsistencyCheckResults();
     }
 
-    private static int getNumberOfNonEmptyPartitions(Cluster cluster, String mapName) {
+    public static int getNumberOfNonEmptyPartitions(Cluster cluster, String mapName) {
         // the record store size is updated on the partition threads, we may read stale values here
         // but since this method is invoked from an assertEventually periodically it is expected that we eventually observe the
         // right values and this doesn't cause false failures due to visibility issues

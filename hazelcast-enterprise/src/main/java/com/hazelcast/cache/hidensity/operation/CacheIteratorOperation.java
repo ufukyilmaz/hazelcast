@@ -69,7 +69,7 @@ public class CacheIteratorOperation extends HiDensityCacheOperation implements R
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         throw new UnsupportedOperationException("CacheIterator Operation is deprecated.");
     }
 }

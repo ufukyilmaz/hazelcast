@@ -89,7 +89,7 @@ public class HotRestartBackupTransactionLogRecord implements TargetAwareTransact
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HotRestartBackupSerializerHook.BACKUP_TRANSACTION_LOG_RECORD;
     }
 }

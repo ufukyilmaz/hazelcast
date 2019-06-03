@@ -34,7 +34,7 @@ public class WanAntiEntropyEventResult implements IdentifiedDataSerializable {
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.WAN_ANTI_ENTROPY_RESULT;
     }
 

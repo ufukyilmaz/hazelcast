@@ -52,7 +52,7 @@ public class MerkleTreeRebuildOperation extends MapOperation implements AllowedD
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         throw new UnsupportedOperationException();
     }
 

@@ -82,7 +82,7 @@ public final class CacheIterationResult implements IdentifiedDataSerializable {
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         throw new UnsupportedOperationException("CacheIterationResult is deprecated");
     }
 

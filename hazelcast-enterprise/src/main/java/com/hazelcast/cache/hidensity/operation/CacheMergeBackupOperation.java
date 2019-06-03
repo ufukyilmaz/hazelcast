@@ -74,7 +74,7 @@ public class CacheMergeBackupOperation extends HiDensityCacheOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.MERGE_BACKUP;
     }
 }

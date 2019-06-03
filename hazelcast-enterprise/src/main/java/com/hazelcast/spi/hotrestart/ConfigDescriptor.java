@@ -31,7 +31,7 @@ public class ConfigDescriptor {
     /**
      * Cache ID, as encoded in Hot Restart store's key prefix.
      */
-    public int getId() {
+    public int getClassId() {
         return id;
     }
 

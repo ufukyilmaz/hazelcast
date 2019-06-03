@@ -38,7 +38,7 @@ public class AddWanConfigOperationFactory implements OperationFactory {
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.ADD_WAN_CONFIG_OPERATION_FACTORY;
     }
 

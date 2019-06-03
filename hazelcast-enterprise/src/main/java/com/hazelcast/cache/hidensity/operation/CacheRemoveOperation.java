@@ -76,7 +76,7 @@ public class CacheRemoveOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.REMOVE;
     }
 }

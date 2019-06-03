@@ -74,7 +74,7 @@ public class AddWanConfigOperation extends Operation implements IdentifiedDataSe
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.ADD_WAN_CONFIG_OPERATION;
     }
 

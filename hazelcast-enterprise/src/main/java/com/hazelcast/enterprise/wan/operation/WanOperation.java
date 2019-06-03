@@ -49,7 +49,7 @@ public class WanOperation extends Operation implements WanReplicationOperation, 
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.WAN_OPERATION;
     }
 

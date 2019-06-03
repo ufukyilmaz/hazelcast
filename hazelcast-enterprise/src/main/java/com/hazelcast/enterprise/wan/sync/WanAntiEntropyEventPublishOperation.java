@@ -65,7 +65,7 @@ public class WanAntiEntropyEventPublishOperation extends Operation implements Id
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.WAN_SYNC_OPERATION;
     }
 

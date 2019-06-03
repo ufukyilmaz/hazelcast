@@ -41,7 +41,7 @@ public class WanSyncEvent extends WanAntiEntropyEvent implements IdentifiedDataS
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.WAN_SYNC_EVENT;
     }
 

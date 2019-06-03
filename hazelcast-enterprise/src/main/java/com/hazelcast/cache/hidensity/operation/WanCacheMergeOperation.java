@@ -92,7 +92,7 @@ public class WanCacheMergeOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.WAN_MERGE;
     }
 

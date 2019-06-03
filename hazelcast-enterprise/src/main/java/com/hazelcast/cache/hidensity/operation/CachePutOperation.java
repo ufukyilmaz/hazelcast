@@ -99,7 +99,7 @@ public class CachePutOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.PUT;
     }
 }

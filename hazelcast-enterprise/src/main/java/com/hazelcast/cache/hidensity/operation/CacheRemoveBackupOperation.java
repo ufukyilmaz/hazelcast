@@ -53,7 +53,7 @@ public class CacheRemoveBackupOperation extends KeyBasedHiDensityCacheOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.REMOVE_BACKUP;
     }
 

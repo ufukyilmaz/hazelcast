@@ -161,7 +161,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HotRestartBackupSerializerHook.BACKUP;
     }
 }

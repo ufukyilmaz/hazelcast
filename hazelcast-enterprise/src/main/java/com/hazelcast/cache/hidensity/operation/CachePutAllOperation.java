@@ -114,7 +114,7 @@ public class CachePutAllOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.PUT_ALL;
     }
 

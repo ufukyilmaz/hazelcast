@@ -94,7 +94,7 @@ public class CacheReplaceOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.REPLACE;
     }
 

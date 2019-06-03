@@ -76,7 +76,7 @@ public class WanCacheLegacyMergeOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.WAN_LEGACY_MERGE;
     }
 

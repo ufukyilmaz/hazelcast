@@ -89,7 +89,7 @@ public class WanMerkleTreeNodeCompareOperation extends Operation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.WAN_MERKLE_TREE_NODE_COMPARE_OPERATION;
     }
 

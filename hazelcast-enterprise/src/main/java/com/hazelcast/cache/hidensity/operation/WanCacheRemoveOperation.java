@@ -62,7 +62,7 @@ public class WanCacheRemoveOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.WAN_REMOVE;
     }
 

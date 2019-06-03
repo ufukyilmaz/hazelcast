@@ -56,7 +56,7 @@ public class WanCacheRemoveOperation extends MutatingCacheOperation {
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EnterpriseCacheDataSerializerHook.WAN_REMOVE;
     }
 

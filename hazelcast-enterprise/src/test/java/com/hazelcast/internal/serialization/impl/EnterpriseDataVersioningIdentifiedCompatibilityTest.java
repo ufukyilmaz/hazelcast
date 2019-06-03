@@ -335,7 +335,7 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 1;
         }
 
@@ -370,7 +370,7 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 1;
         }
 

@@ -62,7 +62,7 @@ public class MerkleTreeGetEntryCountOperation extends MapOperation implements Re
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EnterpriseMapDataSerializerHook.MERKLE_TREE_GET_ENTRY_COUNT_OPERATION;
     }
 

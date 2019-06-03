@@ -68,7 +68,7 @@ public class EnterpriseMapReplicationMerkleTreeNode extends EnterpriseMapReplica
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.MAP_REPLICATION_MERKLE_TREE_NODE;
     }
 

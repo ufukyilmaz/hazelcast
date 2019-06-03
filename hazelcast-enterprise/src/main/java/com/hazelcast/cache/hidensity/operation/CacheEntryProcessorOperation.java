@@ -125,7 +125,7 @@ public class CacheEntryProcessorOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.ENTRY_PROCESSOR;
     }
 

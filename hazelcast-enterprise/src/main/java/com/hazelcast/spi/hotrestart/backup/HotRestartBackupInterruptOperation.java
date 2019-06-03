@@ -41,7 +41,7 @@ public class HotRestartBackupInterruptOperation extends Operation implements All
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HotRestartBackupSerializerHook.BACKUP_INTERRUPT;
     }
 }

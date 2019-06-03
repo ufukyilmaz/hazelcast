@@ -54,7 +54,7 @@ public class MerkleTreeNodeValueComparison implements IdentifiedDataSerializable
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.MERKLE_TREE_NODE_VALUE_COMPARISON;
     }
 

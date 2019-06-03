@@ -44,7 +44,7 @@ public class CacheSizeOperationFactory
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.SIZE_FACTORY;
     }
 }

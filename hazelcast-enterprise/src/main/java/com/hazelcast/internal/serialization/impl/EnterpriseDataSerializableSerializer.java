@@ -229,7 +229,7 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
         out.writeByte(createHeader(true, versioned));
 
         out.writeInt(obj.getFactoryId());
-        out.writeInt(obj.getId());
+        out.writeInt(obj.getClassId());
 
         if (versioned) {
             out.writeByte(version.getMajor());
@@ -254,7 +254,7 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
     }
 
     private static boolean areIdsCompressable(IdentifiedDataSerializable ids) {
-        return isWithinByteRange(ids.getId()) && isWithinByteRange(ids.getFactoryId());
+        return isWithinByteRange(ids.getClassId()) && isWithinByteRange(ids.getFactoryId());
     }
 
     private static boolean isWithinByteRange(int value) {

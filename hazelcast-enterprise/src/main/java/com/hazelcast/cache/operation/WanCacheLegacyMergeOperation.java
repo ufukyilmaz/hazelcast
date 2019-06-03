@@ -75,7 +75,7 @@ public class WanCacheLegacyMergeOperation extends MutatingCacheOperation {
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EnterpriseCacheDataSerializerHook.WAN_LEGACY_MERGE;
     }
 

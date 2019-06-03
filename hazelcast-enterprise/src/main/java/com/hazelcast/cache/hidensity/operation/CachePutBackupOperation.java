@@ -96,7 +96,7 @@ public class CachePutBackupOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.PUT_BACKUP;
     }
 }

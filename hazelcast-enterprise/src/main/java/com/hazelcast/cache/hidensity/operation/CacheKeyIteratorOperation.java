@@ -76,7 +76,7 @@ public class CacheKeyIteratorOperation extends HiDensityCacheOperation implement
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.ITERATE;
     }
 }

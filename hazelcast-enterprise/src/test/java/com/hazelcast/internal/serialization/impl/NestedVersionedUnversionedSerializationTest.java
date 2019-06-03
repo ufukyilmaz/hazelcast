@@ -175,7 +175,7 @@ public class NestedVersionedUnversionedSerializationTest {
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 1;
         }
     }
@@ -187,7 +187,7 @@ public class NestedVersionedUnversionedSerializationTest {
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 2;
         }
     }
@@ -230,7 +230,7 @@ public class NestedVersionedUnversionedSerializationTest {
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 3;
         }
     }

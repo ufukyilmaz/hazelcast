@@ -25,7 +25,7 @@ public class WanConsistencyCheckEvent extends WanAntiEntropyEvent {
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.WAN_CONSISTENCY_CHECK_EVENT;
     }
 

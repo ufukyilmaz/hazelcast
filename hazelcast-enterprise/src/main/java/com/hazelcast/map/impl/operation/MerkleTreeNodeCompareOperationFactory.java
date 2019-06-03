@@ -49,7 +49,7 @@ public class MerkleTreeNodeCompareOperationFactory implements OperationFactory {
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EnterpriseMapDataSerializerHook.MERKLE_TREE_NODE_COMPARE_OPERATION_FACTORY;
     }
 }

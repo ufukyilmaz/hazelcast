@@ -185,7 +185,7 @@ public class HiDensityCacheOperationForcedEvictionTest extends AbstractHDCacheOp
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 0;
         }
     }

@@ -50,7 +50,7 @@ public class CacheGetAndRemoveOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.GET_AND_REMOVE;
     }
 }

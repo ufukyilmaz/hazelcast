@@ -84,7 +84,7 @@ public class PersistentConfigDescriptors {
         if (desc == null) {
             throw new IllegalArgumentException("Unknown name! " + key);
         }
-        return combineToLong(desc.getId(), partitionId);
+        return combineToLong(desc.getClassId(), partitionId);
     }
 
     /**
@@ -201,10 +201,10 @@ public class PersistentConfigDescriptors {
                 } finally {
                     IOUtil.closeResource(in);
                 }
-                maxId = max(maxId, desc.getId());
+                maxId = max(maxId, desc.getClassId());
                 String key = toCacheKey(desc.getServiceName(), desc.getName());
                 nameToDesc.put(key, desc);
-                idToDesc.put(desc.getId(), desc);
+                idToDesc.put(desc.getClassId(), desc);
                 if (config != null) {
                     notifyListeners(loadedConfigurationListeners, desc, config);
                 }

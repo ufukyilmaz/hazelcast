@@ -41,7 +41,7 @@ public class CacheReplicationRemove extends CacheReplicationObject {
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.CACHE_REPLICATION_REMOVE;
     }
 

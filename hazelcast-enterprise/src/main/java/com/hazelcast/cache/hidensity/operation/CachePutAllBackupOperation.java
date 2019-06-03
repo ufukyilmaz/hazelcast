@@ -101,7 +101,7 @@ public class CachePutAllBackupOperation extends HiDensityCacheOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.PUT_ALL_BACKUP;
     }
 

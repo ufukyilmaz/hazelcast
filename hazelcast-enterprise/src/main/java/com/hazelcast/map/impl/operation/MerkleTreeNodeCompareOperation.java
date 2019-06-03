@@ -143,7 +143,7 @@ public class MerkleTreeNodeCompareOperation extends MapOperation implements Read
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EnterpriseMapDataSerializerHook.MERKLE_TREE_NODE_COMPARE_OPERATION;
     }
 

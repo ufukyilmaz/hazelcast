@@ -208,7 +208,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
                 .thenReturn(MINOR_VERSION_BYTE);
         when(input.readInt())
                 .thenReturn(original.getFactoryId())
-                .thenReturn(original.getId())
+                .thenReturn(original.getClassId())
                 .thenReturn(original.value);
         when(input.getVersion()).thenReturn(UNKNOWN);
 
@@ -239,7 +239,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         when(input.readByte())
                 .thenReturn(createHeader(true, false))
                 .thenReturn(Byte.MIN_VALUE)
-                .thenReturn((byte) original.getId());
+                .thenReturn((byte) original.getClassId());
         when(input.readInt()).thenReturn(original.value);
 
         enterpriseSerializer.read(input);
@@ -327,7 +327,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         calls.verify(output).setVersion(CLUSTER_VERSION);
         calls.verify(output).writeByte(createHeader(true, true));
         calls.verify(output).writeInt(original.getFactoryId());
-        calls.verify(output).writeInt(original.getId());
+        calls.verify(output).writeInt(original.getClassId());
         calls.verify(output).writeByte(MAJOR_VERSION_BYTE);
         calls.verify(output).writeByte(MINOR_VERSION_BYTE);
         calls.verify(output).writeInt(original.value);
@@ -425,7 +425,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 1;
         }
 
@@ -457,7 +457,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 311;
         }
 

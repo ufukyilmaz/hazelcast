@@ -40,7 +40,7 @@ public class EnterpriseMapReplicationRemove extends EnterpriseMapReplicationObje
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.MAP_REPLICATION_REMOVE;
     }
 

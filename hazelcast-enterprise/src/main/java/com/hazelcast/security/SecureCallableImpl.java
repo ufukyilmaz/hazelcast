@@ -173,7 +173,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return SecurityDataSerializerHook.SECURE_CALLABLE;
     }
 

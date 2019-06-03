@@ -55,7 +55,7 @@ public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.MAP_REPLICATION_SYNC;
     }
 

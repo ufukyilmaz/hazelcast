@@ -211,7 +211,7 @@ public final class HiDensityCacheReplicationOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.CACHE_REPLICATION;
     }
 

@@ -64,7 +64,7 @@ public class EWRPutOperation extends EWRBackupAwareOperation implements Identifi
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.EWR_PUT_OPERATION;
     }
 

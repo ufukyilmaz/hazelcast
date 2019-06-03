@@ -71,7 +71,7 @@ public final class CacheSegmentShutdownOperation extends Operation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         throw new UnsupportedOperationException();
     }
 }

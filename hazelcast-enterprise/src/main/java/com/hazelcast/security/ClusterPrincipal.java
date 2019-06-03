@@ -48,7 +48,7 @@ public final class ClusterPrincipal implements Principal, IdentifiedDataSerializ
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return SecurityDataSerializerHook.CLUSTER_PRINCIPAL;
     }
 

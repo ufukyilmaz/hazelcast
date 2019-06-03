@@ -99,7 +99,7 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HotRestartClusterSerializerHook.SEND_CLUSTER_START_RESULT;
     }
 }

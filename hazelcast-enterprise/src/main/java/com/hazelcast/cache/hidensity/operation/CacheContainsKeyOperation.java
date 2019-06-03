@@ -35,7 +35,7 @@ public class CacheContainsKeyOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.CONTAINS_KEY;
     }
 }

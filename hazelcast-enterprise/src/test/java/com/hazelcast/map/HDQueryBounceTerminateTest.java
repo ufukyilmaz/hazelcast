@@ -68,7 +68,7 @@ public class HDQueryBounceTerminateTest extends HDQueryBounceTest {
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 0;
         }
 

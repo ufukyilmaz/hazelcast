@@ -69,7 +69,7 @@ public class SendExcludedMemberUuidsOperation extends Operation implements JoinO
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HotRestartClusterSerializerHook.SEND_EXCLUDED_MEMBER_UUIDS;
     }
 }

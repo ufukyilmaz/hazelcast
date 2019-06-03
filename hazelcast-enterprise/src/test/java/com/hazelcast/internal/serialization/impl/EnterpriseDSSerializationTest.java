@@ -136,7 +136,7 @@ public class EnterpriseDSSerializationTest {
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 2;
         }
     }

@@ -57,7 +57,7 @@ public class EWRMigrationContainer implements IdentifiedDataSerializable {
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.EWR_QUEUE_CONTAINER;
     }
 

@@ -55,7 +55,7 @@ public class CacheGetOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.GET;
     }
 }

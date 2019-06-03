@@ -66,7 +66,7 @@ public class HDMapOperationTest extends AbstractHDMapOperationTest {
         }
 
         @Override
-        public int getId() {
+        public int getClassId() {
             return 0;
         }
     }

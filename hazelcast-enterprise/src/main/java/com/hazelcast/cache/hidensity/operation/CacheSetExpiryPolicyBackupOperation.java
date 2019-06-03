@@ -67,7 +67,7 @@ public class CacheSetExpiryPolicyBackupOperation extends HiDensityCacheOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.SET_EXPIRY_POLICY_BACKUP;
     }
 

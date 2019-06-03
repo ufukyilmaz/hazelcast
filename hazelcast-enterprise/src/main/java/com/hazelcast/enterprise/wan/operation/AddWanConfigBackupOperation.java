@@ -59,7 +59,7 @@ public class AddWanConfigBackupOperation extends Operation implements Identified
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.ADD_WAN_CONFIG_BACKUP_OPERATION;
     }
 }

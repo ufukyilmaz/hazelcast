@@ -80,7 +80,7 @@ public class CachePutIfAbsentOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HiDensityCacheDataSerializerHook.PUT_IF_ABSENT;
     }
 }

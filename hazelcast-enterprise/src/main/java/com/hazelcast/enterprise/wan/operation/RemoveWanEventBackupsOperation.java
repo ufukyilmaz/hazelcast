@@ -59,7 +59,7 @@ public class RemoveWanEventBackupsOperation extends EWRBaseOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.REMOVE_WAN_EVENT_BACKUPS_OPERATION;
     }
 

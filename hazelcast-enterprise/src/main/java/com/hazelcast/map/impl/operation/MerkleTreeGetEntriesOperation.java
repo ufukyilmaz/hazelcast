@@ -98,7 +98,7 @@ public class MerkleTreeGetEntriesOperation extends MapOperation implements Reado
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EnterpriseMapDataSerializerHook.MERKLE_TREE_GET_ENTRIES_OPERATION;
     }
 

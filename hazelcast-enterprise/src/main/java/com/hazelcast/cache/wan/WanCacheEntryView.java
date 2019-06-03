@@ -104,7 +104,7 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.WAN_CACHE_ENTRY_VIEW;
     }
 }

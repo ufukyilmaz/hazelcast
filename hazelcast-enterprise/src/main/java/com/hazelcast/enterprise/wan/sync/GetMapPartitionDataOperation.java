@@ -59,7 +59,7 @@ public class GetMapPartitionDataOperation extends MapOperation implements Readon
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.GET_MAP_PARTITION_DATA_OPERATION;
     }
 

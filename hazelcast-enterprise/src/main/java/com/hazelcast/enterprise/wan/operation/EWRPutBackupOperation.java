@@ -45,7 +45,7 @@ public class EWRPutBackupOperation extends EWRBaseOperation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.EWR_PUT_BACKUP_OPERATION;
     }
 

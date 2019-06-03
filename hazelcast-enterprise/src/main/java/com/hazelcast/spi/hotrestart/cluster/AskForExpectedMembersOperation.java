@@ -33,7 +33,7 @@ public class AskForExpectedMembersOperation extends Operation implements JoinOpe
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HotRestartClusterSerializerHook.ASK_FOR_EXPECTED_MEMBERS;
     }
 

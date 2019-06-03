@@ -93,7 +93,7 @@ public final class EnterpriseMapPartitionClearOperation extends Operation
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         throw new UnsupportedOperationException();
     }
 }

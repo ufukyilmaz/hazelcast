@@ -153,7 +153,7 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.BATCH_WAN_REP_EVENT;
     }
 

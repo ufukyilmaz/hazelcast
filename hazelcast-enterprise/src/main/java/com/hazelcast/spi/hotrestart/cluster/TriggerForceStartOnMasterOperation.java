@@ -53,7 +53,7 @@ public class TriggerForceStartOnMasterOperation extends Operation implements Joi
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return HotRestartClusterSerializerHook.TRIGGER_FORCE_START;
     }
 

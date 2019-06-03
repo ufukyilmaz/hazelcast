@@ -64,7 +64,7 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
     }
 
     @Override
-    public int getId() {
+    public int getClassId() {
         return EWRDataSerializerHook.EWR_QUEUE_REPLICATION_OPERATION;
     }
 

@@ -1,20 +1,27 @@
 package com.hazelcast.spi.hotrestart;
 
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
+import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.Member;
 import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.hotrestart.BackupTaskStatus;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
+import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
+import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.operation.SafeStateCheckOperation;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.operation.MerkleTreeRebuildOperation;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.ManagedService;
@@ -39,14 +46,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hazelcast.cluster.memberselector.MemberSelectors.DATA_MEMBER_SELECTOR;
@@ -62,6 +73,7 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOnHeapHotRestartStore;
 import static com.hazelcast.util.Clock.currentTimeMillis;
+import static com.hazelcast.util.MapUtil.createConcurrentHashMap;
 import static com.hazelcast.util.ThreadUtil.createThreadName;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -325,6 +337,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             } catch (Throwable t) {
                 failure = t;
             }
+            rebuildMerkleTrees();
             clusterMetadataManager.loadCompletedLocal(failure);
             logger.info(String.format("Hot Restart procedure completed in %,d seconds",
                     MILLISECONDS.toSeconds(currentTimeMillis() - start)));
@@ -337,6 +350,110 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             throw new HotRestartException("Thread interrupted during the Hot Restart procedure", e);
         } catch (Throwable t) {
             throw new HotRestartException("Hot Restart procedure failed", t);
+        }
+    }
+
+    /**
+     * Rebuilding the Merkle trees for all maps configured with it.
+     * Called while the node is in {@link NodeState#PASSIVE} state and the
+     * partition table cannot change, therefore it is safe to collect the
+     * partitions that {@link MerkleTreeRebuildOperation} is invoked on.
+     */
+    private void rebuildMerkleTrees() throws InterruptedException {
+        final InternalPartitionService partitionService = node.getPartitionService();
+        final NodeEngineImpl nodeEngine = node.getNodeEngine();
+        final MapService mapService = nodeEngine.getService(MapService.SERVICE_NAME);
+        final Set<String> mapNames = mapService.getMapServiceContext().getMapContainers().keySet();
+        final Map<String, List<int[]>> mapLocalPartitionsWithReplicaIndex = new HashMap<>();
+        final MemberImpl localMember = node.getLocalMember();
+        final Config config = node.getConfig();
+
+        // collect maps with Merkle trees and their local primary and backup
+        // partitions together with the replica indexes
+        int totalRebuildOperations = 0;
+        for (String mapName : mapNames) {
+            final boolean mapHasMerkleTree = config.findMapMerkleTreeConfig(mapName).isEnabled();
+            final boolean mapHasHotRestart = config.getMapConfig(mapName).getHotRestartConfig().isEnabled();
+
+            if (mapHasMerkleTree && mapHasHotRestart) {
+                int totalBackupCount = mapService.getMapServiceContext().getMapContainer(mapName).getTotalBackupCount();
+                List<int[]> localPartitionsWithReplicaIndex = new LinkedList<>();
+                mapLocalPartitionsWithReplicaIndex.put(mapName, localPartitionsWithReplicaIndex);
+
+                for (InternalPartition partition : partitionService.getInternalPartitions()) {
+                    for (int replicaIndex = 0; replicaIndex <= totalBackupCount; replicaIndex++) {
+                        PartitionReplica replica = partition.getReplica(replicaIndex);
+
+                        if (replica.isIdentical(localMember)) {
+                            localPartitionsWithReplicaIndex.add(new int[]{partition.getPartitionId(), replicaIndex});
+                            totalRebuildOperations++;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (totalRebuildOperations > 0) {
+            performMerkleTreeRebuild(mapLocalPartitionsWithReplicaIndex, totalRebuildOperations);
+        }
+    }
+
+    private void performMerkleTreeRebuild(Map<String, List<int[]>> mapLocalPartitionsWithReplicaIndex, int totalRebuildOperations)
+            throws InterruptedException {
+
+        final NodeEngineImpl nodeEngine = node.getNodeEngine();
+        final OperationServiceImpl os = nodeEngine.getOperationService();
+        final Address thisAddress = node.getThisAddress();
+        final CountDownLatch rebuiltAllLatch = new CountDownLatch(totalRebuildOperations);
+        final ConcurrentMap<String, AtomicInteger> mapPartitionRebuildCounters = createConcurrentHashMap(
+                mapLocalPartitionsWithReplicaIndex.size());
+
+        for (Map.Entry<String, List<int[]>> mapEntry : mapLocalPartitionsWithReplicaIndex.entrySet()) {
+            final String mapName = mapEntry.getKey();
+            final List<int[]> localPartitions = mapEntry.getValue();
+            final AtomicInteger mapPartitionRebuildCounter = new AtomicInteger();
+            mapPartitionRebuildCounters.put(mapName, mapPartitionRebuildCounter);
+
+            if (logger.isFineEnabled()) {
+                logger.fine(String.format("Rebuilding Merkle trees for map '%s'", mapName));
+            }
+
+            for (int[] partitionIdAndReplicaIndex : localPartitions) {
+                final int partitionId = partitionIdAndReplicaIndex[0];
+                final int replicaIndex = partitionIdAndReplicaIndex[1];
+                final Operation op = new MerkleTreeRebuildOperation(mapName)
+                        .setPartitionId(partitionId)
+                        .setReplicaIndex(replicaIndex);
+
+                mapPartitionRebuildCounter.incrementAndGet();
+                os.invokeOnTarget(MapService.SERVICE_NAME, op, thisAddress)
+                  .andThen(new ExecutionCallback<Object>() {
+                      @Override
+                      public void onResponse(Object response) {
+                          mapPartitionRebuildCounter.decrementAndGet();
+                          rebuiltAllLatch.countDown();
+                      }
+
+                      @Override
+                      public void onFailure(Throwable t) {
+                          // not logging the exception here, it's already logged on the operation thread
+                          rebuiltAllLatch.countDown();
+                      }
+                  });
+            }
+        }
+
+        rebuiltAllLatch.await();
+
+        for (Map.Entry<String, AtomicInteger> rebuildCounterEntry : mapPartitionRebuildCounters.entrySet()) {
+            String mapName = rebuildCounterEntry.getKey();
+            AtomicInteger rebuildCounter = rebuildCounterEntry.getValue();
+
+            if (rebuildCounter.get() != 0) {
+                logger.severe(String.format("Rebuilding Merkle trees during Hot Restart for map '%s' has failed on %d"
+                        + " partitions, Hot Restart continues. Restarting this node after the cluster successfully restarted"
+                        + " rebuilds the Merkle trees.", mapName, rebuildCounter.get()));
+            }
         }
     }
 

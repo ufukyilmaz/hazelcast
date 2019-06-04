@@ -3,17 +3,18 @@ package com.hazelcast.enterprise.wan.merkletree;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanPublisherState;
-import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -25,6 +26,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
@@ -47,9 +49,9 @@ import static org.junit.Assert.assertTrue;
 // This is a serial test because it runs 6 instances per test case
 // and has 24 test cases that may run in parallel
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
-@Category({QuickTest.class})
-public class WanMerkleAntiEntropyHotRestartTest extends HazelcastTestSupport {
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
+@Category({QuickTest.class, ParallelJVMTest.class})
+public class WanMerkleHotRestartComplexTest extends HazelcastTestSupport {
     private static final String MAP_MERKLE1_NAME = "MAP_MERKLE";
     private static final String MAP_MERKLE2_NAME = "MAP_MERKLE2";
     private static final String MAP_NONMERKLE_NAME = "MAP_NONMERKLE";
@@ -60,6 +62,8 @@ public class WanMerkleAntiEntropyHotRestartTest extends HazelcastTestSupport {
     private static final int TWO_BACKUPS = 2;
     private static final boolean HOT_RESTART_ENABLED = true;
     private static final boolean HOT_RESTART_DISABLED = false;
+    private static final int SOURCE_MEMBERS_TWO = 2;
+    private static final int SOURCE_MEMBERS_FOUR = 4;
 
     @Rule
     public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
@@ -80,10 +84,184 @@ public class WanMerkleAntiEntropyHotRestartTest extends HazelcastTestSupport {
     @Parameter
     public InMemoryFormat inMemoryFormat;
 
-    @Before
-    public void setupWithMerkleTree() {
-        sourceCluster = clusterA(factory, 4, Config::new).setup();
-        targetCluster = clusterB(factory, 2, Config::new).setup();
+    @After
+    public void tearDown() {
+        sourceCluster.shutdownMembers();
+        targetCluster.shutdownMembers();
+        factory.terminateAll();
+    }
+
+    @Test
+    public void testConsistencyCheckWithEmptyTargetCluster() {
+        givenClusters(SOURCE_MEMBERS_TWO, HazelcastTestSupport::smallInstanceConfig);
+
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
+
+        fillMap(sourceCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
+
+        sourceCluster.bounceCluster();
+        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME, 1000);
+    }
+
+    @Test
+    public void testConsistencyCheckWithPartiallyFilledTargetCluster() {
+        givenClusters(SOURCE_MEMBERS_TWO, HazelcastTestSupport::smallInstanceConfig);
+
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
+
+        fillMap(sourceCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
+        fillMap(targetCluster, MAP_MERKLE1_NAME, 0, 950, "T");
+
+        sourceCluster.bounceCluster();
+        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
+        assertEquals(950, targetCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        // 11 partitions with smallInstanceConfig
+        // 32 leaves per partition since depth is 6
+        // 352 leaves in total
+        // expected difference is 50 entries
+        // 50/352=~14% of the leaves is different at most
+        // but multiple entries may share the same leaf
+        // in practice the difference is <14
+        int threshold = 15;
+        verifyDeltaIsBelowThreshold(threshold);
+    }
+
+    @Test
+    public void testConsistencyCheckWithFullyFilledTargetCluster() {
+        givenClusters(SOURCE_MEMBERS_TWO, HazelcastTestSupport::smallInstanceConfig);
+
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
+
+        fillMap(sourceCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
+        fillMap(targetCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        sourceCluster.bounceCluster();
+
+        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
+        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
+    }
+
+    @Test
+    public void testConsistencyCheckWithFullyFilledTargetClusterAndTwoMerkleMaps() {
+        givenClusters(SOURCE_MEMBERS_TWO, HazelcastTestSupport::smallInstanceConfig);
+
+        wanReplicationMerkle2 = configureMerkleMap(MERKLE2_REPLICATION_NAME, MAP_MERKLE2_NAME, ONE_BACKUP, HOT_RESTART_ENABLED);
+
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
+
+        fillMap(sourceCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
+        fillMap(targetCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
+        fillMap(sourceCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
+        fillMap(targetCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle2, MAP_MERKLE2_NAME);
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle2, MAP_MERKLE2_NAME);
+
+        sourceCluster.bounceCluster();
+
+        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
+        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
+        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
+        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle2, MAP_MERKLE2_NAME);
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle2, MAP_MERKLE2_NAME);
+    }
+
+    @Test
+    public void testConsistencyCheckWithFullyFilledTargetClusterAndTwoMerkleMaps_oneWithoutHotRestart() {
+        givenClusters(SOURCE_MEMBERS_TWO, HazelcastTestSupport::smallInstanceConfig);
+
+        wanReplicationMerkle2 = configureMerkleMap(MERKLE2_REPLICATION_NAME, MAP_MERKLE2_NAME, TWO_BACKUPS, HOT_RESTART_DISABLED);
+
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
+
+        fillMap(sourceCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
+        fillMap(targetCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
+        fillMap(sourceCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
+        fillMap(targetCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle2, MAP_MERKLE2_NAME);
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle2, MAP_MERKLE2_NAME);
+
+        sourceCluster.bounceCluster();
+
+        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
+        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
+        assertEquals(0, sourceCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
+        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        int nonEmptyPartitionsInTarget = getNumberOfNonEmptyPartitions(targetCluster, MAP_MERKLE2_NAME);
+        sourceCluster.consistencyCheck(wanReplicationMerkle2, MAP_MERKLE2_NAME);
+        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplicationMerkle2, MAP_MERKLE2_NAME, nonEmptyPartitionsInTarget, 0);
+    }
+
+    @Test
+    public void testConsistencyCheckWithFullyFilledTargetCluster_whenTwoSourceMembersTerminate() {
+        Supplier<Config> configSupplier = () -> new Config()
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "2")
+                .setProperty(GroupProperty.GENERIC_OPERATION_THREAD_COUNT.getName(), "2")
+                .setProperty(GroupProperty.EVENT_THREAD_COUNT.getName(), "1");
+
+        givenClusters(SOURCE_MEMBERS_FOUR, configSupplier);
+
+        wanReplicationMerkle2 = configureMerkleMap(MERKLE2_REPLICATION_NAME, MAP_MERKLE2_NAME, TWO_BACKUPS, HOT_RESTART_ENABLED);
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
+
+        fillMap(sourceCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
+        fillMap(targetCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
+
+        sourceCluster.bounceCluster();
+        sourceCluster.getAMember().getLifecycleService().terminate();
+        sourceCluster.getAMember().getLifecycleService().terminate();
+
+        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
+        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
+
+        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE2_NAME);
+        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE2_NAME);
+    }
+
+    private void givenClusters(int sourceClusterSize, Supplier<Config> configSupplier) {
+        sourceCluster = clusterA(factory, sourceClusterSize, configSupplier).setup();
+        targetCluster = clusterB(factory, 1, configSupplier).setup();
 
         Config sourceConfig = sourceCluster.getConfig();
         Config targetConfig = targetCluster.getConfig();
@@ -178,181 +356,13 @@ public class WanMerkleAntiEntropyHotRestartTest extends HazelcastTestSupport {
         return wanReplication;
     }
 
-    @After
-    public void tearDown() {
-        sourceCluster.shutdownMembers();
-        targetCluster.shutdownMembers();
-        factory.terminateAll();
-    }
-
-    @Test
-    public void testConsistencyCheckWithEmptyTargetCluster() {
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-
-        fillMap(sourceCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
-
-        sourceCluster.bounceCluster();
-        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME, 1000);
-    }
-
-    @Test
-    public void testConsistencyCheckWithPartiallyFilledTargetCluster() {
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-
-        fillMap(sourceCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
-        fillMap(targetCluster, MAP_MERKLE1_NAME, 0, 950, "T");
-
-        sourceCluster.bounceCluster();
-        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
-        assertEquals(950, targetCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        verifyDeltaIsBelowFivePercent();
-    }
-
-    @Test
-    public void testConsistencyCheckWithFullyFilledTargetCluster() {
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-
-        fillMap(sourceCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
-        fillMap(targetCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        sourceCluster.bounceCluster();
-
-        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
-        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
-    }
-
-    @Test
-    public void testConsistencyCheckWithFullyFilledTargetClusterAndTwoMerkleMaps() {
-        wanReplicationMerkle2 = configureMerkleMap(MERKLE2_REPLICATION_NAME, MAP_MERKLE2_NAME, ONE_BACKUP, HOT_RESTART_ENABLED);
-
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-
-        fillMap(sourceCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
-        fillMap(targetCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
-        fillMap(sourceCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
-        fillMap(targetCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle2, MAP_MERKLE2_NAME);
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle2, MAP_MERKLE2_NAME);
-
-        sourceCluster.bounceCluster();
-
-        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
-        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
-        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
-        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle2, MAP_MERKLE2_NAME);
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle2, MAP_MERKLE2_NAME);
-    }
-
-    @Test
-    public void testConsistencyCheckWithFullyFilledTargetClusterAndTwoMerkleMaps_oneWithoutHotRestart() {
-        wanReplicationMerkle2 = configureMerkleMap(MERKLE2_REPLICATION_NAME, MAP_MERKLE2_NAME, TWO_BACKUPS, HOT_RESTART_DISABLED);
-
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-
-        fillMap(sourceCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
-        fillMap(targetCluster, MAP_MERKLE1_NAME, 0, 1000, "T");
-        fillMap(sourceCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
-        fillMap(targetCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle2, MAP_MERKLE2_NAME);
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle2, MAP_MERKLE2_NAME);
-
-        sourceCluster.bounceCluster();
-
-        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
-        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE1_NAME).size());
-        assertEquals(0, sourceCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
-        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        int nonEmptyPartitionsInTarget = getNumberOfNonEmptyPartitions(targetCluster, MAP_MERKLE2_NAME);
-        sourceCluster.consistencyCheck(wanReplicationMerkle2, MAP_MERKLE2_NAME);
-        verifyAllPartitionsAreInconsistent(sourceCluster, wanReplicationMerkle2, MAP_MERKLE2_NAME, nonEmptyPartitionsInTarget, 0);
-    }
-
-    @Test
-    public void testConsistencyCheckWithFullyFilledTargetCluster_whenTwoSourceMembersTerminate() {
-        wanReplicationMerkle2 = configureMerkleMap(MERKLE2_REPLICATION_NAME, MAP_MERKLE2_NAME, TWO_BACKUPS, HOT_RESTART_ENABLED);
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-
-        fillMap(sourceCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
-        fillMap(targetCluster, MAP_MERKLE2_NAME, 0, 1000, "T");
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
-
-        sourceCluster.bounceCluster();
-        sourceCluster.getAMember().getLifecycleService().terminate();
-        sourceCluster.getAMember().getLifecycleService().terminate();
-
-        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
-        assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
-
-        sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE2_NAME);
-        verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE2_NAME);
-    }
-
-    @Test
-    public void testHotRestartWithNonMerkleMapDataSucceeds() {
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-
-        fillMap(sourceCluster, MAP_NONMERKLE_NAME, 0, 1000);
-
-        sourceCluster.bounceCluster();
-    }
-
-    @Test
-    public void testHotRestartWithNoDataSucceeds() {
-        sourceCluster.startCluster();
-        targetCluster.startCluster();
-
-        sourceCluster.bounceCluster();
-    }
-
-    private void verifyDeltaIsBelowFivePercent() {
+    private void verifyDeltaIsBelowThreshold(int threshold) {
         assertTrueEventually(() -> {
             ConsistencyCheckResult checkResult = getLastCheckResult(sourceCluster.getAMember(), wanReplicationMerkle1)
                     .get(MAP_MERKLE1_NAME);
             assertNotNull(checkResult);
             float diffPercentage = checkResult.getDiffPercentage();
-            assertTrue("Map difference percentage is " + diffPercentage, diffPercentage < 5);
+            assertTrue("Map difference percentage is " + diffPercentage, diffPercentage < threshold);
         });
     }
 }

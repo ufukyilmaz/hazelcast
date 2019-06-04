@@ -15,12 +15,16 @@ import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.map.MapWanReplicationTestSupport;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,16 +45,19 @@ import static org.junit.Assert.assertFalse;
  * See https://hazelcast.zendesk.com/agent/tickets/4195
  */
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
 
     private static final String MAP_NAME = "ZD1995";
 
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
+
     @Parameter
     public InMemoryFormat inMemoryFormat;
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameters(name = "{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
                 {InMemoryFormat.BINARY},

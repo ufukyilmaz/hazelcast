@@ -41,6 +41,7 @@ import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.UninitializableWanEndpoint;
 import com.hazelcast.wan.WanReplicationService;
@@ -48,10 +49,14 @@ import com.hazelcast.wan.WanSyncStatus;
 import com.hazelcast.wan.map.filter.DummyMapWanFilter;
 import com.hazelcast.wan.map.filter.NoFilterMapWanFilter;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -78,17 +83,20 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({ParallelJVMTest.class, QuickTest.class})
 public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
-    @Parameterized.Parameter(0)
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
+
+    @Parameter(0)
     public InMemoryFormat inMemoryFormat;
 
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int maxConcurrentInvocations;
 
-    @Parameterized.Parameters(name = "inMemoryFormat:{0}, maxConcurrentInvocations:{1}")
+    @Parameters(name = "inMemoryFormat:{0}, maxConcurrentInvocations:{1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {InMemoryFormat.BINARY, -1},

@@ -7,15 +7,18 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
@@ -39,12 +42,15 @@ public class WanMerkleConsistencyCheckTest {
     private static final String MAP_NAME = "MAP_WITH_MERKLETREES";
     private static final String REPLICATION_NAME = "wanReplication";
 
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
+
     private Cluster sourceCluster;
     private Cluster targetCluster;
     private WanReplication wanReplication;
     private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
 
-    @Parameterized.Parameters(name = "inMemoryFormat: {0} sourceDepth:{1} targetDepth:{2} partitions:{3} elements:{4}")
+    @Parameters(name = "inMemoryFormat: {0} sourceDepth:{1} targetDepth:{2} partitions:{3} elements:{4}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
 

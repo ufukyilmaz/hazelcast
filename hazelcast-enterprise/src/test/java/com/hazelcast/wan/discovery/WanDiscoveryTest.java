@@ -24,8 +24,10 @@ import com.hazelcast.spi.discovery.SimpleDiscoveryNode;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.map.MapWanReplicationTestSupport;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -44,6 +46,9 @@ import static org.junit.Assert.assertTrue;
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class WanDiscoveryTest extends MapWanReplicationTestSupport {
+
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
 
     private String wanReplicationName;
 

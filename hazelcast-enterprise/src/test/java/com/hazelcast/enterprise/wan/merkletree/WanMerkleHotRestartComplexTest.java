@@ -11,6 +11,7 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
@@ -67,6 +68,9 @@ public class WanMerkleHotRestartComplexTest extends HazelcastTestSupport {
 
     @Rule
     public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
+
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
 
     protected File baseDir;
 

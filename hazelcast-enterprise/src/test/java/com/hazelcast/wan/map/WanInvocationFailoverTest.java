@@ -5,10 +5,12 @@ import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -27,6 +29,9 @@ public class WanInvocationFailoverTest {
 
     private static final String MAP_NAME = "map";
     private static final String REPLICATION_NAME = "wanReplication";
+
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
 
     private Cluster clusterA;
     private Cluster clusterB;

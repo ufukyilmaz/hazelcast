@@ -9,6 +9,8 @@ import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -18,6 +20,9 @@ import static org.junit.Assert.assertEquals;
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSupport {
+
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
 
     @Override
     public String getReplicationImpl() {

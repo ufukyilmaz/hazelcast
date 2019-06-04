@@ -6,20 +6,24 @@ import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.WanSyncStatus;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
@@ -37,19 +41,21 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class WanMerkleSyncCountTest {
     private static final String MAP_NAME = "MAP_WITH_MERKLETREES";
     private static final String REPLICATION_NAME = "wanReplication";
+
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
 
     private Cluster sourceCluster;
     private Cluster targetCluster;
     private WanReplication wanReplication;
     private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
 
-    @Parameterized.Parameters(name = "sourceDepth: {0} targetDepth: {1} partitions: {2} sourceCount: {3} targetCount:{4} "
-            + "syncCount:{5}")
+    @Parameters(name = "sourceDepth: {0} targetDepth: {1} partitions: {2} sourceCount: {3} targetCount:{4} syncCount:{5}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 // depths are equal on both sides - local finishes comparison
@@ -88,22 +94,22 @@ public class WanMerkleSyncCountTest {
         });
     }
 
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public int sourceDepth;
 
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int targetDepth;
 
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public int partitions;
 
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public int sourceCount;
 
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public int targetCount;
 
-    @Parameterized.Parameter(5)
+    @Parameter(5)
     public int expectedSyncCount;
 
     @After
@@ -163,25 +169,22 @@ public class WanMerkleSyncCountTest {
     }
 
     private void verifySyncResult(final int expectedRecordsToSync) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                int syncCount = 0;
-                for (HazelcastInstance instance : sourceCluster.getMembers()) {
-                    EnterpriseWanReplicationService replicationService = wanReplicationService(instance);
-                    assertEquals(WanSyncStatus.READY, replicationService.getWanSyncState().getStatus());
+        assertTrueEventually(() -> {
+            int syncCount = 0;
+            for (HazelcastInstance instance : sourceCluster.getMembers()) {
+                EnterpriseWanReplicationService replicationService = wanReplicationService(instance);
+                assertEquals(WanSyncStatus.READY, replicationService.getWanSyncState().getStatus());
 
-                    LocalWanStats localWanStats = replicationService.getStats().get(wanReplication.getSetupName());
-                    DistributedServiceWanEventCounters.DistributedObjectWanEventCounters counters = localWanStats
-                            .getLocalWanPublisherStats().get(targetCluster.getName()).getSentMapEventCounter().get(MAP_NAME);
+                LocalWanStats localWanStats = replicationService.getStats().get(wanReplication.getSetupName());
+                DistributedServiceWanEventCounters.DistributedObjectWanEventCounters counters = localWanStats
+                        .getLocalWanPublisherStats().get(targetCluster.getName()).getSentMapEventCounter().get(MAP_NAME);
 
-                    if (counters != null) {
-                        syncCount += counters.getSyncCount();
-                    }
+                if (counters != null) {
+                    syncCount += counters.getSyncCount();
                 }
-
-                assertTrue("Sync count " + syncCount + " should == " + expectedRecordsToSync, syncCount == expectedRecordsToSync);
             }
+
+            assertTrue("Sync count " + syncCount + " should == " + expectedRecordsToSync, syncCount == expectedRecordsToSync);
         });
     }
 

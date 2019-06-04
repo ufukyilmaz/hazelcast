@@ -13,6 +13,7 @@ import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.util.RootCauseMatcher;
 import com.hazelcast.wan.AddWanConfigResult;
 import com.hazelcast.wan.WanSyncStats;
@@ -58,6 +59,9 @@ import static org.junit.Assert.fail;
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class MapWanSyncAPITest {
+
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
 
     @Parameters(name = "consistencyCheckStrategy:{0}, maxConcurrentInvocations:{1}")
     public static Collection<Object[]> parameters() {

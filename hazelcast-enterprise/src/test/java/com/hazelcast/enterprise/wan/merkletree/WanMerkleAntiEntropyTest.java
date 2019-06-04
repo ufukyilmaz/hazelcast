@@ -6,14 +6,17 @@ import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -48,16 +51,12 @@ import static org.junit.Assert.assertEquals;
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class WanMerkleAntiEntropyTest {
-    private static final Supplier<Config> REGULAR_CONFIG_SUPPLIER = new Supplier<Config>() {
-        @Override
-        public Config get() {
-            return new Config();
-        }
-    };
-
     private static final String MAP_NAME = "MAP_WITH_MERKLETREES";
     private static final String REPLICATION_NAME = "wanReplication";
     private static final int MAP_ENTRIES = 100;
+
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
 
     private Cluster sourceCluster;
     private Cluster targetCluster;
@@ -74,8 +73,13 @@ public class WanMerkleAntiEntropyTest {
 
     @Before
     public void setup() {
-        sourceCluster = clusterA(factory, 2, REGULAR_CONFIG_SUPPLIER).setup();
-        targetCluster = clusterB(factory, 2, REGULAR_CONFIG_SUPPLIER).setup();
+        Supplier<Config> configSupplier = () -> new Config()
+                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "2")
+                .setProperty(GroupProperty.GENERIC_OPERATION_THREAD_COUNT.getName(), "2")
+                .setProperty(GroupProperty.EVENT_THREAD_COUNT.getName(), "1");
+
+        sourceCluster = clusterA(factory, 2, configSupplier).setup();
+        targetCluster = clusterB(factory, 2, configSupplier).setup();
 
         wanReplication = replicate()
                 .from(sourceCluster)

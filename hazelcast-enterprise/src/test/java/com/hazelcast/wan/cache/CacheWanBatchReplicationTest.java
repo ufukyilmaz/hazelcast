@@ -6,13 +6,18 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.cache.filter.DummyCacheWanFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
@@ -20,14 +25,17 @@ import static java.util.Arrays.asList;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class})
 public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTest {
 
-    @Parameterized.Parameter
+    @Rule
+    public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
+
+    @Parameter
     public int maxConcurrentInvocations;
 
-    @Parameterized.Parameters(name = "maxConcurrentInvocations:{0}")
+    @Parameters(name = "maxConcurrentInvocations:{0}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {-1},

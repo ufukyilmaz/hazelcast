@@ -12,12 +12,10 @@ import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.internal.serialization.PortableHook;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.impl.NodeEngineImpl;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.DynamicType;
-import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -32,14 +30,6 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTestSupport {
 
-    private static void setUseDeleteWhenProcessingRemoveEvents(boolean value) {
-        System.setProperty("hazelcast.wan.map.useDeleteWhenProcessingRemoveEvents", String.valueOf(value));
-    }
-
-    private static void unsetUseDeleteWhenProcessingRemoveEvents() {
-        System.clearProperty("hazelcast.wan.map.useDeleteWhenProcessingRemoveEvents");
-    }
-
     @Override
     protected Config getConfig() {
         Config config = super.getConfig();
@@ -48,13 +38,6 @@ public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTe
               .setInMemoryFormat(getMemoryFormat());
 
         return config;
-    }
-
-    @After
-    @Override
-    public void cleanup() {
-        super.cleanup();
-        unsetUseDeleteWhenProcessingRemoveEvents();
     }
 
     @Override
@@ -68,19 +51,7 @@ public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTe
     }
 
     @Test
-    public void failWhenTargetClusterDoesNotContainClassAndUsingRemove() throws Exception {
-        // false by default
-        unsetUseDeleteWhenProcessingRemoveEvents();
-        testClassNotFoundExceptionTargetCluster(1);
-    }
-
-    @Test
-    public void noFailuresWhenTargetClusterDoesNotContainClassAndUsingDelete() throws Exception {
-        setUseDeleteWhenProcessingRemoveEvents(true);
-        testClassNotFoundExceptionTargetCluster(0);
-    }
-
-    private void testClassNotFoundExceptionTargetCluster(int expectedFailureCount) throws InstantiationException, IllegalAccessException {
+    public void noFailuresWhenTargetClusterDoesNotContainClass() throws Exception {
         clusterA = new HazelcastInstance[1];
         clusterB = new HazelcastInstance[1];
         final String publisherName = "atob";
@@ -111,16 +82,13 @@ public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTe
 
 
         // assert no publisher in the entire cluster encountered a failure
-        assertPublisherFailureCountEventually(clusterA, expectedFailureCount, publisherName);
+        assertPublisherFailureCountEventually(clusterA, 0, publisherName);
     }
 
-    private static void assertPublisherFailureCountEventually(final HazelcastInstance[] cluster, final int expectedFailureCount, final String publisherName) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertPublisherFailureCount(cluster, expectedFailureCount, publisherName);
-            }
-        });
+    private static void assertPublisherFailureCountEventually(final HazelcastInstance[] cluster,
+                                                              final int expectedFailureCount,
+                                                              final String publisherName) {
+        assertTrueEventually(() -> assertPublisherFailureCount(cluster, expectedFailureCount, publisherName));
     }
 
     private static void assertPublisherFailureCount(HazelcastInstance[] cluster, int expectedFailureCount, String publisherName) {

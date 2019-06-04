@@ -69,7 +69,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.hazelcast.config.WanPublisherState.PAUSED;
 import static com.hazelcast.config.WanPublisherState.STOPPED;
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
-import static com.hazelcast.map.impl.EnterpriseMapReplicationSupportingService.PROP_USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_CLEANUP_PERCENTAGE;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
@@ -956,8 +955,6 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
                 .setImplementation(store);
         configB.getMapConfig(mapName).setMapStoreConfig(mapStoreConfig);
 
-        setUseMapDeletePropertyIfReplicationConcurrent(configB, maxConcurrentInvocations);
-
         // 3. Start cluster-A and cluster-B
         startClusterA();
         startClusterB();
@@ -997,8 +994,6 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         mapConfig.setWanReplicationRef(getWanReplicationRefFrom(configB, true));
         mapConfig.setMapStoreConfig(mapStoreConfig);
 
-        setUseMapDeletePropertyIfReplicationConcurrent(configB, maxConcurrentInvocations);
-
         // 3. Start cluster-A and cluster-B
         startClusterA();
         startClusterB();
@@ -1019,23 +1014,6 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
             assertEquals("missing store operations", mapEntryCount, store.storeCount.get());
             assertEquals("missing delete operations", mapEntryCount, store.deleteCount.get());
         });
-    }
-
-    /**
-     * Use map#delete to process events on target cluster when
-     * maxConcurrentInvocations > 1 because, in contrast with
-     * map#remove, map#delete always calls mapstore#delete
-     * without pre-checking existence of key.
-     * <p>
-     * Below setting is needed due to the out of order nature of
-     * wan concurrent invocations. In this test updates can be
-     * reordered with removes when maxConcurrentInvocations > 1.
-     */
-    private static void setUseMapDeletePropertyIfReplicationConcurrent(Config config,
-                                                                       int maxConcurrentInvocations) {
-        if (maxConcurrentInvocations > 1) {
-            config.setProperty(PROP_USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS, "true");
-        }
     }
 
     @Test

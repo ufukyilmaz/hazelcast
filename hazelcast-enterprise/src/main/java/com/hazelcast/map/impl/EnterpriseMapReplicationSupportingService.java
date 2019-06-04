@@ -20,7 +20,6 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
-import com.hazelcast.spi.properties.HazelcastProperty;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
 
@@ -31,22 +30,8 @@ import static com.hazelcast.util.ExceptionUtil.rethrow;
  * This class handles incoming map WAN replication events.
  */
 public class EnterpriseMapReplicationSupportingService implements ReplicationSupportingService {
-    /**
-     * Uses map delete instead of map remove when processing remove events. This has the benefit
-     * that the old value will not be sent from the partition owner (since this member does not use it)
-     * and that we avoid {@link ClassNotFoundException}s when the in-memory type of this map is
-     * {@link com.hazelcast.config.InMemoryFormat#BINARY} and the member does not have the class in it's
-     * classloader.
-     * The downside to this is that map listeners will not receive the old value (since we are performing
-     * delete instead of remove).
-     */
-    public static final String PROP_USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS
-            = "hazelcast.wan.map.useDeleteWhenProcessingRemoveEvents";
-    private static final HazelcastProperty USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS
-            = new HazelcastProperty(PROP_USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS, false);
     private static final String DEFAULT_MERGE_POLICY = PassThroughMergePolicy.class.getName();
 
-    private final boolean useDeleteWhenProcessingRemoveEvents;
     private final NodeEngine nodeEngine;
     private final ProxyService proxyService;
     private final MapServiceContext mapServiceContext;
@@ -62,10 +47,8 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
                 = (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicyProvider
                 .getMergePolicy(DEFAULT_MERGE_POLICY);
         this.proxyService = nodeEngine.getProxyService();
-        this.useDeleteWhenProcessingRemoveEvents = nodeEngine.getProperties()
-                .getBoolean(USE_DELETE_WHEN_PROCESSING_REMOVE_EVENTS);
         this.wanEventCounters = nodeEngine.getWanReplicationService()
-                .getReceivedEventCounters(MapService.SERVICE_NAME);
+                                          .getReceivedEventCounters(MapService.SERVICE_NAME);
     }
 
     @Override
@@ -190,9 +173,7 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
         final String mapName = event.getMapName();
         final MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
 
-        final MapOperation operation = useDeleteWhenProcessingRemoveEvents
-                ? operationProvider.createDeleteOperation(mapName, event.getKey(), true)
-                : operationProvider.createRemoveOperation(mapName, event.getKey(), true);
+        final MapOperation operation = operationProvider.createDeleteOperation(mapName, event.getKey(), true);
         final InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
         if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
             future.join();
@@ -226,7 +207,7 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             return nodeEngine.getOperationService()
-                    .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
+                             .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
             throw rethrow(t);
         }

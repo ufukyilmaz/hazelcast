@@ -1,7 +1,7 @@
 package com.hazelcast.nio.ssl;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.ConfigurationException;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
@@ -227,7 +227,7 @@ public class SSLConnectionTest {
     /**
      * Tests that node doesn't start when SSL configurations contains only unsupported ciphersuite names.
      */
-    @Test(expected = ConfigurationException.class)
+    @Test(expected = InvalidConfigurationException.class)
     public void testUnsupportedCipherSuiteNames() {
         factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", "foo,bar"));
         factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", "foo,bar"));
@@ -236,7 +236,7 @@ public class SSLConnectionTest {
     /**
      * Tests that a node doesn't start if its SSL configurations contains empty ("") ciphersuites property value.
      */
-    @Test(expected = ConfigurationException.class)
+    @Test(expected = InvalidConfigurationException.class)
     public void testEmptyCipherSuiteProperty() {
         factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", ""));
         factory.newHazelcastInstance(createConfigWithSslProperty("ciphersuites", ""));

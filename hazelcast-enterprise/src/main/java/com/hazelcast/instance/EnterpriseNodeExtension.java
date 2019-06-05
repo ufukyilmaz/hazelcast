@@ -5,8 +5,8 @@ import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.AdvancedNetworkConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.HotRestartPersistenceConfig;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.OnJoinPermissionOperationName;
 import com.hazelcast.config.SecurityConfig;
@@ -426,7 +426,7 @@ public class EnterpriseNodeExtension
             logger.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
             if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
                 if (isHotRestartEnabled()) {
-                    throw new ConfigurationException("MemoryAllocatorType.STANDARD cannot be used when Hot Restart "
+                    throw new InvalidConfigurationException("MemoryAllocatorType.STANDARD cannot be used when Hot Restart "
                             + "is enabled. Please use MemoryAllocatorType.POOLED!");
                 }
                 memoryManager = new StandardMemoryManager(size, freeMemoryChecker);

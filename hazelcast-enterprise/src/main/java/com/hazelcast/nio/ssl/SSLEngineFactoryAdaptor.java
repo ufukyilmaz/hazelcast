@@ -1,6 +1,6 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.config.ConfigurationException;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 
@@ -64,7 +64,8 @@ public class SSLEngineFactoryAdaptor implements SSLEngineFactory {
             cipherSuites = intersection(configuredCipherSuites, supportedCipherSuites);
             // fail fast if no valid ciphersuite found
             if (cipherSuites.length < 1) {
-                throw new ConfigurationException("No configured SSL cipher suite name is valid. Check if configured values "
+                throw new InvalidConfigurationException("No configured SSL cipher suite name is valid. "
+                        + "Check if configured values "
                         + Arrays.toString(configuredCipherSuites) + " contain supported values: "
                         + Arrays.toString(supportedCipherSuites));
             }

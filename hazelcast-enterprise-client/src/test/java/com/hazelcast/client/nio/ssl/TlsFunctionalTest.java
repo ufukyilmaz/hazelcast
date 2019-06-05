@@ -6,8 +6,8 @@ import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.AdvancedNetworkConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.EndpointConfig;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
@@ -316,7 +316,7 @@ public class TlsFunctionalTest {
      * Then: Client fails to start
      * </pre>
      */
-    @Test(expected = ConfigurationException.class)
+    @Test(expected = InvalidConfigurationException.class)
     public void testUnsupportedClientCipherSuiteNames() throws IOException {
         factory.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();

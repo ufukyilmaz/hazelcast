@@ -25,9 +25,9 @@ import com.hazelcast.cache.wan.CacheReplicationUpdate;
 import com.hazelcast.cache.wan.WanCacheEntryView;
 import com.hazelcast.cache.wan.filter.CacheWanEventFilter;
 import com.hazelcast.config.CacheConfig;
-import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
@@ -521,7 +521,7 @@ public class EnterpriseCacheService
             if (publisher == null) {
                 String msg = String.format("Missing WAN replication config with name '%s' for cache '%s'",
                         wanReplicationRef.getName(), config.getNameWithPrefix());
-                throw new ConfigurationException(msg);
+                throw new InvalidConfigurationException(msg);
             }
             wanReplicationPublishers.putIfAbsent(config.getNameWithPrefix(), publisher);
             cacheMergePolicies.putIfAbsent(config.getNameWithPrefix(), wanReplicationRef.getMergePolicy());

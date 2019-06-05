@@ -2,7 +2,7 @@ package com.hazelcast.cache;
 
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.ConfigurationException;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.SlowTest;
@@ -22,7 +22,7 @@ public class EnterpriseCacheCreationTest extends CacheCreationTest {
         CachingProvider cachingProvider = createCachingProvider(config);
         CacheManager defaultCacheManager = cachingProvider.getCacheManager();
 
-        thrown.expect(ConfigurationException.class);
+        thrown.expect(InvalidConfigurationException.class);
         defaultCacheManager.getCache("test");
     }
 

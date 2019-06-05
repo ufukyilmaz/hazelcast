@@ -1,6 +1,6 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.config.ConfigurationException;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.networking.Channel;
@@ -49,9 +49,9 @@ public abstract class AbstractTLSChannelInitializer implements ChannelInitialize
         } catch (HazelcastException e) {
             throw e;
         } catch (NoSuchAlgorithmException e) {
-            throw new ConfigurationException("Error while loading SSL engine for: " + getClass().getSimpleName(), e);
+            throw new InvalidConfigurationException("Error while loading SSL engine for: " + getClass().getSimpleName(), e);
         } catch (IOException e) {
-            throw new ConfigurationException("Error while loading SSL engine for: " + getClass().getSimpleName(), e);
+            throw new InvalidConfigurationException("Error while loading SSL engine for: " + getClass().getSimpleName(), e);
         } catch (Exception e) {
             throw new HazelcastException(e);
         }

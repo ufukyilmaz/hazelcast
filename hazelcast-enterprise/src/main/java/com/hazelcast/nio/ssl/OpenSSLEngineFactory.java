@@ -1,6 +1,6 @@
 package com.hazelcast.nio.ssl;
 
-import com.hazelcast.config.ConfigurationException;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -183,7 +183,7 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
             // even create the context to enquire for the supported cipher suites.
             // Therefore, we rely on the following translation:
             if (e.getMessage() != null && e.getMessage().contains("cipher suite")) {
-                throw new ConfigurationException(e.getMessage(), e);
+                throw new InvalidConfigurationException(e.getMessage(), e);
             }
 
             throw new RuntimeException(e);
@@ -191,7 +191,7 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
             // Similarly to above, the two engines behave differently
             // The following translation allows for a fail-fast connection breaker
             if (e.getMessage() != null && e.getMessage().contains("Protocol") && e.getMessage().contains("is not supported")) {
-                throw new ConfigurationException(e.getMessage(), e);
+                throw new InvalidConfigurationException(e.getMessage(), e);
             }
 
             return sneakyThrow(e);

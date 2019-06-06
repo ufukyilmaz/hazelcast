@@ -1,7 +1,7 @@
 package com.hazelcast.client.security;
 
+import com.hazelcast.collection.IList;
 import com.hazelcast.collection.impl.list.ListService;
-import com.hazelcast.core.IList;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;

@@ -1,8 +1,8 @@
 package com.hazelcast.client.security;
 
+import com.hazelcast.collection.ICollection;
+import com.hazelcast.collection.ItemListener;
 import com.hazelcast.collection.impl.set.SetService;
-import com.hazelcast.core.ICollection;
-import com.hazelcast.core.ItemListener;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;

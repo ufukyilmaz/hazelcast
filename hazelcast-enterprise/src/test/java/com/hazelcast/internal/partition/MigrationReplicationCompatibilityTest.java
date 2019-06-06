@@ -2,6 +2,7 @@ package com.hazelcast.internal.partition;
 
 import com.hazelcast.cache.CacheNotExistsException;
 import com.hazelcast.cache.ICache;
+import com.hazelcast.collection.IQueue;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
@@ -12,7 +13,6 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ILock;
 import com.hazelcast.core.IMap;
-import com.hazelcast.core.IQueue;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.instance.HazelcastInstanceFactory;

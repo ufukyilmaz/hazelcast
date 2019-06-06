@@ -1,10 +1,10 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.core.ITopic;
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.topic.ITopic;
+import com.hazelcast.topic.Message;
+import com.hazelcast.topic.MessageListener;
 import com.hazelcast.topic.impl.TopicService;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

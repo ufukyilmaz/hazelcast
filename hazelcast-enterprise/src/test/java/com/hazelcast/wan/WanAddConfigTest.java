@@ -328,8 +328,8 @@ public class WanAddConfigTest {
         }
 
         verifyMapReplicated(clusterA, clusterB, "map");
-        verifyMapReplicated(clusterA, clusterB, "map2");
-        verifyMapReplicated(clusterA, clusterB, "map3");
+        assertKeysNotInEventually(clusterB.getMembers(), "map2", 0, 2000);
+        assertKeysNotInEventually(clusterB.getMembers(), "map3", 0, 3000);
     }
 
     @Test

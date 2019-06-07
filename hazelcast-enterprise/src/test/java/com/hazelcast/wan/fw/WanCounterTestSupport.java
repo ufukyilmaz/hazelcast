@@ -10,6 +10,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.test.ProgressCheckerTask;
 import com.hazelcast.test.TaskProgress;
+import com.hazelcast.wan.WanSyncStats;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -81,6 +82,19 @@ public class WanCounterTestSupport {
         }
     }
 
+    public static int getClusterWideSumPartitionsSyncedCount(Cluster cluster, WanReplication wanReplication, String mapName) {
+        int sumPrimary = 0;
+
+        for (HazelcastInstance instance : cluster.getMembers()) {
+            if (instance != null && instance.getLifecycleService().isRunning()) {
+                WanSyncStats syncStats = getSyncStats(instance, wanReplication, mapName);
+                sumPrimary += syncStats != null ? syncStats.getPartitionsSynced() : 0;
+            }
+        }
+
+        return sumPrimary;
+    }
+
     public static ScheduledFuture<?> dumpWanCounters(WanReplication wanReplication, ScheduledExecutorService executorService) {
         WanCounterDumper wanCounterDumper = new WanCounterDumper(wanReplication);
         return executorService.scheduleAtFixedRate(wanCounterDumper, 0, 1000, MILLISECONDS);
@@ -123,6 +137,11 @@ public class WanCounterTestSupport {
 
     private static int getBackupOutboundQueueSize(HazelcastInstance instance, WanReplication wanReplication) {
         return wanReplicationEndpoint(instance, wanReplication).getCurrentBackupElementCount();
+    }
+
+    private static WanSyncStats getSyncStats(HazelcastInstance instance, WanReplication wanReplication, String mapName) {
+        WanSyncStats wanSyncStats = wanReplicationEndpoint(instance, wanReplication).getStats().getLastSyncStats().get(mapName);
+        return wanSyncStats;
     }
 
     private static class QueueDrainingProgressCheckerTask implements ProgressCheckerTask {

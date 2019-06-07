@@ -110,6 +110,11 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     @Override
     public void processEvent(WanConsistencyCheckEvent event) throws Exception {
         String mapName = event.getMapName();
+        if (!isMapWanReplicated(mapName)) {
+            throw new IllegalArgumentException("WAN consistency check requested for map " + mapName + " that is "
+                    + "not configured for WAN replication");
+        }
+
         String target = publisher.wanReplicationName + "/" + publisher.wanPublisherId;
         nodeEngine.getManagementCenterService()
                   .log(new WanConsistencyCheckStartedEvent(publisher.wanReplicationName,
@@ -212,15 +217,26 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     public void processEvent(WanSyncEvent event) throws Exception {
         if (event.getType() == WanSyncType.ALL_MAPS) {
             for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
-                lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1, -1, -1, -1));
-                processMapSync(event, mapName);
+                if (isMapWanReplicated(mapName)) {
+                    lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1, -1, -1, -1));
+                    processMapSync(event, mapName);
+                }
             }
         } else {
             String mapName = event.getMapName();
+            if (!isMapWanReplicated(mapName)) {
+                throw new IllegalArgumentException("WAN synchronization requested for map " + mapName + " that is "
+                        + "not configured for WAN replication");
+            }
             lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1, -1, -1, -1));
             processMapSync(event, mapName);
         }
     }
+
+    private boolean isMapWanReplicated(String mapName) {
+        return mapService.getMapServiceContext().getMapContainer(mapName).isWanReplicationEnabled();
+    }
+
 
     private void processMapSync(WanSyncEvent event, String mapName) throws Exception {
         String target = publisher.wanReplicationName + "/" + publisher.wanPublisherId;

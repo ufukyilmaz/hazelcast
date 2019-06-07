@@ -11,6 +11,8 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.WanSyncStatus;
 import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
@@ -103,6 +105,18 @@ public class WanAntiEntropyTestSupport {
                 assertEquals(0, entriesToSync);
             }
         });
+    }
+
+    public static Collection<Map<String, ConsistencyCheckResult>> getLastCheckResults(Cluster cluster,
+                                                                                      WanReplication wanReplication) {
+        HazelcastInstance[] members = cluster.getMembers();
+        Collection<Map<String, ConsistencyCheckResult>> consistencyCheckResults = new ArrayList<>(members.length);
+
+        for (HazelcastInstance instance : members) {
+            consistencyCheckResults.add(getLastCheckResult(instance, wanReplication));
+        }
+
+        return consistencyCheckResults;
     }
 
     public static Map<String, ConsistencyCheckResult> getLastCheckResult(HazelcastInstance instance,

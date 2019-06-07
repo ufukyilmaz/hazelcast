@@ -98,12 +98,27 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
     private Collection<String> getMapsToSynchronize(WanSyncEvent event) {
         final Collection<String> mapNames;
         if (event.getType() == WanSyncType.ALL_MAPS) {
-            mapNames = mapService.getMapServiceContext().getMapContainers().keySet();
+            Collection<String> allMapNames = mapService.getMapServiceContext().getMapContainers().keySet();
+            mapNames = SetUtil.createHashSet(allMapNames.size());
+            for (String mapName : allMapNames) {
+                if (isMapWanReplicated(mapName)) {
+                    mapNames.add(mapName);
+                }
+            }
         } else {
+            String mapName = event.getMapName();
+            if (!isMapWanReplicated(mapName)) {
+                throw new IllegalArgumentException("WAN synchronization requested for map " + mapName + " that is "
+                        + "not configured for WAN replication");
+            }
             mapNames = SetUtil.createHashSet(1);
-            mapNames.add(event.getMapName());
+            mapNames.add(mapName);
         }
         return mapNames;
+    }
+
+    private boolean isMapWanReplicated(String mapName) {
+        return mapService.getMapServiceContext().getMapContainer(mapName).isWanReplicationEnabled();
     }
 
     private void beforeSync(Collection<String> mapNames, Map<String, FullWanSyncStats> mapSyncStats) {

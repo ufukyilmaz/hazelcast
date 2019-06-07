@@ -3,6 +3,7 @@ package com.hazelcast.wan.fw;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.LifecycleEvent;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
@@ -84,8 +85,18 @@ public class Cluster {
     }
 
     public void bounceCluster() {
-        ILogger logger = Logger.getLogger(Cluster.class);
+        CountDownLatch shutdownLatch = new CountDownLatch(getMembers().length);
+        for (HazelcastInstance instance : getMembers()) {
+            instance.getLifecycleService().addLifecycleListener(event -> {
+                if (event.getState() == LifecycleEvent.LifecycleState.SHUTDOWN) {
+                    shutdownLatch.countDown();
+                }
+            });
+        }
         getAMember().getCluster().shutdown();
+        assertOpenEventually(shutdownLatch);
+
+        ILogger logger = Logger.getLogger(Cluster.class);
 
         CountDownLatch membersLatch = new CountDownLatch(clusterMembers.length);
         AtomicReferenceArray<HazelcastInstance> bouncedMembers = new AtomicReferenceArray<>(clusterMembers.length);

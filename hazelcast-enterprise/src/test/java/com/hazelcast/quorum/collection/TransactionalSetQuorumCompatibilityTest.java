@@ -3,11 +3,11 @@ package com.hazelcast.quorum.collection;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SetConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.TransactionalSet;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.quorum.AbstractQuorumCompatibilityTest;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import com.hazelcast.transaction.TransactionContext;
+import com.hazelcast.transaction.TransactionalSet;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 

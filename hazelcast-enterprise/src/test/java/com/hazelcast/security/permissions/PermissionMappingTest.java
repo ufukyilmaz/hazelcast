@@ -45,7 +45,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         INSECURE_SERVICES.add(com.hazelcast.serviceprovider.TestRemoteService.class);
         INSECURE_SERVICES.add(com.hazelcast.ringbuffer.impl.RingbufferService.class);
         INSECURE_SERVICES.add(com.hazelcast.topic.impl.reliable.ReliableTopicService.class);
-        INSECURE_SERVICES.add(com.hazelcast.concurrent.idgen.IdGeneratorService.class);
+        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.unsafe.idgen.IdGeneratorService.class);
         INSECURE_SERVICES.add(com.hazelcast.transaction.impl.xa.XAService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.lock.RaftLockService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomiclong.RaftAtomicLongService.class);
@@ -79,9 +79,9 @@ public class PermissionMappingTest extends HazelcastTestSupport {
     private static final Map<Class, String> SERVICE_TO_PERMSTRUCT_MAPPING = new HashMap<Class, String>();
 
     static {
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.concurrent.atomiclong.AtomicLongService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.atomiclong.AtomicLongService.class,
                 "atomicLong");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.concurrent.atomicreference.AtomicReferenceService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.atomicreference.AtomicReferenceService.class,
                 "atomicReference");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cardinality.impl.CardinalityEstimatorService.class,
                 "cardinalityEstimator");
@@ -93,21 +93,21 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "map");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.executor.impl.DistributedExecutorService.class,
                 "executorService");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.concurrent.countdownlatch.CountDownLatchService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.countdownlatch.CountDownLatchService.class,
                 "countDownLatch");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.collection.impl.queue.QueueService.class,
                 "queue");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.collection.impl.list.ListService.class,
                 "list");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.concurrent.idgen.IdGeneratorService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.idgen.IdGeneratorService.class,
                 "idGenerator");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.collection.impl.set.SetService.class,
                 "set");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.replicatedmap.impl.ReplicatedMapService.class,
                 "replicatedMap");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.concurrent.lock.LockServiceImpl.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.lock.LockServiceImpl.class,
                 "lock");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.concurrent.semaphore.SemaphoreService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.semaphore.SemaphoreService.class,
                 "semaphore");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.multimap.impl.MultiMapService.class,
                 "multiMap");
@@ -324,11 +324,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
             }
             final String structure = key.substring(0, dotIndex).trim();
             final String method = key.substring(dotIndex + 1).trim();
-            Set<String> methods = permissionMappings.get(structure);
-            if (methods == null) {
-                methods = new HashSet<String>();
-                permissionMappings.put(structure, methods);
-            }
+            Set<String> methods = permissionMappings.computeIfAbsent(structure, k -> new HashSet<String>());
 
             methods.add(method);
         }

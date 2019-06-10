@@ -7,7 +7,7 @@ import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.cp.CPSemaphoreConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.ISemaphore;
+import com.hazelcast.cp.ISemaphore;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.annotation.ParallelJVMTest;

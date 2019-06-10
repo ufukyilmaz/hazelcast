@@ -1,7 +1,7 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.concurrent.semaphore.SemaphoreService;
-import com.hazelcast.core.ISemaphore;
+import com.hazelcast.cp.internal.datastructures.unsafe.semaphore.SemaphoreService;
+import com.hazelcast.cp.ISemaphore;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

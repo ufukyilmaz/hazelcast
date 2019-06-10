@@ -3,7 +3,7 @@ package com.hazelcast.quorum.atomicreference;
 import com.hazelcast.config.AtomicReferenceConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.cp.IAtomicReference;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.quorum.AbstractQuorumCompatibilityTest;
 import com.hazelcast.test.annotation.CompatibilityTest;

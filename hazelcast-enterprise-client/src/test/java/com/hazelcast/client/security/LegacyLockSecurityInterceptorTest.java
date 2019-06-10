@@ -1,8 +1,8 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.concurrent.lock.LockService;
-import com.hazelcast.core.ICondition;
-import com.hazelcast.core.ILock;
+import com.hazelcast.cp.internal.datastructures.unsafe.lock.LockService;
+import com.hazelcast.cp.lock.ICondition;
+import com.hazelcast.cp.lock.ILock;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

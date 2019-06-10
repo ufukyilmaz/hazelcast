@@ -1,4 +1,4 @@
-package com.hazelcast.concurrent.countdownlatch;
+package com.hazelcast.cp.internal.datastructures.unsafe.countdownlatch;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;

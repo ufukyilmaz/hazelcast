@@ -1,4 +1,4 @@
-package com.hazelcast.concurrent.atomicreference;
+package com.hazelcast.cp.internal.datastructures.unsafe.semaphore;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -7,15 +7,14 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 /**
- * Compatibility test for AtomicReference.
+ * Compatibility test for Semaphore.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
-public class AtomicReferenceCompatibilityTest extends AtomicReferenceAbstractTest {
+public class SemaphoreCompatibilityTest extends SemaphoreBasicTest {
 
     @Override
     protected HazelcastInstance[] newInstances() {
         return createHazelcastInstanceFactory().newInstances();
     }
-
 }

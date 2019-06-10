@@ -1,15 +1,15 @@
 package com.hazelcast.spi.hotrestart;
 
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.cluster.Member;
+import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.ExecutionCallback;
-import com.hazelcast.core.Member;
 import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.hotrestart.BackupTaskStatus;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.instance.EnterpriseNodeExtension;
-import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.cluster.ClusterService;

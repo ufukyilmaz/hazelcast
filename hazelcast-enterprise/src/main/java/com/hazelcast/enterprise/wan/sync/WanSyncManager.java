@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.sync;
 
-import com.hazelcast.core.Member;
+import com.hazelcast.cluster.Member;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.ClusterService;

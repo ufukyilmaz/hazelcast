@@ -9,10 +9,10 @@ import static org.junit.Assert.fail;
 
 import java.util.Set;
 
+import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.Member;
 import com.hazelcast.partition.PartitionService;
 
 /**

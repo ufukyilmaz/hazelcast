@@ -1,9 +1,9 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.core.Member;
+import com.hazelcast.cluster.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.BuildInfoProvider;
-import com.hazelcast.instance.MemberImpl;
+import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.nio.Address;

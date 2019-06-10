@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.core.Member;
+import com.hazelcast.cluster.Member;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.spi.annotation.PrivateApi;
 

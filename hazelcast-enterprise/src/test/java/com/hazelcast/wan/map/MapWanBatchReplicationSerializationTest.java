@@ -74,10 +74,10 @@ public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTe
         final IMap<Object, Object> aMap = getNode(clusterA).getMap(mapName);
         final IMap<Object, Object> bMap = getNode(clusterB).getMap(mapName);
 
-        aMap.put("a", o);
+        aMap.put(o, o);
         assertSizeEventually(1, bMap);
 
-        aMap.delete("a");
+        aMap.delete(o);
         assertSizeEventually(0, bMap);
 
 

@@ -1,8 +1,8 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.core.EntryAdapter;
-import com.hazelcast.core.MultiMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.multimap.MultiMap;
 import com.hazelcast.multimap.impl.MultiMapService;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;

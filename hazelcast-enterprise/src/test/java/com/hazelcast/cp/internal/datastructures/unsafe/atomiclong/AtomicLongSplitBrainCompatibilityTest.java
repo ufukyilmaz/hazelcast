@@ -1,4 +1,4 @@
-package com.hazelcast.concurrent.atomicreference;
+package com.hazelcast.cp.internal.datastructures.unsafe.atomiclong;
 
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.CompatibilityTest;
@@ -10,5 +10,5 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category(CompatibilityTest.class)
-public class AtomicReferenceSplitBrainCompatibilityTest extends AtomicReferenceSplitBrainTest {
+public class AtomicLongSplitBrainCompatibilityTest extends AtomicLongSplitBrainTest {
 }

@@ -6,7 +6,7 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IAtomicLong;
+import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.annotation.ParallelJVMTest;

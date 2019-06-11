@@ -1,4 +1,4 @@
-package com.hazelcast.concurrent.atomiclong;
+package com.hazelcast.cp.internal.datastructures.unsafe.atomiclong;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;

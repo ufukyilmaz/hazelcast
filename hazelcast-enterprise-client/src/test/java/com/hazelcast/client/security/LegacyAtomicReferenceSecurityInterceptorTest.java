@@ -1,7 +1,7 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.concurrent.atomicreference.AtomicReferenceService;
-import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.cp.internal.datastructures.unsafe.atomicreference.AtomicReferenceService;
+import com.hazelcast.cp.IAtomicReference;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

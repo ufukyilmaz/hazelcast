@@ -1,4 +1,4 @@
-package com.hazelcast.concurrent.idgen;
+package com.hazelcast.cp.internal.datastructures.unsafe.lock;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -7,14 +7,15 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 /**
- * Compatibility test for IdGenerator.
+ * Compatibility test for ILock.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
-public class IdGenCompatibilityTest extends IdGeneratorAbstractTest {
+public class LockCompatibilityTest extends LockBasicTest {
 
     @Override
     protected HazelcastInstance[] newInstances() {
         return createHazelcastInstanceFactory().newInstances();
     }
+
 }

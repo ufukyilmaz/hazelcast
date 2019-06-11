@@ -3,7 +3,7 @@ package com.hazelcast.quorum.countdownlatch;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CountDownLatchConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.ICountDownLatch;
+import com.hazelcast.cp.ICountDownLatch;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.quorum.AbstractQuorumCompatibilityTest;
 import com.hazelcast.test.annotation.CompatibilityTest;

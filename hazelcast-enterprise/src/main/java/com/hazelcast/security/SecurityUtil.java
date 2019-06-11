@@ -1,6 +1,6 @@
 package com.hazelcast.security;
 
-import com.hazelcast.concurrent.idgen.IdGeneratorService;
+import com.hazelcast.cp.internal.datastructures.unsafe.idgen.IdGeneratorService;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.security.permission.AllPermissions;
 import com.hazelcast.security.permission.AtomicLongPermission;

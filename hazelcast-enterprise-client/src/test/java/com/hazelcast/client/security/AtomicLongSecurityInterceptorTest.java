@@ -1,7 +1,7 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.core.IAtomicLong;
+import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.cp.internal.datastructures.atomiclong.RaftAtomicLongService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;

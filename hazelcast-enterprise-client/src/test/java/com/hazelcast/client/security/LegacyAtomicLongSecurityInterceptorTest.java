@@ -1,7 +1,7 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.concurrent.atomiclong.AtomicLongService;
-import com.hazelcast.core.IAtomicLong;
+import com.hazelcast.cp.internal.datastructures.unsafe.atomiclong.AtomicLongService;
+import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

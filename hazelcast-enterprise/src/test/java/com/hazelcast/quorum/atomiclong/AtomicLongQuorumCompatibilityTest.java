@@ -3,7 +3,7 @@ package com.hazelcast.quorum.atomiclong;
 import com.hazelcast.config.AtomicLongConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IAtomicLong;
+import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.quorum.AbstractQuorumCompatibilityTest;
 import com.hazelcast.test.annotation.CompatibilityTest;

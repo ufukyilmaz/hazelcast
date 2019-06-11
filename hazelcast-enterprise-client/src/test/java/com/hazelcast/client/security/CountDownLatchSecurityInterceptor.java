@@ -1,7 +1,7 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.core.ICountDownLatch;
+import com.hazelcast.cp.ICountDownLatch;
 import com.hazelcast.cp.internal.datastructures.countdownlatch.RaftCountDownLatchService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;

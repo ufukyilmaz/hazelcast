@@ -2,8 +2,8 @@ package com.hazelcast.client.security;
 
 import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryListener;
-import com.hazelcast.core.ReplicatedMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.replicatedmap.ReplicatedMap;
 import com.hazelcast.replicatedmap.impl.ReplicatedMapService;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;

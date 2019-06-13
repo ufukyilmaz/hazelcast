@@ -10,10 +10,14 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.annotation.NightlyTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.NativeMemoryTestUtil.assertFreeNativeMemory;
+import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
+import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.spi.properties.GroupProperty.PARTITION_COUNT;
@@ -21,6 +25,16 @@ import static com.hazelcast.spi.properties.GroupProperty.PARTITION_COUNT;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(NightlyTest.class)
 public class HDCacheExpirationStressTest extends CacheExpirationStressTest {
+
+    @BeforeClass
+    public static void setupClass() {
+        enableNativeMemoryDebugging();
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        disableNativeMemoryDebugging();
+    }
 
     @Override
     protected Config getConfig() {

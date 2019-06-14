@@ -27,6 +27,8 @@ import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
+import static com.hazelcast.config.WanPublisherState.STOPPED;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanAntiEntropyTestSupport.verifyAllPartitionsAreConsistent;
@@ -127,6 +129,7 @@ public class WanMerkleConsistencyCheckTest {
                 .to(targetCluster)
                 .withSetupName(REPLICATION_NAME)
                 .withConsistencyCheckStrategy(MERKLE_TREES)
+                .withInitialPublisherState(STOPPED)
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
@@ -167,10 +170,10 @@ public class WanMerkleConsistencyCheckTest {
     public void testConsistencyCheckDifferences() {
         sourceCluster.startCluster();
         targetCluster.startCluster();
-        sourceCluster.stopWanReplicationOnAllMembers(wanReplication);
 
         fillMap(sourceCluster, MAP_NAME, 0, entriesToPut);
 
+        assertClusterSizeEventually(2, sourceCluster.getMembers());
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
 
         verifyAllPartitionsAreInconsistent(sourceCluster, wanReplication, MAP_NAME, entriesToPut);
@@ -180,12 +183,12 @@ public class WanMerkleConsistencyCheckTest {
     public void testConsistencyCheckAllInSync() {
         sourceCluster.startCluster();
         targetCluster.startCluster();
-        sourceCluster.stopWanReplicationOnAllMembers(wanReplication);
 
         String valuePrefixCommonOnBothClusters = "T";
         fillMap(sourceCluster, MAP_NAME, 0, entriesToPut, valuePrefixCommonOnBothClusters);
         fillMap(targetCluster, MAP_NAME, 0, entriesToPut, valuePrefixCommonOnBothClusters);
 
+        assertClusterSizeEventually(2, sourceCluster.getMembers());
         sourceCluster.consistencyCheck(wanReplication, MAP_NAME);
 
         verifyAllPartitionsAreConsistent(sourceCluster, wanReplication, MAP_NAME);

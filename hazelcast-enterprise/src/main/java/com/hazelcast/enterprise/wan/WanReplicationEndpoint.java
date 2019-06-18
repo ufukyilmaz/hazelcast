@@ -37,47 +37,12 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
     void shutdown();
 
     /**
-     * Remove the oldest replication event from the replication queue and
-     * decrease the backup event count. The replication queue chosen has the
-     * same map/cache name and partition ID as the provided
-     * {@code wanReplicationEvent}.
-     *
-     * @param wanReplicationEvent the completed wan event
-     */
-    void removeBackup(WanReplicationEvent wanReplicationEvent);
-
-    /**
      * Puts the given {@code wanReplicationEvent} in the corresponding WAN backup
      * queue.
      *
      * @param wanReplicationEvent the WAN event
      */
     void putBackup(WanReplicationEvent wanReplicationEvent);
-
-    /**
-     * Returns the WAN event queue container for this publisher.
-     */
-    PublisherQueueContainer getPublisherQueueContainer();
-
-    /**
-     * Publishes all events from the {@code eventQueue} to the WAN queue for
-     * the given partition ID and map name.
-     *
-     * @param name        the name of the map to which to publish to
-     * @param partitionId the partition to which to publish to
-     * @param eventQueue  the event queue from which events are published
-     */
-    void addMapQueue(String name, int partitionId, WanReplicationEventQueue eventQueue);
-
-    /**
-     * Publishes all events from the {@code eventQueue} to the WAN queue for
-     * the given partition ID and cache name.
-     *
-     * @param name        the name of the cache to which to publish to
-     * @param partitionId the partition to which to publish to
-     * @param eventQueue  the event queue from which events are published
-     */
-    void addCacheQueue(String name, int partitionId, WanReplicationEventQueue eventQueue);
 
     /**
      * Calls to this method will pause WAN event queue polling. Effectively,
@@ -142,11 +107,6 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
     void publishSyncEvent(WanSyncEvent syncRequest);
 
     /**
-     * Clears the WAN queues and recalculates the WAN queue sizes.
-     */
-    void clearQueues();
-
-    /**
      * Collect all replication data for the specific replication event and
      * collection of namespaces being replicated.
      *
@@ -169,4 +129,32 @@ public interface WanReplicationEndpoint extends WanReplicationPublisher {
      * @param namespaces the set in which namespaces should be added
      */
     void collectAllServiceNamespaces(PartitionReplicationEvent event, Set<ServiceNamespace> namespaces);
+
+    /**
+     * Removes all WAN events pending replication.
+     * If the publisher does not store WAN events, this method is a no-op.
+     */
+    int removeWanEvents();
+
+    /**
+     * Removes all WAN events pending replication and belonging to the provided
+     * service and partition.
+     * If the publisher does not store WAN events, this method is a no-op.
+     *
+     * @param serviceName the service name of the WAN events should be removed
+     * @param partitionId the partition ID of the WAN events should be removed
+     */
+    int removeWanEvents(int partitionId, String serviceName);
+
+    /**
+     * Removes a {@code count} number of events pending replication and belonging
+     * to the provided service, object and partition.
+     * If the publisher does not store WAN events, this method is a no-op.
+     *
+     * @param serviceName the service name of the WAN events should be removed
+     * @param objectName  the object name of the WAN events should be removed
+     * @param partitionId the partition ID of the WAN events should be removed
+     * @param count       the number of events to remove
+     */
+    int removeWanEvents(int partitionId, String serviceName, String objectName, int count);
 }

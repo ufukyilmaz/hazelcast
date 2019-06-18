@@ -81,7 +81,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
     private static final int IDLE_MAX_YIELDS = 50;
 
     private final AtomicLong failedTransmitCount = new AtomicLong();
-    private final Set<Operation> liveOperations = newSetFromMap(new ConcurrentHashMap<Operation, Boolean>());
+    private final Set<Operation> liveOperations = newSetFromMap(new ConcurrentHashMap<>());
 
     /**
      * Lock for coordinating WAN sync process with dequeueing WAN events from
@@ -116,8 +116,8 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                 configurationContext.getIdleMaxParkNs());
         this.wanExecutor = node.getNodeEngine().getExecutionService().getExecutor(WAN_EXECUTOR);
         this.wanBatchSender = createWanBatchSender(node);
-        this.syncEvents = new LinkedBlockingQueue<WanReplicationEvent>(configurationContext.getBatchSize());
-        this.eventBatchHolder = new ArrayList<WanReplicationEvent>(configurationContext.getBatchSize());
+        this.syncEvents = new LinkedBlockingQueue<>(configurationContext.getBatchSize());
+        this.eventBatchHolder = new ArrayList<>(configurationContext.getBatchSize());
 
         int maxConcurrentInvocations = configurationContext.getMaxConcurrentInvocations();
         logger.fine("Initialising WAN batch publisher with " + maxConcurrentInvocations + " max invocations.");
@@ -176,7 +176,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
 
         if (!syncEvents.isEmpty()) {
             BatchWanReplicationEvent batch = new BatchWanReplicationEvent(configurationContext.isSnapshotEnabled());
-            ArrayList<WanReplicationEvent> batchList = new ArrayList<WanReplicationEvent>(configurationContext.getBatchSize());
+            ArrayList<WanReplicationEvent> batchList = new ArrayList<>(configurationContext.getBatchSize());
             syncEvents.drainTo(batchList, configurationContext.getBatchSize());
             for (WanReplicationEvent event : batchList) {
                 batch.addEvent(event);
@@ -407,32 +407,29 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
     public void publishAntiEntropyEvent(final WanAntiEntropyEvent event) {
         liveOperations.add(event.getOp());
 
-        wanExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                event.setProcessingResult(new WanAntiEntropyEventResult());
-                try {
-                    if (event instanceof WanSyncEvent) {
-                        syncLock.lock();
-                        try {
-                            syncSupport.processEvent((WanSyncEvent) event);
-                        } finally {
-                            syncLock.unlock();
-                        }
-                        return;
+        wanExecutor.execute(() -> {
+            event.setProcessingResult(new WanAntiEntropyEventResult());
+            try {
+                if (event instanceof WanSyncEvent) {
+                    syncLock.lock();
+                    try {
+                        syncSupport.processEvent((WanSyncEvent) event);
+                    } finally {
+                        syncLock.unlock();
                     }
-                    if (event instanceof WanConsistencyCheckEvent) {
-                        syncSupport.processEvent((WanConsistencyCheckEvent) event);
-                        return;
-                    }
-
-                    logger.info("Ignoring unknown WAN anti-entropy event " + event);
-                } catch (Exception ex) {
-                    logger.warning("WAN anti-entropy event processing failed", ex);
-                } finally {
-                    event.sendResponse();
-                    liveOperations.remove(event.getOp());
+                    return;
                 }
+                if (event instanceof WanConsistencyCheckEvent) {
+                    syncSupport.processEvent((WanConsistencyCheckEvent) event);
+                    return;
+                }
+
+                logger.info("Ignoring unknown WAN anti-entropy event " + event);
+            } catch (Exception ex) {
+                logger.warning("WAN anti-entropy event processing failed", ex);
+            } finally {
+                event.sendResponse();
+                liveOperations.remove(event.getOp());
             }
         });
     }

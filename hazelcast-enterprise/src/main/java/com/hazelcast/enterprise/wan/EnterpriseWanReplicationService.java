@@ -457,7 +457,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     @Override
     public void clearQueues(String wanReplicationName, String wanPublisherId) {
         WanReplicationEndpoint endpoint = getEndpointOrFail(wanReplicationName, wanPublisherId);
-        endpoint.clearQueues();
+        endpoint.removeWanEvents();
     }
 
     @Override

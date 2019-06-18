@@ -1,14 +1,15 @@
 package com.hazelcast.enterprise.wan.operation;
 
+import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.enterprise.wan.EWRMigrationContainer;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.PartitionWanEventQueueMap;
-import com.hazelcast.enterprise.wan.PublisherQueueContainer;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -117,12 +118,11 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
             for (String publisherName : wanRepEntry.getValue().keySet()) {
                 WanReplicationEndpoint publisher = getWanReplicationService().getEndpointOrFail(wanRepName, publisherName);
 
-                PublisherQueueContainer publisherQueueContainer = publisher.getPublisherQueueContainer();
                 final int drained;
                 if (map) {
-                    drained = publisherQueueContainer.drainMapQueues(partitionId);
+                    drained = publisher.removeWanEvents(partitionId, MapService.SERVICE_NAME);
                 } else {
-                    drained = publisherQueueContainer.drainCacheQueues(partitionId);
+                    drained = publisher.removeWanEvents(partitionId, ICacheService.SERVICE_NAME);
                 }
 
                 if (publisher instanceof AbstractWanPublisher) {

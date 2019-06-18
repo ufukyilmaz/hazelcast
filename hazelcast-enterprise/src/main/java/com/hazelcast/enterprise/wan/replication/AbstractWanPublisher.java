@@ -13,7 +13,6 @@ import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.PartitionWanEventContainer;
 import com.hazelcast.enterprise.wan.PartitionWanEventQueueMap;
-import com.hazelcast.enterprise.wan.PublisherQueueContainer;
 import com.hazelcast.enterprise.wan.WanEventQueueMigrationListener;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
@@ -34,8 +33,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.ObjectNamespace;
 import com.hazelcast.spi.ServiceNamespace;
-import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.spi.impl.operationservice.Operation;
+import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.util.Clock;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WANReplicationQueueFullException;
@@ -305,32 +304,6 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     /**
-     * Removes a {@code count} number of events from a WAN replication queue
-     * belonging to the provided service, object and partition.
-     *
-     * @param serviceName the service name for the WAN replication queue
-     * @param objectName  the object name for the WAN replication queue
-     * @param partitionId the partition ID of the WAN replication queue
-     * @param count       the number of events to remove from the queue
-     */
-    public void removeBackups(String serviceName, String objectName, int partitionId, int count) {
-        boolean isMapService = MapService.SERVICE_NAME.equals(serviceName);
-        if (!isMapService && !CacheService.SERVICE_NAME.equals(serviceName)) {
-            logger.warning("Unexpected replication event service name: " + serviceName);
-            return;
-        }
-
-        for (int i = 0; i < count; i++) {
-            WanReplicationEvent event = isMapService
-                    ? eventQueueContainer.pollMapWanEvent(objectName, partitionId)
-                    : eventQueueContainer.pollCacheWanEvent(objectName, partitionId);
-            if (event != null) {
-                wanCounter.decrementBackupElementCounter();
-            }
-        }
-    }
-
-    /**
      * Updates the statistics for the provided replicated WAN events and counts
      * them by partition ID and distributed object.
      *
@@ -402,52 +375,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     @Override
-    public void removeBackup(WanReplicationEvent wanReplicationEvent) {
-        ReplicationEventObject eventObject = wanReplicationEvent.getEventObject();
-
-        if (eventObject instanceof EnterpriseMapReplicationObject) {
-            String mapName = ((EnterpriseMapReplicationObject) eventObject).getMapName();
-            int partitionId = getPartitionId(eventObject.getKey());
-            WanReplicationEvent event = eventQueueContainer.pollMapWanEvent(mapName, partitionId);
-            if (event != null) {
-                wanCounter.decrementBackupElementCounter();
-            }
-            return;
-        }
-
-        if (eventObject instanceof CacheReplicationObject) {
-            String cacheName = ((CacheReplicationObject) eventObject).getNameWithPrefix();
-            int partitionId = getPartitionId(eventObject.getKey());
-            WanReplicationEvent event = eventQueueContainer.pollCacheWanEvent(cacheName, partitionId);
-            if (event != null) {
-                wanCounter.decrementBackupElementCounter();
-            }
-            return;
-        }
-
-        logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
-    }
-
-    @Override
     public void putBackup(WanReplicationEvent wanReplicationEvent) {
         EnterpriseReplicationEventObject eventObject
                 = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
         publishReplicationEventBackup(wanReplicationEvent.getServiceName(), eventObject);
-    }
-
-    @Override
-    public PublisherQueueContainer getPublisherQueueContainer() {
-        return eventQueueContainer;
-    }
-
-    @Override
-    public void addMapQueue(String name, int partitionId, WanReplicationEventQueue eventQueue) {
-        // nothing to do here, this method is not invoked
-    }
-
-    @Override
-    public void addCacheQueue(String name, int partitionId, WanReplicationEventQueue eventQueue) {
-        // nothing to do here, this method is not invoked
     }
 
     @Override
@@ -569,17 +500,18 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     @Override
-    public void clearQueues() {
+    public int removeWanEvents() {
         boolean isReplicating = state.isReplicateEnqueuedEvents();
         if (isReplicating) {
             pause();
         }
 
-        clearQueuesInternal();
+        int drained = clearQueuesInternal();
 
         if (isReplicating) {
             resume();
         }
+        return drained;
     }
 
     /**
@@ -597,7 +529,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         }
     }
 
-    private void clearQueuesInternal() {
+    private int clearQueuesInternal() {
         int totalDrained = 0;
 
         Map<Integer, Integer> drainedPerPartition = eventQueueContainer.drainQueues();
@@ -614,6 +546,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         logger.info("Cleared " + totalDrained + " elements from the WAN queues. Current element counts:"
                 + " primary=" + wanCounter.getPrimaryElementCount()
                 + " backup=" + wanCounter.getBackupElementCount());
+        return totalDrained;
     }
 
     @Override
@@ -683,6 +616,51 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     @Override
+    public int removeWanEvents(int partitionId, String serviceName) {
+        int size = 0;
+        switch (serviceName) {
+            case MapService.SERVICE_NAME:
+                size += eventQueueContainer.drainMapQueues(partitionId);
+                break;
+            case ICacheService.SERVICE_NAME:
+                size += eventQueueContainer.drainCacheQueues(partitionId);
+                break;
+            default:
+                String msg = "Unexpected replication event service name: " + serviceName;
+                assert false : msg;
+                logger.warning(msg);
+                break;
+        }
+
+        return size;
+    }
+
+    @Override
+    public int removeWanEvents(int partitionId, String serviceName, String objectName, int count) {
+        boolean isMapService = MapService.SERVICE_NAME.equals(serviceName);
+        if (!isMapService && !CacheService.SERVICE_NAME.equals(serviceName)) {
+            String msg = "Unexpected replication event service name: " + serviceName;
+            assert false : msg;
+            logger.warning(msg);
+            return 0;
+        }
+
+        int removed = 0;
+        for (int i = 0; i < count; i++) {
+            WanReplicationEvent event = isMapService
+                    ? eventQueueContainer.pollMapWanEvent(objectName, partitionId)
+                    : eventQueueContainer.pollCacheWanEvent(objectName, partitionId);
+            if (event != null) {
+                wanCounter.decrementBackupElementCounter();
+                removed++;
+            } else {
+                break;
+            }
+        }
+        return removed;
+    }
+
+    @Override
     public void collectReplicationData(String wanReplicationName,
                                        PartitionReplicationEvent event,
                                        Collection<ServiceNamespace> namespaces,
@@ -749,5 +727,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      */
     WanConfigurationContext getConfigurationContext() {
         return configurationContext;
+    }
+
+    // public for testing
+    public PollSynchronizerPublisherQueueContainer getEventQueueContainer() {
+        return eventQueueContainer;
     }
 }

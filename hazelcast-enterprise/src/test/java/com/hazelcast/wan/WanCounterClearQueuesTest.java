@@ -191,7 +191,7 @@ public class WanCounterClearQueuesTest {
             if (node.getNodeEngine().getHazelcastInstance().getName().equals(nodeName.get())
                     && clearQueuesFlag.get()
                     && hitCount.incrementAndGet() == 10) {
-                clearQueues();
+                removeWanEvents();
             }
         }
 

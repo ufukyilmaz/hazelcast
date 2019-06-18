@@ -104,11 +104,13 @@ public class WanCounterTestSupport {
         dumpFuture.cancel(false);
     }
 
-    private static int getQueueSizes(HazelcastInstance instance, WanBatchReplication endpoint, boolean onlyPrimaries) {
+    private static int getQueueSizes(HazelcastInstance instance,
+                                     WanBatchReplication endpoint,
+                                     boolean onlyPrimaries) {
         int queueSizes = 0;
 
         InternalPartitionService partitionService = ((HazelcastInstanceProxy) instance).getOriginal().node.getPartitionService();
-        PartitionWanEventContainer[] containers = endpoint.getPublisherQueueContainer()
+        PartitionWanEventContainer[] containers = endpoint.getEventQueueContainer()
                                                           .getContainers();
         for (int partitionId = 0; partitionId < containers.length; partitionId++) {
             PartitionWanEventContainer container = containers[partitionId];

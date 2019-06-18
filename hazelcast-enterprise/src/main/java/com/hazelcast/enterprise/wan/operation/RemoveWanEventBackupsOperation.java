@@ -49,7 +49,7 @@ public class RemoveWanEventBackupsOperation extends EWRBaseOperation
                     continue;
                 }
 
-                endpoint.removeBackups(id.getServiceName(), id.getObjectName(), getPartitionId(), count);
+                endpoint.removeWanEvents(getPartitionId(), id.getServiceName(), id.getObjectName(), count);
             }
         } else {
             getLogger().finest("Ignoring backup since WAN config doesn't exist with config name "

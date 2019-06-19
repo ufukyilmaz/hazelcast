@@ -5,7 +5,6 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.monitor.LocalIndexStats;
 import com.hazelcast.monitor.LocalMapStats;
-import com.hazelcast.query.PartitionPredicate;
 import com.hazelcast.query.Predicates;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -45,7 +44,7 @@ public class HDClientIndexStatsTest extends ClientIndexStatsTest {
             map.put(i, i);
         }
 
-        map.entrySet(new PartitionPredicate(10, Predicates.equal("this", 10)));
+        map.entrySet(Predicates.partitionPredicate(10, Predicates.equal("this", 10)));
         LocalMapStats stats1 = map1.getLocalMapStats();
         LocalMapStats stats2 = map2.getLocalMapStats();
         assertTrue(stats1.getQueryCount() == 1 && stats2.getQueryCount() == 0

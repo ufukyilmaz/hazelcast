@@ -8,8 +8,8 @@ import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.query.Predicates;
 import com.hazelcast.query.QueryConstants;
-import com.hazelcast.query.TruePredicate;
 import com.hazelcast.spi.impl.proxyservice.InternalProxyService;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -173,7 +173,7 @@ public class MapHotRestartSlowTest extends AbstractMapHotRestartTest {
         resetFixture();
 
         // hr-store created on non-partition thread
-        Collection result = map.values(TruePredicate.INSTANCE);
+        Collection result = map.values(Predicates.alwaysTrue());
         assertEquals(0, result.size());
 
         // verify hr-store worked properly

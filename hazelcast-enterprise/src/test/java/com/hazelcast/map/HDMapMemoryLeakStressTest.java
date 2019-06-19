@@ -15,8 +15,9 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.query.EntryObject;
 import com.hazelcast.query.PredicateBuilder;
+import com.hazelcast.query.PredicateBuilder.EntryObject;
+import com.hazelcast.query.Predicates;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -103,17 +104,14 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         map.addIndex("__key", true);
 
         final AtomicBoolean stopBouncingThread = new AtomicBoolean(false);
-        Thread bouncingThread = new Thread() {
-            @Override
-            public void run() {
-                while (!stopBouncingThread.get()) {
-                    HazelcastInstance hz = factory.newHazelcastInstance(config);
-                    sleepSeconds(10);
-                    factory.terminate(hz);
-                    sleepSeconds(5);
-                }
+        Thread bouncingThread = new Thread(() -> {
+            while (!stopBouncingThread.get()) {
+                HazelcastInstance hz = factory.newHazelcastInstance(config);
+                sleepSeconds(10);
+                factory.terminate(hz);
+                sleepSeconds(5);
             }
-        };
+        });
         bouncingThread.start();
 
         int threads = 8;
@@ -243,7 +241,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                     break;
 
                 case 10:
-                    Map<Integer, byte[]> entries = new HashMap<Integer, byte[]>(32);
+                    Map<Integer, byte[]> entries = new HashMap<>(32);
                     for (int k = key, i = 0; i < 32 && k < KEY_RANGE; k++, i++) {
                         entries.put(k, newValue(k));
                     }
@@ -255,7 +253,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                     break;
 
                 case 11:
-                    Set<Integer> keysToAdd = new HashSet<Integer>(32);
+                    Set<Integer> keysToAdd = new HashSet<>(32);
                     for (int k = key, i = 0; i < 32 && k < KEY_RANGE; k++, i++) {
                         keysToAdd.add(k);
                     }
@@ -292,9 +290,9 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                 case 16:
                     for (int k = key, i = 0; i < 32 && k < KEY_RANGE; k++, i++) {
                         final byte[] newValue = newValue(k);
-                        Object newKey = map.executeOnKey(k, new AdderEntryProcessor(newValue));
+                        Integer newKey = map.executeOnKey(k, new AdderEntryProcessor(newValue));
 
-                        verifyValue(((Integer) newKey), newValue);
+                        verifyValue(newKey, newValue);
                     }
                     for (int k = key, i = 0; i < 32 && k < KEY_RANGE; k++, i++) {
                         byte[] v = map.get(k);
@@ -303,7 +301,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                     break;
 
                 case 17:
-                    Set<Integer> keysToRemove = new HashSet<Integer>(32);
+                    Set<Integer> keysToRemove = new HashSet<>(32);
                     for (int k = key, i = 0; i < 32 && k < KEY_RANGE; k++, i++) {
                         keysToRemove.add(k);
                     }
@@ -311,7 +309,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                     break;
 
                 case 18:
-                    EntryObject entryObject = new PredicateBuilder().getEntryObject();
+                    EntryObject entryObject = Predicates.newPredicateBuilder().getEntryObject();
                     PredicateBuilder predicate = entryObject.key().between(key, key + 32);
                     map.values(predicate);
                     break;

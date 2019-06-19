@@ -3,7 +3,6 @@ package com.hazelcast.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.query.PartitionPredicate;
 import com.hazelcast.query.Predicates;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -44,7 +43,7 @@ public class HDLocalIndexStatsTest extends LocalIndexStatsTest {
             map.put(i, i);
         }
 
-        map.entrySet(new PartitionPredicate(10, Predicates.equal("this", 10)));
+        map.entrySet(Predicates.partitionPredicate(10, Predicates.equal("this", 10)));
         assertEquals(1, stats().getQueryCount());
         assertEquals(1, stats().getIndexedQueryCount());
         assertEquals(1, valueStats().getQueryCount());

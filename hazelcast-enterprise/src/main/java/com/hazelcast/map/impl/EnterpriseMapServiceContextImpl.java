@@ -20,7 +20,6 @@ import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.query.HDPartitionScanExecutor;
 import com.hazelcast.map.impl.query.HDPartitionScanRunner;
 import com.hazelcast.map.impl.query.PartitionScanExecutor;
-import com.hazelcast.map.impl.query.PartitionScanRunner;
 import com.hazelcast.map.impl.query.QueryRunner;
 import com.hazelcast.map.impl.query.ResultProcessorRegistry;
 import com.hazelcast.map.impl.record.Record;
@@ -80,7 +79,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
             };
 
     private final QueryRunner hdMapQueryRunner;
-    private final HDPartitionScanRunner hdPartitionScanRunner;
     private final MapFilterProvider mapFilterProvider;
     private final HDIndexProvider hdIndexProvider;
 
@@ -95,8 +93,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
             hotRestartService = (HotRestartIntegrationService) nodeExtension.getInternalHotRestartService();
             hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
         }
-        this.hdPartitionScanRunner = new HDPartitionScanRunner(this);
-        this.hdMapQueryRunner = createHDMapQueryRunner(hdPartitionScanRunner, getQueryOptimizer(),
+        this.hdMapQueryRunner = createHDMapQueryRunner(new HDPartitionScanRunner(this),
+                getQueryOptimizer(),
                 getResultProcessorRegistry());
         this.hdIndexProvider = new HDIndexProvider();
     }
@@ -164,11 +162,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     @Override
     public MapFilterProvider getMapFilterProvider() {
         return mapFilterProvider;
-    }
-
-    @Override
-    public PartitionScanRunner getPartitionScanRunner() {
-        return hdPartitionScanRunner;
     }
 
     @Override

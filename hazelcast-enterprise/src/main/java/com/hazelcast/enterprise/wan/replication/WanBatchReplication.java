@@ -11,7 +11,7 @@ import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEventResult;
 import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.diagnostics.Diagnostics;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin;
 import com.hazelcast.internal.partition.InternalPartitionService;

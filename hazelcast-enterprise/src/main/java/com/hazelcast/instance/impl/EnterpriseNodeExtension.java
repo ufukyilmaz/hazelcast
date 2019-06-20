@@ -1,4 +1,4 @@
-package com.hazelcast.instance;
+package com.hazelcast.instance.impl;
 
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
@@ -14,7 +14,6 @@ import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
-import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.enterprise.EnterprisePhoneHome;
 import com.hazelcast.enterprise.monitor.impl.jmx.EnterpriseManagementService;
 import com.hazelcast.enterprise.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
@@ -25,6 +24,9 @@ import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
+import com.hazelcast.instance.BuildInfo;
+import com.hazelcast.instance.BuildInfoProvider;
+import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.internal.ascii.TextCommandService;
 import com.hazelcast.internal.cluster.impl.ClusterVersionAutoUpgradeHelper;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
@@ -68,6 +70,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.tcp.SymmetricCipherPacketDecoder;
 import com.hazelcast.nio.tcp.SymmetricCipherPacketEncoder;
 import com.hazelcast.nio.tcp.TcpIpConnection;
+import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.security.SecurityService;
@@ -96,8 +99,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.logging.Level;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 import static com.hazelcast.instance.EndpointQualifier.MEMBER;
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
@@ -363,7 +366,7 @@ public class EnterpriseNodeExtension
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(
-                    new HazelcastRuntimePermission("com.hazelcast.instance.EnterpriseNodeExtension.getLicense"));
+                    new HazelcastRuntimePermission("com.hazelcast.instance.impl.EnterpriseNodeExtension.getLicense"));
         }
         return license;
     }

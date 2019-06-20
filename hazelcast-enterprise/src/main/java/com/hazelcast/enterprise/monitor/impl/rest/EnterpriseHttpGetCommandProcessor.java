@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.monitor.impl.rest;
 
 import com.hazelcast.enterprise.monitor.LicenseInfo;
-import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.internal.ascii.TextCommandService;
 import com.hazelcast.internal.ascii.rest.HttpGetCommand;
 import com.hazelcast.internal.ascii.rest.HttpGetCommandProcessor;

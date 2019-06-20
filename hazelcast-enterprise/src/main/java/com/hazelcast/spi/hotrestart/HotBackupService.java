@@ -4,7 +4,7 @@ import com.hazelcast.cluster.Member;
 import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.hotrestart.BackupTaskStatus;
 import com.hazelcast.hotrestart.HotRestartService;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.util.LockGuard;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.TransactionalService;

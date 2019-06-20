@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

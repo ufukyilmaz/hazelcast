@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.monitor.impl.jmx;
 
 import com.hazelcast.enterprise.monitor.LicenseInfo;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.jmx.HazelcastMBean;
 import com.hazelcast.internal.jmx.ManagedAnnotation;
 import com.hazelcast.internal.jmx.ManagedDescription;

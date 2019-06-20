@@ -5,7 +5,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.EWRMigrationContainer;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.nio.serialization.Data;

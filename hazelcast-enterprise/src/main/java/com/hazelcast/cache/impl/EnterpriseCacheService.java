@@ -31,7 +31,7 @@ import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
-import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.util.InvocationUtil;
 import com.hazelcast.internal.util.LocalRetryableExecution;

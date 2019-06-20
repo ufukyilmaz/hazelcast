@@ -14,7 +14,7 @@ import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.WanReplicationConsumer;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;

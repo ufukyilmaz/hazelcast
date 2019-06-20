@@ -2,7 +2,7 @@ package com.hazelcast.memory;
 
 import com.hazelcast.elastic.LongArray;
 import com.hazelcast.elastic.queue.LongArrayQueue;
-import com.hazelcast.instance.OutOfMemoryErrorDispatcher;
+import com.hazelcast.instance.impl.OutOfMemoryErrorDispatcher;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.internal.util.collection.Long2LongMap;

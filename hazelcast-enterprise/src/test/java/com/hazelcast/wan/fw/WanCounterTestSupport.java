@@ -3,7 +3,7 @@ package com.hazelcast.wan.fw;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.PartitionWanEventContainer;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
-import com.hazelcast.instance.HazelcastInstanceProxy;
+import com.hazelcast.instance.impl.HazelcastInstanceProxy;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.logging.ILogger;

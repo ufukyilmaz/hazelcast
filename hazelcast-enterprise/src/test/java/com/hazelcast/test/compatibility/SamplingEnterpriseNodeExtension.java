@@ -1,7 +1,7 @@
 package com.hazelcast.test.compatibility;
 
-import com.hazelcast.instance.EnterpriseNodeExtension;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.EnterpriseNodeExtension;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 

@@ -3,7 +3,7 @@ package com.hazelcast.wan.custom;
 import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationConsumer;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

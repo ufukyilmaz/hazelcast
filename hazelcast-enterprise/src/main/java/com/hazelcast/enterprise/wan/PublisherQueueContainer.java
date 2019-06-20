@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan;
 
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;

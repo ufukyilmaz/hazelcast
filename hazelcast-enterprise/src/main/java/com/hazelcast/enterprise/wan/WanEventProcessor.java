@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.enterprise.wan.operation.WanOperation;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.ReplicationSupportingService;

@@ -3,7 +3,7 @@ package com.hazelcast.enterprise.monitor.impl.management;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.enterprise.monitor.LicenseInfo;
 import com.hazelcast.enterprise.monitor.impl.rest.LicenseInfoImpl;
-import com.hazelcast.instance.NodeState;
+import com.hazelcast.instance.impl.NodeState;
 import com.hazelcast.internal.json.JsonObject;
 import com.hazelcast.internal.json.JsonValue;
 import com.hazelcast.monitor.impl.NodeStateImpl;

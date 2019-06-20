@@ -34,7 +34,7 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.security.jsm.HazelcastRuntimePermission;
 import com.hazelcast.test.annotation.QuickTest;
@@ -72,7 +72,7 @@ public class JSMPermissionsTest {
     @Test
     public void testLicenseObjectProtected() throws Exception {
         HazelcastInstance client = startMemberAndClient();
-        initSecurityManager(new HazelcastRuntimePermission("com.hazelcast.instance.EnterpriseNodeExtension.getLicense"));
+        initSecurityManager(new HazelcastRuntimePermission("com.hazelcast.instance.impl.EnterpriseNodeExtension.getLicense"));
 
         IExecutorService executorService = client.getExecutorService("executor");
         Future<String> future = executorService.submitToKeyOwner(new GetLicenseCallable(), "foo");

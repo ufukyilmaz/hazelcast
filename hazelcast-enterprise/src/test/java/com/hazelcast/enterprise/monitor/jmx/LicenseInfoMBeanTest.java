@@ -1,8 +1,8 @@
 package com.hazelcast.enterprise.monitor.jmx;
 
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.HazelcastInstanceImpl;
-import com.hazelcast.instance.HazelcastInstanceProxy;
+import com.hazelcast.instance.impl.HazelcastInstanceImpl;
+import com.hazelcast.instance.impl.HazelcastInstanceProxy;
 import com.hazelcast.internal.jmx.MBeanDataHolder;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.util.LicenseHelper;

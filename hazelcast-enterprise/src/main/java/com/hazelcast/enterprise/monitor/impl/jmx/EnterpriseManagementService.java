@@ -2,8 +2,8 @@ package com.hazelcast.enterprise.monitor.impl.jmx;
 
 import com.hazelcast.enterprise.monitor.LicenseInfo;
 import com.hazelcast.enterprise.monitor.impl.rest.LicenseInfoImpl;
-import com.hazelcast.instance.EnterpriseNodeExtension;
-import com.hazelcast.instance.HazelcastInstanceImpl;
+import com.hazelcast.instance.impl.EnterpriseNodeExtension;
+import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.internal.jmx.InstanceMBean;
 import com.hazelcast.internal.jmx.ManagementService;
 

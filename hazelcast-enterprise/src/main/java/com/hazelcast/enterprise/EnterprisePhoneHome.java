@@ -1,8 +1,8 @@
 package com.hazelcast.enterprise;
 
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.instance.EnterpriseNodeExtension;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.EnterpriseNodeExtension;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.logging.ILogger;

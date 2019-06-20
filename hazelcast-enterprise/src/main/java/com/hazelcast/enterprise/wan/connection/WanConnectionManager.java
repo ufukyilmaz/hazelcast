@@ -3,7 +3,7 @@ package com.hazelcast.enterprise.wan.connection;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.enterprise.wan.replication.WanConfigurationContext;
 import com.hazelcast.instance.EndpointQualifier;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.impl.operations.AuthorizationOp;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;

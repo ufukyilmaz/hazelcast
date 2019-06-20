@@ -14,7 +14,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.lock.ILock;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
-import com.hazelcast.instance.HazelcastInstanceFactory;
+import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.multimap.MultiMap;

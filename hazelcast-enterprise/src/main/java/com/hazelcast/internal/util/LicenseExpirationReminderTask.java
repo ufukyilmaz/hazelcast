@@ -1,5 +1,6 @@
 package com.hazelcast.internal.util;
 
+import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.logging.ILogger;
@@ -20,7 +21,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Scheduled task responsible to send log-notifications regarding license info, regarding expiration.
  * <p>
- * Note. This task is not be started in NLC mode. See {@link com.hazelcast.instance.EnterpriseNodeExtension}.
+ * Note. This task is not be started in NLC mode. See {@link EnterpriseNodeExtension}.
  */
 public class LicenseExpirationReminderTask implements Runnable {
 

@@ -15,7 +15,7 @@ import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.management.events.AddWanConfigIgnoredEvent;
 import com.hazelcast.internal.management.events.Event;
 import com.hazelcast.internal.management.events.WanConfigurationAddedEvent;
@@ -65,7 +65,7 @@ import static com.hazelcast.util.StringUtil.isNullOrEmptyAfterTrim;
  */
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity", "checkstyle:classdataabstractioncoupling"})
 public class EnterpriseWanReplicationService implements WanReplicationService, FragmentedMigrationAwareService,
-                                                        PostJoinAwareService, LiveOperationsTracker, ManagedService {
+        PostJoinAwareService, LiveOperationsTracker, ManagedService {
 
     private static final int ADD_WAN_CONFIG_MAX_RETRIES = 10;
     private final Node node;
@@ -75,13 +75,19 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     private final WanPublisherContainer publisherContainer;
     private final WanConsumerContainer consumerContainer;
     private final WanSyncManager syncManager;
-    /** Mutex for adding new WAN replication config */
+    /**
+     * Mutex for adding new WAN replication config
+     */
     private final Object configUpdateMutex = new Object();
 
-    /** WAN event counters for all services and only received events */
+    /**
+     * WAN event counters for all services and only received events
+     */
     private final WanEventCounters receivedWanEventCounters = new WanEventCounters();
 
-    /** WAN event counters for all services and only sent events */
+    /**
+     * WAN event counters for all services and only sent events
+     */
     private final WanEventCounters sentWanEventCounters = new WanEventCounters();
 
     public EnterpriseWanReplicationService(Node node) {

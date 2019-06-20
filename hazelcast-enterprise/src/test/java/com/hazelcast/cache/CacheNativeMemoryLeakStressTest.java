@@ -78,7 +78,7 @@ import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsZero;
 import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
 import static com.hazelcast.NativeMemoryTestUtil.dumpNativeMemory;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
-import static com.hazelcast.instance.TestUtil.terminateInstance;
+import static com.hazelcast.instance.impl.TestUtil.terminateInstance;
 import static com.hazelcast.spi.properties.GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

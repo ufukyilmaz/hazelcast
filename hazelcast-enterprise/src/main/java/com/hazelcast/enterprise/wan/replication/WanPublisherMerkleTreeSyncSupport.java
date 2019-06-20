@@ -9,7 +9,7 @@ import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.management.events.WanConsistencyCheckFinishedEvent;
 import com.hazelcast.internal.management.events.WanConsistencyCheckStartedEvent;
 import com.hazelcast.internal.management.events.WanMerkleSyncFinishedEvent;

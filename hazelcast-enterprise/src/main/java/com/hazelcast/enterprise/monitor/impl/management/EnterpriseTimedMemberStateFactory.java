@@ -2,9 +2,9 @@ package com.hazelcast.enterprise.monitor.impl.management;
 
 import com.hazelcast.enterprise.monitor.LicenseInfo;
 import com.hazelcast.enterprise.monitor.impl.rest.LicenseInfoImpl;
-import com.hazelcast.instance.EnterpriseNodeExtension;
-import com.hazelcast.instance.HazelcastInstanceImpl;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.EnterpriseNodeExtension;
+import com.hazelcast.instance.impl.HazelcastInstanceImpl;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.management.TimedMemberState;
 import com.hazelcast.internal.management.TimedMemberStateFactory;

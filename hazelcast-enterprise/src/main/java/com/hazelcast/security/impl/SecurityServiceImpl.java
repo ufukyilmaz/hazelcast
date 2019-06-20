@@ -2,7 +2,7 @@ package com.hazelcast.security.impl;
 
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.core.ICompletableFuture;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.management.operation.UpdatePermissionConfigOperation;
 import com.hazelcast.security.SecurityService;
 import com.hazelcast.spi.CoreService;

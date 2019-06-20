@@ -9,7 +9,7 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.HazelcastInstanceFactory;
+import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;

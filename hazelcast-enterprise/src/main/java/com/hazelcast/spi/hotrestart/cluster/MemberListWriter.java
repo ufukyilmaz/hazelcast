@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.Member;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 
 import java.io.DataOutput;
 import java.io.File;

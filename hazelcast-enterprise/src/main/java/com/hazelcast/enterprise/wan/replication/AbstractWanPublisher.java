@@ -20,7 +20,7 @@ import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.RemoveWanEventBackupsOperation;
 import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;

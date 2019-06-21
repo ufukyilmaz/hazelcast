@@ -20,7 +20,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.instance.HazelcastInstanceFactory;
+import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 
 /**
  * Basic test which checks if correct Hazelcast modules are on the modulepath. It also checks that Hazelcast members and clients

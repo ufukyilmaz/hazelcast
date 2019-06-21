@@ -17,9 +17,7 @@ import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.partition.IPartitionService;
@@ -100,12 +98,6 @@ public class EnterpriseMapContainer extends MapContainer {
 
     public HiDensityStorageInfo getStorageInfo() {
         return storageInfo;
-    }
-
-    @Override
-    public QueryableEntry newQueryEntry(Data key, Object value) {
-        // For native we do not copy to on-heap anymore
-        return super.newQueryEntry(key, value);
     }
 
     @Override

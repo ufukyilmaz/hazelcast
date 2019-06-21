@@ -1,6 +1,5 @@
 package com.hazelcast.map.impl;
 
-import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
@@ -16,10 +15,8 @@ import com.hazelcast.map.impl.event.MapEventPublisherImpl;
 import com.hazelcast.map.impl.nearcache.EnterpriseMapNearCacheManager;
 import com.hazelcast.map.impl.nearcache.MapNearCacheManager;
 import com.hazelcast.map.impl.operation.EnterpriseMapPartitionClearOperation;
-import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.query.HDPartitionScanExecutor;
 import com.hazelcast.map.impl.query.HDPartitionScanRunner;
-import com.hazelcast.map.impl.query.PartitionScanExecutor;
 import com.hazelcast.map.impl.query.QueryRunner;
 import com.hazelcast.map.impl.query.ResultProcessorRegistry;
 import com.hazelcast.map.impl.record.Record;
@@ -46,7 +43,6 @@ import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
-import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
 import com.hazelcast.wan.merkletree.MerkleTree;
 
@@ -61,26 +57,20 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static java.lang.Thread.currentThread;
 
 /**
- * Contains enterprise specific implementations of {@link MapServiceContext}
- * functionality.
+ * Contains enterprise specific implementations
+ * of {@link MapServiceContext} functionality.
  *
  * @see MapServiceContext
  */
 @SuppressWarnings({"checkstyle:classfanoutcomplexity", "checkstyle:classdataabstractioncoupling"})
-class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements EnterpriseMapServiceContext, RamStoreRegistry {
+class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
+        implements EnterpriseMapServiceContext, RamStoreRegistry {
 
     private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS = 10;
 
-    private final ConstructorFunction<String, MapContainer> constructorFunction =
-            mapName -> {
-                MapServiceContext mapServiceContext = getService().getMapServiceContext();
-                Config config = mapServiceContext.getNodeEngine().getConfig();
-                return new EnterpriseMapContainer(mapName, config, mapServiceContext);
-            };
-
     private final QueryRunner hdMapQueryRunner;
-    private final MapFilterProvider mapFilterProvider;
     private final HDIndexProvider hdIndexProvider;
+    private final MapFilterProvider mapFilterProvider;
 
     private HotRestartIntegrationService hotRestartService;
 
@@ -99,6 +89,13 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
         this.hdIndexProvider = new HDIndexProvider();
     }
 
+    private QueryRunner createHDMapQueryRunner(HDPartitionScanRunner runner,
+                                               QueryOptimizer queryOptimizer,
+                                               ResultProcessorRegistry resultProcessorRegistry) {
+        return new QueryRunner(this, queryOptimizer,
+                new HDPartitionScanExecutor(runner), resultProcessorRegistry);
+    }
+
     @Override
     protected PartitionContainer createPartitionContainer(MapService service, int partitionId) {
         return new EnterprisePartitionContainer(service, partitionId);
@@ -107,6 +104,21 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     @Override
     protected LocalMapStatsProvider createLocalMapStatsProvider() {
         return new EnterpriseLocalMapStatsProvider(this);
+    }
+
+    @Override
+    ConstructorFunction<String, MapContainer> createMapConstructor() {
+        return mapName -> new EnterpriseMapContainer(mapName, nodeEngine.getConfig(), this);
+    }
+
+    @Override
+    MapNearCacheManager createMapNearCacheManager() {
+        return new EnterpriseMapNearCacheManager(this);
+    }
+
+    @Override
+    MapEventPublisherImpl createMapEventPublisherSupport() {
+        return new EnterpriseMapEventPublisherImpl(this);
     }
 
     @Override
@@ -140,23 +152,14 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
         int partitionId = PersistentConfigDescriptors.toPartitionId(prefix);
         String name = hotRestartService.getCacheName(prefix);
         PartitionContainer partitionContainer = getPartitionContainer(partitionId);
-        EnterpriseRecordStore recordStore = (EnterpriseRecordStore) partitionContainer.getRecordStoreForHotRestart(name);
+        EnterpriseRecordStore recordStore
+                = (EnterpriseRecordStore) partitionContainer.getRecordStoreForHotRestart(name);
         return recordStore.getRamStore();
     }
 
     @Override
     public int prefixToThreadId(long prefix) {
         throw new UnsupportedOperationException("prefixToThreadId() should not have been called on this class");
-    }
-
-    @Override
-    MapNearCacheManager createMapNearCacheManager() {
-        return new EnterpriseMapNearCacheManager(this);
-    }
-
-    @Override
-    public MapContainer getMapContainer(String mapName) {
-        return ConcurrencyUtil.getOrPutSynchronized(mapContainers, mapName, contextMutexFactory, constructorFunction);
     }
 
     @Override
@@ -172,20 +175,10 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
         return hdMapQueryRunner;
     }
 
-    private QueryRunner createHDMapQueryRunner(HDPartitionScanRunner runner, QueryOptimizer queryOptimizer,
-                                               ResultProcessorRegistry resultProcessorRegistry) {
-        PartitionScanExecutor partitionScanExecutor = new HDPartitionScanExecutor(runner);
-        return new QueryRunner(this, queryOptimizer, partitionScanExecutor, resultProcessorRegistry);
-    }
-
-    @Override
-    MapEventPublisherImpl createMapEventPublisherSupport() {
-        return new EnterpriseMapEventPublisherImpl(this);
-    }
-
-    @Override
-    public MapOperationProvider getMapOperationProvider(String name) {
-        return operationProviders.getOperationProvider(name);
+    private InMemoryFormat getInMemoryFormat(String mapName) {
+        MapContainer container = getMapContainer(mapName);
+        MapConfig mapConfig = container.getMapConfig();
+        return mapConfig.getInMemoryFormat();
     }
 
     @Override
@@ -194,7 +187,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     }
 
     @Override
-    protected void removeAllRecordStoresOfAllMaps(boolean onShutdown, boolean onRecordStoreDestroy) {
+    protected void removeAllRecordStoresOfAllMaps(
+            boolean onShutdown, boolean onRecordStoreDestroy) {
         OperationService operationService = nodeEngine.getOperationService();
 
         List<EnterpriseMapPartitionClearOperation> operations = new ArrayList<>();
@@ -229,14 +223,9 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
         }
     }
 
-    protected InMemoryFormat getInMemoryFormat(String mapName) {
-        MapContainer container = getMapContainer(mapName);
-        MapConfig mapConfig = container.getMapConfig();
-        return mapConfig.getInMemoryFormat();
-    }
-
     @Override
-    public RecordStore createRecordStore(MapContainer mapContainer, int partitionId, MapKeyLoader keyLoader) {
+    public RecordStore createRecordStore(MapContainer mapContainer,
+                                         int partitionId, MapKeyLoader keyLoader) {
         ILogger logger = nodeEngine.getLogger(DefaultRecordStore.class);
         long prefix = -1;
         HotRestartConfig hotRestartConfig = getHotRestartConfig(mapContainer);
@@ -255,7 +244,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
         return new EnterpriseRecordStore(mapContainer, partitionId, keyLoader, logger, hotRestartConfig, prefix);
     }
 
-    private HotRestartConfig getHotRestartConfig(MapContainer mapContainer) {
+    private HotRestartConfig getHotRestartConfig(MapContainer
+                                                         mapContainer) {
         HotRestartConfig hotRestartConfig = mapContainer.getMapConfig().getHotRestartConfig();
         return hotRestartConfig != null ? hotRestartConfig : new HotRestartConfig().setEnabled(false);
     }
@@ -305,9 +295,9 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
      * @param partitionId The partition ID
      */
     private void addMerkleTreeUpdaterObserver(Collection<RecordStoreMutationObserver<Record>> observers,
-                                              String mapName,
-                                              int partitionId) {
-        EnterprisePartitionContainer partitionContainer = (EnterprisePartitionContainer) partitionContainers[partitionId];
+                                              String mapName, int partitionId) {
+        EnterprisePartitionContainer partitionContainer
+                = (EnterprisePartitionContainer) getPartitionContainer(partitionId);
         MerkleTree merkleTree = partitionContainer.getOrCreateMerkleTree(mapName);
         if (merkleTree != null) {
             observers.add(new MerkleTreeUpdaterRecordStoreMutationObserver<>(merkleTree,

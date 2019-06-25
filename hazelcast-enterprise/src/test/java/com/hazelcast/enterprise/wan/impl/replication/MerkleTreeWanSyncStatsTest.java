@@ -3,14 +3,18 @@ package com.hazelcast.enterprise.wan.impl.replication;
 import com.hazelcast.test.HazelcastTestSupport;
 import org.junit.Test;
 
+import java.util.UUID;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class MerkleTreeWanSyncStatsTest {
+    private static final UUID IRRELEVANT_UUID = UUID.randomUUID();
+    private static final int IRRELEVANT = -1;
 
     @Test
     public void testStats() {
-        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats(IRRELEVANT_UUID, IRRELEVANT);
 
         // first partition
         stats.onSyncPartition();
@@ -35,7 +39,7 @@ public class MerkleTreeWanSyncStatsTest {
 
     @Test
     public void testNoDeviance() {
-        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats(IRRELEVANT_UUID, IRRELEVANT);
 
         // first partition
         stats.onSyncPartition();
@@ -55,7 +59,7 @@ public class MerkleTreeWanSyncStatsTest {
 
     @Test
     public void testOneSyncedRecord() {
-        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats(IRRELEVANT_UUID, IRRELEVANT);
 
         // first partition
         stats.onSyncPartition();
@@ -71,7 +75,7 @@ public class MerkleTreeWanSyncStatsTest {
 
     @Test
     public void testNoOverflow() {
-        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats(IRRELEVANT_UUID, IRRELEVANT);
 
         // first partition
         stats.onSyncPartition();
@@ -89,7 +93,7 @@ public class MerkleTreeWanSyncStatsTest {
 
     @Test
     public void testSyncDuration() {
-        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats(IRRELEVANT_UUID, IRRELEVANT);
 
         HazelcastTestSupport.sleepAtLeastSeconds(1);
         stats.onSyncComplete();

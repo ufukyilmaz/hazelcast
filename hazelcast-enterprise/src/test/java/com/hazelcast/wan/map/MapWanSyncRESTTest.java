@@ -29,9 +29,12 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 
+import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -55,8 +58,12 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
 
     @Test
     public void syncSuccess() throws Exception {
+        UUID expectedUuid = randomUUID();
+        when(wanServiceMock.syncMap(any(), any(), any())).thenReturn(expectedUuid);
+
         JsonObject responseObject = assertSuccess(communicator.syncMapOverWAN("atob", "B", "map"));
         assertNotNull(responseObject.getString("message", null));
+        assertEquals(expectedUuid.toString(), responseObject.getString("uuid", null));
         verify(wanServiceMock, times(1)).syncMap("atob", "B", "map");
     }
 
@@ -73,8 +80,12 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
 
     @Test
     public void syncAllSuccess() throws IOException {
+        UUID expectedUuid = randomUUID();
+        when(wanServiceMock.syncAllMaps(any(), any())).thenReturn(expectedUuid);
+
         JsonObject responseObject = assertSuccess(communicator.syncMapsOverWAN("atob", "B"));
         assertNotNull(responseObject.getString("message", null));
+        assertEquals(expectedUuid.toString(), responseObject.getString("uuid", null));
         verify(wanServiceMock, times(1)).syncAllMaps("atob", "B");
     }
 
@@ -87,6 +98,28 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
         JsonObject responseObject = assertFail(communicator.syncMapsOverWAN("atob", "B"));
         assertEquals(msg, responseObject.getString("message", null));
         verify(wanServiceMock, times(1)).syncAllMaps("atob", "B");
+    }
+
+    @Test
+    public void consistencyCheckSuccess() throws Exception {
+        UUID expectedUuid = randomUUID();
+        when(wanServiceMock.consistencyCheck(any(), any(), any())).thenReturn(expectedUuid);
+
+        JsonObject responseObject = assertSuccess(communicator.wanMapConsistencyCheck("atob", "B", "map"));
+        assertNotNull(responseObject.getString("message", null));
+        assertEquals(expectedUuid.toString(), responseObject.getString("uuid", null));
+        verify(wanServiceMock, times(1)).consistencyCheck("atob", "B", "map");
+    }
+
+    @Test
+    public void consistencyCheckFail() throws IOException {
+        String msg = "Error occurred";
+        doThrow(new RuntimeException(msg))
+                .when(wanServiceMock)
+                .consistencyCheck("atob", "B", "map");
+        JsonObject responseObject = assertFail(communicator.wanMapConsistencyCheck("atob", "B", "map"));
+        assertEquals(msg, responseObject.getString("message", null));
+        verify(wanServiceMock, times(1)).consistencyCheck("atob", "B", "map");
     }
 
     @Test

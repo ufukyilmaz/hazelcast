@@ -7,9 +7,8 @@ import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.instance.impl.TestUtil;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.test.AssertTask;
-import com.hazelcast.wan.impl.WanSyncStatus;
 import com.hazelcast.wan.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
+import com.hazelcast.wan.impl.WanSyncStatus;
 
 import java.util.Map;
 
@@ -34,36 +33,29 @@ public class WanTestSupport {
     }
 
     public static void waitForSyncToComplete(final Cluster cluster) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                boolean syncFinished = true;
-                for (HazelcastInstance instance : cluster.getMembers()) {
-                    syncFinished &= wanReplicationService(instance).getWanSyncState().getStatus() == WanSyncStatus.READY;
-                }
-                assertTrue(syncFinished);
+        assertTrueEventually(() -> {
+            boolean syncFinished = true;
+            for (HazelcastInstance instance : cluster.getMembers()) {
+                syncFinished &= wanReplicationService(instance).getWanSyncState().getStatus() == WanSyncStatus.READY;
             }
+            assertTrue(syncFinished);
         });
     }
 
-    public static void waitForReplicationToStart(final Cluster sourceCluster, final Cluster targetCluster, final WanReplication
-            wanReplication,
-                                                 final String mapName) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                for (HazelcastInstance instance : sourceCluster.getMembers()) {
-                    Map<String, LocalWanStats> stats = wanReplicationService(instance).getStats();
-                    Map<String, DistributedObjectWanEventCounters> allMapEventCounters = stats
-                            .get(wanReplication.getSetupName())
-                            .getLocalWanPublisherStats()
-                            .get(targetCluster.getName())
-                            .getSentMapEventCounter();
-                    DistributedObjectWanEventCounters mapCounters = allMapEventCounters.get(mapName);
-                    assertNotNull(mapCounters);
-                    long updateCount = mapCounters.getUpdateCount();
-                    assertNotEquals(0, updateCount);
-                }
+    public static void waitForReplicationToStart(final Cluster sourceCluster, final Cluster targetCluster,
+                                                 final WanReplication wanReplication, final String mapName) {
+        assertTrueEventually(() -> {
+            for (HazelcastInstance instance : sourceCluster.getMembers()) {
+                Map<String, LocalWanStats> stats = wanReplicationService(instance).getStats();
+                Map<String, DistributedObjectWanEventCounters> allMapEventCounters = stats
+                        .get(wanReplication.getSetupName())
+                        .getLocalWanPublisherStats()
+                        .get(targetCluster.getName())
+                        .getSentMapEventCounter();
+                DistributedObjectWanEventCounters mapCounters = allMapEventCounters.get(mapName);
+                assertNotNull(mapCounters);
+                long updateCount = mapCounters.getUpdateCount();
+                assertNotEquals(0, updateCount);
             }
         });
     }

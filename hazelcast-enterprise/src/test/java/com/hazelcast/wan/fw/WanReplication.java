@@ -7,11 +7,14 @@ import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchSender;
 import com.hazelcast.enterprise.wan.impl.replication.WanConfigurationContext;
 import com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.Map;
+
+import static com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication.WAN_BATCH_SENDER_CLASS;
 
 public class WanReplication {
     private final Cluster sourceCluster;
@@ -25,6 +28,7 @@ public class WanReplication {
     private WanReplicationPublisher wanPublisher;
     private Class<? extends WanReplicationPublisher> wanPublisherClass;
     private WanReplicationConfig wanReplicationConfig;
+    private Class<? extends WanBatchSender> wanBatchSender;
 
     private WanReplication(WanReplicationBuilder builder) {
         this.sourceCluster = builder.sourceCluster;
@@ -37,6 +41,7 @@ public class WanReplication {
         this.replicationBatchSize = builder.replicationBatchSize;
         this.snapshotEnabled = builder.snapshotEnabled;
         this.maxConcurrentInvocations = builder.maxConcurrentInvocations;
+        this.wanBatchSender = builder.wanBatchSender;
     }
 
     public static WanReplicationBuilder replicate() {
@@ -108,6 +113,10 @@ public class WanReplication {
         props.put(WanReplicationProperties.BATCH_SIZE.key(), replicationBatchSize);
         props.put(WanReplicationProperties.BATCH_MAX_DELAY_MILLIS.key(), 1000);
 
+        if (wanBatchSender != null) {
+            System.setProperty(WAN_BATCH_SENDER_CLASS, wanBatchSender.getName());
+        }
+
         return target;
     }
 
@@ -133,6 +142,7 @@ public class WanReplication {
         private int replicationBatchSize = WanConfigurationContext.DEFAULT_BATCH_SIZE;
         private int maxConcurrentInvocations = WanConfigurationContext.DEFAULT_MAX_CONCURRENT_INVOCATIONS;
         private boolean snapshotEnabled = false;
+        private Class<? extends WanBatchSender> wanBatchSender;
 
         private WanReplicationBuilder() {
         }
@@ -184,6 +194,11 @@ public class WanReplication {
 
         public WanReplicationBuilder withMaxConcurrentInvocations(int maxConcurrentInvocations) {
             this.maxConcurrentInvocations = maxConcurrentInvocations;
+            return this;
+        }
+
+        public WanReplicationBuilder withWanBatchSender(Class<? extends WanBatchSender> wanBatchSender) {
+            this.wanBatchSender = wanBatchSender;
             return this;
         }
 

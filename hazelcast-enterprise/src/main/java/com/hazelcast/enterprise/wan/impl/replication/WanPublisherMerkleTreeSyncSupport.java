@@ -31,11 +31,12 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.util.MapUtil;
+import com.hazelcast.util.ThreadUtil;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
+import com.hazelcast.wan.ConsistencyCheckResult;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanSyncStats;
-import com.hazelcast.wan.ConsistencyCheckResult;
 import com.hazelcast.wan.impl.merkletree.MerkleTreeUtil;
 
 import java.util.Collection;
@@ -46,11 +47,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ExecutorService;
 
 import static com.hazelcast.util.CollectionUtil.isEmpty;
 import static com.hazelcast.util.Preconditions.checkNotNull;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -74,14 +79,13 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     private final Map<String, WanSyncStats> lastSyncStats = new ConcurrentHashMap<>();
     private final WanBatchReplication publisher;
     private final WanSyncManager syncManager;
-    /**
-     * The count of {@link WanReplicationEvent} sync events pending replication per partition.
-     */
-    private final Map<Integer, AtomicInteger> counterMap = new ConcurrentHashMap<>();
+    private final Map<UUID, WanSyncContext<MerkleTreeWanSyncStats>> syncContextMap = new ConcurrentHashMap<>();
+
     /**
      * {@link IdleStrategy} used for
      */
     private final IdleStrategy wanTargetInvocationIdleStrategy;
+    private final ExecutorService updateSerializingExecutor;
 
     WanPublisherMerkleTreeSyncSupport(Node node,
                                       WanConfigurationContext configurationContext,
@@ -96,6 +100,8 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         this.syncManager = checkNotNull(service.getSyncManager());
         this.wanTargetInvocationIdleStrategy = new BackoffIdleStrategy(0, 0, WAN_TARGET_INVOCATION_BACKOFF_MIN_PARK,
                 WAN_TARGET_INVOCATION_BACKOFF_MAX_PARK);
+        this.updateSerializingExecutor = newSingleThreadExecutor(
+                r -> new Thread(r, ThreadUtil.createThreadName(node.hazelcastInstance.getName(), "wan-sync-stats-updater")));
     }
 
     /**
@@ -117,19 +123,19 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
 
         String target = publisher.wanReplicationName + "/" + publisher.wanPublisherId;
         nodeEngine.getManagementCenterService()
-                  .log(new WanConsistencyCheckStartedEvent(publisher.wanReplicationName,
+                  .log(new WanConsistencyCheckStartedEvent(event.getUuid(), publisher.wanReplicationName,
                           publisher.wanPublisherId, mapName));
         if (logger.isFineEnabled()) {
             logger.fine("Checking via Merkle trees if map " + mapName + " is consistent with cluster " + target);
         }
-        lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1, -1, -1, -1));
-        ConsistencyCheckResult checkResult = new ConsistencyCheckResult();
+        lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(event.getUuid(), -1, -1, -1, -1, -1));
+        ConsistencyCheckResult checkResult = new ConsistencyCheckResult(event.getUuid());
         try {
             List<Integer> localPartitionsToSync = getLocalPartitions(event);
             Map<Integer, int[]> diff = compareMerkleTrees(mapName, localPartitionsToSync);
             if (diff != null) {
                 int totalLocalMerkleTreeLeaves = getMerkleTreeLeaves(diff) * localPartitionsToSync.size();
-                checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), diff.size(),
+                checkResult = new ConsistencyCheckResult(event.getUuid(), localPartitionsToSync.size(), diff.size(),
                         totalLocalMerkleTreeLeaves, getDiffLeafCount(diff), getEntriesToSync(mapName, diff));
                 event.getProcessingResult()
                      .addProcessedPartitions(localPartitionsToSync);
@@ -142,8 +148,8 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         int checkedCount = checkResult.getLastCheckedPartitionCount();
         int diffCount = checkResult.getLastDiffPartitionCount();
         nodeEngine.getManagementCenterService()
-                  .log(new WanConsistencyCheckFinishedEvent(publisher.wanReplicationName, publisher.wanPublisherId,
-                          mapName, diffCount, checkedCount, entriesToSync));
+                  .log(new WanConsistencyCheckFinishedEvent(event.getUuid(), publisher.wanReplicationName,
+                          publisher.wanPublisherId, mapName, diffCount, checkedCount, entriesToSync));
         if (logger.isFineEnabled()) {
             logger.fine("Consistency check for map " + mapName + " with cluster " + target + " has completed: "
                     + diffCount + " partitions out of " + checkedCount + " are not consistent, " + entriesToSync
@@ -196,14 +202,48 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     @Override
     public void removeReplicationEvent(EnterpriseMapReplicationObject sync) {
         EnterpriseMapReplicationMerkleTreeNode node = (EnterpriseMapReplicationMerkleTreeNode) sync;
+        WanSyncContext<MerkleTreeWanSyncStats> syncContext = syncContextMap.get(node.getUuid());
         int partitionId = node.getPartitionId();
-        int remainingEventCount = counterMap.get(partitionId)
-                                            .addAndGet(-node.getEntryCount());
-        if (remainingEventCount == 0) {
-            syncManager.incrementSyncedPartitionCount();
+        int nodeEntryCount = node.getEntryCount();
+        String mapName = sync.getMapName();
+        int remainingEventCount = syncContext.getSyncCounter(mapName, partitionId).addAndGet(-nodeEntryCount);
+        MerkleTreeWanSyncStats syncStats = syncContext.getSyncStats(mapName);
+
+        updateSerializingExecutor.execute(() -> {
+            syncStats.onSyncLeaf(nodeEntryCount);
+
+            if (remainingEventCount == 0) {
+                syncManager.incrementSyncedPartitionCount();
+                syncStats.onSyncPartition();
+
+                writeManagementCenterProgressUpdateEvent(syncContext.getUuid(), mapName, syncStats.getPartitionsToSync(),
+                        syncStats, syncStats.getRecordsSynced());
+
+                completeSyncContext(syncContext, mapName, syncStats);
+            }
+        });
+    }
+
+    private void completeSyncContext(WanSyncContext<MerkleTreeWanSyncStats> syncContext, String mapName,
+                                     MerkleTreeWanSyncStats syncStats) {
+        if (syncStats.getPartitionsToSync() == syncStats.getPartitionsSynced()) {
+            syncContext.onMapSynced();
+            syncStats.onSyncComplete();
+            logSyncStats(syncStats);
+            writeManagementCenterSyncFinishedEvent(syncContext.getUuid(), mapName, syncStats);
+            cleanupSyncContextMap();
         }
     }
 
+    private void cleanupSyncContextMap() {
+        for (Map.Entry<UUID, WanSyncContext<MerkleTreeWanSyncStats>> entry : syncContextMap.entrySet()) {
+            UUID key = entry.getKey();
+            WanSyncContext<MerkleTreeWanSyncStats> context = entry.getValue();
+            if (context.isCompletedOrStuck()) {
+                syncContextMap.remove(key);
+            }
+        }
+    }
 
     /**
      * {@inheritDoc}
@@ -215,11 +255,24 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
      */
     @Override
     public void processEvent(WanSyncEvent event) throws Exception {
+        List<Integer> localPartitionsToSync = getLocalPartitions(event);
+        UUID uuid = event.getUuid();
         if (event.getType() == WanSyncType.ALL_MAPS) {
-            for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
+            List<String> mapNames = new LinkedList<>();
+
+            mapService.getMapServiceContext().getMapContainers().keySet().forEach(mapName -> {
                 if (isMapWanReplicated(mapName)) {
-                    lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1, -1, -1, -1));
-                    processMapSync(event, mapName);
+                    mapNames.add(mapName);
+                }
+            });
+
+            if (!isEmpty(mapNames)) {
+                WanSyncContext<MerkleTreeWanSyncStats> syncContext = new WanSyncContext<>(uuid, localPartitionsToSync.size(),
+                        mapNames);
+                syncContextMap.put(uuid, syncContext);
+                for (String mapName : mapNames) {
+                    lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(uuid, -1, -1, -1, -1, -1));
+                    processMapSync(event, syncContext, mapName, localPartitionsToSync);
                 }
             }
         } else {
@@ -228,8 +281,11 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                 throw new IllegalArgumentException("WAN synchronization requested for map " + mapName + " that is "
                         + "not configured for WAN replication");
             }
-            lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(-1, -1, -1, -1, -1));
-            processMapSync(event, mapName);
+            lastConsistencyCheckResults.put(mapName, new ConsistencyCheckResult(uuid, -1, -1, -1, -1, -1));
+            WanSyncContext<MerkleTreeWanSyncStats> syncContext = new WanSyncContext<>(uuid, localPartitionsToSync.size(),
+                    singletonList(mapName));
+            syncContextMap.put(uuid, syncContext);
+            processMapSync(event, syncContext, mapName, localPartitionsToSync);
         }
     }
 
@@ -237,43 +293,53 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         return mapService.getMapServiceContext().getMapContainer(mapName).isWanReplicationEnabled();
     }
 
-
-    private void processMapSync(WanSyncEvent event, String mapName) throws Exception {
+    private void processMapSync(WanSyncEvent event, WanSyncContext<MerkleTreeWanSyncStats> syncContext, String mapName,
+                                List<Integer> localPartitionsToSync) throws Exception {
         String target = publisher.wanReplicationName + "/" + publisher.wanPublisherId;
         if (logger.isFineEnabled()) {
             logger.fine("Synchronizing map " + mapName + " to cluster " + target + " by using Merkle trees");
         }
 
-        ConsistencyCheckResult checkResult = new ConsistencyCheckResult();
+        UUID uuid = event.getUuid();
+        ConsistencyCheckResult checkResult = new ConsistencyCheckResult(uuid);
         try {
             nodeEngine.getManagementCenterService()
-                      .log(new WanConsistencyCheckStartedEvent(publisher.wanReplicationName,
+                      .log(new WanConsistencyCheckStartedEvent(uuid, publisher.wanReplicationName,
                               publisher.wanPublisherId, mapName));
             if (logger.isFineEnabled()) {
                 logger.fine("Comparing Merkle trees of map " + mapName + " with cluster " + target
                         + " to identify the difference");
             }
 
-            List<Integer> localPartitionsToSync = getLocalPartitions(event);
             Map<Integer, int[]> diff = compareMerkleTrees(mapName, localPartitionsToSync);
             Set<Integer> processedPartitions = event.getProcessingResult()
                                                     .getProcessedPartitions();
             if (diff == null || diff.isEmpty()) {
+                MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats(syncContext.getUuid(), 0);
+                syncContext.addSyncStats(mapName, stats);
+                lastSyncStats.put(mapName, stats);
+
                 if (logger.isFineEnabled()) {
                     logger.fine("Map " + mapName + " found to be consistent with cluster " + target
                             + ", no synchronization is needed");
                 }
                 nodeEngine.getManagementCenterService()
-                          .log(new WanConsistencyCheckFinishedEvent(publisher.wanReplicationName,
+                          .log(new WanConsistencyCheckFinishedEvent(uuid, publisher.wanReplicationName,
                                   publisher.wanPublisherId, mapName, 0, localPartitionsToSync.size(), 0));
+
+                // we don't sync anything, but update the stats, log and send the events to MC for tracking purpose
+                nodeEngine.getManagementCenterService()
+                          .log(new WanSyncStartedEvent(uuid, publisher.wanReplicationName, publisher.wanPublisherId, mapName));
+
+                completeSyncContext(syncContext, mapName, syncContext.getSyncStats(mapName));
                 return;
             }
             int entriesToSync = getEntriesToSync(mapName, diff);
             int totalLocalMerkleTreeLeaves = getMerkleTreeLeaves(diff) * localPartitionsToSync.size();
-            checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), diff.size(), totalLocalMerkleTreeLeaves,
+            checkResult = new ConsistencyCheckResult(uuid, localPartitionsToSync.size(), diff.size(), totalLocalMerkleTreeLeaves,
                     getDiffLeafCount(diff), entriesToSync);
             nodeEngine.getManagementCenterService()
-                      .log(new WanConsistencyCheckFinishedEvent(publisher.wanReplicationName, publisher.wanPublisherId,
+                      .log(new WanConsistencyCheckFinishedEvent(uuid, publisher.wanReplicationName, publisher.wanPublisherId,
                               mapName, diff.size(), localPartitionsToSync.size(), entriesToSync));
             if (logger.isFineEnabled()) {
                 logger.fine("Merkle tree comparison for map " + mapName + " with cluster " + target + " has completed: " + diff
@@ -281,27 +347,23 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             }
 
             nodeEngine.getManagementCenterService()
-                      .log(new WanSyncStartedEvent(publisher.wanReplicationName, publisher.wanPublisherId, mapName));
+                      .log(new WanSyncStartedEvent(uuid, publisher.wanReplicationName, publisher.wanPublisherId, mapName));
 
-            syncDifferences(mapName, diff, processedPartitions);
-            checkResult = new ConsistencyCheckResult(localPartitionsToSync.size(), 0, totalLocalMerkleTreeLeaves, 0, 0);
-
-            if (logger.isFineEnabled()) {
-                logger.fine("Synchronization of map " + mapName + " to cluster " + target + " has finished");
-            }
+            syncDifferences(syncContext, mapName, diff, processedPartitions);
 
         } finally {
             lastConsistencyCheckResults.put(mapName, checkResult);
         }
     }
 
-    private void syncDifferences(String mapName, Map<Integer, int[]> diff, Set<Integer> processedPartitions) {
-        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats();
+    private void syncDifferences(WanSyncContext<MerkleTreeWanSyncStats> syncContext, String mapName, Map<Integer, int[]> diff,
+                                 Set<Integer> processedPartitions) {
+        MerkleTreeWanSyncStats stats = new MerkleTreeWanSyncStats(syncContext.getUuid(), diff.size());
+        syncContext.addSyncStats(mapName, stats);
+        lastSyncStats.put(mapName, stats);
 
         for (Entry<Integer, int[]> partitionDiffsEntry : diff.entrySet()) {
-            stats.onSyncPartition();
             Integer partitionId = partitionDiffsEntry.getKey();
-            counterMap.put(partitionId, new AtomicInteger());
 
             int[] merkleTreeNodeOrderValuePairs = partitionDiffsEntry.getValue();
             MerkleTreeGetEntriesOperation op = new MerkleTreeGetEntriesOperation(
@@ -314,26 +376,19 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             for (MerkleTreeNodeEntries nodeEntries : partitionEntries) {
                 if (!nodeEntries.getNodeEntries().isEmpty()) {
                     EnterpriseMapReplicationMerkleTreeNode node =
-                            new EnterpriseMapReplicationMerkleTreeNode(mapName, nodeEntries, partitionId);
+                            new EnterpriseMapReplicationMerkleTreeNode(syncContext.getUuid(), mapName, nodeEntries, partitionId);
+                    syncContext.getSyncCounter(mapName, partitionId).addAndGet(node.getEntryCount());
                     publisher.putToSyncEventQueue(new WanReplicationEvent(MapService.SERVICE_NAME, node));
-                    counterMap.get(partitionId).addAndGet(node.getEntryCount());
-                    stats.onSyncLeaf(node.getEntryCount());
                 }
             }
-            writeManagementCenterProgressUpdateEvent(mapName, diff.size(), stats);
             processedPartitions.add(partitionId);
         }
-
-        stats.onSyncComplete();
-        logSyncStatsIfEnabled(stats);
-        lastSyncStats.put(mapName, stats);
-        writeManagementCenterSyncFinishedEvent(mapName, stats);
     }
 
-    private void logSyncStatsIfEnabled(MerkleTreeWanSyncStats stats) {
-        if (logger.isFineEnabled()) {
+    private void logSyncStats(MerkleTreeWanSyncStats stats) {
             String syncStatsMsg = String.format("Synchronization finished%n%n"
                             + "Merkle synchronization statistics:%n"
+                            + "\t Synchronization UUID: %s%n"
                             + "\t Duration: %d secs%n"
                             + "\t Total records synchronized: %d%n"
                             + "\t Total partitions synchronized: %d%n"
@@ -342,15 +397,15 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                             + "\t StdDev of records per Merkle tree node: %.2f%n"
                             + "\t Minimum records per Merkle tree node: %d%n"
                             + "\t Maximum records per Merkle tree node: %d%n",
-                    stats.getDurationSecs(), stats.getRecordsSynced(), stats.getPartitionsSynced(), stats.getNodesSynced(),
-                    stats.getAvgEntriesPerLeaf(), stats.getStdDevEntriesPerLeaf(), stats.getMinLeafEntryCount(),
-                    stats.getMaxLeafEntryCount());
-            logger.fine(syncStatsMsg);
-        }
+                    stats.getUuid(), stats.getDurationSecs(), stats.getRecordsSynced(), stats.getPartitionsSynced(),
+                    stats.getNodesSynced(), stats.getAvgEntriesPerLeaf(), stats.getStdDevEntriesPerLeaf(),
+                    stats.getMinLeafEntryCount(), stats.getMaxLeafEntryCount());
+        logger.info(syncStatsMsg);
     }
 
-    private void writeManagementCenterSyncFinishedEvent(String mapName, MerkleTreeWanSyncStats stats) {
-        WanMerkleSyncFinishedEvent event = new WanMerkleSyncFinishedEvent(publisher.wanReplicationName, publisher.wanPublisherId,
+    private void writeManagementCenterSyncFinishedEvent(UUID uuid, String mapName, MerkleTreeWanSyncStats stats) {
+        WanMerkleSyncFinishedEvent event = new WanMerkleSyncFinishedEvent(uuid, publisher.wanReplicationName,
+                publisher.wanPublisherId,
                 mapName, stats.getDurationSecs(), stats.getPartitionsSynced(), stats.getNodesSynced(),
                 stats.getRecordsSynced(), stats.getMinLeafEntryCount(), stats.getMaxLeafEntryCount(),
                 stats.getAvgEntriesPerLeaf(), stats.getStdDevEntriesPerLeaf());
@@ -358,11 +413,11 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                   .log(event);
     }
 
-    private void writeManagementCenterProgressUpdateEvent(String mapName, int partitionsToSync, MerkleTreeWanSyncStats stats) {
-        WanSyncProgressUpdateEvent event = new WanSyncProgressUpdateEvent(publisher.wanReplicationName, publisher.wanPublisherId,
-                mapName, partitionsToSync, stats.getPartitionsSynced());
-        nodeEngine.getManagementCenterService()
-                  .log(event);
+    private void writeManagementCenterProgressUpdateEvent(UUID uuid, String mapName, int partitionsSynced,
+                                                          MerkleTreeWanSyncStats stats, int recordsSynced) {
+        WanSyncProgressUpdateEvent event = new WanSyncProgressUpdateEvent(uuid, publisher.wanReplicationName,
+                publisher.wanPublisherId, mapName, stats.getPartitionsToSync(), partitionsSynced, recordsSynced);
+        nodeEngine.getManagementCenterService().log(event);
     }
 
     /**
@@ -470,7 +525,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
 
     @Override
     public Map<String, WanSyncStats> getLastSyncStats() {
-        return lastSyncStats;
+        return unmodifiableMap(lastSyncStats);
     }
 
     @Override

@@ -2,15 +2,30 @@ package com.hazelcast.enterprise.wan.impl.sync;
 
 import com.hazelcast.enterprise.wan.WanSyncType;
 import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.util.SetUtil;
+import com.hazelcast.util.UuidUtil;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
+import java.util.UUID;
+
+import static com.hazelcast.cp.internal.util.UUIDSerializationUtil.readUUID;
+import static com.hazelcast.cp.internal.util.UUIDSerializationUtil.writeUUID;
 
 /**
  * Base class for WAN anti-entropy related events.
  */
 public abstract class WanAntiEntropyEvent implements IdentifiedDataSerializable {
+    /**
+     * The unique ID of the WAN anti-entropy events. Used to distinguish
+     * between separate anti-entropy requests.
+     */
+    protected UUID uuid;
+
     /**
      * The name of the map, can be {@code null} in case of
      * {@link WanSyncType#ALL_MAPS}
@@ -31,7 +46,25 @@ public abstract class WanAntiEntropyEvent implements IdentifiedDataSerializable 
     }
 
     public WanAntiEntropyEvent(String mapName) {
+        assignUuid();
         this.mapName = mapName;
+    }
+
+    protected WanAntiEntropyEvent(UUID uuid) {
+        this.uuid = uuid;
+    }
+
+    protected WanAntiEntropyEvent(UUID uuid, String mapName) {
+        this.uuid = uuid;
+        this.mapName = mapName;
+    }
+
+    protected void assignUuid() {
+        this.uuid = UuidUtil.newUnsecureUUID();
+    }
+
+    public UUID getUuid() {
+        return uuid;
     }
 
     public String getMapName() {
@@ -86,4 +119,25 @@ public abstract class WanAntiEntropyEvent implements IdentifiedDataSerializable 
      * @return a cloned instance
      */
     public abstract WanAntiEntropyEvent cloneWithoutPartitionKeys();
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        writeUUID(out, uuid);
+        out.writeUTF(mapName);
+        out.writeInt(partitionSet.size());
+        for (Integer partitionId : partitionSet) {
+            out.writeInt(partitionId);
+        }
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        uuid = readUUID(in);
+        mapName = in.readUTF();
+        int size = in.readInt();
+        partitionSet = SetUtil.createHashSet(size);
+        for (int i = 0; i < size; i++) {
+            partitionSet.add(in.readInt());
+        }
+    }
 }

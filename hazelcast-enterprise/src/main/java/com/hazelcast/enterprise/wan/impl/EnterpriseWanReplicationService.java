@@ -41,12 +41,12 @@ import com.hazelcast.spi.partition.FragmentedMigrationAwareService;
 import com.hazelcast.spi.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.util.MapUtil;
-import com.hazelcast.wan.impl.AddWanConfigResult;
+import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
-import com.hazelcast.wan.impl.WanReplicationService;
-import com.hazelcast.wan.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.impl.AddWanConfigResult;
 import com.hazelcast.wan.impl.WanEventCounters;
+import com.hazelcast.wan.impl.WanReplicationService;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -433,19 +434,21 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     @Override
-    public void syncMap(String wanReplicationName, String wanPublisherId, String mapName) {
+    public UUID syncMap(String wanReplicationName, String wanPublisherId, String mapName) {
         WanSyncEvent event = new WanSyncEvent(WanSyncType.SINGLE_MAP, mapName);
         syncManager.initiateAntiEntropyRequest(wanReplicationName, wanPublisherId, event);
+        return event.getUuid();
     }
 
     @Override
-    public void syncAllMaps(String wanReplicationName, String wanPublisherId) {
+    public UUID syncAllMaps(String wanReplicationName, String wanPublisherId) {
         WanSyncEvent event = new WanSyncEvent(WanSyncType.ALL_MAPS);
         syncManager.initiateAntiEntropyRequest(wanReplicationName, wanPublisherId, event);
+        return event.getUuid();
     }
 
     @Override
-    public void consistencyCheck(String wanReplicationName, String wanPublisherId, String mapName) {
+    public UUID consistencyCheck(String wanReplicationName, String wanPublisherId, String mapName) {
         MerkleTreeConfig merkleTreeConfig = node.getConfig().findMapConfig(mapName).getMerkleTreeConfig();
         if (!merkleTreeConfig.isEnabled()) {
             emitManagementCenterEvent(new WanConsistencyCheckIgnoredEvent(wanReplicationName,
@@ -455,11 +458,12 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
                             + " target group name '%s' and map '%s'"
                             + " ignored because map has merkle trees disabled",
                     wanReplicationName, wanPublisherId, mapName));
-            return;
+            return null;
         }
 
-        syncManager.initiateAntiEntropyRequest(wanReplicationName, wanPublisherId,
-                new WanConsistencyCheckEvent(mapName));
+        WanConsistencyCheckEvent event = new WanConsistencyCheckEvent(mapName);
+        syncManager.initiateAntiEntropyRequest(wanReplicationName, wanPublisherId, event);
+        return event.getUuid();
     }
 
     @Override

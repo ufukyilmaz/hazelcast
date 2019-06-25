@@ -79,6 +79,8 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
     private static final int IDLE_MAX_SPINS = 20;
     private static final int IDLE_MAX_YIELDS = 50;
 
+    protected WanBatchSender wanBatchSender;
+
     private final AtomicLong failedTransmitCount = new AtomicLong();
     private final Set<Operation> liveOperations = newSetFromMap(new ConcurrentHashMap<>());
 
@@ -98,7 +100,6 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
     private volatile long lastBatchSendTime = System.currentTimeMillis();
 
     private Executor wanExecutor;
-    private WanBatchSender wanBatchSender;
     private BlockingQueue<WanReplicationEvent> syncEvents;
     private IdleStrategy idlingStrategy;
     private ArrayList<WanReplicationEvent> eventBatchHolder;

@@ -151,7 +151,6 @@ public class MapWanSyncAPITest {
         factory.cleanup();
         clusterB.startCluster();
 
-
         assertKeysNotInEventually(clusterB.getMembers(), "map", 0, 1000);
 
         clusterA.syncMap(toBReplication, MAP_NAME);

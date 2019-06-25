@@ -8,7 +8,6 @@ import com.hazelcast.core.LifecycleEvent;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.wan.impl.AddWanConfigResult;
 
@@ -20,6 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
@@ -27,9 +27,11 @@ import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static com.hazelcast.test.HazelcastTestSupport.spawn;
 import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
+import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 import static com.hazelcast.util.Preconditions.checkPositive;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class Cluster {
@@ -46,7 +48,7 @@ public class Cluster {
     }
 
     public HazelcastInstance getAMember() {
-        List<HazelcastInstance> runningInstances = new ArrayList<HazelcastInstance>(clusterMembers.length);
+        List<HazelcastInstance> runningInstances = new ArrayList<>(clusterMembers.length);
         for (HazelcastInstance instance : clusterMembers) {
             if (instance != null && instance.getLifecycleService().isRunning()) {
                 runningInstances.add(instance);
@@ -55,6 +57,12 @@ public class Cluster {
 
         int randomInstanceIndex = getRandomInstanceIndex(runningInstances.size());
         return runningInstances.get(randomInstanceIndex);
+    }
+
+    public void forEachMember(Consumer<HazelcastInstance> consumer) {
+        for (HazelcastInstance instance : clusterMembers) {
+            consumer.accept(instance);
+        }
     }
 
     public HazelcastInstance[] getMembers() {
@@ -129,6 +137,7 @@ public class Cluster {
     public void startClusterAndWaitForSafeState() {
         startCluster();
         waitAllForSafeState(clusterMembers);
+        warmUpPartitions(clusterMembers);
     }
 
     public HazelcastInstance startAClusterMember() {
@@ -240,15 +249,12 @@ public class Cluster {
     public void waitForNoOngoingReplication(WanReplication wanReplication) {
         final String setupName = wanReplication.getSetupName();
         final String targetClusterName = wanReplication.getTargetClusterName();
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                for (HazelcastInstance member : clusterMembers) {
-                    if (member != null) {
-                        WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
-                                .getEndpointOrFail(setupName, targetClusterName);
-                        assertTrue(!endpoint.getReplicationStrategy().hasOngoingReplication());
-                    }
+        assertTrueEventually(() -> {
+            for (HazelcastInstance member : clusterMembers) {
+                if (member != null) {
+                    WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
+                            .getEndpointOrFail(setupName, targetClusterName);
+                    assertFalse(endpoint.getReplicationStrategy().hasOngoingReplication());
                 }
             }
         });
@@ -262,27 +268,27 @@ public class Cluster {
         }
     }
 
-    public void consistencyCheck(WanReplication wanReplication, String mapName) {
+    public UUID consistencyCheck(WanReplication wanReplication, String mapName) {
         String wanReplicationName = wanReplication.getSetupName();
         String targetClusterName = wanReplication.getTargetClusterName();
-        wanReplicationService(getAMember()).consistencyCheck(wanReplicationName, targetClusterName, mapName);
+        return wanReplicationService(getAMember()).consistencyCheck(wanReplicationName, targetClusterName, mapName);
     }
 
-    public void syncMap(WanReplication wanReplication, String mapName) {
+    public UUID syncMap(WanReplication wanReplication, String mapName) {
         HazelcastInstance aMember = getAMember();
-        syncMapOnMember(wanReplication, mapName, aMember);
+        return syncMapOnMember(wanReplication, mapName, aMember);
     }
 
-    public void syncMapOnMember(WanReplication wanReplication, String mapName, HazelcastInstance aMember) {
+    public UUID syncMapOnMember(WanReplication wanReplication, String mapName, HazelcastInstance aMember) {
         String wanReplicationName = wanReplication.getSetupName();
         String targetClusterName = wanReplication.getTargetClusterName();
-        wanReplicationService(aMember).syncMap(wanReplicationName, targetClusterName, mapName);
+        return wanReplicationService(aMember).syncMap(wanReplicationName, targetClusterName, mapName);
     }
 
-    public void syncAllMaps(WanReplication wanReplication) {
+    public UUID syncAllMaps(WanReplication wanReplication) {
         String wanReplicationName = wanReplication.getSetupName();
         String targetClusterName = wanReplication.getTargetClusterName();
-        wanReplicationService(getAMember()).syncAllMaps(wanReplicationName, targetClusterName);
+        return wanReplicationService(getAMember()).syncAllMaps(wanReplicationName, targetClusterName);
     }
 
     private int getRandomInstanceIndex(int instances) {

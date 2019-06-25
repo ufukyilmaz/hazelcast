@@ -8,6 +8,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 
 import java.io.IOException;
+import java.util.UUID;
 
 /**
  * WAN replication object for merkle tree sync requests.
@@ -16,18 +17,22 @@ import java.io.IOException;
  * @see com.hazelcast.wan.impl.merkletree.MerkleTree
  */
 public class EnterpriseMapReplicationMerkleTreeNode extends EnterpriseMapReplicationObject {
+    private transient UUID uuid;
     private MerkleTreeNodeEntries entries;
     private transient int partitionId;
 
     public EnterpriseMapReplicationMerkleTreeNode() {
     }
 
-    public EnterpriseMapReplicationMerkleTreeNode(String mapName,
-                                                  MerkleTreeNodeEntries entries,
-                                                  int partitionId) {
+    public EnterpriseMapReplicationMerkleTreeNode(UUID uuid, String mapName, MerkleTreeNodeEntries entries, int partitionId) {
         super(mapName, 0);
+        this.uuid = uuid;
         this.entries = entries;
         this.partitionId = partitionId;
+    }
+
+    public UUID getUuid() {
+        return uuid;
     }
 
     public MerkleTreeNodeEntries getEntries() {

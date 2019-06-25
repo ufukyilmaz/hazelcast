@@ -7,9 +7,9 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.wan.ConsistencyCheckResult;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
-import com.hazelcast.wan.ConsistencyCheckResult;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -117,12 +117,14 @@ public class MapWanAntiEntropyTest extends HazelcastTestSupport {
 
         clusterA.syncAllMaps(wanReplication);
 
-        waitForSyncToComplete(clusterA.getMembers());
-        int syncedPartitionsNotReplicated = getClusterWideSumPartitionsSyncedCount(clusterA, wanReplication, MAP_NOT_REPLICATED);
-        assertEquals(0, syncedPartitionsNotReplicated);
+        assertTrueEventually(() -> {
+            int syncedPartitionsNotReplicated = getClusterWideSumPartitionsSyncedCount(clusterA, wanReplication,
+                    MAP_NOT_REPLICATED);
+            assertEquals(0, syncedPartitionsNotReplicated);
 
-        int syncedPartitionsReplicated = getClusterWideSumPartitionsSyncedCount(clusterA, wanReplication, MAP_REPLICATED);
-        assertTrue(syncedPartitionsReplicated != 0);
+            int syncedPartitionsReplicated = getClusterWideSumPartitionsSyncedCount(clusterA, wanReplication, MAP_REPLICATED);
+            assertTrue(syncedPartitionsReplicated != 0);
+        });
         verifyMapReplicated(clusterA, clusterB, MAP_REPLICATED);
     }
 
@@ -132,9 +134,10 @@ public class MapWanAntiEntropyTest extends HazelcastTestSupport {
 
         clusterA.syncMap(wanReplication, MAP_REPLICATED);
 
-        waitForSyncToComplete(clusterA.getMembers());
-        int syncedPartitions = getClusterWideSumPartitionsSyncedCount(clusterA, wanReplication, MAP_REPLICATED);
-        assertTrue(syncedPartitions != 0);
+        assertTrueEventually(() -> {
+            int syncedPartitions = getClusterWideSumPartitionsSyncedCount(clusterA, wanReplication, MAP_REPLICATED);
+            assertTrue(syncedPartitions != 0);
+        });
         verifyMapReplicated(clusterA, clusterB, MAP_REPLICATED);
     }
 

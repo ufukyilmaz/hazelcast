@@ -5,9 +5,9 @@ import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEvent;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.util.SetUtil;
 
 import java.io.IOException;
+import java.util.UUID;
 
 /**
  * A marker event to initiate WAN sync for map entries.
@@ -24,6 +24,7 @@ public class WanSyncEvent extends WanAntiEntropyEvent implements IdentifiedDataS
 
     public WanSyncEvent(WanSyncType type) {
         assert type == WanSyncType.ALL_MAPS;
+        assignUuid();
         this.type = type;
     }
 
@@ -32,9 +33,14 @@ public class WanSyncEvent extends WanAntiEntropyEvent implements IdentifiedDataS
         this.type = type;
     }
 
+    private WanSyncEvent(WanSyncType type, UUID uuid, String name) {
+        super(uuid, name);
+        this.type = type;
+    }
+
     @Override
     public WanAntiEntropyEvent cloneWithoutPartitionKeys() {
-        return new WanSyncEvent(type, mapName);
+        return new WanSyncEvent(type, uuid, mapName);
     }
 
     public WanSyncType getType() {
@@ -48,23 +54,14 @@ public class WanSyncEvent extends WanAntiEntropyEvent implements IdentifiedDataS
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
+        super.writeData(out);
         out.writeInt(type.getType());
-        out.writeUTF(mapName);
-        out.writeInt(partitionSet.size());
-        for (Integer partitionId : partitionSet) {
-            out.writeInt(partitionId);
-        }
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
+        super.readData(in);
         type = WanSyncType.getByType(in.readInt());
-        mapName = in.readUTF();
-        int size = in.readInt();
-        partitionSet = SetUtil.createHashSet(size);
-        for (int i = 0; i < size; i++) {
-            partitionSet.add(in.readInt());
-        }
     }
 
     @Override

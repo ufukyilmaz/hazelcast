@@ -10,11 +10,11 @@ import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.properties.HazelcastProperty;
-import com.hazelcast.wan.impl.WanReplicationService;
+import com.hazelcast.wan.ConsistencyCheckResult;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
 import com.hazelcast.wan.WanSyncStats;
-import com.hazelcast.wan.ConsistencyCheckResult;
+import com.hazelcast.wan.impl.WanReplicationService;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -39,6 +39,8 @@ public class WANPlugin extends DiagnosticsPlugin {
             = new HazelcastProperty("hazelcast.diagnostics.wan.period.seconds", 0, SECONDS);
 
     private static final String WAN_SECTION_NAME = "WAN";
+
+    private static final String UUID_KEY = "uuid";
 
     private static final String CACHE_EVENT_COUNT_SECTION_PREFIX = "cache";
     private static final String MAP_EVENT_COUNT_SECTION_PREFIX = "map";
@@ -216,6 +218,7 @@ public class WANPlugin extends DiagnosticsPlugin {
                 String mapName = comparisonEntry.getKey();
                 ConsistencyCheckResult result = comparisonEntry.getValue();
                 writer.startSection(MAP_CONSISTENCY_CHECK_SECTION_PREFIX + "-" + mapName);
+                writer.writeKeyValueEntry(UUID_KEY, result.getUuid().toString());
                 writer.writeKeyValueEntry(CONSISTENCY_CHECK_IS_RUNNING_KEY, result.isRunning());
                 writer.writeKeyValueEntry(CONSISTENCY_CHECK_LAST_CHECKED_COUNT_KEY, result.getLastCheckedPartitionCount());
                 writer.writeKeyValueEntry(CONSISTENCY_CHECK_LAST_DIFF_COUNT_KEY, result.getLastDiffPartitionCount());
@@ -241,6 +244,7 @@ public class WANPlugin extends DiagnosticsPlugin {
                 WanSyncStats stats = syncStatsEntry.getValue();
 
                 writer.startSection(MAP_SYNC_STATS_SECTION_PREFIX + "-" + mapName);
+                writer.writeKeyValueEntry(UUID_KEY, stats.getUuid().toString());
                 writer.writeKeyValueEntry(SYNC_STATS_DURATION, stats.getDurationSecs());
                 writer.writeKeyValueEntry(SYNC_STATS_PARTITIONS, stats.getPartitionsSynced());
                 writer.writeKeyValueEntry(SYNC_STATS_RECORDS, stats.getRecordsSynced());

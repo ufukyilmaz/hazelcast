@@ -2,38 +2,57 @@ package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.wan.WanSyncStats;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Full sync specific implementation of the {@link WanSyncStats} interface
  */
 public class FullWanSyncStats implements WanSyncStats {
+    private final UUID uuid;
     private final long syncStartNanos = System.nanoTime();
+    private final int partitionsToSync;
 
-    private int partitionsSynced;
-    private int recordsSynced;
-    private long syncDurationNanos;
+    private AtomicInteger partitionsSynced = new AtomicInteger();
+    private AtomicInteger recordsSynced = new AtomicInteger();
+    private volatile long syncDurationNanos;
 
-    /**
-     * Callback for synchronizing a partition
-     */
-    public void onSyncPartition() {
-        partitionsSynced++;
+    FullWanSyncStats(UUID uuid, int partitionsToSync) {
+        this.uuid = uuid;
+        this.partitionsToSync = partitionsToSync;
+    }
+
+    @Override
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    @Override
+    public int getPartitionsToSync() {
+        return partitionsToSync;
     }
 
     /**
-     * Callback for synchronizing records
+     * Callback for synchronizing a partition.
      *
-     * @param recordsSynced the number of the records synchronized
+     * @return the number of partitions synced
      */
-    public void onSyncRecords(int recordsSynced) {
-        this.recordsSynced += recordsSynced;
+    int onSyncPartition() {
+        return partitionsSynced.incrementAndGet();
+    }
+
+    /**
+     * Callback for synchronizing a record.
+     */
+    void onSyncRecord() {
+        this.recordsSynced.incrementAndGet();
     }
 
     /**
      * Callback for completing synchronization
      */
-    public void onSyncComplete() {
+    void onSyncComplete() {
         syncDurationNanos = System.nanoTime() - syncStartNanos;
     }
 
@@ -44,11 +63,23 @@ public class FullWanSyncStats implements WanSyncStats {
 
     @Override
     public int getPartitionsSynced() {
-        return partitionsSynced;
+        return partitionsSynced.get();
     }
 
     @Override
     public int getRecordsSynced() {
-        return recordsSynced;
+        return recordsSynced.get();
+    }
+
+    @Override
+    public String toString() {
+        return "FullWanSyncStats{"
+                + "uuid=" + uuid
+                + ", syncStartNanos=" + syncStartNanos
+                + ", partitionsToSync=" + partitionsToSync
+                + ", partitionsSynced=" + partitionsSynced
+                + ", recordsSynced=" + recordsSynced
+                + ", syncDurationNanos=" + syncDurationNanos
+                + '}';
     }
 }

@@ -2,40 +2,56 @@ package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.wan.WanSyncStats;
 
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Merkle tree specific implementation of the {@link WanSyncStats} interface.
  */
 public class MerkleTreeWanSyncStats implements WanSyncStats {
+    private final UUID uuid;
     private final long syncStartNanos = System.nanoTime();
 
-    private long syncDurationNanos;
-    private int partitionsSynced;
-    private int nodesSynced;
-    private int recordsSynced;
-    private int minLeafEntryCount = Integer.MAX_VALUE;
-    private int maxLeafEntryCount = Integer.MIN_VALUE;
-    private double avgEntriesPerLeaf;
-    private double stdDevEntriesPerLeaf;
-    private long sumEntryCountSquares;
+    private final int partitionsToSync;
+    private final AtomicInteger partitionsSynced = new AtomicInteger();
+    private final AtomicInteger recordsSynced = new AtomicInteger();
+    private final AtomicInteger nodesSynced = new AtomicInteger();
+    private final AtomicLong sumEntryCountSquares = new AtomicLong();
 
-    /**
-     * Callback for synchronizing a partition
-     */
-    void onSyncPartition() {
-        partitionsSynced++;
+    private volatile long syncDurationNanos;
+    private volatile int minLeafEntryCount = Integer.MAX_VALUE;
+    private volatile int maxLeafEntryCount = Integer.MIN_VALUE;
+    private volatile double avgEntriesPerLeaf;
+    private volatile double stdDevEntriesPerLeaf;
+
+    MerkleTreeWanSyncStats(UUID uuid, int partitionsToSync) {
+        this.uuid = uuid;
+        this.partitionsToSync = partitionsToSync;
     }
 
     /**
-     * Callback for synchronizing a Merkle tree node
+     * Callback for synchronizing a partition.
+     *
+     * @return the number of partitions synced
+     */
+    int onSyncPartition() {
+        return partitionsSynced.incrementAndGet();
+    }
+
+    /**
+     * Callback for synchronizing a Merkle tree node.
      *
      * @param leafEntryCount the number of the records belong to the
      *                       synchronized Merkle tree node
+     *
+     * @return the number of records synchronized
      */
     void onSyncLeaf(int leafEntryCount) {
-        recordsSynced += leafEntryCount;
-        nodesSynced++;
+        int recordsSynchronized = recordsSynced.addAndGet(leafEntryCount);
+        int nodesSynchronized = nodesSynced.incrementAndGet();
 
         if (leafEntryCount < minLeafEntryCount) {
             minLeafEntryCount = leafEntryCount;
@@ -45,11 +61,11 @@ public class MerkleTreeWanSyncStats implements WanSyncStats {
             maxLeafEntryCount = leafEntryCount;
         }
 
-        avgEntriesPerLeaf = nodesSynced != 0 ? (double) recordsSynced / nodesSynced : 0;
+        avgEntriesPerLeaf = nodesSynchronized != 0 ? (double) recordsSynchronized / nodesSynchronized : 0;
 
-        sumEntryCountSquares += (long) leafEntryCount * leafEntryCount;
+        long sumSquares = sumEntryCountSquares.addAndGet((long) leafEntryCount * leafEntryCount);
         double avgSquare = avgEntriesPerLeaf * avgEntriesPerLeaf;
-        stdDevEntriesPerLeaf = Math.sqrt((((double) sumEntryCountSquares) / nodesSynced) - avgSquare);
+        stdDevEntriesPerLeaf = Math.sqrt((((double) sumSquares) / nodesSynchronized) - avgSquare);
     }
 
     /**
@@ -60,25 +76,35 @@ public class MerkleTreeWanSyncStats implements WanSyncStats {
     }
 
     @Override
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    @Override
     public long getDurationSecs() {
         return NANOSECONDS.toSeconds(syncDurationNanos);
     }
 
     @Override
+    public int getPartitionsToSync() {
+        return partitionsToSync;
+    }
+
+    @Override
     public int getPartitionsSynced() {
-        return partitionsSynced;
+        return partitionsSynced.get();
     }
 
     @Override
     public int getRecordsSynced() {
-        return recordsSynced;
+        return recordsSynced.get();
     }
 
     /**
      * Returns the number of the synchronized Merkle tree nodes
      */
     public int getNodesSynced() {
-        return nodesSynced;
+        return nodesSynced.get();
     }
 
     /**
@@ -86,7 +112,7 @@ public class MerkleTreeWanSyncStats implements WanSyncStats {
      * Merkle tree nodes have
      */
     public int getMinLeafEntryCount() {
-        return minLeafEntryCount;
+        return partitionsToSync != 0 ? minLeafEntryCount : 0;
     }
 
     /**
@@ -94,7 +120,7 @@ public class MerkleTreeWanSyncStats implements WanSyncStats {
      * Merkle tree nodes have
      */
     public int getMaxLeafEntryCount() {
-        return maxLeafEntryCount;
+        return partitionsToSync != 0 ? maxLeafEntryCount : 0;
     }
 
     /**

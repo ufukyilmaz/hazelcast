@@ -8,16 +8,19 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 
 import java.io.IOException;
+import java.util.UUID;
 
 /**
  * WAN replication object for sync requests.
  */
 public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject {
+    private transient UUID uuid;
     private WanMapEntryView<Data, Data> entryView;
     private transient int partitionId;
 
-    public EnterpriseMapReplicationSync(String mapName, EntryView<Data, Data> entryView, int partitionId) {
+    public EnterpriseMapReplicationSync(UUID uuid, String mapName, EntryView<Data, Data> entryView, int partitionId) {
         super(mapName, 0);
+        this.uuid = uuid;
         if (entryView instanceof WanMapEntryView) {
             this.entryView = (WanMapEntryView<Data, Data>) entryView;
         } else {
@@ -27,6 +30,10 @@ public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject
     }
 
     public EnterpriseMapReplicationSync() {
+    }
+
+    public UUID getUuid() {
+        return uuid;
     }
 
     public WanMapEntryView<Data, Data> getEntryView() {

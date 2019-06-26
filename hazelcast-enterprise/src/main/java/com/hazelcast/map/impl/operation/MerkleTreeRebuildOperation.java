@@ -8,7 +8,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.serialization.SerializationService;
-import com.hazelcast.wan.merkletree.MerkleTree;
+import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
 import java.io.IOException;
 import java.util.Iterator;

@@ -1,11 +1,11 @@
 package com.hazelcast.map.impl.wan;
 
-import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
 import com.hazelcast.map.impl.MerkleTreeNodeEntries;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.DistributedServiceWanEventCounters;
 
 import java.io.IOException;
 
@@ -13,7 +13,7 @@ import java.io.IOException;
  * WAN replication object for merkle tree sync requests.
  * This object contains all entries for a single merkle tree node.
  *
- * @see com.hazelcast.wan.merkletree.MerkleTree
+ * @see com.hazelcast.wan.impl.merkletree.MerkleTree
  */
 public class EnterpriseMapReplicationMerkleTreeNode extends EnterpriseMapReplicationObject {
     private MerkleTreeNodeEntries entries;

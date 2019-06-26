@@ -16,6 +16,7 @@ import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
+import com.hazelcast.wan.impl.AddWanConfigResult;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

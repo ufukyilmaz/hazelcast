@@ -20,7 +20,7 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.annotation.SlowTest;
-import com.hazelcast.wan.merkletree.MerkleTree;
+import com.hazelcast.wan.impl.merkletree.MerkleTree;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

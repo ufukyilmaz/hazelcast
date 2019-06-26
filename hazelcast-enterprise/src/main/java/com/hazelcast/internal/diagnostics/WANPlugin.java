@@ -1,7 +1,8 @@
 package com.hazelcast.internal.diagnostics;
 
 import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.enterprise.wan.replication.MerkleTreeWanSyncStats;
+import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
+import com.hazelcast.enterprise.wan.impl.replication.MerkleTreeWanSyncStats;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.LocalWanStats;
@@ -9,11 +10,11 @@ import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.properties.HazelcastProperty;
-import com.hazelcast.wan.WanReplicationService;
-import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
-import com.hazelcast.wan.impl.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
+import com.hazelcast.wan.impl.WanReplicationService;
+import com.hazelcast.wan.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
 import com.hazelcast.wan.WanSyncStats;
-import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
+import com.hazelcast.wan.ConsistencyCheckResult;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -161,7 +162,7 @@ public class WANPlugin extends DiagnosticsPlugin {
      * @param writer                   the diagnostics log writer
      * @param wanReplicationConfigName the WAN replication config name
      * @param stats                    the WAN replication statistics
-     * @see com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate
+     * @see WanReplicationPublisherDelegate
      */
     private void renderWanReplication(DiagnosticsLogWriter writer, String wanReplicationConfigName, LocalWanStats stats) {
         final Map<String, LocalWanPublisherStats> publisherStats = stats.getLocalWanPublisherStats();
@@ -282,7 +283,7 @@ public class WANPlugin extends DiagnosticsPlugin {
 
     /**
      * Renders the diagnostics for the state of the
-     * {@link com.hazelcast.enterprise.wan.sync.WanSyncManager} such as the
+     * {@link com.hazelcast.enterprise.wan.impl.sync.WanSyncManager} such as the
      * status and active sync state.
      *
      * @param writer the diagnostics log writer

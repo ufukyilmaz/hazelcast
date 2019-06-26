@@ -1,12 +1,12 @@
 package com.hazelcast.wan;
 
-import com.hazelcast.cache.wan.CacheReplicationRemove;
-import com.hazelcast.cache.wan.CacheReplicationUpdate;
+import com.hazelcast.cache.impl.wan.CacheReplicationRemove;
+import com.hazelcast.cache.impl.wan.CacheReplicationUpdate;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
-import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
-import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
-import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEventPublishOperation;
+import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
+import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.operation.PostJoinWanOperation;
+import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventPublishOperation;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -16,17 +16,17 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.BATCH_WAN_REP_EVENT;
-import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.CACHE_REPLICATION_REMOVE;
-import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.CACHE_REPLICATION_UPDATE;
-import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.MAP_REPLICATION_REMOVE;
-import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.MAP_REPLICATION_UPDATE;
-import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.POST_JOIN_WAN_OPERATION;
-import static com.hazelcast.enterprise.wan.EWRDataSerializerHook.WAN_SYNC_OPERATION;
+import static com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook.BATCH_WAN_REP_EVENT;
+import static com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook.CACHE_REPLICATION_REMOVE;
+import static com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook.CACHE_REPLICATION_UPDATE;
+import static com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook.MAP_REPLICATION_REMOVE;
+import static com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook.MAP_REPLICATION_UPDATE;
+import static com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook.POST_JOIN_WAN_OPERATION;
+import static com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook.WAN_SYNC_OPERATION;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for {@link com.hazelcast.enterprise.wan.EWRDataSerializerHook}
+ * Tests for {@link EWRDataSerializerHook}
  */
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})

@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl.wan;
 
-import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

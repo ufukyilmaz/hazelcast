@@ -1,15 +1,15 @@
 package com.hazelcast.wan.fw;
 
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
-import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.instance.impl.TestUtil;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.wan.WanSyncStatus;
-import com.hazelcast.wan.impl.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
+import com.hazelcast.wan.impl.WanSyncStatus;
+import com.hazelcast.wan.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
 
 import java.util.Map;
 

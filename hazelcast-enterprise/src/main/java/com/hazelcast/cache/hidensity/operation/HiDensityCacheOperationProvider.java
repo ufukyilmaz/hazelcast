@@ -4,7 +4,7 @@ import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.operation.CacheClearOperationFactory;
 import com.hazelcast.cache.impl.operation.CacheRemoveAllOperationFactory;
-import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
+import com.hazelcast.cache.impl.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.Operation;

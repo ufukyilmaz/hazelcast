@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.enterprise.wan.operation.MerkleTreeNodeValueComparison;
+import com.hazelcast.enterprise.wan.impl.operation.MerkleTreeNodeValueComparison;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.impl.operationservice.Operation;

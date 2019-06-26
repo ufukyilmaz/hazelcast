@@ -2,17 +2,17 @@ package com.hazelcast.wan.custom;
 
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
-import com.hazelcast.enterprise.wan.replication.WanPublisherSyncSupport;
-import com.hazelcast.enterprise.wan.sync.WanAntiEntropyEvent;
-import com.hazelcast.enterprise.wan.sync.WanConsistencyCheckEvent;
-import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
+import com.hazelcast.enterprise.wan.WanConsistencyCheckEvent;
+import com.hazelcast.enterprise.wan.WanSyncEvent;
+import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
+import com.hazelcast.enterprise.wan.impl.replication.WanPublisherSyncSupport;
+import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEvent;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanSyncStats;
-import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
+import com.hazelcast.wan.ConsistencyCheckResult;
 
 import java.util.ArrayList;
 import java.util.Collections;

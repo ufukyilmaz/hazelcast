@@ -14,7 +14,7 @@ import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
-import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
+import com.hazelcast.wan.ConsistencyCheckResult;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;

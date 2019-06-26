@@ -2,7 +2,6 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.spi.ExecutionService;
 import com.hazelcast.wan.WanReplicationPublisher;
@@ -19,7 +18,6 @@ import com.hazelcast.wan.WanReplicationPublisher;
  * Can be registered by programmatically or by XML using {@link WanConsumerConfig}.
  *
  * @see WanReplicationPublisher
- * @see WanBatchReplication
  */
 public interface WanReplicationConsumer {
 

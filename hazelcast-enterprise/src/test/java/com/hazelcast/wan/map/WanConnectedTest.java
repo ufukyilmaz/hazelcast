@@ -3,10 +3,10 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
-import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
-import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -17,7 +17,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Map;
 
-import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.ENDPOINTS;
+import static com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties.ENDPOINTS;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 

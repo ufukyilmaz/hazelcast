@@ -3,9 +3,9 @@
 
 # enterprise hooks
 com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook
-com.hazelcast.cache.operation.EnterpriseCacheDataSerializerHook
+com.hazelcast.cache.impl.operation.EnterpriseCacheDataSerializerHook
 com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook
-com.hazelcast.enterprise.wan.EWRDataSerializerHook
+com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook
 com.hazelcast.spi.hotrestart.cluster.HotRestartClusterSerializerHook
 com.hazelcast.spi.hotrestart.backup.HotRestartBackupSerializerHook
 com.hazelcast.security.impl.SecurityDataSerializerHook

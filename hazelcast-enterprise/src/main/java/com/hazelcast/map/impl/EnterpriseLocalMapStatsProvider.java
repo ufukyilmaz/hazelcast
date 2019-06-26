@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl;
 
-import com.hazelcast.wan.merkletree.MerkleTree;
+import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
 /**
  * Enterprise extension for {@link LocalMapStatsProvider}

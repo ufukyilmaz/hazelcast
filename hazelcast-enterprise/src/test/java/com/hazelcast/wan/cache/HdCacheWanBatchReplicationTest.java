@@ -3,7 +3,7 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import org.junit.AfterClass;

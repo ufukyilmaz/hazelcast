@@ -27,7 +27,7 @@ import com.hazelcast.map.impl.recordstore.JsonMetadataRecordStoreMutationObserve
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStoreMutationObserver;
 import com.hazelcast.map.impl.wan.MerkleTreeUpdaterRecordStoreMutationObserver;
-import com.hazelcast.map.impl.wan.filter.MapFilterProvider;
+import com.hazelcast.map.impl.wan.MapFilterProvider;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -44,7 +44,7 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
 import com.hazelcast.util.ConstructorFunction;
-import com.hazelcast.wan.merkletree.MerkleTree;
+import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
 import java.util.ArrayList;
 import java.util.Collection;

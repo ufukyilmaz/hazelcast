@@ -1,6 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.cache.wan.WanCacheEntryView;
+import com.hazelcast.cache.impl.wan.WanCacheEntryView;
 import com.hazelcast.internal.util.JavaVersion;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;

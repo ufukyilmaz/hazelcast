@@ -13,7 +13,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.WanReplicationConsumer;
-import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
+import com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -60,7 +60,7 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(16, MemoryUnit.MEGABYTES));
         WanReplicationConfig wanReplicationConfig = new WanReplicationConfig().setName("wan-replication");
         WanPublisherConfig wanPublisherConfig = new WanPublisherConfig().setGroupName("target-cluster")
-                .setClassName(CountingWanEndpoint.class.getName());
+                                                                        .setClassName(CountingWanEndpoint.class.getName());
         WanConsumerConfig wanConsumerConfig = new WanConsumerConfig().setClassName(NoopWanConsumer.class.getName());
         wanPublisherConfig.getProperties().put(WanReplicationProperties.GROUP_PASSWORD.key(), "password");
         wanReplicationConfig.addWanPublisherConfig(wanPublisherConfig);
@@ -68,10 +68,10 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
         config.addWanReplicationConfig(wanReplicationConfig);
 
         config.getHotRestartPersistenceConfig().setEnabled(true)
-                .setBaseDir(hotRestartFolderRule.getBaseDir())
-                .setClusterDataRecoveryPolicy(PARTIAL_RECOVERY_MOST_RECENT)
-                .setDataLoadTimeoutSeconds(10)
-                .setValidationTimeoutSeconds(10);
+              .setBaseDir(hotRestartFolderRule.getBaseDir())
+              .setClusterDataRecoveryPolicy(PARTIAL_RECOVERY_MOST_RECENT)
+              .setDataLoadTimeoutSeconds(10)
+              .setValidationTimeoutSeconds(10);
         return config;
     }
 

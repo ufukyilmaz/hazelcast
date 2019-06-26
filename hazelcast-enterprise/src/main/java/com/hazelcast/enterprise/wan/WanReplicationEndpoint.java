@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
+import com.hazelcast.enterprise.wan.impl.EWRMigrationContainer;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.spi.ServiceNamespace;

@@ -1,6 +1,6 @@
 package com.hazelcast.cache.impl.wan;
 
-import com.hazelcast.cache.wan.filter.CacheWanEventFilter;
+import com.hazelcast.cache.wan.CacheWanEventFilter;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;

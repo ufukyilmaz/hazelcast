@@ -7,8 +7,8 @@ package com.hazelcast.enterprise.wan;
  * <p>
  * None of the methods of this interface is expected to block or fail.
  *
- * @see com.hazelcast.spi.PartitionMigrationEvent
- * @see com.hazelcast.spi.MigrationAwareService
+ * @see com.hazelcast.spi.partition.PartitionMigrationEvent
+ * @see com.hazelcast.spi.partition.MigrationAwareService
  */
 public interface WanEventQueueMigrationListener {
     /**

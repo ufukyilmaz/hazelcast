@@ -238,7 +238,7 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
         WanPublisherConfig publisherConfig = new WanPublisherConfig();
         publisherConfig.setEndpoint("WAN");
         publisherConfig.setGroupName(clusterName);
-        publisherConfig.setClassName("com.hazelcast.enterprise.wan.replication.WanBatchReplication");
+        publisherConfig.setClassName("com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication");
         publisherConfig.setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION);
         publisherConfig.setQueueCapacity(1000);
         publisherConfig.getWanSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);

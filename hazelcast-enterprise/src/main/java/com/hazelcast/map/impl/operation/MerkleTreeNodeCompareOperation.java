@@ -1,19 +1,19 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.enterprise.wan.operation.MerkleTreeNodeValueComparison;
+import com.hazelcast.enterprise.wan.impl.operation.MerkleTreeNodeValueComparison;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
-import com.hazelcast.wan.merkletree.MerkleTree;
-import com.hazelcast.wan.merkletree.MerkleTreeUtil;
+import com.hazelcast.wan.impl.merkletree.MerkleTree;
+import com.hazelcast.wan.impl.merkletree.MerkleTreeUtil;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hazelcast.wan.merkletree.MerkleTreeUtil.getLevelOfNode;
+import static com.hazelcast.wan.impl.merkletree.MerkleTreeUtil.getLevelOfNode;
 
 /**
  * Operation for comparing the local merkle tree node values with the remote

@@ -6,9 +6,9 @@ import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
-import com.hazelcast.enterprise.wan.replication.WanConfigurationContext;
-import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanConfigurationContext;
+import com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.Map;

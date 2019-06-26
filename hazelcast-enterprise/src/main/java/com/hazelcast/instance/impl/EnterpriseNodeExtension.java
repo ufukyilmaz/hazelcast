@@ -19,7 +19,7 @@ import com.hazelcast.enterprise.monitor.impl.jmx.EnterpriseManagementService;
 import com.hazelcast.enterprise.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
 import com.hazelcast.enterprise.monitor.impl.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.enterprise.monitor.impl.rest.EnterpriseTextCommandServiceImpl;
-import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.hotrestart.NoOpHotRestartService;
@@ -90,7 +90,7 @@ import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.Preconditions;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
-import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 

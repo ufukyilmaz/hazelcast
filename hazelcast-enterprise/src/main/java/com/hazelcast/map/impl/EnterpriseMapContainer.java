@@ -2,8 +2,8 @@ package com.hazelcast.map.impl;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MerkleTreeConfig;
-import com.hazelcast.enterprise.wan.WanReplicationPublisherDelegate;
-import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;

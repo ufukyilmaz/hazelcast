@@ -8,8 +8,8 @@ import com.hazelcast.map.impl.PartitionContainer;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.wan.WanSyncStatus;
-import com.hazelcast.wan.merkletree.ConsistencyCheckResult;
+import com.hazelcast.wan.impl.WanSyncStatus;
+import com.hazelcast.wan.ConsistencyCheckResult;
 
 import java.util.ArrayList;
 import java.util.Collection;

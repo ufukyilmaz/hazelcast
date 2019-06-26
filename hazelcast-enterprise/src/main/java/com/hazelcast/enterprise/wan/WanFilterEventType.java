@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan;
 
-import com.hazelcast.map.wan.filter.MapWanEventFilter;
+import com.hazelcast.map.wan.MapWanEventFilter;
 
 /**
  * Event types to be used by {@link com.hazelcast.cache.wan.filter.CacheWanEventFilter}

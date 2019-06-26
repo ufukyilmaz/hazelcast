@@ -58,6 +58,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     protected final MemoryBlockProcessor<V> memoryBlockProcessor;
 
     protected BehmSlotAccessor accessor;
+    private final BehmSlotAccessorFactory accessorFactory;
 
     /**
      * Number of allocated slots.
@@ -102,9 +103,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * load factor of {@value CapacityUtil#DEFAULT_LOAD_FACTOR}.
      */
     public BinaryElasticHashMap(EnterpriseSerializationService serializationService,
+                                BehmSlotAccessorFactory behmSlotAccessorFactory,
                                 MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
         // checkstyle complains that CapacityUtil is an unused import so we use it once here
-        this(CapacityUtil.DEFAULT_CAPACITY, serializationService, memoryBlockAccessor, malloc);
+        this(CapacityUtil.DEFAULT_CAPACITY, serializationService, behmSlotAccessorFactory, memoryBlockAccessor, malloc);
     }
 
     /**
@@ -115,8 +117,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      *                        rounded to the next power of two)
      */
     public BinaryElasticHashMap(int initialCapacity, EnterpriseSerializationService serializationService,
+                                BehmSlotAccessorFactory behmSlotAccessorFactory,
                                 MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
-        this(initialCapacity, DEFAULT_LOAD_FACTOR, serializationService, memoryBlockAccessor, malloc);
+        this(initialCapacity, DEFAULT_LOAD_FACTOR, serializationService, behmSlotAccessorFactory,
+                memoryBlockAccessor, malloc);
     }
 
     /**
@@ -129,8 +133,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      */
     public BinaryElasticHashMap(int initialCapacity, float loadFactor,
                                 EnterpriseSerializationService serializationService,
+                                BehmSlotAccessorFactory behmSlotAccessorFactory,
                                 MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
-        this(initialCapacity, loadFactor,
+        this(initialCapacity, loadFactor, behmSlotAccessorFactory,
                 new BehmMemoryBlockProcessor<V>(serializationService, memoryBlockAccessor, malloc));
     }
 
@@ -141,8 +146,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * @param initialCapacity initial capacity (greater than zero and automatically
      *                        rounded to the next power of two)
      */
-    public BinaryElasticHashMap(int initialCapacity, MemoryBlockProcessor<V> memoryBlockProcessor) {
-        this(initialCapacity, DEFAULT_LOAD_FACTOR, memoryBlockProcessor);
+    public BinaryElasticHashMap(int initialCapacity, BehmSlotAccessorFactory behmSlotAccessorFactory,
+                                MemoryBlockProcessor<V> memoryBlockProcessor) {
+        this(initialCapacity, DEFAULT_LOAD_FACTOR, behmSlotAccessorFactory, memoryBlockProcessor);
     }
 
     /**
@@ -154,6 +160,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * @param loadFactor      the load factor (greater than zero and smaller than 1)
      */
     public BinaryElasticHashMap(int initialCapacity, float loadFactor,
+                                BehmSlotAccessorFactory behmSlotAccessorFactory,
                                 MemoryBlockProcessor<V> memoryBlockProcessor) {
         initialCapacity = Math.max(initialCapacity, MIN_CAPACITY);
 
@@ -165,13 +172,16 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         this.loadFactor = loadFactor;
         this.memoryBlockProcessor = memoryBlockProcessor;
         this.malloc = memoryBlockProcessor.unwrapMemoryAllocator();
+        this.accessorFactory = behmSlotAccessorFactory;
 
         allocateBuffer(roundCapacity(initialCapacity));
     }
 
+    @SuppressWarnings("checkstyle:parameternumber")
     private BinaryElasticHashMap(int allocatedSlotCount, int assignedSlotCount, float loadFactor, int resizeAt,
                                  int perturbation, long baseAddress, long size, MemoryBlockAccessor<V> memoryBlockAccessor,
-                                 MemoryAllocator malloc, EnterpriseSerializationService ess) {
+                                 MemoryAllocator malloc, EnterpriseSerializationService ess,
+                                 BehmSlotAccessorFactory behmSlotAccessorFactory) {
         this.allocatedSlotCount = allocatedSlotCount;
         this.assignedSlotCount = assignedSlotCount;
         this.loadFactor = loadFactor;
@@ -179,14 +189,18 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         this.perturbation = perturbation;
         this.malloc = malloc;
         this.memoryBlockProcessor = new BehmMemoryBlockProcessor<V>(ess, memoryBlockAccessor, malloc);
-        this.accessor = new BehmSlotAccessor(malloc, baseAddress, size);
+        this.accessorFactory = behmSlotAccessorFactory;
+        this.accessor = accessorFactory.create(malloc, baseAddress, size);
     }
 
+    @SuppressWarnings("checkstyle:parameternumber")
     private BinaryElasticHashMap(int allocatedSlotCount, int assignedSlotCount, float loadFactor, int resizeAt,
                                  int perturbation, long baseAddress, long size,
-                                 MemoryAllocator malloc, EnterpriseSerializationService ess) {
+                                 MemoryAllocator malloc, EnterpriseSerializationService ess,
+                                 BehmSlotAccessorFactory behmSlotAccessorFactory,
+                                 MemoryBlockAccessor memoryBlockAccessor) {
         this(allocatedSlotCount, assignedSlotCount, loadFactor, resizeAt, perturbation, baseAddress, size,
-                (MemoryBlockAccessor<V>) new NativeMemoryDataAccessor(ess), malloc, ess);
+                memoryBlockAccessor, malloc, ess, behmSlotAccessorFactory);
     }
 
     private Random getRandom() {
@@ -203,7 +217,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      */
     private void allocateBuffer(int capacity) {
         try {
-            accessor = new BehmSlotAccessor(malloc).allocate(capacity);
+            accessor = accessorFactory.create(malloc, 0L, 0L).allocate(capacity);
         } catch (NativeOutOfMemoryError e) {
             throw onOome(e);
         }
@@ -227,7 +241,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             long keyAddr = accessor.getKey(slot);
             if (NativeMemoryDataUtil.equals(keyAddr, key)) {
                 final long oldValue = accessor.getValue(slot);
-                accessor.setValue(slot, value.address());
+                accessor.setValue(slot, value);
                 return readV(oldValue);
             }
             slot = (slot + 1) & mask;
@@ -241,7 +255,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         // and rehash
         if (assignedSlotCount == resizeAt) {
             try {
-                expandAndPut(memKey.address(), value.address(), slot);
+                expandAndPut(memKey.address(), value, slot);
             } catch (Throwable error) {
                 // if they are not same, this means that the key is converted to native memory data at here
                 // so, it must be disposed at here
@@ -254,7 +268,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         } else {
             assignedSlotCount++;
             accessor.setKey(slot, memKey.address());
-            accessor.setValue(slot, value.address());
+            accessor.setValue(slot, value);
         }
 
         modCount++;
@@ -290,7 +304,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     @Override
     public boolean replace(Data key, V oldValue, V newValue) {
         ensureMemory();
-        assert newValue instanceof NativeMemoryData;
 
         final int mask = allocatedSlotCount - 1;
         int slot = rehash(key, perturbation) & mask;
@@ -300,7 +313,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 long current = accessor.getValue(slot);
                 if (memoryBlockProcessor.isEqual(current, oldValue)) {
-                    accessor.setValue(slot, newValue.address());
+                    accessor.setValue(slot, newValue);
                     if (current != NULL_ADDRESS) {
                         memoryBlockProcessor.dispose(current);
                     }
@@ -326,7 +339,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             long slotKey = accessor.getKey(slot);
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 long current = accessor.getValue(slot);
-                accessor.setValue(slot, value.address());
+                accessor.setValue(slot, value);
                 return readV(current);
             }
             slot = (slot + 1) & mask;
@@ -340,12 +353,12 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     /**
      * Expands the internal storage buffers (capacity) and rehash.
      */
-    private void expandAndPut(long pendingKey, long pendingValue, int freeSlot) {
+    private void expandAndPut(long pendingKey, V pendingValue, int freeSlot) {
         ensureMemory();
         assert assignedSlotCount == resizeAt;
         assert !accessor.isAssigned(freeSlot);
 
-        final BehmSlotAccessor oldAccessor = new BehmSlotAccessor(accessor);
+        final BehmSlotAccessor oldAccessor = accessorFactory.create(accessor);
         final int oldAllocated = allocatedSlotCount;
 
         // try to allocate new buffer first. If we OOM, it'll be now without
@@ -1105,7 +1118,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         @Override
         public Object setValue(Object value) {
             Object current = getValue();
-            accessor.setValue(slot, ((MemoryBlock) value).address());
+            accessor.setValue(slot, (MemoryBlock) value);
             return current;
         }
     }
@@ -1160,8 +1173,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
     @SuppressWarnings("checkstyle:magicnumber")
     public static <V extends MemoryBlock> BinaryElasticHashMap<V> loadFromOffHeapHeader(EnterpriseSerializationService ss,
-                                                                                        MemoryAllocator malloc, long address) {
-
+                                                                     MemoryAllocator malloc, long address,
+                                                                     BehmSlotAccessorFactory behmSlotAccessorFactory,
+                                                                     MemoryBlockAccessor memoryBlockAccessor) {
         GlobalMemoryAccessor unsafe = GlobalMemoryAccessorRegistry.MEM;
 
         long pointer = address + NATIVE_MEMORY_DATA_OVERHEAD;
@@ -1180,7 +1194,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         long size = unsafe.getLong(pointer);
 
         return new BinaryElasticHashMap<V>(allocatedSlotCount, assignedSlotCount, loadFactor, resizeAt, perturbation,
-                baseAddr, size, malloc, ss);
+                baseAddr, size, malloc, ss, behmSlotAccessorFactory, memoryBlockAccessor);
     }
 
     /**

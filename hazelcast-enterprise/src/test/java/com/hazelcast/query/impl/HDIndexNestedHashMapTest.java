@@ -49,7 +49,7 @@ public class HDIndexNestedHashMapTest {
         this.malloc = new StandardMemoryManager(new MemorySize(2, MemoryUnit.GIGABYTES));
         this.ess = getSerializationService();
         this.factory = new CachedQueryEntryFactory(ess);
-        this.map = new HDIndexNestedHashMap<QueryableEntry>(ess, malloc, factory);
+        this.map = new HDIndexNestedHashMap<QueryableEntry>(null, ess, malloc, factory);
     }
 
     private NativeMemoryConfig getMemoryConfig() {

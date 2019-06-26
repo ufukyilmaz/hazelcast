@@ -133,8 +133,12 @@ public class HDRecord
     @Override
     public void onAccess(long now) {
         setHits(getHits() + 1);
-
         setLastAccessTime(now);
+    }
+
+    @Override
+    public void onAccessSafe(long now) {
+        onAccess(now);
     }
 
     @Override

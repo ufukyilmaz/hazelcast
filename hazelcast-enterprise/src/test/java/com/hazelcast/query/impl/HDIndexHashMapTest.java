@@ -41,7 +41,7 @@ public class HDIndexHashMapTest {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
         this.ess = getSerializationService();
         this.factory = new CachedQueryEntryFactory(ess);
-        this.map = new HDIndexHashMap<QueryableEntry>(ess, malloc, factory);
+        this.map = new HDIndexHashMap<QueryableEntry>(null, ess, malloc, factory);
     }
 
     private NativeMemoryConfig getMemoryConfig() {

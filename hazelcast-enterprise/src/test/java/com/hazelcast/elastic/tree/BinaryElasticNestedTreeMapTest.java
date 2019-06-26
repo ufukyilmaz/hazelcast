@@ -35,14 +35,14 @@ import static org.junit.Assert.assertNull;
 public class BinaryElasticNestedTreeMapTest {
 
     private HazelcastMemoryManager malloc;
-    private BinaryElasticNestedTreeMap map;
+    private NativeBinaryElasticNestedTreeMap<Map.Entry>  map;
     private EnterpriseSerializationService ess;
 
     @Before
     public void setUp() throws Exception {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
         this.ess = getSerializationService();
-        this.map = new BinaryElasticNestedTreeMap(ess, malloc, new ComparableComparator(ess));
+        this.map = new NativeBinaryElasticNestedTreeMap(ess, malloc, new ComparableComparator(ess));
     }
 
     private NativeMemoryConfig getMemoryConfig() {

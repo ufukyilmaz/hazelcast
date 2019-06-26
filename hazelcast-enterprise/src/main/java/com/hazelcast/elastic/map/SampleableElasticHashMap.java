@@ -24,30 +24,26 @@ import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
  */
 public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElasticHashMap<V> {
 
-    public SampleableElasticHashMap(EnterpriseSerializationService serializationService,
-                                    MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
-        super(serializationService, memoryBlockAccessor, malloc);
-    }
-
     public SampleableElasticHashMap(int initialCapacity,
                                     EnterpriseSerializationService serializationService,
                                     MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
-        super(initialCapacity, serializationService, memoryBlockAccessor, malloc);
+        super(initialCapacity, serializationService, new NativeBehmSlotAccessorFactory(), memoryBlockAccessor, malloc);
     }
 
     public SampleableElasticHashMap(int initialCapacity, float loadFactor,
                                     EnterpriseSerializationService serializationService,
                                     MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
-        super(initialCapacity, loadFactor, serializationService, memoryBlockAccessor, malloc);
+        super(initialCapacity, loadFactor, serializationService, new NativeBehmSlotAccessorFactory(),
+                memoryBlockAccessor, malloc);
     }
 
     public SampleableElasticHashMap(int initialCapacity, MemoryBlockProcessor<V> memoryBlockProcessor) {
-        super(initialCapacity, memoryBlockProcessor);
+        super(initialCapacity, new NativeBehmSlotAccessorFactory(), memoryBlockProcessor);
     }
 
     public SampleableElasticHashMap(int initialCapacity, float loadFactor,
                                     MemoryBlockProcessor<V> memoryBlockProcessor) {
-        super(initialCapacity, loadFactor, memoryBlockProcessor);
+        super(initialCapacity, loadFactor, new NativeBehmSlotAccessorFactory(), memoryBlockProcessor);
     }
 
     /**

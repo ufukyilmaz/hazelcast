@@ -3,6 +3,7 @@ package com.hazelcast.query.impl;
 import com.hazelcast.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.impl.StoreAdapter;
 import com.hazelcast.monitor.impl.PerIndexStats;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -20,9 +21,9 @@ public class HDIndexImpl extends AbstractIndex {
     private int indexedPartition = UNINDEXED;
 
     public HDIndexImpl(String name, String[] components, boolean ordered, EnterpriseSerializationService ss,
-                       Extractors extractors, PerIndexStats stats) {
+                       Extractors extractors, PerIndexStats stats, StoreAdapter partitionStoreAdapter) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
-        super(name, components, ordered, ss, extractors, IndexCopyBehavior.NEVER, stats);
+        super(name, components, ordered, ss, extractors, IndexCopyBehavior.NEVER, stats, partitionStoreAdapter);
     }
 
     @Override
@@ -30,8 +31,8 @@ public class HDIndexImpl extends AbstractIndex {
         EnterpriseSerializationService ess = (EnterpriseSerializationService) ss;
         MemoryAllocator malloc = stats.wrapMemoryAllocator(ess.getCurrentMemoryAllocator());
         MapEntryFactory<QueryableEntry> entryFactory = new OnHeapEntryFactory(ess, extractors);
-        return ordered ? new HDOrderedIndexStore(ess, malloc, entryFactory) : new HDUnorderedIndexStore(ess, malloc,
-                entryFactory);
+        return ordered ? new HDOrderedIndexStore(ess, malloc, entryFactory, getPartitionStoreAdapter())
+                : new HDUnorderedIndexStore(ess, malloc, entryFactory, getPartitionStoreAdapter());
     }
 
     @Override

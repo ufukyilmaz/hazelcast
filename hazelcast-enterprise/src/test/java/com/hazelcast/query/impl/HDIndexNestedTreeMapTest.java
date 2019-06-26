@@ -50,7 +50,7 @@ public class HDIndexNestedTreeMapTest {
         this.malloc = new StandardMemoryManager(new MemorySize(2, MemoryUnit.GIGABYTES));
         this.ess = getSerializationService();
         this.factory = new CachedQueryEntryFactory(ess);
-        this.map = new HDIndexNestedTreeMap<QueryableEntry>(ess, malloc, factory);
+        this.map = new HDIndexNestedTreeMap<QueryableEntry>(null, ess, malloc, factory);
     }
 
     private NativeMemoryConfig getMemoryConfig() {

@@ -85,7 +85,9 @@ public class BinaryElasticHashMapTest {
                 .build();
 
         NativeMemoryDataAccessor accessor = new NativeMemoryDataAccessor(serializationService);
-        map = new BinaryElasticHashMap<NativeMemoryData>(serializationService, accessor, memoryManager);
+        NativeBehmSlotAccessorFactory behmSlotAccessorFactory = new NativeBehmSlotAccessorFactory();
+        map = new BinaryElasticHashMap<NativeMemoryData>(serializationService, behmSlotAccessorFactory, accessor,
+                memoryManager);
     }
 
     @After

@@ -1,10 +1,10 @@
 package com.hazelcast.query.impl;
 
-import com.hazelcast.elastic.tree.BinaryElasticNestedTreeMap;
 import com.hazelcast.elastic.tree.ComparableComparator;
 import com.hazelcast.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
@@ -17,7 +17,8 @@ import static com.hazelcast.nio.serialization.DataType.HEAP;
  * Does validation and necessary transformations.
  *
  * Contract:
- * - Expects the key & value to be in the NativeMemoryData,
+ * - Expects the key to be in the NativeMemoryData,
+ * - Expects the value to be in either NativeMemoryData or HDRecord,
  * - Returns NativeMemoryData,
  * - Never disposes any NativeMemoryData passed to it,
  * - Uses MapEntryFactory to create MapEntry instances in methods that return them.
@@ -26,21 +27,23 @@ import static com.hazelcast.nio.serialization.DataType.HEAP;
  */
 class HDIndexNestedTreeMap<T extends QueryableEntry> {
 
-    private final BinaryElasticNestedTreeMap<T> recordMap;
+    private final HDIndexBinaryElasticNestedTreeMap<T> recordMap;
     private final EnterpriseSerializationService ess;
 
-    HDIndexNestedTreeMap(EnterpriseSerializationService ess, MemoryAllocator malloc, MapEntryFactory<T> entryFactory) {
+    HDIndexNestedTreeMap(HDExpirableIndexStore indexStore, EnterpriseSerializationService ess, MemoryAllocator malloc,
+                         MapEntryFactory<T> entryFactory) {
         this.ess = ess;
-        this.recordMap = new BinaryElasticNestedTreeMap<T>(ess, malloc,
-                new ComparableComparator(ess), entryFactory);
+        this.recordMap = new HDIndexBinaryElasticNestedTreeMap<T>(indexStore, ess, malloc,
+                new ComparableComparator(ess), entryFactory
+        );
     }
 
-    public NativeMemoryData put(Comparable attribute, NativeMemoryData key, NativeMemoryData value) {
+    public MemoryBlock put(Comparable attribute, NativeMemoryData key, MemoryBlock value) {
         Data attributeData = ess.toData(attribute, HEAP);
         return recordMap.put(attributeData, key, value);
     }
 
-    public NativeMemoryData remove(Comparable attribute, NativeMemoryData key) {
+    public MemoryBlock remove(Comparable attribute, NativeMemoryData key) {
         return recordMap.remove(ess.toData(attribute, HEAP), key);
     }
 

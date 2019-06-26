@@ -1,10 +1,15 @@
 package com.hazelcast.query.impl;
 
+import com.hazelcast.elastic.map.BehmSlotAccessorFactory;
 import com.hazelcast.elastic.map.BinaryElasticHashMap;
+import com.hazelcast.elastic.map.NativeBehmSlotAccessorFactory;
 import com.hazelcast.elastic.map.NativeMemoryDataAccessor;
 import com.hazelcast.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.impl.record.HDRecordAccessor;
+import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
@@ -47,15 +52,25 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
     private final EnterpriseSerializationService ess;
     private final MemoryAllocator malloc;
     private final MapEntryFactory<T> mapEntryFactory;
+    private final HDExpirableIndexStore indexStore;
+    private final BehmSlotAccessorFactory behmSlotAccessorFactory;
+    private final MemoryBlockAccessor behmMemoryBlockAccessor;
 
-    HDIndexNestedHashMap(EnterpriseSerializationService ess, MemoryAllocator malloc, MapEntryFactory<T> mapEntryFactory) {
-        this.records = new BinaryElasticHashMap<NativeMemoryData>(ess, new NativeMemoryDataAccessor(ess), malloc);
+    HDIndexNestedHashMap(HDExpirableIndexStore indexStore, EnterpriseSerializationService ess, MemoryAllocator malloc,
+                         MapEntryFactory<T> mapEntryFactory) {
+        this.indexStore = indexStore;
+        this.records = new BinaryElasticHashMap<NativeMemoryData>(ess, new NativeBehmSlotAccessorFactory(),
+                new NativeMemoryDataAccessor(ess), malloc);
         this.ess = ess;
         this.malloc = malloc;
         this.mapEntryFactory = mapEntryFactory;
+        this.behmSlotAccessorFactory = new HDIndexBehmSlotAccessorFactory();
+        MemoryBlockAccessor valueAccessor = new NativeMemoryDataAccessor(ess);
+        MemoryBlockAccessor recordAccessor = new HDRecordAccessor(ess);
+        this.behmMemoryBlockAccessor = new HDIndexBehmMemoryBlockAccessor(valueAccessor, recordAccessor);
     }
 
-    public NativeMemoryData put(Comparable segment, NativeMemoryData keyData, NativeMemoryData valueData) {
+    public MemoryBlock put(Comparable segment, NativeMemoryData keyData, MemoryBlock value) {
         Data segmentData = ess.toData(segment, HEAP);
 
         checkNotNullOrEmpty(segmentData, "segment can't be null or empty");
@@ -63,22 +78,22 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
 
         NativeMemoryData mapHeader = records.get(segmentData);
 
-        BinaryElasticHashMap<NativeMemoryData> map;
+        BinaryElasticHashMap<MemoryBlock> map;
         if (isNullOrEmptyData(mapHeader)) {
-            map = new BinaryElasticHashMap<NativeMemoryData>(ess, new NativeMemoryDataAccessor(ess), malloc);
+            map = new BinaryElasticHashMap<MemoryBlock>(ess, behmSlotAccessorFactory, behmMemoryBlockAccessor, malloc);
             mapHeader = map.storeHeaderOffHeap(malloc, NULL_ADDRESS);
             NativeMemoryData oldValue = records.put(segmentData, mapHeader);
             if (oldValue != null) {
                 throw new ConcurrentModificationException();
             }
         } else {
-            map = loadFromOffHeapHeader(ess, malloc, mapHeader.address());
+            map = loadFromOffHeapHeader(ess, malloc, mapHeader.address(), behmSlotAccessorFactory, behmMemoryBlockAccessor);
         }
 
-        if (valueData == null) {
-            valueData = new NativeMemoryData();
+        if (value == null) {
+            value = new NativeMemoryData();
         }
-        NativeMemoryData oldValueData = map.put(keyData, valueData);
+        MemoryBlock oldValueData = map.put(keyData, value);
         map.storeHeaderOffHeap(malloc, mapHeader.address());
 
         return oldValueData;
@@ -104,18 +119,29 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
 
         NativeMemoryData mapHeader = records.get(segmentData);
         if (isNullOrEmptyData(mapHeader)) {
-            return Collections.EMPTY_SET;
+            return Collections.emptySet();
         }
 
         Set<T> result = new HashSet<T>();
-        BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, mapHeader.address());
-        for (Map.Entry<Data, NativeMemoryData> entry : map.entrySet()) {
-            result.add(mapEntryFactory.create(entry.getKey(), entry.getValue()));
+        BinaryElasticHashMap<MemoryBlock> map = loadFromOffHeapHeader(ess, malloc, mapHeader.address(), behmSlotAccessorFactory,
+                behmMemoryBlockAccessor);
+        for (Map.Entry<Data, MemoryBlock> entry : map.entrySet()) {
+            MemoryBlock memoryBlock = entry.getValue();
+            NativeMemoryData valueData;
+            if (memoryBlock instanceof NativeMemoryData || memoryBlock == null) {
+                valueData = (NativeMemoryData) memoryBlock;
+            } else {
+                valueData = indexStore.getValueOrNullIfExpired(memoryBlock);
+            }
+
+            if (memoryBlock == null || valueData != null) {
+                result.add(mapEntryFactory.create(entry.getKey(), valueData));
+            }
         }
         return result;
     }
 
-    public NativeMemoryData remove(Comparable segment, NativeMemoryData key) {
+    public MemoryBlock remove(Comparable segment, NativeMemoryData key) {
         Data segmentData = ess.toData(segment, HEAP);
 
         checkNotNullOrEmpty(segmentData, "segment can't be null or empty");
@@ -125,9 +151,10 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         if (isNullOrEmptyData(mapHeader)) {
             return null;
         }
-        BinaryElasticHashMap<NativeMemoryData> map = loadFromOffHeapHeader(ess, malloc, mapHeader.address());
+        BinaryElasticHashMap<MemoryBlock> map = loadFromOffHeapHeader(ess, malloc, mapHeader.address(), behmSlotAccessorFactory,
+                behmMemoryBlockAccessor);
         // we are not disposing value - governed by the user of the map
-        NativeMemoryData value = map.remove(key);
+        MemoryBlock value = map.remove(key);
         if (map.isEmpty()) {
             map.dispose();
             NativeMemoryData mapHeaderOnRemove = records.remove(segmentData);
@@ -147,7 +174,8 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
                 continue;
             }
 
-            BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc, mapHeader.address());
+            BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc, mapHeader.address(), behmSlotAccessorFactory,
+                    behmMemoryBlockAccessor);
             map.dispose();
         }
 
@@ -168,7 +196,8 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         long size = 0;
         Iterator<NativeMemoryData> iterator = records.valueIter();
         while (iterator.hasNext()) {
-            BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc, iterator.next().address());
+            BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc, iterator.next().address(), behmSlotAccessorFactory,
+                    behmMemoryBlockAccessor);
             size += map.size();
         }
         return size;
@@ -183,5 +212,4 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
             throw new IllegalArgumentException(message);
         }
     }
-
 }

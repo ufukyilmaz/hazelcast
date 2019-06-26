@@ -106,7 +106,7 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
         Segment(EnterpriseSerializationService ss, int initialCapacity, float loadFactor, MemoryAllocator malloc) {
             this.ss = ss;
             map = new BinaryElasticHashMap<NativeMemoryData>(initialCapacity, loadFactor,
-                    ss, new NativeMemoryDataAccessor(ss), malloc);
+                    ss, new NativeBehmSlotAccessorFactory(), new NativeMemoryDataAccessor(ss), malloc);
         }
 
         public V put(Data key, V value) {

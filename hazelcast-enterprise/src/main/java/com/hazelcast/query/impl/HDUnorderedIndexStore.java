@@ -3,6 +3,8 @@ package com.hazelcast.query.impl;
 import com.hazelcast.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.impl.StoreAdapter;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
@@ -22,21 +24,21 @@ import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
  * - Never returns any native memory - all returning objects are on-heap (QueryableEntry and its fields).
  * - There is no read & write locking since it's accessed from a single partition-thread only
  */
-class HDUnorderedIndexStore extends BaseIndexStore {
+class HDUnorderedIndexStore extends HDExpirableIndexStore {
 
     private final EnterpriseSerializationService ess;
     private final HDIndexHashMap<QueryableEntry> recordsWithNullValue;
     private final HDIndexNestedHashMap<QueryableEntry> records;
 
     HDUnorderedIndexStore(EnterpriseSerializationService ess, MemoryAllocator malloc,
-                          MapEntryFactory<QueryableEntry> entryFactory) {
+                          MapEntryFactory<QueryableEntry> entryFactory, StoreAdapter partitionStoreAdapter) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
-        super(IndexCopyBehavior.NEVER);
+        super(IndexCopyBehavior.NEVER, partitionStoreAdapter);
         assertRunningOnPartitionThread();
         this.ess = ess;
 
-        this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(ess, malloc, entryFactory);
-        this.records = new HDIndexNestedHashMap<QueryableEntry>(ess, malloc, entryFactory);
+        this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(this, ess, malloc, entryFactory);
+        this.records = new HDIndexNestedHashMap<QueryableEntry>(this, ess, malloc, entryFactory);
     }
 
     @Override
@@ -44,8 +46,9 @@ class HDUnorderedIndexStore extends BaseIndexStore {
         assertRunningOnPartitionThread();
         if (newValue == NULL) {
             NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
-            NativeMemoryData value = (NativeMemoryData) entry.getValueData();
-            return recordsWithNullValue.put(key, value);
+            MemoryBlock value = getValueToStore(entry);
+            MemoryBlock oldValue = recordsWithNullValue.put(key, value);
+            return getValueData(oldValue);
         } else {
             return mapAttributeToEntry(newValue, entry);
         }
@@ -196,12 +199,14 @@ class HDUnorderedIndexStore extends BaseIndexStore {
 
     private Object mapAttributeToEntry(Comparable attribute, QueryableEntry entry) {
         NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
-        NativeMemoryData value = (NativeMemoryData) entry.getValueData();
-        return records.put(attribute, key, value);
+        MemoryBlock value = getValueToStore(entry);
+        MemoryBlock oldValue = records.put(attribute, key, value);
+        return getValueData(oldValue);
     }
 
     private Object removeMappingForAttribute(Comparable attribute, Data indexKey) {
-        return records.remove(attribute, (NativeMemoryData) indexKey);
+        MemoryBlock oldValue = records.remove(attribute, (NativeMemoryData) indexKey);
+        return getValueData(oldValue);
     }
 
     private void dispose() {

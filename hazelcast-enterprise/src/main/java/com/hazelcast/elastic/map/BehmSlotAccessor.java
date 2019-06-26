@@ -2,14 +2,18 @@ package com.hazelcast.elastic.map;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
 
-/** Helper class with logic to access BinaryElasticHashMap's slots. */
-public class BehmSlotAccessor {
+/**
+ *  Helper class with logic to access BinaryElasticHashMap's slots.
+ *  @param <V> the type of the memory block.
+ */
+public class BehmSlotAccessor<V extends MemoryBlock> {
     /** A slot consists of a key pointer (8 bytes) and a value pointer (8 bytes). */
     static final long SLOT_LENGTH = 16L;
     /** Location of the key pointer in a slot. */
@@ -22,17 +26,13 @@ public class BehmSlotAccessor {
 
     private final MemoryAllocator malloc;
 
-    BehmSlotAccessor(MemoryAllocator malloc) {
-        this.malloc = malloc;
-    }
-
-    BehmSlotAccessor(MemoryAllocator malloc, long baseAddr, long size) {
+    public BehmSlotAccessor(MemoryAllocator malloc, long baseAddr, long size) {
         this.malloc = malloc;
         this.baseAddr = baseAddr;
         this.size = size;
     }
 
-    BehmSlotAccessor(BehmSlotAccessor that) {
+    public BehmSlotAccessor(BehmSlotAccessor that) {
         this.malloc = that.malloc;
         this.baseAddr = that.baseAddr;
         this.size = that.size;
@@ -80,6 +80,11 @@ public class BehmSlotAccessor {
 
     public void setValue(int slot, long value) {
         AMEM.putLong(slotBase(slot) + VALUE_OFFSET, value);
+    }
+
+    public void setValue(int slot, V v) {
+        long address = v == null ? NULL_ADDRESS : v.address();
+        AMEM.putLong(slotBase(slot) + VALUE_OFFSET, address);
     }
 
     public NativeMemoryData keyData(int slot) {

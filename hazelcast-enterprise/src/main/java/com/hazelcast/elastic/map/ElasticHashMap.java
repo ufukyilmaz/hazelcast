@@ -29,7 +29,7 @@ public final class ElasticHashMap<K, V> implements ElasticMap<K, V> {
                           MemoryAllocator malloc) {
         this.ss = ss;
         map = new BinaryElasticHashMap<NativeMemoryData>(initialCapacity, loadFactor,
-                ss, new NativeMemoryDataAccessor(ss), malloc);
+                ss, new NativeBehmSlotAccessorFactory(), new NativeMemoryDataAccessor(ss), malloc);
     }
 
     @Override

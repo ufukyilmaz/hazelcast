@@ -28,6 +28,9 @@ import com.hazelcast.instance.BuildInfo;
 import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.internal.ascii.TextCommandService;
+import com.hazelcast.internal.auditlog.AuditlogService;
+import com.hazelcast.internal.auditlog.impl.ILoggerAuditlogService;
+import com.hazelcast.internal.auditlog.impl.NoOpAuditlogService;
 import com.hazelcast.internal.cluster.impl.ClusterVersionAutoUpgradeHelper;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
@@ -130,6 +133,7 @@ public class EnterpriseNodeExtension
     private final HotRestartIntegrationService hotRestartService;
     private final HotBackupService hotBackupService;
     private final SecurityService securityService;
+    private final AuditlogService auditlogService;
     private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
     private final ClusterVersionAutoUpgradeHelper clusterVersionAutoUpgradeHelper
             = new ClusterVersionAutoUpgradeHelper();
@@ -145,6 +149,7 @@ public class EnterpriseNodeExtension
         hotRestartService = createHotRestartService(node);
         hotBackupService = createHotBackupService(node, hotRestartService);
         securityService = createSecurityService(node);
+        auditlogService = createAuditlogService(node);
     }
 
     private SecurityService createSecurityService(Node node) {
@@ -158,6 +163,13 @@ public class EnterpriseNodeExtension
         }
         final HotRestartPersistenceConfig config = node.getConfig().getHotRestartPersistenceConfig();
         return config.getBackupDir() != null ? new HotBackupService(node, hotRestartService) : null;
+    }
+
+    private AuditlogService createAuditlogService(Node node) {
+        if (node.getProperties().getBoolean(GroupProperty.AUDIT_LOG_ENABLED)) {
+            return new ILoggerAuditlogService(node.getLoggingService());
+        }
+        return NoOpAuditlogService.INSTANCE;
     }
 
     private HotRestartIntegrationService createHotRestartService(Node node) {
@@ -873,5 +885,10 @@ public class EnterpriseNodeExtension
     @Override
     public boolean isClientFailoverSupported() {
         return true;
+    }
+
+    @Override
+    public AuditlogService getAuditlogService() {
+        return auditlogService;
     }
 }

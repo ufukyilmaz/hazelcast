@@ -20,15 +20,23 @@
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{ABSOLUTE} %5p |%X{test-name}| - [%c{1}] %t - %m%n" />
     </Console>
+    <File name="AuditLogFile" fileName="${sys:java.io.tmpdir}/hazelcast-auditlog.log" createOnDemand="true">
+      <PatternLayout>
+        <Pattern>%d %p [%t]:%m%n</Pattern>
+      </PatternLayout>
+    </File>
   </Appenders>
   <Loggers>
-    <Root level="INFO">
-      <AppenderRef ref="Console" />
-    </Root>
+    <Logger name="hazelcast.auditlog" level="debug">
+      <AppenderRef ref="AuditLogFile"/>
+    </Logger>
 
       <!-- example how to set log levels
     <Logger name="com.hazelcast.instance" level="debug" />
     -->
 
+    <Root level="INFO">
+      <AppenderRef ref="Console" />
+    </Root>
   </Loggers>
 </Configuration>

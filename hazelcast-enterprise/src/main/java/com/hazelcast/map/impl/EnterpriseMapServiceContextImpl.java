@@ -26,8 +26,8 @@ import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.map.impl.recordstore.JsonMetadataRecordStoreMutationObserver;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStoreMutationObserver;
-import com.hazelcast.map.impl.wan.MerkleTreeUpdaterRecordStoreMutationObserver;
 import com.hazelcast.map.impl.wan.MapFilterProvider;
+import com.hazelcast.map.impl.wan.MerkleTreeUpdaterRecordStoreMutationObserver;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -66,7 +66,7 @@ import static java.lang.Thread.currentThread;
 class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         implements EnterpriseMapServiceContext, RamStoreRegistry {
 
-    private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS = 10;
+    private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_SECONDS = 10;
 
     private final QueryRunner hdMapQueryRunner;
     private final HDIndexProvider hdIndexProvider;
@@ -83,9 +83,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             hotRestartService = (HotRestartIntegrationService) nodeExtension.getInternalHotRestartService();
             hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
         }
-        this.hdMapQueryRunner = createHDMapQueryRunner(new HDPartitionScanRunner(this),
-                getQueryOptimizer(),
-                getResultProcessorRegistry());
+        this.hdMapQueryRunner = createHDMapQueryRunner(
+                new HDPartitionScanRunner(this), getQueryOptimizer(), getResultProcessorRegistry());
         this.hdIndexProvider = new HDIndexProvider();
     }
 
@@ -108,7 +107,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     ConstructorFunction<String, MapContainer> createMapConstructor() {
-        return mapName -> new EnterpriseMapContainer(mapName, nodeEngine.getConfig(), this);
+        return mapName -> new EnterpriseMapContainer(mapName, getNodeEngine().getConfig(), this);
     }
 
     @Override
@@ -187,8 +186,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     @Override
-    protected void removeAllRecordStoresOfAllMaps(
-            boolean onShutdown, boolean onRecordStoreDestroy) {
+    protected void removeAllRecordStoresOfAllMaps(boolean onShutdown, boolean onRecordStoreDestroy) {
+        NodeEngine nodeEngine = getNodeEngine();
         OperationService operationService = nodeEngine.getOperationService();
 
         List<EnterpriseMapPartitionClearOperation> operations = new ArrayList<>();
@@ -215,7 +214,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
         for (EnterpriseMapPartitionClearOperation operation : operations) {
             try {
-                operation.awaitCompletion(MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS);
+                operation.awaitCompletion(MAP_PARTITION_CLEAR_OPERATION_AWAIT_SECONDS, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 currentThread().interrupt();
                 nodeEngine.getLogger(getClass()).warning(e);
@@ -226,6 +225,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     @Override
     public RecordStore createRecordStore(MapContainer mapContainer,
                                          int partitionId, MapKeyLoader keyLoader) {
+        NodeEngine nodeEngine = getNodeEngine();
         ILogger logger = nodeEngine.getLogger(DefaultRecordStore.class);
         long prefix = -1;
         HotRestartConfig hotRestartConfig = getHotRestartConfig(mapContainer);
@@ -276,10 +276,10 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         if (policy == MetadataPolicy.CREATE_ON_UPDATE) {
             RecordStoreMutationObserver<Record> observer;
             if (mapContainer.getMapConfig().getInMemoryFormat() == NATIVE) {
-                observer = new EnterpriseMetadataRecordStoreMutationObserver(serializationService,
+                observer = new EnterpriseMetadataRecordStoreMutationObserver(getSerializationService(),
                         JsonMetadataInitializer.INSTANCE, this, mapName, partitionId);
             } else {
-                observer = new JsonMetadataRecordStoreMutationObserver(serializationService,
+                observer = new JsonMetadataRecordStoreMutationObserver(getSerializationService(),
                         JsonMetadataInitializer.INSTANCE);
             }
             observers.add(observer);

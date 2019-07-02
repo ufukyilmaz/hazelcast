@@ -2,6 +2,7 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
@@ -55,12 +56,10 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
         configA.getHotRestartPersistenceConfig().setBaseDir(hotRestartFolderRule.getBaseDir());
 
         if (consistencyCheckStrategy == MERKLE_TREES) {
-            configA.getMapMerkleTreeConfig("default")
-                   .setEnabled(true)
-                   .setDepth(5);
-            configB.getMapMerkleTreeConfig("default")
-                   .setEnabled(true)
-                   .setDepth(5);
+            configA.getMapConfig("default")
+                   .setMerkleTreeConfig(new MerkleTreeConfig().setEnabled(true).setDepth(5));
+            configB.getMapConfig("default")
+                   .setMerkleTreeConfig(new MerkleTreeConfig().setEnabled(true).setDepth(5));
         }
 
         configA.getHotRestartPersistenceConfig()

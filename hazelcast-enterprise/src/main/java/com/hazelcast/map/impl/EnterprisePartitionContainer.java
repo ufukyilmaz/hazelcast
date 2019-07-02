@@ -37,7 +37,9 @@ public class EnterprisePartitionContainer extends PartitionContainer {
     private MerkleTreeConfig getMerkleTreeConfig(String mapName) {
         MapServiceContext mapServiceContext = getMapService().getMapServiceContext();
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
-        return nodeEngine.getConfig().findMapMerkleTreeConfig(mapName);
+        return nodeEngine.getConfig()
+                         .findMapConfig(mapName)
+                         .getMerkleTreeConfig();
     }
 
     @Override

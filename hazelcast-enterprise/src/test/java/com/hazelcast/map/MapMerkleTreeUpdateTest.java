@@ -94,7 +94,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
                  .setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY)
                  .setEnabled(true)
                  .setImplementation(basicMapStore);
-        cfg.getMapMerkleTreeConfig(MAP_NAME)
+        mapConfig.getMerkleTreeConfig()
            .setEnabled(true)
            .setDepth(4);
         cfg.addMapConfig(mapConfig);

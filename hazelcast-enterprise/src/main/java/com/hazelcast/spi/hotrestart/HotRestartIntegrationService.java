@@ -5,6 +5,7 @@ import com.hazelcast.cluster.Member;
 import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.hotrestart.BackupTaskStatus;
@@ -372,8 +373,9 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         // partitions together with the replica indexes
         int totalRebuildOperations = 0;
         for (String mapName : mapNames) {
-            final boolean mapHasMerkleTree = config.findMapMerkleTreeConfig(mapName).isEnabled();
-            final boolean mapHasHotRestart = config.getMapConfig(mapName).getHotRestartConfig().isEnabled();
+            MapConfig mapConfig = config.getMapConfig(mapName);
+            final boolean mapHasMerkleTree = mapConfig.getMerkleTreeConfig().isEnabled();
+            final boolean mapHasHotRestart = mapConfig.getHotRestartConfig().isEnabled();
 
             if (mapHasMerkleTree && mapHasHotRestart) {
                 int totalBackupCount = mapService.getMapServiceContext().getMapContainer(mapName).getTotalBackupCount();

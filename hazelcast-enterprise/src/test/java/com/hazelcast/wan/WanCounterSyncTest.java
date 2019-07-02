@@ -97,10 +97,10 @@ public class WanCounterSyncTest {
                      .setup();
 
         if (consistencyCheckStrategy == MERKLE_TREES) {
-            sourceCluster.getConfig().getMapMerkleTreeConfig(MAP_NAME)
+            sourceCluster.getConfig().getMapConfig(MAP_NAME).getMerkleTreeConfig()
                          .setEnabled(true)
                          .setDepth(4);
-            targetCluster.getConfig().getMapMerkleTreeConfig(MAP_NAME)
+            targetCluster.getConfig().getMapConfig(MAP_NAME).getMerkleTreeConfig()
                          .setEnabled(true)
                          .setDepth(4);
         }

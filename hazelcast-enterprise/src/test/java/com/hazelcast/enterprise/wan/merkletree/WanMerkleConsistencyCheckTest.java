@@ -138,12 +138,12 @@ public class WanMerkleConsistencyCheckTest {
                      .setup();
 
         sourceCluster.getConfig()
-                     .getMapMerkleTreeConfig(MAP_NAME)
+                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
                      .setEnabled(true)
                      .setDepth(sourceTreeDepth);
 
         targetCluster.getConfig()
-                     .getMapMerkleTreeConfig(MAP_NAME)
+                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
                      .setEnabled(true)
                      .setDepth(targetTreeDepth);
 

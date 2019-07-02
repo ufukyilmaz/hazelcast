@@ -446,7 +446,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public void consistencyCheck(String wanReplicationName, String wanPublisherId, String mapName) {
-        MerkleTreeConfig merkleTreeConfig = node.getConfig().findMapMerkleTreeConfig(mapName);
+        MerkleTreeConfig merkleTreeConfig = node.getConfig().findMapConfig(mapName).getMerkleTreeConfig();
         if (!merkleTreeConfig.isEnabled()) {
             emitManagementCenterEvent(new WanConsistencyCheckIgnoredEvent(wanReplicationName,
                     wanPublisherId, mapName, "Map has merkle trees disabled."));

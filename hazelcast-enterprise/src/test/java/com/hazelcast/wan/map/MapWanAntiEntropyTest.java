@@ -94,7 +94,7 @@ public class MapWanAntiEntropyTest extends HazelcastTestSupport {
     private void configureMerkleTrees(Cluster cluster) {
         if (consistencyCheckStrategy == MERKLE_TREES) {
             cluster.getConfig()
-                   .getMapMerkleTreeConfig("default")
+                   .getMapConfig("default").getMerkleTreeConfig()
                    .setEnabled(true)
                    .setDepth(6);
         }

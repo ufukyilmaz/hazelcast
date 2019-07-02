@@ -94,12 +94,12 @@ public class WanMerkleAntiEntropyTest {
                      .setup();
 
         sourceCluster.getConfig()
-                     .getMapMerkleTreeConfig(MAP_NAME)
+                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
                      .setEnabled(true)
                      .setDepth(6);
 
         targetCluster.getConfig()
-                     .getMapMerkleTreeConfig(MAP_NAME)
+                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
                      .setEnabled(true)
                      .setDepth(6);
 

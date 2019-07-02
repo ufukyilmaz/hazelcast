@@ -52,7 +52,7 @@ public class HDMapWanSyncTest extends MapWanReplicationTestSupport {
         config.getMapConfig("default")
               .setInMemoryFormat(getMemoryFormat());
         if (consistencyCheckStrategy == MERKLE_TREES) {
-            config.getMapMerkleTreeConfig("default")
+            config.getMapConfig("default").getMerkleTreeConfig()
                   .setEnabled(true)
                   .setDepth(5);
         }

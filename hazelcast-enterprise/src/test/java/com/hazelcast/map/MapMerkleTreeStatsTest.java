@@ -58,7 +58,7 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
 
         MapConfig mapWithMerkleConfig = new MapConfig(MAP_NAME_WITH_MERKLE);
         mapWithMerkleConfig.setInMemoryFormat(InMemoryFormat.BINARY);
-        cfg.getMapMerkleTreeConfig(MAP_NAME_WITH_MERKLE)
+        cfg.getMapConfig(MAP_NAME_WITH_MERKLE).getMerkleTreeConfig()
            .setEnabled(true)
            .setDepth(4);
         cfg.addMapConfig(mapWithMerkleConfig);

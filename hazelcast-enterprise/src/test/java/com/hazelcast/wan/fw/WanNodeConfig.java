@@ -21,7 +21,6 @@ import com.hazelcast.config.LockConfig;
 import com.hazelcast.config.ManagementCenterConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.config.MultiMapConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
@@ -785,21 +784,6 @@ class WanNodeConfig extends Config {
     }
 
     @Override
-    public MerkleTreeConfig findMapMerkleTreeConfig(String name) {
-        return wrappedConfig.findMapMerkleTreeConfig(name);
-    }
-
-    @Override
-    public MerkleTreeConfig getMapMerkleTreeConfig(String name) {
-        return wrappedConfig.getMapMerkleTreeConfig(name);
-    }
-
-    @Override
-    public Config addMerkleTreeConfig(MerkleTreeConfig merkleTreeConfig) {
-        return wrappedConfig.addMerkleTreeConfig(merkleTreeConfig);
-    }
-
-    @Override
     public Map<String, FlakeIdGeneratorConfig> getFlakeIdGeneratorConfigs() {
         return wrappedConfig.getFlakeIdGeneratorConfigs();
     }
@@ -844,16 +828,6 @@ class WanNodeConfig extends Config {
     public Config setCacheEventJournalConfigs(
             Map<String, EventJournalConfig> eventJournalConfigs) {
         return wrappedConfig.setCacheEventJournalConfigs(eventJournalConfigs);
-    }
-
-    @Override
-    public Map<String, MerkleTreeConfig> getMapMerkleTreeConfigs() {
-        return wrappedConfig.getMapMerkleTreeConfigs();
-    }
-
-    @Override
-    public Config setMapMerkleTreeConfigs(Map<String, MerkleTreeConfig> merkleTreeConfigs) {
-        return wrappedConfig.setMapMerkleTreeConfigs(merkleTreeConfigs);
     }
 
     @Override

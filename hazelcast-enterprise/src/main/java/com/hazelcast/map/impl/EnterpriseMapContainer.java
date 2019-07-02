@@ -77,10 +77,10 @@ public class EnterpriseMapContainer extends MapContainer {
     }
 
     private void logMerkleTreeInfoIfEnabled() {
-        NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
-        MerkleTreeConfig mapMerkleTreeConfig = nodeEngine.getConfig().findMapMerkleTreeConfig(name);
+        MerkleTreeConfig mapMerkleTreeConfig = mapConfig.getMerkleTreeConfig();
         if (mapMerkleTreeConfig.isEnabled()) {
-            ILogger logger = nodeEngine.getLogger(EnterpriseMapContainer.class);
+            ILogger logger = mapServiceContext.getNodeEngine()
+                                              .getLogger(EnterpriseMapContainer.class);
             logger.fine("Using Merkle trees with depth " + mapMerkleTreeConfig.getDepth() + " for map " + name);
         }
     }
@@ -116,11 +116,11 @@ public class EnterpriseMapContainer extends MapContainer {
     private void initStorageInfoAndRegisterMapProbes() {
         storageInfo = new HiDensityStorageInfo(name);
         ((NodeEngineImpl) mapServiceContext.getNodeEngine()).getMetricsRegistry()
-                .scanAndRegister(storageInfo, "map[" + name + "]");
+                                                            .scanAndRegister(storageInfo, "map[" + name + "]");
     }
 
     private void deregisterMapProbes() {
         ((NodeEngineImpl) mapServiceContext.getNodeEngine()).getMetricsRegistry()
-                .deregister(storageInfo);
+                                                            .deregister(storageInfo);
     }
 }

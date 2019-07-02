@@ -224,7 +224,7 @@ public class EnterpriseCacheService
 
     private static HotRestartConfig getHotRestartConfig(CacheConfig cacheConfig) {
         HotRestartConfig hotRestartConfig = cacheConfig.getHotRestartConfig();
-        return hotRestartConfig != null ? hotRestartConfig : new HotRestartConfig().setEnabled(false);
+        return hotRestartConfig;
     }
 
     private HotRestartIntegrationService getHotRestartService() {

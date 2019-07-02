@@ -95,11 +95,11 @@ public class WanMerkleHotRestartSimpleTest extends HazelcastTestSupport {
                     .setAsyncBackupCount(0);
 
         sourceConfig
-                .getMapMerkleTreeConfig(mapName)
+                .getMapConfig(mapName).getMerkleTreeConfig()
                 .setEnabled(true)
                 .setDepth(6);
 
-        targetConfig.getMapMerkleTreeConfig(mapName)
+        targetConfig.getMapConfig(mapName).getMerkleTreeConfig()
                     .setEnabled(true)
                     .setDepth(6);
 

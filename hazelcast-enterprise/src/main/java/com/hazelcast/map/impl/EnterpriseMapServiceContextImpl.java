@@ -247,7 +247,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     private HotRestartConfig getHotRestartConfig(MapContainer
                                                          mapContainer) {
         HotRestartConfig hotRestartConfig = mapContainer.getMapConfig().getHotRestartConfig();
-        return hotRestartConfig != null ? hotRestartConfig : new HotRestartConfig().setEnabled(false);
+        return hotRestartConfig;
     }
 
     @Override

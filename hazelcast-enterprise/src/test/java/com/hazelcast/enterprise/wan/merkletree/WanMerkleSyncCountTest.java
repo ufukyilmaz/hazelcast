@@ -135,12 +135,12 @@ public class WanMerkleSyncCountTest {
                      .setup();
 
         sourceCluster.getConfig()
-                     .getMapMerkleTreeConfig(MAP_NAME)
+                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
                      .setEnabled(true)
                      .setDepth(sourceDepth);
 
         targetCluster.getConfig()
-                     .getMapMerkleTreeConfig(MAP_NAME)
+                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
                      .setEnabled(true)
                      .setDepth(sourceDepth);
 

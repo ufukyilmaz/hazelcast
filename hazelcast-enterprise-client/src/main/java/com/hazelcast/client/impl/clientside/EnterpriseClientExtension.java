@@ -9,7 +9,6 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
-import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.instance.BuildInfo;
 import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.metrics.MetricsProvider;
@@ -28,14 +27,13 @@ import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.version.Version;
 
 import java.util.concurrent.Executor;
-import java.util.function.Supplier;
 
 /**
  * Enterprise implementation of {@code ClientExtension}.
@@ -50,15 +48,6 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
         super.beforeStart(client);
-        ClientConfig clientConfig = client.getClientConfig();
-        String licenseKey = clientConfig.getLicenseKey();
-        if (licenseKey == null) {
-            licenseKey = clientConfig.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName());
-        }
-        if (licenseKey != null) {
-            EnterpriseClientExtension.LOGGER.info("As of Hazelcast 3.10.3, "
-                    + "enterprise license keys are required only for members, and not for clients.");
-        }
     }
 
     @Override
@@ -83,12 +72,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
                     .setClusterVersionAware(versionAware)
                     // the client doesn't use the versioned serialization
                     .setVersionedSerializationEnabled(false)
-                    .setNotActiveExceptionSupplier(new Supplier<RuntimeException>() {
-                        @Override
-                        public RuntimeException get() {
-                            return new HazelcastClientNotActiveException("Client is shutdown");
-                        }
-                    })
+                    .setNotActiveExceptionSupplier(() -> new HazelcastClientNotActiveException("Client is shutdown"))
                     .build();
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);

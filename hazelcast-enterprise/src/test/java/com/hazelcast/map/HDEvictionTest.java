@@ -7,7 +7,6 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.map.impl.operation.WithForcedEviction;

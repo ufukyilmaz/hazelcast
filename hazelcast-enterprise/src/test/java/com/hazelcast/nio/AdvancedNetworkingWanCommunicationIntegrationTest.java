@@ -9,7 +9,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.networking.nio.AbstractAdvancedNetworkIntegrationTest;
 import com.hazelcast.map.merge.PassThroughMergePolicy;

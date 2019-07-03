@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;

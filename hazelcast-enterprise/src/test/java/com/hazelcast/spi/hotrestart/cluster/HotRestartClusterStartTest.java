@@ -4,7 +4,7 @@ import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.core.IndeterminateOperationStateException;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.cluster.MembershipAdapter;

@@ -1,7 +1,7 @@
 package com.hazelcast.map.hotrestart;
 
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

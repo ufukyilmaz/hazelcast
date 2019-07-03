@@ -9,7 +9,7 @@ import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SecurityInterceptorConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IFunction;
-import com.hazelcast.core.MapLoader;
+import com.hazelcast.map.MapLoader;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.Parameters;

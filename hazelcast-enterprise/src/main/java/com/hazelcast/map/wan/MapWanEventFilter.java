@@ -3,9 +3,10 @@ package com.hazelcast.map.wan;
 
 import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
+import com.hazelcast.map.IMap;
 
 /**
- * WAN event filtering interface for {@link com.hazelcast.core.IMap}
+ * WAN event filtering interface for {@link IMap}
  * based wan replication events.
  *
  * @param <K> the type of the key

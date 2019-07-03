@@ -11,7 +11,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 
 /**
  * Tests to see {@link com.hazelcast.map.merge.MapMergePolicy} implementations in action
- * for HD backed {@link com.hazelcast.core.IMap}.
+ * for HD backed {@link IMap}.
  */
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})

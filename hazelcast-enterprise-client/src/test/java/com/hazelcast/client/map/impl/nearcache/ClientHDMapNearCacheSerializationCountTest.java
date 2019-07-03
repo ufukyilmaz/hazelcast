@@ -3,6 +3,7 @@ package com.hazelcast.client.map.impl.nearcache;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.map.IMap;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
@@ -22,7 +23,7 @@ import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.creat
 import static java.util.Arrays.asList;
 
 /**
- * HiDensity Near Cache serialization count tests for {@link com.hazelcast.core.IMap} on Hazelcast clients.
+ * HiDensity Near Cache serialization count tests for {@link IMap} on Hazelcast clients.
  */
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)

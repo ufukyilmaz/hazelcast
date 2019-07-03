@@ -3,7 +3,7 @@ package com.hazelcast.usercodedeployment;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.UserCodeDeploymentConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.internal.usercodedeployment.impl.filter.UserCodeDeploymentAbstractTest;
 import com.hazelcast.map.EntryProcessor;

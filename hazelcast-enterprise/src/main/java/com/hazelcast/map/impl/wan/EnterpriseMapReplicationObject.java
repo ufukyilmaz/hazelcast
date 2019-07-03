@@ -1,7 +1,8 @@
 package com.hazelcast.map.impl.wan;
 
-import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
+import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.map.IMap;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -12,10 +13,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Base class for {@link com.hazelcast.core.IMap} related WAN replication
+ * Base class for {@link IMap} related WAN replication
  * objects.
  */
-public abstract class EnterpriseMapReplicationObject implements EnterpriseReplicationEventObject, IdentifiedDataSerializable {
+public abstract class EnterpriseMapReplicationObject
+        implements EnterpriseReplicationEventObject, IdentifiedDataSerializable {
+
     private Set<String> groupNames = new HashSet<>();
     private String mapName;
     private int backupCount;

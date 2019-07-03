@@ -2,7 +2,7 @@ package com.hazelcast.internal.diagnostics;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.test.annotation.QuickTest;

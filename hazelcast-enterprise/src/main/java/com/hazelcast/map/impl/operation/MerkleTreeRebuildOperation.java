@@ -16,9 +16,9 @@ import java.util.Iterator;
 import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
 
 /**
- * Operation used to rebuild Merkle trees on top of a map. Invoked from
- * {@link HotRestartIntegrationService#start()} in local only, therefore
- * no serialization support.
+ * Operation used to rebuild Merkle trees on top of a map.
+ * Invoked from {@link HotRestartIntegrationService#start()}
+ * in local only, therefore no serialization support.
  */
 public class MerkleTreeRebuildOperation extends MapOperation implements AllowedDuringPassiveState {
 

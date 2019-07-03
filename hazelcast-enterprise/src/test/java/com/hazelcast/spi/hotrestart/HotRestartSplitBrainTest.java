@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.nio.Address;
 import com.hazelcast.test.SplitBrainTestSupport;

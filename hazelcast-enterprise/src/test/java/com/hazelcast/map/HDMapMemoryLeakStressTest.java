@@ -9,7 +9,6 @@ import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;

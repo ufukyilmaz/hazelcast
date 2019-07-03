@@ -3,7 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;

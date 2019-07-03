@@ -18,9 +18,10 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * Hot Restart storage implementation for maps
- * not configured with in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
- * For {@link com.hazelcast.config.InMemoryFormat#NATIVE} please see {@link HotRestartHDStorageImpl}.
+ * Hot Restart storage implementation for maps not configured with
+ * in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
+ * For {@link com.hazelcast.config.InMemoryFormat#NATIVE}
+ * please see {@link HotRestartHDStorageImpl}.
  */
 public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>, HotRestartStorage<R> {
 

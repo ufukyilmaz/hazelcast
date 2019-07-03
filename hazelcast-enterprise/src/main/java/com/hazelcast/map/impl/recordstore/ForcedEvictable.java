@@ -19,14 +19,16 @@ import java.util.Iterator;
 public interface ForcedEvictable<T> {
 
     /**
-     * Return iterator to be used for forced evictions. This is not a general-purpose iterator,
-     * it's intended to be used exclusively for evictions. It does not guarantee to iterate over
-     * all entries and it can give you the same entries twice.
+     * Return iterator to be used for forced evictions. This is
+     * not a general-purpose iterator, it's intended to be used
+     * exclusively for evictions. It does not guarantee to iterate
+     * over all entries and it can give you the same entries twice.
      *
-     * This iterator does <b>not</b> have a fail-fast semantic. A caller can use {@link Iterator#remove()}
-     * method to remove a current record or a {@link Storage#removeRecord(Object)} - but it's only allowed to remove
-     * a record the iterator is currently pointing to.  No other modification of the underlying storage is
-     * allowed while using this iterator.
+     * This iterator does <b>not</b> have a fail-fast semantic. A caller can
+     * use {@link Iterator#remove()} method to remove a current record or a
+     * {@link Storage#removeRecord(Object)} - but it's only allowed to remove
+     * a record the iterator is currently pointing to.  No other modification
+     * of the underlying storage is allowed while using this iterator.
      *
      * @return
      */

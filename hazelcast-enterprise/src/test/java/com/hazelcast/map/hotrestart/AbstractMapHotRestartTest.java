@@ -6,7 +6,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;

@@ -4,6 +4,7 @@ import com.hazelcast.core.EntryView;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
@@ -20,7 +21,7 @@ import java.util.Map;
 
 /**
  * An extended {@link SampleableElasticHashMap} for Hi-Density
- * backed {@link com.hazelcast.core.IMap}.
+ * backed {@link IMap}.
  */
 public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 

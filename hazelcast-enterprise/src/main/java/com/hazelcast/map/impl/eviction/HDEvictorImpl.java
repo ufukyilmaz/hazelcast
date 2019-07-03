@@ -19,9 +19,11 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * An {@link Evictor} for maps which have the {@link com.hazelcast.config.InMemoryFormat#NATIVE NATIVE} in-memory-format.
+ * An {@link Evictor} for maps which have the {@link
+ * com.hazelcast.config.InMemoryFormat#NATIVE NATIVE} in-memory-format.
  * <p>
- * This evictor is sampling based, so it's independent of the size of the {@link RecordStore} (it works in constant time).
+ * This evictor is sampling based, so it's independent of the
+ * size of the {@link RecordStore} (it works in constant time).
  */
 public class HDEvictorImpl extends EvictorImpl {
 
@@ -101,7 +103,7 @@ public class HDEvictorImpl extends EvictorImpl {
         if (storage instanceof HotRestartHDStorageImpl) {
             return ((HotRestartHDStorageImpl) storage).getStorageImpl().getRandomSamples(SAMPLE_COUNT);
         }
-        return (Iterable<EntryView>)  storage.getRandomSamples(SAMPLE_COUNT);
+        return (Iterable<EntryView>) storage.getRandomSamples(SAMPLE_COUNT);
     }
 
     private static int calculateRemovalSize(RecordStore recordStore) {

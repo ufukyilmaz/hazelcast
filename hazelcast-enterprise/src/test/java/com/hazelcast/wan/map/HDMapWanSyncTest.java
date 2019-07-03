@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;

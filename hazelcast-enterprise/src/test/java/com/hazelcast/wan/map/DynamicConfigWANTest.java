@@ -5,7 +5,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;

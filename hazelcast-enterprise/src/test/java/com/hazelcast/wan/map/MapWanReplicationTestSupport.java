@@ -5,7 +5,7 @@ import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.WanReplicationTestSupport;
 import org.junit.Before;

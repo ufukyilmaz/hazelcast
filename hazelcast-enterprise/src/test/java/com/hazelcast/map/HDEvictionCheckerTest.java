@@ -6,7 +6,6 @@ import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;

@@ -3,7 +3,7 @@ package com.hazelcast.enterprise.wan.merkletree;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanPublisherState;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;

@@ -5,7 +5,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;

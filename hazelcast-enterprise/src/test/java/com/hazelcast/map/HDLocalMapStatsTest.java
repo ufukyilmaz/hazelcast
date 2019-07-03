@@ -2,7 +2,6 @@ package com.hazelcast.map;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
-import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

@@ -8,7 +8,7 @@ import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;

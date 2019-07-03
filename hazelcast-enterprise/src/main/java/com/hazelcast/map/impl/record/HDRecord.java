@@ -3,6 +3,7 @@ package com.hazelcast.map.impl.record;
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.IMap;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Metadata;
 import com.hazelcast.util.Clock;
@@ -16,12 +17,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Represents simple Hi-Density backed {@link Record} implementation for {@link com.hazelcast.core.IMap IMap}.
+ * Represents simple Hi-Density backed {@link
+ * Record} implementation for {@link IMap IMap}.
  */
 @SuppressWarnings("checkstyle:methodcount")
-public class HDRecord
-        extends HiDensityRecord
-        implements Record<Data> {
+public class HDRecord extends HiDensityRecord implements Record<Data> {
 
     /*
      * Structure:
@@ -340,6 +340,7 @@ public class HDRecord
      * {@inheritDoc}
      *
      * Note: Metadata is stored on-heap
+     *
      * @param metadata
      */
     @Override
@@ -351,6 +352,7 @@ public class HDRecord
      * {@inheritDoc}
      *
      * Note: Metadata is stored on-heap
+     *
      * @return
      */
     @Override

@@ -4,6 +4,7 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.map.IMap;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
@@ -19,7 +20,7 @@ import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.creat
 import static java.util.Arrays.asList;
 
 /**
- * Basic HiDensity Near Cache tests for {@link com.hazelcast.core.IMap} on Hazelcast clients.
+ * Basic HiDensity Near Cache tests for {@link IMap} on Hazelcast clients.
  */
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)

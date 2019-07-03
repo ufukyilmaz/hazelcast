@@ -16,8 +16,8 @@ import java.util.List;
 import static com.hazelcast.wan.impl.merkletree.MerkleTreeUtil.getLevelOfNode;
 
 /**
- * Operation for comparing the local merkle tree node values with the remote
- * node values.
+ * Operation for comparing the local merkle
+ * tree node values with the remote node values.
  *
  * @see MerkleTree
  * @since 3.11

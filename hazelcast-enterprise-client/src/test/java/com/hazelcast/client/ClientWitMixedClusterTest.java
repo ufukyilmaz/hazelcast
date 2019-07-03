@@ -4,7 +4,7 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.spi.properties.ClientProperty;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;

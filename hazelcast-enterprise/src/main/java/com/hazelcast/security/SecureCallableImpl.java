@@ -20,7 +20,7 @@ import com.hazelcast.core.ICacheManager;
 import com.hazelcast.cp.ICountDownLatch;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.cp.lock.ILock;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.cp.ISemaphore;
 import com.hazelcast.core.IdGenerator;
 import com.hazelcast.core.LifecycleService;

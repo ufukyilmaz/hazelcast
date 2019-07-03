@@ -9,7 +9,7 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.test.annotation.QuickTest;

@@ -6,6 +6,7 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.impl.EntryCostEstimator;
 import com.hazelcast.map.impl.NativeMapEntryCostEstimator;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
@@ -24,7 +25,7 @@ import java.util.Iterator;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
- * Hi-Density backed {@code Storage} implementation for {@link com.hazelcast.core.IMap}.
+ * Hi-Density backed {@code Storage} implementation for {@link IMap}.
  * This implementation can be used under multi-thread access.
  */
 public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<HDRecord> {

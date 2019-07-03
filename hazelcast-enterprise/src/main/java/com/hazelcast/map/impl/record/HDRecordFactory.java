@@ -12,8 +12,8 @@ import com.hazelcast.spi.serialization.SerializationService;
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 
 /**
- * Factory for creating Hi-Density backed records. Created for every partition.
- * The records will be created in Hi-Density memory storage.
+ * Factory for creating Hi-Density backed records. Created for every
+ * partition. The records will be created in Hi-Density memory storage.
  */
 public class HDRecordFactory implements RecordFactory<Data> {
 

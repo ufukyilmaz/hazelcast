@@ -1,7 +1,6 @@
 package com.hazelcast.map;
 
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceV1;
 import com.hazelcast.memory.MemoryStats;

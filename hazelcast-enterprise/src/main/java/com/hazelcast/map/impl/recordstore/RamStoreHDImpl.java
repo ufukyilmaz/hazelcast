@@ -18,7 +18,8 @@ import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
- * RamStore implementation for maps configured with in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
+ * RamStore implementation for maps configured with in-memory-format:
+ * {@link com.hazelcast.config.InMemoryFormat#NATIVE}
  */
 public class RamStoreHDImpl implements RamStore {
 

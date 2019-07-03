@@ -3,6 +3,7 @@ package com.hazelcast.client.map.impl.nearcache;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.map.IMap;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
@@ -16,7 +17,7 @@ import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.creat
 import static com.hazelcast.internal.nearcache.NearCacheTestUtils.createNearCacheConfig;
 
 /**
- * Basic HiDensity Near Cache tests for {@link com.hazelcast.core.IMap} on Hazelcast clients.
+ * Basic HiDensity Near Cache tests for {@link IMap} on Hazelcast clients.
  */
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})

@@ -19,9 +19,8 @@ import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 
 /**
- * Checks whether a specific threshold is exceeded or not
- * according to configured {@link MaxSizePolicy}
- * to start eviction process.
+ * Checks whether a specific threshold is exceeded or not according
+ * to configured {@link MaxSizePolicy} to start eviction process.
  *
  * Created one per map-container.
  */

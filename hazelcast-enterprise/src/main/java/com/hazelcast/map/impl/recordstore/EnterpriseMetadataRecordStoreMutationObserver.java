@@ -7,7 +7,8 @@ import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Metadata;
 
-public class EnterpriseMetadataRecordStoreMutationObserver extends JsonMetadataRecordStoreMutationObserver {
+public class EnterpriseMetadataRecordStoreMutationObserver
+        extends JsonMetadataRecordStoreMutationObserver {
 
     private final EnterpriseMapServiceContext mapServiceContext;
     private final String mapName;

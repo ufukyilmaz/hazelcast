@@ -1,7 +1,7 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.core.EntryAdapter;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.MapInterceptor;

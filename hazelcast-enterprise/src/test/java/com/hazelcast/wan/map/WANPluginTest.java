@@ -2,7 +2,7 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.diagnostics.DiagnosticsLogWriterImpl;

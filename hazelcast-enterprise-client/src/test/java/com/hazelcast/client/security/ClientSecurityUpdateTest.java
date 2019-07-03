@@ -5,7 +5,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.HazelcastTestSupport;

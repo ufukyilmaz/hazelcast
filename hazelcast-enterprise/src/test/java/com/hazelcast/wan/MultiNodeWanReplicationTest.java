@@ -6,7 +6,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;

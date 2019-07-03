@@ -70,14 +70,14 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     private final WanConfigurationContext configurationContext;
     private final ILogger logger;
     private final Map<String, ConsistencyCheckResult> lastConsistencyCheckResults =
-            new ConcurrentHashMap<String, ConsistencyCheckResult>();
-    private final Map<String, WanSyncStats> lastSyncStats = new ConcurrentHashMap<String, WanSyncStats>();
+            new ConcurrentHashMap<>();
+    private final Map<String, WanSyncStats> lastSyncStats = new ConcurrentHashMap<>();
     private final WanBatchReplication publisher;
     private final WanSyncManager syncManager;
     /**
      * The count of {@link WanReplicationEvent} sync events pending replication per partition.
      */
-    private final Map<Integer, AtomicInteger> counterMap = new ConcurrentHashMap<Integer, AtomicInteger>();
+    private final Map<Integer, AtomicInteger> counterMap = new ConcurrentHashMap<>();
     /**
      * {@link IdleStrategy} used for
      */
@@ -455,7 +455,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         WanMerkleTreeNodeCompareOperation compareOp = new WanMerkleTreeNodeCompareOperation(mapName, comparison);
 
         MerkleTreeNodeValueComparison comparisonResult = invokeOnWanTarget(randomTarget, compareOp);
-        Map<Integer, int[]> comparisonResultMap = new HashMap<Integer, int[]>(comparisonResult.getPartitionIds().size());
+        Map<Integer, int[]> comparisonResultMap = new HashMap<>(comparisonResult.getPartitionIds().size());
         for (int partitionId : comparisonResult.getPartitionIds()) {
             comparisonResultMap.put(partitionId, comparisonResult.getMerkleTreeNodeValues(partitionId));
         }
@@ -489,7 +489,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     private List<Integer> getLocalPartitions(WanAntiEntropyEvent event) {
         Set<Integer> partitionsToProcess = event.getPartitionSet();
         InternalPartitionService partitionService = nodeEngine.getPartitionService();
-        LinkedList<Integer> localPartitionsToCheck = new LinkedList<Integer>();
+        LinkedList<Integer> localPartitionsToCheck = new LinkedList<>();
 
         if (isEmpty(partitionsToProcess)) {
             for (IPartition partition : partitionService.getPartitions()) {

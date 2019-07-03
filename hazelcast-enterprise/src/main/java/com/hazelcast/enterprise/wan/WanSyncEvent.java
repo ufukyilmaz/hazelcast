@@ -66,4 +66,12 @@ public class WanSyncEvent extends WanAntiEntropyEvent implements IdentifiedDataS
             partitionSet.add(in.readInt());
         }
     }
+
+    @Override
+    public String toString() {
+        return "WanSyncEvent{" + "type=" + type
+                + ", mapName='" + mapName + '\''
+                + ", partitionSet=" + partitionSet
+                + '}';
+    }
 }

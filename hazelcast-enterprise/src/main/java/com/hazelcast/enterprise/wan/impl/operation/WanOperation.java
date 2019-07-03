@@ -6,6 +6,7 @@ import com.hazelcast.internal.cluster.impl.operations.WanReplicationOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.impl.operationservice.Operation;
 
 import java.io.IOException;
@@ -16,8 +17,14 @@ import java.io.IOException;
  * cluster) and the acknowledge type. The acknowledge type defines when
  * the response for this operation will be sent to the source endpoint so
  * that it knows in which stage is the operation (accepted or completed).
+ * <p>
+ * The operation implements {@link AllowedDuringPassiveState} since its'
+ * effects take place on a different cluster which may be
+ * {@link com.hazelcast.cluster.ClusterState#ACTIVE} at the time when
+ * it's invoked.
  */
-public class WanOperation extends Operation implements WanReplicationOperation, IdentifiedDataSerializable {
+public class WanOperation extends Operation
+        implements WanReplicationOperation, IdentifiedDataSerializable, AllowedDuringPassiveState {
 
     private IdentifiedDataSerializable event;
     private WanAcknowledgeType acknowledgeType;

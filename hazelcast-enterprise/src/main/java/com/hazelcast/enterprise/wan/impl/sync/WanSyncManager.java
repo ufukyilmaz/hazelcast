@@ -1,18 +1,20 @@
 package com.hazelcast.enterprise.wan.impl.sync;
 
 import com.hazelcast.cluster.Member;
+import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.enterprise.wan.WanSyncEvent;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
+import com.hazelcast.internal.util.collection.InflatableSet;
+import com.hazelcast.internal.util.collection.InflatableSet.Builder;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.WanSyncStateImpl;
+import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartitionService;
-import com.hazelcast.internal.util.collection.InflatableSet;
-import com.hazelcast.internal.util.collection.InflatableSet.Builder;
 import com.hazelcast.wan.impl.WanSyncStatus;
 
 import java.util.ArrayList;
@@ -79,15 +81,24 @@ public class WanSyncManager {
         }
         activeWanConfig = wanReplicationName;
         activePublisher = targetGroupName;
-        node.getNodeEngine().getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
-            @Override
-            public void run() {
-                Operation operation = new WanAntiEntropyEventStarterOperation(wanReplicationName, targetGroupName, event);
-                getOperationService().invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
-                        operation, getClusterService().getThisAddress());
-            }
+
+        node.getNodeEngine().getExecutionService().execute("hz:wan:sync:pool", () -> {
+            Operation op = new WanAntiEntropyEventStarterOperation(wanReplicationName, targetGroupName, event);
+            InternalCompletableFuture<Object> future = getOperationService()
+                    .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, op, node.getThisAddress());
+            future.andThen(new ExecutionCallback<Object>() {
+                @Override
+                public void onResponse(Object response) {
+                    logger.info("WAN anti-entropy request " + event + " has been processed");
+                }
+
+                @Override
+                public void onFailure(Throwable t) {
+                    logger.warning("WAN anti-entropy request " + event + " processing failed", t);
+                }
+            });
         });
-        logger.info("WAN anti-entropy request has been sent");
+        logger.info("WAN anti-entropy request " + event + " has been sent");
     }
 
     public WanSyncState getWanSyncState() {
@@ -169,7 +180,7 @@ public class WanSyncManager {
                                 WanAntiEntropyEvent event,
                                 Set<Integer> partitionsToSync) {
         final Set<Member> members = getClusterService().getMembers();
-        final List<Future<WanAntiEntropyEventResult>> futures = new ArrayList<Future<WanAntiEntropyEventResult>>(members.size());
+        final List<Future<WanAntiEntropyEventResult>> futures = new ArrayList<>(members.size());
 
         for (Member member : members) {
             WanAntiEntropyEvent clonedEvent = event.cloneWithoutPartitionKeys();

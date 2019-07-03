@@ -2,6 +2,8 @@ package com.hazelcast.map.impl.wan;
 
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.core.EntryView;
+import com.hazelcast.core.ExecutionCallback;
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
@@ -18,8 +20,8 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
-import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.WanReplicationEvent;
 
 import static com.hazelcast.spi.impl.merge.MergingValueFactory.createMergingEntry;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
@@ -35,10 +37,12 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
     private final MapServiceContext mapServiceContext;
     private final DistributedServiceWanEventCounters wanEventCounters;
     private final SplitBrainMergePolicy<Data, MapMergeTypes> defaultSyncMergePolicy;
+    private final ILogger logger;
 
     public EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
         this.mapServiceContext = mapServiceContext;
         this.nodeEngine = mapServiceContext.getNodeEngine();
+        this.logger = nodeEngine.getLogger(this.getClass());
         MergePolicyProvider mergePolicyProvider = mapServiceContext.getMergePolicyProvider();
         //noinspection unchecked
         this.defaultSyncMergePolicy
@@ -190,7 +194,18 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
         MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
         MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
-        invokeOnPartition(mergingEntry.getKey(), operation);
+        InternalCompletableFuture<Boolean> future = invokeOnPartition(mergingEntry.getKey(), operation);
+        future.andThen(new ExecutionCallback<Boolean>() {
+            @Override
+            public void onResponse(Boolean response) {
+                // nothing to do after sync, we only care not to silently ignore errors
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                logger.warning("Failed to process WAN sync event", t);
+            }
+        });
     }
 
     /**
@@ -201,7 +216,7 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
      * @param operation the operation to invoke
      * @return the future representing the pending completion of the operation
      */
-    private InternalCompletableFuture invokeOnPartition(Data key, Operation operation) {
+    private <E> InternalCompletableFuture<E> invokeOnPartition(Data key, Operation operation) {
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             return nodeEngine.getOperationService()

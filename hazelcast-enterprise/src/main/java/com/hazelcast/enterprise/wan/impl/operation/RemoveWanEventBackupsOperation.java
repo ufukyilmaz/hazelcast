@@ -5,6 +5,7 @@ import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.impl.operationservice.BackupOperation;
 import com.hazelcast.util.MapUtil;
 
@@ -18,7 +19,7 @@ import java.util.Map.Entry;
  * @since 3.12
  */
 public class RemoveWanEventBackupsOperation extends EWRBaseOperation
-        implements BackupOperation, IdentifiedDataSerializable {
+        implements BackupOperation, IdentifiedDataSerializable, AllowedDuringPassiveState {
     private Map<DistributedObjectIdentifier, Integer> eventCounts;
 
     public RemoveWanEventBackupsOperation() {

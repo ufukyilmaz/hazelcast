@@ -8,6 +8,7 @@ import com.hazelcast.map.impl.operation.MerkleTreeNodeCompareOperationFactory;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.impl.operationservice.CallStatus;
 import com.hazelcast.spi.impl.operationservice.Offload;
 import com.hazelcast.spi.impl.operationservice.Operation;
@@ -27,7 +28,7 @@ import static com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication.
  * The comparison is offloaded to the {@link WanBatchReplication#WAN_EXECUTOR} wanExecutor.
  */
 public class WanMerkleTreeNodeCompareOperation extends Operation
-        implements WanReplicationOperation, IdentifiedDataSerializable {
+        implements WanReplicationOperation, IdentifiedDataSerializable, AllowedDuringPassiveState {
     private String mapName;
     private MerkleTreeNodeValueComparison remoteLevels;
 

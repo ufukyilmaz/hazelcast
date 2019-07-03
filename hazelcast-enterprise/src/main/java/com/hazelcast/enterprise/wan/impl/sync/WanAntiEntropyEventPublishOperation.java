@@ -5,6 +5,7 @@ import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.impl.operationservice.Operation;
 
 import java.io.IOException;
@@ -19,7 +20,8 @@ import java.io.IOException;
  * returns. After this method returns, entries for all partitions have been
  * enqueued but not yet replicated.
  */
-public class WanAntiEntropyEventPublishOperation extends Operation implements IdentifiedDataSerializable {
+public class WanAntiEntropyEventPublishOperation extends Operation
+        implements IdentifiedDataSerializable, AllowedDuringPassiveState {
 
     private String wanReplicationName;
     private String targetGroupName;

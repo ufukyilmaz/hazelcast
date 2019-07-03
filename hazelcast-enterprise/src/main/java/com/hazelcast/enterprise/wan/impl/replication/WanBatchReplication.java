@@ -425,7 +425,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
 
                 logger.info("Ignoring unknown WAN anti-entropy event " + event);
             } catch (Exception ex) {
-                logger.warning("WAN anti-entropy event processing failed", ex);
+                logger.warning("WAN anti-entropy event " + event + " processing failed", ex);
             } finally {
                 event.sendResponse();
                 liveOperations.remove(event.getOp());

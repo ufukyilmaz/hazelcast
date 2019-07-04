@@ -10,7 +10,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigPatternMatcher;
 import com.hazelcast.config.CountDownLatchConfig;
 import com.hazelcast.config.DurableExecutorConfig;
-import com.hazelcast.config.EventJournalConfig;
 import com.hazelcast.config.ExecutorConfig;
 import com.hazelcast.config.FlakeIdGeneratorConfig;
 import com.hazelcast.config.GroupConfig;
@@ -759,31 +758,6 @@ class WanNodeConfig extends Config {
     }
 
     @Override
-    public EventJournalConfig findMapEventJournalConfig(String name) {
-        return wrappedConfig.findMapEventJournalConfig(name);
-    }
-
-    @Override
-    public EventJournalConfig findCacheEventJournalConfig(String name) {
-        return wrappedConfig.findCacheEventJournalConfig(name);
-    }
-
-    @Override
-    public EventJournalConfig getMapEventJournalConfig(String name) {
-        return wrappedConfig.getMapEventJournalConfig(name);
-    }
-
-    @Override
-    public EventJournalConfig getCacheEventJournalConfig(String name) {
-        return wrappedConfig.getCacheEventJournalConfig(name);
-    }
-
-    @Override
-    public Config addEventJournalConfig(EventJournalConfig eventJournalConfig) {
-        return wrappedConfig.addEventJournalConfig(eventJournalConfig);
-    }
-
-    @Override
     public Map<String, FlakeIdGeneratorConfig> getFlakeIdGeneratorConfigs() {
         return wrappedConfig.getFlakeIdGeneratorConfigs();
     }
@@ -806,28 +780,6 @@ class WanNodeConfig extends Config {
     @Override
     public Config setFlakeIdGeneratorConfigs(Map<String, FlakeIdGeneratorConfig> map) {
         return wrappedConfig.setFlakeIdGeneratorConfigs(map);
-    }
-
-    @Override
-    public Map<String, EventJournalConfig> getMapEventJournalConfigs() {
-        return wrappedConfig.getMapEventJournalConfigs();
-    }
-
-    @Override
-    public Map<String, EventJournalConfig> getCacheEventJournalConfigs() {
-        return wrappedConfig.getCacheEventJournalConfigs();
-    }
-
-    @Override
-    public Config setMapEventJournalConfigs(
-            Map<String, EventJournalConfig> eventJournalConfigs) {
-        return wrappedConfig.setMapEventJournalConfigs(eventJournalConfigs);
-    }
-
-    @Override
-    public Config setCacheEventJournalConfigs(
-            Map<String, EventJournalConfig> eventJournalConfigs) {
-        return wrappedConfig.setCacheEventJournalConfigs(eventJournalConfigs);
     }
 
     @Override

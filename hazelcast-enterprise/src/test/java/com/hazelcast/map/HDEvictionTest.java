@@ -190,17 +190,19 @@ public class HDEvictionTest extends EvictionTest {
 
         // the entry should be evicted based on maxIdle
         map.put(1, new Person(37), 0L, SECONDS, 1L, SECONDS);
+        sleepAtLeastSeconds(2);
+        Collection<Person> valuesAge37 = map.values(Predicates.equal("age", 37));
+        assertTrue(valuesAge37.isEmpty());
+
         // the entry should be evicted based on ttl
         map.put(2, new Person(50), 1L, SECONDS);
         // the entry should stay indefinite
         map.put(3, new Person(20));
-        // the entry will live indefinite since we touch it every 200 millisecs
-        map.put(4, new Person(40), 0L, SECONDS, 2L, SECONDS);
         // the entry should be evicted based on ttl
         map.put(5, new Person(10), 2L, SECONDS, 5L, SECONDS);
 
-
-        map.put(6, new Person(5), 0L, SECONDS, 2L, SECONDS);
+        // the key should stay since we replace it later
+        map.put(6, new Person(5), 0L, SECONDS, 15L, SECONDS);
         // check indirect access through the HDRecord in the index
         Collection<Person> persons = map.values(Predicates.equal("age", 5));
         assertEquals(1, persons.size());
@@ -210,40 +212,20 @@ public class HDEvictionTest extends EvictionTest {
         assertEquals(1, map.values(Predicates.equal("age", 2)).size());
 
         assertTrueEventually(() -> {
-            Collection<Person> valuesAge37 = map.values(Predicates.equal("age", 37));
-            assertTrue(valuesAge37.isEmpty());
-
             Collection<Person> valuesAge50 = map.values(Predicates.equal("age", 50));
             assertTrue(valuesAge50.isEmpty());
 
-            Collection<Person> valuesAge40 = map.values(Predicates.equal("age", 40));
-            assertFalse(valuesAge40.isEmpty());
-
             Collection<Person> valuesAge10 = map.values(Predicates.equal("age", 10));
-            assertFalse(valuesAge10.isEmpty());
+            assertTrue(valuesAge10.isEmpty());
 
             Collection<Person> valuesOlder15 = map.values(Predicates.greaterThan("age", 15));
-            assertEquals(2, valuesOlder15.size());
+            assertEquals(1, valuesOlder15.size());
         });
         assertFalse(map.containsKey(1));
         assertFalse(map.containsKey(2));
         assertTrue(map.containsKey(3));
         assertTrue(map.containsKey(6));
     }
-
-    @Ignore
-    @Test
-    public void testMaxIdle_readThroughOrderedIndex() {
-        // no-op
-    }
-
-    @Ignore
-    @Test
-    public void testMaxIdle_readThroughUnorderedIndex() {
-        // no-op
-    }
-
-
 
     public static class Person implements DataSerializable {
 

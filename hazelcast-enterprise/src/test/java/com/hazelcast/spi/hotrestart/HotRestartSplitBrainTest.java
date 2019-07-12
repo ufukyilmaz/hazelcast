@@ -78,7 +78,7 @@ public class HotRestartSplitBrainTest extends SplitBrainTestSupport {
         shutdownCluster(instances);
 
         instances = restartCluster(addresses);
-        assertClusterSize(instances.length, instances);
+        assertClusterSizeEventually(instances.length, instances);
 
         assertPartitionStateVersions(instances);
         assertClusterStates(instances);

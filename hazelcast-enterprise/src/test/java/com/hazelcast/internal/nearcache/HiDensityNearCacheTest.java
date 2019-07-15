@@ -7,9 +7,13 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
+import com.hazelcast.map.impl.nearcache.HDNearCacheTest;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.TaskScheduler;
 import com.hazelcast.spi.properties.HazelcastProperties;
@@ -132,8 +136,11 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
 
     @Test
     public void createEntryBiggerThanNativeMemory() {
+        ILogger logger = Logger.getLogger(HDNearCacheTest.class);
+
         // given
         int estimatedNearCacheConcurrencyLevel = nextPowerOfTwo(8 * RuntimeAvailableProcessors.get());
+        logger.info("Using estimatedNearCacheConcurrencyLevel " + estimatedNearCacheConcurrencyLevel);
         int metaKbPerEmptyNearCacheSegment = 4;
         int metadataSizeToTotalNativeSizeFactor = 8;
         int size = estimatedNearCacheConcurrencyLevel * metaKbPerEmptyNearCacheSegment * metadataSizeToTotalNativeSizeFactor;
@@ -149,12 +156,27 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
             NearCache<Integer, byte[]> nearCache
                     = createHDNearCache(ess, executionService.getGlobalTaskScheduler(),
                     null, nearCacheConfig, properties);
+            String valueSize = formatMegaBytes(2 * memorySize.bytes());
+            logger.info("Allocating value with size: " + valueSize);
             byte[] value = new byte[(int) (2 * memorySize.bytes())];
             // when - then (just don't fail)
-            nearCache.put(1, ess.toData(1), value, ess.toData(value));
+            logger.info("Serializing value with size " + valueSize + " free memory before: " + getFreeMemoryStr());
+            Data valueData = ess.toData(value);
+            logger.info("Serialized size: " + formatMegaBytes(valueData.totalSize())
+                    + " free memory after: " + getFreeMemoryStr());
+            nearCache.put(1, ess.toData(1), value, valueData);
         } finally {
+            logger.info("Free memory in finally: " + getFreeMemoryStr());
             mm.dispose();
         }
+    }
+
+    private String getFreeMemoryStr() {
+        return formatMegaBytes(Runtime.getRuntime().freeMemory());
+    }
+
+    private String formatMegaBytes(long size) {
+        return size / 1024 / 1024 + "MB";
     }
 
     public static <K, V> NearCache<K, V> createHDNearCache(EnterpriseSerializationService ess,

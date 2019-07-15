@@ -2,9 +2,8 @@ package com.hazelcast.wan;
 
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.WanSyncEvent;
-import com.hazelcast.enterprise.wan.impl.EWRMigrationContainer;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.enterprise.wan.WanSyncEvent;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.monitor.LocalWanPublisherStats;
@@ -19,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * WAN endpoint implementation that only counts the number of published events (excluding republished).
  */
-public class CountingWanEndpoint implements WanReplicationEndpoint {
+public class CountingWanEndpoint implements WanReplicationEndpoint<Object> {
 
     private AtomicLong counter = new AtomicLong();
     private AtomicLong backupCounter = new AtomicLong();
@@ -101,13 +100,19 @@ public class CountingWanEndpoint implements WanReplicationEndpoint {
     }
 
     @Override
-    public int removeWanEvents() {
-        return 0;
+    public Object prepareEventContainerReplicationData(
+            PartitionReplicationEvent event, Collection<ServiceNamespace> namespaces) {
+        return null;
     }
 
     @Override
-    public void collectReplicationData(String wanReplicationName, PartitionReplicationEvent event,
-                                       Collection<ServiceNamespace> namespaces, EWRMigrationContainer migrationDataContainer) {
+    public void processEventContainerReplicationData(int partitionId, Object eventContainer) {
+
+    }
+
+    @Override
+    public int removeWanEvents() {
+        return 0;
     }
 
     @Override

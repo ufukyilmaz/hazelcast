@@ -1,12 +1,18 @@
 package com.hazelcast.enterprise.wan.impl;
 
+import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.map.impl.MapService;
+import com.hazelcast.spi.ObjectNamespace;
+import com.hazelcast.spi.ServiceNamespace;
+import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * WAN event queue container for WAN replication publishers. Each WAN queue
@@ -179,5 +185,90 @@ public class PublisherQueueContainer {
         for (PartitionWanEventContainer container : containers) {
             container.clear();
         }
+    }
+
+    /**
+     * Returns a container containing the WAN events for the given replication
+     * {@code event} and {@code namespaces} to be replicated. The replication
+     * here refers to the intra-cluster replication between members in a single
+     * cluster and does not refer to WAN replication, e.g. between two clusters.
+     *
+     * @param event      the replication event
+     * @param namespaces namespaces which will be replicated
+     * @return the WAN event container
+     */
+    public WanEventMigrationContainer prepareEventContainerReplicationData(
+            PartitionReplicationEvent event,
+            Collection<ServiceNamespace> namespaces) {
+        final PartitionWanEventContainer partitionContainer = getEventQueue(event.getPartitionId());
+        if (partitionContainer != null) {
+            final PartitionWanEventQueueMap mapQueues = collectNamespaces(
+                    partitionContainer.getMapEventQueueMapByBackupCount(event.getReplicaIndex()),
+                    MapService.SERVICE_NAME, namespaces);
+
+            final PartitionWanEventQueueMap cacheQueues = collectNamespaces(
+                    partitionContainer.getCacheEventQueueMapByBackupCount(event.getReplicaIndex()),
+                    CacheService.SERVICE_NAME, namespaces);
+            return new WanEventMigrationContainer(mapQueues, cacheQueues);
+        }
+
+        return null;
+    }
+
+    /**
+     * Collect the namespaces of all WAN event containers that should be replicated
+     * by the replication event.
+     *
+     * @param event      the replication event
+     * @param namespaces the set in which namespaces should be added
+     */
+    public void collectAllServiceNamespaces(PartitionReplicationEvent event, Set<ServiceNamespace> namespaces) {
+        final int partitionId = event.getPartitionId();
+        final PartitionWanEventContainer partitionContainer = getEventQueue(partitionId);
+
+        if (partitionContainer == null) {
+            return;
+        }
+        final int replicaIndex = event.getReplicaIndex();
+        final PartitionWanEventQueueMap mapQueues = partitionContainer.getMapEventQueueMapByBackupCount(replicaIndex);
+        final PartitionWanEventQueueMap cacheQueues = partitionContainer.getCacheEventQueueMapByBackupCount(replicaIndex);
+        for (String mapName : mapQueues.keySet()) {
+            namespaces.add(MapService.getObjectNamespace(mapName));
+        }
+        for (String cacheName : cacheQueues.keySet()) {
+            namespaces.add(CacheService.getObjectNamespace(cacheName));
+        }
+    }
+
+
+    /**
+     * Filter and collect {@link WanReplicationEventQueue}s that contain events matching the
+     * {@code serviceName} and one of the provided {@code namespaces}. The namespaces must be
+     * of the type {@link ObjectNamespace}.
+     *
+     * @param queues      WAN event queue map of a partition and a specific service (map/cache)
+     * @param serviceName the service name for which we are collecting WAN queues
+     * @param namespaces  the collection of {@link ObjectNamespace}s for which we are collecting WAN queues
+     * @return the filtered map from distributed object name to WAN queue
+     */
+    private PartitionWanEventQueueMap collectNamespaces(PartitionWanEventQueueMap queues, String serviceName,
+                                                        Collection<ServiceNamespace> namespaces) {
+        if (queues.isEmpty()) {
+            return null;
+        }
+
+        final PartitionWanEventQueueMap filteredQueues = new PartitionWanEventQueueMap();
+        for (ServiceNamespace namespace : namespaces) {
+            if (!serviceName.equals(namespace.getServiceName())) {
+                continue;
+            }
+
+            final ObjectNamespace ns = (ObjectNamespace) namespace;
+            final WanReplicationEventQueue q = queues.get(ns.getObjectName());
+            if (q != null) {
+                filteredQueues.put(ns.getObjectName(), q);
+            }
+        }
+        return filteredQueues;
     }
 }

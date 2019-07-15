@@ -7,15 +7,14 @@ import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.WanSyncEvent;
-import com.hazelcast.enterprise.wan.impl.DistributedObjectIdentifier;
-import com.hazelcast.enterprise.wan.impl.EWRMigrationContainer;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
-import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.impl.PartitionWanEventContainer;
-import com.hazelcast.enterprise.wan.impl.PartitionWanEventQueueMap;
 import com.hazelcast.enterprise.wan.WanEventQueueMigrationListener;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.enterprise.wan.WanSyncEvent;
+import com.hazelcast.enterprise.wan.impl.DistributedObjectIdentifier;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.PartitionWanEventQueueMap;
+import com.hazelcast.enterprise.wan.impl.WanEventMigrationContainer;
 import com.hazelcast.enterprise.wan.impl.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.impl.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.impl.operation.RemoveWanEventBackupsOperation;
@@ -31,16 +30,15 @@ import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.InternalCompletableFuture;
-import com.hazelcast.spi.ObjectNamespace;
 import com.hazelcast.spi.ServiceNamespace;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.util.Clock;
+import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
-import com.hazelcast.wan.DistributedServiceWanEventCounters;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -62,7 +60,7 @@ import static java.util.Collections.unmodifiableMap;
  */
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
 public abstract class AbstractWanPublisher implements WanReplicationPublisher,
-        WanReplicationEndpoint, WanEventQueueMigrationListener {
+        WanReplicationEndpoint<WanEventMigrationContainer>, WanEventQueueMigrationListener {
 
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
 
@@ -598,21 +596,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
     @Override
     public void collectAllServiceNamespaces(PartitionReplicationEvent event, Set<ServiceNamespace> namespaces) {
-        final int partitionId = event.getPartitionId();
-        final PartitionWanEventContainer partitionContainer = eventQueueContainer.getEventQueue(partitionId);
-
-        if (partitionContainer == null) {
-            return;
-        }
-        final int replicaIndex = event.getReplicaIndex();
-        final PartitionWanEventQueueMap mapQueues = partitionContainer.getMapEventQueueMapByBackupCount(replicaIndex);
-        final PartitionWanEventQueueMap cacheQueues = partitionContainer.getCacheEventQueueMapByBackupCount(replicaIndex);
-        for (String mapName : mapQueues.keySet()) {
-            namespaces.add(MapService.getObjectNamespace(mapName));
-        }
-        for (String cacheName : cacheQueues.keySet()) {
-            namespaces.add(CacheService.getObjectNamespace(cacheName));
-        }
+        eventQueueContainer.collectAllServiceNamespaces(event, namespaces);
     }
 
     @Override
@@ -661,58 +645,57 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     @Override
-    public void collectReplicationData(String wanReplicationName,
-                                       PartitionReplicationEvent event,
-                                       Collection<ServiceNamespace> namespaces,
-                                       EWRMigrationContainer migrationDataContainer) {
-        final PartitionWanEventContainer partitionContainer = eventQueueContainer.getEventQueue(event.getPartitionId());
-        if (partitionContainer != null) {
-            final PartitionWanEventQueueMap mapQueues = collectNamespaces(
-                    partitionContainer.getMapEventQueueMapByBackupCount(event.getReplicaIndex()),
-                    MapService.SERVICE_NAME, namespaces);
+    public WanEventMigrationContainer prepareEventContainerReplicationData(
+            PartitionReplicationEvent event,
+            Collection<ServiceNamespace> namespaces) {
+        return eventQueueContainer.prepareEventContainerReplicationData(event, namespaces);
+    }
 
-            final PartitionWanEventQueueMap cacheQueues = collectNamespaces(
-                    partitionContainer.getCacheEventQueueMapByBackupCount(event.getReplicaIndex()),
-                    CacheService.SERVICE_NAME, namespaces);
+    @Override
+    public void processEventContainerReplicationData(int partitionId, WanEventMigrationContainer eventContainer) {
+        boolean isPrimaryReplica = node.getNodeEngine().getPartitionService()
+                                       .getPartition(partitionId)
+                                       .isLocal();
+        PartitionWanEventQueueMap mapQueues = eventContainer.getMapQueues();
+        PartitionWanEventQueueMap cacheQueues = eventContainer.getCacheQueues();
+        int removedMapEvents = isNullOrEmpty(mapQueues)
+                ? 0
+                : removeWanEvents(partitionId, MapService.SERVICE_NAME);
+        int removedCacheEvents = isNullOrEmpty(cacheQueues)
+                ? 0
+                : removeWanEvents(partitionId, ICacheService.SERVICE_NAME);
+        decrementCounter(removedMapEvents + removedCacheEvents, isPrimaryReplica);
+        publishEvents(partitionId, mapQueues);
+        publishEvents(partitionId, cacheQueues);
+    }
 
-            if (!isNullOrEmpty(mapQueues)) {
-                migrationDataContainer.addMapEventQueueMap(wanReplicationName, wanPublisherId, mapQueues);
-            }
-            if (!isNullOrEmpty(cacheQueues)) {
-                migrationDataContainer.addCacheEventQueueMap(wanReplicationName, wanPublisherId, cacheQueues);
+    private void publishEvents(int partitionId, PartitionWanEventQueueMap queues) {
+        if (queues != null) {
+            for (WanReplicationEventQueue queue : queues.values()) {
+                publishReplicationEventQueue(partitionId, queue);
             }
         }
     }
 
-    /**
-     * Filter and collect {@link WanReplicationEventQueue}s that contain events matching the
-     * {@code serviceName} and one of the provided {@code namespaces}. The namespaces must be
-     * of the type {@link ObjectNamespace}.
-     *
-     * @param queues      WAN event queue map of a partition and a specific service (map/cache)
-     * @param serviceName the service name for which we are collecting WAN queues
-     * @param namespaces  the collection of {@link ObjectNamespace}s for which we are collecting WAN queues
-     * @return the filtered map from distributed object name to WAN queue
-     */
-    private PartitionWanEventQueueMap collectNamespaces(PartitionWanEventQueueMap queues, String serviceName,
-                                                        Collection<ServiceNamespace> namespaces) {
-        if (queues.isEmpty()) {
-            return null;
-        }
 
-        final PartitionWanEventQueueMap filteredQueues = new PartitionWanEventQueueMap();
-        for (ServiceNamespace namespace : namespaces) {
-            if (!serviceName.equals(namespace.getServiceName())) {
-                continue;
+    private void publishReplicationEventQueue(int partitionId, WanReplicationEventQueue eventQueue) {
+        WanReplicationEvent event = eventQueue.poll();
+        while (event != null) {
+            boolean isPrimaryReplica = node.getNodeEngine().getPartitionService()
+                                           .getPartition(partitionId)
+                                           .isLocal();
+            // whether the event is published as a backup or primary only
+            // affects if the event is counted as a backup or primary event
+            // we check the local (transient) partition table and publish accordingly
+            // the WanQueueMigrationSupport.onMigrationCommit will then migrate
+            // some of the counts from backup to primary counter and vice versa
+            if (isPrimaryReplica) {
+                publishReplicationEvent(event.getServiceName(), event.getEventObject());
+            } else {
+                publishReplicationEventBackup(event.getServiceName(), event.getEventObject());
             }
-
-            final ObjectNamespace ns = (ObjectNamespace) namespace;
-            final WanReplicationEventQueue q = queues.get(ns.getObjectName());
-            if (q != null) {
-                filteredQueues.put(ns.getObjectName(), q);
-            }
+            event = eventQueue.poll();
         }
-        return filteredQueues;
     }
 
     /**

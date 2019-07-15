@@ -4,7 +4,7 @@ import com.hazelcast.cache.impl.wan.CacheReplicationRemove;
 import com.hazelcast.cache.impl.wan.CacheReplicationUpdate;
 import com.hazelcast.cache.impl.wan.WanCacheEntryView;
 import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
-import com.hazelcast.enterprise.wan.impl.EWRMigrationContainer;
+import com.hazelcast.enterprise.wan.impl.WanEventMigrationContainer;
 import com.hazelcast.enterprise.wan.impl.sync.GetMapPartitionDataOperation;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventPublishOperation;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventResult;
@@ -37,8 +37,8 @@ public class EWRDataSerializerHook implements DataSerializerHook {
     public static final int BATCH_WAN_REP_EVENT = 0;
     public static final int EWR_PUT_OPERATION = 1;
     public static final int EWR_PUT_BACKUP_OPERATION = 2;
-    public static final int EWR_QUEUE_CONTAINER = 3;
-    public static final int EWR_QUEUE_REPLICATION_OPERATION = 4;
+    public static final int WAN_EVENT_MIGRATION_CONTAINER = 3;
+    public static final int WAN_EVENT_CONTAINER_REPLICATION_OPERATION = 4;
     public static final int MAP_REPLICATION_UPDATE = 5;
     public static final int MAP_REPLICATION_REMOVE = 6;
     public static final int CACHE_REPLICATION_UPDATE = 7;
@@ -76,10 +76,10 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                     return new EWRPutOperation();
                 case EWR_PUT_BACKUP_OPERATION:
                     return new EWRPutBackupOperation();
-                case EWR_QUEUE_CONTAINER:
-                    return new EWRMigrationContainer();
-                case EWR_QUEUE_REPLICATION_OPERATION:
-                    return new EWRQueueReplicationOperation();
+                case WAN_EVENT_MIGRATION_CONTAINER:
+                    return new WanEventMigrationContainer();
+                case WAN_EVENT_CONTAINER_REPLICATION_OPERATION:
+                    return new WanEventContainerReplicationOperation();
                 case MAP_REPLICATION_UPDATE:
                     return new EnterpriseMapReplicationUpdate();
                 case MAP_REPLICATION_REMOVE:

@@ -5,16 +5,17 @@ import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.spi.ServiceNamespace;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
-import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.hazelcast.util.MapUtil.createHashMap;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
@@ -94,7 +95,7 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
     }
 
     public Map<String, LocalWanPublisherStats> getStats() {
-        final Map<String, LocalWanPublisherStats> statsMap = MapUtil.createHashMap(endpoints.size());
+        final Map<String, LocalWanPublisherStats> statsMap = createHashMap(endpoints.size());
         for (Map.Entry<String, WanReplicationEndpoint> endpointEntry : endpoints.entrySet()) {
             final String endpointName = endpointEntry.getKey();
             final WanReplicationEndpoint endpoint = endpointEntry.getValue();
@@ -113,17 +114,24 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
     /**
      * Collect all replication data matching the replication event and collection
      * of namespaces being replicated.
+     * Returns containers for WAN replication events grouped by WAN publisher ID.
      *
-     * @param event                  the replication event
-     * @param namespaces             the object namespaces which are being replicated
-     * @param migrationDataContainer the container for the migration data
+     * @param event      the replication event
+     * @param namespaces the object namespaces which are being replicated
+     * @return a map from WAN publisher ID to container object for WAN replication events
      */
-    public void collectReplicationData(PartitionReplicationEvent event,
-                                       Collection<ServiceNamespace> namespaces,
-                                       EWRMigrationContainer migrationDataContainer) {
-        for (WanReplicationEndpoint endpoint : getEndpoints()) {
-            endpoint.collectReplicationData(name, event, namespaces, migrationDataContainer);
+    public Map<String, Object> prepareEventContainerReplicationData(PartitionReplicationEvent event,
+                                                                    Collection<ServiceNamespace> namespaces) {
+        Map<String, Object> eventContainers = createHashMap(endpoints.size());
+        for (Entry<String, WanReplicationEndpoint> endpointEntry : endpoints.entrySet()) {
+            Object eventContainer = endpointEntry.getValue()
+                                                 .prepareEventContainerReplicationData(event, namespaces);
+            if (eventContainer != null) {
+                String publisherId = endpointEntry.getKey();
+                eventContainers.put(publisherId, eventContainer);
+            }
         }
+        return eventContainers;
     }
 
     /**

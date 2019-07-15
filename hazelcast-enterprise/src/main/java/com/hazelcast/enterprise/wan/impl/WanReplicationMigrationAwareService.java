@@ -4,7 +4,7 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.WanEventQueueMigrationListener;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
-import com.hazelcast.enterprise.wan.impl.operation.EWRQueueReplicationOperation;
+import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerReplicationOperation;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.spi.ObjectNamespace;
@@ -18,8 +18,12 @@ import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.hazelcast.util.MapUtil.createHashMap;
 
 /**
  * Supporting service for integrating the WAN system with the migration system.
@@ -55,22 +59,29 @@ class WanReplicationMigrationAwareService implements FragmentedMigrationAwareSer
     }
 
     @Override
-    public Operation prepareReplicationOperation(PartitionReplicationEvent event, Collection<ServiceNamespace> namespaces) {
-        final ConcurrentHashMap<String, WanReplicationPublisherDelegate> wanReplications = getWanReplications();
+    public Operation prepareReplicationOperation(PartitionReplicationEvent event,
+                                                 Collection<ServiceNamespace> namespaces) {
+        ConcurrentHashMap<String, WanReplicationPublisherDelegate> wanReplications = getWanReplications();
         if (wanReplications.isEmpty() || namespaces.isEmpty()) {
             return null;
         }
-        final EWRMigrationContainer migrationData = new EWRMigrationContainer();
-        for (WanReplicationPublisherDelegate delegate : wanReplications.values()) {
-            delegate.collectReplicationData(event, namespaces, migrationData);
+        Map<String, Map<String, Object>> eventContainers = createHashMap(wanReplications.size());
+
+        for (Entry<String, WanReplicationPublisherDelegate> wanReplicationEntry : wanReplications.entrySet()) {
+            String replicationScheme = wanReplicationEntry.getKey();
+            WanReplicationPublisherDelegate delegate = wanReplicationEntry.getValue();
+            Map<String, Object> publisherEventContainers = delegate.prepareEventContainerReplicationData(event, namespaces);
+            if (!publisherEventContainers.isEmpty()) {
+                eventContainers.put(replicationScheme, publisherEventContainers);
+            }
         }
         Collection<WanReplicationConfig> wanReplicationConfigs = node.getConfig().getWanReplicationConfigs().values();
 
-        if (migrationData.isEmpty() && wanReplicationConfigs.isEmpty()) {
+        if (eventContainers.isEmpty() && wanReplicationConfigs.isEmpty()) {
             return null;
         } else {
-            return new EWRQueueReplicationOperation(
-                    wanReplicationConfigs, migrationData, event.getPartitionId(), event.getReplicaIndex());
+            return new WanEventContainerReplicationOperation(
+                    wanReplicationConfigs, eventContainers, event.getPartitionId(), event.getReplicaIndex());
         }
     }
 

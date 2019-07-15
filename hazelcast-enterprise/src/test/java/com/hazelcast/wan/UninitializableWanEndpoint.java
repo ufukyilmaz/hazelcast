@@ -2,9 +2,8 @@ package com.hazelcast.wan;
 
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.WanSyncEvent;
-import com.hazelcast.enterprise.wan.impl.EWRMigrationContainer;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.enterprise.wan.WanSyncEvent;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.spi.ServiceNamespace;
@@ -16,7 +15,7 @@ import java.util.Set;
 /**
  * WAN endpoint implementation that throws an exception on initialization.
  */
-public class UninitializableWanEndpoint implements WanReplicationEndpoint {
+public class UninitializableWanEndpoint implements WanReplicationEndpoint<Object> {
 
     public UninitializableWanEndpoint() {
     }
@@ -73,13 +72,19 @@ public class UninitializableWanEndpoint implements WanReplicationEndpoint {
     }
 
     @Override
-    public int removeWanEvents() {
-        return 0;
+    public Object prepareEventContainerReplicationData(PartitionReplicationEvent event,
+                                                       Collection<ServiceNamespace> namespaces) {
+        return null;
     }
 
     @Override
-    public void collectReplicationData(String wanReplicationName, PartitionReplicationEvent event,
-                                       Collection<ServiceNamespace> namespaces, EWRMigrationContainer migrationDataContainer) {
+    public void processEventContainerReplicationData(int partitionId, Object eventContainer) {
+
+    }
+
+    @Override
+    public int removeWanEvents() {
+        return 0;
     }
 
     @Override

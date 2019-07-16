@@ -101,27 +101,32 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     }
 
     @Override
-    public void updateRecordValue(Data ignored, HDRecord record, Object value) {
-        Data oldValue = null;
-        Data newValue = null;
-        boolean succeed = false;
+    public void updateRecordValue(Data key, HDRecord record, Object value) {
+        NativeMemoryData oldValue = null;
+        NativeMemoryData newValue = null;
+        boolean disposeNewValue = true;
         long oldCostEstimate = 0L;
 
         try {
-            oldValue = record.getValue();
+            oldValue = (NativeMemoryData) record.getValue();
             oldCostEstimate = entryCostEstimator.calculateValueCost(record);
-            newValue = toNative(value);
-            long address = value == null ? NULL_ADDRESS : ((NativeMemoryData) newValue).address();
+            newValue = (NativeMemoryData) toNative(value);
+
+            if (oldValue != null && newValue != null && oldValue.address() == newValue.address()) {
+                disposeNewValue = false;
+                return;
+            }
+
+            long address = value == null ? NULL_ADDRESS : newValue.address();
             record.setValueAddress(address);
-            succeed = true;
+            disposeNewValue = false;
+            addDeferredDispose(oldValue);
+            entryCostEstimator.adjustEstimateBy(-oldCostEstimate);
+            entryCostEstimator.adjustEstimateBy(entryCostEstimator.calculateValueCost(record));
         } finally {
-            if (succeed) {
-                addDeferredDispose(oldValue);
-                entryCostEstimator.adjustEstimateBy(-oldCostEstimate);
-                entryCostEstimator.adjustEstimateBy(entryCostEstimator.calculateValueCost(record));
-            } else {
+            if (disposeNewValue) {
                 addDeferredDispose(newValue);
-                entryCostEstimator.adjustEstimateBy(-entryCostEstimator.calculateValueCost((NativeMemoryData) newValue));
+                entryCostEstimator.adjustEstimateBy(-entryCostEstimator.calculateValueCost(newValue));
             }
         }
     }

@@ -14,7 +14,6 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
 import com.hazelcast.spi.partition.IPartition;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.NightlyTest;
@@ -57,13 +56,14 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
 
         MapConfig mapWithMerkleConfig = new MapConfig(MAP_NAME_WITH_MERKLE);
         mapWithMerkleConfig.setInMemoryFormat(InMemoryFormat.BINARY);
-        cfg.getMapConfig(MAP_NAME_WITH_MERKLE).getMerkleTreeConfig()
-           .setEnabled(true)
-           .setDepth(4);
+        mapWithMerkleConfig.getMerkleTreeConfig()
+                           .setEnabled(true)
+                           .setDepth(4);
         cfg.addMapConfig(mapWithMerkleConfig);
 
         MapConfig mapWithoutConfig = new MapConfig(MAP_NAME_WITHOUT_MERKLE);
         mapWithoutConfig.setInMemoryFormat(InMemoryFormat.BINARY);
+        cfg.addMapConfig(mapWithoutConfig);
 
         return cfg;
     }
@@ -89,20 +89,17 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
     }
 
     private void assertProbesEventuallyMatch(final long heapCostWithoutMerkle, final long merkleFootprintWithMerkle) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                ProbeCatcher probesWithMerkle = new ProbeCatcher(MAP_NAME_WITH_MERKLE);
-                ProbeCatcher probesWithoutMerkle = new ProbeCatcher(MAP_NAME_WITHOUT_MERKLE);
-                registry.render(probesWithMerkle);
-                registry.render(probesWithoutMerkle);
+        assertTrueEventually(() -> {
+            ProbeCatcher probesWithMerkle = new ProbeCatcher(MAP_NAME_WITH_MERKLE);
+            ProbeCatcher probesWithoutMerkle = new ProbeCatcher(MAP_NAME_WITHOUT_MERKLE);
+            registry.render(probesWithMerkle);
+            registry.render(probesWithoutMerkle);
 
-                assertEquals(heapCostWithoutMerkle + merkleFootprintWithMerkle, probesWithMerkle.heapCost);
-                assertEquals(merkleFootprintWithMerkle, probesWithMerkle.merkleTreesCost);
+            assertEquals(heapCostWithoutMerkle + merkleFootprintWithMerkle, probesWithMerkle.heapCost);
+            assertEquals(merkleFootprintWithMerkle, probesWithMerkle.merkleTreesCost);
 
-                assertEquals(heapCostWithoutMerkle, probesWithoutMerkle.heapCost);
-                assertEquals(0, probesWithoutMerkle.merkleTreesCost);
-            }
+            assertEquals(heapCostWithoutMerkle, probesWithoutMerkle.heapCost);
+            assertEquals(0, probesWithoutMerkle.merkleTreesCost);
         });
     }
 

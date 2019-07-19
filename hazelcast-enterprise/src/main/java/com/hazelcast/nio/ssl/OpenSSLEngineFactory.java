@@ -194,7 +194,7 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
                 throw new InvalidConfigurationException(e.getMessage(), e);
             }
 
-            return sneakyThrow(e);
+            throw sneakyThrow(e);
         }
     }
 

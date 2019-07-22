@@ -56,10 +56,10 @@ public class ParametersImpl implements Parameters {
 
             @Override
             public Object next() {
-                index++;
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
+                index++;
                 return get(index);
             }
 

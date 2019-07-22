@@ -47,4 +47,12 @@ public class WanConsistencyCheckEvent extends WanAntiEntropyEvent {
             partitionSet.add(in.readInt());
         }
     }
+
+    @Override
+    public String toString() {
+        return "WanConsistencyCheckEvent{"
+                + "mapName='" + mapName + '\''
+                + ", partitionSet=" + partitionSet
+                + '}';
+    }
 }

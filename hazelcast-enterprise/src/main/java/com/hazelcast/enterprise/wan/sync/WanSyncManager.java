@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.sync;
 
+import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.instance.Node;
@@ -7,6 +8,7 @@ import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.WanSyncStateImpl;
+import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
@@ -78,15 +80,28 @@ public class WanSyncManager {
         }
         activeWanConfig = wanReplicationName;
         activePublisher = targetGroupName;
-        node.getNodeEngine().getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
-            @Override
-            public void run() {
-                Operation operation = new WanAntiEntropyEventStarterOperation(wanReplicationName, targetGroupName, event);
-                getOperationService().invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
-                        operation, getClusterService().getThisAddress());
-            }
-        });
-        logger.info("WAN anti-entropy request has been sent");
+
+        node.getNodeEngine().getExecutionService().execute("hz:wan:sync:pool",
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        Operation op = new WanAntiEntropyEventStarterOperation(wanReplicationName, targetGroupName, event);
+                        InternalCompletableFuture<Object> future = getOperationService()
+                                .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, op, node.getThisAddress());
+                        future.andThen(new ExecutionCallback<Object>() {
+                            @Override
+                            public void onResponse(Object response) {
+                                logger.info("WAN anti-entropy request " + event + " has been processed");
+                            }
+
+                            @Override
+                            public void onFailure(Throwable t) {
+                                logger.warning("WAN anti-entropy request " + event + " processing failed", t);
+                            }
+                        });
+                    }
+                });
+        logger.info("WAN anti-entropy request " + event + " has been sent");
     }
 
     public WanSyncState getWanSyncState() {

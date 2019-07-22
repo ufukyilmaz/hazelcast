@@ -1,5 +1,6 @@
 package com.hazelcast.wan.fw;
 
+import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -300,6 +301,10 @@ public class Cluster {
     public AddWanConfigResult addWanReplication(WanReplication wanReplication) {
         return wanReplicationService(getAMember())
                 .addWanReplicationConfig(wanReplication.getConfig());
+    }
+
+    public void changeClusterState(ClusterState newState) {
+        getAMember().getCluster().changeClusterState(newState);
     }
 
     public static class ClusterBuilder {

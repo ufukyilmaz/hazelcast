@@ -2,6 +2,7 @@ package com.hazelcast.enterprise.wan.sync;
 
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.spi.AbstractLocalOperation;
+import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 
 /**
  * Operation to start coordination of WAN anti-entropy event publication on
@@ -10,7 +11,7 @@ import com.hazelcast.spi.AbstractLocalOperation;
  * This operation is invoked locally. The local member is then designated
  * as a coordinator member which broadcasts the event to all other members.
  */
-public class WanAntiEntropyEventStarterOperation extends AbstractLocalOperation {
+public class WanAntiEntropyEventStarterOperation extends AbstractLocalOperation implements AllowedDuringPassiveState {
 
     private String wanReplicationName;
     private String targetGroupName;

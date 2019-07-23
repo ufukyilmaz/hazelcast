@@ -10,11 +10,12 @@ import com.hazelcast.cp.internal.raft.impl.dataservice.RestoreSnapshotRaftRunnab
 import com.hazelcast.cp.internal.raft.impl.dto.AppendRequest;
 import com.hazelcast.cp.internal.raft.impl.log.LogEntry;
 import com.hazelcast.cp.internal.raft.impl.log.SnapshotEntry;
+import com.hazelcast.cp.internal.raft.impl.persistence.RaftStateLoader;
 import com.hazelcast.cp.internal.raft.impl.persistence.RaftStateStore;
 import com.hazelcast.cp.internal.raft.impl.persistence.RestoredRaftState;
 import com.hazelcast.cp.internal.raft.impl.testing.LocalRaftGroup;
 import com.hazelcast.cp.internal.raft.impl.testing.LocalRaftGroup.LocalRaftGroupBuilder;
-import com.hazelcast.cp.internal.raft.impl.testing.LocalRaftIntegration;
+import com.hazelcast.cp.internal.raft.impl.testing.TestRaftEndpoint;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
@@ -23,8 +24,8 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.util.function.IntFunction;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -33,9 +34,10 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 
 import static com.hazelcast.config.cp.RaftAlgorithmConfig.DEFAULT_UNCOMMITTED_ENTRY_COUNT_TO_REJECT_NEW_APPENDS;
 import static com.hazelcast.cp.internal.raft.MembershipChangeMode.REMOVE;
@@ -65,20 +67,31 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
 
     private InternalSerializationService serializationService = new DefaultSerializationServiceBuilder().build();
 
-    private IBiFunction<RaftEndpoint, RaftAlgorithmConfig, RaftStateStore> stateStoreFactory;
+    private final IBiFunction<RaftEndpoint, RaftAlgorithmConfig, RaftStateLoader> stateLoaderFactory =
+            new IBiFunction<RaftEndpoint, RaftAlgorithmConfig, RaftStateLoader>() {
+                @Override
+                public RaftStateLoader apply(RaftEndpoint endpoint, RaftAlgorithmConfig config) {
+                    return getStateLoader(endpoint, config.getUncommittedEntryCountToRejectNewAppends());
+                }
+            };
+
+    private final IBiFunction<RaftEndpoint, RaftAlgorithmConfig, RaftStateStore> stateStoreFactory =
+            new IBiFunction<RaftEndpoint, RaftAlgorithmConfig, RaftStateStore>() {
+                @Override
+                public RaftStateStore apply(RaftEndpoint endpoint, RaftAlgorithmConfig config) {
+                    OnDiskRaftStateLoader loader = (OnDiskRaftStateLoader) stateLoaderFactory.apply(endpoint, config);
+                    try {
+                        loader.load();
+                        return new OnDiskRaftStateStore(getDirectory(endpoint), serializationService,
+                                config.getUncommittedEntryCountToRejectNewAppends(), loader.logFileStructure());
+                    } catch (Exception e) {
+                        return new OnDiskRaftStateStore(getDirectory(endpoint), serializationService,
+                                config.getUncommittedEntryCountToRejectNewAppends(), null);
+                    }
+                }
+    };
 
     private LocalRaftGroup group;
-
-    @Before
-    public void init() {
-        stateStoreFactory = new IBiFunction<RaftEndpoint, RaftAlgorithmConfig, RaftStateStore>() {
-            @Override
-            public RaftStateStore apply(RaftEndpoint endpoint, RaftAlgorithmConfig config) {
-                return new OnDiskRaftStateStore(getDirectory(endpoint), serializationService,
-                        config.getUncommittedEntryCountToRejectNewAppends(), null);
-            }
-        };
-    }
 
     @After
     public void destroy() {
@@ -141,7 +154,7 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testCommittedEntriesArePersisted()throws Exception {
+    public void testCommittedEntriesArePersisted() throws Exception {
         group = new LocalRaftGroupBuilder(3).setRaftStateStoreFactory(stateStoreFactory).build();
         group.start();
 
@@ -219,8 +232,7 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testSnapshotIsPersisted()
-           throws Exception {
+    public void testSnapshotIsPersisted() throws Exception {
         final int committedEntryCountToSnapshot = 50;
         RaftAlgorithmConfig config = new RaftAlgorithmConfig()
                 .setCommitIndexAdvanceCountToSnapshot(committedEntryCountToSnapshot);
@@ -262,8 +274,7 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
 
 
     @Test
-    public void when_leaderAppendEntriesInMinoritySplit_then_itTruncatesEntriesOnStore()
-           throws Exception {
+    public void when_leaderAppendEntriesInMinoritySplit_then_itTruncatesEntriesOnStore() throws Exception {
         group = new LocalRaftGroupBuilder(3).setRaftStateStoreFactory(stateStoreFactory).build();
         group.start();
 
@@ -388,8 +399,6 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
             }
         });
     }
-
-
 
     @Test
     public void when_leaderIsRestarted_then_itRestoresItsRaftStateAndBecomesLeader() throws Exception {
@@ -674,7 +683,7 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void when_followerIsRestarted_then_itAppliesPreviouslyCommittedMemberList()throws Exception {
+    public void when_followerIsRestarted_then_itAppliesPreviouslyCommittedMemberList() throws Exception {
         RaftAlgorithmConfig config = new RaftAlgorithmConfig().setLeaderHeartbeatPeriodInMillis(SECONDS.toMillis(30));
         group = new LocalRaftGroupBuilder(3, config).setAppendNopEntryOnLeaderElection(true)
                                                     .setRaftStateStoreFactory(stateStoreFactory)
@@ -714,8 +723,7 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void when_leaderIsRestarted_then_itBecomesLeaderAndAppliesPreviouslyCommittedMemberListViaSnapshot()
-            throws Exception {
+    public void when_leaderIsRestarted_then_itBecomesLeaderAndAppliesPreviouslyCommittedMemberListViaSnapshot() throws Exception {
         int committedEntryCountToSnapshot = 50;
         RaftAlgorithmConfig config = new RaftAlgorithmConfig()
                 .setCommitIndexAdvanceCountToSnapshot(committedEntryCountToSnapshot)
@@ -765,7 +773,7 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void when_followerIsRestarted_then_itAppliesPreviouslyCommittedMemberListViaSnapshot()throws Exception {
+    public void when_followerIsRestarted_then_itAppliesPreviouslyCommittedMemberListViaSnapshot() throws Exception {
         int committedEntryCountToSnapshot = 50;
         RaftAlgorithmConfig config = new RaftAlgorithmConfig()
                 .setCommitIndexAdvanceCountToSnapshot(committedEntryCountToSnapshot)
@@ -812,6 +820,67 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
         });
     }
 
+    @Test
+    public void test_committedEntriesSurviveWholeGroupCrash() throws Exception {
+        int committedEntryCountToSnapshot = 50;
+        int committedEntryCountOnEachRound = 75;
+        int repeat = 25;
+        long entryIndex = 0;
+
+        RaftAlgorithmConfig config = new RaftAlgorithmConfig()
+                .setCommitIndexAdvanceCountToSnapshot(committedEntryCountToSnapshot);
+        group = new LocalRaftGroupBuilder(3, config)
+                .setAppendNopEntryOnLeaderElection(true)
+                .setRaftStateStoreFactory(stateStoreFactory).build();
+        group.start();
+
+        final Map<Integer, TestRaftEndpoint> endpointMap = new HashMap<Integer, TestRaftEndpoint>();
+        for (RaftNodeImpl node : group.getNodes()) {
+            TestRaftEndpoint endpoint = (TestRaftEndpoint) node.getLocalMember();
+            endpointMap.put(endpoint.getPort(), endpoint);
+        }
+
+        IntFunction<TestRaftEndpoint> endpointFactory = new IntFunction<TestRaftEndpoint>() {
+            @Override
+            public TestRaftEndpoint apply(int port) {
+                return endpointMap.get(port);
+            }
+        };
+
+        for (int round = 0; round < repeat; round++) {
+            final RaftNodeImpl leader = group.waitUntilLeaderElected();
+
+            for (int i = 0; i < committedEntryCountOnEachRound; i++) {
+                entryIndex++;
+                String value = "val" + entryIndex;
+                leader.replicate(new ApplyRaftRunnable(value)).get();
+            }
+
+            group.destroy();
+
+            group = new LocalRaftGroupBuilder(3, config)
+                    .setAppendNopEntryOnLeaderElection(true)
+                    .setEndpointFactory(endpointFactory)
+                    .setRaftStateStoreFactory(stateStoreFactory)
+                    .setRaftStateLoaderFactory(stateLoaderFactory).build();
+            group.start();
+        }
+
+        final RaftNodeImpl leader = group.waitUntilLeaderElected();
+        final long finalEntryIndex = entryIndex;
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                RaftDataService service = group.getService(leader.getLocalMember());
+                Set<Object> committedValues = service.values();
+                for (int i = 1; i <= finalEntryIndex; i++) {
+                    String value = "val" + i;
+                    assertTrue(value + " does not exist!", committedValues.contains(value));
+                }
+            }
+        });
+    }
+
     private RaftStateStore createStateStore(RaftEndpoint endpoint, OnDiskRaftStateLoader loader) {
         return new OnDiskRaftStateStore(getDirectory(endpoint), serializationService, loader.maxUncommittedEntries(),
                 loader.logFileStructure());
@@ -835,8 +904,7 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
     private void ensureFlush(RaftNodeImpl... nodes) {
         final CountDownLatch latch = new CountDownLatch(nodes.length);
         for (final RaftNodeImpl node : nodes) {
-            LocalRaftIntegration integration = group.getIntegration(node.getLocalMember());
-            integration.execute(new Runnable() {
+            node.execute(new Runnable() {
                 @Override
                 public void run() {
                     node.state().log().flush();

@@ -18,6 +18,7 @@ import java.io.RandomAccessFile;
 import java.util.Collection;
 
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.writeCollection;
+import static java.lang.Math.max;
 
 public class OnDiskRaftStateStore implements RaftStateStore {
 
@@ -68,7 +69,7 @@ public class OnDiskRaftStateStore implements RaftStateStore {
     public void persistEntry(@Nonnull LogEntry entry) throws IOException {
         if (entry.index() != nextEntryIndex) {
             throw new IllegalArgumentException(String.format(
-                    "Expected entry index %,d, but got %,d", nextEntryIndex, entry.index()));
+                    "Expected entry index %,d, but got %,d (%s)", nextEntryIndex, entry.index(), entry.toString()));
         }
         logEntryRingBuffer.addEntryOffset(logRaf.filePointer());
         logDataOut.writeObject(entry);
@@ -93,6 +94,7 @@ public class OnDiskRaftStateStore implements RaftStateStore {
         logRaf = newRaf;
         logDataOut = newDataOut;
         logEntryRingBuffer.adjustToNewFile(newStartOffset, snapshot.index());
+        nextEntryIndex = max(nextEntryIndex, snapshot.index() + 1);
         if (flushCalledOnCurrFile) {
             danglingFile = currentFile;
             flushCalledOnCurrFile = false;
@@ -159,7 +161,7 @@ public class OnDiskRaftStateStore implements RaftStateStore {
 
     @Nonnull
     private File fileWithIndex(long entryIndex) {
-        File newFile = new File(baseDir, String.format(RAFT_LOG_PREFIX + "%016x", entryIndex));
+        File newFile = new File(baseDir, getRaftLogFileName(entryIndex));
         if (currentFile != null && currentFile.getName().equals(newFile.getName())) {
             throw new IllegalArgumentException("invalid index: " + entryIndex + " for new file!");
         }
@@ -187,6 +189,11 @@ public class OnDiskRaftStateStore implements RaftStateStore {
         BufferedRaf raf = new BufferedRaf(new RandomAccessFile(file, "rw"));
         raf.seek(raf.length());
         return raf;
+    }
+
+    @Nonnull
+    static String getRaftLogFileName(long entryIndex) {
+        return String.format(RAFT_LOG_PREFIX + "%016x", entryIndex);
     }
 
     private interface WriteTask {

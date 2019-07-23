@@ -181,7 +181,7 @@ public class OnDiskRaftStateLoader implements RaftStateLoader {
     }
 
     private Tuple2<Integer, RaftEndpoint> readVoteAndTerm() throws IOException {
-        Tuple2<Integer, RaftEndpoint> result = runRead(TERM_FILENAME, new ReadTask<Integer, RaftEndpoint>() {
+        return runRead(TERM_FILENAME, new ReadTask<Integer, RaftEndpoint>() {
             @Override
             public Tuple2<Integer, RaftEndpoint> readFrom(ObjectDataInput in) throws IOException {
                 int term = in.readInt();
@@ -189,20 +189,17 @@ public class OnDiskRaftStateLoader implements RaftStateLoader {
                 return Tuple2.of(term, votedFor);
             }
         });
-        return result != null ? result : Tuple2.of(0, (RaftEndpoint) null);
     }
 
     private Tuple2<RaftEndpoint, Collection<RaftEndpoint>> readMembers() throws IOException {
-        Tuple2<RaftEndpoint, Collection<RaftEndpoint>> result =
-            runRead(MEMBERS_FILENAME, new ReadTask<RaftEndpoint, Collection<RaftEndpoint>>() {
-                @Override
-                public Tuple2<RaftEndpoint, Collection<RaftEndpoint>> readFrom(ObjectDataInput in) throws IOException {
-                    RaftEndpoint localMember = in.readObject();
-                    Collection<RaftEndpoint> initialMembers = readCollection(in);
-                    return Tuple2.of(localMember, initialMembers);
-                }
-            });
-        return result != null ? result : Tuple2.of((RaftEndpoint) null, emptyEndpoints());
+        return runRead(MEMBERS_FILENAME, new ReadTask<RaftEndpoint, Collection<RaftEndpoint>>() {
+            @Override
+            public Tuple2<RaftEndpoint, Collection<RaftEndpoint>> readFrom(ObjectDataInput in) throws IOException {
+                RaftEndpoint localMember = in.readObject();
+                Collection<RaftEndpoint> initialMembers = readCollection(in);
+                return Tuple2.of(localMember, initialMembers);
+            }
+        });
     }
 
     private <T1, T2> Tuple2<T1, T2> runRead(String filename, ReadTask<T1, T2> task) throws IOException {
@@ -230,7 +227,4 @@ public class OnDiskRaftStateLoader implements RaftStateLoader {
         }
     }
 
-    private static Collection<RaftEndpoint> emptyEndpoints() {
-        return Collections.emptyList();
-    }
 }

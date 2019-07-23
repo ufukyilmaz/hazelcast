@@ -27,37 +27,27 @@ public class CPMemberMetadataStoreImpl implements CPMetadataStore {
 
     static final String CP_METADATA_FILE_NAME = "cp-metadata";
 
-
     private final File dir;
 
     CPMemberMetadataStoreImpl(File dir) {
         this.dir = dir;
     }
 
-    /**
-     * Returns true if this member is marked as AP member on the storage layer.
-     * If {@code false} is returned, it means that AP/CP identity of the member
-     * is not not known yet CP member discovery will run.
-     */
     @Override
     public boolean isMarkedAPMember() {
         File file = new File(dir, CP_METADATA_FILE_NAME);
         return file.exists() && file.length() == 0;
     }
 
-    /**
-     *  Marks this member as AP member on the storage layer.
-     */
     @Override
-    public void markAPMember() throws IOException {
+    public boolean tryMarkAPMember() throws IOException {
         File file = new File(dir, CP_METADATA_FILE_NAME);
-        boolean created = file.createNewFile();
-        assert created;
+        if (file.exists()) {
+            return file.length() == 0;
+        }
+        return file.createNewFile();
     }
 
-    /**
-     * Persists {@link CPMember} identity of the local member to storage.
-     */
     @Override
     public void persistLocalMember(CPMember member) throws IOException {
         File tmp = new File(dir, CP_METADATA_FILE_NAME + ".tmp");
@@ -65,22 +55,20 @@ public class CPMemberMetadataStoreImpl implements CPMetadataStore {
         DataOutputStream out = new DataOutputStream(new BufferedOutputStream(fileOutputStream));
         try {
             writeUUID(out, member.getUuid());
+            Address address = member.getAddress();
+            out.writeUTF(address.getHost());
+            out.writeInt(address.getPort());;
             out.flush();
             fileOutputStream.getFD().sync();
         } finally {
             IOUtil.closeResource(fileOutputStream);
             IOUtil.closeResource(out);
         }
-        IOUtil.rename(tmp, new File(dir, "cp-metadata"));
+        IOUtil.rename(tmp, new File(dir, CP_METADATA_FILE_NAME));
     }
 
-    /**
-     * Reads {@link CPMember} identity of this member from storage.
-     * If {@code null} is returned, it means that AP/CP identity of the member
-     * is not not known yet CP member discovery will run.
-     */
     @Override
-    public CPMember readLocalMember(Address address) throws IOException {
+    public CPMemberInfo readLocalMember() throws IOException {
         File file = new File(dir, CP_METADATA_FILE_NAME);
         if (!file.exists()) {
             return null;
@@ -88,6 +76,7 @@ public class CPMemberMetadataStoreImpl implements CPMetadataStore {
         DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
         try {
             UUID uuid = readUUID(in);
+            Address address = new Address(in.readUTF(), in.readInt());
             return new CPMemberInfo(uuid, address);
         } finally {
             IOUtil.closeResource(in);

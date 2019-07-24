@@ -71,9 +71,16 @@ public class EnterpriseCacheExpirationTest extends CacheExpirationTest {
             M expiryPolicy, T listener) {
         CacheConfig<K, V> cacheConfig = super.createCacheConfig(expiryPolicy, listener).setInMemoryFormat(inMemoryFormat);
         if (inMemoryFormat == NATIVE) {
-            cacheConfig.setEvictionConfig(new EvictionConfig(95, USED_NATIVE_MEMORY_PERCENTAGE, LRU));
+            cacheConfig.setEvictionConfig(createEvictionConfig());
         }
         return cacheConfig;
+    }
+
+    private EvictionConfig createEvictionConfig() {
+        return new EvictionConfig()
+                .setSize(95)
+                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setEvictionPolicy(LRU);
     }
 
     @Override
@@ -81,7 +88,7 @@ public class EnterpriseCacheExpirationTest extends CacheExpirationTest {
         CacheConfig<K, V> cacheConfig = super.createCacheConfig(expiryPolicy);
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         if (inMemoryFormat == NATIVE) {
-            cacheConfig.setEvictionConfig(new EvictionConfig(95, USED_NATIVE_MEMORY_PERCENTAGE, LRU));
+            cacheConfig.setEvictionConfig(createEvictionConfig());
         }
         return cacheConfig;
     }
@@ -91,7 +98,7 @@ public class EnterpriseCacheExpirationTest extends CacheExpirationTest {
         CacheConfig<K, V> cacheConfig = super.createCacheConfig();
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         if (inMemoryFormat == NATIVE) {
-            cacheConfig.setEvictionConfig(new EvictionConfig(95, USED_NATIVE_MEMORY_PERCENTAGE, LRU));
+            cacheConfig.setEvictionConfig(createEvictionConfig());
         }
         return cacheConfig;
     }

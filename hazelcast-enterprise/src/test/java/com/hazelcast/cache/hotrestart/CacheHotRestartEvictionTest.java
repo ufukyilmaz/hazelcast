@@ -124,7 +124,10 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
         HazelcastInstance hz = newHazelcastInstance();
         HazelcastProperties properties = getNode(hz).getProperties();
         int freeNativeMemoryPercentage = properties.getInteger(HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE);
-        EvictionConfig evictionConfig = new EvictionConfig(freeNativeMemoryPercentage / 2, FREE_NATIVE_MEMORY_PERCENTAGE, LRU);
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(freeNativeMemoryPercentage / 2)
+                .setMaximumSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE)
+                .setEvictionPolicy(LRU);
         ICache<Integer, byte[]> cache = createCache(hz, evictionConfig);
         try {
             // config is checked while creating cache record store, so to trigger it we are putting to cache

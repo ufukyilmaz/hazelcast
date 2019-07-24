@@ -27,6 +27,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Collections;
 
+import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE;
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_RECENT;
 
 /**
@@ -44,8 +45,9 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
         CacheConfig cacheConfig = new CacheConfig();
         cacheConfig.setTypes(String.class, Person.class);
         cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        cacheConfig.setEvictionConfig(new EvictionConfig(30,
-                EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE, EvictionPolicy.LFU));
+        cacheConfig.setEvictionConfig(new EvictionConfig().setSize(30)
+                .setMaximumSizePolicy(FREE_NATIVE_MEMORY_SIZE)
+                .setEvictionPolicy(EvictionPolicy.LFU));
         cacheConfig.setWanReplicationRef(new WanReplicationRef("wan-replication",
                 PassThroughCacheMergePolicy.class.getName(),
                 Collections.<String>emptyList(),
@@ -60,7 +62,7 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(16, MemoryUnit.MEGABYTES));
         WanReplicationConfig wanReplicationConfig = new WanReplicationConfig().setName("wan-replication");
         WanPublisherConfig wanPublisherConfig = new WanPublisherConfig().setGroupName("target-cluster")
-                                                                        .setClassName(CountingWanEndpoint.class.getName());
+                .setClassName(CountingWanEndpoint.class.getName());
         WanConsumerConfig wanConsumerConfig = new WanConsumerConfig().setClassName(NoopWanConsumer.class.getName());
         wanPublisherConfig.getProperties().put(WanReplicationProperties.GROUP_PASSWORD.key(), "password");
         wanReplicationConfig.addWanPublisherConfig(wanPublisherConfig);
@@ -68,10 +70,10 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
         config.addWanReplicationConfig(wanReplicationConfig);
 
         config.getHotRestartPersistenceConfig().setEnabled(true)
-              .setBaseDir(hotRestartFolderRule.getBaseDir())
-              .setClusterDataRecoveryPolicy(PARTIAL_RECOVERY_MOST_RECENT)
-              .setDataLoadTimeoutSeconds(10)
-              .setValidationTimeoutSeconds(10);
+                .setBaseDir(hotRestartFolderRule.getBaseDir())
+                .setClusterDataRecoveryPolicy(PARTIAL_RECOVERY_MOST_RECENT)
+                .setDataLoadTimeoutSeconds(10)
+                .setValidationTimeoutSeconds(10);
         return config;
     }
 

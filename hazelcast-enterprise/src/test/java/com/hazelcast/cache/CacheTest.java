@@ -111,8 +111,10 @@ public class CacheTest extends AbstractCacheTest {
             HazelcastServerCachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(hz);
 
             CacheConfig<String, String> cacheConfig = new CacheConfig<String, String>()
-                    .setInMemoryFormat(InMemoryFormat.NATIVE)
-                    .setEvictionConfig(new EvictionConfig(99, USED_NATIVE_MEMORY_PERCENTAGE, EvictionPolicy.LRU));
+                    .setInMemoryFormat(InMemoryFormat.NATIVE).setEvictionConfig(new EvictionConfig()
+                            .setSize(99)
+                            .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                            .setEvictionPolicy(EvictionPolicy.LRU));
 
             // create cache should fail here with an informative exception
             Cache<String, String> cache = getICache(provider.getCacheManager(), cacheConfig, "test");

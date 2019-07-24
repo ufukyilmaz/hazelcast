@@ -24,6 +24,9 @@ import java.util.function.Supplier;
 
 import static com.hazelcast.HDTestSupport.getICache;
 import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
+import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport {
@@ -109,7 +112,7 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
                 // to reduce used native memory size
                 .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
-        if (memoryFormat == InMemoryFormat.NATIVE) {
+        if (memoryFormat == NATIVE) {
             config.getNativeMemoryConfig()
                     .setEnabled(true)
                     .setSize(getNativeMemorySize())
@@ -133,14 +136,21 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
     }
 
     <K, V> ICache<K, V> createCache(HazelcastInstance hz, int backupCount) {
-        EvictionConfig evictionConfig;
-        if (memoryFormat == InMemoryFormat.NATIVE) {
-            int size = evictionEnabled ? 90 : 100;
-            evictionConfig = new EvictionConfig(size, MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE, EvictionPolicy.LRU);
+        int maxSize;
+        MaxSizePolicy maxSizePolicy;
+        if (memoryFormat == NATIVE) {
+            maxSize = evictionEnabled ? 90 : 100;
+            maxSizePolicy = USED_NATIVE_MEMORY_PERCENTAGE;
         } else {
-            int size = evictionEnabled ? keyRange / 2 : Integer.MAX_VALUE;
-            evictionConfig = new EvictionConfig(size, MaxSizePolicy.ENTRY_COUNT, EvictionPolicy.LRU);
+            maxSize = evictionEnabled ? keyRange / 2 : Integer.MAX_VALUE;
+            maxSizePolicy = ENTRY_COUNT;
         }
+
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(maxSize)
+                .setMaximumSizePolicy(maxSizePolicy)
+                .setEvictionPolicy(EvictionPolicy.LRU);
+
         return createCache(hz, backupCount, evictionConfig);
     }
 
@@ -156,8 +166,8 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
         cacheConfig.getHotRestartConfig()
                 .setEnabled(true)
                 .setFsync(fsyncEnabled);
-        if (memoryFormat == InMemoryFormat.NATIVE) {
-            cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+        if (memoryFormat == NATIVE) {
+            cacheConfig.setInMemoryFormat(NATIVE);
         }
 
         CacheManager cacheManager = createCachingProvider(hz).getCacheManager();

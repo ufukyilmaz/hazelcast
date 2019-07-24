@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.cluster.Joiner;
+import com.hazelcast.internal.cluster.Joiner;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;

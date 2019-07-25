@@ -93,8 +93,8 @@ public class HDQueryBounceTerminateTest extends HDQueryBounceTest {
         @Override
         public void readData(ObjectDataInput in) throws IOException {
             super.readData(in);
-            to = in.readObject();
-            from = in.readObject();
+            to = (Integer) in.readObject();
+            from = (Integer) in.readObject();
         }
 
     }

@@ -2,8 +2,6 @@ package com.hazelcast.client.security;
 
 import static com.hazelcast.config.PermissionConfig.PermissionType.MAP;
 import static com.hazelcast.test.HazelcastTestSupport.randomName;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
@@ -111,18 +109,26 @@ public class EntryProcessorOffloadTest {
         @Override
         public void before(Credentials credentials, String objectType, String objectName, String methodName,
                 Parameters parameters) throws AccessControlException {
-            System.out.println("before [credentials=" + credentials + ", objectType=" + objectType + ", objectName="
-                    + objectName + ", methodName=" + methodName + ", parameters="
-                    + stream(parameters.spliterator(), false).map(String::valueOf).collect(joining()) + "]");
+            System.out.println("before " + formatArgs(credentials, objectType, objectName, methodName, parameters));
         }
 
         @Override
         public void after(Credentials credentials, String objectType, String objectName, String methodName,
                 Parameters parameters) {
-            System.out.println("after [credentials=" + credentials + ", objectType=" + objectType + ", objectName=" + objectName
-                    + ", methodName=" + methodName + ", parameters="
-                    + stream(parameters.spliterator(), false).map(String::valueOf).collect(joining()) + "]");
+            System.out.println("after " + formatArgs(credentials, objectType, objectName, methodName, parameters));
         }
 
+        private String formatArgs(Credentials credentials, String objectType, String objectName, String methodName,
+                Parameters parameters) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("[credentials=").append(credentials).append(", objectType=").append(objectType)
+                    .append(", objectName=").append(objectName).append(", methodName=").append(methodName)
+                    .append(", parameters=[");
+            for (Object param: parameters) {
+                builder.append(param).append(", ");
+            }
+            builder.append("]]");
+            return builder.toString();
+        }
     }
 }

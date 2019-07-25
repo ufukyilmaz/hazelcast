@@ -5,7 +5,6 @@
     <modules>
         <module>hazelcast-enterprise-native-memory</module>
         <module>hazelcast-enterprise</module>
-        <module>hazelcast-enterprise-client</module>
         <module>hazelcast-enterprise-hotrestart</module>
         <module>hazelcast-enterprise-all</module>
     </modules>

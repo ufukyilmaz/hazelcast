@@ -325,5 +325,11 @@
             <version>2.12.2</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>net.sourceforge.pro-grade</groupId>
+            <artifactId>pro-grade</artifactId>
+            <version>1.1.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

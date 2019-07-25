@@ -46,7 +46,7 @@ public class EnterpriseDataSerializableConventionsTest extends DataSerializableC
         for (String className : WHITELISTED_CLASS_NAMES) {
             addToWhiteList(classes, className);
         }
-        if (JavaVersion.isAtLeast(JavaVersion.JAVA_1_8)) {
+        if (JavaVersion.isAtLeast(JavaVersion.JAVA_8)) {
             // only resolve those classes when tests are executed with Java 8 or later
             for (String className : WHITELISTED_JDK8_CLASS_NAMES) {
                 addToWhiteList(classes, className);

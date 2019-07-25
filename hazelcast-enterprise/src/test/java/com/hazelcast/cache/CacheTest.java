@@ -4,7 +4,6 @@ import com.hazelcast.cache.hidensity.operation.CacheContainsKeyOperation;
 import com.hazelcast.cache.hidensity.operation.CacheEntryProcessorOperation;
 import com.hazelcast.cache.hidensity.operation.CacheGetAndRemoveOperation;
 import com.hazelcast.cache.hidensity.operation.CacheGetAndReplaceOperation;
-import com.hazelcast.cache.hidensity.operation.CacheKeyIteratorOperation;
 import com.hazelcast.cache.hidensity.operation.CacheLoadAllOperationFactory;
 import com.hazelcast.cache.hidensity.operation.CachePutIfAbsentOperation;
 import com.hazelcast.cache.hidensity.operation.CacheReplaceOperation;
@@ -29,7 +28,6 @@ import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.nearcache.impl.invalidation.Invalidation;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -130,7 +128,7 @@ public class CacheTest extends AbstractCacheTest {
     }
 
     @Test
-    public void testPutGetRemoveReplace() throws InterruptedException, ExecutionException {
+    public void testPutGetRemoveReplace() {
         ICache<String, String> cache = createCache();
 
         cache.put("key1", "value1");
@@ -175,12 +173,7 @@ public class CacheTest extends AbstractCacheTest {
         assertEquals("value1", f.get());
 
         cache.putAsync(key, "value2");
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertEquals("value2", cache.get(key));
-            }
-        });
+        assertTrueEventually(() -> assertEquals("value2", cache.get(key)));
 
         f = cache.getAndPutAsync(key, "value3");
         assertEquals("value2", f.get());
@@ -201,26 +194,20 @@ public class CacheTest extends AbstractCacheTest {
     @Test
     public void testExpiration() {
         CacheConfig<Integer, String> config = createCacheConfig(CACHE_NAME);
-        final SimpleExpiryListener<Integer, String> listener = new SimpleExpiryListener<Integer, String>();
+        final SimpleExpiryListener<Integer, String> listener = new SimpleExpiryListener<>();
         MutableCacheEntryListenerConfiguration<Integer, String> listenerConfiguration =
-                new MutableCacheEntryListenerConfiguration<Integer, String>(
+                new MutableCacheEntryListenerConfiguration<>(
                         FactoryBuilder.factoryOf(listener), null, true, true);
 
         config.addCacheEntryListenerConfiguration(listenerConfiguration);
         config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new HazelcastExpiryPolicy(100, 100, 100)));
 
-        Cache<Integer, String> instanceCache = createCache(config);
+        ICache<Integer, String> instanceCache = createCache(config);
 
         instanceCache.put(1, "value");
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run()
-                    throws Exception {
-                assertEquals(1, listener.expired.get());
-            }
-        });
-        assertEquals(0, ((ICache<Integer, String>) instanceCache).size());
+        assertTrueEventually(() -> assertEquals(1, listener.expired.get()));
+        assertEquals(0, instanceCache.size());
     }
 
     @Test
@@ -270,7 +257,7 @@ public class CacheTest extends AbstractCacheTest {
 
         Duration generalDuration = new Duration(TimeUnit.DAYS, 1);
         Duration modifiedDuration = new Duration(TimeUnit.MILLISECONDS, UPDATED_TTL);
-        CacheConfig<Integer, String> cacheConfig = new CacheConfig<Integer, String>();
+        CacheConfig<Integer, String> cacheConfig = new CacheConfig<>();
         cacheConfig.setExpiryPolicyFactory(TouchedExpiryPolicy.factoryOf(generalDuration));
 
         ICache<Integer, String> cache = createCache(cacheConfig);
@@ -342,43 +329,28 @@ public class CacheTest extends AbstractCacheTest {
 
         final AtomicInteger counter = new AtomicInteger(0);
 
-        registerInvalidationListener(new CacheEventListener() {
-            @Override
-            public void handleEvent(Object eventObject) {
-                if (eventObject instanceof Invalidation) {
-                    Invalidation event = (Invalidation) eventObject;
-                    if (null == event.getKey() && cache.getPrefixedName().equals(event.getName())) {
-                        counter.incrementAndGet();
-                    }
+        registerInvalidationListener(eventObject -> {
+            if (eventObject instanceof Invalidation) {
+                Invalidation event = (Invalidation) eventObject;
+                if (null == event.getKey() && cache.getPrefixedName().equals(event.getName())) {
+                    counter.incrementAndGet();
                 }
             }
         }, cache.getPrefixedName());
 
         cache.clear();
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run()
-                    throws Exception {
-                assertEquals(1, counter.get());
-            }
-        }, 2);
+        assertTrueEventually(() -> assertEquals(1, counter.get()), 2);
 
         // Make sure that the callback is not called for a while
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run()
-                    throws Exception {
-                assertTrue(counter.get() <= 1);
-            }
-        }, 3);
+        assertTrueAllTheTime(() -> assertTrue(counter.get() <= 1), 3);
     }
 
     protected Map<String, String> createAndFillEntries() {
         final int ENTRY_COUNT_PER_PARTITION = 3;
         Node node = getNode(instance);
         int partitionCount = node.getPartitionService().getPartitionCount();
-        Map<String, String> entries = new HashMap<String, String>(partitionCount * ENTRY_COUNT_PER_PARTITION);
+        Map<String, String> entries = new HashMap<>(partitionCount * ENTRY_COUNT_PER_PARTITION);
 
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             for (int i = 0; i < ENTRY_COUNT_PER_PARTITION; i++) {
@@ -407,44 +379,24 @@ public class CacheTest extends AbstractCacheTest {
         final String key = "key";
         cache.put(key, "value1", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertNull(cache.get(key));
-            }
-        });
+        assertTrueEventually(() -> assertNull(cache.get(key)));
         assertEquals(0, cache.size());
 
         cache.putAsync(key, "value1", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertNull(cache.get(key));
-            }
-        });
+        assertTrueEventually(() -> assertNull(cache.get(key)));
         assertEquals(0, cache.size());
 
         cache.put(key, "value2");
         Object o = cache.getAndPut(key, "value3", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
         assertEquals("value2", o);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertNull(cache.get(key));
-            }
-        });
+        assertTrueEventually(() -> assertNull(cache.get(key)));
         assertEquals(0, cache.size());
 
         cache.put(key, "value4");
         Future f = cache.getAndPutAsync(key, "value5", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
         assertEquals("value4", f.get());
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertNull(cache.get(key));
-            }
-        });
+        assertTrueEventually(() -> assertNull(cache.get(key)));
         assertEquals(0, cache.size());
     }
 
@@ -516,20 +468,17 @@ public class CacheTest extends AbstractCacheTest {
             cache.put(i, i);
         }
 
-        final Thread thread = new Thread() {
-            @Override
-            public void run() {
-                Random rand = new Random();
-                while (!stop.get()) {
-                    int i = rand.nextInt();
-                    try {
-                        cache.put(i, i);
-                        LockSupport.parkNanos(1);
-                    } catch (Throwable ignored) {
-                    }
+        final Thread thread = new Thread(() -> {
+            Random rand = new Random();
+            while (!stop.get()) {
+                int i = rand.nextInt();
+                try {
+                    cache.put(i, i);
+                    LockSupport.parkNanos(1);
+                } catch (Throwable ignored) {
                 }
             }
-        };
+        });
         thread.start();
 
         // Give chance to thread for starting
@@ -562,20 +511,17 @@ public class CacheTest extends AbstractCacheTest {
             cache.put(i, i);
         }
 
-        final Thread thread = new Thread() {
-            @Override
-            public void run() {
-                Random rand = new Random();
-                while (!stop.get()) {
-                    int i = rand.nextInt(size);
-                    try {
-                        cache.put(i, -i);
-                        LockSupport.parkNanos(1);
-                    } catch (Throwable ignored) {
-                    }
+        final Thread thread = new Thread(() -> {
+            Random rand = new Random();
+            while (!stop.get()) {
+                int i = rand.nextInt(size);
+                try {
+                    cache.put(i, -i);
+                    LockSupport.parkNanos(1);
+                } catch (Throwable ignored) {
                 }
             }
-        };
+        });
         thread.start();
 
         // Give chance to thread for starting
@@ -608,20 +554,17 @@ public class CacheTest extends AbstractCacheTest {
             cache.put(i, i);
         }
 
-        final Thread thread = new Thread() {
-            @Override
-            public void run() {
-                Random rand = new Random();
-                while (!stop.get()) {
-                    int i = rand.nextInt(size);
-                    try {
-                        cache.remove(i);
-                        LockSupport.parkNanos(1);
-                    } catch (Throwable ignored) {
-                    }
+        final Thread thread = new Thread(() -> {
+            Random rand = new Random();
+            while (!stop.get()) {
+                int i = rand.nextInt(size);
+                try {
+                    cache.remove(i);
+                    LockSupport.parkNanos(1);
+                } catch (Throwable ignored) {
                 }
             }
-        };
+        });
         thread.start();
 
         // Give chance to thread for starting
@@ -663,7 +606,7 @@ public class CacheTest extends AbstractCacheTest {
 
         ICache<String, Integer> cache = getICache(cacheManager, configuration, "test");
 
-        Map<String, Integer> map = new HashMap<String, Integer>();
+        Map<String, Integer> map = new HashMap<>();
         for (int i = 0; i < 10; i++) {
             map.put(String.valueOf(i), i);
         }
@@ -686,7 +629,7 @@ public class CacheTest extends AbstractCacheTest {
 
                 @Override
                 public Map<String, Integer> loadAll(Iterable<? extends String> keys) throws CacheLoaderException {
-                    Map<String, Integer> map = new HashMap<String, Integer>();
+                    Map<String, Integer> map = new HashMap<>();
                     for (String key : keys) {
                         map.put(key, load(key));
                     }
@@ -699,7 +642,7 @@ public class CacheTest extends AbstractCacheTest {
     private static class MyCompletionListener implements CompletionListener {
 
         final CountDownLatch done = new CountDownLatch(1);
-        final AtomicReference<Exception> error = new AtomicReference<Exception>();
+        final AtomicReference<Exception> error = new AtomicReference<>();
 
         @Override
         public void onCompletion() {
@@ -715,7 +658,7 @@ public class CacheTest extends AbstractCacheTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testHiDensityCacheDataSerializerHook() throws Exception {
+    public void testHiDensityCacheDataSerializerHook() {
         HiDensityCacheDataSerializerHook hook = new HiDensityCacheDataSerializerHook();
         DataSerializableFactory factory = hook.createFactory();
 
@@ -733,8 +676,6 @@ public class CacheTest extends AbstractCacheTest {
                 instanceof CacheSizeOperation);
         assertTrue(factory.create(HiDensityCacheDataSerializerHook.SIZE_FACTORY)
                 instanceof CacheSizeOperationFactory);
-        assertTrue(factory.create(HiDensityCacheDataSerializerHook.ITERATE)
-                instanceof CacheKeyIteratorOperation);
         assertTrue(factory.create(HiDensityCacheDataSerializerHook.ITERATION_RESULT)
                 instanceof CacheKeyIterationResult);
         assertTrue(factory.create(HiDensityCacheDataSerializerHook.LOAD_ALL_FACTORY)

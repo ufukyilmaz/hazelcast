@@ -10,6 +10,7 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
+import com.hazelcast.security.SecureCallableImpl;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -19,7 +20,10 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.net.URL;
 import java.security.AccessControlException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +50,8 @@ public class MissingPermissionsCallTest extends HazelcastTestSupport {
     private static final String DURABLE_EXEC_NAME = "ExecKungfu";
     private static final String PERMISSION_PRINCIPAL = "dev";
     private static final String PERMISSION_NAME = "*";
+    private String mappingsFilePath;
+    private Config config;
 
     @Parameterized.Parameters(name = "policy:{0}")
     public static Collection<Boolean> parameters() {
@@ -63,7 +69,7 @@ public class MissingPermissionsCallTest extends HazelcastTestSupport {
 
     @Before
     public void setup() {
-        Config config = new Config();
+        config = new Config();
 
         SecurityConfig sc = new SecurityConfig();
         sc.setEnabled(true);
@@ -79,17 +85,24 @@ public class MissingPermissionsCallTest extends HazelcastTestSupport {
         sc.addClientPermissionConfig(atomicLongPermission);
         config.setSecurityConfig(sc);
 
-        factory.newHazelcastInstance(config);
-        client = factory.newHazelcastClient();
     }
 
     @After
     public void tearDown() {
         factory.terminateAll();
+        if (mappingsFilePath != null) {
+            File file = new File(mappingsFilePath);
+            file.delete();
+        }
     }
 
     @Test
-    public void verifyCorrectAccessRights_whenRunWithinExecutor_whenDenyAccessIsDefined() {
+    public void verifyCorrectAccessRights_whenRunWithinExecutor_whenDenyAccessIsDefined() throws Exception {
+        createPermissionMappingFileOnClasspath();
+
+        factory.newHazelcastInstance(config);
+        client = factory.newHazelcastClient();
+
         final CountDownLatch lock = new CountDownLatch(1);
 
         DurableExecutorService executor = client.getDurableExecutorService(DURABLE_EXEC_NAME);
@@ -119,6 +132,18 @@ public class MissingPermissionsCallTest extends HazelcastTestSupport {
         } else {
             assertEquals(2L, (long) response);
         }
+    }
+
+    private void createPermissionMappingFileOnClasspath() throws Exception {
+        URL classPathUrl = SecureCallableImpl.class.getClassLoader().getResource(".");
+        mappingsFilePath = classPathUrl.getFile() + "/permission-mapping.properties";
+        File file = new File(mappingsFilePath);
+        PrintWriter writer = new PrintWriter(file, "UTF-8");
+
+        writer.println(""
+                + "#MissingPermissionsCallTest.java\n"
+                + "atomicLong.get                       = read\n");
+        writer.close();
     }
 
     static class SampleTask implements Callable<Long>, Serializable, HazelcastInstanceAware {

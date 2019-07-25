@@ -1,5 +1,17 @@
 package com.hazelcast.test.modulepath;
 
+import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.instance.impl.HazelcastInstanceFactory;
+import org.junit.After;
+import org.junit.Test;
+
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import static com.hazelcast.test.modulepath.EnterpriseTestUtils.assertClusterSize;
 import static com.hazelcast.test.modulepath.EnterpriseTestUtils.createConfigWithTcpJoin;
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -8,19 +20,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.junit.After;
-import org.junit.Test;
-
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.config.Config;
-import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 
 /**
  * Basic test which checks if correct Hazelcast modules are on the modulepath. It also checks that Hazelcast members and clients
@@ -43,12 +42,8 @@ public class SmokeEnterpriseModulePathTest {
         assertNotNull("Module path was expected", modulePath);
         assertTrue("Module path should contain hazelcast-enterprise JAR",
                 modulePath.matches(".*hazelcast-enterprise-[1-9][\\p{Alnum}\\-_\\.]+\\.jar.*"));
-        assertTrue("Module path should contain hazelcast-enterprise-client JAR",
-                modulePath.matches(".*hazelcast-enterprise-client-[\\p{Alnum}\\-_\\.]+\\.jar.*"));
         assertFalse("Module path must not contain hazelcast (OS) JAR",
                 modulePath.matches(".*hazelcast-[0-9][\\p{Alnum}\\-_\\.]+\\.jar.*"));
-        assertFalse("Module path must not contain hazelcast-client (OS) JAR",
-                modulePath.matches(".*hazelcast-client-[\\p{Alnum}\\-_\\.]+\\.jar.*"));
     }
 
     /**
@@ -58,7 +53,7 @@ public class SmokeEnterpriseModulePathTest {
     public void testModuleNames() {
         Set<String> hazelcastModuleNames = ModuleLayer.boot().modules().stream().map(Module::getName)
                 .filter(s -> s.contains("hazelcast")).collect(Collectors.toSet());
-        assertThat(hazelcastModuleNames, hasItems("com.hazelcast.core", "com.hazelcast.client", "com.hazelcast.tests"));
+        assertThat(hazelcastModuleNames, hasItems("com.hazelcast.core", "com.hazelcast.tests"));
     }
 
     /**

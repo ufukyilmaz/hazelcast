@@ -3,13 +3,13 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.serialization.PortableHook;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -38,11 +38,6 @@ public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTe
               .setInMemoryFormat(getMemoryFormat());
 
         return config;
-    }
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
     }
 
     @Override

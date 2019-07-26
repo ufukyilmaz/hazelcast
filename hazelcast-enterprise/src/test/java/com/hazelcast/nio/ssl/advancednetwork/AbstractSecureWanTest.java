@@ -8,7 +8,7 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
@@ -16,13 +16,13 @@ import com.hazelcast.map.IMap;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ssl.TestKeyStoreUtil;
-import java.io.File;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Callable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.io.File;
+import java.util.Properties;
+import java.util.concurrent.Callable;
 
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
@@ -109,12 +109,12 @@ public abstract class AbstractSecureWanTest {
     }
 
     protected void testSuccessfulReplication(HazelcastInstance replicateFrom, final HazelcastInstance replicateTo1,
-            final HazelcastInstance replicateTo2, String replicatedMap) {
+                                             final HazelcastInstance replicateTo2, String replicatedMap) {
         testSuccessfulReplication(replicateFrom, replicateTo1, replicateTo2, replicatedMap, replicatedMap);
     }
 
     protected void testSuccessfulReplication(HazelcastInstance replicateFrom, final HazelcastInstance replicateTo1,
-            final HazelcastInstance replicateTo2, final String replicatedMapName1, final String replicatedMapName2) {
+                                             final HazelcastInstance replicateTo2, final String replicatedMapName1, final String replicatedMapName2) {
         IMap<String, String> replicatedMap = replicateFrom.getMap(replicatedMapName1);
         replicatedMap.put("someKeyIn" + replicatedMapName1, "someValueIn" + replicatedMapName1);
         if (!replicatedMapName1.equals(replicatedMapName2)) {
@@ -153,7 +153,7 @@ public abstract class AbstractSecureWanTest {
         join.getTcpIpConfig().setEnabled(true);
         join.getMulticastConfig().setEnabled(false);
         config.getAdvancedNetworkConfig().setEnabled(true)
-                .setMemberEndpointConfig(createMemberSocketConfig(memberPort));
+              .setMemberEndpointConfig(createMemberSocketConfig(memberPort));
         return config;
     }
 
@@ -186,7 +186,7 @@ public abstract class AbstractSecureWanTest {
     }
 
     protected Properties prepareSslProperties(File keystore, String keystorePassword, File truststore,
-            String truststorePassword) {
+                                              String truststorePassword) {
         Properties props = new Properties();
         props.setProperty(JAVAX_NET_SSL_KEY_STORE, keystore.getAbsolutePath());
         props.setProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD, keystorePassword);
@@ -197,15 +197,15 @@ public abstract class AbstractSecureWanTest {
     }
 
     protected static void addCommonWanReplication(Config config, String mapName, String groupName, int port,
-            String endpointName) {
+                                                  String endpointName) {
         WanReplicationConfig wrConfig = new WanReplicationConfig();
         wrConfig.setName("wan-cluster-for-" + mapName);
-        WanPublisherConfig londonPublisherConfig = createWanPublisherConfig(
+        WanBatchReplicationPublisherConfig londonPublisherConfig = createWanPublisherConfig(
                 groupName,
                 "127.0.0.1:" + port,
                 endpointName
         );
-        wrConfig.addWanPublisherConfig(londonPublisherConfig);
+        wrConfig.addWanBatchReplicationPublisherConfig(londonPublisherConfig);
 
         config.addWanReplicationConfig(wrConfig);
 
@@ -217,23 +217,20 @@ public abstract class AbstractSecureWanTest {
         config.getMapConfig(mapName).setWanReplicationRef(wanRef);
     }
 
-    private static WanPublisherConfig createWanPublisherConfig(String clusterName, String endpoints, String endpointName) {
-        WanPublisherConfig publisherConfig = new WanPublisherConfig();
-        publisherConfig.setEndpoint(endpointName);
-        publisherConfig.setGroupName(clusterName);
-        publisherConfig.setClassName("com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication");
-        publisherConfig.setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION);
-        publisherConfig.setQueueCapacity(1000);
-        publisherConfig.getWanSyncConfig().setConsistencyCheckStrategy(ConsistencyCheckStrategy.NONE);
-        Map<String, Comparable> props = publisherConfig.getProperties();
-        props.put("batch.size", 500);
-        props.put("batch.max.delay.millis", 1000);
-        props.put("snapshot.enabled", false);
-        props.put("response.timeout.millis", 60000);
-        props.put("ack.type", WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE.toString());
-        props.put("endpoints", endpoints);
-        props.put("discovery.period", "20");
-        props.put("executorThreadCount", "2");
-        return publisherConfig;
+    private static WanBatchReplicationPublisherConfig createWanPublisherConfig(String clusterName, String endpoints, String endpointName) {
+        WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
+        c.setEndpoint(endpointName)
+         .setGroupName(clusterName)
+         .setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION)
+         .setQueueCapacity(1000)
+         .setBatchSize(500)
+         .setBatchMaxDelayMillis(1000)
+         .setSnapshotEnabled(false)
+         .setResponseTimeoutMillis(60000)
+         .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
+         .setTargetEndpoints(endpoints)
+         .setDiscoveryPeriodSeconds(20)
+         .getWanSyncConfig().setConsistencyCheckStrategy(ConsistencyCheckStrategy.NONE);
+        return c;
     }
 }

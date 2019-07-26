@@ -4,7 +4,6 @@ import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.cache.filter.DummyCacheWanFilter;
@@ -105,11 +104,6 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
     public void cache_wan_events_should_be_processed_in_order() {
         assumeTrue("maxConcurrentInvocations higher than 1 does not guarantee ordering", maxConcurrentInvocations < 2);
         super.cache_wan_events_should_be_processed_in_order();
-    }
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
     }
 
     @Override

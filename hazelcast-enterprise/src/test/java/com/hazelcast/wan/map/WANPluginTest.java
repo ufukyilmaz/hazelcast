@@ -2,11 +2,10 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.diagnostics.DiagnosticsLogWriterImpl;
 import com.hazelcast.internal.diagnostics.WANPlugin;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -128,11 +127,6 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
 
     private String getContent() {
         return out.toString();
-    }
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
     }
 
     @Override

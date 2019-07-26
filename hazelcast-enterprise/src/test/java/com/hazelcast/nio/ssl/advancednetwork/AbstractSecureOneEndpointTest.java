@@ -8,26 +8,26 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
-import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Callable;
 import net.spy.memcached.ConnectionFactory;
 import net.spy.memcached.ConnectionFactoryBuilder;
 import net.spy.memcached.FailureMode;
 import net.spy.memcached.MemcachedClient;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.concurrent.Callable;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertEqualsEventually;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
@@ -111,11 +111,11 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
     private Config createCompleteMultiSocketConfigWithSecurity() {
         Config config = smallInstanceConfig();
         config.getAdvancedNetworkConfig().setEnabled(true)
-                .setMemberEndpointConfig(createServerSocketConfig(MEMBER_PORT, prepareMemberEndpointSsl()))
-                .setClientEndpointConfig(createServerSocketConfig(CLIENT_PORT, prepareClientEndpointSsl()))
-                .addWanEndpointConfig(createServerSocketConfig(WAN_PORT, "WAN", prepareWanEndpointSsl()))
-                .setRestEndpointConfig(createRestServerSocketConfig(REST_PORT, "REST", prepareRestEndpointSsl()))
-                .setMemcacheEndpointConfig(createServerSocketConfig(MEMCACHE_PORT, prepareMemcacheEndpointSsl()));
+              .setMemberEndpointConfig(createServerSocketConfig(MEMBER_PORT, prepareMemberEndpointSsl()))
+              .setClientEndpointConfig(createServerSocketConfig(CLIENT_PORT, prepareClientEndpointSsl()))
+              .addWanEndpointConfig(createServerSocketConfig(WAN_PORT, "WAN", prepareWanEndpointSsl()))
+              .setRestEndpointConfig(createRestServerSocketConfig(REST_PORT, "REST", prepareRestEndpointSsl()))
+              .setMemcacheEndpointConfig(createServerSocketConfig(MEMCACHE_PORT, prepareMemcacheEndpointSsl()));
         return config;
     }
 
@@ -173,8 +173,8 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
     protected Config prepareWanAdvancedNetworkConfig(int port, Properties sslProperties) {
         Config config = smallInstanceConfig();
         config.getAdvancedNetworkConfig()
-                .setEnabled(true)
-                .addWanEndpointConfig(createServerSocketConfig(WAN_PORT + 10, "WAN", sslProperties));
+              .setEnabled(true)
+              .addWanEndpointConfig(createServerSocketConfig(WAN_PORT + 10, "WAN", sslProperties));
         addCommonWanReplication(config, port);
         config.getGroupConfig().setName("not-dev-cluster");
         return config;
@@ -183,12 +183,12 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
     private static void addCommonWanReplication(Config config, int port) {
         WanReplicationConfig wrConfig = new WanReplicationConfig();
         wrConfig.setName("my-wan-cluster");
-        WanPublisherConfig londonPublisherConfig = createWanPublisherConfig(
+        WanBatchReplicationPublisherConfig londonPublisherConfig = createWanPublisherConfig(
                 "dev",
                 "127.0.0.1:" + port,
                 ConsistencyCheckStrategy.NONE
         );
-        wrConfig.addWanPublisherConfig(londonPublisherConfig);
+        wrConfig.addWanBatchReplicationPublisherConfig(londonPublisherConfig);
 
         config.addWanReplicationConfig(wrConfig);
 
@@ -200,25 +200,23 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
         config.getMapConfig(REPLICATED_MAP).setWanReplicationRef(wanRef);
     }
 
-    private static WanPublisherConfig createWanPublisherConfig(String clusterName, String endpoints,
-            ConsistencyCheckStrategy consistencyStrategy) {
-        WanPublisherConfig publisherConfig = new WanPublisherConfig();
-        publisherConfig.setEndpoint("WAN");
-        publisherConfig.setGroupName(clusterName);
-        publisherConfig.setClassName("com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication");
-        publisherConfig.setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION);
-        publisherConfig.setQueueCapacity(1000);
-        publisherConfig.getWanSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);
-        Map<String, Comparable> props = publisherConfig.getProperties();
-        props.put("batch.size", 500);
-        props.put("batch.max.delay.millis", 1000);
-        props.put("snapshot.enabled", false);
-        props.put("response.timeout.millis", 60000);
-        props.put("ack.type", WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE.toString());
-        props.put("endpoints", endpoints);
-        props.put("discovery.period", "20");
-        props.put("executorThreadCount", "2");
-        return publisherConfig;
+    private static WanBatchReplicationPublisherConfig createWanPublisherConfig(String clusterName,
+                                                                               String endpoints,
+                                                                               ConsistencyCheckStrategy consistencyStrategy) {
+        WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
+        c.setEndpoint("WAN")
+         .setGroupName(clusterName)
+         .setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION)
+         .setQueueCapacity(1000)
+         .setBatchSize(500)
+         .setBatchMaxDelayMillis(1000)
+         .setSnapshotEnabled(false)
+         .setResponseTimeoutMillis(60000)
+         .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
+         .setTargetEndpoints(endpoints)
+         .setDiscoveryPeriodSeconds(20)
+         .getWanSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);
+        return c;
     }
 
     private MemcachedClient getMemcachedClient(HazelcastInstance instance, int port) throws Exception {

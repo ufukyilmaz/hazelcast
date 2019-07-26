@@ -2,9 +2,7 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanConsumerConfig;
-import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -21,17 +19,16 @@ import org.junit.runner.RunWith;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class MapCustomWanReplicationQuickTest extends MapWanReplicationTestSupport {
 
-    private static final String CUSTOM_PUBLISHER = CustomWanPublisher.class.getName();
-    private static final String CUSTOM_CONSUMER = CustomWanConsumer.class.getName();
+    private static final Class<?> CUSTOM_PUBLISHER = CustomWanPublisher.class;
+    private static final Class<?> CUSTOM_CONSUMER = CustomWanConsumer.class;
 
     private HazelcastInstance[] sourceCluster = new HazelcastInstance[2];
     private HazelcastInstance[] targetCluster = new HazelcastInstance[2];
 
     @Test
     public void testCustomWanReplication() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
-        initializePublisherConfig(wanConfig);
+        setupReplicateFrom(configA, "customPublisherId",
+                CUSTOM_PUBLISHER, "atob", PassThroughMergePolicy.class.getName(), null);
         initCluster(sourceCluster, configA);
 
         initializeConsumerConfig(configB);
@@ -47,23 +44,9 @@ public class MapCustomWanReplicationQuickTest extends MapWanReplicationTestSuppo
         wanReplicationConfig.setName("b");
 
         WanConsumerConfig consumerConfig = new WanConsumerConfig();
-        consumerConfig.setClassName(CUSTOM_CONSUMER);
+        consumerConfig.setClassName(CUSTOM_CONSUMER.getName());
         wanReplicationConfig.setWanConsumerConfig(consumerConfig);
         config.addWanReplicationConfig(wanReplicationConfig);
-    }
-
-    private void initializePublisherConfig(WanReplicationConfig wanReplicationConfig) {
-        WanPublisherConfig publisherConfig = new WanPublisherConfig();
-        publisherConfig.setGroupName("targetGroup");
-        publisherConfig.setClassName(CUSTOM_PUBLISHER);
-        publisherConfig.setQueueCapacity(10000);
-        publisherConfig.setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION);
-        wanReplicationConfig.addWanPublisherConfig(publisherConfig);
-    }
-
-    @Override
-    public String getReplicationImpl() {
-        return CUSTOM_PUBLISHER;
     }
 
     @Override

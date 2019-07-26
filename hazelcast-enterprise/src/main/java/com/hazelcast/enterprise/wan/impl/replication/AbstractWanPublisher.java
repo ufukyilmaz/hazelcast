@@ -3,8 +3,9 @@ package com.hazelcast.enterprise.wan.impl.replication;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.wan.CacheReplicationObject;
+import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.WANQueueFullBehavior;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
@@ -49,6 +50,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService.getPublisherIdOrGroupName;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.MapUtil.isNullOrEmpty;
 import static java.util.Collections.unmodifiableMap;
@@ -87,11 +89,12 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
 
     @Override
-    public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
+    public void init(Node node, WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig config) {
+        WanBatchReplicationPublisherConfig publisherConfig = (WanBatchReplicationPublisherConfig) config;
         this.configurationContext = new WanConfigurationContext(publisherConfig);
         this.node = node;
         this.wanReplicationName = wanReplicationConfig.getName();
-        this.wanPublisherId = EnterpriseWanReplicationService.getPublisherIdOrGroupName(publisherConfig);
+        this.wanPublisherId = getPublisherIdOrGroupName(publisherConfig);
         this.logger = node.getLogger(getClass());
         this.queueCapacity = publisherConfig.getQueueCapacity();
         this.localGroupName = node.getNodeEngine().getConfig().getGroupConfig().getName();

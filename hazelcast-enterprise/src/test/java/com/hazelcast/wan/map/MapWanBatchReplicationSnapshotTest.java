@@ -1,9 +1,8 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.test.AssertTask;
@@ -23,11 +22,6 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
 
     @Rule
     public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
-    }
 
     @Override
     public InMemoryFormat getMemoryFormat() {
@@ -90,8 +84,8 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         assertDataSizeEventually(clusterB, mapName, 0);
         assertDataSizeEventually(clusterC, mapName, 0);
 
-        assertWanQueueSizesEventually(clusterA, replicaName, configB.getGroupConfig().getName(),  0);
-        assertWanQueueSizesEventually(clusterA, replicaName, configC.getGroupConfig().getName(),  0);
+        assertWanQueueSizesEventually(clusterA, replicaName, configB.getGroupConfig().getName(), 0);
+        assertWanQueueSizesEventually(clusterA, replicaName, configC.getGroupConfig().getName(), 0);
     }
 
     @Test
@@ -126,8 +120,8 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         // cluster should still should have the keys mapped to 'dummy' as we have the Put-If-Absent policy
         assertKeyRangeMappedToValueAllTheTime("dummy", 0, 200, mapC, 10);
 
-        assertWanQueueSizesEventually(clusterA, atocReplicationName, configC.getGroupConfig().getName(),  0);
-        assertWanQueueSizesEventually(clusterB, btocReplicationName, configC.getGroupConfig().getName(),  0);
+        assertWanQueueSizesEventually(clusterA, atocReplicationName, configC.getGroupConfig().getName(), 0);
+        assertWanQueueSizesEventually(clusterB, btocReplicationName, configC.getGroupConfig().getName(), 0);
     }
 
     private static <V> void assertKeyRangeMappedToValue(V expectedValue, int rangeFromInclusive, int rangeToExclusive,

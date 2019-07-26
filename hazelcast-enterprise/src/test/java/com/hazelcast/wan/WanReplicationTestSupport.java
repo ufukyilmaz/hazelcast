@@ -6,7 +6,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -14,7 +14,6 @@ import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
-import com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.MemorySize;
@@ -74,8 +73,6 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     protected void givenSizeOfClusterB(int sizeOfCluster) {
         clusterB = new HazelcastInstance[sizeOfCluster];
     }
-
-    public abstract String getReplicationImpl();
 
     public abstract InMemoryFormat getMemoryFormat();
 
@@ -150,22 +147,20 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         return ends.toString();
     }
 
-    protected WanPublisherConfig targetCluster(Config config, int count) {
+    protected WanBatchReplicationPublisherConfig targetCluster(Config config, int count) {
         return targetCluster(config, count, ConsistencyCheckStrategy.NONE);
     }
 
-    protected WanPublisherConfig targetCluster(Config config, int count, ConsistencyCheckStrategy consistencyCheckStrategy) {
-        WanPublisherConfig target = new WanPublisherConfig();
-        target.setGroupName(config.getGroupConfig().getName());
-        target.setClassName(getReplicationImpl());
-        Map<String, Comparable> props = target.getProperties();
-        props.put(WanReplicationProperties.GROUP_PASSWORD.key(), config.getGroupConfig().getPassword());
-        props.put(WanReplicationProperties.ENDPOINTS.key(), (getClusterEndPoints(config, count)));
-        props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
-        props.put(WanReplicationProperties.SNAPSHOT_ENABLED.key(), isSnapshotEnabled());
-        props.put(WanReplicationProperties.BATCH_MAX_DELAY_MILLIS.key(), "10");
-        props.put(WanReplicationProperties.MAX_CONCURRENT_INVOCATIONS.key(), getMaxConcurrentInvocations());
-
+    protected WanBatchReplicationPublisherConfig targetCluster(Config config,
+                                                               int count,
+                                                               ConsistencyCheckStrategy consistencyCheckStrategy) {
+        WanBatchReplicationPublisherConfig target = new WanBatchReplicationPublisherConfig()
+                .setGroupName(config.getGroupConfig().getName())
+                .setTargetEndpoints(getClusterEndPoints(config, count))
+                .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
+                .setSnapshotEnabled(isSnapshotEnabled())
+                .setBatchMaxDelayMillis(10)
+                .setMaxConcurrentInvocations(getMaxConcurrentInvocations());
         target.getWanSyncConfig().setConsistencyCheckStrategy(consistencyCheckStrategy);
         return target;
     }

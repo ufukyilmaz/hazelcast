@@ -5,27 +5,24 @@ import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.SlowTest;
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Callable;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+
+import java.io.File;
+import java.util.Properties;
 
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
@@ -97,12 +94,9 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
             IMap<String, String> map = hz2.getMap(REPLICATED_MAP);
             map.put("someKey", "someValue");
 
-            assertEqualsEventually(new Callable<String>() {
-                @Override
-                public String call() {
-                    IMap<String, String> map1 = hz.getMap(REPLICATED_MAP);
-                    return map1.get("someKey");
-                }
+            assertEqualsEventually(() -> {
+                IMap<String, String> map1 = hz.getMap(REPLICATED_MAP);
+                return map1.get("someKey");
             }, "someValue");
         } finally {
             if (hz2 != null) {
@@ -132,7 +126,7 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
     }
 
     @Test
-    public void testRestEndpointWithRestCertificate() throws IOException, Exception {
+    public void testRestEndpointWithRestCertificate() throws Exception {
         testTextEndpoint(REST_PORT, restTruststore, REST_PASSWORD, true);
     }
 
@@ -152,7 +146,7 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
     }
 
     private void testMemberEndpointWithIncorrectCertificate(File keystore, String keystorePassword, File truststore,
-            String truststorePassword) {
+                                                            String truststorePassword) {
         Config config = configForTestMemberEndpoint(keystore, keystorePassword, truststore, truststorePassword);
         HazelcastInstance newHzInstance = null;
         try {
@@ -168,11 +162,11 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
     }
 
     private Config configForTestMemberEndpoint(File keystore, String keystorePassword, File truststore,
-            String truststorePassword) {
+                                               String truststorePassword) {
         Config config = smallInstanceConfig();
         config.getAdvancedNetworkConfig().setEnabled(true)
-                .setMemberEndpointConfig(createServerSocketConfig(MEMBER_PORT + 10,
-                        prepareSslPropertiesWithTrustStore(keystore, keystorePassword, truststore, truststorePassword)));
+              .setMemberEndpointConfig(createServerSocketConfig(MEMBER_PORT + 10,
+                      prepareSslPropertiesWithTrustStore(keystore, keystorePassword, truststore, truststorePassword)));
         JoinConfig join = config.getAdvancedNetworkConfig().getJoin();
         join.getTcpIpConfig().addMember("127.0.0.1:" + MEMBER_PORT).setEnabled(true);
         join.getMulticastConfig().setEnabled(false);
@@ -186,8 +180,8 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
         props.setProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD, truststorePassword);
         Config config = smallInstanceConfig();
         config.getAdvancedNetworkConfig()
-                .setEnabled(true)
-                .addWanEndpointConfig(createServerSocketConfig(WAN_PORT + 10, "WAN", props));
+              .setEnabled(true)
+              .addWanEndpointConfig(createServerSocketConfig(WAN_PORT + 10, "WAN", props));
         addCommonWanReplication(config, WAN_PORT);
         config.getGroupConfig().setName("not-dev-cluster");
         return config;
@@ -216,12 +210,12 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
     private static void addCommonWanReplication(Config config, int port) {
         WanReplicationConfig wrConfig = new WanReplicationConfig();
         wrConfig.setName("my-wan-cluster");
-        WanPublisherConfig londonPublisherConfig = createWanPublisherConfig(
+        WanBatchReplicationPublisherConfig pc = createWanPublisherConfig(
                 "dev",
                 "127.0.0.1:" + port,
                 ConsistencyCheckStrategy.NONE
         );
-        wrConfig.addWanPublisherConfig(londonPublisherConfig);
+        wrConfig.addWanBatchReplicationPublisherConfig(pc);
 
         config.addWanReplicationConfig(wrConfig);
 
@@ -233,25 +227,23 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
         config.getMapConfig(REPLICATED_MAP).setWanReplicationRef(wanRef);
     }
 
-    private static WanPublisherConfig createWanPublisherConfig(String clusterName, String endpoints,
-            ConsistencyCheckStrategy consistencyStrategy) {
-        WanPublisherConfig publisherConfig = new WanPublisherConfig();
-        publisherConfig.setEndpoint("WAN");
-        publisherConfig.setGroupName(clusterName);
-        publisherConfig.setClassName("com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication");
-        publisherConfig.setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION);
-        publisherConfig.setQueueCapacity(1000);
-        publisherConfig.getWanSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);
-        Map<String, Comparable> props = publisherConfig.getProperties();
-        props.put("batch.size", 500);
-        props.put("batch.max.delay.millis", 1000);
-        props.put("snapshot.enabled", false);
-        props.put("response.timeout.millis", 60000);
-        props.put("ack.type", WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE.toString());
-        props.put("endpoints", endpoints);
-        props.put("discovery.period", "20");
-        props.put("executorThreadCount", "2");
-        return publisherConfig;
+    private static WanBatchReplicationPublisherConfig createWanPublisherConfig(String clusterName,
+                                                                               String endpoints,
+                                                                               ConsistencyCheckStrategy consistencyStrategy) {
+        WanBatchReplicationPublisherConfig pc = new WanBatchReplicationPublisherConfig()
+                .setEndpoint("WAN")
+                .setGroupName(clusterName)
+                .setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION)
+                .setQueueCapacity(1000)
+                .setBatchSize(500)
+                .setBatchMaxDelayMillis(1000)
+                .setSnapshotEnabled(false)
+                .setResponseTimeoutMillis(60000)
+                .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
+                .setTargetEndpoints(endpoints)
+                .setDiscoveryPeriodSeconds(20);
+        pc.getWanSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);
+        return pc;
     }
 
 }

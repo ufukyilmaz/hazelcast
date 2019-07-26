@@ -1,20 +1,18 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.CustomWanPublisherConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanConsumerConfig;
-import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
-import com.hazelcast.map.MapStore;
-import com.hazelcast.map.MapStoreAdapter;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
@@ -22,6 +20,9 @@ import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.jmx.MBeanDataHolder;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.EntryProcessor;
+import com.hazelcast.map.IMap;
+import com.hazelcast.map.MapStore;
+import com.hazelcast.map.MapStoreAdapter;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.mapstore.MapLoaderTest;
@@ -73,7 +74,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.config.WanPublisherState.PAUSED;
 import static com.hazelcast.config.WanPublisherState.STOPPED;
-import static com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties.ENDPOINTS;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_CLEANUP_PERCENTAGE;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
@@ -126,21 +126,17 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         return config;
     }
 
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
-    }
-
     @Test(expected = InvalidConfigurationException.class)
     public void failStartupWhenEndpointsAreMisconfigured() {
         final String publisherSetup = "atob";
         setupReplicateFrom(configA, configB, clusterB.length, publisherSetup, PassThroughMergePolicy.class.getName());
 
-        for (WanPublisherConfig publisherConfig : configA.getWanReplicationConfig(publisherSetup).getWanPublisherConfigs()) {
-            final Map<String, Comparable> properties = publisherConfig.getProperties();
-            final String endpoints = (String) properties.get(ENDPOINTS.key());
-            final String endpointsWithError = endpoints.replaceFirst("\\.", "\\.mumboJumbo\n");
-            properties.put(ENDPOINTS.key(), endpointsWithError);
+        List<WanBatchReplicationPublisherConfig> configs = configA.getWanReplicationConfig(publisherSetup)
+                                                                  .getBatchPublisherConfigs();
+        for (WanBatchReplicationPublisherConfig publisherConfig : configs) {
+            String endpoints = publisherConfig.getTargetEndpoints();
+            String endpointsWithError = endpoints.replaceFirst("\\.", "\\.mumboJumbo\n");
+            publisherConfig.setTargetEndpoints(endpointsWithError);
         }
 
         startClusterA();
@@ -186,7 +182,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         // 2. Ensure WAN events are enqueued but not replicated
         // PAUSED state let WAN events offered to the queues, but prevents replicating it
         configA.getWanReplicationConfig("atob")
-               .getWanPublisherConfigs().get(0).setInitialPublisherState(PAUSED);
+               .getBatchPublisherConfigs().get(0)
+               .setInitialPublisherState(PAUSED);
 
         // 3. Add map-loader to cluster-A
         MapStoreConfig mapStoreConfig = new MapStoreConfig()
@@ -210,7 +207,9 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         assertEquals("Loading from MapLoader should not trigger WAN publication", 0, outboundQueueSize);
     }
 
-    private int getOutboundQueueSizeFromReplicationInstance(HazelcastInstance instance, String setupName, String publisherName) {
+    private int getOutboundQueueSizeFromReplicationInstance(HazelcastInstance instance,
+                                                            String setupName,
+                                                            String publisherName) {
         EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(instance);
         WanReplicationPublisherDelegate publisherDelegate = (WanReplicationPublisherDelegate) wanReplicationService
                 .getWanReplicationPublisher(setupName);
@@ -873,9 +872,9 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         final String targetGroupName = configB.getGroupConfig().getName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
 
-        final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
-                                                              .getWanPublisherConfigs()
-                                                              .get(0);
+        WanBatchReplicationPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
+                                                                        .getBatchPublisherConfigs()
+                                                                        .get(0);
         targetClusterConfig.setInitialPublisherState(STOPPED);
 
         startClusterA();
@@ -900,9 +899,9 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         final String targetGroupName = configB.getGroupConfig().getName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
 
-        final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
-                                                              .getWanPublisherConfigs()
-                                                              .get(0);
+        WanBatchReplicationPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
+                                                                        .getBatchPublisherConfigs()
+                                                                        .get(0);
         targetClusterConfig.setInitialPublisherState(WanPublisherState.PAUSED);
 
         startClusterA();
@@ -1051,8 +1050,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configA, configC, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
 
-        List<WanPublisherConfig> publisherConfigs = configA.getWanReplicationConfig(wanReplicationScheme)
-                                                           .getWanPublisherConfigs();
+        List<WanBatchReplicationPublisherConfig> publisherConfigs = configA.getWanReplicationConfig(wanReplicationScheme)
+                                                                           .getBatchPublisherConfigs();
         assertEquals(2, publisherConfigs.size());
         publisherConfigs.get(0).setPublisherId("publisher1");
         publisherConfigs.get(1).setPublisherId("publisher2");
@@ -1065,12 +1064,14 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
     public void duplicatePublisherConfigThrowsException() {
         String wanReplicationScheme = "atob";
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
-        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
 
-        for (WanPublisherConfig publisherConfig : configA.getWanReplicationConfig(wanReplicationScheme)
-                                                         .getWanPublisherConfigs()) {
-            publisherConfig.setClassName(UninitializableWanEndpoint.class.getName());
-        }
+        WanReplicationConfig wanConfig = configA.getWanReplicationConfig(wanReplicationScheme);
+        wanConfig.getBatchPublisherConfigs().clear();
+        CustomWanPublisherConfig pc = new CustomWanPublisherConfig()
+                .setPublisherId("publisherId")
+                .setClassName(UninitializableWanEndpoint.class.getName());
+        wanConfig.addCustomPublisherConfig(pc);
+        wanConfig.addCustomPublisherConfig(pc);
 
         startClusterA();
 

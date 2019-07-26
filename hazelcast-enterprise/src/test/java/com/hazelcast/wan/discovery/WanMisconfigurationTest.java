@@ -4,14 +4,12 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.DiscoveryConfig;
 import com.hazelcast.config.DiscoveryStrategyConfig;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.config.properties.PropertyDefinition;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
-import com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.discovery.AbstractDiscoveryStrategy;
@@ -21,7 +19,6 @@ import com.hazelcast.spi.discovery.DiscoveryStrategyFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.executor.ManagedExecutorService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -47,16 +44,14 @@ public class WanMisconfigurationTest extends HazelcastTestSupport {
 
     @Override
     protected Config getConfig() {
-        final DiscoveryConfig discoveryConfig = new DiscoveryConfig();
+        DiscoveryConfig discoveryConfig = new DiscoveryConfig();
         discoveryConfig.addDiscoveryStrategyConfig(new DiscoveryStrategyConfig(discoveryStrategyFactory));
-        final WanPublisherConfig wanPublisherConfig = new WanPublisherConfig()
+        WanBatchReplicationPublisherConfig pc = new WanBatchReplicationPublisherConfig()
                 .setDiscoveryConfig(discoveryConfig)
-                .setClassName(WanBatchReplication.class.getName());
-        wanPublisherConfig.getProperties().put(WanReplicationProperties.MAX_ENDPOINTS.key(), "");
-        wanPublisherConfig.getProperties().put(WanReplicationProperties.GROUP_PASSWORD.key(), "");
+                .setTargetEndpoints("lala");
         final WanReplicationConfig wanConfig = new WanReplicationConfig()
                 .setName(wanReplicationName)
-                .addWanPublisherConfig(wanPublisherConfig);
+                .addWanBatchReplicationPublisherConfig(pc);
         final WanReplicationRef wanReplicationRef = new WanReplicationRef()
                 .setName(wanReplicationName)
                 .setMergePolicy(PassThroughMergePolicy.class.getName());
@@ -82,15 +77,11 @@ public class WanMisconfigurationTest extends HazelcastTestSupport {
         } catch (Exception e) {
             ignore(e);
         }
-        final ManagedExecutorService wanPollerExecutor =
-                getNode(instance).nodeEngine.getExecutionService().getExecutor("hz:wan:poller");
-
-        assertEquals(0, wanPollerExecutor.getQueueSize());
         assertEquals(0, discoveryStrategyFactory.strategy.invocationCount);
     }
 
     public static class CountingDiscoveryStrategyFactory implements DiscoveryStrategyFactory {
-        private CountingDiscoveryStrategy strategy = new CountingDiscoveryStrategy(null, Collections.<String, Comparable>emptyMap());
+        private CountingDiscoveryStrategy strategy = new CountingDiscoveryStrategy(null, Collections.emptyMap());
 
         @Override
         public Class<? extends DiscoveryStrategy> getDiscoveryStrategyType() {

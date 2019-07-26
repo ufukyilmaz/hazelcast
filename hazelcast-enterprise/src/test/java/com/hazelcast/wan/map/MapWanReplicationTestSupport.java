@@ -2,11 +2,13 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
+import com.hazelcast.config.CustomWanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
 import com.hazelcast.map.IMap;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.WanReplicationTestSupport;
 import org.junit.Before;
 
@@ -53,15 +55,54 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         setupReplicateFrom(fromConfig, toConfig, clusterSz, setupName, policy, null, ConsistencyCheckStrategy.NONE);
     }
 
-    protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy, String
-            filter, ConsistencyCheckStrategy consistencyCheckStrategy) {
+    protected void setupReplicateFrom(Config fromConfig,
+                                      String publisherId,
+                                      Class<?> publisherClass,
+                                      String setupName,
+                                      String policy,
+                                      String filter) {
         WanReplicationConfig wanConfig = fromConfig.getWanReplicationConfig(setupName);
         if (wanConfig == null) {
             wanConfig = new WanReplicationConfig();
             wanConfig.setName(setupName);
         }
 
-        wanConfig.addWanPublisherConfig(targetCluster(toConfig, clusterSz, consistencyCheckStrategy));
+        if (AbstractWanPublisher.class.isAssignableFrom(publisherClass)) {
+            wanConfig.addWanBatchReplicationPublisherConfig(new WanBatchReplicationPublisherConfig()
+                    .setPublisherId(publisherId)
+                    .setClassName(publisherClass.getName()));
+        } else {
+            wanConfig.addCustomPublisherConfig(new CustomWanPublisherConfig()
+                    .setPublisherId(publisherId)
+                    .setClassName(publisherClass.getName()));
+        }
+
+
+        WanReplicationRef wanRef = new WanReplicationRef()
+                .setName(setupName)
+                .setMergePolicy(policy);
+        if (filter != null) {
+            wanRef.addFilter(filter);
+        }
+
+        fromConfig.addWanReplicationConfig(wanConfig);
+        fromConfig.getMapConfig("default").setWanReplicationRef(wanRef);
+    }
+
+    protected void setupReplicateFrom(Config fromConfig,
+                                      Config toConfig,
+                                      int clusterSz,
+                                      String setupName,
+                                      String policy,
+                                      String filter,
+                                      ConsistencyCheckStrategy consistencyCheckStrategy) {
+        WanReplicationConfig wanConfig = fromConfig.getWanReplicationConfig(setupName);
+        if (wanConfig == null) {
+            wanConfig = new WanReplicationConfig();
+            wanConfig.setName(setupName);
+        }
+
+        wanConfig.addWanBatchReplicationPublisherConfig(targetCluster(toConfig, clusterSz, consistencyCheckStrategy));
 
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(setupName);
@@ -151,49 +192,26 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
     }
 
     public static void assertDataSizeEventually(final HazelcastInstance[] cluster, final String mapName, final int size) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                IMap m = getMap(cluster, mapName);
-                assertEquals(size, m.size());
-            }
+        assertTrueEventually(() -> {
+            IMap m = getMap(cluster, mapName);
+            assertEquals(size, m.size());
         });
     }
 
     public static void assertKeysInEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertKeysIn(cluster, mapName, start, end);
-            }
-        }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
+        assertTrueEventually(() -> assertKeysIn(cluster, mapName, start, end), ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
     public static void assertDataInFromEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertDataInFrom(cluster, mapName, start, end, sourceGroupName);
-            }
-        }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
+        assertTrueEventually(() -> assertDataInFrom(cluster, mapName, start, end, sourceGroupName), ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
     public static void assertDataInFromEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertDataInFrom(cluster, mapName, start, end, sourceCluster);
-            }
-        }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
+        assertTrueEventually(() -> assertDataInFrom(cluster, mapName, start, end, sourceCluster), ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
     public static void assertKeysNotInEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertTrue(checkKeysNotIn(cluster, mapName, start, end));
-            }
-        }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
+        assertTrueEventually(() -> assertTrue(checkKeysNotIn(cluster, mapName, start, end)), ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
     public static void removeAndCreateDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {

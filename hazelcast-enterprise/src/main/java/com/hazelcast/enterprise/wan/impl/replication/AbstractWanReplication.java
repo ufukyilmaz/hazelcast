@@ -1,9 +1,10 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
+import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.AliasedDiscoveryConfigUtils;
 import com.hazelcast.config.DiscoveryConfig;
 import com.hazelcast.config.InvalidConfigurationException;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.discovery.StaticDiscoveryProperties;
@@ -30,17 +31,18 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
     private DiscoveryService discoveryService;
 
     @Override
-    public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
+    public void init(Node node, WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig publisherConfig) {
+        WanBatchReplicationPublisherConfig batchReplicationConfig = (WanBatchReplicationPublisherConfig) publisherConfig;
         super.init(node, wanReplicationConfig, publisherConfig);
 
-        this.discoveryService = checkNotNull(createDiscoveryService(publisherConfig));
+        this.discoveryService = checkNotNull(createDiscoveryService(batchReplicationConfig));
         this.discoveryService.start();
 
         this.connectionManager = new WanConnectionManager(node, discoveryService);
         this.connectionManager.init(configurationContext);
     }
 
-    private DiscoveryService createDiscoveryService(WanPublisherConfig config) {
+    private DiscoveryService createDiscoveryService(WanBatchReplicationPublisherConfig config) {
         final String endpoints = configurationContext.getEndpoints();
         final DiscoveryConfig discoveryConfig = config.getDiscoveryConfig();
         final boolean endpointsConfigured = !isNullOrEmpty(endpoints);
@@ -68,7 +70,7 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
     }
 
     private StaticDiscoveryStrategy staticDiscoveryStrategy(String endpoints) {
-        final Map<String, Comparable> properties = new HashMap<String, Comparable>();
+        final Map<String, Comparable> properties = new HashMap<>();
         properties.put(StaticDiscoveryProperties.ENDPOINTS.key(), endpoints);
         properties.put(StaticDiscoveryProperties.PORT.key(), node.getConfig().getNetworkConfig().getPort());
         return new StaticDiscoveryStrategy(logger, properties);

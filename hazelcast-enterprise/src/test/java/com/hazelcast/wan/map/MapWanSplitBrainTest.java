@@ -1,18 +1,18 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.CustomWanPublisherConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MergePolicyConfig;
-import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -94,7 +94,8 @@ public class MapWanSplitBrainTest extends SplitBrainTestSupport {
 
         WanReplicationConfig wanConfig = new WanReplicationConfig()
                 .setName(WAN_REPLICATION_NAME)
-                .addWanPublisherConfig(new WanPublisherConfig()
+                .addCustomPublisherConfig(new CustomWanPublisherConfig()
+                        .setPublisherId("customPublisherId")
                         .setClassName(CountingWanEndpoint.class.getName()));
 
         return getHDConfig(super.config(), POOLED, MEMORY_SIZE)

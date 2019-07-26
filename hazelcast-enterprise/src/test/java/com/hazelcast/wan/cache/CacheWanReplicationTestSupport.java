@@ -3,12 +3,12 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.CustomWanPublisherConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.WanReplicationTestSupport;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -35,6 +35,34 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         configC = createConfig("C", "confC-" + UUID.randomUUID() + "-", 5901, isNativeMemoryEnabled());
     }
 
+    protected void setupReplicateFrom(Config fromConfig,
+                                      String publisherId,
+                                      String publisherClass,
+                                      String setupName,
+                                      String policy,
+                                      String cacheName,
+                                      String filter) {
+        WanReplicationConfig wanConfig = fromConfig.getWanReplicationConfig(setupName);
+        if (wanConfig == null) {
+            wanConfig = new WanReplicationConfig();
+            wanConfig.setName(setupName);
+        }
+
+        wanConfig.addCustomPublisherConfig(new CustomWanPublisherConfig()
+                .setPublisherId(publisherId)
+                .setClassName(publisherClass));
+
+        WanReplicationRef wanRef = new WanReplicationRef()
+                .setName(setupName)
+                .setMergePolicy(policy);
+        if (filter != null) {
+            wanRef.addFilter(filter);
+        }
+
+        fromConfig.addWanReplicationConfig(wanConfig);
+        fromConfig.getCacheConfig(cacheName).setWanReplicationRef(wanRef);
+    }
+
     protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz,
                                       String setupName, String policy, String cacheName) {
         setupReplicateFrom(fromConfig, toConfig, clusterSz, setupName, policy, cacheName, null);
@@ -47,7 +75,7 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
             wanConfig = new WanReplicationConfig();
             wanConfig.setName(setupName);
         }
-        wanConfig.addWanPublisherConfig(targetCluster(toConfig, clusterSz));
+        wanConfig.addWanBatchReplicationPublisherConfig(targetCluster(toConfig, clusterSz));
 
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(setupName);
@@ -76,7 +104,7 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
                                     int start, int end, boolean removeBeforePut, ExpiryPolicy expiryPolicy,
                                     boolean usePutAll) {
         ICache<Integer, String> myCache = getCacheFromRandomMember(cluster, cacheName);
-        HashMap<Integer, String> putAllMap = usePutAll ? new HashMap<Integer, String>() : null;
+        HashMap<Integer, String> putAllMap = usePutAll ? new HashMap<>() : null;
 
         for (; start < end; start++) {
             if (removeBeforePut) {
@@ -121,12 +149,9 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
                                            final int end, HazelcastInstance[] sourceCluster) {
         final String sourceGroupName = getNode(sourceCluster).getConfig().getGroupConfig().getName();
         final ICache<Integer, String> cache = getNode(targetCluster).getCacheManager().getCache(cacheName);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                for (int i = start; i < end; i++) {
-                    assertEquals(sourceGroupName + i, cache.get(i));
-                }
+        assertTrueEventually(() -> {
+            for (int i = start; i < end; i++) {
+                assertEquals(sourceGroupName + i, cache.get(i));
             }
         });
 
@@ -136,12 +161,9 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
     protected boolean checkKeysNotIn(HazelcastInstance[] targetCluster, String cacheName,
                                      final int start, final int end) {
         final ICache<Integer, String> cache = getNode(targetCluster).getCacheManager().getCache(cacheName);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                for (int i = start; i < end; i++) {
-                    assertFalse(cache.containsKey(i));
-                }
+        assertTrueEventually(() -> {
+            for (int i = start; i < end; i++) {
+                assertFalse(cache.containsKey(i));
             }
         });
 
@@ -150,12 +172,7 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
 
     protected boolean checkCacheDataSize(HazelcastInstance[] targetCluster, final String cacheName, final int size) {
         final ICache cache = getNode(targetCluster).getCacheManager().getCache(cacheName);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertEquals(size, cache.size());
-            }
-        });
+        assertTrueEventually(() -> assertEquals(size, cache.size()));
 
         return true;
     }

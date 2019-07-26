@@ -1,6 +1,7 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.AbstractWanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanSyncConfig;
 import com.hazelcast.core.ExecutionCallback;
@@ -44,12 +45,10 @@ import static java.util.Collections.newSetFromMap;
  * Basically, it publishes events either when enough events are enqueued
  * or enqueued events have waited for enough time.
  * <p>
- * The event count is configurable by
- * {@link WanReplicationProperties#BATCH_SIZE} and is
- * {@value WanConfigurationContext#DEFAULT_BATCH_SIZE} by default.
+ * The event count is configurable with
+ * {@link WanBatchReplicationPublisherConfig#setBatchSize(int)}.
  * The elapsed time is configurable by
- * {@link WanReplicationProperties#BATCH_MAX_DELAY_MILLIS} and is
- * {@value WanConfigurationContext#DEFAULT_BATCH_MAX_DELAY_MILLIS} by default.
+ * {@link WanBatchReplicationPublisherConfig#setBatchMaxDelayMillis(int)}.
  * The events are sent to the endpoints depending on the event key
  * partition.
  *
@@ -107,7 +106,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
     private BatchReplicationStrategy replicationStrategy;
 
     @Override
-    public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig wanPublisherConfig) {
+    public void init(Node node, WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig wanPublisherConfig) {
         super.init(node, wanReplicationConfig, wanPublisherConfig);
         this.idlingStrategy = new BackoffIdleStrategy(
                 IDLE_MAX_SPINS,
@@ -233,8 +232,8 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
      * @param endpoint  the endpoint to which WAN events should be sent
      * @param endpoints the complete list of target endpoints
      * @return the collected WAN batch or {@code null} if nothing was collected
-     * @see WanReplicationProperties#BATCH_SIZE
-     * @see WanReplicationProperties#BATCH_MAX_DELAY_MILLIS
+     * @see WanBatchReplicationPublisherConfig#getBatchSize()
+     * @see WanBatchReplicationPublisherConfig#getBatchMaxDelayMillis()
      */
     @SuppressWarnings({"checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity"})
     private BatchWanReplicationEvent collectEventBatch(Address endpoint, List<Address> endpoints) {
@@ -277,7 +276,10 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         return batch;
     }
 
-    /** Checks if {@link WanReplicationProperties#BATCH_MAX_DELAY_MILLIS} has passed since the last replication was sent */
+    /**
+     * Checks if {@link WanBatchReplicationPublisherConfig#getBatchMaxDelayMillis()}
+     * has passed since the last replication was sent
+     */
     private boolean sendingPeriodPassed() {
         long elapsedMillis = System.currentTimeMillis() - lastBatchSendTime;
         long maxDelayMillis = configurationContext.getBatchMaxDelayMillis();

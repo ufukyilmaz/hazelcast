@@ -8,7 +8,6 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
@@ -31,11 +30,6 @@ public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
     @AfterClass
     public static void cleanupJCache() {
         JsrTestUtil.cleanup();
-    }
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
     }
 
     @Override

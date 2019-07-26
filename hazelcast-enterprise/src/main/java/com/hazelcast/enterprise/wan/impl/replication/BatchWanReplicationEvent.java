@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
@@ -25,7 +26,7 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
  * Container to gather batch of {@link WanReplicationEvent} objects.
- * If {@link com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties#SNAPSHOT_ENABLED}
+ * If {@link WanBatchReplicationPublisherConfig#isSnapshotEnabled()}
  * is {@code true}, only the latest event for a key will be sent.
  *
  * @see com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication
@@ -62,7 +63,7 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
      * key or not.
      *
      * @param event a WAN replication event
-     * @see WanReplicationProperties#SNAPSHOT_ENABLED
+     * @see WanBatchReplicationPublisherConfig#isSnapshotEnabled()
      */
     public void addEvent(WanReplicationEvent event) {
         boolean isCoalesced = false;

@@ -2,16 +2,14 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
-import com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.OverridePropertyRule;
@@ -32,7 +30,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.GroupConfig.DEFAULT_GROUP_NAME;
-import static com.hazelcast.config.GroupConfig.DEFAULT_GROUP_PASSWORD;
 import static com.hazelcast.test.OverridePropertyRule.set;
 import static com.hazelcast.test.TestEnvironment.HAZELCAST_TEST_USE_NETWORK;
 
@@ -73,12 +70,7 @@ public class WanReplicationClockDiffTest extends HazelcastTestSupport {
             sourceMap.put(i, i);
         }
 
-        assertEqualsEventually(new Callable<Object>() {
-            @Override
-            public Integer call() throws Exception {
-                return getTargetClusterMapSize(MAP_NAME);
-            }
-        }, entryCount);
+        assertEqualsEventually((Callable<Object>) () -> getTargetClusterMapSize(MAP_NAME), entryCount);
     }
 
     private Integer getTargetClusterMapSize(String mapName) throws Exception {
@@ -99,7 +91,7 @@ public class WanReplicationClockDiffTest extends HazelcastTestSupport {
         Thread thread = Thread.currentThread();
         ClassLoader tccl = thread.getContextClassLoader();
         try {
-            FilteringClassLoader cl = new FilteringClassLoader(Collections.<String>emptyList(), "com.hazelcast");
+            FilteringClassLoader cl = new FilteringClassLoader(Collections.emptyList(), "com.hazelcast");
             thread.setContextClassLoader(cl);
 
             Class<?> configClazz = cl.loadClass("com.hazelcast.config.Config");
@@ -160,12 +152,9 @@ public class WanReplicationClockDiffTest extends HazelcastTestSupport {
     }
 
     private HazelcastInstance startSourceNode() {
-        WanPublisherConfig publisherConfig = new WanPublisherConfig();
-        publisherConfig.setGroupName(DEFAULT_GROUP_NAME);
-        publisherConfig.setClassName(WanBatchReplication.class.getName());
-        Map<String, Comparable> props = publisherConfig.getProperties();
-        props.put(WanReplicationProperties.GROUP_PASSWORD.key(), DEFAULT_GROUP_PASSWORD);
-        props.put(WanReplicationProperties.ENDPOINTS.key(), "127.0.0.1:5701");
+        WanBatchReplicationPublisherConfig pc = new WanBatchReplicationPublisherConfig()
+                .setGroupName(DEFAULT_GROUP_NAME)
+                .setTargetEndpoints("127.0.0.1:5701");
 
         Config config = smallInstanceConfig();
 
@@ -180,7 +169,7 @@ public class WanReplicationClockDiffTest extends HazelcastTestSupport {
         config.setInstanceName("confB-" + UUID.randomUUID() + "-");
         config.getNetworkConfig().setPort(5801);
         config.addWanReplicationConfig(new WanReplicationConfig().setName(WAN_REPLICATION_SCHEME)
-                                                                 .addWanPublisherConfig(publisherConfig));
+                                                                 .addWanBatchReplicationPublisherConfig(pc));
         WanReplicationRef wanReplicationRef = new WanReplicationRef()
                 .setName(WAN_REPLICATION_SCHEME)
                 .setMergePolicy(PassThroughMergePolicy.class.getName());

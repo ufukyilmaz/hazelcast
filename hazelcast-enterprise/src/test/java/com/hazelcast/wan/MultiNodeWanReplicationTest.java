@@ -4,12 +4,11 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WANQueueFullBehavior;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.test.AssertTask;
@@ -28,7 +27,6 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -164,13 +162,13 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
     }
 
     @Override
-    protected WanPublisherConfig targetCluster(Config config, int count) {
-        final WanPublisherConfig wanConfig = super.targetCluster(config, count)
-                                                  .setQueueCapacity(100)
-                                                  .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
-        final Map<String, Comparable> props = wanConfig.getProperties();
-        props.put("batch.size", 10);
-        props.put("batch.max.delay.millis", 100);
+    protected WanBatchReplicationPublisherConfig targetCluster(Config config, int count) {
+        final WanBatchReplicationPublisherConfig wanConfig =
+                super.targetCluster(config, count)
+                     .setQueueCapacity(100)
+                     .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION)
+                     .setBatchSize(10)
+                     .setBatchMaxDelayMillis(100);
         return wanConfig;
     }
 
@@ -184,11 +182,6 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
               .setMaxIdleSeconds(900)
               .setEvictionPolicy(EvictionPolicy.LRU);
         return config;
-    }
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
     }
 
     @Override

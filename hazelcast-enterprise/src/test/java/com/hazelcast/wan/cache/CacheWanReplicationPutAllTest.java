@@ -4,17 +4,14 @@ import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
-import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.CountingWanEndpoint;
 import org.junit.AfterClass;
@@ -57,11 +54,6 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
     @AfterClass
     public static void cleanupJCache() {
         JsrTestUtil.cleanup();
-    }
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
     }
 
     @Override
@@ -111,8 +103,10 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
         initConfigA();
         initConfigB();
 
-        setupReplicateFrom(configA, configB, clusterB.length, wanSetupName, PassThroughCacheMergePolicy.class.getName(),
-                "default");
+        setupReplicateFrom(configA,
+                "customPublisherId", CountingWanEndpoint.class.getName(),
+                wanSetupName, PassThroughCacheMergePolicy.class.getName(),
+                "default", null);
         // disable WAN replication for the default cache config (it's auto-enabled by the setupReplicateFrom())
         configA.getCacheConfig("default")
                .setWanReplicationRef(null);
@@ -121,12 +115,6 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
         startClusterB();
 
         configureCacheWithWanReplication(cacheName, wanSetupName);
-    }
-
-    @Override
-    protected WanPublisherConfig targetCluster(Config config, int count) {
-        return super.targetCluster(config, count)
-                    .setClassName(CountingWanEndpoint.class.getName());
     }
 
     private void configureCacheWithWanReplication(String cacheName, String wanSetupName) {

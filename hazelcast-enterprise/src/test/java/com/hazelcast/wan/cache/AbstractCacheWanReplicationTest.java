@@ -7,14 +7,13 @@ import com.hazelcast.cache.merge.HigherHitsCacheMergePolicy;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanConsumerConfig;
-import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.custom.CustomWanConsumer;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -296,10 +295,10 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughCacheMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
-        final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig(wanReplicationConfigName)
-                .getWanPublisherConfigs()
-                .get(0);
-        targetClusterConfig.setInitialPublisherState(WanPublisherState.STOPPED);
+        final WanBatchReplicationPublisherConfig pc = configA.getWanReplicationConfig(wanReplicationConfigName)
+                                                             .getBatchPublisherConfigs()
+                                                             .get(0);
+        pc.setInitialPublisherState(WanPublisherState.STOPPED);
 
         startClusterA();
         startClusterB();
@@ -327,10 +326,10 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughCacheMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
-        final WanPublisherConfig targetClusterConfig = configA.getWanReplicationConfig(wanReplicationConfigName)
-                .getWanPublisherConfigs()
-                .get(0);
-        targetClusterConfig.setInitialPublisherState(WanPublisherState.PAUSED);
+        WanBatchReplicationPublisherConfig pc = configA.getWanReplicationConfig(wanReplicationConfigName)
+                                                       .getBatchPublisherConfigs()
+                                                       .get(0);
+        pc.setInitialPublisherState(WanPublisherState.PAUSED);
 
         startClusterA();
         startClusterB();
@@ -356,12 +355,9 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterA();
         startClusterB();
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                Collection<DistributedObject> distributedObjects = clusterB[0].getDistributedObjects();
-                assertEquals(1, distributedObjects.size());
-            }
+        assertTrueEventually(() -> {
+            Collection<DistributedObject> distributedObjects = clusterB[0].getDistributedObjects();
+            assertEquals(1, distributedObjects.size());
         }, 10);
         checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
     }
@@ -403,12 +399,9 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         removeCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50);
 
         // Ensure no put or delete operation is passed to cache writer.
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertEquals(0, TestCacheWriter1.writeCount.get());
-                assertEquals(0, TestCacheWriter1.deleteCount.get());
-            }
+        assertTrueAllTheTime(() -> {
+            assertEquals(0, TestCacheWriter1.writeCount.get());
+            assertEquals(0, TestCacheWriter1.deleteCount.get());
         }, 10);
     }
 
@@ -433,12 +426,9 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         removeCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50);
 
         // Ensure put or delete operation are passed to cache writer.
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertEquals(50, TestCacheWriter2.writeCount.get());
-                assertEquals(50, TestCacheWriter2.deleteCount.get());
-            }
+        assertTrueEventually(() -> {
+            assertEquals(50, TestCacheWriter2.writeCount.get());
+            assertEquals(50, TestCacheWriter2.deleteCount.get());
         });
     }
 

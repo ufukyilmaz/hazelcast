@@ -1,6 +1,6 @@
 package com.hazelcast.wan;
 
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanSyncEvent;
@@ -21,7 +21,7 @@ public class UninitializableWanEndpoint implements WanReplicationEndpoint<Object
     }
 
     @Override
-    public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig wanPublisherConfig) {
+    public void init(Node node, WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig pc) {
         throw new UnsupportedOperationException("This endpoint cannot be initialized!");
     }
 

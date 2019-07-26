@@ -182,7 +182,7 @@ public class WanCounterClearQueuesTest {
     private static class QueueClearerWanPublisher extends WanBatchReplication {
         private final AtomicBoolean clearQueuesFlag = new AtomicBoolean();
         private final AtomicInteger hitCount = new AtomicInteger();
-        private final AtomicReference<String> nodeName = new AtomicReference<String>();
+        private final AtomicReference<String> nodeName = new AtomicReference<>();
 
         @Override
         public void onMigrationCommit(int partitionId, int currentReplicaIndex, int newReplicaIndex) {

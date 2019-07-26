@@ -2,17 +2,14 @@ package com.hazelcast.wan.fw;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
+import com.hazelcast.config.CustomWanPublisherConfig;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchSender;
-import com.hazelcast.enterprise.wan.impl.replication.WanConfigurationContext;
-import com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties;
 import com.hazelcast.wan.WanReplicationPublisher;
-
-import java.util.Map;
 
 import static com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication.WAN_BATCH_SENDER_CLASS;
 
@@ -72,8 +69,12 @@ public class WanReplication {
 
         wanReplicationConfig = new WanReplicationConfig();
         wanReplicationConfig.setName(setupName);
-        if (targetCluster != null) {
-            wanReplicationConfig.addWanPublisherConfig(configureTargetCluster(targetCluster, wanPublisher, wanPublisherClass));
+        if (wanPublisher != null || (wanPublisherClass != null && !WanBatchReplication.class.isAssignableFrom(wanPublisherClass))) {
+            CustomWanPublisherConfig pc = configureCustomPublisher(wanPublisher, wanPublisherClass);
+            wanReplicationConfig.addCustomPublisherConfig(pc);
+        } else if (targetCluster != null) {
+            WanBatchReplicationPublisherConfig pc = configureBatchPublisher(targetCluster, wanPublisherClass);
+            wanReplicationConfig.addWanBatchReplicationPublisherConfig(pc);
         }
 
         if (sourceCluster != null) {
@@ -83,41 +84,46 @@ public class WanReplication {
         return this;
     }
 
-    private WanPublisherConfig configureTargetCluster(Cluster targetCluster, WanReplicationPublisher wanPublisher,
-                                                      Class<? extends WanReplicationPublisher> wanPublisherClass) {
-        Config config = targetCluster.getConfig();
-        WanPublisherConfig target = new WanPublisherConfig();
-        target.setGroupName(config.getGroupConfig().getName());
+    private CustomWanPublisherConfig configureCustomPublisher(WanReplicationPublisher wanPublisher,
+                                                              Class<? extends WanReplicationPublisher> wanPublisherClass) {
+        CustomWanPublisherConfig pc = new CustomWanPublisherConfig();
+
         if (wanPublisher != null) {
-            target.setImplementation(wanPublisher);
+            pc.setImplementation(wanPublisher);
         } else {
-            target.setClassName(wanPublisherClass.getName());
+            pc.setClassName(wanPublisherClass.getName());
         }
+        return pc;
+    }
+
+    private WanBatchReplicationPublisherConfig configureBatchPublisher(Cluster targetCluster,
+                                                                       Class<? extends WanReplicationPublisher> wanPublisherClass) {
+        Config config = targetCluster.getConfig();
+        WanBatchReplicationPublisherConfig pc = new WanBatchReplicationPublisherConfig()
+                .setGroupName(config.getGroupConfig().getName())
+                .setClassName(wanPublisherClass.getName());
 
         if (consistencyCheckStrategy != null) {
-            target.getWanSyncConfig()
-                  .setConsistencyCheckStrategy(consistencyCheckStrategy);
+            pc.getWanSyncConfig()
+              .setConsistencyCheckStrategy(consistencyCheckStrategy);
         }
 
         if (initialPublisherState != null) {
-            target.setInitialPublisherState(initialPublisherState);
+            pc.setInitialPublisherState(initialPublisherState);
         }
 
-
-        Map<String, Comparable> props = target.getProperties();
-        props.put(WanReplicationProperties.GROUP_PASSWORD.key(), config.getGroupConfig().getPassword());
-        props.put(WanReplicationProperties.ENDPOINTS.key(), (getClusterEndPoints(config, targetCluster.size())));
-        props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
-        props.put(WanReplicationProperties.SNAPSHOT_ENABLED.key(), snapshotEnabled);
-        props.put(WanReplicationProperties.MAX_CONCURRENT_INVOCATIONS.key(), maxConcurrentInvocations);
-        props.put(WanReplicationProperties.BATCH_SIZE.key(), replicationBatchSize);
-        props.put(WanReplicationProperties.BATCH_MAX_DELAY_MILLIS.key(), 1000);
+        pc.setTargetEndpoints(getClusterEndPoints(config, targetCluster.size()))
+          .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
+          .setSnapshotEnabled(snapshotEnabled)
+          .setMaxConcurrentInvocations(maxConcurrentInvocations)
+          .setBatchSize(replicationBatchSize)
+          .setBatchMaxDelayMillis(1000);
 
         if (wanBatchSender != null) {
             System.setProperty(WAN_BATCH_SENDER_CLASS, wanBatchSender.getName());
         }
 
-        return target;
+        return pc;
     }
 
     private static String getClusterEndPoints(Config config, int count) {
@@ -139,9 +145,9 @@ public class WanReplication {
         private Class<? extends WanReplicationPublisher> wanPublisherClass = WanBatchReplication.class;
         private ConsistencyCheckStrategy consistencyCheckStrategy;
         private WanPublisherState initialPublisherState;
-        private int replicationBatchSize = WanConfigurationContext.DEFAULT_BATCH_SIZE;
-        private int maxConcurrentInvocations = WanConfigurationContext.DEFAULT_MAX_CONCURRENT_INVOCATIONS;
-        private boolean snapshotEnabled = false;
+        private int replicationBatchSize = WanBatchReplicationPublisherConfig.DEFAULT_BATCH_SIZE;
+        private int maxConcurrentInvocations = WanBatchReplicationPublisherConfig.DEFAULT_MAX_CONCURRENT_INVOCATIONS;
+        private boolean snapshotEnabled = WanBatchReplicationPublisherConfig.DEFAULT_SNAPSHOT_ENABLED;
         private Class<? extends WanBatchSender> wanBatchSender;
 
         private WanReplicationBuilder() {

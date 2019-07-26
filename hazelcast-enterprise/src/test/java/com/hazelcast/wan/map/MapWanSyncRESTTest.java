@@ -3,10 +3,9 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties;
 import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
@@ -17,9 +16,9 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.wan.WanServiceMockingNodeContext;
 import com.hazelcast.wan.impl.AddWanConfigResult;
 import com.hazelcast.wan.impl.WanReplicationService;
-import com.hazelcast.wan.WanServiceMockingNodeContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +27,6 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Map;
 import java.util.UUID;
 
 import static java.util.UUID.randomUUID;
@@ -162,17 +160,14 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
     }
 
     private WanReplicationConfig getExampleWanConfig() {
-        WanPublisherConfig newPublisherConfig = new WanPublisherConfig()
+        WanBatchReplicationPublisherConfig newPublisherConfig = new WanBatchReplicationPublisherConfig()
                 .setGroupName("B")
-                .setClassName("ClassName");
-        Map<String, Comparable> props = newPublisherConfig.getProperties();
-        props.put(WanReplicationProperties.GROUP_PASSWORD.key(), "password");
-        props.put(WanReplicationProperties.ENDPOINTS.key(), "1.1.1.1:5701");
-        props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE.name());
+                .setTargetEndpoints("1.1.1.1:5701")
+                .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
 
         return new WanReplicationConfig()
                 .setName("newWRConfig")
-                .addWanPublisherConfig(newPublisherConfig);
+                .addWanBatchReplicationPublisherConfig(newPublisherConfig);
     }
 
     @Override

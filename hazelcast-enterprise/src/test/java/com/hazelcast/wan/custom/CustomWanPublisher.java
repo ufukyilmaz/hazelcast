@@ -1,6 +1,6 @@
 package com.hazelcast.wan.custom;
 
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.WanSyncEvent;
@@ -10,9 +10,9 @@ import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEvent;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.spi.partition.IPartition;
+import com.hazelcast.wan.ConsistencyCheckResult;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanSyncStats;
-import com.hazelcast.wan.ConsistencyCheckResult;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +28,7 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
     private volatile boolean running = true;
 
     @Override
-    public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig targetClusterConfig) {
+    public void init(Node node, WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig targetClusterConfig) {
         super.init(node, wanReplicationConfig, targetClusterConfig);
         node.nodeEngine.getExecutionService().execute("hz:custom:wan:publisher", this);
     }

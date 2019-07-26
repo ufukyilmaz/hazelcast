@@ -11,7 +11,6 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -148,13 +147,10 @@ public class WanAddConfigTest {
 
         final AtomicBoolean mutationActive = new AtomicBoolean();
 
-        Future mutationFuture = spawn(new Runnable() {
-            @Override
-            public void run() {
-                while (mutationActive.get()) {
-                    fillMap(clusterA, MAP_NAME, 0, 100);
-                    fillCache(clusterA, CACHE_NAME, 0, 100);
-                }
+        Future mutationFuture = spawn(() -> {
+            while (mutationActive.get()) {
+                fillMap(clusterA, MAP_NAME, 0, 100);
+                fillCache(clusterA, CACHE_NAME, 0, 100);
             }
         });
 
@@ -183,19 +179,16 @@ public class WanAddConfigTest {
 
         clusterA.startCluster();
 
-        Future bouncingFuture = spawn(new Runnable() {
-            @Override
-            public void run() {
-                while (bouncingActive.get()) {
-                    HazelcastInstance[] members = clusterA.getMembers();
-                    for (int i = 0; i < members.length; i++) {
-                        logger.info("Source cluster WAN config counts before bouncing: "
-                                + getSourceClusterConfigCountMap(toBReplication.getSetupName()).toString());
-                        members[i].shutdown();
-                        clusterA.startClusterMember(i);
-                        logger.info("Source cluster WAN config counts after bouncing: "
-                                + getSourceClusterConfigCountMap(toBReplication.getSetupName()).toString());
-                    }
+        Future bouncingFuture = spawn(() -> {
+            while (bouncingActive.get()) {
+                HazelcastInstance[] members = clusterA.getMembers();
+                for (int i = 0; i < members.length; i++) {
+                    logger.info("Source cluster WAN config counts before bouncing: "
+                            + getSourceClusterConfigCountMap(toBReplication.getSetupName()).toString());
+                    members[i].shutdown();
+                    clusterA.startClusterMember(i);
+                    logger.info("Source cluster WAN config counts after bouncing: "
+                            + getSourceClusterConfigCountMap(toBReplication.getSetupName()).toString());
                 }
             }
         });
@@ -253,32 +246,22 @@ public class WanAddConfigTest {
 
         final CountDownLatch configAdded = new CountDownLatch(2);
         final CyclicBarrier gate = new CyclicBarrier(3);
-        spawn(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    gate.await();
-                    clusterA.addWanReplication(toBReplication);
-                    configAdded.countDown();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (BrokenBarrierException e) {
-                    e.printStackTrace();
-                }
+        spawn(() -> {
+            try {
+                gate.await();
+                clusterA.addWanReplication(toBReplication);
+                configAdded.countDown();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
             }
         });
-        spawn(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    gate.await();
-                    clusterA.addWanReplication(toCReplication);
-                    configAdded.countDown();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (BrokenBarrierException e) {
-                    e.printStackTrace();
-                }
+        spawn(() -> {
+            try {
+                gate.await();
+                clusterA.addWanReplication(toCReplication);
+                configAdded.countDown();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
             }
         });
         gate.await();
@@ -354,8 +337,8 @@ public class WanAddConfigTest {
         assertPublisherCountEventually(REPLICATION_NAME, 1);
 
         toBReplication.getConfig()
-                      .getWanPublisherConfigs()
-                      .addAll(toCReplication.getConfig().getWanPublisherConfigs());
+                      .getBatchPublisherConfigs()
+                      .addAll(toCReplication.getConfig().getBatchPublisherConfigs());
 
         addResult = clusterA.addWanReplication(toBReplication);
         assertEquals(1, addResult.getAddedPublisherIds().size());
@@ -365,12 +348,12 @@ public class WanAddConfigTest {
 
     private Map<String, Integer> getSourceClusterConfigCountMap(String wanReplicationName) {
         while (true) {
-            Map<String, Integer> instanceConfigCount = new HashMap<String, Integer>();
+            Map<String, Integer> instanceConfigCount = new HashMap<>();
             try {
                 for (HazelcastInstance instance : clusterA.getMembers()) {
                     WanReplicationConfig wanConfig = getNode(instance).getConfig()
                                                                       .getWanReplicationConfig(wanReplicationName);
-                    int configSize = wanConfig.getWanPublisherConfigs().size();
+                    int configSize = wanConfig.getBatchPublisherConfigs().size();
                     instanceConfigCount.put(instance.getName(), configSize);
                 }
                 return instanceConfigCount;
@@ -384,14 +367,11 @@ public class WanAddConfigTest {
 
     private void assertPublisherCountEventually(final String wanReplicationName,
                                                 final int count) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                Map<String, Integer> instanceConfigCount = getSourceClusterConfigCountMap(wanReplicationName);
-                for (Map.Entry<String, Integer> entry : instanceConfigCount.entrySet()) {
-                    if (entry.getValue() != count) {
-                        fail(instanceConfigCount.toString());
-                    }
+        assertTrueEventually(() -> {
+            Map<String, Integer> instanceConfigCount = getSourceClusterConfigCountMap(wanReplicationName);
+            for (Map.Entry<String, Integer> entry : instanceConfigCount.entrySet()) {
+                if (entry.getValue() != count) {
+                    fail(instanceConfigCount.toString());
                 }
             }
         });

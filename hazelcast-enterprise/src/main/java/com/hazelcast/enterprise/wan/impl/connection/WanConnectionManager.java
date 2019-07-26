@@ -1,6 +1,7 @@
 package com.hazelcast.enterprise.wan.impl.connection;
 
 import com.hazelcast.config.InvalidConfigurationException;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.enterprise.wan.impl.replication.WanConfigurationContext;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.instance.impl.Node;
@@ -114,7 +115,7 @@ public class WanConnectionManager implements ConnectionListener {
             }
         }
         if (targetEndpoints.size() == 0) {
-            final String msg = "There were no discovered nodes for WanPublisherConfig,"
+            final String msg = "There were no discovered nodes for WanBatchReplicationPublisherConfig,"
                     + "please define endpoints statically or check the discovery config";
             if (discoveryService instanceof PredefinedDiscoveryService) {
                 throw new InvalidConfigurationException(msg);
@@ -172,7 +173,7 @@ public class WanConnectionManager implements ConnectionListener {
      * to which the connection manager can connect to.
      *
      * @return the endpoint addresses
-     * @see com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties#DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS
+     * @see WanBatchReplicationPublisherConfig#isUseEndpointPrivateAddress()
      */
     private List<Address> discoverEndpointAddresses() {
         final Iterable<DiscoveryNode> nodes = discoveryService.discoverNodes();
@@ -349,20 +350,19 @@ public class WanConnectionManager implements ConnectionListener {
 
     /**
      * Runs an authorization operation against the given {@code target} address
-     * with the given {@code groupName} and {@code groupPassword}.
+     * with the given {@code groupName}.
      *
-     * @param groupName     expected group name
-     * @param groupPassword expected password
-     * @param target        the target to validate group name and password against
+     * @param groupName expected group name
+     * @param target    the target to validate group name and password against
      * @return {@code true} if authorization passed, {@code false} otherwise
      */
-    private boolean checkAuthorization(String groupName, String groupPassword, Address target) {
-        Operation authorizationCall = new AuthorizationOp(groupName, groupPassword);
+    private boolean checkAuthorization(String groupName, Address target) {
+        Operation authorizationCall = new AuthorizationOp(groupName);
         Future<Boolean> future = node.getNodeEngine().getOperationService()
-                                                .createInvocationBuilder(SERVICE_NAME, authorizationCall, target)
-                                                .setTryCount(1)
-                                                .setEndpointManager(node.getEndpointManager(endpointQualifier))
-                                                .invoke();
+                                     .createInvocationBuilder(SERVICE_NAME, authorizationCall, target)
+                                     .setTryCount(1)
+                                     .setEndpointManager(node.getEndpointManager(endpointQualifier))
+                                     .invoke();
         try {
             return future.get();
         } catch (Exception ignored) {
@@ -382,7 +382,6 @@ public class WanConnectionManager implements ConnectionListener {
         String groupName = configurationContext.getGroupName();
         boolean authorized = checkAuthorization(
                 groupName,
-                configurationContext.getPassword(),
                 conn.getEndPoint());
         if (!authorized) {
             final String msg = "WAN authorization failed for groupName " + groupName

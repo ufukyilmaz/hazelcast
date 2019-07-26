@@ -5,7 +5,6 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -81,11 +80,6 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
         wanReplicationService.syncMap("atob", "B", "map");
 
         assertKeysInEventually(clusterB, "map", 0, 1000);
-    }
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
     }
 
     @Override

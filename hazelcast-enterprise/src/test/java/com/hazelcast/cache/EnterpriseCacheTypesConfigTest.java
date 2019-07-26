@@ -4,16 +4,15 @@ import classloading.domain.Person;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.CustomWanPublisherConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanConsumerConfig;
-import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.WanReplicationConsumer;
-import com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -60,14 +59,15 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
     protected Config getConfig() {
         Config config = super.getConfig();
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(16, MemoryUnit.MEGABYTES));
-        WanReplicationConfig wanReplicationConfig = new WanReplicationConfig().setName("wan-replication");
-        WanPublisherConfig wanPublisherConfig = new WanPublisherConfig().setGroupName("target-cluster")
+        WanReplicationConfig wanConfig = new WanReplicationConfig().setName("wan-replication");
+        CustomWanPublisherConfig pc = new CustomWanPublisherConfig()
+                .setPublisherId("target-cluster")
                 .setClassName(CountingWanEndpoint.class.getName());
-        WanConsumerConfig wanConsumerConfig = new WanConsumerConfig().setClassName(NoopWanConsumer.class.getName());
-        wanPublisherConfig.getProperties().put(WanReplicationProperties.GROUP_PASSWORD.key(), "password");
-        wanReplicationConfig.addWanPublisherConfig(wanPublisherConfig);
-        wanReplicationConfig.setWanConsumerConfig(wanConsumerConfig);
-        config.addWanReplicationConfig(wanReplicationConfig);
+        WanConsumerConfig wanConsumerConfig = new WanConsumerConfig()
+                .setClassName(NoopWanConsumer.class.getName());
+        wanConfig.addCustomPublisherConfig(pc);
+        wanConfig.setWanConsumerConfig(wanConsumerConfig);
+        config.addWanReplicationConfig(wanConfig);
 
         config.getHotRestartPersistenceConfig().setEnabled(true)
                 .setBaseDir(hotRestartFolderRule.getBaseDir())

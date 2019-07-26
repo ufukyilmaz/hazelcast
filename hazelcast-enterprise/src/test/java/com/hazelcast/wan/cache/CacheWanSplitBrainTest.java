@@ -5,15 +5,15 @@ import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.cache.merge.PutIfAbsentCacheMergePolicy;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.CustomWanPublisherConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -82,12 +82,13 @@ public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
 
     @Override
     protected Config config() {
-        WanPublisherConfig wanPublisherConfig = new WanPublisherConfig()
+        CustomWanPublisherConfig pc = new CustomWanPublisherConfig()
+                .setPublisherId("customPublisherId")
                 .setClassName(CountingWanEndpoint.class.getName());
 
         WanReplicationConfig wanConfig = new WanReplicationConfig()
                 .setName(WAN_REPLICATION_NAME)
-                .addWanPublisherConfig(wanPublisherConfig);
+                .addCustomPublisherConfig(pc);
 
         Config config = super.config();
         config.addWanReplicationConfig(wanConfig);
@@ -158,7 +159,7 @@ public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
             evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         }
 
-        CacheConfig<K, V> cacheConfig = new CacheConfig<K, V>();
+        CacheConfig<K, V> cacheConfig = new CacheConfig<>();
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         cacheConfig.setName(cacheName);
         cacheConfig.setMergePolicy(cacheMergePolicy.getName());

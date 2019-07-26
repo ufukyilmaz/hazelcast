@@ -5,14 +5,13 @@ import com.hazelcast.config.DiscoveryConfig;
 import com.hazelcast.config.DiscoveryStrategyConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.InvalidConfigurationException;
-import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.properties.PropertyDefinition;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
-import com.hazelcast.enterprise.wan.impl.replication.WanReplicationProperties;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.nio.Address;
@@ -21,7 +20,6 @@ import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.DiscoveryStrategy;
 import com.hazelcast.spi.discovery.DiscoveryStrategyFactory;
 import com.hazelcast.spi.discovery.SimpleDiscoveryNode;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
@@ -36,9 +34,9 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -51,11 +49,6 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
 
     private String wanReplicationName;
-
-    @Override
-    public String getReplicationImpl() {
-        return WanBatchReplication.class.getName();
-    }
 
     @Override
     public InMemoryFormat getMemoryFormat() {
@@ -89,12 +82,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
         factory.strategy.throwException = false;
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertAllEndpointsDiscovered(discoveryEndpoints, clusterB.length);
-            }
-        });
+        assertTrueEventually(() -> assertAllEndpointsDiscovered(discoveryEndpoints, clusterB.length));
 
         createDataIn(clusterA, "map2", 0, 1000);
         assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
@@ -114,12 +102,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
         strategyEndpoints.add(endpoints.get(0));
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertAllEndpointsDiscovered(strategyEndpoints, 1);
-            }
-        });
+        assertTrueEventually(() -> assertAllEndpointsDiscovered(strategyEndpoints, 1));
 
         createDataIn(clusterA, "map2", 0, 1000);
         assertDataInFromEventually(clusterB, "map", 0, 1000, clusterA);
@@ -139,19 +122,9 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         createDataIn(clusterA, "map", 0, 1000);
 
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertAllEndpointsDiscovered(strategyEndpoints, 1);
-            }
-        });
+        assertTrueEventually(() -> assertAllEndpointsDiscovered(strategyEndpoints, 1));
         strategyEndpoints.clear();
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertEquals(0, getTargetEndpoints().size());
-            }
-        });
+        assertTrueEventually(() -> assertEquals(0, getTargetEndpoints().size()));
     }
 
     @Test
@@ -170,12 +143,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         assertAllEndpointsDiscovered(discoveryEndpoints, 1);
 
         discoveryEndpoints.add(removed);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertAllEndpointsDiscovered(discoveryEndpoints, 2);
-            }
-        });
+        assertTrueEventually(() -> assertAllEndpointsDiscovered(discoveryEndpoints, 2));
 
         createDataIn(clusterA, "map2", 0, 1000);
         assertDataInFromEventually(clusterB, "map2", 0, 1000, clusterA);
@@ -198,12 +166,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         discoveryEndpoints.remove(0);
         assertEquals(1, discoveryEndpoints.size());
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertAllEndpointsDiscovered(discoveryEndpoints, 1);
-            }
-        });
+        assertTrueEventually(() -> assertAllEndpointsDiscovered(discoveryEndpoints, 1));
 
         createDataIn(clusterA, "map2", 0, 1000);
         assertDataInFromEventually(clusterB, "map2", 0, 1000, clusterA);
@@ -231,21 +194,11 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         // faulty address must have been removed because we could not replicate to it
         // but it will be readded as a result of periodic WAN discovery implementation
         // returning two endpoints
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertTargetEndpointSize(2);
-            }
-        });
+        assertTrueEventually(() -> assertTargetEndpointSize(2));
 
         clusterB[1] = super.factory.newHazelcastInstance(configB.setInstanceName("newInstance"));
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertAllEndpointsDiscovered(discoveryEndpoints, 2);
-            }
-        });
+        assertTrueEventually(() -> assertAllEndpointsDiscovered(discoveryEndpoints, 2));
 
         createDataIn(clusterA, "map3", 0, 1000);
         assertDataInFromEventually(clusterB, "map3", 0, 1000, clusterA);
@@ -257,9 +210,9 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
         discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length));
 
-        final WanReplicationConfig c = configA.getWanReplicationConfig(wanReplicationName);
-        final WanPublisherConfig publisherConfig = c.getWanPublisherConfigs().iterator().next();
-        publisherConfig.getProperties().put(WanReplicationProperties.MAX_ENDPOINTS.key(), 1);
+        WanReplicationConfig c = configA.getWanReplicationConfig(wanReplicationName);
+        WanBatchReplicationPublisherConfig publisherConfig = c.getBatchPublisherConfigs().iterator().next();
+        publisherConfig.setMaxTargetEndpoints(1);
 
         startClusterA();
         startClusterB();
@@ -280,10 +233,8 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     @Test
     public void connectToPrivateAddress() {
-        final HashMap<String, Comparable> publisherProperties = new HashMap<String, Comparable>();
-        publisherProperties.put(WanReplicationProperties.DISCOVERY_USE_ENDPOINT_PRIVATE_ADDRESS.key(), true);
         final ArrayListDiscoveryStrategyFactory factory = setupDiscoveryStrategyFactory(
-                new ArrayListDiscoveryStrategyFactory(), publisherProperties);
+                new ArrayListDiscoveryStrategyFactory(), pc -> pc.setUseEndpointPrivateAddress(true));
         final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
         discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length, false));
 
@@ -302,9 +253,9 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
         final ArrayList<DiscoveryNode> discoveryEndpoints = factory.strategy.nodes;
         discoveryEndpoints.addAll(clusterDiscoveryNodes(configB, clusterB.length));
 
-        final WanReplicationConfig c = configA.getWanReplicationConfig(wanReplicationName);
-        final WanPublisherConfig publisherConfig = c.getWanPublisherConfigs().iterator().next();
-        publisherConfig.getProperties().put(WanReplicationProperties.ENDPOINTS.key(), "192.168.0.1");
+        WanReplicationConfig c = configA.getWanReplicationConfig(wanReplicationName);
+        WanBatchReplicationPublisherConfig publisherConfig = c.getBatchPublisherConfigs().iterator().next();
+        publisherConfig.setTargetEndpoints("192.168.0.1");
 
         startClusterA();
         startClusterB();
@@ -313,17 +264,20 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     }
 
     private <T extends DiscoveryStrategyFactory> T setupDiscoveryStrategyFactory(T discoveryStrategyFactory) {
-        return setupDiscoveryStrategyFactory(discoveryStrategyFactory, Collections.<String, Comparable>emptyMap());
+        return setupDiscoveryStrategyFactory(discoveryStrategyFactory, null);
     }
 
-    private <T extends DiscoveryStrategyFactory> T setupDiscoveryStrategyFactory(T discoveryStrategyFactory,
-                                                                                 Map<String, Comparable> publisherProperties) {
+    private <T extends DiscoveryStrategyFactory> T setupDiscoveryStrategyFactory(
+            T discoveryStrategyFactory,
+            Consumer<WanBatchReplicationPublisherConfig> publisherConfigConsumer) {
         final DiscoveryStrategyConfig discoveryConfig = new DiscoveryStrategyConfig(discoveryStrategyFactory);
         addDiscoveryConfig(configA, wanReplicationName, discoveryConfig);
-        final WanPublisherConfig publisherConfig =
-                configA.getWanReplicationConfig(wanReplicationName).getWanPublisherConfigs().iterator().next();
-        publisherConfig.getProperties().put(WanReplicationProperties.DISCOVERY_PERIOD.key(), 1);
-        publisherConfig.getProperties().putAll(publisherProperties);
+        WanReplicationConfig wanConfig = configA.getWanReplicationConfig(wanReplicationName);
+        WanBatchReplicationPublisherConfig pc = wanConfig.getBatchPublisherConfigs().iterator().next();
+        pc.setDiscoveryPeriodSeconds(1);
+        if (publisherConfigConsumer != null) {
+            publisherConfigConsumer.accept(pc);
+        }
         return discoveryStrategyFactory;
     }
 
@@ -354,7 +308,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     private static ArrayList<DiscoveryNode> clusterDiscoveryNodes(Config config, int count, boolean hasPublicAddress) {
         try {
-            final ArrayList<DiscoveryNode> nodes = new ArrayList<DiscoveryNode>();
+            final ArrayList<DiscoveryNode> nodes = new ArrayList<>();
             int port = config.getNetworkConfig().getPort();
             for (int i = 0; i < count; i++) {
                 final Address addr = new Address("127.0.0.1", port++);
@@ -367,16 +321,16 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
     }
 
     private void addDiscoveryConfig(Config config, String setupName, DiscoveryStrategyConfig discoveryStrategyConfig) {
-        final WanReplicationConfig c = config.getWanReplicationConfig(setupName);
-        final WanPublisherConfig publisherConfig = c.getWanPublisherConfigs().iterator().next();
-        final DiscoveryConfig discoveryConfig = new DiscoveryConfig();
+        WanReplicationConfig c = config.getWanReplicationConfig(setupName);
+        WanBatchReplicationPublisherConfig publisherConfig = c.getBatchPublisherConfigs().iterator().next();
+        DiscoveryConfig discoveryConfig = new DiscoveryConfig();
         discoveryConfig.addDiscoveryStrategyConfig(discoveryStrategyConfig);
         publisherConfig.setDiscoveryConfig(discoveryConfig);
     }
 
     public static class ExceptionThrowingDiscoveryStrategyFactory implements DiscoveryStrategyFactory {
         private ExceptionThrowingDiscoveryStrategy strategy =
-                new ExceptionThrowingDiscoveryStrategy(null, Collections.<String, Comparable>emptyMap());
+                new ExceptionThrowingDiscoveryStrategy(null, Collections.emptyMap());
 
         @Override
         public Class<? extends DiscoveryStrategy> getDiscoveryStrategyType() {
@@ -396,7 +350,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     public static class ExceptionThrowingDiscoveryStrategy extends AbstractDiscoveryStrategy {
 
-        private final ArrayList<DiscoveryNode> nodes = new ArrayList<DiscoveryNode>();
+        private final ArrayList<DiscoveryNode> nodes = new ArrayList<>();
         private boolean throwException;
 
         ExceptionThrowingDiscoveryStrategy(ILogger logger, Map<String, Comparable> properties) {
@@ -414,7 +368,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     public static class ArrayListDiscoveryStrategyFactory implements DiscoveryStrategyFactory {
         private ArrayListDiscoveryStrategy strategy
-                = new ArrayListDiscoveryStrategy(null, Collections.<String, Comparable>emptyMap());
+                = new ArrayListDiscoveryStrategy(null, Collections.emptyMap());
 
         @Override
         public Class<? extends DiscoveryStrategy> getDiscoveryStrategyType() {
@@ -434,7 +388,7 @@ public class WanDiscoveryTest extends MapWanReplicationTestSupport {
 
     public static class ArrayListDiscoveryStrategy extends AbstractDiscoveryStrategy {
 
-        private final ArrayList<DiscoveryNode> nodes = new ArrayList<DiscoveryNode>();
+        private final ArrayList<DiscoveryNode> nodes = new ArrayList<>();
 
         ArrayListDiscoveryStrategy(ILogger logger, Map<String, Comparable> properties) {
             super(logger, properties);

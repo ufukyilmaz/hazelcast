@@ -4,7 +4,7 @@ import com.hazelcast.client.HazelcastClientNotActiveException;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.config.SocketOptions;
-import com.hazelcast.client.spi.ClientExecutionService;
+import com.hazelcast.client.impl.spi.ClientExecutionService;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;

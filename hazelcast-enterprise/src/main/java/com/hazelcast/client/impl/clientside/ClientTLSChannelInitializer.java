@@ -78,7 +78,7 @@ public class ClientTLSChannelInitializer extends AbstractTLSChannelInitializer {
                     public void accept(ClientMessage message) {
                         connection.handleClientMessage(message);
                     }
-                });
+                }, null);
         // adding of the inbound pipeline
         channel.inboundPipeline().addLast(clientMessageDecoder);
 

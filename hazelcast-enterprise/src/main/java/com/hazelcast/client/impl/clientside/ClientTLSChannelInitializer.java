@@ -1,8 +1,8 @@
 package com.hazelcast.client.impl.clientside;
 
 import com.hazelcast.client.config.SocketOptions;
-import com.hazelcast.client.connection.nio.ClientConnection;
-import com.hazelcast.client.connection.nio.ClientProtocolEncoder;
+import com.hazelcast.client.impl.connection.nio.ClientConnection;
+import com.hazelcast.client.impl.connection.nio.ClientProtocolEncoder;
 import com.hazelcast.client.impl.protocol.ClientMessage;
 import com.hazelcast.client.impl.protocol.util.ClientMessageEncoder;
 import com.hazelcast.config.SSLConfig;

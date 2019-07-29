@@ -5,7 +5,7 @@ import com.hazelcast.cardinality.CardinalityEstimator;
 import com.hazelcast.collection.IList;
 import com.hazelcast.collection.IQueue;
 import com.hazelcast.collection.ISet;
-import com.hazelcast.client.api.ClientService;
+import com.hazelcast.client.ClientService;
 import com.hazelcast.cluster.Cluster;
 import com.hazelcast.cluster.Endpoint;
 import com.hazelcast.cp.internal.datastructures.unsafe.idgen.IdGeneratorService;

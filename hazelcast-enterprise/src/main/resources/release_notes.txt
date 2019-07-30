@@ -56,7 +56,9 @@ getting stuck when requested on a `PASSIVE` cluster: WAN consistency
 check and WAN synchronization performed on a cluster in the `PASSIVE`
 state was keeping the WAN synchronization state at `IN_PROGRESS` even
 after the cluster state has set to `ACTIVE`.
-This was preventing serving future consistency check and synchronization requests. [#2968]
+This was preventing serving future consistency check and synchronization requests.
+This fix allows WAN replication, consistency check and
+WAN synchronization while the source cluster is in the `PASSIVE` state. [#2968]
 
 ==== 3.12.1 ====
 

@@ -3,9 +3,9 @@ package com.hazelcast.enterprise.wan.merkletree;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanPublisherState;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.map.IMap;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -89,33 +89,33 @@ public class WanMerkleAntiEntropyTest {
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceCluster.getConfig()
-                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
-                     .setEnabled(true)
-                     .setDepth(6);
+                .getMapConfig(MAP_NAME).getMerkleTreeConfig()
+                .setEnabled(true)
+                .setDepth(6);
 
         targetCluster.getConfig()
-                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
-                     .setEnabled(true)
-                     .setDepth(6);
+                .getMapConfig(MAP_NAME).getMerkleTreeConfig()
+                .setEnabled(true)
+                .setDepth(6);
 
         sourceCluster.getConfig().getMapConfig(MAP_NAME)
-                     .setInMemoryFormat(inMemoryFormat);
+                .setInMemoryFormat(inMemoryFormat);
         targetCluster.getConfig().getMapConfig(MAP_NAME)
-                     .setInMemoryFormat(inMemoryFormat);
+                .setInMemoryFormat(inMemoryFormat);
 
         if (inMemoryFormat == NATIVE) {
             sourceCluster.getConfig().getNativeMemoryConfig()
-                         .setAllocatorType(STANDARD)
-                         .setEnabled(true);
+                    .setAllocatorType(STANDARD)
+                    .setEnabled(true);
 
             targetCluster.getConfig().getNativeMemoryConfig()
-                         .setAllocatorType(STANDARD)
-                         .setEnabled(true);
+                    .setAllocatorType(STANDARD)
+                    .setEnabled(true);
         }
     }
 

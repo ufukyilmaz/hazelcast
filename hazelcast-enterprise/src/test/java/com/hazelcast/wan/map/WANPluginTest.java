@@ -6,7 +6,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.diagnostics.DiagnosticsLogWriterImpl;
 import com.hazelcast.internal.diagnostics.WANPlugin;
 import com.hazelcast.map.IMap;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -41,10 +41,10 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
     @Override
     protected Config getConfig() {
         Config config = super.getConfig()
-                             .setProperty(WANPlugin.PERIOD_SECONDS.getName(), "1");
+                .setProperty(WANPlugin.PERIOD_SECONDS.getName(), "1");
 
         config.getMapConfig("default")
-              .setInMemoryFormat(getMemoryFormat());
+                .setInMemoryFormat(getMemoryFormat());
         return config;
     }
 

@@ -9,8 +9,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.map.IMap;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -162,13 +162,14 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
     }
 
     @Override
+
     protected WanBatchReplicationPublisherConfig targetCluster(Config config, int count) {
         final WanBatchReplicationPublisherConfig wanConfig =
                 super.targetCluster(config, count)
-                     .setQueueCapacity(100)
-                     .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION)
-                     .setBatchSize(10)
-                     .setBatchMaxDelayMillis(100);
+                        .setQueueCapacity(100)
+                        .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION)
+                        .setBatchSize(10)
+                        .setBatchMaxDelayMillis(100);
         return wanConfig;
     }
 
@@ -176,11 +177,11 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
     protected Config getConfig() {
         final Config config = super.getConfig();
         config.getMapConfig("default")
-              .setInMemoryFormat(getMemoryFormat())
-              .setBackupCount(1)
-              .setTimeToLiveSeconds(900)
-              .setMaxIdleSeconds(900)
-              .setEvictionPolicy(EvictionPolicy.LRU);
+                .setInMemoryFormat(getMemoryFormat())
+                .setBackupCount(1)
+                .setTimeToLiveSeconds(900)
+                .setMaxIdleSeconds(900)
+                .setEvictionPolicy(EvictionPolicy.LRU);
         return config;
     }
 

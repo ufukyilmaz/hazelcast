@@ -1,20 +1,21 @@
 package com.hazelcast.wan.map;
 
-import com.hazelcast.core.EntryView;
-import com.hazelcast.map.merge.MapMergePolicy;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.spi.merge.MergingValue;
+import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 
 import java.io.IOException;
 
 /**
- * Custom {@link MapMergePolicy} that ignores merging and existing entries and returns null
- * that ends up with deletion of the related key.
+ * Custom {@link com.hazelcast.spi.merge.SplitBrainMergePolicy}
+ * that ignores merging and existing entries and returns
+ * null that ends up with deletion of the related key.
  */
-class DeleteMapMergePolicy implements MapMergePolicy {
+class DeleteMapMergePolicy implements SplitBrainMergePolicy<Object, MergingValue<Object>> {
 
     @Override
-    public Object merge(String mapName, EntryView mergingEntry, EntryView existingEntry) {
+    public Object merge(MergingValue<Object> mergingValue, MergingValue<Object> existingValue) {
         return null;
     }
 

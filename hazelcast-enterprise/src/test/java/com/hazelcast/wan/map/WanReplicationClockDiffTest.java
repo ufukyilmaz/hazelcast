@@ -10,7 +10,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 import com.hazelcast.map.IMap;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.SlowTest;
@@ -160,16 +160,16 @@ public class WanReplicationClockDiffTest extends HazelcastTestSupport {
 
         JoinConfig joinConfig = config.getNetworkConfig().getJoin();
         joinConfig.getMulticastConfig()
-                  .setEnabled(false);
+                .setEnabled(false);
         joinConfig.getTcpIpConfig()
-                  .setEnabled(true)
-                  .addMember("127.0.0.1");
+                .setEnabled(true)
+                .addMember("127.0.0.1");
 
         config.getGroupConfig().setName("B");
         config.setInstanceName("confB-" + UUID.randomUUID() + "-");
         config.getNetworkConfig().setPort(5801);
         config.addWanReplicationConfig(new WanReplicationConfig().setName(WAN_REPLICATION_SCHEME)
-                                                                 .addWanBatchReplicationPublisherConfig(pc));
+                .addWanBatchReplicationPublisherConfig(pc));
         WanReplicationRef wanReplicationRef = new WanReplicationRef()
                 .setName(WAN_REPLICATION_SCHEME)
                 .setMergePolicy(PassThroughMergePolicy.class.getName());

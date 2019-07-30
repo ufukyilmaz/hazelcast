@@ -12,7 +12,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.IMap;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.SlowTest;
@@ -165,8 +165,8 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
                                                String truststorePassword) {
         Config config = smallInstanceConfig();
         config.getAdvancedNetworkConfig().setEnabled(true)
-              .setMemberEndpointConfig(createServerSocketConfig(MEMBER_PORT + 10,
-                      prepareSslPropertiesWithTrustStore(keystore, keystorePassword, truststore, truststorePassword)));
+                .setMemberEndpointConfig(createServerSocketConfig(MEMBER_PORT + 10,
+                        prepareSslPropertiesWithTrustStore(keystore, keystorePassword, truststore, truststorePassword)));
         JoinConfig join = config.getAdvancedNetworkConfig().getJoin();
         join.getTcpIpConfig().addMember("127.0.0.1:" + MEMBER_PORT).setEnabled(true);
         join.getMulticastConfig().setEnabled(false);
@@ -180,8 +180,8 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
         props.setProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD, truststorePassword);
         Config config = smallInstanceConfig();
         config.getAdvancedNetworkConfig()
-              .setEnabled(true)
-              .addWanEndpointConfig(createServerSocketConfig(WAN_PORT + 10, "WAN", props));
+                .setEnabled(true)
+                .addWanEndpointConfig(createServerSocketConfig(WAN_PORT + 10, "WAN", props));
         addCommonWanReplication(config, WAN_PORT);
         config.getGroupConfig().setName("not-dev-cluster");
         return config;

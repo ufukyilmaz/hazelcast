@@ -1,7 +1,5 @@
 package com.hazelcast.cache.impl.operation;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationFactory;
@@ -17,9 +15,10 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * This class is responsible for WAN replication related checks for supported mutating operations.
- * {@link com.hazelcast.spi.Operation} creations are delegated to underlying {@link EnterpriseCacheOperationProvider} instance
- * after checks.
+ * This class is responsible for WAN replication related
+ * checks for supported mutating operations. {@link
+ * com.hazelcast.spi.Operation} creations are delegated to underlying
+ * {@link EnterpriseCacheOperationProvider} instance after checks.
  */
 public class WANAwareCacheOperationProvider extends EnterpriseCacheOperationProvider {
 
@@ -131,12 +130,6 @@ public class WANAwareCacheOperationProvider extends EnterpriseCacheOperationProv
     @Override
     public Operation createWanRemoveOperation(String origin, Data key, int completionId) {
         return delegate.createWanRemoveOperation(origin, key, completionId);
-    }
-
-    @Override
-    public Operation createLegacyWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,
-                                                   CacheMergePolicy mergePolicy, int completionId) {
-        return delegate.createLegacyWanMergeOperation(origin, cacheEntryView, mergePolicy, completionId);
     }
 
     @Override

@@ -1,8 +1,6 @@
 package com.hazelcast.wan.cache;
 
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
-import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
-import com.hazelcast.cache.merge.PutIfAbsentCacheMergePolicy;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CustomWanPublisherConfig;
@@ -57,9 +55,7 @@ public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
     @Parameters(name = "inMemoryFormat:{0} cacheMergePolicy:{1} wanMergePolicy:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {OBJECT, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
                 {OBJECT, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
-                {BINARY, PassThroughCacheMergePolicy.class, PutIfAbsentCacheMergePolicy.class},
                 {BINARY, PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
                 {NATIVE, com.hazelcast.spi.merge.PassThroughMergePolicy.class, com.hazelcast.spi.merge.PutIfAbsentMergePolicy.class},
                 {NATIVE, com.hazelcast.spi.merge.PassThroughMergePolicy.class, com.hazelcast.spi.merge.PutIfAbsentMergePolicy.class},
@@ -162,7 +158,7 @@ public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
         CacheConfig<K, V> cacheConfig = new CacheConfig<>();
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         cacheConfig.setName(cacheName);
-        cacheConfig.setMergePolicy(cacheMergePolicy.getName());
+        cacheConfig.getMergePolicyConfig().setPolicy(cacheMergePolicy.getName());
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         cacheConfig.setWanReplicationRef(new WanReplicationRef()
                 .setName(WAN_REPLICATION_NAME)

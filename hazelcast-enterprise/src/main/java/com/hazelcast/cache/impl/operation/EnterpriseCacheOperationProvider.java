@@ -1,7 +1,5 @@
 package com.hazelcast.cache.impl.operation;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.DefaultOperationProvider;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.Operation;
@@ -19,11 +17,6 @@ public class EnterpriseCacheOperationProvider extends DefaultOperationProvider {
 
     public Operation createWanRemoveOperation(String origin, Data key, int completionId) {
         return new WanCacheRemoveOperation(nameWithPrefix, origin, key, completionId);
-    }
-
-    public Operation createLegacyWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,
-                                                   CacheMergePolicy mergePolicy, int completionId) {
-        return new WanCacheLegacyMergeOperation(nameWithPrefix, origin, cacheEntryView, mergePolicy, completionId);
     }
 
     public Operation createWanMergeOperation(String origin, CacheMergeTypes mergingEntry,

@@ -16,6 +16,7 @@ import com.hazelcast.internal.management.events.WanMerkleSyncFinishedEvent;
 import com.hazelcast.internal.management.events.WanSyncProgressUpdateEvent;
 import com.hazelcast.internal.management.events.WanSyncStartedEvent;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -124,31 +125,33 @@ public class WanSyncTrackingTest {
                 .setup();
 
         sourceCluster.replicateMap(MAP1_NAME)
-                     .withReplication(wanReplication)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceCluster.replicateMap(MAP2_NAME)
-                     .withReplication(wanReplication)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceCluster.getConfig().getManagementCenterConfig()
-                     .setUrl("https://someUrl")
-                     .setEnabled(true);
+                .setUrl("https://someUrl")
+                .setEnabled(true);
     }
 
     private void configureMerkleTrees(Cluster cluster) {
         if (consistencyCheckStrategy == MERKLE_TREES) {
             cluster.getConfig()
-                   .getMapConfig(MAP1_NAME)
-                   .getMerkleTreeConfig()
-                   .setEnabled(true)
-                   .setDepth(6);
+                    .getMapConfig(MAP1_NAME)
+                    .getMerkleTreeConfig()
+                    .setEnabled(true)
+                    .setDepth(6);
 
             cluster.getConfig()
-                   .getMapConfig(MAP2_NAME)
-                   .getMerkleTreeConfig()
-                   .setEnabled(true)
-                   .setDepth(6);
+                    .getMapConfig(MAP2_NAME)
+                    .getMerkleTreeConfig()
+                    .setEnabled(true)
+                    .setDepth(6);
         }
     }
 

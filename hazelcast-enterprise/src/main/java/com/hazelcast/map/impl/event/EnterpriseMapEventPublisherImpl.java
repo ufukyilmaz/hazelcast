@@ -18,6 +18,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.CollectionUtil;
 
 import java.util.Collections;
@@ -26,7 +27,6 @@ import java.util.List;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.enterprise.wan.WanFilterEventType.LOADED;
 import static com.hazelcast.enterprise.wan.WanFilterEventType.UPDATED;
-import static com.hazelcast.map.impl.EntryViews.toLazyEntryView;
 
 /**
  * Enterprise version of {@link MapEventPublisher} helper functionality.
@@ -120,7 +120,10 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      * @param eventType    the event type
      * @return if the event matches the WAN replication filter
      */
-    private boolean isEventFiltered(MapContainer mapContainer, EntryView entryView, WanFilterEventType eventType) {
+    private boolean isEventFiltered(MapContainer mapContainer,
+                                    EntryView<Data, Data> entryView,
+                                    WanFilterEventType eventType) {
+
         MapConfig mapConfig = mapContainer.getMapConfig();
         WanReplicationRef wanReplicationRef = mapConfig.getWanReplicationRef();
         List<String> filters = getFiltersFrom(wanReplicationRef);
@@ -131,7 +134,7 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
             return eventType == WanFilterEventType.LOADED;
         }
 
-        EntryView lazyEntryView = toLazyEntryView(entryView, serializationService, null);
+        EntryView lazyEntryView = toLazyEntryView(entryView, serializationService);
         MapFilterProvider mapFilterProvider = getEnterpriseMapServiceContext().getMapFilterProvider();
 
         for (String filterName : filters) {
@@ -141,6 +144,21 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
             }
         }
         return false;
+    }
+
+    public static <K, V> EntryView<K, V> toLazyEntryView(EntryView<K, V> entryView,
+                                                         SerializationService serializationService) {
+        return new LazyEntryView<>(entryView.getKey(), entryView.getValue(), serializationService)
+                .setCost(entryView.getCost())
+                .setVersion(entryView.getVersion())
+                .setLastAccessTime(entryView.getLastAccessTime())
+                .setLastUpdateTime(entryView.getLastUpdateTime())
+                .setTtl(entryView.getTtl())
+                .setMaxIdle(entryView.getMaxIdle())
+                .setCreationTime(entryView.getCreationTime())
+                .setHits(entryView.getHits())
+                .setExpirationTime(entryView.getExpirationTime())
+                .setLastStoredTime(entryView.getLastStoredTime());
     }
 
     private static List<String> getFiltersFrom(WanReplicationRef wanReplicationRef) {

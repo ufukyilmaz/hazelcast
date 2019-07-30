@@ -1,13 +1,12 @@
 package com.hazelcast.wan;
 
-import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.map.IMap;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -87,22 +86,22 @@ public class WanCounterSyncTest {
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceCluster.replicateCache(CACHE_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughCacheMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         if (consistencyCheckStrategy == MERKLE_TREES) {
             sourceCluster.getConfig().getMapConfig(MAP_NAME).getMerkleTreeConfig()
-                         .setEnabled(true)
-                         .setDepth(4);
+                    .setEnabled(true)
+                    .setDepth(4);
             targetCluster.getConfig().getMapConfig(MAP_NAME).getMerkleTreeConfig()
-                         .setEnabled(true)
-                         .setDepth(4);
+                    .setEnabled(true)
+                    .setDepth(4);
         }
 
         executorService = Executors.newScheduledThreadPool(2);
@@ -118,7 +117,7 @@ public class WanCounterSyncTest {
         HazelcastInstance syncCoordinatorMember = sourceCluster.getAMember();
         executorService.scheduleAtFixedRate(new SyncTask(syncCoordinatorMember), 10, 200, MILLISECONDS);
         executorService.submit(new LoadTask())
-                       .get();
+                .get();
 
         verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
     }

@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan.merkletree;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -96,7 +96,7 @@ public class WanMerkleConsistencyCheckTest {
                 {NATIVE, 5, 11, 271, 100},
                 {NATIVE, 11, 11, 271, 100},
                 {NATIVE, 11, 5, 271, 100},
-                });
+        });
     }
 
     @Parameter(0)
@@ -133,36 +133,36 @@ public class WanMerkleConsistencyCheckTest {
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceCluster.getConfig()
-                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
-                     .setEnabled(true)
-                     .setDepth(sourceTreeDepth);
+                .getMapConfig(MAP_NAME).getMerkleTreeConfig()
+                .setEnabled(true)
+                .setDepth(sourceTreeDepth);
 
         targetCluster.getConfig()
-                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
-                     .setEnabled(true)
-                     .setDepth(targetTreeDepth);
+                .getMapConfig(MAP_NAME).getMerkleTreeConfig()
+                .setEnabled(true)
+                .setDepth(targetTreeDepth);
 
         sourceCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
         targetCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
 
         sourceCluster.getConfig().getMapConfig(MAP_NAME)
-                     .setInMemoryFormat(inMemoryFormat);
+                .setInMemoryFormat(inMemoryFormat);
         targetCluster.getConfig().getMapConfig(MAP_NAME)
-                     .setInMemoryFormat(inMemoryFormat);
+                .setInMemoryFormat(inMemoryFormat);
 
         if (inMemoryFormat == NATIVE) {
             sourceCluster.getConfig().getNativeMemoryConfig()
-                         .setAllocatorType(STANDARD)
-                         .setEnabled(true);
+                    .setAllocatorType(STANDARD)
+                    .setEnabled(true);
 
             targetCluster.getConfig().getNativeMemoryConfig()
-                         .setAllocatorType(STANDARD)
-                         .setEnabled(true);
+                    .setAllocatorType(STANDARD)
+                    .setEnabled(true);
         }
     }
 

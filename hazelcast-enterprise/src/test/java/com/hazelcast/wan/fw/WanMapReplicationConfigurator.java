@@ -1,19 +1,20 @@
 package com.hazelcast.wan.fw;
 
 import com.hazelcast.config.WanReplicationRef;
-import com.hazelcast.map.merge.MapMergePolicy;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 
-public class WanMapReplicationConfigurator extends AbstractWanReplicationConfigurator<WanMapReplicationConfigurator> {
+public class WanMapReplicationConfigurator
+        extends AbstractWanReplicationConfigurator<WanMapReplicationConfigurator> {
+
     private final String mapName;
-    private Class<? extends MapMergePolicy> mergePolicy = PassThroughMergePolicy.class;
+    private Class<? extends SplitBrainMergePolicy> mergePolicy;
 
     WanMapReplicationConfigurator(Cluster sourceCluster, String mapName) {
         super(sourceCluster);
         this.mapName = mapName;
     }
 
-    public WanMapReplicationConfigurator withMergePolicy(Class<? extends MapMergePolicy> mergePolicy) {
+    public WanMapReplicationConfigurator withMergePolicy(Class<? extends SplitBrainMergePolicy> mergePolicy) {
         this.mergePolicy = mergePolicy;
         return this;
     }

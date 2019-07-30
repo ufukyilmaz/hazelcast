@@ -11,11 +11,11 @@ import com.hazelcast.config.properties.PropertyDefinition;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.discovery.AbstractDiscoveryStrategy;
 import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.DiscoveryStrategy;
 import com.hazelcast.spi.discovery.DiscoveryStrategyFactory;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -59,8 +59,8 @@ public class WanMisconfigurationTest extends HazelcastTestSupport {
                 .setName("default")
                 .setWanReplicationRef(wanReplicationRef);
         return super.getConfig()
-                    .addMapConfig(mapConfig)
-                    .addWanReplicationConfig(wanConfig);
+                .addMapConfig(mapConfig)
+                .addWanReplicationConfig(wanConfig);
     }
 
     @Before

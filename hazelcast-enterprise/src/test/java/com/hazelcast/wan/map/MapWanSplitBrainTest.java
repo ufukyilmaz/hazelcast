@@ -13,7 +13,6 @@ import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.map.IMap;
-import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.merge.PutIfAbsentMergePolicy;
@@ -52,13 +51,8 @@ public class MapWanSplitBrainTest extends SplitBrainTestSupport {
     @Parameters(name = "inMemoryFormat:{0} mapMergePolicy:{1} wanMergePolicy:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {OBJECT, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
                 {OBJECT, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
-
-                {BINARY, com.hazelcast.map.merge.PassThroughMergePolicy.class, PutIfAbsentMapMergePolicy.class},
                 {BINARY, com.hazelcast.spi.merge.PassThroughMergePolicy.class, PutIfAbsentMergePolicy.class},
-
-                {NATIVE, com.hazelcast.spi.merge.PassThroughMergePolicy.class, com.hazelcast.spi.merge.PutIfAbsentMergePolicy.class},
                 {NATIVE, com.hazelcast.spi.merge.PassThroughMergePolicy.class, com.hazelcast.spi.merge.PutIfAbsentMergePolicy.class},
         });
     }

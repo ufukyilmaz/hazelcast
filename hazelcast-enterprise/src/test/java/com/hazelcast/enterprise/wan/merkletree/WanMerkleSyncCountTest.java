@@ -3,17 +3,17 @@ package com.hazelcast.enterprise.wan.merkletree;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.LocalWanStats;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
-import com.hazelcast.wan.impl.WanSyncStatus;
+import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
-import com.hazelcast.wan.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.impl.WanSyncStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -130,19 +130,19 @@ public class WanMerkleSyncCountTest {
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceCluster.getConfig()
-                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
-                     .setEnabled(true)
-                     .setDepth(sourceDepth);
+                .getMapConfig(MAP_NAME).getMerkleTreeConfig()
+                .setEnabled(true)
+                .setDepth(sourceDepth);
 
         targetCluster.getConfig()
-                     .getMapConfig(MAP_NAME).getMerkleTreeConfig()
-                     .setEnabled(true)
-                     .setDepth(sourceDepth);
+                .getMapConfig(MAP_NAME).getMerkleTreeConfig()
+                .setEnabled(true)
+                .setDepth(sourceDepth);
 
         sourceCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
         targetCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));

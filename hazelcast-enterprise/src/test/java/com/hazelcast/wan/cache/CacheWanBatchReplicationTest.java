@@ -1,9 +1,9 @@
 package com.hazelcast.wan.cache;
 
 import com.hazelcast.cache.jsr.JsrTestUtil;
-import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.cache.filter.DummyCacheWanFilter;
@@ -62,7 +62,7 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
         initConfigA();
         //configA.setProperty(GroupProperty.ENTERPRISE_WAN_REP_QUEUE_CAPACITY, "100");
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(), "default");
         initCluster(singleNodeA, configA);
         // exceed the size of event queue
         createCacheDataIn(singleNodeA, DEFAULT_CACHE_NAME, 0, 10000, false);
@@ -76,7 +76,7 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
     public void testCacheWanFilter() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 "default", DummyCacheWanFilter.class.getName());
         startClusterA();
         startClusterB();
@@ -89,7 +89,7 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
     public void testMigration() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(), "default");
 
         initCluster(singleNodeA, configA);
         createCacheDataIn(singleNodeA, DEFAULT_CACHE_NAME, 0, 200, false);

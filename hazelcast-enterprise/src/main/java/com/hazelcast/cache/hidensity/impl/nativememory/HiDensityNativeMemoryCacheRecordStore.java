@@ -1,7 +1,5 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeEvictionChecker;
@@ -291,13 +289,6 @@ public class HiDensityNativeMemoryCacheRecordStore
     public CacheRecord merge(CacheMergeTypes mergingEntry,
                              SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy, CallerProvenance callerProvenance) {
         return toHeapCacheRecord((HiDensityNativeMemoryCacheRecord) super.merge(mergingEntry, mergePolicy, callerProvenance));
-    }
-
-    @Override
-    public CacheRecord merge(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
-                             String caller, String origin, int completionId, CallerProvenance callerProvenance) {
-        return toHeapCacheRecord((HiDensityNativeMemoryCacheRecord) super.merge(cacheEntryView, mergePolicy,
-                caller, origin, completionId, callerProvenance));
     }
 
     @Override

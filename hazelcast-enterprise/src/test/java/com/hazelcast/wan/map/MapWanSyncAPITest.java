@@ -6,20 +6,20 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.MerkleTreeWanSyncStats;
 import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.util.RootCauseMatcher;
-import com.hazelcast.wan.impl.AddWanConfigResult;
 import com.hazelcast.wan.WanSyncStats;
-import com.hazelcast.wan.impl.WanSyncStatus;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
+import com.hazelcast.wan.impl.AddWanConfigResult;
+import com.hazelcast.wan.impl.WanSyncStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -116,9 +116,9 @@ public class MapWanSyncAPITest {
     private void configureMerkleTrees(Cluster cluster) {
         if (consistencyCheckStrategy == MERKLE_TREES) {
             cluster.getConfig()
-                   .getMapConfig("default").getMerkleTreeConfig()
-                   .setEnabled(true)
-                   .setDepth(6);
+                    .getMapConfig("default").getMerkleTreeConfig()
+                    .setEnabled(true)
+                    .setDepth(6);
         }
     }
 

@@ -1,7 +1,6 @@
 package com.hazelcast.cache;
 
 import classloading.domain.Person;
-import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CustomWanPublisherConfig;
@@ -17,6 +16,7 @@ import com.hazelcast.instance.impl.Node;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.CountingWanEndpoint;
@@ -48,7 +48,7 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
                 .setMaximumSizePolicy(FREE_NATIVE_MEMORY_SIZE)
                 .setEvictionPolicy(EvictionPolicy.LFU));
         cacheConfig.setWanReplicationRef(new WanReplicationRef("wan-replication",
-                PassThroughCacheMergePolicy.class.getName(),
+                PassThroughMergePolicy.class.getName(),
                 Collections.<String>emptyList(),
                 false));
         cacheConfig.getHotRestartConfig().setEnabled(true);

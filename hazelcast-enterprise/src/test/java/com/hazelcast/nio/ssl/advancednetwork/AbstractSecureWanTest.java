@@ -13,9 +13,9 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ssl.TestKeyStoreUtil;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -153,7 +153,7 @@ public abstract class AbstractSecureWanTest {
         join.getTcpIpConfig().setEnabled(true);
         join.getMulticastConfig().setEnabled(false);
         config.getAdvancedNetworkConfig().setEnabled(true)
-              .setMemberEndpointConfig(createMemberSocketConfig(memberPort));
+                .setMemberEndpointConfig(createMemberSocketConfig(memberPort));
         return config;
     }
 
@@ -220,17 +220,17 @@ public abstract class AbstractSecureWanTest {
     private static WanBatchReplicationPublisherConfig createWanPublisherConfig(String clusterName, String endpoints, String endpointName) {
         WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
         c.setEndpoint(endpointName)
-         .setGroupName(clusterName)
-         .setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION)
-         .setQueueCapacity(1000)
-         .setBatchSize(500)
-         .setBatchMaxDelayMillis(1000)
-         .setSnapshotEnabled(false)
-         .setResponseTimeoutMillis(60000)
-         .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
-         .setTargetEndpoints(endpoints)
-         .setDiscoveryPeriodSeconds(20)
-         .getWanSyncConfig().setConsistencyCheckStrategy(ConsistencyCheckStrategy.NONE);
+                .setGroupName(clusterName)
+                .setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION)
+                .setQueueCapacity(1000)
+                .setBatchSize(500)
+                .setBatchMaxDelayMillis(1000)
+                .setSnapshotEnabled(false)
+                .setResponseTimeoutMillis(60000)
+                .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
+                .setTargetEndpoints(endpoints)
+                .setDiscoveryPeriodSeconds(20)
+                .getWanSyncConfig().setConsistencyCheckStrategy(ConsistencyCheckStrategy.NONE);
         return c;
     }
 }

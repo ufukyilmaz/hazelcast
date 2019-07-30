@@ -4,17 +4,17 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
+import com.hazelcast.wan.ConsistencyCheckResult;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
-import com.hazelcast.wan.ConsistencyCheckResult;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -271,17 +271,17 @@ public class WanMerkleHotRestartComplexTest extends HazelcastTestSupport {
         Config targetConfig = targetCluster.getConfig();
 
         sourceConfig.getHotRestartPersistenceConfig()
-                    .setBaseDir(hotRestartFolderRule.getBaseDir())
-                    .setEnabled(true);
+                .setBaseDir(hotRestartFolderRule.getBaseDir())
+                .setEnabled(true);
 
         if (inMemoryFormat == NATIVE) {
             sourceConfig.getNativeMemoryConfig()
-                        .setAllocatorType(POOLED)
-                        .setEnabled(true);
+                    .setAllocatorType(POOLED)
+                    .setEnabled(true);
 
             targetConfig.getNativeMemoryConfig()
-                        .setAllocatorType(POOLED)
-                        .setEnabled(true);
+                    .setAllocatorType(POOLED)
+                    .setEnabled(true);
         }
 
         wanReplicationMerkle1 = configureMerkleMap(MERKLE1_REPLICATION_NAME, MAP_MERKLE1_NAME, ONE_BACKUP, HOT_RESTART_ENABLED);
@@ -303,18 +303,18 @@ public class WanMerkleHotRestartComplexTest extends HazelcastTestSupport {
                 .setup();
 
         sourceCluster.replicateMap(mapName)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceConfig.getMapConfig(mapName)
-                    .setInMemoryFormat(inMemoryFormat)
-                    .getHotRestartConfig()
-                    .setEnabled(hotRestartEnabled);
+                .setInMemoryFormat(inMemoryFormat)
+                .getHotRestartConfig()
+                .setEnabled(hotRestartEnabled);
 
         sourceConfig.getMapConfig(mapName)
-                    .setBackupCount(backupCount)
-                    .setAsyncBackupCount(0);
+                .setBackupCount(backupCount)
+                .setAsyncBackupCount(0);
 
         sourceConfig
                 .getMapConfig(mapName).getMerkleTreeConfig()
@@ -322,11 +322,11 @@ public class WanMerkleHotRestartComplexTest extends HazelcastTestSupport {
                 .setDepth(6);
 
         targetConfig.getMapConfig(mapName)
-                    .setInMemoryFormat(inMemoryFormat);
+                .setInMemoryFormat(inMemoryFormat);
 
         targetConfig.getMapConfig(mapName).getMerkleTreeConfig()
-                    .setEnabled(true)
-                    .setDepth(6);
+                .setEnabled(true)
+                .setDepth(6);
 
         return wanReplication;
     }
@@ -343,19 +343,19 @@ public class WanMerkleHotRestartComplexTest extends HazelcastTestSupport {
                 .setup();
 
         sourceCluster.replicateMap(MAP_NONMERKLE_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceConfig.getMapConfig(MAP_NONMERKLE_NAME)
-                    .getHotRestartConfig()
-                    .setEnabled(true);
+                .getHotRestartConfig()
+                .setEnabled(true);
 
         sourceConfig.getMapConfig(MAP_NONMERKLE_NAME)
-                    .setInMemoryFormat(inMemoryFormat);
+                .setInMemoryFormat(inMemoryFormat);
 
         targetConfig.getMapConfig(MAP_NONMERKLE_NAME)
-                    .setInMemoryFormat(inMemoryFormat);
+                .setInMemoryFormat(inMemoryFormat);
 
         return wanReplication;
     }

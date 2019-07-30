@@ -2,12 +2,12 @@ package com.hazelcast.wan.cache;
 
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.jsr.JsrTestUtil;
-import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
@@ -45,17 +45,17 @@ public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
         initConfigA();
         initConfigB();
 
-        setupReplicateFrom(configA, configB, clusterB.length, wanSetupName, PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, wanSetupName, PassThroughMergePolicy.class.getName(),
                 "default");
         // disable WAN replication for the default cache config (it's auto-enabled by the setupReplicateFrom())
         configA.getCacheConfig("default")
-               .setWanReplicationRef(null);
+                .setWanReplicationRef(null);
 
         startClusterA();
         startClusterB();
 
         WanReplicationRef wanRef = new WanReplicationRef();
-        wanRef.setMergePolicy(PassThroughCacheMergePolicy.class.getName());
+        wanRef.setMergePolicy(PassThroughMergePolicy.class.getName());
         wanRef.setName(wanSetupName);
 
         CacheSimpleConfig cacheConfig = new CacheSimpleConfig();

@@ -5,8 +5,8 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Rule;
@@ -49,20 +49,20 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 consistencyCheckStrategy);
         configA.getMapConfig("default")
-               .getHotRestartConfig()
-               .setEnabled(true)
-               .setFsync(false);
+                .getHotRestartConfig()
+                .setEnabled(true)
+                .setFsync(false);
         configA.getHotRestartPersistenceConfig().setBaseDir(hotRestartFolderRule.getBaseDir());
 
         if (consistencyCheckStrategy == MERKLE_TREES) {
             configA.getMapConfig("default")
-                   .setMerkleTreeConfig(new MerkleTreeConfig().setEnabled(true).setDepth(5));
+                    .setMerkleTreeConfig(new MerkleTreeConfig().setEnabled(true).setDepth(5));
             configB.getMapConfig("default")
-                   .setMerkleTreeConfig(new MerkleTreeConfig().setEnabled(true).setDepth(5));
+                    .setMerkleTreeConfig(new MerkleTreeConfig().setEnabled(true).setDepth(5));
         }
 
         configA.getHotRestartPersistenceConfig()
-               .setEnabled(true);
+                .setEnabled(true);
         startClusterA();
         startClusterB();
 

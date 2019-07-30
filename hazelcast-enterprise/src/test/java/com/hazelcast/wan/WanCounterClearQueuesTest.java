@@ -1,13 +1,12 @@
 package com.hazelcast.wan;
 
 import com.hazelcast.cache.jsr.JsrTestUtil;
-import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -100,14 +99,14 @@ public class WanCounterClearQueuesTest {
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceCluster.replicateCache(CACHE_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughCacheMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         executorService = Executors.newSingleThreadScheduledExecutor();
         // uncomment to dump the counters when debugging locally
@@ -119,8 +118,8 @@ public class WanCounterClearQueuesTest {
                 .setMaximumSizePolicy(ENTRY_COUNT);
 
         CacheSimpleConfig cacheConfig = cluster.getConfig().getCacheConfig(CACHE_NAME);
-        cacheConfig.setEvictionConfig(evictionConfig)
-                   .setMergePolicy(PassThroughCacheMergePolicy.class.getName());
+        cacheConfig.setEvictionConfig(evictionConfig).getMergePolicyConfig()
+                .setPolicy(PassThroughMergePolicy.class.getName());
     }
 
     @Test

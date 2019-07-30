@@ -1,7 +1,5 @@
 package com.hazelcast.cache.impl.wan;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
@@ -69,12 +67,12 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
             handleUpdateEvent((CacheReplicationUpdate) cacheReplicationObject,
                     cacheConfig, replicationEvent.getAcknowledgeType());
             wanService.getReceivedEventCounters(ICacheService.SERVICE_NAME)
-                      .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
+                    .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
         } else if (cacheReplicationObject instanceof CacheReplicationRemove) {
             handleRemoveEvent((CacheReplicationRemove) cacheReplicationObject,
                     cacheConfig, replicationEvent.getAcknowledgeType());
             wanService.getReceivedEventCounters(ICacheService.SERVICE_NAME)
-                      .incrementRemove(cacheReplicationObject.getNameWithPrefix());
+                    .incrementRemove(cacheReplicationObject.getNameWithPrefix());
         }
     }
 
@@ -173,22 +171,19 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
      * @param acknowledgeType determines whether the method will wait for the
      *                        update to be processed on the partition owner
      */
-    private void handleUpdateEvent(CacheReplicationUpdate event, CacheConfig cacheConfig, WanAcknowledgeType acknowledgeType) {
+    private void handleUpdateEvent(CacheReplicationUpdate event,
+                                   CacheConfig cacheConfig, WanAcknowledgeType acknowledgeType) {
+
         EnterpriseCacheOperationProvider operationProvider = (EnterpriseCacheOperationProvider) cacheService
                 .getCacheOperationProvider(event.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
-        Object mergePolicy = cacheService.getMergePolicyProvider().getMergePolicy(event.getMergePolicy());
-        Operation operation;
-        if (mergePolicy instanceof SplitBrainMergePolicy) {
-            CacheMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
-            //noinspection unchecked
-            operation = operationProvider.createWanMergeOperation(ORIGIN, mergingEntry,
-                    (SplitBrainMergePolicy<Data, CacheMergeTypes>) mergePolicy, IGNORE_COMPLETION);
-        } else {
-            CacheEntryView<Data, Data> entryView = event.getEntryView();
-            operation = operationProvider.createLegacyWanMergeOperation(ORIGIN, entryView, (CacheMergePolicy) mergePolicy,
-                    IGNORE_COMPLETION);
-        }
+
+        SplitBrainMergePolicy mergePolicy = cacheService.getMergePolicyProvider().getMergePolicy(event.getMergePolicy());
+        CacheMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
+        Operation operation = operationProvider.createWanMergeOperation(ORIGIN, mergingEntry,
+                (SplitBrainMergePolicy<Data, CacheMergeTypes>) mergePolicy, IGNORE_COMPLETION);
+
         InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
+
         if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
             future.join();
         }

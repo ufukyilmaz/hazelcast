@@ -21,16 +21,16 @@ import com.hazelcast.internal.management.events.EventMetadata;
 import com.hazelcast.internal.management.events.WanConfigurationAddedEvent;
 import com.hazelcast.internal.management.events.WanConfigurationExtendedEvent;
 import com.hazelcast.internal.networking.ServerSocketRegistry;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.nio.NetworkingService;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestEnvironment;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.impl.AddWanConfigResult;
-import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
+import com.hazelcast.wan.impl.AddWanConfigResult;
+import com.hazelcast.wan.impl.WanReplicationService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -105,7 +105,7 @@ public class ConfigEventTest extends HazelcastTestSupport {
 
         verify(getWanReplicationService(coordinatorInstance), times(1)).emitManagementCenterEvent(argThat(addedEventMatcher("new-name")));
 
-        for (HazelcastInstance instance: clusterA.getMembers()) {
+        for (HazelcastInstance instance : clusterA.getMembers()) {
             verify(getWanReplicationService(instance), never()).emitManagementCenterEvent(isA(AddWanConfigIgnoredEvent.class));
             verify(getWanReplicationService(instance), never()).emitManagementCenterEvent(isA(WanConfigurationExtendedEvent.class));
         }
@@ -126,7 +126,7 @@ public class ConfigEventTest extends HazelcastTestSupport {
 
         verify(getWanReplicationService(coordinatorInstance), times(1)).emitManagementCenterEvent(argThat(ignoredMatcher(EXISTING_WAN_CONFIG_NAME)));
 
-        for (HazelcastInstance instance: clusterA.getMembers()) {
+        for (HazelcastInstance instance : clusterA.getMembers()) {
             verify(getWanReplicationService(instance), never()).emitManagementCenterEvent(isA(WanConfigurationAddedEvent.class));
             verify(getWanReplicationService(instance), never()).emitManagementCenterEvent(isA(WanConfigurationExtendedEvent.class));
         }
@@ -147,7 +147,7 @@ public class ConfigEventTest extends HazelcastTestSupport {
 
         verify(getWanReplicationService(coordinatorInstance), times(1)).emitManagementCenterEvent(argThat(extendedMatcher(EXISTING_WAN_CONFIG_NAME, "C")));
 
-        for (HazelcastInstance instance: clusterA.getMembers()) {
+        for (HazelcastInstance instance : clusterA.getMembers()) {
             verify(getWanReplicationService(instance), never()).emitManagementCenterEvent(isA(AddWanConfigIgnoredEvent.class));
         }
     }
@@ -227,7 +227,7 @@ public class ConfigEventTest extends HazelcastTestSupport {
                     Json.object().add("wanConfigName", wanName));
         }
 
-        static WanConfigEventMatcher extendedMatcher(String wanName, String ...publisherIds) {
+        static WanConfigEventMatcher extendedMatcher(String wanName, String... publisherIds) {
             return new WanConfigEventMatcher(EventMetadata.EventType.WAN_CONFIGURATION_EXTENDED,
                     Json.object()
                             .add("wanConfigName", wanName)

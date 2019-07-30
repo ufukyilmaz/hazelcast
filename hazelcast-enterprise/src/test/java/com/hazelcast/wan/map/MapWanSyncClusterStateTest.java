@@ -3,7 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -85,9 +85,9 @@ public class MapWanSyncClusterStateTest {
 
 
         sourceCluster.replicateMap("default")
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
 //         uncomment to dump the counters when debugging locally
         //dumpWanCounters(wanReplication, Executors.newSingleThreadScheduledExecutor());
@@ -96,9 +96,9 @@ public class MapWanSyncClusterStateTest {
     private void configureMerkleTrees(Cluster cluster) {
         if (consistencyCheckStrategy == MERKLE_TREES) {
             cluster.getConfig().getMapConfig("default")
-                   .getMerkleTreeConfig()
-                   .setEnabled(true)
-                   .setDepth(6);
+                    .getMerkleTreeConfig()
+                    .setEnabled(true)
+                    .setDepth(6);
         }
     }
 

@@ -1,7 +1,5 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.operation.CacheClearOperationFactory;
 import com.hazelcast.cache.impl.operation.CacheRemoveAllOperationFactory;
 import com.hazelcast.cache.impl.operation.EnterpriseCacheOperationProvider;
@@ -101,12 +99,6 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     @Override
     public Operation createWanRemoveOperation(String origin, Data key, int completionId) {
         return new WanCacheRemoveOperation(nameWithPrefix, origin, key, completionId);
-    }
-
-    @Override
-    public Operation createLegacyWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,
-                                                   CacheMergePolicy mergePolicy, int completionId) {
-        return new WanCacheLegacyMergeOperation(nameWithPrefix, origin, mergePolicy, cacheEntryView, completionId);
     }
 
     @Override

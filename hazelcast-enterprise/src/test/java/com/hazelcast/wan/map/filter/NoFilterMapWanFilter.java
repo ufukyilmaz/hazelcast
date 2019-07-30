@@ -13,7 +13,8 @@ public class NoFilterMapWanFilter implements MapWanEventFilter<Integer, String> 
 
     @Override
     public boolean filter(String mapName,
-                          EntryView<Integer, String> entryView, WanFilterEventType eventType) {
+                          EntryView<Integer, String> entryView,
+                          WanFilterEventType eventType) {
         return false;
     }
 }

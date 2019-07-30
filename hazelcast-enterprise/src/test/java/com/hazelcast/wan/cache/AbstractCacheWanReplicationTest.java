@@ -3,8 +3,6 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.merge.HigherHitsCacheMergePolicy;
-import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
@@ -13,7 +11,8 @@ import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.DistributedObject;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.HigherHitsMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.wan.custom.CustomWanConsumer;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -37,7 +36,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigA();
         initConfigB();
         setupReplicateFrom(configA, configB,
-                clusterB.length, "atob", HigherHitsCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+                clusterB.length, "atob", HigherHitsMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
 
         startClusterA();
         startClusterB();
@@ -53,7 +52,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigA();
         initConfigB();
         setupReplicateFrom(configA, configB,
-                clusterB.length, "atob", HigherHitsCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+                clusterB.length, "atob", HigherHitsMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
 
         startClusterA();
         startClusterB();
@@ -68,7 +67,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     public void linkTopo_ActivePassiveReplication_2clusters_withHigherHitsCacheMergePolicy() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
@@ -86,7 +85,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     public void cache_wan_events_should_be_processed_in_order() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
@@ -103,9 +102,9 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigA();
         initConfigB();
         initConfigC();
-        setupReplicateFrom(configA, configB, clusterB.length, replicaName, PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, replicaName, PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
-        setupReplicateFrom(configA, configC, clusterC.length, replicaName, PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configC, clusterC.length, replicaName, PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
         startAllClusters();
 
@@ -125,8 +124,8 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigA();
         initConfigB();
         initConfigC();
-        setupReplicateFrom(configA, configC, clusterC.length, "atoc", HigherHitsCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
-        setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+        setupReplicateFrom(configA, configC, clusterC.length, "atoc", HigherHitsMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+        setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
         startAllClusters();
 
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
@@ -146,11 +145,11 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigA();
         initConfigB();
         initConfigC();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
-        setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
-        setupReplicateFrom(configC, configA, clusterA.length, "ctoa", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configC, configA, clusterA.length, "ctoa", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
         startAllClusters();
 
@@ -164,7 +163,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     public void testEntryWithReplicationExpiresOnTargetCluster() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
@@ -181,7 +180,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     public void testEntryWithExpirationIsReplicated() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
@@ -196,7 +195,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     public void setExpiryPolicyPropagatesExpiryPolicyChangeToPassiveCluster() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
@@ -211,9 +210,9 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     public void setExpiryPolicyPropagatesExpiryPolicyBothWays() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
-        setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
@@ -232,7 +231,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigB();
         final String wanReplicationConfigName = "atob";
         final String targetGroupName = configB.getGroupConfig().getName();
-        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
         startClusterA();
@@ -261,7 +260,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigB();
         final String wanReplicationConfigName = "atob";
         final String targetGroupName = configB.getGroupConfig().getName();
-        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
         startClusterA();
@@ -292,12 +291,12 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigB();
         final String wanReplicationConfigName = "atob";
         final String targetGroupName = configB.getGroupConfig().getName();
-        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
         final WanBatchReplicationPublisherConfig pc = configA.getWanReplicationConfig(wanReplicationConfigName)
-                                                             .getBatchPublisherConfigs()
-                                                             .get(0);
+                .getBatchPublisherConfigs()
+                .get(0);
         pc.setInitialPublisherState(WanPublisherState.STOPPED);
 
         startClusterA();
@@ -323,12 +322,12 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigB();
         final String wanReplicationConfigName = "atob";
         final String targetGroupName = configB.getGroupConfig().getName();
-        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
         WanBatchReplicationPublisherConfig pc = configA.getWanReplicationConfig(wanReplicationConfigName)
-                                                       .getBatchPublisherConfigs()
-                                                       .get(0);
+                .getBatchPublisherConfigs()
+                .get(0);
         pc.setInitialPublisherState(WanPublisherState.PAUSED);
 
         startClusterA();
@@ -350,7 +349,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     public void testProxyCreation() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
@@ -367,7 +366,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
     public void updateExpiredEntry() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
@@ -386,7 +385,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
         CacheSimpleConfig cacheConfig = configB.getCacheConfig(DEFAULT_CACHE_NAME);
@@ -412,7 +411,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigA();
         initConfigB();
         setupReplicateFrom(configA, configB, clusterB.length,
-                "atob", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+                "atob", PassThroughMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
 
         CacheSimpleConfig cacheConfig = configB.getCacheConfig(DEFAULT_CACHE_NAME);
         cacheConfig.setWriteThrough(true);

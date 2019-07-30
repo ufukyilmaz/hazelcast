@@ -1,14 +1,11 @@
 package com.hazelcast.internal.config;
 
-import com.hazelcast.cache.merge.PutIfAbsentCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.spi.merge.PutIfAbsentMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -50,7 +47,7 @@ public class HDConfigValidatorTest extends HazelcastTestSupport {
         cacheSimpleConfig.setName(DATA_STRUCTURE_NAME);
         cacheSimpleConfig.setInMemoryFormat(NATIVE);
         cacheSimpleConfig.getEvictionConfig()
-                         .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE);
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE);
         return cacheSimpleConfig;
     }
 
@@ -70,21 +67,11 @@ public class HDConfigValidatorTest extends HazelcastTestSupport {
     @Test
     public void check_splitBrainMergePolicy_supports_NATIVE_cache() {
         CacheSimpleConfig cacheSimpleConfig = getNativeCacheConfig();
-        cacheSimpleConfig.setMergePolicy(PutIfAbsentMergePolicy.class.getName());
+        cacheSimpleConfig.getMergePolicyConfig().setPolicy(PutIfAbsentMergePolicy.class.getName());
 
         Config config = getConfigWithHDSupport().addCacheConfig(cacheSimpleConfig);
 
         createHazelcastInstance(config).getCacheManager().getCache(DATA_STRUCTURE_NAME);
-    }
-
-    @Test(expected = InvalidConfigurationException.class)
-    public void check_legacyMapMergePolicy_throws_exception_when_NATIVE() {
-        MapConfig mapConfig = getNativeMapConfig();
-        mapConfig.getMergePolicyConfig().setPolicy(PutIfAbsentMapMergePolicy.class.getName());
-
-        Config config = getConfigWithHDSupport().addMapConfig(mapConfig);
-
-        createHazelcastInstance(config).getMap(DATA_STRUCTURE_NAME);
     }
 
     private static MapConfig getNativeMapConfig() {
@@ -96,15 +83,5 @@ public class HDConfigValidatorTest extends HazelcastTestSupport {
         mapConfig.setName(DATA_STRUCTURE_NAME);
 
         return mapConfig;
-    }
-
-    @Test(expected = InvalidConfigurationException.class)
-    public void check_legacyCacheMergePolicy_throws_exception_when_NATIVE() {
-        CacheSimpleConfig cacheSimpleConfig = getNativeCacheConfig();
-        cacheSimpleConfig.setMergePolicy(PutIfAbsentCacheMergePolicy.class.getName());
-
-        Config config = getConfigWithHDSupport().addCacheConfig(cacheSimpleConfig);
-
-        createHazelcastInstance(config).getCacheManager().getCache(DATA_STRUCTURE_NAME);
     }
 }

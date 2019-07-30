@@ -3,8 +3,8 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.IMap;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PutIfAbsentMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -93,8 +93,8 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         final String atocReplicationName = "atoc";
         final String btocReplicationName = "btoc";
         final String mapName = "map";
-        setupReplicateFrom(configA, configC, clusterC.length, atocReplicationName, PutIfAbsentMapMergePolicy.class.getName());
-        setupReplicateFrom(configB, configC, clusterC.length, btocReplicationName, PutIfAbsentMapMergePolicy.class.getName());
+        setupReplicateFrom(configA, configC, clusterC.length, atocReplicationName, PutIfAbsentMergePolicy.class.getName());
+        setupReplicateFrom(configB, configC, clusterC.length, btocReplicationName, PutIfAbsentMergePolicy.class.getName());
         startAllClusters();
 
         createDataIn(clusterA, mapName, 0, 100, "dummy");

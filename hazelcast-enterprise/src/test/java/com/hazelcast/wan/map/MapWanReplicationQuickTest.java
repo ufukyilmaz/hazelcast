@@ -11,9 +11,9 @@ import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.internal.management.operation.ChangeWanStateOperation;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.LocalWanStats;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WANReplicationQueueFullException;
@@ -60,7 +60,7 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
         WanBatchReplicationPublisherConfig pc = wanConfig.getBatchPublisherConfigs().get(0);
         pc.setQueueCapacity(10)
-          .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
+                .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
         initCluster(basicCluster, configA);
         createDataIn(basicCluster, "map", 0, 1000);
     }
@@ -71,7 +71,7 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
         WanBatchReplicationPublisherConfig pc = wanConfig.getBatchPublisherConfigs().get(0);
         pc.setQueueCapacity(10)
-          .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE);
+                .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE);
         initCluster(basicCluster, configA);
         createDataIn(basicCluster, "map", 0, 1000);
     }
@@ -82,7 +82,7 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
         WanBatchReplicationPublisherConfig pc = wanConfig.getBatchPublisherConfigs().get(0);
         pc.setQueueCapacity(10)
-          .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE);
+                .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE);
         initCluster(basicCluster, configA);
         for (HazelcastInstance instance : basicCluster) {
             ChangeWanStateOperation changeWanStateOperation = new ChangeWanStateOperation("atob",
@@ -103,8 +103,8 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         WanReplicationConfig wanConfig = propTestConfig.getWanReplicationConfig("atob");
         WanBatchReplicationPublisherConfig pc = wanConfig.getBatchPublisherConfigs().get(0);
         pc.setBatchSize(500)
-          .setBatchMaxDelayMillis(1000)
-          .setResponseTimeoutMillis(500);
+                .setBatchMaxDelayMillis(1000)
+                .setResponseTimeoutMillis(500);
         initCluster(basicCluster, propTestConfig);
         createDataIn(basicCluster, "map", 0, 1000);
     }
@@ -115,7 +115,7 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
         WanBatchReplicationPublisherConfig pc = wanConfig.getBatchPublisherConfigs().get(0);
         pc.setQueueCapacity(1000)
-          .setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION);
+                .setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION);
         initCluster(singleNodeA, configA);
         pauseWanReplication(singleNodeA, "atob", configB.getGroupConfig().getName());
         createDataIn(singleNodeA, "map", 0, 1000);

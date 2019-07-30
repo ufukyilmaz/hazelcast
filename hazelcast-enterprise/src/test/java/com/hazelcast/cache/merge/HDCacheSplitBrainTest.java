@@ -66,14 +66,14 @@ public class HDCacheSplitBrainTest extends CacheSplitBrainTest {
                 .setBackupCount(1)
                 .setAsyncBackupCount(0)
                 .setStatisticsEnabled(true)
-                .setMergePolicy(mergePolicyClass.getName());
+                .getMergePolicyConfig().setPolicy(mergePolicyClass.getName());
         config.getCacheConfig(cacheNameB)
                 .setInMemoryFormat(inMemoryFormat)
                 .setEvictionConfig(evictionConfig)
                 .setBackupCount(1)
                 .setAsyncBackupCount(0)
                 .setStatisticsEnabled(true)
-                .setMergePolicy(mergePolicyClass.getName());
+                .getMergePolicyConfig().setPolicy(mergePolicyClass.getName());
         return config;
     }
 

@@ -1,7 +1,6 @@
 package com.hazelcast.wan;
 
 import com.hazelcast.cache.jsr.JsrTestUtil;
-import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.WanReplicationConfig;
@@ -10,7 +9,7 @@ import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -119,7 +118,7 @@ public class WanAddConfigTest {
 
         clusterA.replicateCache(CACHE_NAME)
                 .withReplication(wanReplication)
-                .withMergePolicy(PassThroughCacheMergePolicy.class)
+                .withMergePolicy(PassThroughMergePolicy.class)
                 .setup();
 
 //         uncomment to dump the counters when debugging locally
@@ -132,7 +131,7 @@ public class WanAddConfigTest {
 
         CacheSimpleConfig cacheConfig = cluster.getConfig().getCacheConfig(CACHE_NAME);
         cacheConfig.setEvictionConfig(evictionConfig)
-                   .setMergePolicy(PassThroughCacheMergePolicy.class.getName());
+                .getMergePolicyConfig().setPolicy(PassThroughMergePolicy.class.getName());
     }
 
     @Test
@@ -337,8 +336,8 @@ public class WanAddConfigTest {
         assertPublisherCountEventually(REPLICATION_NAME, 1);
 
         toBReplication.getConfig()
-                      .getBatchPublisherConfigs()
-                      .addAll(toCReplication.getConfig().getBatchPublisherConfigs());
+                .getBatchPublisherConfigs()
+                .addAll(toCReplication.getConfig().getBatchPublisherConfigs());
 
         addResult = clusterA.addWanReplication(toBReplication);
         assertEquals(1, addResult.getAddedPublisherIds().size());
@@ -352,7 +351,7 @@ public class WanAddConfigTest {
             try {
                 for (HazelcastInstance instance : clusterA.getMembers()) {
                     WanReplicationConfig wanConfig = getNode(instance).getConfig()
-                                                                      .getWanReplicationConfig(wanReplicationName);
+                            .getWanReplicationConfig(wanReplicationName);
                     int configSize = wanConfig.getBatchPublisherConfigs().size();
                     instanceConfigCount.put(instance.getName(), configSize);
                 }

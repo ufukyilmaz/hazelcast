@@ -121,7 +121,7 @@ public class MissingPermissionsCallTest extends HazelcastTestSupport {
         });
 
         try {
-            lock.await(10, SECONDS);
+            lock.await(30, SECONDS);
         } catch (InterruptedException e) {
             fail(e.getMessage());
         }

@@ -9,8 +9,6 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
-import com.hazelcast.map.merge.MapMergePolicy;
-import com.hazelcast.map.merge.MergePolicyProvider;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
@@ -19,6 +17,7 @@ import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergePolicyProvider;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -43,14 +42,12 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
         this.mapServiceContext = mapServiceContext;
         this.nodeEngine = mapServiceContext.getNodeEngine();
         this.logger = nodeEngine.getLogger(this.getClass());
-        MergePolicyProvider mergePolicyProvider = mapServiceContext.getMergePolicyProvider();
-        //noinspection unchecked
-        this.defaultSyncMergePolicy
-                = (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicyProvider
+        SplitBrainMergePolicyProvider mergePolicyProvider = nodeEngine.getSplitBrainMergePolicyProvider();
+        this.defaultSyncMergePolicy = (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicyProvider
                 .getMergePolicy(DEFAULT_MERGE_POLICY);
         this.proxyService = nodeEngine.getProxyService();
         this.wanEventCounters = nodeEngine.getWanReplicationService()
-                                          .getReceivedEventCounters(MapService.SERVICE_NAME);
+                .getReceivedEventCounters(MapService.SERVICE_NAME);
     }
 
     @Override
@@ -142,18 +139,10 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
         final Data key;
         final Operation operation;
 
-        if (mergePolicy instanceof SplitBrainMergePolicy) {
-            MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
-            key = mergingEntry.getKey();
-            //noinspection unchecked
-            operation = operationProvider.createMergeOperation(mapName, mergingEntry,
-                    (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicy, true);
-        } else {
-            EntryView<Data, Data> entryView = event.getEntryView();
-            key = entryView.getKey();
-            operation = operationProvider.createLegacyMergeOperation(mapName, entryView,
-                    (MapMergePolicy) mergePolicy, true);
-        }
+        MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
+        key = mergingEntry.getKey();
+        operation = operationProvider.createMergeOperation(mapName, mergingEntry,
+                (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicy, true);
 
         final InternalCompletableFuture future = invokeOnPartition(key, operation);
         if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
@@ -220,7 +209,7 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             return nodeEngine.getOperationService()
-                             .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
+                    .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
             throw rethrow(t);
         }

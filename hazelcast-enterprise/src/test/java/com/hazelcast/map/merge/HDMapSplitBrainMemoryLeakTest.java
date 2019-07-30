@@ -77,7 +77,7 @@ public class HDMapSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
                 .setBackupCount(1)
                 .setAsyncBackupCount(0)
                 .setStatisticsEnabled(true)
-                .setMergePolicy(mergePolicyClass.getName());
+                .getMergePolicyConfig().setPolicy(mergePolicyClass.getName());
         return config;
     }
 

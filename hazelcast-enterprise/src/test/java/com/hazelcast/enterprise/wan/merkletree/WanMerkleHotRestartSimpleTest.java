@@ -3,8 +3,8 @@ package com.hazelcast.enterprise.wan.merkletree;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -53,8 +53,8 @@ public class WanMerkleHotRestartSimpleTest extends HazelcastTestSupport {
         Config sourceConfig = sourceCluster.getConfig();
 
         sourceConfig.getHotRestartPersistenceConfig()
-                    .setBaseDir(hotRestartFolderRule.getBaseDir())
-                    .setEnabled(true);
+                .setBaseDir(hotRestartFolderRule.getBaseDir())
+                .setEnabled(true);
 
         configureMerkleMap(MERKLE_REPLICATION_NAME, MAP_MERKLE1_NAME, ONE_BACKUP, HOT_RESTART_ENABLED);
 
@@ -82,17 +82,17 @@ public class WanMerkleHotRestartSimpleTest extends HazelcastTestSupport {
                 .setup();
 
         sourceCluster.replicateMap(mapName)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceConfig.getMapConfig(mapName)
-                    .getHotRestartConfig()
-                    .setEnabled(hotRestartEnabled);
+                .getHotRestartConfig()
+                .setEnabled(hotRestartEnabled);
 
         sourceConfig.getMapConfig(mapName)
-                    .setBackupCount(backupCount)
-                    .setAsyncBackupCount(0);
+                .setBackupCount(backupCount)
+                .setAsyncBackupCount(0);
 
         sourceConfig
                 .getMapConfig(mapName).getMerkleTreeConfig()
@@ -100,8 +100,8 @@ public class WanMerkleHotRestartSimpleTest extends HazelcastTestSupport {
                 .setDepth(6);
 
         targetConfig.getMapConfig(mapName).getMerkleTreeConfig()
-                    .setEnabled(true)
-                    .setDepth(6);
+                .setEnabled(true)
+                .setDepth(6);
 
         return wanReplication;
     }
@@ -117,13 +117,13 @@ public class WanMerkleHotRestartSimpleTest extends HazelcastTestSupport {
                 .setup();
 
         sourceCluster.replicateMap(MAP_NONMERKLE_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceConfig.getMapConfig(MAP_NONMERKLE_NAME)
-                    .getHotRestartConfig()
-                    .setEnabled(true);
+                .getHotRestartConfig()
+                .setEnabled(true);
 
         return wanReplication;
     }

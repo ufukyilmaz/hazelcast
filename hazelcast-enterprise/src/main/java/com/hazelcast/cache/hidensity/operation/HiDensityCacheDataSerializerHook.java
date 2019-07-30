@@ -32,17 +32,16 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
     public static final short LOAD_ALL = 16;
     public static final short LOAD_ALL_FACTORY = 17;
     public static final short ENTRY_PROCESSOR = 18;
-    public static final short WAN_LEGACY_MERGE = 19;
-    public static final short WAN_REMOVE = 20;
-    public static final short PUT_ALL = 21;
-    public static final short CACHE_REPLICATION = 22;
-    public static final short CACHE_SEGMENT_SHUTDOWN = 23;
-    public static final short WAN_MERGE = 24;
-    public static final short MERGE = 25;
-    public static final short MERGE_BACKUP = 26;
-    public static final short MERGE_FACTORY = 27;
-    public static final short SET_EXPIRY_POLICY = 28;
-    public static final short SET_EXPIRY_POLICY_BACKUP = 29;
+    public static final short WAN_REMOVE = 19;
+    public static final short PUT_ALL = 20;
+    public static final short CACHE_REPLICATION = 21;
+    public static final short CACHE_SEGMENT_SHUTDOWN = 22;
+    public static final short WAN_MERGE = 23;
+    public static final short MERGE = 24;
+    public static final short MERGE_BACKUP = 25;
+    public static final short MERGE_FACTORY = 26;
+    public static final short SET_EXPIRY_POLICY = 27;
+    public static final short SET_EXPIRY_POLICY_BACKUP = 28;
 
     @Override
     public int getFactoryId() {
@@ -98,8 +97,6 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
                     return new CacheLoadAllOperationFactory();
                 case ENTRY_PROCESSOR:
                     return new CacheEntryProcessorOperation();
-                case WAN_LEGACY_MERGE:
-                    return new WanCacheLegacyMergeOperation();
                 case WAN_REMOVE:
                     return new WanCacheRemoveOperation();
                 case PUT_ALL:

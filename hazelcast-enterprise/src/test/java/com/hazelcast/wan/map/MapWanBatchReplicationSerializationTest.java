@@ -10,8 +10,8 @@ import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.serialization.PortableHook;
 import com.hazelcast.map.IMap;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.impl.NodeEngineImpl;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import net.bytebuddy.ByteBuddy;
@@ -35,7 +35,7 @@ public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTe
         Config config = super.getConfig();
 
         config.getMapConfig("default")
-              .setInMemoryFormat(getMemoryFormat());
+                .setInMemoryFormat(getMemoryFormat());
 
         return config;
     }
@@ -60,7 +60,7 @@ public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTe
         final Object o = c.newInstance();
 
         configA.setClassLoader(childClassloader)
-               .getMapConfig("default").setInMemoryFormat(InMemoryFormat.BINARY);
+                .getMapConfig("default").setInMemoryFormat(InMemoryFormat.BINARY);
         configB.getMapConfig("default").setInMemoryFormat(InMemoryFormat.BINARY);
 
         startClusterA();

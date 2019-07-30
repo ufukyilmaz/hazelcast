@@ -1,13 +1,13 @@
 package com.hazelcast.wan.cache;
 
 import com.hazelcast.cache.jsr.JsrTestUtil;
-import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import org.junit.AfterClass;
@@ -58,11 +58,11 @@ public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport
     public void testExceptionOnQueueOverrun() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
         WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
         WanBatchReplicationPublisherConfig pc = wanConfig.getBatchPublisherConfigs().get(0);
         pc.setQueueCapacity(10)
-          .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
+                .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
         initCluster(basicCluster, configA);
         createCacheDataIn(basicCluster, DEFAULT_CACHE_NAME, 0, 1000, false);
     }

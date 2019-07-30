@@ -2,7 +2,6 @@ package com.hazelcast.wan.cache;
 
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.jsr.JsrTestUtil;
-import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
@@ -12,6 +11,7 @@ import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.CountingWanEndpoint;
 import org.junit.AfterClass;
@@ -105,11 +105,11 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
 
         setupReplicateFrom(configA,
                 "customPublisherId", CountingWanEndpoint.class.getName(),
-                wanSetupName, PassThroughCacheMergePolicy.class.getName(),
+                wanSetupName, PassThroughMergePolicy.class.getName(),
                 "default", null);
         // disable WAN replication for the default cache config (it's auto-enabled by the setupReplicateFrom())
         configA.getCacheConfig("default")
-               .setWanReplicationRef(null);
+                .setWanReplicationRef(null);
 
         startClusterA();
         startClusterB();
@@ -119,7 +119,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
 
     private void configureCacheWithWanReplication(String cacheName, String wanSetupName) {
         WanReplicationRef wanRef = new WanReplicationRef()
-                .setMergePolicy(PassThroughCacheMergePolicy.class.getName())
+                .setMergePolicy(PassThroughMergePolicy.class.getName())
                 .setName(wanSetupName);
 
         CacheSimpleConfig cacheConfig = new CacheSimpleConfig()
@@ -130,7 +130,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
         EvictionConfig evictionConfig = new EvictionConfig();
         if (isNativeMemoryEnabled()) {
             evictionConfig.setSize(90)
-                          .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                    .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
             evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         }

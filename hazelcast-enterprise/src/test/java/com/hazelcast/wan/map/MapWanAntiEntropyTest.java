@@ -2,7 +2,7 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -94,9 +94,9 @@ public class MapWanAntiEntropyTest extends HazelcastTestSupport {
     private void configureMerkleTrees(Cluster cluster) {
         if (consistencyCheckStrategy == MERKLE_TREES) {
             cluster.getConfig()
-                   .getMapConfig("default").getMerkleTreeConfig()
-                   .setEnabled(true)
-                   .setDepth(6);
+                    .getMapConfig("default").getMerkleTreeConfig()
+                    .setEnabled(true)
+                    .setDepth(6);
         }
     }
 

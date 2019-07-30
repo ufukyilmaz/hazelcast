@@ -29,15 +29,15 @@ import com.hazelcast.map.impl.mapstore.MapLoaderTest;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
-import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
-import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
-import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.OperationFactory;
 import com.hazelcast.spi.impl.operationservice.OperationService;
+import com.hazelcast.spi.merge.HigherHitsMergePolicy;
+import com.hazelcast.spi.merge.LatestUpdateMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PutIfAbsentMergePolicy;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -121,7 +121,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         Config config = super.getConfig();
 
         config.getMapConfig("default")
-              .setInMemoryFormat(getMemoryFormat());
+                .setInMemoryFormat(getMemoryFormat());
 
         return config;
     }
@@ -132,7 +132,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         setupReplicateFrom(configA, configB, clusterB.length, publisherSetup, PassThroughMergePolicy.class.getName());
 
         List<WanBatchReplicationPublisherConfig> configs = configA.getWanReplicationConfig(publisherSetup)
-                                                                  .getBatchPublisherConfigs();
+                .getBatchPublisherConfigs();
         for (WanBatchReplicationPublisherConfig publisherConfig : configs) {
             String endpoints = publisherConfig.getTargetEndpoints();
             String endpointsWithError = endpoints.replaceFirst("\\.", "\\.mumboJumbo\n");
@@ -182,8 +182,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         // 2. Ensure WAN events are enqueued but not replicated
         // PAUSED state let WAN events offered to the queues, but prevents replicating it
         configA.getWanReplicationConfig("atob")
-               .getBatchPublisherConfigs().get(0)
-               .setInitialPublisherState(PAUSED);
+                .getBatchPublisherConfigs().get(0)
+                .setInitialPublisherState(PAUSED);
 
         // 3. Add map-loader to cluster-A
         MapStoreConfig mapStoreConfig = new MapStoreConfig()
@@ -336,8 +336,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
     @Test
     public void VTopo_1passiveReplica_2producers_withPutIfAbsentMapMergePolicy() {
-        setupReplicateFrom(configA, configC, clusterC.length, "atoc", PutIfAbsentMapMergePolicy.class.getName());
-        setupReplicateFrom(configB, configC, clusterC.length, "btoc", PutIfAbsentMapMergePolicy.class.getName());
+        setupReplicateFrom(configA, configC, clusterC.length, "atoc", PutIfAbsentMergePolicy.class.getName());
+        setupReplicateFrom(configB, configC, clusterC.length, "btoc", PutIfAbsentMergePolicy.class.getName());
         startAllClusters();
 
         createDataIn(clusterA, "map", 0, 100);
@@ -354,8 +354,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
     @Test
     public void VTopo_1passiveReplica_2producers_withLatestUpdateMapMergePolicy() {
-        setupReplicateFrom(configA, configC, clusterC.length, "atoc", LatestUpdateMapMergePolicy.class.getName());
-        setupReplicateFrom(configB, configC, clusterC.length, "btoc", LatestUpdateMapMergePolicy.class.getName());
+        setupReplicateFrom(configA, configC, clusterC.length, "atoc", LatestUpdateMergePolicy.class.getName());
+        setupReplicateFrom(configB, configC, clusterC.length, "btoc", LatestUpdateMergePolicy.class.getName());
         startAllClusters();
 
         createDataIn(clusterA, "map", 0, 1000);
@@ -377,8 +377,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
     @Test
     public void VTopo_1passiveReplica_2producers_withHigherHitsMapMergePolicy() {
-        setupReplicateFrom(configA, configC, clusterC.length, "atoc", HigherHitsMapMergePolicy.class.getName());
-        setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsMapMergePolicy.class.getName());
+        setupReplicateFrom(configA, configC, clusterC.length, "atoc", HigherHitsMergePolicy.class.getName());
+        setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsMergePolicy.class.getName());
         startAllClusters();
 
         createDataIn(clusterA, "map", 0, 10);
@@ -472,8 +472,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
     @Test
     public void linkTopo_ActiveActiveReplication_2clusters_withHigherHitsMapMergePolicy() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMapMergePolicy.class.getName());
-        setupReplicateFrom(configB, configA, clusterA.length, "btoa", HigherHitsMapMergePolicy.class.getName());
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMergePolicy.class.getName());
+        setupReplicateFrom(configB, configA, clusterA.length, "btoa", HigherHitsMergePolicy.class.getName());
         startClusterA();
         startClusterB();
 
@@ -788,8 +788,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
     @Test
     public void testStats() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMapMergePolicy.class.getName());
-        setupReplicateFrom(configB, configA, clusterA.length, "btoa", HigherHitsMapMergePolicy.class.getName());
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMergePolicy.class.getName());
+        setupReplicateFrom(configB, configA, clusterA.length, "btoa", HigherHitsMergePolicy.class.getName());
         startClusterA();
         startClusterB();
 
@@ -873,8 +873,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
 
         WanBatchReplicationPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
-                                                                        .getBatchPublisherConfigs()
-                                                                        .get(0);
+                .getBatchPublisherConfigs()
+                .get(0);
         targetClusterConfig.setInitialPublisherState(STOPPED);
 
         startClusterA();
@@ -900,8 +900,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
 
         WanBatchReplicationPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
-                                                                        .getBatchPublisherConfigs()
-                                                                        .get(0);
+                .getBatchPublisherConfigs()
+                .get(0);
         targetClusterConfig.setInitialPublisherState(WanPublisherState.PAUSED);
 
         startClusterA();
@@ -1029,7 +1029,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
                 PassThroughMergePolicy.class.getName());
         configA.getMapConfig("default").setMaxIdleSeconds(2);
         configA.setProperty(PROP_CLEANUP_PERCENTAGE, "100")
-               .setProperty(PROP_TASK_PERIOD_SECONDS, "1");
+                .setProperty(PROP_TASK_PERIOD_SECONDS, "1");
         startClusterA();
         startClusterB();
 
@@ -1051,7 +1051,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         setupReplicateFrom(configA, configC, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());
 
         List<WanBatchReplicationPublisherConfig> publisherConfigs = configA.getWanReplicationConfig(wanReplicationScheme)
-                                                                           .getBatchPublisherConfigs();
+                .getBatchPublisherConfigs();
+
         assertEquals(2, publisherConfigs.size());
         publisherConfigs.get(0).setPublisherId("publisher1");
         publisherConfigs.get(1).setPublisherId("publisher2");
@@ -1076,7 +1077,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         startClusterA();
 
         clusterA[0].getMap("map")
-                   .put(1, 1);
+                .put(1, 1);
     }
 
     private static WanReplicationRef getWanReplicationRefFrom(Config config, boolean persistWanReplicatedData) {

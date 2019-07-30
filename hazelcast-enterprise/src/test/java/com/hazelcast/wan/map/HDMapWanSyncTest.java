@@ -7,7 +7,7 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.map.IMap;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.util.RandomPicker;
@@ -49,11 +49,11 @@ public class HDMapWanSyncTest extends MapWanReplicationTestSupport {
     protected Config getConfig() {
         final Config config = super.getConfig();
         config.getMapConfig("default")
-              .setInMemoryFormat(getMemoryFormat());
+                .setInMemoryFormat(getMemoryFormat());
         if (consistencyCheckStrategy == MERKLE_TREES) {
             config.getMapConfig("default").getMerkleTreeConfig()
-                  .setEnabled(true)
-                  .setDepth(5);
+                    .setEnabled(true)
+                    .setDepth(5);
         }
         return config;
     }

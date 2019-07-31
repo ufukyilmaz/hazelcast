@@ -1,16 +1,7 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.internal.cluster.Joiner;
-import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.instance.AddressPicker;
-import com.hazelcast.instance.impl.DefaultNodeContext;
-import com.hazelcast.instance.impl.EnterpriseNodeExtension;
-import com.hazelcast.instance.impl.HazelcastInstanceFactory;
-import com.hazelcast.instance.impl.Node;
-import com.hazelcast.instance.impl.NodeContext;
-import com.hazelcast.instance.impl.NodeExtension;
 import com.hazelcast.internal.json.Json;
 import com.hazelcast.internal.json.JsonArray;
 import com.hazelcast.internal.json.JsonObject;
@@ -20,17 +11,15 @@ import com.hazelcast.internal.management.events.Event;
 import com.hazelcast.internal.management.events.EventMetadata;
 import com.hazelcast.internal.management.events.WanConfigurationAddedEvent;
 import com.hazelcast.internal.management.events.WanConfigurationExtendedEvent;
-import com.hazelcast.internal.networking.ServerSocketRegistry;
-import com.hazelcast.nio.NetworkingService;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.TestEnvironment;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.wan.CustomNodeExtensionTestInstanceFactory;
+import com.hazelcast.wan.WanServiceMockingEnterpriseNodeExtension;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import com.hazelcast.wan.impl.AddWanConfigResult;
-import com.hazelcast.wan.impl.WanReplicationService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,7 +54,11 @@ public class ConfigEventTest extends HazelcastTestSupport {
     private Cluster clusterB;
     private Cluster clusterC;
 
-    private TestHazelcastInstanceFactory factory = new WanServiceSpyingTestInstanceFactory();
+    private TestHazelcastInstanceFactory factory = new CustomNodeExtensionTestInstanceFactory(
+            node -> {
+                EnterpriseWanReplicationService wanService = spy(new EnterpriseWanReplicationService(node));
+                return new WanServiceMockingEnterpriseNodeExtension(node, wanService);
+            });
 
     @Before
     public void initClusters() {
@@ -160,64 +153,6 @@ public class ConfigEventTest extends HazelcastTestSupport {
         return (EnterpriseWanReplicationService) getNodeEngineImpl(instance).getWanReplicationService();
     }
 
-    class WanServiceSpyingTestInstanceFactory extends TestHazelcastInstanceFactory {
-        @Override
-        public HazelcastInstance newHazelcastInstance(Config config) {
-            String instanceName = config != null ? config.getInstanceName() : null;
-            if (TestEnvironment.isMockNetwork()) {
-                config = initOrCreateConfig(config);
-                NodeContext nodeContext = this.registry.createNodeContext(this.nextAddress(config.getNetworkConfig().getPort()));
-                return HazelcastInstanceFactory.newHazelcastInstance(config, instanceName, new WanSpyingNodeContextDelegate(nodeContext));
-            } else {
-                return HazelcastInstanceFactory.newHazelcastInstance(config, instanceName, new WanSpyingNodeContextDelegate(new DefaultNodeContext()));
-            }
-        }
-    }
-
-    class WanSpyingNodeContextDelegate implements NodeContext {
-
-        private NodeContext delegate;
-
-        WanSpyingNodeContextDelegate(NodeContext delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public NodeExtension createNodeExtension(Node node) {
-            return new WanSpyingNodeExtension(node);
-        }
-
-        @Override
-        public AddressPicker createAddressPicker(Node node) {
-            return this.delegate.createAddressPicker(node);
-        }
-
-        @Override
-        public Joiner createJoiner(Node node) {
-            return this.delegate.createJoiner(node);
-        }
-
-        @Override
-        public NetworkingService createNetworkingService(Node node, ServerSocketRegistry serverSocketRegistry) {
-            return this.delegate.createNetworkingService(node, serverSocketRegistry);
-        }
-    }
-
-    class WanSpyingNodeExtension extends EnterpriseNodeExtension {
-
-        EnterpriseWanReplicationService wanReplicationService;
-
-        WanSpyingNodeExtension(Node node) {
-            super(node);
-            wanReplicationService = spy(new EnterpriseWanReplicationService(node));
-        }
-
-        @Override
-        public <T> T createService(Class<T> clazz) {
-            return clazz.isAssignableFrom(WanReplicationService.class) ? (T) wanReplicationService : super.createService(clazz);
-        }
-    }
-
     static class WanConfigEventMatcher implements ArgumentMatcher<Event> {
         private final EventMetadata.EventType eventType;
         private final JsonObject verifierObject;
@@ -230,8 +165,8 @@ public class ConfigEventTest extends HazelcastTestSupport {
         static WanConfigEventMatcher extendedMatcher(String wanName, String... publisherIds) {
             return new WanConfigEventMatcher(EventMetadata.EventType.WAN_CONFIGURATION_EXTENDED,
                     Json.object()
-                            .add("wanConfigName", wanName)
-                            .add("wanPublisherIds", Json.array(publisherIds)));
+                        .add("wanConfigName", wanName)
+                        .add("wanPublisherIds", Json.array(publisherIds)));
         }
 
         static WanConfigEventMatcher ignoredMatcher(String wanName) {

@@ -43,6 +43,7 @@ import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.FragmentedMigrationAwareService;
 import com.hazelcast.spi.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
+import com.hazelcast.version.Version;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
@@ -52,6 +53,7 @@ import com.hazelcast.wan.impl.WanReplicationService;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -74,6 +76,12 @@ import static java.util.stream.Collectors.toMap;
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity", "checkstyle:classdataabstractioncoupling"})
 public class EnterpriseWanReplicationService implements WanReplicationService, FragmentedMigrationAwareService,
         PostJoinAwareService, LiveOperationsTracker, ManagedService {
+
+    /**
+     * Collection of supported WAN protocol versions. In the future, this may
+     * be retrieved dynamically e.g. using a service loader.
+     */
+    private static final List<Version> SUPPORTED_WAN_PROTOCOL_VERSIONS = Collections.singletonList(Version.of(1, 0));
 
     private final Node node;
     private final ILogger logger;
@@ -409,6 +417,11 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     public void removeWanEventCounters(String serviceName, String dataStructureName) {
         receivedWanEventCounters.removeCounter(serviceName, dataStructureName);
         sentWanEventCounters.removeCounter(serviceName, dataStructureName);
+    }
+
+    @Override
+    public List<Version> getSupportedWanProtocolVersions() {
+        return SUPPORTED_WAN_PROTOCOL_VERSIONS;
     }
 
     @Override

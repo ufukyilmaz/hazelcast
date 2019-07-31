@@ -91,7 +91,8 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
         return connectionManager.getTargetEndpoints();
     }
 
-    WanConnectionManager getConnectionManager() {
+    // public for testing
+    public WanConnectionManager getConnectionManager() {
         return connectionManager;
     }
 

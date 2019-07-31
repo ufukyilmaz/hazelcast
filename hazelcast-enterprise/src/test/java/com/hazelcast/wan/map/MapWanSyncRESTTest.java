@@ -15,12 +15,16 @@ import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.OverridePropertyRule;
+import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.WanServiceMockingNodeContext;
+import com.hazelcast.wan.CustomNodeExtensionTestInstanceFactory;
+import com.hazelcast.wan.WanServiceMockingEnterpriseNodeExtension;
 import com.hazelcast.wan.impl.AddWanConfigResult;
 import com.hazelcast.wan.impl.WanReplicationService;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -29,6 +33,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.UUID;
 
+import static com.hazelcast.test.OverridePropertyRule.set;
+import static com.hazelcast.test.TestEnvironment.HAZELCAST_TEST_USE_NETWORK;
 import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -44,13 +50,18 @@ import static org.mockito.Mockito.when;
 public class MapWanSyncRESTTest extends HazelcastTestSupport {
 
     private WanReplicationService wanServiceMock;
+    private TestHazelcastInstanceFactory factory;
     private HTTPCommunicator communicator;
+
+    @Rule
+    public final OverridePropertyRule overridePropertyRule = set(HAZELCAST_TEST_USE_NETWORK, "true");
 
     @Before
     public void initInstance() {
         wanServiceMock = mock(WanReplicationService.class);
-        HazelcastInstance instance = HazelcastInstanceFactory.newHazelcastInstance(getConfig(), randomName(),
-                new WanServiceMockingNodeContext(wanServiceMock));
+        factory = new CustomNodeExtensionTestInstanceFactory(
+                node -> new WanServiceMockingEnterpriseNodeExtension(node, wanServiceMock));
+        HazelcastInstance instance = factory.newHazelcastInstance(getConfig());
         communicator = new HTTPCommunicator(instance);
     }
 

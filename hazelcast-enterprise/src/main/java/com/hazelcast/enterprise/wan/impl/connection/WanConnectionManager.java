@@ -2,10 +2,12 @@ package com.hazelcast.enterprise.wan.impl.connection;
 
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
+import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationOperation;
+import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationResponse;
+import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationStatus;
 import com.hazelcast.enterprise.wan.impl.replication.WanConfigurationContext;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.internal.cluster.impl.operations.AuthorizationOp;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Connection;
@@ -16,8 +18,8 @@ import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
 import com.hazelcast.spi.discovery.integration.DiscoveryService;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.util.ConstructorFunction;
 import com.hazelcast.util.EmptyStatement;
+import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.ArrayList;
@@ -65,22 +67,10 @@ public class WanConnectionManager implements ConnectionListener {
     private final Node node;
     private final ILogger logger;
     private final ConcurrentMap<Address, WanConnectionWrapper> connectionPool =
-            new ConcurrentHashMap<Address, WanConnectionWrapper>();
-    private final List<Address> targetEndpoints = new CopyOnWriteArrayList<Address>();
+            new ConcurrentHashMap<>();
+    private final List<Address> targetEndpoints = new CopyOnWriteArrayList<>();
     private final DiscoveryService discoveryService;
-    private final Set<Address> connectionsInProgress = newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
-    private final ConstructorFunction<Address, WanConnectionWrapper> connectionConstructor =
-            new ConstructorFunction<Address, WanConnectionWrapper>() {
-                @Override
-                public WanConnectionWrapper createNew(Address addr) {
-                    final Connection conn = initConnection(addr);
-                    if (conn == null) {
-                        throw new RuntimeException(
-                                "Connection was not established in expected time or was not authorized");
-                    }
-                    return new WanConnectionWrapper(addr, conn);
-                }
-            };
+    private final Set<Address> connectionsInProgress = newSetFromMap(new ConcurrentHashMap<>());
     private WanConfigurationContext configurationContext;
     private EndpointQualifier endpointQualifier;
     private volatile boolean running = true;
@@ -177,7 +167,7 @@ public class WanConnectionManager implements ConnectionListener {
      */
     private List<Address> discoverEndpointAddresses() {
         final Iterable<DiscoveryNode> nodes = discoveryService.discoverNodes();
-        final ArrayList<Address> addresses = new ArrayList<Address>();
+        final ArrayList<Address> addresses = new ArrayList<>();
         for (DiscoveryNode node : nodes) {
             final Address address = configurationContext.isUseEndpointPrivateAddress()
                     ? node.getPrivateAddress()
@@ -196,7 +186,8 @@ public class WanConnectionManager implements ConnectionListener {
      * or for the first target in the endpoint list if the provided
      * {@code target} is not in the endpoint list. The method may return
      * {@code null} if this method fails to create a connection, either because
-     * it cannot connect in the expected time or it has failed to authorize.
+     * it cannot connect in the expected time or it has failed to negotiate the
+     * WAN protocol.
      * The method will check if the connection is alive before returning the
      * wrapper.
      *
@@ -282,7 +273,7 @@ public class WanConnectionManager implements ConnectionListener {
      * Return an existing connection or create a new one. The method will
      * return {@code null} if this method fails to create a connection, either
      * because it cannot connect in the expected time or it has failed to
-     * authorize.
+     * negotiate the WAN protocol.
      * The method will check if the connection is alive before returning the
      * wrapper.
      *
@@ -294,15 +285,18 @@ public class WanConnectionManager implements ConnectionListener {
             return null;
         }
         try {
-            final WanConnectionWrapper wrapper =
-                    getOrPutSynchronized(connectionPool, targetAddress, connectionPool, connectionConstructor);
+            WanConnectionWrapper wrapper =
+                    getOrPutSynchronized(connectionPool, targetAddress, connectionPool, this::connectAndNegotiate);
             if (wrapper.getConnection().isAlive()) {
                 return wrapper;
             } else {
                 removeTargetEndpoint(targetAddress, "Connection to WAN endpoint " + targetAddress + " is dead", null);
             }
+        } catch (WanConnectionException e) {
+            logger.warning("Failed to establish a connection to a WAN endpoint", e);
+            removeTargetEndpoint(targetAddress, e.getMessage(), e);
         } catch (Throwable e) {
-            final String msg = "Failed to connect to WAN endpoint : " + targetAddress;
+            String msg = "Failed to connect to WAN endpoint : " + targetAddress;
             logger.warning(msg, e);
             removeTargetEndpoint(targetAddress, msg, e);
         }
@@ -312,17 +306,17 @@ public class WanConnectionManager implements ConnectionListener {
 
     /**
      * Attempt to create the connection to the {@code targetAddress} and
-     * authenticate.
+     * negotiate the WAN protocol.
      * Since the connection creation is asynchronous, it will try waiting for
      * {@value RETRY_CONNECTION_SLEEP_MILLIS} millis up to
      * {@value RETRY_CONNECTION_MAX} times before giving up.
      * It may return null if the connection was not established in time or if
-     * the authorization failed.
+     * it failed to negotiate the WAN protocol.
      *
      * @param targetAddress the address to connect to
      * @return the established connection or null if the connection was not established
      */
-    private Connection initConnection(Address targetAddress) {
+    private WanConnectionWrapper connectAndNegotiate(Address targetAddress) {
         try {
             connectionsInProgress.add(targetAddress);
             EndpointManager endpointManager = node.getEndpointManager(endpointQualifier);
@@ -337,7 +331,7 @@ public class WanConnectionManager implements ConnectionListener {
                 conn = endpointManager.getOrConnect(targetAddress);
             }
             if (conn != null) {
-                return authorizeConnection(conn);
+                return new WanConnectionWrapper(targetAddress, conn, negotiateWanProtocol(conn));
             }
         } catch (InterruptedException ie) {
             currentThread().interrupt();
@@ -345,54 +339,59 @@ public class WanConnectionManager implements ConnectionListener {
         } finally {
             connectionsInProgress.remove(targetAddress);
         }
-        return null;
+        throw new WanConnectionException(
+                "WAN connection to " + targetAddress + " was not established in "
+                        + MILLISECONDS.toSeconds(RETRY_CONNECTION_MAX * RETRY_CONNECTION_SLEEP_MILLIS) + " seconds.");
+    }
+
+    // public for testing
+    public ConcurrentMap<Address, WanConnectionWrapper> getConnectionPool() {
+        return connectionPool;
     }
 
     /**
-     * Runs an authorization operation against the given {@code target} address
-     * with the given {@code groupName}.
+     * Negotiate WAN protocol on the connection. If it fails,
+     * close the connection and log the failure.
      *
-     * @param groupName expected group name
-     * @param target    the target to validate group name and password against
-     * @return {@code true} if authorization passed, {@code false} otherwise
+     * @param conn the connection to negotiate
+     * @return the negotiation response or null if the negotiation failed
      */
-    private boolean checkAuthorization(String groupName, Address target) {
-        Operation authorizationCall = new AuthorizationOp(groupName);
-        Future<Boolean> future = node.getNodeEngine().getOperationService()
-                                     .createInvocationBuilder(SERVICE_NAME, authorizationCall, target)
-                                     .setTryCount(1)
-                                     .setEndpointManager(node.getEndpointManager(endpointQualifier))
-                                     .invoke();
+    private WanProtocolNegotiationResponse negotiateWanProtocol(Connection conn) {
+        String targetGroupName = configurationContext.getGroupName();
+        List<Version> supportedWanProtocolVersions = node.getNodeEngine()
+                                                         .getWanReplicationService()
+                                                         .getSupportedWanProtocolVersions();
+        String sourceGroupName = node.getConfig().getGroupConfig().getName();
+
+        Operation negotiationOp = new WanProtocolNegotiationOperation(
+                sourceGroupName, targetGroupName, supportedWanProtocolVersions);
+        Future<WanProtocolNegotiationResponse> future =
+                node.getNodeEngine()
+                    .getOperationService()
+                    .createInvocationBuilder(SERVICE_NAME, negotiationOp, conn.getEndPoint())
+                    .setTryCount(1)
+                    .setEndpointManager(node.getEndpointManager(endpointQualifier))
+                    .invoke();
+
+        String errorMsg;
+        Exception negotiationException = null;
+
         try {
-            return future.get();
-        } catch (Exception ignored) {
-            logger.finest(ignored);
-        }
-        return false;
-    }
-
-    /**
-     * Perform authorization on the connection. If the authorization failed,
-     * close the connection and log the authorization failure.
-     *
-     * @param conn the connection to authorize
-     * @return the authorized connection or null if the authorization failed
-     */
-    private Connection authorizeConnection(Connection conn) {
-        String groupName = configurationContext.getGroupName();
-        boolean authorized = checkAuthorization(
-                groupName,
-                conn.getEndPoint());
-        if (!authorized) {
-            final String msg = "WAN authorization failed for groupName " + groupName
-                    + " and target " + conn.getEndPoint();
-            conn.close(msg, null);
-            if (logger != null) {
-                logger.severe(msg);
+            WanProtocolNegotiationResponse response = future.get();
+            WanProtocolNegotiationStatus status = response.getStatus();
+            if (status == WanProtocolNegotiationStatus.OK) {
+                return response;
             }
-            return null;
+
+            errorMsg = "WAN protocol negotiation failed for group name " + targetGroupName
+                    + " and target " + conn.getEndPoint() + " with status " + status;
+        } catch (Exception exception) {
+            negotiationException = exception;
+            errorMsg = "WAN protocol negotiation failed for group name " + targetGroupName
+                    + " and target " + conn.getEndPoint();
         }
-        return conn;
+        conn.close(errorMsg, null);
+        throw new WanConnectionException(errorMsg, negotiationException);
     }
 
     /**
@@ -404,7 +403,7 @@ public class WanConnectionManager implements ConnectionListener {
      * @see #removeTargetEndpoint(Address, String, Throwable)
      */
     public List<Address> getTargetEndpoints() {
-        return new ArrayList<Address>(targetEndpoints);
+        return new ArrayList<>(targetEndpoints);
     }
 
     @Override

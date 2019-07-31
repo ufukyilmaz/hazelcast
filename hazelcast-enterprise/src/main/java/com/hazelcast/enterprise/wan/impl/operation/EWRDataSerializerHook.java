@@ -60,6 +60,8 @@ public class EWRDataSerializerHook implements DataSerializerHook {
     public static final int ADD_WAN_CONFIG_BACKUP_OPERATION = 23;
     public static final int REMOVE_WAN_EVENT_BACKUPS_OPERATION = 24;
     public static final int WAN_CACHE_ENTRY_VIEW = 25;
+    public static final int WAN_PROTOCOL_NEGOTIATION_OPERATION = 26;
+    public static final int WAN_PROTOCOL_NEGOTIATION_RESPONSE = 27;
 
     @Override
     public int getFactoryId() {
@@ -122,6 +124,10 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                     return new RemoveWanEventBackupsOperation();
                 case WAN_CACHE_ENTRY_VIEW:
                     return new WanCacheEntryView();
+                case WAN_PROTOCOL_NEGOTIATION_OPERATION:
+                    return new WanProtocolNegotiationOperation();
+                case WAN_PROTOCOL_NEGOTIATION_RESPONSE:
+                    return new WanProtocolNegotiationResponse();
                 default:
                     throw new IllegalArgumentException("Unknown type ID: " + typeId);
             }

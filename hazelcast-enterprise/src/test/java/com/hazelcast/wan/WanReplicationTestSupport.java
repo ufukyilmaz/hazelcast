@@ -26,6 +26,8 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.WanStatisticsRule;
+import com.hazelcast.wan.impl.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.impl.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -217,6 +219,35 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
                 assertEquals(backupEvents, totalBackupEvents);
             }
         });
+    }
+
+    protected static void assertReceivedEventCountEventually(final HazelcastInstance[] targetCluster,
+                                                             final String serviceName,
+                                                             final String distributedObjectName,
+                                                             final int expectedSyncCount,
+                                                             final int expectedUpdateCount,
+                                                             final int expectedRemoveCount) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() {
+                int syncCount = 0;
+                int updateCount = 0;
+                int removeCount = 0;
+                for (HazelcastInstance instance : targetCluster) {
+                    DistributedServiceWanEventCounters serviceCounters = getWanReplicationService(instance).getReceivedEventCounters(serviceName);
+                    DistributedObjectWanEventCounters objectCounters = serviceCounters.getEventCounterMap().get(distributedObjectName);
+                    if (objectCounters != null) {
+                        syncCount += objectCounters.getSyncCount();
+                        updateCount += objectCounters.getUpdateCount();
+                        removeCount += objectCounters.getRemoveCount();
+                    }
+                }
+                assertEquals(expectedSyncCount, syncCount);
+                assertEquals(expectedUpdateCount, updateCount);
+                assertEquals(expectedRemoveCount, removeCount);
+            }
+        });
+
     }
 
     protected static void assertWanPublisherStateEventually(final HazelcastInstance[] cluster,

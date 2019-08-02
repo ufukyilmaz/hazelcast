@@ -5,6 +5,7 @@ import com.hazelcast.config.properties.PropertyDefinition;
 import com.hazelcast.config.properties.PropertyTypeConverter;
 import com.hazelcast.config.properties.SimplePropertyDefinition;
 import com.hazelcast.config.properties.ValueValidator;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Map;
 
@@ -16,6 +17,8 @@ public final class WanBatchReplicationProperties {
     private WanBatchReplicationProperties() {
     }
 
+    @SuppressFBWarnings(value = "UPM_UNCALLED_PRIVATE_METHOD",
+            justification = "This class may still be used in the future")
     private static PropertyDefinition property(String key, PropertyTypeConverter typeConverter) {
         return property(key, true, typeConverter);
     }

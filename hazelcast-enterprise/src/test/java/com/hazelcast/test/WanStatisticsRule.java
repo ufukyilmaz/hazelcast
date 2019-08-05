@@ -9,7 +9,7 @@ import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.monitor.LocalWanPublisherStats;
-import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;

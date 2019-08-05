@@ -12,7 +12,7 @@ import com.hazelcast.cluster.MembershipEvent;
 import com.hazelcast.instance.impl.NodeState;
 import com.hazelcast.nio.Address;
 import com.hazelcast.partition.IndeterminateOperationStateExceptionTest.PrimaryOperation;
-import com.hazelcast.spi.InternalCompletableFuture;
+import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;

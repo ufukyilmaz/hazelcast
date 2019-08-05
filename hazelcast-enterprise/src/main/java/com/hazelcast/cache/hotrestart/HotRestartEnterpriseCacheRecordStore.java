@@ -5,7 +5,6 @@ import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RamStore;
@@ -13,6 +12,7 @@ import com.hazelcast.spi.hotrestart.RamStoreHelper;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.util.Clock;
 
 /**

@@ -5,7 +5,7 @@ import com.hazelcast.license.domain.License;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.spi.TaskScheduler;
+import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 
 import java.util.Calendar;
 import java.util.Date;

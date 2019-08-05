@@ -22,6 +22,7 @@ import com.hazelcast.enterprise.wan.impl.operation.RemoveWanEventBackupsOperatio
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEvent;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.partition.InternalPartition;
+import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
@@ -30,8 +31,7 @@ import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.InternalCompletableFuture;
-import com.hazelcast.spi.ServiceNamespace;
+import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.util.Clock;

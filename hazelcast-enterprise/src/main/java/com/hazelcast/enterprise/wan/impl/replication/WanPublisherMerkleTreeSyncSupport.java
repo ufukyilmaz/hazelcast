@@ -25,7 +25,7 @@ import com.hazelcast.map.impl.operation.MerkleTreeNodeCompareOperationFactory;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.nio.Address;
-import com.hazelcast.spi.InternalCompletableFuture;
+import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;

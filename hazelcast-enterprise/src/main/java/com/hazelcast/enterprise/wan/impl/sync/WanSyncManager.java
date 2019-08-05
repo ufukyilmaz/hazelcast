@@ -11,7 +11,7 @@ import com.hazelcast.internal.util.collection.InflatableSet.Builder;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.WanSyncStateImpl;
-import com.hazelcast.spi.InternalCompletableFuture;
+import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartitionService;

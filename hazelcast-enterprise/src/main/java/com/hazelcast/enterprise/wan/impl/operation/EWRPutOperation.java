@@ -4,13 +4,13 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.wan.CacheReplicationObject;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.internal.services.ServiceNamespace;
+import com.hazelcast.internal.services.ServiceNamespaceAware;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.spi.ServiceNamespace;
-import com.hazelcast.spi.ServiceNamespaceAware;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.wan.WanReplicationEvent;
 

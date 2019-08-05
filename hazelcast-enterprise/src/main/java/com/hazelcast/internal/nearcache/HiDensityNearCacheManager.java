@@ -3,7 +3,7 @@ package com.hazelcast.internal.nearcache;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.nearcache.impl.DefaultNearCacheManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.TaskScheduler;
+import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.properties.HazelcastProperties;
 
 /**

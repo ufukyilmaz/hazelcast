@@ -12,7 +12,6 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
@@ -22,6 +21,7 @@ import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
+import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.util.Clock;
 
 import java.util.Iterator;

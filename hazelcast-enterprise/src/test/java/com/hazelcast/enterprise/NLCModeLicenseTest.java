@@ -10,7 +10,7 @@ import com.hazelcast.license.domain.License;
 import com.hazelcast.license.nlc.BuiltInLicenseProviderFactory;
 import com.hazelcast.license.nlc.impl.NLCLicenseProvider;
 import com.hazelcast.license.util.LicenseHelper;
-import com.hazelcast.spi.TaskScheduler;
+import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;

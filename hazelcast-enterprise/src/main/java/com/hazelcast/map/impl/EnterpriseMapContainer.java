@@ -18,7 +18,7 @@ import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.spi.serialization.SerializationService;

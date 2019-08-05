@@ -2,8 +2,8 @@ package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.monitor.LocalWanPublisherStats;
-import com.hazelcast.spi.ServiceNamespace;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;

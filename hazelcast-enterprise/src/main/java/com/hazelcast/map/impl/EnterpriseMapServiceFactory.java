@@ -1,8 +1,8 @@
 package com.hazelcast.map.impl;
 
+import com.hazelcast.internal.services.ReplicationSupportingService;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSupportingService;
-import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.spi.impl.NodeEngine;
 
 /**
  * Enterprise implementation of {@link MapServiceFactory}.

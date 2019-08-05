@@ -3,7 +3,7 @@ package com.hazelcast.internal.cluster.impl;
 import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.impl.NodeEngineImpl;
-import com.hazelcast.spi.impl.executionservice.InternalExecutionService;
+import com.hazelcast.spi.impl.executionservice.ExecutionService;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.properties.HazelcastProperty;
 import com.hazelcast.version.Version;
@@ -61,7 +61,7 @@ public class ClusterVersionAutoUpgradeHelper {
     private void scheduleTask(int attemptNumber, int delaySeconds,
                               ClusterServiceImpl clusterService, ILogger logger) {
         NodeEngineImpl nodeEngine = clusterService.getNodeEngine();
-        InternalExecutionService executionService = nodeEngine.getExecutionService();
+        ExecutionService executionService = nodeEngine.getExecutionService();
 
         Runnable task = new ClusterVersionAutoUpgradeTask(clusterService, attemptNumber, this);
         executionService.schedule(VERSION_AUTO_UPGRADE_EXECUTOR_NAME, task, delaySeconds, TimeUnit.SECONDS);

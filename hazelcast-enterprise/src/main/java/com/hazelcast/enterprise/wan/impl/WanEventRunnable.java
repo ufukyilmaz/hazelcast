@@ -1,9 +1,9 @@
 package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
+import com.hazelcast.internal.services.ReplicationSupportingService;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.wan.WanReplicationEvent;
 

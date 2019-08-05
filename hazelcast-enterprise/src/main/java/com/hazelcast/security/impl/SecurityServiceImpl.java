@@ -4,9 +4,9 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.management.operation.UpdatePermissionConfigOperation;
+import com.hazelcast.internal.services.CoreService;
+import com.hazelcast.internal.services.PreJoinAwareService;
 import com.hazelcast.security.SecurityService;
-import com.hazelcast.spi.CoreService;
-import com.hazelcast.spi.PreJoinAwareService;
 import com.hazelcast.spi.impl.operationservice.Operation;
 
 import java.util.HashSet;

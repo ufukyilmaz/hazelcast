@@ -18,7 +18,7 @@ import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.ForceStartException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus;
-import com.hazelcast.spi.impl.executionservice.InternalExecutionService;
+import com.hazelcast.spi.impl.executionservice.ExecutionService;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -50,7 +50,7 @@ import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_R
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterVersion;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setMissingMembers;
-import static com.hazelcast.spi.ExecutionService.SYSTEM_EXECUTOR;
+import static com.hazelcast.spi.impl.executionservice.ExecutionService.SYSTEM_EXECUTOR;
 import static com.hazelcast.spi.hotrestart.cluster.ClusterStateReader.readClusterState;
 import static com.hazelcast.spi.hotrestart.cluster.ClusterVersionReader.readClusterVersion;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_FAILED;
@@ -426,7 +426,7 @@ public class ClusterMetadataManager {
         if (isStartCompleted() && clusterService.isJoined()) {
             persistMembers();
         } else if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
-            InternalExecutionService executionService = node.getNodeEngine().getExecutionService();
+            ExecutionService executionService = node.getNodeEngine().getExecutionService();
             executionService.execute(SYSTEM_EXECUTOR, new ClearMemberClusterStartInfoTask());
         }
     }

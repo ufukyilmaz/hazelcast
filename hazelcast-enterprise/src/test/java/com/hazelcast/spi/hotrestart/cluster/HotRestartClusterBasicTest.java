@@ -5,6 +5,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.impl.NodeState;
+import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -25,7 +26,7 @@ import static org.junit.Assert.fail;
 public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTest {
 
     private int partitionCount = 271;
-    private int partitionThreadCount = -1;
+    private int partitionThreadCount = RuntimeAvailableProcessors.get();
 
     @Test
     public void testFreshStart() {

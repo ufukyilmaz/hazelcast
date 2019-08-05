@@ -15,10 +15,9 @@ import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
 import com.hazelcast.cache.impl.merge.entry.LazyCacheEntryView;
 import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
-import com.hazelcast.cache.impl.wan.CacheFilterProvider;
 import com.hazelcast.cache.impl.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.impl.operation.EnterpriseCacheOperationProvider;
-import com.hazelcast.cache.impl.operation.WANAwareCacheOperationProvider;
+import com.hazelcast.cache.impl.wan.CacheFilterProvider;
 import com.hazelcast.cache.impl.wan.CacheReplicationRemove;
 import com.hazelcast.cache.impl.wan.CacheReplicationSupportingService;
 import com.hazelcast.cache.impl.wan.CacheReplicationUpdate;
@@ -62,7 +61,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import static com.hazelcast.cache.impl.AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
@@ -457,18 +455,10 @@ public class EnterpriseCacheService
      */
     @Override
     protected CacheOperationProvider createOperationProvider(String cacheNameWithPrefix, InMemoryFormat inMemoryFormat) {
-        EnterpriseCacheOperationProvider operationProvider;
         if (NATIVE.equals(inMemoryFormat)) {
-            operationProvider = new HiDensityCacheOperationProvider(cacheNameWithPrefix);
+            return new HiDensityCacheOperationProvider(cacheNameWithPrefix);
         } else {
-            operationProvider = new EnterpriseCacheOperationProvider(cacheNameWithPrefix);
-        }
-
-        if (isWanReplicationEnabled(cacheNameWithPrefix)) {
-            return new WANAwareCacheOperationProvider(cacheNameWithPrefix,
-                    operationProvider, new WanPublisherLookup());
-        } else {
-            return operationProvider;
+            return new EnterpriseCacheOperationProvider(cacheNameWithPrefix);
         }
     }
 
@@ -662,6 +652,14 @@ public class EnterpriseCacheService
     }
 
     @Override
+    public void checkWanReplicationQueues(String cacheNameWithPrefix) {
+        WanReplicationPublisher publisher = wanReplicationPublishers.get(cacheNameWithPrefix);
+        if (publisher != null) {
+            publisher.checkWanReplicationQueues();
+        }
+    }
+
+    @Override
     public boolean isWanReplicationEnabled(String cacheNameWithPrefix) {
         final CacheConfig config = getCacheConfig(cacheNameWithPrefix);
         final WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
@@ -674,13 +672,5 @@ public class EnterpriseCacheService
     @Override
     public CacheWanEventPublisher getCacheWanEventPublisher() {
         return cacheWanEventPublisher;
-    }
-
-    private class WanPublisherLookup implements Function<String, WanReplicationPublisher> {
-
-        @Override
-        public WanReplicationPublisher apply(String cacheNameWithPrefix) {
-            return getOrLookupWanPublisher(cacheNameWithPrefix);
-        }
     }
 }

@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.record.HDRecord;
@@ -11,7 +12,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
-import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.Iterator;
 

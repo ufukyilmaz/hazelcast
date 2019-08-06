@@ -8,6 +8,7 @@ import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.internal.nearcache.NearCacheRecord;
 import com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector;
 import com.hazelcast.internal.nearcache.impl.preloader.NearCachePreloader;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -15,7 +16,6 @@ import com.hazelcast.monitor.NearCacheStats;
 import com.hazelcast.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.serialization.SerializationService;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Iterator;

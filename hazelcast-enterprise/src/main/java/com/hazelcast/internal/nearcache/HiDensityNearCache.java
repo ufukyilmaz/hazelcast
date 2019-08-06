@@ -3,6 +3,7 @@ package com.hazelcast.internal.nearcache;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.nearcache.impl.DefaultNearCache;
 import com.hazelcast.internal.nearcache.impl.nativememory.SegmentedNativeMemoryNearCacheRecordStore;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.HazelcastMemoryManager;
@@ -11,7 +12,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.properties.HazelcastProperties;
-import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.Collection;
 

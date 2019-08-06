@@ -17,6 +17,7 @@ import com.hazelcast.internal.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.internal.nearcache.NearCacheManager;
 import com.hazelcast.internal.networking.ChannelInitializer;
 import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionAware;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.FreeMemoryChecker;
@@ -29,7 +30,6 @@ import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.spi.properties.HazelcastProperties;
-import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.version.Version;
 

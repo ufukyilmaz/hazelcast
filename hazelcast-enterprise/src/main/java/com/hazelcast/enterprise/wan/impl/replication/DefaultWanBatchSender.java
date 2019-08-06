@@ -6,13 +6,13 @@ import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionWrapper;
 import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.EndpointManager;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.executor.CompletedFuture;
 
 import java.util.concurrent.Executor;

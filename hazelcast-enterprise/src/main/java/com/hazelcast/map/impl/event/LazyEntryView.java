@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.event;
 
 import com.hazelcast.core.EntryView;
-import com.hazelcast.spi.serialization.SerializationService;
+import com.hazelcast.internal.serialization.SerializationService;
 
 /**
  * LazyEntryView is an implementation of {@link

@@ -1,8 +1,9 @@
 package com.hazelcast.security;
 
+import com.hazelcast.internal.serialization.SerializationService;
+
 import javax.security.auth.callback.Callback;
 
-import com.hazelcast.spi.serialization.SerializationService;
 
 /**
  * This {@link Callback} is used to retrieve {@link SerializationService} instance. It is passed to

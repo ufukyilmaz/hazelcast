@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
@@ -7,7 +8,6 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
-import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
 import java.io.IOException;

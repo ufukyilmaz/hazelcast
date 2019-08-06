@@ -4,6 +4,7 @@ import com.hazelcast.core.EntryView;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.IMap;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
@@ -12,7 +13,6 @@ import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
-import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;

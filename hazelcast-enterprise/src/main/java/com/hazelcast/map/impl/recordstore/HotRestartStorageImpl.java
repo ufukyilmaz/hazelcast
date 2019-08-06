@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.EntryView;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EntryCostEstimator;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
@@ -12,7 +13,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
-import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.Collection;
 import java.util.Iterator;

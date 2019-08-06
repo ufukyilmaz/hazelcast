@@ -5,6 +5,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.MaxSizeConfig.MaxSizePolicy;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.recordstore.RecordStore;
@@ -12,7 +13,6 @@ import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.properties.HazelcastProperties;
-import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.MemoryInfoAccessor;
 
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;

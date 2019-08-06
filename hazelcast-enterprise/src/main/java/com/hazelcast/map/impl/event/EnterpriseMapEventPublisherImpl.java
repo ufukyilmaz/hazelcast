@@ -6,6 +6,7 @@ import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.SimpleEntryView;
@@ -18,7 +19,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.NodeEngine;
-import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.CollectionUtil;
 
 import java.util.Collections;

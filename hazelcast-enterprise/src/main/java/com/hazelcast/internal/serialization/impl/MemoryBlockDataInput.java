@@ -34,6 +34,7 @@ import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
 import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.UTF_8;
 
 @SuppressWarnings("checkstyle:methodcount")
 final class MemoryBlockDataInput extends VersionedObjectDataInput implements EnterpriseBufferObjectDataInput {
@@ -559,19 +560,15 @@ final class MemoryBlockDataInput extends VersionedObjectDataInput implements Ent
      */
     @Override
     public String readUTF() throws IOException {
-        int charCount = readInt();
-        if (charCount == NULL_ARRAY_LENGTH) {
+        int numberOfBytes = readInt();
+        if (numberOfBytes == NULL_ARRAY_LENGTH) {
             return null;
         }
-        if (charBuffer == null || charCount > charBuffer.length) {
-            charBuffer = new char[charCount];
-        }
-        byte b;
-        for (int i = 0; i < charCount; i++) {
-            b = readByte();
-            charBuffer[i] = b < 0 ? Bits.readUtf8Char(this, b) : (char) b;
-        }
-        return new String(charBuffer, 0, charCount);
+
+        byte[] utf8Bytes = new byte[numberOfBytes];
+        memory.copyToByteArray(pos + offset, utf8Bytes, 0, numberOfBytes);
+        position(pos + numberOfBytes);
+        return new String(utf8Bytes, UTF_8);
     }
 
     @Override

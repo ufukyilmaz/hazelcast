@@ -35,7 +35,8 @@ class WanSyncContext<T extends WanSyncStats> {
      */
     private final Collection<String> mapNames;
     /**
-     * The count of {@link WanReplicationEvent} sync events pending replication per map, per partition.
+     * The count of {@link WanReplicationEvent} sync events
+     * pending replication per map, per partition.
      */
     private final Map<String, Map<Integer, AtomicInteger>> counterMaps;
     /**

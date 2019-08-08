@@ -78,7 +78,7 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
             eventList.add(event);
         }
 
-        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event.getEventObject();
+        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event;
         if (!isCoalesced) {
             incrementEventCount(eventObject);
         }
@@ -106,7 +106,7 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
     }
 
     private DistributedObjectEntryIdentifier getDistributedObjectEntryIdentifier(WanReplicationEvent event) {
-        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event.getEventObject();
+        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event;
         return new DistributedObjectEntryIdentifier(event.getServiceName(), eventObject.getObjectName(), eventObject.getKey());
     }
 

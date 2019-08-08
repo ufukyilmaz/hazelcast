@@ -4,6 +4,7 @@ import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.CustomWanPublisherConfig;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.MerkleTreeConfig;
+import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
@@ -325,8 +326,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     // only for testing
-    public void handleEvent(WanReplicationEvent event) {
-        eventProcessor.handleEvent(event);
+    public void handleEvent(WanReplicationEvent event, WanAcknowledgeType acknowledgeType) {
+        eventProcessor.handleEvent(event, acknowledgeType);
     }
 
     @Override

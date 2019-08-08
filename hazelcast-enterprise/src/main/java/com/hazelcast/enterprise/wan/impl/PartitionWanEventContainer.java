@@ -2,7 +2,6 @@ package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.util.QueueUtil;
-import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.Collection;
@@ -118,17 +117,16 @@ public class PartitionWanEventContainer {
     }
 
     /**
-     * Returns the backup count for the {@code wanReplicationEvent}
+     * Returns the backup count for the {@code event}
      * representing the number of backup replicas on which this event will be
      * stored in addition to being stored on the primary replica.
      *
-     * @param wanReplicationEvent the WAN event
+     * @param event the WAN event
      * @return the number of backup replicas on which this event is stored
      */
-    private int getBackupCount(WanReplicationEvent wanReplicationEvent) {
-        ReplicationEventObject eventObject = wanReplicationEvent.getEventObject();
-        if (eventObject instanceof EnterpriseReplicationEventObject) {
-            EnterpriseReplicationEventObject evObj = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
+    private int getBackupCount(WanReplicationEvent event) {
+        if (event instanceof EnterpriseReplicationEventObject) {
+            EnterpriseReplicationEventObject evObj = (EnterpriseReplicationEventObject) event;
             return evObj.getBackupCount();
         } else {
             return DEFAULT_BACKUP_COUNT;

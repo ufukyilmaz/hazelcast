@@ -1,7 +1,8 @@
 package com.hazelcast.cache.impl.wan;
 
-import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
+import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -89,5 +90,10 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
     @Override
     public String getObjectName() {
         return cacheName;
+    }
+
+    @Override
+    public String getServiceName() {
+        return CacheService.SERVICE_NAME;
     }
 }

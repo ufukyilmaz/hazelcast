@@ -37,8 +37,7 @@ class WanEventRunnable extends AbstractWanEventRunnable {
         try {
             final String serviceName = event.getServiceName();
             final ReplicationSupportingService service = nodeEngine.getService(serviceName);
-            event.setAcknowledgeType(operation.getAcknowledgeType());
-            service.onReplicationEvent(event);
+            service.onReplicationEvent(event, operation.getAcknowledgeType());
             operation.sendResponse(true);
         } catch (Exception e) {
             operation.sendResponse(false);

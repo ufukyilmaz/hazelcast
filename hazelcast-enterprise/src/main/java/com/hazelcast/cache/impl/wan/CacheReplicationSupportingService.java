@@ -47,13 +47,12 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
     }
 
     @Override
-    public void onReplicationEvent(WanReplicationEvent replicationEvent) {
-        final Object eventObject = replicationEvent.getEventObject();
-        if (!(eventObject instanceof CacheReplicationObject)) {
+    public void onReplicationEvent(WanReplicationEvent event, WanAcknowledgeType acknowledgeType) {
+        if (!(event instanceof CacheReplicationObject)) {
             return;
         }
 
-        final CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
+        final CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) event;
         final CacheConfig cacheConfig = getCacheConfig(cacheReplicationObject);
 
         // Proxies should be created to initialize listeners, etc. and to show WAN replicated caches in mancenter.
@@ -61,18 +60,16 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         // Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
         proxyService.getDistributedObject(CacheService.SERVICE_NAME, cacheConfig.getNameWithPrefix());
 
-        republishIfNecessary(replicationEvent, cacheConfig);
+        republishIfNecessary(event, cacheConfig);
 
         if (cacheReplicationObject instanceof CacheReplicationUpdate) {
-            handleUpdateEvent((CacheReplicationUpdate) cacheReplicationObject,
-                    cacheConfig, replicationEvent.getAcknowledgeType());
+            handleUpdateEvent((CacheReplicationUpdate) cacheReplicationObject, cacheConfig, acknowledgeType);
             wanService.getReceivedEventCounters(ICacheService.SERVICE_NAME)
-                    .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
+                      .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
         } else if (cacheReplicationObject instanceof CacheReplicationRemove) {
-            handleRemoveEvent((CacheReplicationRemove) cacheReplicationObject,
-                    cacheConfig, replicationEvent.getAcknowledgeType());
+            handleRemoveEvent((CacheReplicationRemove) cacheReplicationObject, cacheConfig, acknowledgeType);
             wanService.getReceivedEventCounters(ICacheService.SERVICE_NAME)
-                    .incrementRemove(cacheReplicationObject.getNameWithPrefix());
+                      .incrementRemove(cacheReplicationObject.getNameWithPrefix());
         }
     }
 

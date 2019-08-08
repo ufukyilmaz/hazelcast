@@ -53,7 +53,9 @@ public class PublisherQueueContainer {
      * @param replicationEvent the published replication event
      * @return {@code true} if the element was added to this queue, else {@code false}
      */
-    public boolean publishCacheWanEvent(String nameWithPrefix, int partitionId, WanReplicationEvent replicationEvent) {
+    public boolean publishCacheWanEvent(String nameWithPrefix,
+                                        int partitionId,
+                                        WanReplicationEvent replicationEvent) {
         return getEventQueue(partitionId)
                 .publishCacheWanEvent(nameWithPrefix, replicationEvent);
     }

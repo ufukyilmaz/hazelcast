@@ -5,7 +5,6 @@ import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
-import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
@@ -64,9 +63,9 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
      * delegates.
      */
     @Override
-    public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
+    public void publishReplicationEvent(WanReplicationEvent eventObject) {
         for (WanReplicationEndpoint endpoint : endpoints.values()) {
-            endpoint.publishReplicationEvent(serviceName, eventObject);
+            endpoint.publishReplicationEvent(eventObject);
         }
     }
 
@@ -76,9 +75,9 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
      * publisher delegates.
      */
     @Override
-    public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
+    public void publishReplicationEventBackup(WanReplicationEvent eventObject) {
         for (WanReplicationEndpoint endpoint : endpoints.values()) {
-            endpoint.publishReplicationEventBackup(serviceName, eventObject);
+            endpoint.publishReplicationEventBackup(eventObject);
         }
     }
 
@@ -88,9 +87,9 @@ public final class WanReplicationPublisherDelegate implements WanReplicationPubl
      * delegates.
      */
     @Override
-    public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
+    public void republishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         for (WanReplicationEndpoint endpoint : endpoints.values()) {
-            endpoint.publishReplicationEvent(wanReplicationEvent);
+            endpoint.republishReplicationEvent(wanReplicationEvent);
         }
     }
 

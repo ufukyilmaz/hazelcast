@@ -2,14 +2,14 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.util.Clock;
-import com.hazelcast.wan.ReplicationEventObject;
+import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.Set;
 
 /**
  * Marker interface for enterprise WAN replication events.
  */
-public interface EnterpriseReplicationEventObject extends ReplicationEventObject, DataSerializable {
+public interface EnterpriseReplicationEventObject extends WanReplicationEvent, DataSerializable {
     /**
      * Returns the name of the distributed object (map or cache) on which this
      * event occurred.

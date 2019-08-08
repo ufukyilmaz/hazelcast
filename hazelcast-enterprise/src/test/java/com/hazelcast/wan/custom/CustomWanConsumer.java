@@ -1,8 +1,9 @@
 package com.hazelcast.wan.custom;
 
+import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanConsumerConfig;
-import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationConsumer;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.wan.WanReplicationEvent;
 
@@ -28,11 +29,11 @@ public class CustomWanConsumer implements WanReplicationConsumer, Runnable {
     public void run() {
         while (running) {
             try {
-                WanReplicationEvent event = com.hazelcast.wan.custom.CustomWanPublisher.EVENT_QUEUE.poll(100, MILLISECONDS);
+                WanReplicationEvent event = CustomWanPublisher.EVENT_QUEUE.poll(100, MILLISECONDS);
                 if (event != null) {
                     EnterpriseWanReplicationService wanRepService
                             = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
-                    wanRepService.handleEvent(event);
+                    wanRepService.handleEvent(event, WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();

@@ -69,10 +69,10 @@ public class EWRPutBackupOperation extends EWRBaseOperation
         final Object service = getNodeEngine().getService(serviceName);
 
         if (service instanceof MapService) {
-            final EnterpriseMapReplicationObject mapEvent = (EnterpriseMapReplicationObject) event.getEventObject();
+            final EnterpriseMapReplicationObject mapEvent = (EnterpriseMapReplicationObject) event;
             objectNamespace = MapService.getObjectNamespace(mapEvent.getMapName());
         } else if (service instanceof CacheService) {
-            final CacheReplicationObject cacheEvent = (CacheReplicationObject) event.getEventObject();
+            final CacheReplicationObject cacheEvent = (CacheReplicationObject) event;
             objectNamespace = CacheService.getObjectNamespace(cacheEvent.getCacheName());
         } else {
             getLogger().warning("Forwarding WAN event for unknown service: " + serviceName);

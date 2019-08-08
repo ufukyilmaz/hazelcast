@@ -35,7 +35,6 @@ import com.hazelcast.util.ThreadUtil;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 import com.hazelcast.wan.ConsistencyCheckResult;
-import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanSyncStats;
 import com.hazelcast.wan.impl.merkletree.MerkleTreeUtil;
 
@@ -378,7 +377,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                     EnterpriseMapReplicationMerkleTreeNode node =
                             new EnterpriseMapReplicationMerkleTreeNode(syncContext.getUuid(), mapName, nodeEntries, partitionId);
                     syncContext.getSyncCounter(mapName, partitionId).addAndGet(node.getEntryCount());
-                    publisher.putToSyncEventQueue(new WanReplicationEvent(MapService.SERVICE_NAME, node));
+                    publisher.putToSyncEventQueue(node);
                 }
             }
             processedPartitions.add(partitionId);

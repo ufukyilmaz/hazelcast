@@ -24,7 +24,6 @@ import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.util.SetUtil;
 import com.hazelcast.util.ThreadUtil;
 import com.hazelcast.wan.ConsistencyCheckResult;
-import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanSyncStats;
 
 import java.util.Collection;
@@ -302,8 +301,7 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         for (SimpleEntryView<Data, Data> simpleEntryView : set) {
             EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(syncContext.getUuid(), mapName, simpleEntryView,
                     partitionId);
-            WanReplicationEvent event = new WanReplicationEvent(MapService.SERVICE_NAME, sync);
-            publisher.putToSyncEventQueue(event);
+            publisher.putToSyncEventQueue(sync);
         }
 
         if (syncedEntries == 0) {

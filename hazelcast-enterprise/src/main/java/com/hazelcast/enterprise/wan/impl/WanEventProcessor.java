@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.impl;
 
+import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
 import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
 import com.hazelcast.instance.impl.Node;
@@ -53,35 +54,35 @@ class WanEventProcessor implements LiveOperationsTracker {
      * @param op               the operation which will be notified of the
      *                         processing result
      */
-    public void handleRepEvent(final BatchWanReplicationEvent replicationEvent, WanOperation op) {
+    public void handleRepEvent(BatchWanReplicationEvent replicationEvent, WanOperation op) {
         final Collection<WanReplicationEvent> eventList = replicationEvent.getEvents();
         final int partitionId = eventList.isEmpty()
                 ? DEFAULT_KEY_FOR_STRIPED_EXECUTORS
-                : getPartitionId(eventList.iterator().next().getEventObject().getKey());
+                : getPartitionId(eventList.iterator().next().getKey());
         final BatchWanEventRunnable processingRunnable = new BatchWanEventRunnable(
                 replicationEvent, op, partitionId, node.getNodeEngine(), liveOperations, logger);
         executeAndNotify(processingRunnable, op);
     }
 
     /**
-     * Processes the {@code replicationEvent} by offloading it to a separate
+     * Processes the {@code event} by offloading it to a separate
      * thread. The WAN operation will be notified of the processing result.
      *
-     * @param replicationEvent the WAN replication event to process
-     * @param op               the operation which will be notified of the
-     *                         processing result
+     * @param event the WAN replication event to process
+     * @param op    the operation which will be notified of the
+     *              processing result
      */
-    public void handleRepEvent(final WanReplicationEvent replicationEvent, WanOperation op) {
-        final int partitionId = getPartitionId(replicationEvent.getEventObject().getKey());
+    public void handleRepEvent(WanReplicationEvent event, WanOperation op) {
+        final int partitionId = getPartitionId(event.getKey());
         final WanEventRunnable processingRunnable
-                = new WanEventRunnable(replicationEvent, op, partitionId, node.getNodeEngine(), liveOperations, logger);
+                = new WanEventRunnable(event, op, partitionId, node.getNodeEngine(), liveOperations, logger);
         executeAndNotify(processingRunnable, op);
     }
 
-    public void handleEvent(WanReplicationEvent event) {
+    public void handleEvent(WanReplicationEvent event, WanAcknowledgeType acknowledgeType) {
         String serviceName = event.getServiceName();
         ReplicationSupportingService service = node.getNodeEngine().getService(serviceName);
-        service.onReplicationEvent(event);
+        service.onReplicationEvent(event, acknowledgeType);
     }
 
     /**

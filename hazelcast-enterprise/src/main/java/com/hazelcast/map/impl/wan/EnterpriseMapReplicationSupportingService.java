@@ -51,12 +51,11 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
     }
 
     @Override
-    public void onReplicationEvent(WanReplicationEvent replicationEvent) {
-        Object eventObject = replicationEvent.getEventObject();
-        if (!(eventObject instanceof EnterpriseMapReplicationObject)) {
+    public void onReplicationEvent(WanReplicationEvent event, WanAcknowledgeType acknowledgeType) {
+        if (!(event instanceof EnterpriseMapReplicationObject)) {
             return;
         }
-        EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
+        EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) event;
         String mapName = mapReplicationObject.getMapName();
 
         /*
@@ -66,27 +65,27 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
          */
         proxyService.getDistributedObject(MapService.SERVICE_NAME, mapName);
 
-        if (eventObject instanceof EnterpriseMapReplicationSync) {
-            handleSyncEvent((EnterpriseMapReplicationSync) eventObject);
+        if (event instanceof EnterpriseMapReplicationSync) {
+            handleSyncEvent((EnterpriseMapReplicationSync) event);
             wanEventCounters.incrementSync(mapName);
             return;
         }
 
-        if (eventObject instanceof EnterpriseMapReplicationMerkleTreeNode) {
+        if (event instanceof EnterpriseMapReplicationMerkleTreeNode) {
             EnterpriseMapReplicationMerkleTreeNode merkleTreeNode
-                    = (EnterpriseMapReplicationMerkleTreeNode) eventObject;
+                    = (EnterpriseMapReplicationMerkleTreeNode) event;
             handleMerkleTreeNode(merkleTreeNode);
             wanEventCounters.incrementSync(mapName, merkleTreeNode.getEntryCount());
             return;
         }
 
-        republishIfNecessary(replicationEvent, mapName);
+        republishIfNecessary(event, mapName);
 
-        if (eventObject instanceof EnterpriseMapReplicationUpdate) {
-            handleUpdateEvent((EnterpriseMapReplicationUpdate) eventObject, replicationEvent.getAcknowledgeType());
+        if (event instanceof EnterpriseMapReplicationUpdate) {
+            handleUpdateEvent((EnterpriseMapReplicationUpdate) event, acknowledgeType);
             wanEventCounters.incrementUpdate(mapName);
-        } else if (eventObject instanceof EnterpriseMapReplicationRemove) {
-            handleRemoveEvent((EnterpriseMapReplicationRemove) eventObject, replicationEvent.getAcknowledgeType());
+        } else if (event instanceof EnterpriseMapReplicationRemove) {
+            handleRemoveEvent((EnterpriseMapReplicationRemove) event, acknowledgeType);
             wanEventCounters.incrementRemove(mapName);
         }
     }
@@ -118,7 +117,7 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
     private void republishIfNecessary(WanReplicationEvent event, String mapName) {
         final MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         if (mapContainer.isWanRepublishingEnabled()) {
-            mapContainer.getWanReplicationPublisher().publishReplicationEvent(event);
+            mapContainer.getWanReplicationPublisher().republishReplicationEvent(event);
         }
     }
 

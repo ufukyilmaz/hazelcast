@@ -27,6 +27,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.InvalidConfigurationException;
+import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
@@ -40,7 +41,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
-import com.hazelcast.spi.hotrestart.LoadedConfigurationListener;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngine;
@@ -92,25 +92,22 @@ public class EnterpriseCacheService
     private static final int CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS = 30;
 
     private final ConcurrentMap<String, WanReplicationPublisher> wanReplicationPublishers =
-            new ConcurrentHashMap<String, WanReplicationPublisher>();
+            new ConcurrentHashMap<>();
     private final ConcurrentMap<String, String> cacheMergePolicies =
-            new ConcurrentHashMap<String, String>();
+            new ConcurrentHashMap<>();
     private final ConcurrentMap<String, HiDensityStorageInfo> hiDensityCacheInfoMap =
-            new ConcurrentHashMap<String, HiDensityStorageInfo>();
+            new ConcurrentHashMap<>();
     private final ConstructorFunction<String, HiDensityStorageInfo> hiDensityCacheInfoConstructorFunction =
-            new ConstructorFunction<String, HiDensityStorageInfo>() {
-                @Override
-                public HiDensityStorageInfo createNew(String cacheNameWithPrefix) {
-                    CacheConfig cacheConfig = getCacheConfig(cacheNameWithPrefix);
-                    if (cacheConfig == null) {
-                        throw new CacheNotExistsException("Cache " + cacheNameWithPrefix
-                                + " is already destroyed or not created yet, on " + nodeEngine.getLocalMember());
-                    }
-                    CacheContext cacheContext = getOrCreateCacheContext(cacheNameWithPrefix);
-                    HiDensityCacheStorageInfo storageInfo = new HiDensityCacheStorageInfo(cacheNameWithPrefix, cacheContext);
-                    registerCacheProbes(storageInfo, cacheNameWithPrefix);
-                    return storageInfo;
+            cacheNameWithPrefix -> {
+                CacheConfig cacheConfig = getCacheConfig(cacheNameWithPrefix);
+                if (cacheConfig == null) {
+                    throw new CacheNotExistsException("Cache " + cacheNameWithPrefix
+                            + " is already destroyed or not created yet, on " + nodeEngine.getLocalMember());
                 }
+                CacheContext cacheContext = getOrCreateCacheContext(cacheNameWithPrefix);
+                HiDensityCacheStorageInfo storageInfo = new HiDensityCacheStorageInfo(cacheNameWithPrefix, cacheContext);
+                registerCacheProbes(storageInfo, cacheNameWithPrefix);
+                return storageInfo;
             };
 
     private IPartitionService partitionService;
@@ -130,15 +127,12 @@ public class EnterpriseCacheService
         hotRestartService = getHotRestartService();
         if (hotRestartService != null) {
             hotRestartService.registerRamStoreRegistry(SERVICE_NAME, this);
-            hotRestartService.registerLoadedConfigurationListener(new LoadedConfigurationListener() {
-                @Override
-                public void onConfigurationLoaded(String serviceName, String name, Object config) {
-                    if (SERVICE_NAME.equals(serviceName)) {
-                        if (config instanceof CacheConfig) {
-                            putCacheConfigIfAbsent((CacheConfig) config);
-                        } else {
-                            logger.warning("Configuration " + config + " has an unknown type " + config.getClass());
-                        }
+            hotRestartService.registerLoadedConfigurationListener((serviceName, name, config) -> {
+                if (SERVICE_NAME.equals(serviceName)) {
+                    if (config instanceof CacheConfig) {
+                        putCacheConfigIfAbsent((CacheConfig) config);
+                    } else {
+                        logger.warning("Configuration " + config + " has an unknown type " + config.getClass());
                     }
                 }
             });
@@ -221,8 +215,7 @@ public class EnterpriseCacheService
     }
 
     private static HotRestartConfig getHotRestartConfig(CacheConfig cacheConfig) {
-        HotRestartConfig hotRestartConfig = cacheConfig.getHotRestartConfig();
-        return hotRestartConfig;
+        return cacheConfig.getHotRestartConfig();
     }
 
     private HotRestartIntegrationService getHotRestartService() {
@@ -280,7 +273,7 @@ public class EnterpriseCacheService
      */
     private void destroySegmentsInternal(String cacheNameWithPrefix) {
         OperationService operationService = nodeEngine.getOperationService();
-        List<LocalRetryableExecution> executions = new ArrayList<LocalRetryableExecution>();
+        List<LocalRetryableExecution> executions = new ArrayList<>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasRecordStore(cacheNameWithPrefix)) {
                 CacheSegmentDestroyOperation op = new CacheSegmentDestroyOperation(cacheNameWithPrefix);
@@ -322,7 +315,7 @@ public class EnterpriseCacheService
     @Override
     public void shutdown(boolean terminate) {
         OperationService operationService = nodeEngine.getOperationService();
-        List<CacheSegmentShutdownOperation> ops = new ArrayList<CacheSegmentShutdownOperation>();
+        List<CacheSegmentShutdownOperation> ops = new ArrayList<>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasAnyRecordStore()) {
                 CacheSegmentShutdownOperation op = new CacheSegmentShutdownOperation();
@@ -525,8 +518,8 @@ public class EnterpriseCacheService
     }
 
     @Override
-    public void onReplicationEvent(WanReplicationEvent wanReplicationEvent) {
-        replicationSupportingService.onReplicationEvent(wanReplicationEvent);
+    public void onReplicationEvent(WanReplicationEvent event, WanAcknowledgeType acknowledgeType) {
+        replicationSupportingService.onReplicationEvent(event, acknowledgeType);
     }
 
     public void publishWanEvent(CacheEventContext cacheEventContext) {
@@ -560,17 +553,17 @@ public class EnterpriseCacheService
                                         cacheEventContext.getAccessHit()),
                                 config.getManagerPrefix(), config.getTotalBackupCount());
                 if (backup) {
-                    wanReplicationPublisher.publishReplicationEventBackup(SERVICE_NAME, update);
+                    wanReplicationPublisher.publishReplicationEventBackup(update);
                 } else {
-                    wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, update);
+                    wanReplicationPublisher.publishReplicationEvent(update);
                 }
             } else if (eventType == CacheEventType.REMOVED) {
                 CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
                         config.getManagerPrefix(), config.getTotalBackupCount());
                 if (backup) {
-                    wanReplicationPublisher.publishReplicationEventBackup(SERVICE_NAME, remove);
+                    wanReplicationPublisher.publishReplicationEventBackup(remove);
                 } else {
-                    wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, remove);
+                    wanReplicationPublisher.publishReplicationEvent(remove);
                 }
             }
         }
@@ -582,7 +575,7 @@ public class EnterpriseCacheService
         }
 
         List<String> filters = wanReplicationRef.getFilters();
-        return CollectionUtil.isEmpty(filters) ? Collections.<String>emptyList() : filters;
+        return CollectionUtil.isEmpty(filters) ? Collections.emptyList() : filters;
     }
 
     private boolean isOwnedPartition(Data dataKey) {
@@ -632,7 +625,7 @@ public class EnterpriseCacheService
     public void publishWanEvent(String cacheNameWithPrefix, WanReplicationEvent wanReplicationEvent) {
         final WanReplicationPublisher wanReplicationPublisher = getOrLookupWanPublisher(cacheNameWithPrefix);
         if (wanReplicationPublisher != null) {
-            wanReplicationPublisher.publishReplicationEvent(wanReplicationEvent);
+            wanReplicationPublisher.republishReplicationEvent(wanReplicationEvent);
         }
     }
 

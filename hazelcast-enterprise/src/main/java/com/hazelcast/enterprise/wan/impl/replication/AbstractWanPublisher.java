@@ -36,9 +36,8 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.util.Clock;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
-import com.hazelcast.wan.ReplicationEventObject;
-import com.hazelcast.wan.WANReplicationQueueFullException;
 import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WANReplicationQueueFullException;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.ArrayList;
@@ -121,13 +120,13 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
     }
 
     @Override
-    public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
-        publishReplicationEventInternal(serviceName, (EnterpriseReplicationEventObject) eventObject, false);
+    public void publishReplicationEvent(WanReplicationEvent eventObject) {
+        publishReplicationEventInternal((EnterpriseReplicationEventObject) eventObject, false);
     }
 
     @Override
-    public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
-        publishReplicationEventInternal(serviceName, (EnterpriseReplicationEventObject) eventObject, true);
+    public void publishReplicationEventBackup(WanReplicationEvent eventObject) {
+        publishReplicationEventInternal((EnterpriseReplicationEventObject) eventObject, true);
     }
 
     /**
@@ -136,12 +135,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      * The event will be published to the target endpoints of this publisher
      * if the publisher has not already processed this event.
      *
-     * @param serviceName the service publishing the event
      * @param eventObject the replication backup event
      * @param backupEvent if this is an event of a backup entry
      */
-    private void publishReplicationEventInternal(String serviceName,
-                                                 EnterpriseReplicationEventObject eventObject,
+    private void publishReplicationEventInternal(EnterpriseReplicationEventObject eventObject,
                                                  boolean backupEvent) {
         if (!state.isEnqueueNewEvents()) {
             return;
@@ -149,7 +146,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
         if (isEventDroppingNeeded(backupEvent)) {
             if (!backupEvent) {
-                wanService.getSentEventCounters(wanReplicationName, wanPublisherId, serviceName)
+                wanService.getSentEventCounters(wanReplicationName, wanPublisherId, eventObject.getServiceName())
                           .incrementDropped(eventObject.getObjectName());
             }
             return;
@@ -162,7 +159,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
         eventObject.getGroupNames().add(localGroupName);
 
-        boolean eventPublished = publishEventInternal(serviceName, eventObject);
+        boolean eventPublished = publishEventInternal(eventObject);
         if (eventPublished) {
             wanCounter.incrementCounters(backupEvent);
         }
@@ -172,11 +169,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      * Publishes the {@code eventObject} onto the WAN replication queues. WAN
      * sync events should not be published using this method.
      *
-     * @param serviceName the name of the service to which this event belongs
      * @param eventObject the WAN event
      * @return {@code true} if the event has been published, otherwise returns {@code false}
      */
-    private boolean publishEventInternal(String serviceName, ReplicationEventObject eventObject) {
+    private boolean publishEventInternal(WanReplicationEvent eventObject) {
         assert !(eventObject instanceof EnterpriseMapReplicationMerkleTreeNode)
                 : "Merkle tree sync objects should not be published";
         assert !(eventObject instanceof EnterpriseMapReplicationSync)
@@ -185,29 +181,18 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
         if (eventObject instanceof EnterpriseMapReplicationObject) {
             String mapName = ((EnterpriseMapReplicationObject) eventObject).getMapName();
             int partitionId = getPartitionId(eventObject.getKey());
-            return eventQueueContainer.publishMapWanEvent(mapName, partitionId,
-                    wrapReplicationEvent(serviceName, eventObject));
+            return eventQueueContainer.publishMapWanEvent(mapName, partitionId, eventObject);
         }
 
         if (eventObject instanceof CacheReplicationObject) {
             String cacheName = ((CacheReplicationObject) eventObject).getNameWithPrefix();
             int partitionId = getPartitionId(eventObject.getKey());
-            return eventQueueContainer.publishCacheWanEvent(cacheName, partitionId,
-                    wrapReplicationEvent(serviceName, eventObject));
+            return eventQueueContainer.publishCacheWanEvent(cacheName, partitionId, eventObject);
         }
 
         logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
 
         return false;
-    }
-
-    /**
-     * Creates a new WanReplicationEvent to wrap a ReplicationEventObject in
-     * order to send it over wire.
-     */
-    private WanReplicationEvent wrapReplicationEvent(String serviceName,
-                                                     ReplicationEventObject eventObject) {
-        return new WanReplicationEvent(serviceName, eventObject);
     }
 
     /**
@@ -217,11 +202,10 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      * @param event the WAN event
      */
     void incrementEventCount(WanReplicationEvent event) {
-        final String serviceName = event.getServiceName();
-        final ReplicationEventObject eventObject = event.getEventObject();
-        final DistributedServiceWanEventCounters counters
+        String serviceName = event.getServiceName();
+        DistributedServiceWanEventCounters counters
                 = wanService.getSentEventCounters(wanReplicationName, wanPublisherId, serviceName);
-        eventObject.incrementEventCount(counters);
+        event.incrementEventCount(counters);
     }
 
     /**
@@ -318,22 +302,21 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
 
         for (Collection<WanReplicationEvent> events : eventCollections) {
             for (WanReplicationEvent event : events) {
-                ReplicationEventObject eventObject = event.getEventObject();
-                if (eventObject instanceof EnterpriseMapReplicationSync
-                        || eventObject instanceof EnterpriseMapReplicationMerkleTreeNode) {
-                    syncSupport.removeReplicationEvent((EnterpriseMapReplicationObject) eventObject);
+                if (event instanceof EnterpriseMapReplicationSync
+                        || event instanceof EnterpriseMapReplicationMerkleTreeNode) {
+                    syncSupport.removeReplicationEvent((EnterpriseMapReplicationObject) event);
                     continue;
                 }
                 updateStats(event);
 
-                int partitionId = getPartitionId(eventObject.getKey());
+                int partitionId = getPartitionId(event.getKey());
                 if (!eventCounts.containsKey(partitionId)) {
                     eventCounts.put(partitionId, new HashMap<>());
                 }
 
                 Map<DistributedObjectIdentifier, Integer> partitionEventCounts = eventCounts.get(partitionId);
 
-                DistributedObjectIdentifier id = getDistributedObjectIdentifier(eventObject);
+                DistributedObjectIdentifier id = getDistributedObjectIdentifier(event);
 
                 Integer eventCount = partitionEventCounts.get(id);
                 partitionEventCounts.put(id, eventCount != null ? eventCount + 1 : 1);
@@ -349,7 +332,7 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      * @param eventObject the WAN replication event
      * @return the identifier for the distributed object on which the event happened
      */
-    private DistributedObjectIdentifier getDistributedObjectIdentifier(ReplicationEventObject eventObject) {
+    private DistributedObjectIdentifier getDistributedObjectIdentifier(WanReplicationEvent eventObject) {
         DistributedObjectIdentifier id = null;
         if (eventObject instanceof EnterpriseMapReplicationObject) {
             EnterpriseMapReplicationObject mapEvent = (EnterpriseMapReplicationObject) eventObject;
@@ -370,16 +353,14 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      */
     private void updateStats(WanReplicationEvent wanReplicationEvent) {
         EnterpriseReplicationEventObject eventObject
-                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
+                = (EnterpriseReplicationEventObject) wanReplicationEvent;
         long latency = Clock.currentTimeMillis() - eventObject.getCreationTime();
         localWanPublisherStats.incrementPublishedEventCount(latency < 0 ? 0 : latency);
     }
 
     @Override
     public void putBackup(WanReplicationEvent wanReplicationEvent) {
-        EnterpriseReplicationEventObject eventObject
-                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
-        publishReplicationEventBackup(wanReplicationEvent.getServiceName(), eventObject);
+        publishReplicationEventBackup(wanReplicationEvent);
     }
 
     @Override
@@ -445,9 +426,9 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
      * @param wanReplicationEvent the WAN event to publish
      */
     @Override
-    public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
+    public void republishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         EnterpriseReplicationEventObject replicationEventObject
-                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
+                = (EnterpriseReplicationEventObject) wanReplicationEvent;
         EWRPutOperation wanPutOperation =
                 new EWRPutOperation(wanReplicationName, wanPublisherId,
                         wanReplicationEvent,
@@ -693,9 +674,9 @@ public abstract class AbstractWanPublisher implements WanReplicationPublisher,
             // the WanQueueMigrationSupport.onMigrationCommit will then migrate
             // some of the counts from backup to primary counter and vice versa
             if (isPrimaryReplica) {
-                publishReplicationEvent(event.getServiceName(), event.getEventObject());
+                publishReplicationEvent(event);
             } else {
-                publishReplicationEventBackup(event.getServiceName(), event.getEventObject());
+                publishReplicationEventBackup(event);
             }
             event = eventQueue.poll();
         }

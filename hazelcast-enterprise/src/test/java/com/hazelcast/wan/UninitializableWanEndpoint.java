@@ -30,7 +30,7 @@ public class UninitializableWanEndpoint implements WanReplicationEndpoint<Object
     }
 
     @Override
-    public void putBackup(WanReplicationEvent wanReplicationEvent) {
+    public void putBackup(WanReplicationEvent event) {
     }
 
     @Override
@@ -52,15 +52,15 @@ public class UninitializableWanEndpoint implements WanReplicationEndpoint<Object
     }
 
     @Override
-    public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
+    public void publishReplicationEvent(WanReplicationEvent event) {
     }
 
     @Override
-    public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
+    public void publishReplicationEventBackup(WanReplicationEvent event) {
     }
 
     @Override
-    public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
+    public void republishReplicationEvent(WanReplicationEvent event) {
     }
 
     @Override

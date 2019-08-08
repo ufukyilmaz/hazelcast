@@ -2,8 +2,8 @@ package com.hazelcast.enterprise.wan.impl.operation;
 
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.wan.CacheReplicationObject;
-import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.internal.services.ServiceNamespaceAware;
 import com.hazelcast.map.impl.MapService;
@@ -36,7 +36,7 @@ public class EWRPutOperation extends EWRBackupAwareOperation implements Identifi
     public void run() throws Exception {
         EnterpriseWanReplicationService wanReplicationService = getEWRService();
         WanReplicationEndpoint endpoint = wanReplicationService.getEndpointOrFail(wanReplicationName, wanPublisherId);
-        endpoint.publishReplicationEvent(event.getServiceName(), event.getEventObject());
+        endpoint.publishReplicationEvent(event);
         response = true;
     }
 
@@ -75,10 +75,10 @@ public class EWRPutOperation extends EWRBackupAwareOperation implements Identifi
         final String serviceName = event.getServiceName();
 
         if (MapService.SERVICE_NAME.equals(serviceName)) {
-            final EnterpriseMapReplicationObject mapEvent = (EnterpriseMapReplicationObject) event.getEventObject();
+            final EnterpriseMapReplicationObject mapEvent = (EnterpriseMapReplicationObject) event;
             objectNamespace = MapService.getObjectNamespace(mapEvent.getMapName());
         } else if (CacheService.SERVICE_NAME.equals(serviceName)) {
-            final CacheReplicationObject cacheEvent = (CacheReplicationObject) event.getEventObject();
+            final CacheReplicationObject cacheEvent = (CacheReplicationObject) event;
             objectNamespace = CacheService.getObjectNamespace(cacheEvent.getCacheName());
         } else {
             getLogger().warning("Forwarding WAN event for unknown service: " + serviceName);

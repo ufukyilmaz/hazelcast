@@ -3,6 +3,7 @@ package com.hazelcast.map.impl.wan;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
 import com.hazelcast.map.IMap;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -80,5 +81,10 @@ public abstract class EnterpriseMapReplicationObject
     @Override
     public String getObjectName() {
         return mapName;
+    }
+
+    @Override
+    public String getServiceName() {
+        return MapService.SERVICE_NAME;
     }
 }

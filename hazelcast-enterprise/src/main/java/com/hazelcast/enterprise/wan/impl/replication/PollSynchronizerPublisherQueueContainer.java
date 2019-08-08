@@ -2,7 +2,6 @@ package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.enterprise.wan.impl.PublisherQueueContainer;
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.Collection;
@@ -28,13 +27,10 @@ public class PollSynchronizerPublisherQueueContainer extends PublisherQueueConta
      */
     private final AtomicReferenceArray<ReentrantLock> partitionPollLocks;
 
-    private final ILogger logger;
-
     PollSynchronizerPublisherQueueContainer(Node node) {
         super(node);
         int partitionCount = node.getNodeEngine().getPartitionService().getPartitionCount();
-        partitionPollLocks = new AtomicReferenceArray<ReentrantLock>(partitionCount);
-        logger = node.getLogger(PollSynchronizerPublisherQueueContainer.class);
+        partitionPollLocks = new AtomicReferenceArray<>(partitionCount);
     }
 
     @Override

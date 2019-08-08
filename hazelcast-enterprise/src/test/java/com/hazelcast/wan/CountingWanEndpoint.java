@@ -46,7 +46,7 @@ public class CountingWanEndpoint implements WanReplicationEndpoint<Object> {
     }
 
     @Override
-    public void putBackup(WanReplicationEvent wanReplicationEvent) {
+    public void putBackup(WanReplicationEvent event) {
     }
 
     @Override
@@ -68,15 +68,15 @@ public class CountingWanEndpoint implements WanReplicationEndpoint<Object> {
     }
 
     @Override
-    public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
-        if (isOwnedPartition(eventObject.getKey())) {
+    public void publishReplicationEvent(WanReplicationEvent event) {
+        if (isOwnedPartition(event.getKey())) {
             counter.incrementAndGet();
         }
     }
 
     @Override
-    public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
-        if (!isOwnedPartition(eventObject.getKey())) {
+    public void publishReplicationEventBackup(WanReplicationEvent event) {
+        if (!isOwnedPartition(event.getKey())) {
             backupCounter.incrementAndGet();
         }
     }
@@ -88,7 +88,7 @@ public class CountingWanEndpoint implements WanReplicationEndpoint<Object> {
     }
 
     @Override
-    public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
+    public void republishReplicationEvent(WanReplicationEvent event) {
     }
 
     @Override

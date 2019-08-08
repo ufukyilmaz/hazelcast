@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
+import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
 import com.hazelcast.internal.services.ReplicationSupportingService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.impl.NodeEngine;
@@ -39,8 +39,7 @@ class BatchWanEventRunnable extends AbstractWanEventRunnable {
             for (WanReplicationEvent wanReplicationEvent : batchEvent.getEvents()) {
                 String serviceName = wanReplicationEvent.getServiceName();
                 ReplicationSupportingService service = nodeEngine.getService(serviceName);
-                wanReplicationEvent.setAcknowledgeType(operation.getAcknowledgeType());
-                service.onReplicationEvent(wanReplicationEvent);
+                service.onReplicationEvent(wanReplicationEvent, operation.getAcknowledgeType());
             }
             operation.sendResponse(true);
         } catch (Exception e) {

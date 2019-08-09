@@ -176,7 +176,7 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
             // upon initialization by NioChannel
 
             // For the plain SSL, we do the extra effort of cross-checking the supported cipher suites
-            // in SSLEngineFactoryAdaptor and when a mismatch is detected, we throw a ConfigurationException
+            // in SSLEngineFactoryAdaptor and when a mismatch is detected, we throw a InvalidConfigurationException
             // as a fail-fast mechanism.
             //
             // However, the same can not easily be done for OpenSSL, because we can not

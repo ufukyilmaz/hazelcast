@@ -143,12 +143,12 @@ public class LicenseExpirationReminderTaskTest extends HazelcastTestSupport {
 
         String expected = format("%n"
                 + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%n"
-                + "HAZELCAST LICENSE WILL EXPIRE IN 6 DAYS.%n"
-                + "Your Hazelcast cluster will stop working on next re-start after expiry.%n"
-                + "%n" + "Your license holder is customer@example-company.com, you should have them contact%n"
-                + "our license renewal department, urgently on info@hazelcast.com%n"
-                + "or call us on +1 (650) 521-5453%n%n"
-                + "Please quote license id CUSTOM_TEST_KEY%n%n"
+                + "THIS HAZELCAST LICENSE ID CUSTOM_TEST_KEY WILL EXPIRE IN 6 DAYS.%n"
+                + "Your Hazelcast cluster will stop working on the next re-start after%n"
+                + "expiry.%n%n"
+                + "Please contact your Hazelcast Account Executive or%n"
+                + "email sales@hazelcast.com.%n"
+                + "Phone: +1 (650) 521-5453%n"
                 + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
         assertEquals(msg(nowInMillis), expected, actual);
@@ -171,12 +171,12 @@ public class LicenseExpirationReminderTaskTest extends HazelcastTestSupport {
 
         String expected = format("%n"
                 + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%n"
-                + "HAZELCAST LICENSE EXPIRED!%n%n"
-                + "You are now in a grace period of 1 month(s). The license will expire in "
-                + countDaysTillSameDayNextMonth(license.getExpiryDate(), nowInMillis) + " days time%n%n"
-                + "Your license holder is customer@example-company.com, you should have them contact%n"
-                + "our license renewal department, urgently on info@hazelcast.com%n" + "or call us on +1 (650) 521-5453%n%n"
-                + "Please quote license id CUSTOM_TEST_KEY%n%n"
+                + "THIS HAZELCAST LICENSE ID CUSTOM_TEST_KEY HAS EXPIRED!%n%n"
+                + "You are now in a grace period of 1 month(s). The license will expire%n"
+                + "in " + countDaysTillSameDayNextMonth(license.getExpiryDate(), nowInMillis) + " days time.%n%n"
+                + "Please contact your Hazelcast Account Executive or%n"
+                + "email sales@hazelcast.com.%n"
+                + "Phone: +1 (650) 521-5453%n"
                 + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
         assertEquals(msg(nowInMillis), expected, actual);
@@ -206,10 +206,10 @@ public class LicenseExpirationReminderTaskTest extends HazelcastTestSupport {
 
         String expected = format("%n"
                 + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%n"
-                + "HAZELCAST LICENSE EXPIRED!%n%n"
-                + "Your license holder is customer@example-company.com, you should have them contact%n"
-                + "our license renewal department, urgently on info@hazelcast.com%n" + "or call us on +1 (650) 521-5453%n%n"
-                + "Please quote license id CUSTOM_TEST_KEY%n%n"
+                + "THIS HAZELCAST LICENSE ID CUSTOM_TEST_KEY HAS EXPIRED!%n%n"
+                + "Please contact your Hazelcast Account Executive or%n"
+                + "email sales@hazelcast.com.%n"
+                + "Phone: +1 (650) 521-5453%n"
                 + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
 

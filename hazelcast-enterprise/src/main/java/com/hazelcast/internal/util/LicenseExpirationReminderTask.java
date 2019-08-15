@@ -31,11 +31,11 @@ public class LicenseExpirationReminderTask implements Runnable {
     private static final int SCHEDULING_DELAY_DAYS_DUE_TO_EXPIRATION = 60;
     private static final String BANNER_TEMPLATE = "%n"
             + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%n"
-            + "HAZELCAST LICENSE :EXPIRY_TIME:"
+            + "THIS HAZELCAST LICENSE ID :LICENSE_ID: :EXPIRY_TIME:"
             + ":GRACE_PERIOD:"
-            + "Your license holder is :CUSTOMER_EMAIL:, you should have them contact%n"
-            + "our license renewal department, urgently on :HAZELCAST_EMAIL:%n" + "or call us on :HAZELCAST_PHONE_NUMBER:%n%n"
-            + "Please quote license id :LICENSE_ID:%n%n"
+            + "Please contact your Hazelcast Account Executive or%n"
+            + "email :HAZELCAST_EMAIL:.%n"
+            + "Phone: :HAZELCAST_PHONE_NUMBER:%n"
             + "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
 
     enum NotificationPeriod {
@@ -133,12 +133,12 @@ public class LicenseExpirationReminderTask implements Runnable {
     String assembleLicenseInfoBanner(NotificationPeriod period, long nowInMillis) {
         return format(BANNER_TEMPLATE).replace(":EXPIRY_TIME:", formatExpiryTimeString(nowInMillis))
                 .replace(":CUSTOMER_EMAIL:", license.getEmail() != null ? license.getEmail() : "not-specified")
-                .replace(":HAZELCAST_EMAIL:", "info@hazelcast.com")
+                .replace(":HAZELCAST_EMAIL:", "sales@hazelcast.com")
                 .replace(":HAZELCAST_PHONE_NUMBER:", "+1 (650) 521-5453")
                 .replace(":LICENSE_ID:", license.getKey())
                 .replace(":GRACE_PERIOD:", period.isGrace && remainingDaysTillGraceEnds(nowInMillis) != -1
                         ? "You are now in a grace period of " + license.getGracePeriod() + " month(s). "
-                        + format("The license will expire in " + remainingDaysTillGraceEnds(nowInMillis) + " days time%n%n")
+                        + format("The license will expire%nin " + remainingDaysTillGraceEnds(nowInMillis) + " days time.%n%n")
                         : "");
     }
 
@@ -165,28 +165,28 @@ public class LicenseExpirationReminderTask implements Runnable {
     private String formatExpiryTimeString(long nowInMillis) {
         long diff = license.getExpiryDate().getTime() - nowInMillis;
         if (diff <= 0) {
-            return format("EXPIRED!%n%n");
+            return format("HAS EXPIRED!%n%n");
         }
 
         long days = MILLISECONDS.toDays(diff);
         if (days > 0) {
             return format("WILL EXPIRE IN %d DAYS.%n"
-                    + "Your Hazelcast cluster will stop working on next re-start after expiry.%n%n", days);
+                    + "Your Hazelcast cluster will stop working on the next re-start after%nexpiry.%n%n", days);
         }
 
         long hours = MILLISECONDS.toHours(diff);
         if (hours > 0) {
             return format("WILL EXPIRE IN %d HOURS.%n"
-                    + "Your Hazelcast cluster will stop working on next re-start after expiry.%n%n", hours);
+                    + "Your Hazelcast cluster will stop working on the next re-start after%nexpiry.%n%n", hours);
         }
 
         long minutes = MILLISECONDS.toMinutes(diff);
         if (minutes > 0) {
             return format("WILL EXPIRE IN %d MINS.%n"
-                    + "Your Hazelcast cluster will stop working on next re-start after expiry.%n%n", minutes);
+                    + "Your Hazelcast cluster will stop working on the next re-start after%nexpiry.%n%n", minutes);
         }
 
         return format("WILL EXPIRE IN A FEW SECONDS.%n"
-                + "Your Hazelcast cluster will stop working on next re-start after expiry.%n%n");
+                + "Your Hazelcast cluster will stop working on the next re-start after%nexpiry.%n%n");
     }
 }

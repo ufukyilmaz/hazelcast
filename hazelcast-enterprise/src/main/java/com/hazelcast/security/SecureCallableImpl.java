@@ -2,43 +2,43 @@ package com.hazelcast.security;
 
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cardinality.CardinalityEstimator;
-import com.hazelcast.collection.IList;
-import com.hazelcast.collection.IQueue;
-import com.hazelcast.collection.ISet;
 import com.hazelcast.client.ClientService;
 import com.hazelcast.cluster.Cluster;
 import com.hazelcast.cluster.Endpoint;
-import com.hazelcast.cp.internal.datastructures.unsafe.idgen.IdGeneratorService;
+import com.hazelcast.collection.IList;
+import com.hazelcast.collection.IQueue;
+import com.hazelcast.collection.ISet;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.DistributedObjectListener;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
-import com.hazelcast.cp.IAtomicLong;
-import com.hazelcast.cp.IAtomicReference;
 import com.hazelcast.core.ICacheManager;
-import com.hazelcast.cp.ICountDownLatch;
 import com.hazelcast.core.IExecutorService;
-import com.hazelcast.cp.lock.ILock;
-import com.hazelcast.map.IMap;
-import com.hazelcast.cp.ISemaphore;
 import com.hazelcast.core.IdGenerator;
 import com.hazelcast.core.LifecycleService;
-import com.hazelcast.instance.impl.Node;
-import com.hazelcast.multimap.MultiMap;
-import com.hazelcast.partition.PartitionService;
 import com.hazelcast.cp.CPMember;
 import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.CPSubsystemManagementService;
+import com.hazelcast.cp.IAtomicLong;
+import com.hazelcast.cp.IAtomicReference;
+import com.hazelcast.cp.ICountDownLatch;
+import com.hazelcast.cp.ISemaphore;
+import com.hazelcast.cp.internal.datastructures.unsafe.idgen.IdGeneratorService;
 import com.hazelcast.cp.lock.FencedLock;
+import com.hazelcast.cp.lock.ILock;
 import com.hazelcast.cp.session.CPSessionManagementService;
 import com.hazelcast.crdt.pncounter.PNCounter;
 import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.hazelcast.flakeidgen.FlakeIdGenerator;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.logging.LoggingService;
+import com.hazelcast.map.IMap;
+import com.hazelcast.multimap.MultiMap;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.partition.PartitionService;
 import com.hazelcast.quorum.QuorumService;
 import com.hazelcast.replicatedmap.ReplicatedMap;
 import com.hazelcast.ringbuffer.Ringbuffer;
@@ -75,7 +75,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import javax.security.auth.Subject;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -84,16 +83,11 @@ import java.security.Permission;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-
-import static com.hazelcast.nio.IOUtil.closeResource;
-import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 @SuppressWarnings({
         "checkstyle:methodcount",
@@ -103,37 +97,7 @@ import static com.hazelcast.util.ExceptionUtil.rethrow;
         justification = "we implement IdentifiedDataSerializable, so Serializable is not used")
 public final class SecureCallableImpl<V> implements SecureCallable<V>, IdentifiedDataSerializable {
 
-    private static final Map<String, Map<String, String>> SERVICE_TO_METHODMAP = new HashMap<String, Map<String, String>>();
-
-    static {
-        Properties properties = new Properties();
-        ClassLoader cl = SecureCallableImpl.class.getClassLoader();
-        InputStream stream = cl.getResourceAsStream("permission-mapping.properties");
-        try {
-            properties.load(stream);
-        } catch (IOException e) {
-            throw rethrow(e);
-        } finally {
-            closeResource(stream);
-        }
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            String key = (String) entry.getKey();
-            String action = (String) entry.getValue();
-            int dotIndex = key.indexOf('.');
-            if (dotIndex == -1) {
-                continue;
-            }
-            String structure = key.substring(0, dotIndex);
-            String method = key.substring(dotIndex + 1);
-            Map<String, String> methodMap = SERVICE_TO_METHODMAP.get(structure);
-            if (methodMap == null) {
-                methodMap = new HashMap<>();
-                SERVICE_TO_METHODMAP.put(structure, methodMap);
-            }
-            methodMap.put(method, action);
-        }
-    }
-
+    private Map<String, Map<String, String>> serviceToMethod;
     private Subject subject;
     private Object taskObject;
     private boolean blockUnmappedActions;
@@ -143,14 +107,16 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     public SecureCallableImpl() {
     }
 
-    public SecureCallableImpl(Subject subject, Callable<V> taskObject) {
+    public SecureCallableImpl(Subject subject, Callable<V> taskObject, Map<String, Map<String, String>> serviceToMethod) {
         this.subject = subject;
         this.taskObject = taskObject;
+        this.serviceToMethod = serviceToMethod;
     }
 
-    public SecureCallableImpl(Subject subject, Runnable runnable) {
+    public SecureCallableImpl(Subject subject, Runnable runnable, Map<String, Map<String, String>> serviceToMethod) {
         this.subject = subject;
         this.taskObject = runnable;
+        this.serviceToMethod = serviceToMethod;
     }
 
     @Override
@@ -217,6 +183,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     public void setNode(Node node) {
         this.node = node;
         this.blockUnmappedActions = node.getConfig().getSecurityConfig().getClientBlockUnmappedActions();
+        this.serviceToMethod = ((SecurityContextImpl) node.getNodeExtension().getSecurityContext()).getServiceToMethod();
     }
 
     private <T> T getProxy(SecureInvocationHandler handler) {
@@ -236,7 +203,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             Collections.addAll(all, clazz.getInterfaces());
             clazz = clazz.getSuperclass();
         }
-        return all.toArray(new Class[all.size()]);
+        return all.toArray(new Class[0]);
     }
 
     private class HazelcastInstanceDelegate implements HazelcastInstance {
@@ -509,9 +476,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
 
         SecureInvocationHandler(DistributedObject distributedObject) {
             this.distributedObject = distributedObject;
-            methodMap = SERVICE_TO_METHODMAP.containsKey(getStructureName())
-                    ? SERVICE_TO_METHODMAP.get(getStructureName())
-                    : Collections.<String, String>emptyMap();
+            methodMap = serviceToMethod.getOrDefault(getStructureName(), Collections.emptyMap());
         }
 
         @Override

@@ -18,22 +18,30 @@ import javax.security.auth.Subject;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.AccessControlException;
 import java.security.Permission;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
+import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.security.impl.SecurityServiceImpl.clonePermissionConfigs;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 public class SecurityContextImpl implements SecurityContext {
 
     private static final ThreadLocal<ParametersImpl> THREAD_LOCAL_PARAMETERS = new ThreadLocal<>();
 
+    private final Map<String, Map<String, String>> serviceToMethod = new HashMap<String, Map<String, String>>();
     private final ILogger logger;
     private final Node node;
     private final IPermissionPolicy policy;
@@ -84,6 +92,38 @@ public class SecurityContextImpl implements SecurityContext {
         for (SecurityInterceptorConfig interceptorConfig : interceptorConfigs) {
             addInterceptors(interceptorConfig);
         }
+
+        fillServiceToMethodMap();
+
+    }
+
+    private void fillServiceToMethodMap() {
+        Properties properties = new Properties();
+        ClassLoader cl = SecureCallableImpl.class.getClassLoader();
+        InputStream stream = cl.getResourceAsStream("permission-mapping.properties");
+        try {
+            properties.load(stream);
+        } catch (IOException e) {
+            throw rethrow(e);
+        } finally {
+            closeResource(stream);
+        }
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            String key = (String) entry.getKey();
+            String action = (String) entry.getValue();
+            int dotIndex = key.indexOf('.');
+            if (dotIndex == -1) {
+                continue;
+            }
+            String structure = key.substring(0, dotIndex);
+            String method = key.substring(dotIndex + 1);
+            Map<String, String> methodMap = serviceToMethod.computeIfAbsent(structure, k -> new HashMap<>());
+            methodMap.put(method, action);
+        }
+    }
+
+    public Map<String, Map<String, String>> getServiceToMethod() {
+        return serviceToMethod;
     }
 
     @Override
@@ -162,12 +202,12 @@ public class SecurityContextImpl implements SecurityContext {
 
     @Override
     public <V> SecureCallable<V> createSecureCallable(Subject subject, Callable<V> callable) {
-        return new SecureCallableImpl<>(subject, callable);
+        return new SecureCallableImpl<>(subject, callable, serviceToMethod);
     }
 
     @Override
     public <V> SecureCallable<?> createSecureCallable(Subject subject, Runnable runnable) {
-        return new SecureCallableImpl<V>(subject, runnable);
+        return new SecureCallableImpl<V>(subject, runnable, serviceToMethod);
     }
 
     @Override
@@ -194,7 +234,7 @@ public class SecurityContextImpl implements SecurityContext {
         return node.getLogger(name);
     }
 
-    void addInterceptors(SecurityInterceptorConfig interceptorConfig) {
+    private void addInterceptors(SecurityInterceptorConfig interceptorConfig) {
         SecurityInterceptor interceptor = interceptorConfig.getImplementation();
         final String className = interceptorConfig.getClassName();
         if (interceptor == null && className != null) {
@@ -209,7 +249,7 @@ public class SecurityContextImpl implements SecurityContext {
         }
     }
 
-    Parameters getArguments(Object[] args) {
+    private Parameters getArguments(Object[] args) {
         if (args == null) {
             return emptyParameters;
         }
@@ -239,12 +279,11 @@ public class SecurityContextImpl implements SecurityContext {
         if (modules.isEmpty()) {
             modules.add(getDefaultLoginModuleConfig());
         }
-        return modules.toArray(new LoginModuleConfig[modules.size()]);
+        return modules.toArray(new LoginModuleConfig[0]);
     }
 
     private LoginModuleConfig getDefaultLoginModuleConfig() {
-        final LoginModuleConfig module = new LoginModuleConfig(SecurityConstants.DEFAULT_LOGIN_MODULE,
+        return new LoginModuleConfig(SecurityConstants.DEFAULT_LOGIN_MODULE,
                 LoginModuleUsage.REQUIRED);
-        return module;
     }
 }

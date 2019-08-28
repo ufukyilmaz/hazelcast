@@ -33,7 +33,7 @@ public final class HiDensityNearCacheTestUtils {
     public static NativeMemoryConfig createNativeMemoryConfig() {
         return new NativeMemoryConfig()
                 .setEnabled(true)
-                .setSize(new MemorySize(32, MemoryUnit.MEGABYTES))
+                .setSize(new MemorySize(64, MemoryUnit.MEGABYTES))
                 .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
     }
 }

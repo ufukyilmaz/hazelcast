@@ -38,6 +38,9 @@ import com.hazelcast.internal.dynamicconfig.HotRestartConfigListener;
 import com.hazelcast.internal.jmx.ManagementService;
 import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
+import com.hazelcast.internal.memory.impl.LibMallocFactory;
+import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
+import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.networking.ChannelInitializerProvider;
@@ -427,20 +430,33 @@ public class EnterpriseNodeExtension
             final FreeMemoryChecker freeMemoryChecker = new FreeMemoryChecker(node.getProperties());
 
             logger.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
+            LibMallocFactory libMallocFactory = createLibMallocFactory(node, memoryConfig, freeMemoryChecker);
             if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
                 if (isHotRestartEnabled()) {
                     throw new InvalidConfigurationException("MemoryAllocatorType.STANDARD cannot be used when Hot Restart "
                             + "is enabled. Please use MemoryAllocatorType.POOLED!");
                 }
-                memoryManager = new StandardMemoryManager(size, freeMemoryChecker);
+                memoryManager = new StandardMemoryManager(size, libMallocFactory);
             } else {
                 int blockSize = memoryConfig.getMinBlockSize();
                 int pageSize = memoryConfig.getPageSize();
                 float metadataSpace = memoryConfig.getMetadataSpacePercentage();
                 memoryManager = isHotRestartEnabled()
-                        ? new HotRestartPoolingMemoryManager(size, blockSize, pageSize, metadataSpace, freeMemoryChecker)
-                        : new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace, freeMemoryChecker);
+                        ? new HotRestartPoolingMemoryManager(size, blockSize, pageSize, metadataSpace,
+                        libMallocFactory)
+                        : new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace, libMallocFactory);
             }
+        }
+    }
+
+    private static LibMallocFactory createLibMallocFactory(Node node, NativeMemoryConfig config,
+                                                           FreeMemoryChecker freeMemoryChecker) {
+        if (config.getPersistentMemoryDirectory() == null) {
+            // RAM via Unsafe
+            return new UnsafeMallocFactory(freeMemoryChecker);
+        } else {
+            // Non-volatile memory
+            return new PersistentMemoryMallocFactory(config);
         }
     }
 

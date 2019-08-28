@@ -1,8 +1,8 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.impl.UnsafeMalloc;
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.HazelcastMemoryManager.SIZE_INVALID;
@@ -23,9 +24,10 @@ import static com.hazelcast.memory.ThreadLocalPoolingMemoryManager.makeHeaderUna
 import static com.hazelcast.memory.ThreadLocalPoolingMemoryManager.markAsExternalBlockHeader;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(HazelcastParallelClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class ThreadLocalMgrPointerValidationTest {
+public class ThreadLocalMgrPointerValidationTest extends ParameterizedMemoryTest {
 
     private static final int BLOCK_OVERHEAD_WITH_OFFSET_STORED = MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
     private static final int BLOCK_OVERHEAD_WITHOUT_OFFSET_STORED = HEADER_SIZE;
@@ -35,6 +37,7 @@ public class ThreadLocalMgrPointerValidationTest {
     private final int bogusBlockSize = legitBlockSize / 2;
 
     private ThreadLocalPoolingMemoryManager mgr;
+    private LibMalloc libMalloc;
 
     private long legitAddr;
     private long bogusAddr;
@@ -48,13 +51,20 @@ public class ThreadLocalMgrPointerValidationTest {
         int minBlockSize = 1 << 4;
         long maxNative = 1 << 20;
         long maxMetadata = 1 << 20;
-        mgr = new ThreadLocalPoolingMemoryManager(minBlockSize, pageSize, new UnsafeMalloc(),
+
+        libMalloc = newLibMalloc(persistentMemory);
+        mgr = new ThreadLocalPoolingMemoryManager(minBlockSize, pageSize, libMalloc,
                 new PooledNativeMemoryStats(maxNative, maxMetadata));
     }
 
     @After
     public void after() {
-        mgr.dispose();
+        if (mgr != null) {
+            mgr.dispose();
+        }
+        if (libMalloc != null) {
+            libMalloc.dispose();
+        }
     }
 
     private void setUpForTestWithStoredOffset() {

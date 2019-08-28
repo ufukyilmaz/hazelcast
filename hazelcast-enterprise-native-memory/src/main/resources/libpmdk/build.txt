@@ -1,0 +1,6 @@
+To update PMDK version, follow the steps on a linux machine
+
+- Run "make", libpmdk-x86-64.so will be created in resources/libpmdk/linux-x86_64.
+
+
+

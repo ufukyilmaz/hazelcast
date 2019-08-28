@@ -1,9 +1,7 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.internal.memory.impl.UnsafeMalloc;
-import com.hazelcast.test.HazelcastSerialClassRunner;
-import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import org.junit.After;
@@ -11,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Queue;
 import java.util.Random;
@@ -22,11 +21,13 @@ import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertNull;
 
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
 @Category({NightlyTest.class, ParallelJVMTest.class})
-public class GlobalPoolingMemoryManagerStressTest extends HazelcastTestSupport {
+public class GlobalPoolingMemoryManagerStressTest extends ParameterizedMemoryTest {
 
     private GlobalPoolingMemoryManager globalPoolingMemoryManager;
+    private LibMalloc malloc;
     private PooledNativeMemoryStats stats;
     private SimpleGarbageCollector gc;
 
@@ -42,12 +43,15 @@ public class GlobalPoolingMemoryManagerStressTest extends HazelcastTestSupport {
         gc = new SimpleGarbageCollector();
         gc.start();
 
-        LibMalloc malloc = new UnsafeMalloc();
+        malloc = newLibMalloc(persistentMemory);
         globalPoolingMemoryManager = new GlobalPoolingMemoryManager(minBlockSize, pageSize, malloc, stats, gc);
     }
 
     @After
     public void tearDown() {
+        if (malloc != null) {
+            malloc.dispose();
+        }
         gc.abort();
     }
 

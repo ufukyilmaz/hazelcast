@@ -1,5 +1,7 @@
 package com.hazelcast.test.compatibility;
 
+import com.hazelcast.internal.memory.impl.LibMallocFactory;
+import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionAware;
@@ -107,7 +109,8 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     public void testObjectsAreDeserializedInCurrentVersion_whenEESerializationService() {
         MemorySize size = new MemorySize(16, MemoryUnit.MEGABYTES);
         FreeMemoryChecker freeMemoryChecker = new FreeMemoryChecker(new HazelcastProperties((Properties) null));
-        StandardMemoryManager memoryManager = new StandardMemoryManager(size, freeMemoryChecker);
+        LibMallocFactory libMallocFactory = new UnsafeMallocFactory(freeMemoryChecker);
+        StandardMemoryManager memoryManager = new StandardMemoryManager(size, libMallocFactory);
 
         currentSerializationService = new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)

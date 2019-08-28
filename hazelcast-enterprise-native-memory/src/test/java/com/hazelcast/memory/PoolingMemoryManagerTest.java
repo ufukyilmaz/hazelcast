@@ -1,6 +1,6 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -25,17 +26,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(HazelcastSerialClassRunner.class)
+
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class PoolingMemoryManagerTest {
+public class PoolingMemoryManagerTest extends ParameterizedMemoryTest {
 
     private final int pageSize = 1 << 22;
     private PoolingMemoryManager memoryManager;
 
     @Before
     public void init() {
-        MemorySize size = new MemorySize(32, MemoryUnit.MEGABYTES);
-        memoryManager = new PoolingMemoryManager(size, 16, pageSize);
+        MemorySize size = new MemorySize(128, MemoryUnit.MEGABYTES);
+        memoryManager = new PoolingMemoryManager(size, 16, pageSize, newLibMallocFactory(persistentMemory));
     }
 
     @After

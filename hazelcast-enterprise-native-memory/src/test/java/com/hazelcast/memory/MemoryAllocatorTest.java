@@ -20,7 +20,9 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
+import static com.hazelcast.internal.memory.impl.PersistentMemoryHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
+import static com.hazelcast.memory.ParameterizedMemoryTest.newLibMallocFactory;
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;
 import static org.junit.Assert.assertEquals;
 
@@ -33,19 +35,28 @@ public class MemoryAllocatorTest {
         HEAP, STANDARD, SYSTEM, POOLED_GLOBAL, POOLED_THREADLOCAL
     }
 
-    @Parameterized.Parameters(name = "managerType:{0}")
+    @Parameterized.Parameters(name = "managerType:{0}, persistentMemory: {1}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                {ManagerType.HEAP},
-                {ManagerType.STANDARD},
-                {ManagerType.SYSTEM},
-                {ManagerType.POOLED_GLOBAL},
-                {ManagerType.POOLED_THREADLOCAL},
+                {ManagerType.HEAP, true},
+                {ManagerType.HEAP, false},
+                {ManagerType.STANDARD, true},
+                {ManagerType.STANDARD, false},
+                {ManagerType.SYSTEM, true},
+                {ManagerType.SYSTEM, false},
+                {ManagerType.POOLED_GLOBAL, true},
+                {ManagerType.POOLED_GLOBAL, false},
+                {ManagerType.POOLED_THREADLOCAL, true},
+                {ManagerType.POOLED_THREADLOCAL, false},
         });
     }
 
-    @Parameterized.Parameter
+    @Parameterized.Parameter(0)
     public ManagerType mgrType;
+
+    @Parameterized.Parameter(1)
+    public boolean persistentMemory;
+
 
     private MemoryManager memMgr;
     private Disposable toDispose;
@@ -81,12 +92,14 @@ public class MemoryAllocatorTest {
     }
 
     private PoolingMemoryManager getMalloc() {
-        return new PoolingMemoryManager(new MemorySize(8, MEGABYTES), 16, 1 << 20);
+        return new PoolingMemoryManager(new MemorySize(32, MEGABYTES), 16, 1 << 20,
+                newLibMallocFactory(persistentMemory));
     }
 
     @After
     public void teardown() {
         toDispose.dispose();
+        System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
     }
 
     @Test

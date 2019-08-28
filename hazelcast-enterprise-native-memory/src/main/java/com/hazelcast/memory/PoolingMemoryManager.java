@@ -2,7 +2,8 @@ package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.internal.memory.impl.UnsafeMalloc;
+import com.hazelcast.internal.memory.impl.LibMallocFactory;
+import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.util.QuickMath;
@@ -56,8 +57,9 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
 
     private static final int PERCENTAGE_FACTOR = 100;
     private static final FreeMemoryChecker DEFAULT_FREE_MEMORY_CHECKER = new FreeMemoryChecker();
+    private static final LibMallocFactory DEFAULT_LIB_MALLOC_FACTORY = new UnsafeMallocFactory(DEFAULT_FREE_MEMORY_CHECKER);
 
-    private final LibMalloc malloc = new UnsafeMalloc();
+    private final LibMalloc malloc;
     private final PooledNativeMemoryStats memoryStats;
     private final GlobalPoolingMemoryManager globalMemoryManager;
     private final Map<Thread, HazelcastMemoryManager> threadLocalManagers
@@ -66,29 +68,36 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
     private final SimpleGarbageCollector gc = new SimpleGarbageCollector();
 
     public PoolingMemoryManager(MemorySize cap) {
-        this(cap, DEFAULT_MIN_BLOCK_SIZE, DEFAULT_PAGE_SIZE, DEFAULT_METADATA_SPACE_PERCENTAGE, DEFAULT_FREE_MEMORY_CHECKER);
+        this(cap, DEFAULT_MIN_BLOCK_SIZE, DEFAULT_PAGE_SIZE, DEFAULT_METADATA_SPACE_PERCENTAGE,
+                DEFAULT_LIB_MALLOC_FACTORY);
     }
 
     public PoolingMemoryManager(MemorySize size, int minBlockSize, int pageSize) {
-        this(size, minBlockSize, pageSize, DEFAULT_METADATA_SPACE_PERCENTAGE, DEFAULT_FREE_MEMORY_CHECKER);
+        this(size, minBlockSize, pageSize, DEFAULT_METADATA_SPACE_PERCENTAGE,
+                DEFAULT_LIB_MALLOC_FACTORY);
     }
 
     public PoolingMemoryManager(MemorySize size, int minBlockSize, int pageSize, float metadataSpacePercentage) {
-        this(size, minBlockSize, pageSize, metadataSpacePercentage, DEFAULT_FREE_MEMORY_CHECKER);
+        this(size, minBlockSize, pageSize, metadataSpacePercentage, DEFAULT_LIB_MALLOC_FACTORY);
+    }
+
+    public PoolingMemoryManager(MemorySize size, int minBlockSize, int pageSize,  LibMallocFactory libMallocFactory) {
+        this(size, minBlockSize, pageSize, DEFAULT_METADATA_SPACE_PERCENTAGE,
+                libMallocFactory);
     }
 
     public PoolingMemoryManager(MemorySize cap, int minBlockSize,
                                 int pageSize, float metadataSpacePercentage,
-                                FreeMemoryChecker freeMemoryChecker) {
+                                LibMallocFactory libMallocFactory) {
         long totalSize = cap.bytes();
         if (totalSize <= 0) {
             throw new IllegalArgumentException("Capacity must be positive!");
         }
 
-        freeMemoryChecker.checkFreeMemory(totalSize);
         checkBlockAndPageSize(minBlockSize, pageSize);
         long maxMetadata = (long) (totalSize * metadataSpacePercentage / PERCENTAGE_FACTOR);
         long maxNative = QuickMath.normalize(totalSize - maxMetadata, pageSize);
+        malloc = libMallocFactory.create(totalSize);
 
         memoryStats = new PooledNativeMemoryStats(maxNative, maxMetadata);
         globalMemoryManager = new GlobalPoolingMemoryManager(minBlockSize, pageSize, malloc, memoryStats, gc);
@@ -233,6 +242,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
         }
         threadLocalManagers.clear();
         destroyPool(globalMemoryManager);
+        malloc.dispose();
         memoryStats.resetUsedNativeMemory();
     }
 

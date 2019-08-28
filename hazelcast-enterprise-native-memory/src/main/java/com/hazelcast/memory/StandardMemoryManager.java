@@ -2,7 +2,8 @@ package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.internal.memory.impl.UnsafeMalloc;
+import com.hazelcast.internal.memory.impl.LibMallocFactory;
+import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.util.counters.Counter;
@@ -32,6 +33,7 @@ public final class StandardMemoryManager implements HazelcastMemoryManager, Metr
     private static final int STACK_TRACE_OFFSET = 3;
 
     private static final FreeMemoryChecker DEFAULT_FREE_MEMORY_CHECKER = new FreeMemoryChecker();
+    private static final LibMallocFactory DEFAULT_LIB_MALLOC_FACTORY = new UnsafeMallocFactory(DEFAULT_FREE_MEMORY_CHECKER);
 
     private final Counter sequenceGenerator = MwCounter.newMwCounter();
 
@@ -46,17 +48,16 @@ public final class StandardMemoryManager implements HazelcastMemoryManager, Metr
     private final StringBuilder stackTraceStringBuilder;
 
     public StandardMemoryManager(MemorySize cap) {
-        this(cap, DEFAULT_FREE_MEMORY_CHECKER);
+        this(cap, DEFAULT_LIB_MALLOC_FACTORY);
     }
 
-    public StandardMemoryManager(MemorySize cap, FreeMemoryChecker freeMemoryChecker) {
+    public StandardMemoryManager(MemorySize cap, LibMallocFactory libMallocFactory) {
         this.isDebugStackTraceEnabled = Boolean.getBoolean(PROPERTY_DEBUG_STACKTRACE_ENABLED);
         this.isDebugEnabled = isDebugStackTraceEnabled || Boolean.getBoolean(PROPERTY_DEBUG_ENABLED);
 
         long size = cap.bytes();
-        freeMemoryChecker.checkFreeMemory(size);
 
-        this.malloc = new UnsafeMalloc();
+        this.malloc = libMallocFactory.create(size);
         this.memoryStats = new NativeMemoryStats(size);
 
         this.allocatedBlocks = initAllocatedBlocks();
@@ -190,6 +191,7 @@ public final class StandardMemoryManager implements HazelcastMemoryManager, Metr
         if (isDebugEnabled) {
             allocatedBlocks.clear();
         }
+        malloc.dispose();
     }
 
     @Override

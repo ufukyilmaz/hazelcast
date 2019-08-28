@@ -11,6 +11,7 @@ import com.hazelcast.memory.MemoryUnit;
 
 import javax.cache.CacheManager;
 
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
@@ -26,6 +27,12 @@ public final class HDTestSupport {
         return getHDConfig(new Config(), STANDARD);
     }
 
+    public static Config getHDConfig(String persistentMemoryDirectory) {
+        MemorySize memorySize = persistentMemoryDirectory == null ? NATIVE_MEMORY_SIZE
+                : new MemorySize(128, MemoryUnit.MEGABYTES);
+        return getHDConfig(new Config(), STANDARD, memorySize, persistentMemoryDirectory);
+    }
+
     public static Config getSmallInstanceHDConfig() {
         return getHDConfig(smallInstanceConfig(), STANDARD);
     }
@@ -34,15 +41,20 @@ public final class HDTestSupport {
         return getHDConfig(config, STANDARD);
     }
 
-    public static Config getHDConfig(NativeMemoryConfig.MemoryAllocatorType allocatorType) {
+    public static Config getHDConfig(MemoryAllocatorType allocatorType) {
         return getHDConfig(new Config(), allocatorType);
     }
 
-    private static Config getHDConfig(Config config, NativeMemoryConfig.MemoryAllocatorType allocatorType) {
+    private static Config getHDConfig(Config config, MemoryAllocatorType allocatorType) {
         return getHDConfig(config, allocatorType, NATIVE_MEMORY_SIZE);
     }
 
-    public static Config getHDConfig(Config config, NativeMemoryConfig.MemoryAllocatorType allocatorType, MemorySize size) {
+    public static Config getHDConfig(Config config, MemoryAllocatorType allocatorType, MemorySize size) {
+        return getHDConfig(config, allocatorType, size, null);
+    }
+
+    public static Config getHDConfig(Config config, MemoryAllocatorType allocatorType, MemorySize size,
+                                     String persistentMemoryDirectory) {
         MapConfig mapConfig = new MapConfig()
                 .setName("default")
                 .setInMemoryFormat(InMemoryFormat.NATIVE);
@@ -50,7 +62,8 @@ public final class HDTestSupport {
         NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
                 .setSize(size)
-                .setAllocatorType(allocatorType);
+                .setAllocatorType(allocatorType)
+                .setPersistentMemoryDirectory(persistentMemoryDirectory);
 
         return config
                 .addMapConfig(mapConfig)

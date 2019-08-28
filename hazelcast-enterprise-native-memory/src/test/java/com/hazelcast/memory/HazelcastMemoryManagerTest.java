@@ -1,34 +1,44 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.internal.memory.impl.UnsafeMalloc;
-import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static com.hazelcast.memory.HazelcastMemoryManager.SIZE_INVALID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class HazelcastMemoryManagerTest {
+public class HazelcastMemoryManagerTest extends ParameterizedMemoryTest {
 
     private static final int DEFAULT_PAGE_SIZE = 1 << 10;
 
     private HazelcastMemoryManager memoryManager;
-    private final LibMalloc malloc = new UnsafeMalloc();
+    private LibMalloc malloc;
     private final PooledNativeMemoryStats stats = new PooledNativeMemoryStats(MemoryUnit.MEGABYTES.toBytes(1),
             MemoryUnit.MEGABYTES.toBytes(1));
+
+    @Before
+    public void setup() {
+        malloc = newLibMalloc(persistentMemory);
+    }
 
     @After
     public void destroy() {
         if (memoryManager != null) {
             memoryManager.dispose();
+        }
+        if (malloc != null) {
+            malloc.dispose();
         }
     }
 

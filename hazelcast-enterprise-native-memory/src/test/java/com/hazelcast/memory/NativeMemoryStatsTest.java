@@ -77,8 +77,15 @@ public class NativeMemoryStatsTest extends HazelcastTestSupport {
         }
 
         private void destroy() {
-            if (address != 0) {
+            if (address != 0L) {
                 libMalloc.free(address);
+            }
+        }
+
+        @Override
+        public void dispose() {
+            if (address != 0L) {
+                libMalloc.dispose();
             }
         }
     }

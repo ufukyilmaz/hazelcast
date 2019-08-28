@@ -31,4 +31,9 @@ public final class UnsafeMalloc implements LibMalloc {
     public String toString() {
         return "UnsafeMalloc";
     }
+
+    @Override
+    public void dispose() {
+        // no-op
+    }
 }

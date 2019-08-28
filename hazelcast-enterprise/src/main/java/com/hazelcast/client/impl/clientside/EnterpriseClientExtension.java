@@ -11,6 +11,9 @@ import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.instance.BuildInfo;
 import com.hazelcast.instance.BuildInfoProvider;
+import com.hazelcast.internal.memory.impl.LibMallocFactory;
+import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
+import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.nearcache.HiDensityNearCacheManager;
@@ -87,15 +90,19 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
             MemorySize size = memoryConfig.getSize();
             NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
             final FreeMemoryChecker freeMemoryChecker = new FreeMemoryChecker(client.getProperties());
+            String persistentMemoryDirectory = memoryConfig.getPersistentMemoryDirectory();
+            final LibMallocFactory libMallocFactory = persistentMemoryDirectory == null
+                    ?  new UnsafeMallocFactory(freeMemoryChecker)
+                    : new PersistentMemoryMallocFactory(memoryConfig);
 
             LOGGER.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
             if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
-                return new StandardMemoryManager(size, freeMemoryChecker);
+                return new StandardMemoryManager(size, libMallocFactory);
             } else {
                 int blockSize = memoryConfig.getMinBlockSize();
                 int pageSize = memoryConfig.getPageSize();
                 float metadataSpace = memoryConfig.getMetadataSpacePercentage();
-                return new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace, freeMemoryChecker);
+                return new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace, libMallocFactory);
             }
         }
         return null;

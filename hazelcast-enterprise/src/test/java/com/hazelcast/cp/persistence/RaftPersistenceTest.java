@@ -1,7 +1,6 @@
 package com.hazelcast.cp.persistence;
 
 import com.hazelcast.config.cp.RaftAlgorithmConfig;
-import com.hazelcast.core.IBiFunction;
 import com.hazelcast.cp.internal.raft.impl.RaftEndpoint;
 import com.hazelcast.cp.internal.raft.impl.RaftNodeImpl;
 import com.hazelcast.cp.internal.raft.impl.dataservice.ApplyRaftRunnable;
@@ -17,14 +16,14 @@ import com.hazelcast.cp.internal.raft.impl.testing.LocalRaftGroup;
 import com.hazelcast.cp.internal.raft.impl.testing.LocalRaftGroup.LocalRaftGroupBuilder;
 import com.hazelcast.cp.internal.raft.impl.testing.TestRaftEndpoint;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
-import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.internal.util.function.BiFunctionEx;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.function.IntFunction;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.IntFunction;
 
 import static com.hazelcast.config.cp.RaftAlgorithmConfig.DEFAULT_UNCOMMITTED_ENTRY_COUNT_TO_REJECT_NEW_APPENDS;
 import static com.hazelcast.cp.internal.raft.MembershipChangeMode.REMOVE;
@@ -49,7 +49,7 @@ import static com.hazelcast.cp.internal.raft.impl.RaftUtil.getLastLogOrSnapshotE
 import static com.hazelcast.cp.internal.raft.impl.RaftUtil.getLeaderMember;
 import static com.hazelcast.cp.internal.raft.impl.RaftUtil.getSnapshotEntry;
 import static com.hazelcast.cp.internal.raft.impl.RaftUtil.getTerm;
-import static com.hazelcast.util.Preconditions.checkState;
+import static com.hazelcast.internal.util.Preconditions.checkState;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -59,7 +59,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class RaftPersistenceTest extends HazelcastTestSupport {
 
     @Rule
@@ -67,18 +67,18 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
 
     private InternalSerializationService serializationService = new DefaultSerializationServiceBuilder().build();
 
-    private final IBiFunction<RaftEndpoint, RaftAlgorithmConfig, RaftStateLoader> stateLoaderFactory =
-            new IBiFunction<RaftEndpoint, RaftAlgorithmConfig, RaftStateLoader>() {
+    private final BiFunctionEx<RaftEndpoint, RaftAlgorithmConfig, RaftStateLoader> stateLoaderFactory =
+            new BiFunctionEx<RaftEndpoint, RaftAlgorithmConfig, RaftStateLoader>() {
                 @Override
-                public RaftStateLoader apply(RaftEndpoint endpoint, RaftAlgorithmConfig config) {
+                public RaftStateLoader applyEx(RaftEndpoint endpoint, RaftAlgorithmConfig config) {
                     return getStateLoader(endpoint, config.getUncommittedEntryCountToRejectNewAppends());
                 }
             };
 
-    private final IBiFunction<RaftEndpoint, RaftAlgorithmConfig, RaftStateStore> stateStoreFactory =
-            new IBiFunction<RaftEndpoint, RaftAlgorithmConfig, RaftStateStore>() {
+    private final BiFunctionEx<RaftEndpoint, RaftAlgorithmConfig, RaftStateStore> stateStoreFactory =
+            new BiFunctionEx<RaftEndpoint, RaftAlgorithmConfig, RaftStateStore>() {
                 @Override
-                public RaftStateStore apply(RaftEndpoint endpoint, RaftAlgorithmConfig config) {
+                public RaftStateStore applyEx(RaftEndpoint endpoint, RaftAlgorithmConfig config) {
                     OnDiskRaftStateLoader loader = (OnDiskRaftStateLoader) stateLoaderFactory.apply(endpoint, config);
                     try {
                         loader.load();
@@ -454,7 +454,7 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
             leader.replicate(new ApplyRaftRunnable("val" + i)).get();
         }
 
-        assertEquals(getCommitIndex(leader), getCommitIndex(terminatedFollower));
+        assertTrueEventually(() -> assertEquals(getCommitIndex(leader), getCommitIndex(terminatedFollower)));
 
         RaftEndpoint terminatedEndpoint = terminatedFollower.getLocalMember();
         ensureFlush(terminatedFollower);

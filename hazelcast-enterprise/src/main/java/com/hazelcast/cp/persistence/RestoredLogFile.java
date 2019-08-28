@@ -25,7 +25,7 @@ class RestoredLogFile {
         this.entries = null;
         this.entryOffsets = null;
     }
-    
+
     RestoredLogFile(
             @Nonnull String filename,
             @Nullable SnapshotEntry snapshotEntry,

@@ -228,7 +228,8 @@
         <dependency>
             <groupId>org.hdrhistogram</groupId>
             <artifactId>HdrHistogram</artifactId>
-            <version>2.1.11</version>
+            <version>2.1.4</version>
+            <scope>test</scope>
         </dependency>
         <!-- netty dependencies for OpenSSL integration -->
         <dependency>

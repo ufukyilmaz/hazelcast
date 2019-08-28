@@ -1,37 +1,35 @@
 package com.hazelcast.cp.persistence.datastructures;
 
-import com.hazelcast.config.Config;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.cp.CPSubsystem;
-import com.hazelcast.cp.persistence.PersistenceTestSupport;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cp.IAtomicLong;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
+import com.hazelcast.internal.util.RandomPicker;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.RandomPicker;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
-public class RaftAtomicLongPersistenceTest extends PersistenceTestSupport {
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
+@Category({QuickTest.class, ParallelJVMTest.class})
+public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceTestSupport {
 
     @Test
     public void when_wholeClusterRestarted_then_dataIsRestored() {
-        Config config = createConfig(3, 3);
-        HazelcastInstance[] instances = factory.newInstances(config, 3);
-        Address[] addresses = getAddresses(instances);
-
-        CPSubsystem cpSubsystem = instances[0].getCPSubsystem();
+        CPSubsystem cpSubsystem = proxyInstance.getCPSubsystem();
         IAtomicLong atomicLong = cpSubsystem.getAtomicLong("test");
         long value1 = atomicLong.incrementAndGet();
 
@@ -41,10 +39,8 @@ public class RaftAtomicLongPersistenceTest extends PersistenceTestSupport {
         IAtomicLong atomicLong3 = cpSubsystem.getAtomicLong("test@group2");
         long value3 = atomicLong3.decrementAndGet();
 
-        factory.terminateAll();
-
-        instances = restartInstancesParallel(addresses, config);
-        cpSubsystem = instances[0].getCPSubsystem();
+        terminateMembers();
+        instances = restartInstances(addresses, config);
 
         atomicLong = cpSubsystem.getAtomicLong("test");
         assertEquals(value1, atomicLong.get());
@@ -58,14 +54,7 @@ public class RaftAtomicLongPersistenceTest extends PersistenceTestSupport {
 
     @Test
     public void when_wholeClusterRestarted_withSnapshot_then_dataIsRestored() {
-        Config config = createConfig(3, 3);
-        int commitIndexAdvanceCountToSnapshot = 99;
-        config.getCPSubsystemConfig().getRaftAlgorithmConfig()
-                .setCommitIndexAdvanceCountToSnapshot(commitIndexAdvanceCountToSnapshot);
-        HazelcastInstance[] instances = factory.newInstances(config, 3);
-        Address[] addresses = getAddresses(instances);
-
-        CPSubsystem cpSubsystem = instances[0].getCPSubsystem();
+        CPSubsystem cpSubsystem = proxyInstance.getCPSubsystem();
         IAtomicLong atomicLong = cpSubsystem.getAtomicLong("test");
 
         long value = 0;
@@ -73,10 +62,9 @@ public class RaftAtomicLongPersistenceTest extends PersistenceTestSupport {
             value = atomicLong.incrementAndGet();
         }
 
-        factory.terminateAll();
+        terminateMembers();
 
-        instances = restartInstancesParallel(addresses, config);
-        cpSubsystem = instances[0].getCPSubsystem();
+        instances = restartInstances(addresses, config);
 
         atomicLong = cpSubsystem.getAtomicLong("test");
         assertEquals(value, atomicLong.get());
@@ -84,11 +72,7 @@ public class RaftAtomicLongPersistenceTest extends PersistenceTestSupport {
 
     @Test
     public void when_memberRestarts_then_restoresData() throws Exception {
-        Config config = createConfig(3, 3);
-        final HazelcastInstance[] instances = factory.newInstances(config, 3);
-        Address[] addresses = getAddresses(instances);
-
-        final IAtomicLong atomicLong = instances[2].getCPSubsystem().getAtomicLong("test");
+        final IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
         long value = atomicLong.addAndGet(RandomPicker.getInt(100));
 
         // shutdown majority
@@ -111,8 +95,8 @@ public class RaftAtomicLongPersistenceTest extends PersistenceTestSupport {
         }, 3);
 
         // restart majority back
-        instances[0] = factory.newHazelcastInstance(addresses[0], config);
-        instances[1] = factory.newHazelcastInstance(addresses[1], config);
+        instances[0] = restartInstance(addresses[0], config);
+        instances[1] = restartInstance(addresses[1], config);
 
         Long newValue = f.get();
         assertEquals(value, newValue - 1);
@@ -120,18 +104,16 @@ public class RaftAtomicLongPersistenceTest extends PersistenceTestSupport {
 
     @Test
     public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
-        Config config = createConfig(3, 3);
-        HazelcastInstance[] instances = factory.newInstances(config, 3);
-        Address[] addresses = getAddresses(instances);
-
-        final IAtomicLong atomicLong = instances[2].getCPSubsystem().getAtomicLong("test");
-        final int increments = 5000;
+        final IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
+        final AtomicLong increments = new AtomicLong();
+        final AtomicBoolean done = new AtomicBoolean();
         final Future<Long> f = spawn(new Callable<Long>() {
             @Override
             public Long call() {
-                for (int i = 0; i < increments; i++) {
+                while (!done.get()) {
                     atomicLong.incrementAndGet();
-                    sleepMillis(1);
+                    increments.incrementAndGet();
+                    LockSupport.parkNanos(1);
                 }
                 return atomicLong.get();
             }
@@ -145,40 +127,67 @@ public class RaftAtomicLongPersistenceTest extends PersistenceTestSupport {
         instances[1].getLifecycleService().terminate();
 
         // restart majority back
-        instances[1] = factory.newHazelcastInstance(addresses[1], config);
+        instances[1] = restartInstance(addresses[1], config);
         sleepSeconds(1);
-        instances[0] = factory.newHazelcastInstance(addresses[0], config);
+        instances[0] = restartInstance(addresses[0], config);
+
+        sleepSeconds(1);
+        done.set(true);
 
         long value = f.get();
-        assertBetween("atomiclong value", value, increments, increments + 1);
+        long expected = increments.get();
+        assertBetween("atomiclong value", value, expected, expected + 1);
     }
 
     @Test
-    public void when_CpSubsystemReset_then_dataIsRemoved() throws Exception {
-        Config config = createConfig(3, 3);
-        HazelcastInstance[] instances = factory.newInstances(config, 3);
-        Address[] addresses = getAddresses(instances);
+    public void whenClusterRestart_whileOperationsOngoing_then_recoversData() throws Exception {
+        final IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
+        final AtomicLong increments = new AtomicLong();
+        final AtomicBoolean done = new AtomicBoolean();
+        final Future<Long> f = spawn(new Callable<Long>() {
+            @Override
+            public Long call() {
+                while (!done.get()) {
+                    atomicLong.incrementAndGet();
+                    increments.incrementAndGet();
+                    LockSupport.parkNanos(1);
+                }
+                return atomicLong.get();
+            }
+        });
 
-        CPSubsystem cpSubsystem = instances[0].getCPSubsystem();
+        sleepSeconds(1);
+        terminateMembers();
+        restartInstances(addresses, config);
+
+        sleepSeconds(1);
+        done.set(true);
+
+        long value = f.get();
+        long expected = increments.get();
+        assertBetween("atomiclong value", value, expected, expected + 1);
+    }
+
+    @Test
+    public void when_CPSubsystemReset_then_dataIsRemoved() throws Exception {
+        CPSubsystem cpSubsystem = proxyInstance.getCPSubsystem();
         IAtomicLong atomicLong = cpSubsystem.getAtomicLong("test");
         atomicLong.addAndGet(RandomPicker.getInt(100));
         IAtomicLong atomicLong2 = cpSubsystem.getAtomicLong("test@group");
         atomicLong2.addAndGet(RandomPicker.getInt(100));
 
-        cpSubsystem.getCPSubsystemManagementService().restart().get();
-        long seed = getMetadataGroupId(instances[0]).seed();
+        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart().get();
+        long seed = getMetadataGroupId(instances[0]).getSeed();
         waitUntilCPDiscoveryCompleted(instances);
 
-        factory.terminateAll();
-
-        instances = restartInstancesParallel(addresses, config);
-        cpSubsystem = instances[0].getCPSubsystem();
+        terminateMembers();
+        instances = restartInstances(addresses, config);
 
         atomicLong = cpSubsystem.getAtomicLong("test");
         assertEquals(0, atomicLong.get());
         atomicLong = cpSubsystem.getAtomicLong("test@group");
         assertEquals(0, atomicLong.get());
 
-        assertEquals(seed, getMetadataGroupId(instances[0]).seed());
+        assertEquals(seed, getMetadataGroupId(instances[0]).getSeed());
     }
 }

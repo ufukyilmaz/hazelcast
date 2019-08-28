@@ -4,15 +4,15 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.lock.FencedLock;
-import com.hazelcast.cp.persistence.PersistenceTestSupport;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.nio.Address;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -23,30 +23,22 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
-public class FencedLockPersistenceTest extends PersistenceTestSupport {
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
+@Category({QuickTest.class, ParallelJVMTest.class})
+public class FencedLockPersistenceTest extends RaftDataStructurePersistenceTestSupport {
 
     @Test
     public void when_wholeClusterRestarted_then_dataIsRestored() {
-        Config config = createConfig(3, 3);
-        HazelcastInstance[] instances = factory.newInstances(config, 3);
-        Address[] addresses = getAddresses(instances);
-
-        HazelcastInstance apInstance = factory.newHazelcastInstance(config);
-
-        CPSubsystem cpSubsystem = apInstance.getCPSubsystem();
+        CPSubsystem cpSubsystem = proxyInstance.getCPSubsystem();
         FencedLock lock1 = cpSubsystem.getLock("test");
         long fence1 = lock1.lockAndGetFence();
 
         FencedLock lock2 = cpSubsystem.getLock("test@group");
         long fence2 = lock2.lockAndGetFence();
 
-        for (HazelcastInstance instance : instances) {
-            instance.getLifecycleService().terminate();
-        }
-
-        restartInstancesParallel(addresses, config);
+        terminateMembers();
+        restartInstances(addresses, config);
 
         assertTrue(lock1.isLockedByCurrentThread());
         assertTrue(lock2.isLockedByCurrentThread());
@@ -59,16 +51,7 @@ public class FencedLockPersistenceTest extends PersistenceTestSupport {
 
     @Test
     public void when_wholeClusterRestarted_withSnapshot_then_dataIsRestored() {
-        Config config = createConfig(3, 3);
-        int commitIndexAdvanceCountToSnapshot = 99;
-        config.getCPSubsystemConfig().getRaftAlgorithmConfig()
-                .setCommitIndexAdvanceCountToSnapshot(commitIndexAdvanceCountToSnapshot);
-        HazelcastInstance[] instances = factory.newInstances(config, 3);
-        Address[] addresses = getAddresses(instances);
-
-        HazelcastInstance apInstance = factory.newHazelcastInstance(config);
-
-        CPSubsystem cpSubsystem = apInstance.getCPSubsystem();
+        CPSubsystem cpSubsystem = proxyInstance.getCPSubsystem();
         FencedLock lock = cpSubsystem.getLock("test");
 
         for (int j = 0; j < commitIndexAdvanceCountToSnapshot + 10; j++) {
@@ -76,11 +59,8 @@ public class FencedLockPersistenceTest extends PersistenceTestSupport {
         }
         long fence = lock.getFence();
 
-        for (HazelcastInstance instance : instances) {
-            instance.getLifecycleService().terminate();
-        }
-
-        restartInstancesParallel(addresses, config);
+        terminateMembers();
+        restartInstances(addresses, config);
 
         assertTrue(lock.isLockedByCurrentThread());
         assertEquals(fence, lock.getFence());
@@ -88,11 +68,7 @@ public class FencedLockPersistenceTest extends PersistenceTestSupport {
 
     @Test
     public void when_memberRestarts_then_restoresData() throws Exception {
-        Config config = createConfig(3, 3);
-        final HazelcastInstance[] instances = factory.newInstances(config, 3);
-        Address[] addresses = getAddresses(instances);
-
-        final FencedLock lock = instances[2].getCPSubsystem().getLock("test");
+        final FencedLock lock = proxyInstance.getCPSubsystem().getLock("test");
         long fence0 = lock.lockAndGetFence();
 
         // shutdown majority
@@ -107,8 +83,8 @@ public class FencedLockPersistenceTest extends PersistenceTestSupport {
         });
 
         // restart majority back
-        instances[0] = factory.newHazelcastInstance(addresses[0], config);
-        instances[1] = factory.newHazelcastInstance(addresses[1], config);
+        instances[0] = restartInstance(addresses[0], config);
+        instances[1] = restartInstance(addresses[1], config);
 
         assertTrueAllTheTime(new AssertTask() {
             @Override
@@ -126,11 +102,7 @@ public class FencedLockPersistenceTest extends PersistenceTestSupport {
 
     @Test
     public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
-        Config config = createConfig(3, 3);
-        HazelcastInstance[] instances = factory.newInstances(config, 3);
-        Address[] addresses = getAddresses(instances);
-
-        final FencedLock lock = instances[2].getCPSubsystem().getLock("test");
+        final FencedLock lock = proxyInstance.getCPSubsystem().getLock("test");
         final int count = 5000;
         final Future<Long> f = spawn(new Callable<Long>() {
             @Override
@@ -151,9 +123,9 @@ public class FencedLockPersistenceTest extends PersistenceTestSupport {
         instances[1].getLifecycleService().terminate();
 
         // restart majority back
-        instances[1] = factory.newHazelcastInstance(addresses[1], config);
+        instances[1] = restartInstance(addresses[1], config);
         sleepSeconds(1);
-        instances[0] = factory.newHazelcastInstance(addresses[0], config);
+        instances[0] = restartInstance(addresses[0], config);
 
         long fence = f.get();
         assertThat(fence, greaterThan(0L));
@@ -161,31 +133,29 @@ public class FencedLockPersistenceTest extends PersistenceTestSupport {
     }
 
     @Test
-    public void when_CpSubsystemReset_then_dataIsRemoved() throws Exception {
-        Config config = createConfig(3, 3);
-        HazelcastInstance[] instances = factory.newInstances(config, 3);
-        Address[] addresses = getAddresses(instances);
-
-        CPSubsystem cpSubsystem = instances[0].getCPSubsystem();
+    public void when_CPSubsystemReset_then_dataIsRemoved() throws Exception {
+        CPSubsystem cpSubsystem = proxyInstance.getCPSubsystem();
         FencedLock lock = cpSubsystem.getLock("test");
         lock.lock();
         FencedLock lock2 = cpSubsystem.getLock("test@group");
         lock2.lock();
 
-        cpSubsystem.getCPSubsystemManagementService().restart().get();
-        long seed = getMetadataGroupId(instances[0]).seed();
+        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart().get();
+        long seed = getMetadataGroupId(instances[0]).getSeed();
         waitUntilCPDiscoveryCompleted(instances);
 
-        factory.terminateAll();
-
-        instances = restartInstancesParallel(addresses, config);
-        cpSubsystem = instances[0].getCPSubsystem();
+        terminateMembers();
+        instances = restartInstances(addresses, config);
 
         lock = cpSubsystem.getLock("test");
         assertFalse(lock.isLocked());
         lock2 = cpSubsystem.getLock("test@group");
         assertFalse(lock2.isLocked());
 
-        assertEquals(seed, getMetadataGroupId(instances[0]).seed());
+        assertEquals(seed, getMetadataGroupId(instances[0]).getSeed());
+    }
+
+    protected HazelcastInstance createProxyInstance(Config config) {
+        return factory.newHazelcastInstance(config);
     }
 }

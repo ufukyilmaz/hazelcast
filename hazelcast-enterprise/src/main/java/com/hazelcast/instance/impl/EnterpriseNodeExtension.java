@@ -105,12 +105,7 @@ import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
-<<<<<<< HEAD
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Collections;
-=======
->>>>>>> Start CP persistence restore process
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -371,6 +366,10 @@ public class EnterpriseNodeExtension
             LicenseHelper.checkLicensePerFeature(license, Feature.HOT_RESTART);
             hotRestartService.prepare();
         }
+        if (cpPersistenceService != null) {
+            // TODO: We'll have a separate license feature in 4.0
+            LicenseHelper.checkLicensePerFeature(license, Feature.HOT_RESTART);
+        }
         if (node.getConfig().getNativeMemoryConfig().isEnabled()) {
             LicenseHelper.checkLicensePerFeature(license, Feature.HD_MEMORY);
         }
@@ -400,6 +399,7 @@ public class EnterpriseNodeExtension
     }
 
     @Override
+    @SuppressWarnings("checkstyle:npathcomplexity")
     public void afterStart() {
         if (license == null) {
             logger.log(Level.SEVERE, "Hazelcast Enterprise license could not be found!");
@@ -415,21 +415,21 @@ public class EnterpriseNodeExtension
             return;
         }
 
-        if (hotRestartService != null) {
-            try {
-                hotRestartService.start();
-            } catch (Throwable e) {
-                logger.severe("Hot Restart procedure failed", e);
-                node.shutdown(true);
-                return;
-            }
-        }
-
         if (cpPersistenceService != null) {
             try {
                 cpPersistenceService.start();
             } catch (Throwable e) {
                 logger.severe("CP restore failed", e);
+                node.shutdown(true);
+                return;
+            }
+        }
+
+        if (hotRestartService != null) {
+            try {
+                hotRestartService.start();
+            } catch (Throwable e) {
+                logger.severe("Hot Restart procedure failed", e);
                 node.shutdown(true);
                 return;
             }

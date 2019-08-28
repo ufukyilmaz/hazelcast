@@ -1,12 +1,13 @@
 package com.hazelcast.cp.persistence;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.cp.CPSubsystemConfig;
-import com.hazelcast.config.cp.RaftAlgorithmConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.cp.internal.CPMemberInfo;
 import com.hazelcast.cp.internal.MetadataRaftGroupSnapshot;
 import com.hazelcast.cp.internal.RaftGroupId;
+import com.hazelcast.cp.internal.RaftInvocationManager;
 import com.hazelcast.cp.internal.RaftService;
 import com.hazelcast.cp.internal.persistence.CPMetadataStore;
 import com.hazelcast.cp.internal.persistence.CPPersistenceService;
@@ -20,7 +21,9 @@ import com.hazelcast.cp.internal.raftop.metadata.AddCPMemberOp;
 import com.hazelcast.cp.internal.raftop.metadata.InitMetadataRaftGroupOp;
 import com.hazelcast.cp.internal.raftop.metadata.RemoveCPMemberOp;
 import com.hazelcast.cp.internal.raftop.snapshot.RestoreSnapshotOp;
+import com.hazelcast.cp.persistence.operation.PublishLocalCPMemberOp;
 import com.hazelcast.cp.persistence.operation.PublishRestoredCPMembersOp;
+import com.hazelcast.cp.persistence.raftop.VerifyRestartedCPMemberOp;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.util.BiTuple;
@@ -28,79 +31,122 @@ import com.hazelcast.internal.util.Clock;
 import com.hazelcast.internal.util.DirectoryLock;
 import com.hazelcast.internal.util.UuidUtil;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.spi.impl.InternalCompletableFuture;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.executionservice.ExecutionService;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
+import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
+import com.hazelcast.spi.properties.HazelcastProperty;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.cluster.memberselector.MemberSelectors.NON_LOCAL_MEMBER_SELECTOR;
 import static com.hazelcast.cp.CPGroup.METADATA_CP_GROUP_NAME;
-import static com.hazelcast.cp.persistence.CPMemberMetadataStoreImpl.CP_METADATA_FILE_NAME;
+import static com.hazelcast.cp.persistence.CPMetadataStoreImpl.isCPDirectory;
+import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.MEMBERS_FILENAME;
+import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.TERM_FILENAME;
 import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.util.DirectoryLock.lockForDirectory;
 import static com.hazelcast.internal.util.FutureUtil.RETHROW_EVERYTHING;
 import static com.hazelcast.internal.util.FutureUtil.waitWithDeadline;
 import static com.hazelcast.internal.util.ThreadUtil.createThreadName;
 import static com.hazelcast.spi.impl.executionservice.ExecutionService.ASYNC_EXECUTOR;
+import static java.util.Arrays.sort;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
+/**
+ * Implementation of {@link CPPersistenceService}.
+ * <p>
+ * CPPersistenceService is responsible for;
+ * <ul>
+ *     <li>managing lifecycle of {@link RaftStateStore}s</li>
+ *     <li>discovering and selecting persistence directories</li>
+ *     <li>restoring persisted state and creating {@link RaftNodeImpl}s</li>
+ * </ul>
+ */
+@SuppressWarnings({"checkstyle:classdataabstractioncoupling"})
 public class CPPersistenceServiceImpl implements CPPersistenceService {
+
+    /**
+     * !!! ONLY FOR INTERNAL USAGE AND TESTING !!!
+     * If enabled, a node tries to pick its own persistence directory if it discovers multiple directories.
+     */
+    public static final HazelcastProperty FAVOR_OWN_PERSISTENCE_DIRECTORY
+            = new HazelcastProperty("hazelcast.cp.persistence.favor.own.directory", true);
+
+    /**
+     * Allow or disallow IP address change during restart.
+     */
+    public static final HazelcastProperty ALLOW_IP_ADDRESS_CHANGE
+            = new HazelcastProperty("hazelcast.cp.persistence.allow.ip.change", true);
+
+    private static final int PUBLISH_CP_MEMBERS_MILLIS = 250;
 
     private final Node node;
     private final File dir;
-    private final CPMemberMetadataStoreImpl cpMemberMetadataStore;
+    private final CPMetadataStoreImpl metadataStore;
     private final ILogger logger;
+    private final boolean allowIpAddressChange;
     private final DirectoryLock directoryLock;
-    private final int uncommittedEntryCount;
+    private final CPSubsystemConfig cpSubsystemConfig;
     private volatile boolean startCompleted;
-    private volatile CPMemberInfo localMember;
+    private volatile CPMemberInfo localCPMember;
 
     public CPPersistenceServiceImpl(Node node) {
         this.node = node;
         this.logger = node.getLogger(getClass());
+        this.allowIpAddressChange = node.getProperties().getBoolean(ALLOW_IP_ADDRESS_CHANGE);
         this.directoryLock = acquireDir(node.getConfig().getCPSubsystemConfig());
         this.dir = directoryLock.getDir();
-        this.cpMemberMetadataStore = new CPMemberMetadataStoreImpl(dir);
-        RaftAlgorithmConfig config = node.getConfig().getCPSubsystemConfig().getRaftAlgorithmConfig();
-        this.uncommittedEntryCount = config.getUncommittedEntryCountToRejectNewAppends();
+        this.metadataStore = new CPMetadataStoreImpl(dir);
+        this.cpSubsystemConfig = node.getConfig().getCPSubsystemConfig();
     }
 
+    @SuppressWarnings("checkstyle:npathcomplexity")
     private DirectoryLock acquireDir(CPSubsystemConfig config) {
         File baseDir = config.getBaseDir();
         if (!baseDir.exists() && !baseDir.mkdirs() && !baseDir.exists()) {
             throw new HazelcastException("Could not create " + baseDir.getAbsolutePath());
         }
+
         if (!baseDir.isDirectory()) {
             throw new HazelcastException(baseDir.getAbsolutePath() + " is not a directory!");
         }
-        File[] dirs = baseDir.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File f) {
-                boolean cpDirectory = isCPDirectory(f);
-                if (!cpDirectory) {
-                    logger.fine(f.getAbsolutePath() + " is not a valid CP data directory.");
-                }
-                return cpDirectory;
+
+        File[] dirs = baseDir.listFiles(f -> {
+            boolean cpDirectory = isCPDirectory(f);
+            if (!cpDirectory) {
+                logger.fine(f.getAbsolutePath() + " is not a valid CP data directory.");
             }
+            return cpDirectory;
         });
+
         if (dirs == null) {
             return createNewDir(baseDir);
         }
+
+        if (node.getProperties().getBoolean(FAVOR_OWN_PERSISTENCE_DIRECTORY)) {
+            sort(dirs, new OwnDirComparator());
+        }
+
         for (File dir : dirs) {
             try {
-                CPMemberInfo member = new CPMemberMetadataStoreImpl(dir).readLocalMember();
-                if (!node.getThisAddress().equals(member.getAddress())) {
-                    logger.fine("This directory does not belong to us: " + dir.getAbsolutePath());
-                    continue;
+                if (!allowIpAddressChange) {
+                    CPMemberInfo member = new CPMetadataStoreImpl(dir).readLocalCPMember();
+                    if (!node.getThisAddress().equals(member.getAddress())) {
+                        logger.fine("This directory does not belong to us: " + dir.getAbsolutePath());
+                        continue;
+                    }
                 }
 
                 DirectoryLock directoryLock = lockForDirectory(dir, logger);
@@ -111,7 +157,8 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
                         + ". Reason: " + e.getMessage());
             }
         }
-        // create a new one
+
+        // create a new persistence directory
         return createNewDir(baseDir);
     }
 
@@ -123,10 +170,6 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         return lockForDirectory(dir, logger);
     }
 
-    private static boolean isCPDirectory(File dir) {
-        return new File(dir, CP_METADATA_FILE_NAME).exists();
-    }
-
     @Override
     public boolean isEnabled() {
         return true;
@@ -134,23 +177,27 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
 
     @Override
     public CPMetadataStore getCPMetadataStore() {
-        return cpMemberMetadataStore;
+        return metadataStore;
     }
 
     @Nonnull
-    public RaftStateStore createRaftStateStore(
-            @Nonnull RaftGroupId groupId, @Nullable LogFileStructure logFileStructure
-    ) {
+    public RaftStateStore createRaftStateStore(@Nonnull RaftGroupId groupId, @Nullable LogFileStructure logFileStructure) {
         File groupDir = getGroupDir(groupId);
         if (!groupDir.exists() && !groupDir.mkdir() && !groupDir.exists()) {
             throw new IllegalStateException("Cannot create directory " + groupDir.getAbsolutePath() + " for " + groupId);
         }
+        int uncommittedEntryCount = cpSubsystemConfig.getRaftAlgorithmConfig().getUncommittedEntryCountToRejectNewAppends();
         return new OnDiskRaftStateStore(groupDir, node.getSerializationService(), uncommittedEntryCount + 1, logFileStructure);
     }
 
     @Override
+    public void removeRaftStateStore(@Nonnull RaftGroupId groupId) {
+         delete(getGroupDir(groupId));
+    }
+
+    @Override
     public void reset() {
-        File[] files = dir.listFiles();
+        File[] files = dir.listFiles((dir, name) -> !DirectoryLock.FILE_NAME.equals(name));
         if (files != null) {
             for (File f : files) {
                 delete(f);
@@ -158,35 +205,109 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         }
     }
 
+    @SuppressWarnings("checkstyle:npathcomplexity")
     public void start() {
         logger.info("Starting CP restore process in " + dir.getAbsolutePath());
-        File[] groupDirs = getGroupDirs();
-        if (groupDirs == null || groupDirs.length == 0) {
-            logger.info("Nothing to restore in " + dir.getAbsolutePath());
-            startCompleted = true;
-            return;
-        }
 
+        RaftService raftService = node.getNodeEngine().getService(RaftService.SERVICE_NAME);
         try {
-            localMember = cpMemberMetadataStore.readLocalMember();
+            RaftGroupId metadataGroupId = metadataStore.readMetadataGroupId();
+            if (metadataGroupId != null) {
+                raftService.getMetadataGroupManager().restoreMetadataGroupId(metadataGroupId);
+            }
         } catch (IOException e) {
             throw new HazelcastException(e);
         }
-        assert node.getThisAddress().equals(localMember.getAddress())
-                : "Local address: " + node.getThisAddress() + ", CP member: " + localMember;
 
-        RaftService raftService = node.getNodeEngine().getService(RaftService.SERVICE_NAME);
-        ExecutionService executionService = node.getNodeEngine().getExecutionService();
-        List<Future<Void>> futures = new ArrayList<Future<Void>>(groupDirs.length);
-        for (File groupDir : groupDirs) {
-            Future<Void> f = executionService.submit(ASYNC_EXECUTOR, new RestoreTask(groupDir, raftService));
-            futures.add(f);
+        boolean addressChangeDetected;
+        try {
+            localCPMember = metadataStore.readLocalCPMember();
+            if (localCPMember == null) {
+                logger.info("Nothing to restore in " + dir.getAbsolutePath());
+                startCompleted = true;
+                return;
+            }
+
+            addressChangeDetected = !node.getThisAddress().equals(localCPMember.getAddress());
+            if (addressChangeDetected) {
+                logger.warning("IP address change detected! " + localCPMember.getAddress() + " -> " + node.getThisAddress());
+                assert allowIpAddressChange : "IP address change is now allowed!";
+                localCPMember = new CPMemberInfo(localCPMember.getUuid(), node.getThisAddress());
+            }
+        } catch (IOException e) {
+            throw new HazelcastException(e);
         }
 
-        // TODO [basri] fix timeout
-        waitWithDeadline(futures, 2, TimeUnit.MINUTES, RETHROW_EVERYTHING);
+        List<Future<Void>> futures = new ArrayList<>();
+        CompletableFuture<Void> verificationFuture = new InternalCompletableFuture<>();
+        futures.add(verificationFuture);
+        if (addressChangeDetected) {
+            runAsync("cp-local-member-address-publish-thread", () -> publishLocalAddressChange(verificationFuture));
+        }
+
+        runAsync("notify-metadata-group-thread", () -> verifyRestartedCPMember(verificationFuture));
+
+        File[] groupDirs = getGroupDirs();
+        if (groupDirs == null || groupDirs.length == 0) {
+            logger.info("No CP group to restore in " + dir.getAbsolutePath());
+        } else {
+            ExecutionService executionService = node.getNodeEngine().getExecutionService();
+            for (File groupDir : groupDirs) {
+                Future<Void> f = executionService.submit(ASYNC_EXECUTOR, new RestoreCPGroupTask(groupDir, raftService));
+                futures.add(f);
+            }
+        }
+
+        waitWithDeadline(futures, cpSubsystemConfig.getDataLoadTimeoutSeconds(), SECONDS, RETHROW_EVERYTHING);
 
         this.startCompleted = true;
+        logger.fine("CP restore completed...");
+    }
+
+    private void publishLocalAddressChange(Future<Void> futureToCheck) {
+        NodeEngineImpl nodeEngine = node.getNodeEngine();
+        OperationService operationService = nodeEngine.getOperationService();
+        ClusterService clusterService = nodeEngine.getClusterService();
+        RaftService raftService = node.getNodeEngine().getService(RaftService.SERVICE_NAME);
+
+        while (!futureToCheck.isDone()) {
+            raftService.getInvocationManager().getRaftInvocationContext().updateMember(localCPMember);
+
+            logger.fine("Broadcasting local CP member... " + localCPMember);
+            Operation op = new PublishLocalCPMemberOp(localCPMember);
+            for (Member member : clusterService.getMembers(NON_LOCAL_MEMBER_SELECTOR)) {
+                operationService.send(op, member.getAddress());
+            }
+
+            try {
+                Thread.sleep(SECONDS.toMillis(1));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    private void verifyRestartedCPMember(CompletableFuture<Void> future) {
+        RaftService raftService = node.getNodeEngine().getService(RaftService.SERVICE_NAME);
+        RaftInvocationManager invocationManager = raftService.getInvocationManager();
+        try {
+            // METADATA group id is already restored...
+            invocationManager.invoke(raftService.getMetadataGroupId(), new VerifyRestartedCPMemberOp(localCPMember)).join();
+            logger.info("CP member is verified on the METADATA group.");
+            // setting local cp member after my ip change is committed to the metadata group
+            // because we initialize local cp member also when the initial cp discovery is completed
+            // so we use the same ordering logic here.
+            raftService.getMetadataGroupManager().restoreLocalCPMember(localCPMember);
+
+            // if this call fails and I restart again, I will re-commit my ip change
+            // to the metadata group without any problem.
+            metadataStore.persistLocalCPMember(localCPMember);
+            future.complete(null);
+        } catch (Throwable t) {
+            future.completeExceptionally(t);
+            logger.severe("Could not verify the CP member on the METADATA group", t);
+        }
     }
 
     public void shutdown() {
@@ -197,7 +318,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         return startCompleted;
     }
 
-    private File getGroupDir(RaftGroupId groupId) {
+    public File getGroupDir(RaftGroupId groupId) {
         return new File(dir, groupId.getName() + "@" + groupId.getSeed() + "@" + groupId.getId());
     }
 
@@ -209,21 +330,20 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
     }
 
     private File[] getGroupDirs() {
-        return dir.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File path) {
-                return path.isDirectory()
-                        && new File(path, OnDiskRaftStateStore.MEMBERS_FILENAME).exists()
-                        && new File(path, OnDiskRaftStateStore.TERM_FILENAME).exists();
-            }
-        });
+        return dir.listFiles(path ->
+                path.isDirectory() && new File(path, MEMBERS_FILENAME).exists() && new File(path, TERM_FILENAME).exists());
     }
 
-    private class RestoreTask implements Callable<Void> {
+    private void runAsync(String taskName, Runnable runnable) {
+        String threadName = createThreadName(node.hazelcastInstance.getName(), taskName);
+        new Thread(runnable, threadName).start();
+    }
+
+    private class RestoreCPGroupTask implements Callable<Void> {
         private final File groupDir;
         private final RaftService raftService;
 
-        RestoreTask(File groupDir, RaftService raftService) {
+        RestoreCPGroupTask(File groupDir, RaftService raftService) {
             this.groupDir = groupDir;
             this.raftService = raftService;
         }
@@ -232,46 +352,43 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         public Void call() throws Exception {
             final RaftGroupId groupId = getGroupId(groupDir);
             logger.info("Restoring " + groupId + " from " + groupDir);
+            int uncommittedEntryCount = cpSubsystemConfig.getRaftAlgorithmConfig().getUncommittedEntryCountToRejectNewAppends();
             OnDiskRaftStateLoader stateLoader =
-                    new OnDiskRaftStateLoader(groupDir, uncommittedEntryCount, node.getSerializationService());
+                    new OnDiskRaftStateLoader(groupDir, uncommittedEntryCount + 1, node.getSerializationService());
             final RestoredRaftState restoredState = stateLoader.load();
 
-            if (!localMember.getUuid().equals(restoredState.localEndpoint().getUuid())) {
-                 throw new IllegalStateException("Local member: " + localMember + ", endpoint: " + restoredState.localEndpoint()
-                    + ", group: " + groupId);
-            }
-
-            boolean metadataGroup = groupId.getName().equals(METADATA_CP_GROUP_NAME);
-            if (metadataGroup && groupId.getId() != 0L) {
-                raftService.getMetadataGroupManager().setMetadataGroupId(groupId);
+            if (!localCPMember.getUuid().equals(restoredState.localEndpoint().getUuid())) {
+                 throw new IllegalStateException("Local CP member: " + localCPMember + ", restored endpoint: "
+                         + restoredState.localEndpoint() + ", group: " + groupId);
             }
 
             final RaftNodeImpl raftNode = raftService.restoreRaftNode(groupId, restoredState, stateLoader.logFileStructure());
-
-            if (metadataGroup) {
-                new Thread(createThreadName(node.hazelcastInstance.getName(), "cp-metadata-restore-thread")) {
-                    public void run() {
-                        publishCpMembersUntilLeaderElection(groupId, raftNode, restoredState);
-                    }
-                }.start();
+            if (groupId.getName().equals(METADATA_CP_GROUP_NAME)) {
+                runAsync("cp-metadata-restore-thread",
+                        () -> publishCPMembersUntilMetadataGroupLeaderElected(groupId, raftNode, restoredState));
             }
+
             logger.info("Completed restore of " + groupId);
             return null;
         }
 
-        private void publishCpMembersUntilLeaderElection(RaftGroupId groupId, RaftNodeImpl raftNode,
-                RestoredRaftState restoredState) {
-            BiTuple<Long, List<CPMemberInfo>> tuple2 = updateInvocationManagerMembers(raftService, groupId, restoredState);
-            long entryIndex = tuple2.element1;
-            List<CPMemberInfo> cpMembers = tuple2.element2;
+        private void publishCPMembersUntilMetadataGroupLeaderElected(RaftGroupId metadataGroupId, RaftNodeImpl raftNode,
+                                                                     RestoredRaftState restoredState) {
+            BiTuple<Long, List<CPMemberInfo>> t = getLatestCPMembers(restoredState);
+            if (t == null) {
+                logger.fine("CP members list not restored...");
+                return;
+            }
+            long membersCommitIndex = t.element1;
+            List<CPMemberInfo> cpMembers = t.element2;
+            updateInvocationManager(metadataGroupId, membersCommitIndex, cpMembers);
 
-            // TODO: fixme timeout
-            long timeout = TimeUnit.MINUTES.toMillis(2);
+            long timeout = SECONDS.toMillis(cpSubsystemConfig.getDataLoadTimeoutSeconds());
             long deadline = Clock.currentTimeMillis() + timeout;
 
             ClusterService clusterService = node.getClusterService();
-            OperationService operationService = node.getNodeEngine().getOperationService();
-            Operation op = new PublishRestoredCPMembersOp(groupId, entryIndex, cpMembers);
+            OperationServiceImpl operationService = node.getNodeEngine().getOperationService();
+            Operation op = new PublishRestoredCPMembersOp(metadataGroupId, membersCommitIndex, cpMembers);
 
             while (Clock.currentTimeMillis() < deadline && raftNode.getLeader() == null) {
                 if (logger.isFineEnabled()) {
@@ -282,7 +399,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
                     operationService.send(op, member.getAddress());
                 }
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(PUBLISH_CP_MEMBERS_MILLIS);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
@@ -294,8 +411,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
             }
         }
 
-        private BiTuple<Long, List<CPMemberInfo>> updateInvocationManagerMembers(RaftService service, RaftGroupId groupId,
-                RestoredRaftState restoredState) {
+        private BiTuple<Long, List<CPMemberInfo>> getLatestCPMembers(RestoredRaftState restoredState) {
             long index = 0;
             List<CPMemberInfo> members = null;
             SnapshotEntry snapshot = restoredState.snapshot();
@@ -303,40 +419,80 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
                 RestoreSnapshotOp op = (RestoreSnapshotOp) snapshot.operation();
                 MetadataRaftGroupSnapshot metadataSnapshot = (MetadataRaftGroupSnapshot) op.getSnapshot();
                 index = metadataSnapshot.getMembersCommitIndex();
-                members = new ArrayList<CPMemberInfo>(metadataSnapshot.getMembers());
-                updateInvocationManagerMembers(service, groupId, index, members);
+                members = new ArrayList<>(metadataSnapshot.getMembers());
+                replaceCPMemberIfIPChanged(members, localCPMember);
             }
+            // we rely on internal details of our persistence impl here...
+            // we know that the restored entries are later then the restored snapshot.
             for (LogEntry entry : restoredState.entries()) {
                 Object op = entry.operation();
                 if (op instanceof InitMetadataRaftGroupOp) {
                     // Having multiple InitMetadataRaftGroupOp entries is allowed and expected.
                     // Every metadata member appends its own init operation during CP discovery.
                     index = entry.index();
-                    members = ((InitMetadataRaftGroupOp) op).getDiscoveredCPMembers();
-                    updateInvocationManagerMembers(service, groupId, entry.index(), members);
-                }
-                if (op instanceof AddCPMemberOp) {
+                    members = new ArrayList<>(((InitMetadataRaftGroupOp) op).getDiscoveredCPMembers());
+                    replaceCPMemberIfIPChanged(members, localCPMember);
+                } else if (op instanceof AddCPMemberOp) {
                     assert members != null;
                     index = entry.index();
                     members.add(((AddCPMemberOp) op).getMember());
-                    updateInvocationManagerMembers(service, groupId, entry.index(), members);
-                }
-                if (op instanceof RemoveCPMemberOp) {
+                    replaceCPMemberIfIPChanged(members, localCPMember);
+                } else if (op instanceof RemoveCPMemberOp) {
                     assert members != null;
                     index = entry.index();
                     members.remove(((RemoveCPMemberOp) op).getMember());
-                    updateInvocationManagerMembers(service, groupId, entry.index(), members);
+                    replaceCPMemberIfIPChanged(members, localCPMember);
+                } else if (op instanceof VerifyRestartedCPMemberOp) {
+                    assert members != null;
+                    index = entry.index();
+                    replaceCPMemberIfIPChanged(members, ((VerifyRestartedCPMemberOp) op).getMember());
                 }
             }
-            return BiTuple.of(index, members);
+            return members != null ? BiTuple.of(index, members) : null;
         }
 
-        private void updateInvocationManagerMembers(RaftService service, RaftGroupId groupId,
-                long index, List<CPMemberInfo> members) {
-            service.updateInvocationManagerMembers(groupId.getSeed(), index, members);
+        private void replaceCPMemberIfIPChanged(List<CPMemberInfo> members, CPMemberInfo member) {
+            for (int i = 0; i < members.size(); i++) {
+                CPMemberInfo m = members.get(i);
+                if (m.getUuid().equals(member.getUuid()) && !m.getAddress().equals(member.getAddress())) {
+                    members.set(i, member);
+                    break;
+                }
+            }
+        }
+
+        private void updateInvocationManager(RaftGroupId metadataGroupId, long membersCommitIndex,
+                                             List<CPMemberInfo> members) {
+            raftService.updateInvocationManagerMembers(metadataGroupId.getSeed(), membersCommitIndex, members);
             if (logger.isFineEnabled()) {
-                logger.fine("Restored seed: " + groupId.getSeed() + ", members commit index: " + index
+                logger.fine("Restored seed: " + metadataGroupId.getSeed() + ", members commit index: " + membersCommitIndex
                         + ", CP member list: " + members);
+            }
+        }
+    }
+
+    private class OwnDirComparator implements Comparator<File> {
+        @Override
+        public int compare(File dir1, File dir2) {
+            try {
+                CPMemberInfo member1 = new CPMetadataStoreImpl(dir1).readLocalCPMember();
+                CPMemberInfo member2 = new CPMetadataStoreImpl(dir2).readLocalCPMember();
+                if (member1 == null) {
+                    return member2 != null ? 1 : 0;
+                }
+                if (member2 == null) {
+                    return -1;
+                }
+
+                Address thisAddress = node.getThisAddress();
+                if (thisAddress.equals(member1.getAddress())) {
+                    return -1;
+                }
+                return thisAddress.equals(member2.getAddress()) ? 1 : 0;
+            } catch (IOException e) {
+                logger.severe("Could not compare addresses in CP Subsystem persistence directories: "
+                        + dir1.getAbsolutePath() + " and " + dir2.getAbsolutePath(), e);
+                return 0;
             }
         }
     }

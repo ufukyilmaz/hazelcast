@@ -1,30 +1,15 @@
-/*
- * Copyright (c) 2008-2019, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.cp.persistence.operation;
 
 import com.hazelcast.cp.internal.CPMemberInfo;
 import com.hazelcast.cp.internal.RaftGroupId;
-import com.hazelcast.cp.internal.RaftOp;
 import com.hazelcast.cp.internal.RaftService;
 import com.hazelcast.cp.internal.RaftSystemOperation;
+import com.hazelcast.cp.persistence.CPPersistenceDataSerializerHook;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.impl.operationservice.Operation;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,10 +20,10 @@ import java.util.Collection;
  * storage, it broadcasts this list to other cluster members using this
  * operation until the Metadata CP group elects its leader.
  * <p/>
- * Please note that this operation is not a {@link RaftOp},
+ * Please note that this operation is not a {@link com.hazelcast.cp.internal.RaftOp},
  * so it is not handled via the Raft layer.
  */
-public class PublishRestoredCPMembersOp extends Operation implements /*IdentifiedDataSerializable,*/ RaftSystemOperation {
+public class PublishRestoredCPMembersOp extends Operation implements IdentifiedDataSerializable, RaftSystemOperation {
 
     private RaftGroupId metadataGroupId;
     private long membersCommitIndex;
@@ -56,11 +41,11 @@ public class PublishRestoredCPMembersOp extends Operation implements /*Identifie
     @Override
     public void run() {
         RaftService service = getService();
-        if (service.updateInvocationManagerMembers(metadataGroupId.seed(), membersCommitIndex, members)) {
+        if (service.updateInvocationManagerMembers(metadataGroupId.getSeed(), membersCommitIndex, members)) {
             ILogger logger = getNodeEngine().getLogger(getClass());
             if (logger.isFineEnabled()) {
-                logger.fine("Received restored seed: " + metadataGroupId.seed() + ", members commit index: " + membersCommitIndex
-                        + ", CP member list: " + members);
+                logger.fine("Received restored seed: " + metadataGroupId.getSeed()
+                        + ", members commit index: " + membersCommitIndex + ", CP member list: " + members);
             }
         }
     }
@@ -75,15 +60,15 @@ public class PublishRestoredCPMembersOp extends Operation implements /*Identifie
         return RaftService.SERVICE_NAME;
     }
 
-//    @Override
-//    public int getFactoryId() {
-//        return RaftServiceDataSerializerHook.F_ID;
-//    }
-//
-//    @Override
-//    public int getId() {
-//        return RaftServiceDataSerializerHook.PUBLISH_RESTORED_CP_MEMBERS_OP;
-//    }
+    @Override
+    public int getFactoryId() {
+        return CPPersistenceDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getClassId() {
+        return CPPersistenceDataSerializerHook.PUBLISH_RESTORED_MEMBERS_OP;
+    }
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
@@ -102,7 +87,7 @@ public class PublishRestoredCPMembersOp extends Operation implements /*Identifie
         metadataGroupId = in.readObject();
         membersCommitIndex = in.readLong();
         int len = in.readInt();
-        members = new ArrayList<CPMemberInfo>(len);
+        members = new ArrayList<>(len);
         for (int i = 0; i < len; i++) {
             CPMemberInfo member = in.readObject();
             members.add(member);

@@ -6,8 +6,8 @@ import com.hazelcast.cp.internal.raft.impl.log.SnapshotEntry;
 import com.hazelcast.cp.internal.raft.impl.persistence.LogFileStructure;
 import com.hazelcast.cp.internal.raft.impl.persistence.RaftStateStore;
 import com.hazelcast.cp.persistence.BufferedRaf.BufRafObjectDataOut;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.serialization.InternalSerializationService;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataOutput;
 
 import javax.annotation.Nonnull;
@@ -20,6 +20,9 @@ import java.util.Collection;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.writeCollection;
 import static java.lang.Math.max;
 
+/**
+ * Disk based implementation of {@link RaftStateStore}.
+ */
 public class OnDiskRaftStateStore implements RaftStateStore {
 
     static final String RAFT_LOG_PREFIX = "raftlog-";
@@ -117,23 +120,17 @@ public class OnDiskRaftStateStore implements RaftStateStore {
             @Nonnull final RaftEndpoint localMember,
             @Nonnull final Collection<RaftEndpoint> initialMembers
     ) throws IOException {
-        runWrite(MEMBERS_FILENAME, new WriteTask() {
-            @Override
-            public void writeTo(ObjectDataOutput out) throws IOException {
-                out.writeObject(localMember);
-                writeCollection(initialMembers, out);
-            }
+        runWrite(MEMBERS_FILENAME, out -> {
+            out.writeObject(localMember);
+            writeCollection(initialMembers, out);
         });
     }
 
     @Override
     public void persistTerm(final int term, @Nullable final RaftEndpoint votedFor) throws IOException {
-        runWrite(TERM_FILENAME, new WriteTask() {
-            @Override
-            public void writeTo(ObjectDataOutput out) throws IOException {
-                out.writeInt(term);
-                out.writeObject(votedFor);
-            }
+        runWrite(TERM_FILENAME, out -> {
+            out.writeInt(term);
+            out.writeObject(votedFor);
         });
     }
 

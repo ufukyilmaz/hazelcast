@@ -1,26 +1,10 @@
-/*
- * Copyright (c) 2008-2019, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.cp.persistence;
 
 import com.hazelcast.cp.internal.raft.exception.LogValidationException;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.ObjectDataInputStream;
 import com.hazelcast.internal.serialization.impl.ObjectDataOutputStream;
-import com.hazelcast.util.Preconditions;
+import com.hazelcast.internal.util.Preconditions;
 
 import javax.annotation.Nonnull;
 import java.io.Closeable;
@@ -31,12 +15,17 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.zip.CRC32;
 
-import static com.hazelcast.nio.Bits.BYTE_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.BYTE_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
 import static java.lang.Math.min;
 
+/**
+ * Buffered RandomAccessFile.
+ */
 public class BufferedRaf implements Closeable {
+
+    @SuppressWarnings("checkstyle:magicnumber")
     private static final int BUFFER_SIZE = 1 << 14;
 
     private enum Mode { READING, WRITING }
@@ -168,6 +157,7 @@ public class BufferedRaf implements Closeable {
         filePointer += count;
     }
 
+    @SuppressWarnings("checkstyle:magicnumber")
     public int readByte() throws IOException {
         read(auxBuf.array(), 0, BYTE_SIZE_IN_BYTES);
         return auxBuf.get(0) & 0xff;
@@ -304,7 +294,7 @@ public class BufferedRaf implements Closeable {
         }
     }
 
-    class BufRafObjectDataIn extends ObjectDataInputStream {
+    static class BufRafObjectDataIn extends ObjectDataInputStream {
 
         private final BufRafInputStream inputStream;
 
@@ -318,7 +308,7 @@ public class BufferedRaf implements Closeable {
         }
     }
 
-    class BufRafObjectDataOut extends ObjectDataOutputStream {
+    static class BufRafObjectDataOut extends ObjectDataOutputStream {
 
         private final BufRafOutputStream outputStream;
 

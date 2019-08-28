@@ -10,13 +10,14 @@ import com.hazelcast.cp.internal.raft.impl.persistence.RestoredRaftState;
 import com.hazelcast.cp.internal.raft.impl.testing.TestRaftEndpoint;
 import com.hazelcast.cp.internal.raft.impl.testing.TestRaftGroupId;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
-import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
-import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.HdrHistogram.Histogram;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -33,8 +34,8 @@ import java.util.List;
 import static com.hazelcast.cp.internal.raft.impl.RaftUtil.newRaftMember;
 import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.RAFT_LOG_PREFIX;
 import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.getRaftLogFileName;
-import static com.hazelcast.nio.IOUtil.copy;
-import static com.hazelcast.nio.IOUtil.rename;
+import static com.hazelcast.internal.nio.IOUtil.copy;
+import static com.hazelcast.internal.nio.IOUtil.rename;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class OnDiskRaftStateStoreTest {
 
     @Rule
@@ -73,6 +74,7 @@ public class OnDiskRaftStateStoreTest {
         store.persistInitialMembers(endpoint1, members);
     }
 
+    @Ignore
     @Test
     public void benchmark() throws Exception {
         int entryCount = maxUncommittedEntries * 1000;
@@ -635,7 +637,7 @@ public class OnDiskRaftStateStoreTest {
     public void when_storeRestoredMultipleTimes_then_newEntriesPersisted() throws IOException {
         // When
         long logIndex = 0;
-        int repeat = 100;
+        int repeat = 10;
         int logEntryCountOnEachRound = maxUncommittedEntries;
         for (int round = 0; round < repeat; round++) {
             for (int i = 0; i < logEntryCountOnEachRound; i++) {
@@ -665,7 +667,7 @@ public class OnDiskRaftStateStoreTest {
     public void when_storeRestoredMultipleTimes_then_newSnapshotsPersisted() throws IOException {
         // When
         long logIndex = 0;
-        int repeat = 100;
+        int repeat = 10;
         int logEntryCountOnEachRound = maxUncommittedEntries * 10;
         long snapshotIndex = 0;
         for (int round = 0; round < repeat; round++) {
@@ -704,7 +706,7 @@ public class OnDiskRaftStateStoreTest {
     public void when_storeRestoredMultipleTimes_then_newEntriesPersistedAfterSnapshots() throws IOException {
         // When
         long logIndex = 0;
-        int repeat = 100;
+        int repeat = 10;
         int logEntryCountOnEachRound = maxUncommittedEntries * 10;
         long snapshotIndex = 0;
         for (int round = 0; round < repeat; round++) {
@@ -748,7 +750,7 @@ public class OnDiskRaftStateStoreTest {
     public void when_storeRestoredMultipleTimes_then_entriesDeletedAndNewEntriesPersisted() throws IOException {
         // When
         long logIndex = 0;
-        int repeat = 100;
+        int repeat = 10;
         int logEntryCountOnEachRound = maxUncommittedEntries;
         long deletedEntryCountOnEachRound = 5;
         for (int round = 0; round < repeat; round++) {

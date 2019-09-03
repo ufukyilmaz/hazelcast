@@ -6,7 +6,9 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -25,11 +27,20 @@ public class PersistentMemoryMallocTest extends AbstractMallocTest {
     private LibMalloc libMalloc;
     private final MemorySize nativeMemorySize = new MemorySize(64, MemoryUnit.MEGABYTES);
 
+    @BeforeClass
+    public static void init() {
+        System.setProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "true");
+    }
+
+    @AfterClass
+    public static void cleanup() {
+        System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
+    }
+
     @Before
     public void setup() {
         NativeMemoryConfig config = new NativeMemoryConfig();
         config.setPersistentMemoryDirectory(PERSISTENT_MEMORY_DIRECTORY);
-        System.setProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "true");
         assertNotNull(config.getPersistentMemoryDirectory());
         LibMallocFactory libMallocFactory = new PersistentMemoryMallocFactory(config);
         libMalloc = libMallocFactory.create(nativeMemorySize.bytes());
@@ -40,7 +51,6 @@ public class PersistentMemoryMallocTest extends AbstractMallocTest {
         if (libMalloc != null) {
             libMalloc.dispose();
         }
-        System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
     }
 
     @Override

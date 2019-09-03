@@ -4,8 +4,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -32,16 +32,15 @@ public class HDQueryBasicTest extends QueryBasicTest {
         });
     }
 
-    @Before
-    public void setup() {
+    @BeforeClass
+    public static void init() {
         System.setProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "true");
     }
 
-    @After
-    public void tearDown() {
+    @AfterClass
+    public static void cleanup() {
         System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
     }
-
 
     @Override
     protected Config getConfig() {

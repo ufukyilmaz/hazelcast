@@ -36,7 +36,7 @@ public class PoolingMemoryManagerTest extends ParameterizedMemoryTest {
     private PoolingMemoryManager memoryManager;
 
     @Before
-    public void init() {
+    public void setUp() {
         MemorySize size = new MemorySize(128, MemoryUnit.MEGABYTES);
         memoryManager = new PoolingMemoryManager(size, 16, pageSize, newLibMallocFactory(persistentMemory));
     }

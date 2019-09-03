@@ -6,7 +6,8 @@ import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.test.HazelcastTestSupport;
-import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runners.Parameterized;
 
 import java.util.Collection;
@@ -28,9 +29,6 @@ public class ParameterizedMemoryTest extends HazelcastTestSupport {
     }
 
     static LibMallocFactory newLibMallocFactory(boolean persistentMemory) {
-        if (persistentMemory) {
-            System.setProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "true");
-        }
         if (persistentMemory) {
             NativeMemoryConfig config = new NativeMemoryConfig().setPersistentMemoryDirectory(PERSISTENT_MEMORY_DIRECTORY);
             LibMallocFactory libMallocFactory =  new PersistentMemoryMallocFactory(config);
@@ -63,9 +61,13 @@ public class ParameterizedMemoryTest extends HazelcastTestSupport {
         return libMallocFactory.create(1 << 28);
     }
 
-    @After
-    public void cleanUp() {
-        System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
+    @BeforeClass
+    public static void init() {
+        System.setProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "true");
     }
 
+    @AfterClass
+    public static void cleanup() {
+        System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
+    }
 }

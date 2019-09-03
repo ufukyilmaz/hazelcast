@@ -10,7 +10,9 @@ import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -61,6 +63,16 @@ public class MemoryAllocatorTest {
     private MemoryManager memMgr;
     private Disposable toDispose;
 
+    @BeforeClass
+    public static void init() {
+        System.setProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "true");
+    }
+
+    @AfterClass
+    public static void cleanup() {
+        System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
+    }
+
     @Before
     public void setup() {
         switch (mgrType) {
@@ -99,7 +111,6 @@ public class MemoryAllocatorTest {
     @After
     public void teardown() {
         toDispose.dispose();
-        System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
     }
 
     @Test

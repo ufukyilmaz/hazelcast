@@ -26,7 +26,7 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.PNCounterConfig;
 import com.hazelcast.config.PartitionGroupConfig;
 import com.hazelcast.config.QueueConfig;
-import com.hazelcast.config.QuorumConfig;
+import com.hazelcast.config.SplitBrainProtectionConfig;
 import com.hazelcast.config.ReliableTopicConfig;
 import com.hazelcast.config.ReplicatedMapConfig;
 import com.hazelcast.config.RingbufferConfig;
@@ -688,28 +688,28 @@ class WanNodeConfig extends Config {
     }
 
     @Override
-    public Map<String, QuorumConfig> getQuorumConfigs() {
-        return wrappedConfig.getQuorumConfigs();
+    public Map<String, SplitBrainProtectionConfig> getSplitBrainProtectionConfigs() {
+        return wrappedConfig.getSplitBrainProtectionConfigs();
     }
 
     @Override
-    public QuorumConfig getQuorumConfig(String name) {
-        return wrappedConfig.getQuorumConfig(name);
+    public SplitBrainProtectionConfig getSplitBrainProtectionConfig(String name) {
+        return wrappedConfig.getSplitBrainProtectionConfig(name);
     }
 
     @Override
-    public QuorumConfig findQuorumConfig(String name) {
-        return wrappedConfig.findQuorumConfig(name);
+    public SplitBrainProtectionConfig findSplitBrainProtectionConfig(String name) {
+        return wrappedConfig.findSplitBrainProtectionConfig(name);
     }
 
     @Override
-    public Config setQuorumConfigs(Map<String, QuorumConfig> quorumConfigs) {
-        return wrappedConfig.setQuorumConfigs(quorumConfigs);
+    public Config setSplitBrainProtectionConfigs(Map<String, SplitBrainProtectionConfig> splitBrainProtectionConfigs) {
+        return wrappedConfig.setSplitBrainProtectionConfigs(splitBrainProtectionConfigs);
     }
 
     @Override
-    public Config addQuorumConfig(QuorumConfig quorumConfig) {
-        return wrappedConfig.addQuorumConfig(quorumConfig);
+    public Config addSplitBrainProtectionConfig(SplitBrainProtectionConfig splitBrainProtectionConfig) {
+        return wrappedConfig.addSplitBrainProtectionConfig(splitBrainProtectionConfig);
     }
 
     @Override

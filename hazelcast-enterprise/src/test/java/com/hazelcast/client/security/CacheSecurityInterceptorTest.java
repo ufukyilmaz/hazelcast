@@ -7,7 +7,7 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.client.cache.impl.HazelcastClientCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.quorum.cache.CacheQuorumWriteTest;
+import com.hazelcast.splitbrainprotection.cache.CacheSplitBrainProtectionWriteTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -205,7 +205,7 @@ public class CacheSecurityInterceptorTest extends InterceptorTestSupport {
         final String keys = randomString();
 
         final javax.cache.processor.EntryProcessor entryProcessor =
-                new CacheQuorumWriteTest.SimpleEntryProcessor();
+                new CacheSplitBrainProtectionWriteTest.SimpleEntryProcessor();
 
         cache.invoke(keys, entryProcessor, null);
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "invoke", keys, null, null);
@@ -216,7 +216,7 @@ public class CacheSecurityInterceptorTest extends InterceptorTestSupport {
     public void invokeAll() {
         HashSet keys = new HashSet();
         final javax.cache.processor.EntryProcessor entryProcessor =
-                new CacheQuorumWriteTest.SimpleEntryProcessor();
+                new CacheSplitBrainProtectionWriteTest.SimpleEntryProcessor();
 
         keys.add(randomString());
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "invokeAll", keys, null, null);

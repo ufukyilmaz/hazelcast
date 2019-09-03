@@ -64,7 +64,7 @@ public class HDPutOperationTest extends AbstractHDMapOperationTest {
         // HDPutOperation
         List<Operation> list = new ArrayList<Operation>(ENTRY_COUNT);
         for (int i = 0; i < ENTRY_COUNT; i++) {
-            TestHDPutOperation operation = new TestHDPutOperation(MAP_NAME, dataKey, dataValue, 0);
+            TestHDPutOperation operation = new TestHDPutOperation(MAP_NAME, dataKey, dataValue);
             executeOperation(operation, PARTITION_ID);
 
             if (syncBackupCount > 0) {
@@ -94,8 +94,8 @@ public class HDPutOperationTest extends AbstractHDMapOperationTest {
         public TestHDPutOperation() {
         }
 
-        public TestHDPutOperation(String name, Data dataKey, Data value, long ttl) {
-            super(name, dataKey, value, ttl, -1);
+        public TestHDPutOperation(String name, Data dataKey, Data value) {
+            super(name, dataKey, value);
         }
     }
 }

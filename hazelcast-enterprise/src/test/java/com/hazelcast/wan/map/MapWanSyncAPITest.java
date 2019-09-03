@@ -39,6 +39,7 @@ import java.util.Map;
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
 import static com.hazelcast.test.HazelcastTestSupport.assertContains;
+import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getNodeEngineImpl;
 import static com.hazelcast.test.HazelcastTestSupport.getPartitionService;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
@@ -334,23 +335,25 @@ public class MapWanSyncAPITest {
     private void verifySyncStats(Cluster sourceCluster,
                                  WanReplication wanReplication,
                                  String... mapNames) {
-        for (HazelcastInstance instance : sourceCluster.getMembers()) {
-            Map<String, WanSyncStats> lastSyncResult = getLastSyncResult(
-                    instance, wanReplication.getSetupName(), wanReplication.getTargetClusterName());
-            int localPartitions = getLocalPartitions(instance);
+        assertTrueEventually(() -> {
+            for (HazelcastInstance instance : sourceCluster.getMembers()) {
+                Map<String, WanSyncStats> lastSyncResult = getLastSyncResult(
+                        instance, wanReplication.getSetupName(), wanReplication.getTargetClusterName());
+                int localPartitions = getLocalPartitions(instance);
 
-            for (String mapName : mapNames) {
-                assertTrue(lastSyncResult.containsKey(mapName));
+                for (String mapName : mapNames) {
+                    assertTrue(lastSyncResult.containsKey(mapName));
 
-                if (consistencyCheckStrategy == NONE) {
-                    verifyFullSyncStats(lastSyncResult, localPartitions, mapName);
-                } else if (consistencyCheckStrategy == MERKLE_TREES) {
-                    verifyMerkleSyncStats(lastSyncResult, localPartitions, mapName);
-                } else {
-                    fail("Unhandled consistency check strategy");
+                    if (consistencyCheckStrategy == NONE) {
+                        verifyFullSyncStats(lastSyncResult, localPartitions, mapName);
+                    } else if (consistencyCheckStrategy == MERKLE_TREES) {
+                        verifyMerkleSyncStats(lastSyncResult, localPartitions, mapName);
+                    } else {
+                        fail("Unhandled consistency check strategy");
+                    }
                 }
             }
-        }
+        });
     }
 
     private static int getLocalPartitions(HazelcastInstance instance) {

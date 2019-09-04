@@ -40,6 +40,13 @@
         <maven.shade.plugin.version>2.2</maven.shade.plugin.version>
         <maven.gpg.plugin.version>1.4</maven.gpg.plugin.version>
         <maven.javadoc.plugin.version>3.1.0</maven.javadoc.plugin.version>
+        <maven.javadoc.plugin.excludePackageNames>
+            *.impl:*.impl.*:*.internal:*.internal.*:*.operations:*.proxy:*.util:
+            com.hazelcast.aws.security:*.handlermigration:*.client.connection.nio:
+            *.client.console:*.buildutils:*.client.protocol.generator:*.cluster.client:
+            *.concurrent:*.collection:*.nio.ascii:*.nio.ssl:*.nio.tcp:*.partition.client:
+            *.transaction.client:*.core.server:com.hazelcast.instance:com.hazelcast.PlaceHolder
+        </maven.javadoc.plugin.excludePackageNames>
 
         <maven.surefire.plugin.version>2.22.0</maven.surefire.plugin.version>
         <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
@@ -380,6 +387,9 @@
                         <version>${maven.javadoc.plugin.version}</version>
                         <configuration>
                             <maxmemory>1024</maxmemory>
+                            <subpackages>com.hazelcast</subpackages>
+                            <excludePackageNames>${maven.javadoc.plugin.excludePackageNames}</excludePackageNames>
+                            <doclint>none</doclint>
                         </configuration>
                         <executions>
                             <execution>
@@ -387,13 +397,9 @@
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
-                                <configuration>
-                                    <doclint>none</doclint>
-                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
-
                 </plugins>
             </build>
         </profile>
@@ -410,13 +416,9 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>${maven.javadoc.plugin.version}</version>
                         <configuration>
-                            <excludePackageNames>
-                                *.impl:*.internal:*.operations:*.proxy:*.util:com.hazelcast.aws.security:
-                                *.handlermigration:*.client.connection.nio:*.client.console:*.buildutils:
-                                *.client.protocol.generator:*.cluster.client:*.concurrent:*.collection:
-                                *.nio.ascii:*.nio.ssl:*.nio.tcp:*.partition.client:*.transaction.client:
-                                *.core.server:com.hazelcast.instance:com.hazelcast.PlaceHolder
-                            </excludePackageNames>
+                            <subpackages>com.hazelcast</subpackages>
+                            <excludePackageNames>${maven.javadoc.plugin.excludePackageNames}</excludePackageNames>
+                            <doclint>none</doclint>
                         </configuration>
                         <executions>
                             <execution>
@@ -424,9 +426,6 @@
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
-                                <configuration>
-                                    <doclint>none</doclint>
-                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

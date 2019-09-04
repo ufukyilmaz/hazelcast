@@ -203,10 +203,94 @@
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>release</id>
+            <properties>
+                <javadoc>true</javadoc>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven.javadoc.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <includeDependencySources>true</includeDependencySources>
+                                    <dependencySourceIncludes>
+                                        <dependencySourceInclude>com.hazelcast:hazelcast-enterprise</dependencySourceInclude>
+                                        <dependencySourceInclude>com.hazelcast:hazelcast-enterprise-hotrestart</dependencySourceInclude>
+                                        <dependencySourceInclude>com.hazelcast:hazelcast-enterprise-native-memory</dependencySourceInclude>
+                                        <dependencySourceInclude>com.hazelcast:hazelcast-enterprise-client</dependencySourceInclude>
+                                        <dependencySourceInclude>com.hazelcast:hazelcast-enterprise-all</dependencySourceInclude>
+                                    </dependencySourceIncludes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>release-snapshot</id>
+            <properties>
+                <javadoc>true</javadoc>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven.javadoc.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <includeDependencySources>true</includeDependencySources>
+                                    <dependencySourceIncludes>
+                                        <dependencySourceInclude>com.hazelcast:hazelcast-enterprise</dependencySourceInclude>
+                                        <dependencySourceInclude>com.hazelcast:hazelcast-enterprise-hotrestart</dependencySourceInclude>
+                                        <dependencySourceInclude>com.hazelcast:hazelcast-enterprise-native-memory</dependencySourceInclude>
+                                        <dependencySourceInclude>com.hazelcast:hazelcast-enterprise-client</dependencySourceInclude>
+                                        <dependencySourceInclude>com.hazelcast:hazelcast-enterprise-all</dependencySourceInclude>
+                                    </dependencySourceIncludes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <dependencies>
         <dependency>
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-enterprise</artifactId>
+            <version>${project.version}</version>
+            <type>jar</type>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-enterprise-hotrestart</artifactId>
+            <version>${project.version}</version>
+            <type>jar</type>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-enterprise-native-memory</artifactId>
             <version>${project.version}</version>
             <type>jar</type>
             <scope>compile</scope>
@@ -224,6 +308,12 @@
             <version>${project.version}</version>
             <type>jar</type>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.cache</groupId>
+            <artifactId>cache-api</artifactId>
+            <version>${jsr107.api.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

@@ -41,7 +41,7 @@ class WanEventRunnable extends AbstractWanEventRunnable {
             operation.sendResponse(true);
         } catch (Exception e) {
             operation.sendResponse(false);
-            logger.severe(e);
+            log(logger, e);
         } finally {
             if (!liveOperations.remove(operation)) {
                 logger.warning("Did not remove WanOperation from live operation list. Possible memory leak!");

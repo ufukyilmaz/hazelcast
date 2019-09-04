@@ -1,5 +1,6 @@
 package com.hazelcast.cache.impl.wan;
 
+import com.hazelcast.cache.CacheNotExistsException;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
@@ -102,6 +103,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);
         }
+        // add the cache config if it does not exist yet
         CacheConfig existingCacheConfig = cacheService.putCacheConfigIfAbsent(cacheConfig);
         if (existingCacheConfig == null) {
             cacheService.createCacheConfigOnAllMembers(PreJoinCacheConfig.of(cacheConfig));
@@ -109,21 +111,25 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         return cacheConfig;
     }
 
-
     /**
-     * Returns the local cache config or {@code null} if none was found.
+     * Returns the local cache config corresponding to the given cache name.
+     * If a direct lookup on the prefixed cache name yields no result, performs
+     * a pattern match using the simple cache name.
      *
      * @param cacheNameWithPrefix the full name of the
      *                            {@link com.hazelcast.cache.ICache}, including
      *                            the manager scope prefix
      * @param cacheSimpleName     pure cache name without any prefix
-     * @return the cache config or {@code null} if none was found
+     * @return the cache config
+     * @throws CacheNotExistsException if a matching local cache config cannot be found
      */
     private CacheConfig getLocalCacheConfig(String cacheNameWithPrefix, String cacheSimpleName) {
         CacheConfig cacheConfig = cacheService.getCacheConfig(cacheNameWithPrefix);
         if (cacheConfig == null) {
             cacheConfig = cacheService.findCacheConfig(cacheSimpleName);
-            if (cacheConfig != null) {
+            if (cacheConfig == null) {
+                throw new CacheNotExistsException("Couldn't find cache config with name " + cacheNameWithPrefix);
+            } else {
                 cacheConfig.setManagerPrefix(cacheNameWithPrefix.substring(0, cacheNameWithPrefix.lastIndexOf(cacheSimpleName)));
             }
         }

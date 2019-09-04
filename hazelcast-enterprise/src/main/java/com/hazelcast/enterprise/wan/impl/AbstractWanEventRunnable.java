@@ -1,6 +1,8 @@
 package com.hazelcast.enterprise.wan.impl;
 
+import com.hazelcast.cache.CacheNotExistsException;
 import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.util.executor.StripedRunnable;
 import com.hazelcast.util.executor.TimeoutRunnable;
 
@@ -32,5 +34,16 @@ public abstract class AbstractWanEventRunnable implements StripedRunnable, Timeo
     @Override
     public TimeUnit getTimeUnit() {
         return TimeUnit.SECONDS;
+    }
+
+    // convenience method for logging exceptions, allowing for custom handling of specific exception types
+    void log(ILogger logger, Throwable t) {
+        if (t instanceof CacheNotExistsException) {
+            // log just the message for CacheNotExistsException because a) when this exception occurs,
+            // it may occur frequently, and b) the message is informative enough
+            logger.severe(t.getMessage());
+        } else {
+            logger.severe(t);
+        }
     }
 }

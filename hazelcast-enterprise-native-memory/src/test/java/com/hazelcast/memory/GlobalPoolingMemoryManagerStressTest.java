@@ -33,6 +33,7 @@ public class GlobalPoolingMemoryManagerStressTest extends ParameterizedMemoryTes
 
     @Before
     public void setUp() throws Exception {
+        checkPlatform();
         long maxNative = MEGABYTES.toBytes(32);
         long maxMetadata = MEGABYTES.toBytes(4);
 
@@ -52,7 +53,9 @@ public class GlobalPoolingMemoryManagerStressTest extends ParameterizedMemoryTes
         if (malloc != null) {
             malloc.dispose();
         }
-        gc.abort();
+        if (gc != null) {
+            gc.abort();
+        }
     }
 
     @Test

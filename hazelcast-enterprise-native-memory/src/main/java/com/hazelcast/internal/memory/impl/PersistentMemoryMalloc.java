@@ -4,6 +4,10 @@ import com.hazelcast.config.NativeMemoryConfig;
 
 import java.io.File;
 
+import static com.hazelcast.util.JVMUtil.is32bitJVM;
+import static com.hazelcast.util.OsHelper.OS;
+import static com.hazelcast.util.OsHelper.isLinux;
+
 /**
  * LibMalloc implementation for non-volatile memory. Makes JNI calls to the PMDK library
  * for all allocation requests.
@@ -17,6 +21,7 @@ final class PersistentMemoryMalloc implements LibMalloc {
     private final PersistentMemoryHeap pmemHeap;
 
     PersistentMemoryMalloc(NativeMemoryConfig config, long size) {
+        checkPlatform();
         assert config.getPersistentMemoryDirectory() != null;
         this.directory = new PersistentMemoryDirectory(config);
         File pmemFile = directory.getPersistentMemoryFile();
@@ -52,9 +57,19 @@ final class PersistentMemoryMalloc implements LibMalloc {
         directory.dispose();
     }
 
+    static void checkPlatform() {
+        if (!isLinux()) {
+            throw new UnsupportedOperationException("Persistent memory is not supported on this platform: " + OS
+                    + ". Only Linux platform is supported.");
+        }
+
+        if (is32bitJVM()) {
+            throw new UnsupportedOperationException("Persistent memory is not supported on 32 bit JVM");
+        }
+    }
+
     @Override
     public String toString() {
         return "PersistentMemoryMalloc";
     }
-
 }

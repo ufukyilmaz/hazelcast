@@ -5,6 +5,8 @@ import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -14,6 +16,7 @@ import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.internal.memory.impl.PersistentMemoryHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
+import static com.hazelcast.util.OsHelper.isLinux;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
@@ -40,6 +43,13 @@ public class HDQueryBasicTest extends QueryBasicTest {
     @AfterClass
     public static void cleanup() {
         System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
+    }
+
+    @Before
+    public void setUp() {
+        if (persistentMemoryDirectory != null) {
+            Assume.assumeTrue("Only Linux platform supported", isLinux());
+        }
     }
 
     @Override

@@ -7,12 +7,14 @@ import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
 import static com.hazelcast.internal.memory.impl.PersistentMemoryHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
+import static com.hazelcast.util.OsHelper.isLinux;
 import static java.util.Arrays.asList;
 
 public class ParameterizedMemoryTest extends HazelcastTestSupport {
@@ -69,5 +71,11 @@ public class ParameterizedMemoryTest extends HazelcastTestSupport {
     @AfterClass
     public static void cleanup() {
         System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
+    }
+
+    void checkPlatform() {
+        if (persistentMemory) {
+            Assume.assumeTrue("Only Linux platform supported", isLinux());
+        }
     }
 }

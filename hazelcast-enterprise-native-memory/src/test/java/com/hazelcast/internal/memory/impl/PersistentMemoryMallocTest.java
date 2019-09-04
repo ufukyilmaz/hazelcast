@@ -7,6 +7,7 @@ import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -16,6 +17,7 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.internal.memory.impl.LibMalloc.NULL_ADDRESS;
 import static com.hazelcast.internal.memory.impl.PersistentMemoryHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
 import static com.hazelcast.test.HazelcastTestSupport.PERSISTENT_MEMORY_DIRECTORY;
+import static com.hazelcast.util.OsHelper.isLinux;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -29,6 +31,7 @@ public class PersistentMemoryMallocTest extends AbstractMallocTest {
 
     @BeforeClass
     public static void init() {
+        Assume.assumeTrue("Only Linux platform supported", isLinux());
         System.setProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "true");
     }
 

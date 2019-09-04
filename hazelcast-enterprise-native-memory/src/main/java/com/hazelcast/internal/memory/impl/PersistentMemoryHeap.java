@@ -11,11 +11,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static com.hazelcast.internal.memory.impl.PersistentMemoryMalloc.checkPlatform;
 import static com.hazelcast.nio.IOUtil.copy;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
-import static com.hazelcast.util.JVMUtil.is32bitJVM;
-import static com.hazelcast.util.OsHelper.OS;
-import static com.hazelcast.util.OsHelper.isUnixFamily;
 
 /**
  * Persistent memory heap which uses JNI calls to the libvmem PMDK library https://github.com/pmem/pmdk
@@ -135,14 +133,7 @@ public final class PersistentMemoryHeap {
     }
 
     private static String getBundledLibraryPath() {
-        if (!isUnixFamily()) {
-            throw new IllegalStateException("Persistent memory is not supported in this platform: " + OS);
-        }
-
-        if (is32bitJVM()) {
-            throw new IllegalStateException("Persistent memory is not supported on 32 bit JVM");
-        }
-
+        checkPlatform();
         return "libpmdk/linux-x86_64/libpmdk.so";
     }
 

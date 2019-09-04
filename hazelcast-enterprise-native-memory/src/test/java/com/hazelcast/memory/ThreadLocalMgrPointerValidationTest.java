@@ -48,6 +48,7 @@ public class ThreadLocalMgrPointerValidationTest extends ParameterizedMemoryTest
 
     @Before
     public void before() {
+        checkPlatform();
         int minBlockSize = 1 << 4;
         long maxNative = 1 << 20;
         long maxMetadata = 1 << 20;

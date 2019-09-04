@@ -92,7 +92,7 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClusterName("dev1");
+        clientConfig.setClientName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
@@ -100,7 +100,7 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
         networkConfig.setSSLConfig(createClientSSlConfig(trustStore1));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClusterName("dev2");
+        clientConfig2.setClientName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
@@ -150,14 +150,14 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClusterName("dev1");
+        clientConfig.setClientName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClusterName("dev2");
+        clientConfig2.setClientName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
@@ -207,7 +207,7 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClusterName("dev1");
+        clientConfig.setClientName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
@@ -215,7 +215,7 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
         networkConfig.setSSLConfig(createClientSSlConfig(trustStore1));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClusterName("dev2");
+        clientConfig2.setClientName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();

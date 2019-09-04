@@ -5,6 +5,8 @@ import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CredentialsFactoryConfig;
 import com.hazelcast.config.LoginModuleConfig;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.ClusterLoginModule;
 import com.hazelcast.security.Credentials;
@@ -20,6 +22,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
@@ -77,7 +80,6 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(USER_NAME, KEY1, KEY2));
-        clientConfig.getSecurityConfig().setCredentialsClassname(CustomCredentials.class.getName());
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
@@ -91,9 +93,8 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         prop.setProperty("key1", KEY1);
         prop.setProperty("key2", KEY2);
         ClientConfig clientConfig = new ClientConfig();
-        CredentialsFactoryConfig credentialsFactoryConfig = clientConfig.getSecurityConfig().getCredentialsFactoryConfig();
-        credentialsFactoryConfig.setProperties(prop);
-        credentialsFactoryConfig.setClassName(CustomCredentialsFactory.class.getName());
+        clientConfig.getSecurityConfig().setCredentialsFactoryConfig(
+                new CredentialsFactoryConfig(CustomCredentialsFactory.class.getName()).setProperties(prop));
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
@@ -108,14 +109,13 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         prop.setProperty("key2", KEY2);
 
         ClientConfig clientConfig = new ClientConfig();
-        CredentialsFactoryConfig credentialsFactoryConfig = clientConfig.getSecurityConfig().getCredentialsFactoryConfig();
-        CustomCredentialsFactory customCredentialsFactory = new CustomCredentialsFactory();
-        credentialsFactoryConfig.setImplementation(customCredentialsFactory);
-        credentialsFactoryConfig.setProperties(prop);
+        CustomCredentialsFactory credsFactory = new CustomCredentialsFactory();
+        credsFactory.init(prop);
+        clientConfig.getSecurityConfig().setCredentialsFactoryConfig(
+                new CredentialsFactoryConfig().setImplementation(credsFactory));
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
-    @Test(expected = IllegalStateException.class)
     public void testCustomCredentialsViaBoth_FactoryImplementation_and_Credentials() {
         Config config = getConfig(USER_NAME, KEY1, KEY2);
         hazelcastFactory.newHazelcastInstance(config);
@@ -126,10 +126,8 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         prop.setProperty("key2", KEY2);
 
         ClientConfig clientConfig = new ClientConfig();
-        CredentialsFactoryConfig credentialsFactoryConfig = clientConfig.getSecurityConfig().getCredentialsFactoryConfig();
-        CustomCredentialsFactory customCredentialsFactory = new CustomCredentialsFactory();
-        credentialsFactoryConfig.setImplementation(customCredentialsFactory);
-        credentialsFactoryConfig.setProperties(prop);
+        clientConfig.getSecurityConfig().setCredentialsFactoryConfig(
+                new CredentialsFactoryConfig(CustomCredentialsFactory.class.getName()).setProperties(prop));
 
         clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(USER_NAME, KEY1, KEY2));
 
@@ -148,11 +146,13 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         prop.setProperty("key2", KEY2);
 
         ClientConfig clientConfig = new ClientConfig();
-        CredentialsFactoryConfig credentialsFactoryConfig = clientConfig.getSecurityConfig().getCredentialsFactoryConfig();
-        CustomCredentialsFactory customCredentialsFactory = new CustomCredentialsFactory();
-        credentialsFactoryConfig.setImplementation(customCredentialsFactory);
-        credentialsFactoryConfig.setClassName(CustomCredentialsFactory.class.getName());
-        credentialsFactoryConfig.setProperties(prop);
+        CustomCredentialsFactory credsFactory = new CustomCredentialsFactory();
+        credsFactory.init(prop);
+        CredentialsFactoryConfig credFactoryConfig = new CredentialsFactoryConfig(CustomCredentialsFactory.class.getName())
+                .setProperties(prop)
+                .setImplementation(credsFactory);
+        clientConfig.getSecurityConfig()
+                .setCredentialsFactoryConfig(credFactoryConfig);
 
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
@@ -168,10 +168,10 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         prop.setProperty("key2", "invalid");
 
         ClientConfig clientConfig = new ClientConfig();
-        CredentialsFactoryConfig credentialsFactoryConfig = clientConfig.getSecurityConfig().getCredentialsFactoryConfig();
-        CustomCredentialsFactory customCredentialsFactory = new CustomCredentialsFactory();
-        credentialsFactoryConfig.setImplementation(customCredentialsFactory);
-        credentialsFactoryConfig.setProperties(prop);
+        CustomCredentialsFactory credsFactory = new CustomCredentialsFactory();
+        credsFactory.init(prop);
+        clientConfig.getSecurityConfig().setCredentialsFactoryConfig(
+                new CredentialsFactoryConfig().setImplementation(credsFactory));
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
@@ -179,7 +179,9 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         Config config = new Config();
         config.getSecurityConfig()
                 .setEnabled(true)
-                .addClientLoginModuleConfig(getLoginModuleConfig(username, key1, key2));
+                .setClientRealmConfig("realm",
+                        new RealmConfig().setJaasAuthenticationConfig(
+                                new JaasAuthenticationConfig().addLoginModuleConfig(getLoginModuleConfig(username, key1, key2))));
         return config;
     }
 
@@ -194,7 +196,6 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
                 .setProperties(prop);
     }
 
-
     public static class CustomCredentialsFactory implements ICredentialsFactory {
 
         private String username;
@@ -202,10 +203,14 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         private String key2;
 
         @Override
-        public void configure(String clusterName, String clusterPassword, Properties properties) {
+        public void init(Properties properties) {
             username = properties.getProperty("username");
             key1 = properties.getProperty("key1");
             key2 = properties.getProperty("key2");
+        }
+
+        @Override
+        public void configure(CallbackHandler callbackHandler) {
         }
 
         @Override

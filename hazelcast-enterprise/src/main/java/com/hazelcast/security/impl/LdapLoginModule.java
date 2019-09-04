@@ -16,6 +16,8 @@ import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 import javax.security.auth.login.FailedLoginException;
 
+import com.hazelcast.config.security.LdapSearchScope;
+
 
 /**
  * JAAS Login module which uses LDAP protocol to verify credentials and load roles. Compared to
@@ -73,7 +75,7 @@ public class LdapLoginModule extends BasicLdapLoginModule {
      */
     public static final String DEFAULT_USER_FILTER = "(uid=" + PLACEHOLDER_LOGIN + ")";
 
-    private SearchScope userSearchScope;
+    private LdapSearchScope userSearchScope;
     private String userContext;
     private String userFilter;
     private String passwordAttribute;

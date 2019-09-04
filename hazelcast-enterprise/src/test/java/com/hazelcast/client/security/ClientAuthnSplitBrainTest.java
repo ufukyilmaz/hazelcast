@@ -19,6 +19,8 @@ import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -62,10 +64,12 @@ public class ClientAuthnSplitBrainTest {
     @Test(timeout = 60000L)
     public void testBlockedClientAuthentication() throws InterruptedException {
         final Config config = new Config();
+        RealmConfig realmConfig = new RealmConfig()
+                .setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(new LoginModuleConfig()
+                        .setClassName(TestLoginModule.class.getName()).setUsage(LoginModuleUsage.REQUIRED)));
         config.getSecurityConfig()
             .setEnabled(true)
-            .addClientLoginModuleConfig(
-                new LoginModuleConfig().setClassName(TestLoginModule.class.getName()).setUsage(LoginModuleUsage.REQUIRED))
+            .setClientRealmConfig("realm", realmConfig)
             .addClientPermissionConfig(new PermissionConfig(ALL, "", null));
 
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);

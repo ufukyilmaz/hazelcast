@@ -352,8 +352,7 @@ public class Cluster {
             checkPositive(clusterSize, "Cluster size should be positive");
             checkPositive(port, "Port should be positive");
 
-            config.setClusterName(clusterName)
-                  .setClusterPassword("H4:z3lc4st");
+            config.setClusterName(clusterName);
             config.getNetworkConfig()
                   .setPortAutoIncrement(false)
                   .setPort(port);

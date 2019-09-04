@@ -4,7 +4,6 @@ import static com.hazelcast.security.impl.LdapUtils.getAttributeValue;
 import static com.hazelcast.security.impl.LdapUtils.getAttributeValues;
 import static com.hazelcast.security.impl.LdapUtils.replacePlaceholders;
 import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
-import static com.hazelcast.internal.util.StringUtil.trim;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -29,6 +28,8 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 
+import com.hazelcast.config.security.LdapRoleMappingMode;
+import com.hazelcast.config.security.LdapSearchScope;
 import com.hazelcast.security.ClusterLoginModule;
 
 /**
@@ -112,7 +113,7 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
     public static final String OPTION_ROLE_NAME_ATTRIBUTE = "roleNameAttribute";
 
     /**
-     * LDAP search scope used for roleFilter search. Allowed values comes from the {@link SearchScope} enum:
+     * LDAP search scope used for roleFilter search. Allowed values comes from the {@link LdapSearchScope} enum:
      * <ul>
      * <li>subtree - searches for objects in the given context and its subtree</li>
      * <li>one-level - searches just one-level under the given context</li>
@@ -140,17 +141,6 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
      */
     public static final int DEFAULT_ROLE_RECURSION_MAX_DEPTH = 1;
 
-    /**
-     * Default search scope for LDAP searches done by this login module. It's used when no value is configured in a search
-     * related option (e.g. {@link #OPTION_ROLE_SEARCH_SCOPE}).
-     */
-    public static final SearchScope DEFAULT_SEARCH_SCOPE = SearchScope.SUBTREE;
-
-    /**
-     * @see #OPTION_ROLE_MAPPING_MODE
-     */
-    public static final RoleMappingMode DEFAULT_MAPPING_MODE = RoleMappingMode.ATTRIBUTE;
-
     protected String name;
 
     protected String login;
@@ -158,11 +148,11 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
     protected String userDN;
     protected String userNameAttribute;
     protected String roleMappingAttribute;
-    protected RoleMappingMode roleMappingMode;
+    protected LdapRoleMappingMode roleMappingMode;
     protected String roleNameAttribute;
     protected String roleFilter;
     protected String roleContext;
-    protected SearchScope roleSearchScope;
+    protected LdapSearchScope roleSearchScope;
     protected boolean parseFromDN;
     protected int maxRecursionDepth;
     protected Attributes userAttributes;
@@ -237,20 +227,20 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
 
     protected void verifyOptions() {
         logger.finest("Verifying provided options and credentials");
-        checkOptionInMappingMode(OPTION_PARSE_DN, RoleMappingMode.ATTRIBUTE);
-        checkOptionInMappingMode(OPTION_ROLE_CONTEXT, RoleMappingMode.REVERSE);
-        checkOptionInMappingMode(OPTION_ROLE_FILTER, RoleMappingMode.REVERSE);
-        checkOptionInMappingMode(OPTION_ROLE_RECURSION_MAX_DEPTH, RoleMappingMode.DIRECT, RoleMappingMode.REVERSE);
+        checkOptionInMappingMode(OPTION_PARSE_DN, LdapRoleMappingMode.ATTRIBUTE);
+        checkOptionInMappingMode(OPTION_ROLE_CONTEXT, LdapRoleMappingMode.REVERSE);
+        checkOptionInMappingMode(OPTION_ROLE_FILTER, LdapRoleMappingMode.REVERSE);
+        checkOptionInMappingMode(OPTION_ROLE_RECURSION_MAX_DEPTH, LdapRoleMappingMode.DIRECT, LdapRoleMappingMode.REVERSE);
     }
 
-    private void checkOptionInMappingMode(String optionName, RoleMappingMode... supportedModes) {
+    private void checkOptionInMappingMode(String optionName, LdapRoleMappingMode... supportedModes) {
         if (!logger.isWarningEnabled()) {
             return;
         }
         boolean optionConfigured = getStringOption(optionName, null) != null;
         if (optionConfigured) {
             boolean optionSupported = false;
-            for (RoleMappingMode mode : supportedModes) {
+            for (LdapRoleMappingMode mode : supportedModes) {
                 optionSupported |= (roleMappingMode == mode);
             }
             if (!optionSupported) {
@@ -356,71 +346,16 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
         }
     }
 
-    protected SearchScope getSearchScope(String optionName) {
-        String optionValue = trim(getStringOption(optionName, null));
-        if (optionValue == null) {
-            return DEFAULT_SEARCH_SCOPE;
-        }
-        for (SearchScope scope : SearchScope.values()) {
-            if (scope.toString().equals(optionValue)) {
-                return scope;
-            }
-        }
-        return DEFAULT_SEARCH_SCOPE;
+    protected LdapSearchScope getSearchScope(String optionName) {
+        return LdapSearchScope.getSearchScope(getStringOption(optionName, null));
     }
 
-    private RoleMappingMode getRoleMappingMode(String optionName) {
-        String optionValue = trim(getStringOption(optionName, null));
-        if (optionValue == null) {
-            return DEFAULT_MAPPING_MODE;
-        }
-        for (RoleMappingMode mapping : RoleMappingMode.values()) {
-            if (mapping.toString().equals(optionValue)) {
-                return mapping;
-            }
-        }
-        return DEFAULT_MAPPING_MODE;
+    private LdapRoleMappingMode getRoleMappingMode(String optionName) {
+        return LdapRoleMappingMode.getRoleMappingMode(getStringOption(optionName, null));
     }
 
     @Override
     protected String getName() {
         return name;
-    }
-
-    protected enum SearchScope {
-        OBJECT("object", SearchControls.OBJECT_SCOPE), ONE_LEVEL("one-level", SearchControls.ONELEVEL_SCOPE), SUBTREE("subtree",
-                SearchControls.SUBTREE_SCOPE);
-
-        private final String valueString;
-        private final int searchControlValue;
-
-        SearchScope(String valueString, int searchControlValue) {
-            this.valueString = valueString;
-            this.searchControlValue = searchControlValue;
-        }
-
-        @Override
-        public String toString() {
-            return valueString;
-        }
-
-        public int toSearchControlValue() {
-            return searchControlValue;
-        }
-    }
-
-    public enum RoleMappingMode {
-        ATTRIBUTE("attribute"), DIRECT("direct"), REVERSE("reverse");
-
-        private final String valueString;
-
-        RoleMappingMode(String valueString) {
-            this.valueString = valueString;
-        }
-
-        @Override
-        public String toString() {
-            return valueString;
-        }
     }
 }

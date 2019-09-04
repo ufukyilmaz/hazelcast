@@ -8,14 +8,15 @@ import com.hazelcast.config.AdvancedNetworkConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.config.InvalidConfigurationException;
-import com.hazelcast.config.LoginModuleConfig;
-import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.SSLConfig;
+import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
 import com.hazelcast.config.XmlConfigBuilder;
+import com.hazelcast.config.security.RealmConfig;
+import com.hazelcast.config.security.TlsAuthenticationConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
@@ -24,7 +25,6 @@ import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.nio.ssl.SSLConnectionTest;
-import com.hazelcast.security.impl.X509CertificateLoginModule;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -633,11 +633,12 @@ public class TlsFunctionalTest {
             networkConfig.getJoin().getTcpIpConfig().setConnectionTimeoutSeconds(CONNECTION_TIMEOUT_SECONDS);
         }
         if (mutualAuthentication) {
-            LoginModuleConfig loginModuleConfig = new LoginModuleConfig(X509CertificateLoginModule.class.getName(), LoginModuleUsage.REQUIRED);
-            config.getSecurityConfig().setEnabled(true)
-                .addMemberLoginModuleConfig(loginModuleConfig)
-                .addClientLoginModuleConfig(loginModuleConfig)
+            SecurityConfig sc = config.getSecurityConfig().setEnabled(true)
                 .addClientPermissionConfig(new PermissionConfig(PermissionType.ALL, "*", "client"));
+            sc.setMemberRealm("testrealm")
+                    .setClientRealm("testrealm")
+                    .getRealmConfigs().put("testrealm",
+                            new RealmConfig().setTlsAuthenticationConfig(new TlsAuthenticationConfig()));
         }
         return config;
     }

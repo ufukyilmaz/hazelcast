@@ -6,6 +6,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
@@ -250,11 +252,12 @@ public class MapSecurityTest {
 
         SecurityConfig secCfg = config.getSecurityConfig();
 
-        secCfg.addClientLoginModuleConfig(
-                new LoginModuleConfig()
-                        .setUsage(LoginModuleConfig.LoginModuleUsage.REQUIRED)
-                        .setClassName(ClientCustomAuthenticationTest.CustomLoginModule.class.getName())
-                        .setProperties(prop));
+        LoginModuleConfig lmConfig = new LoginModuleConfig()
+                .setUsage(LoginModuleConfig.LoginModuleUsage.REQUIRED)
+                .setClassName(ClientCustomAuthenticationTest.CustomLoginModule.class.getName())
+                .setProperties(prop);
+        RealmConfig realmConfig = new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(lmConfig));
+        secCfg.setClientRealmConfig("clientRealm", realmConfig);
     }
 
 }

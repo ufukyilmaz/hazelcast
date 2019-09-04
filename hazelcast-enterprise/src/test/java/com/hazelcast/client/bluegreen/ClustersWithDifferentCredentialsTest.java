@@ -11,6 +11,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.CredentialsFactoryConfig;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.SecurityConfig;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.LifecycleEvent;
@@ -59,7 +61,6 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
 
     static class CustomCredentials implements Credentials {
 
-        private transient String endpoint;
         private String secret;
 
         CustomCredentials(String secret) {
@@ -120,13 +121,17 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         }
     }
 
-    static class CustomCredentialsFactory implements ICredentialsFactory {
+    public static class CustomCredentialsFactory implements ICredentialsFactory {
 
         private String secret;
 
         @Override
-        public void configure(String clusterName, String clusterPassword, Properties properties) {
+        public void init(Properties properties) {
             secret = properties.getProperty("secret");
+        }
+
+        @Override
+        public void configure(CallbackHandler callbackHandler) {
         }
 
         @Override
@@ -150,7 +155,9 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         loginModuleConfig1.setUsage(LoginModuleConfig.LoginModuleUsage.REQUIRED);
         SecurityConfig securityConfig1 = config1.getSecurityConfig();
         securityConfig1.setEnabled(true);
-        securityConfig1.getClientLoginModuleConfigs().add(loginModuleConfig1);
+        RealmConfig realmConfig1 = new RealmConfig();
+        realmConfig1.setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(loginModuleConfig1));
+        securityConfig1.setClientRealmConfig("realm", realmConfig1);
         config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
@@ -164,35 +171,37 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         loginModuleConfig2.setUsage(LoginModuleConfig.LoginModuleUsage.REQUIRED);
         SecurityConfig securityConfig2 = config2.getSecurityConfig();
         securityConfig2.setEnabled(true);
-        securityConfig2.getClientLoginModuleConfigs().add(loginModuleConfig2);
+        RealmConfig realmConfig2 = new RealmConfig();
+        realmConfig2.setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(loginModuleConfig2));
+        securityConfig2.setClientRealmConfig("realm", realmConfig2);
         config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClusterName("dev1");
+        clientConfig.setClientName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
-        CredentialsFactoryConfig credentialsFactoryConfig1 = new CredentialsFactoryConfig();
-        credentialsFactoryConfig1.setImplementation(new CustomCredentialsFactory());
+        CredentialsFactoryConfig credentialsFactoryConfig1 = new CredentialsFactoryConfig(
+                CustomCredentialsFactory.class.getName());
         credentialsFactoryConfig1.getProperties().setProperty("secret", "cluster1");
 
         ClientSecurityConfig clientSecurityConfig1 = clientConfig.getSecurityConfig();
         clientSecurityConfig1.setCredentialsFactoryConfig(credentialsFactoryConfig1);
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClusterName("dev2");
+        clientConfig2.setClientName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         networkConfig2.setAddresses(Collections.singletonList(address2.getHost() + ":" + address2.getPort()));
 
         CredentialsFactoryConfig credentialsFactoryConfig2 = new CredentialsFactoryConfig();
-        credentialsFactoryConfig2.setImplementation(new CustomCredentialsFactory());
+        credentialsFactoryConfig2.setClassName(CustomCredentialsFactory.class.getName());
         credentialsFactoryConfig2.getProperties().setProperty("secret", "cluster2");
         ClientSecurityConfig clientSecurityConfig2 = new ClientSecurityConfig();
         clientSecurityConfig2.setCredentialsFactoryConfig(credentialsFactoryConfig2);
@@ -241,28 +250,30 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         loginModuleConfig2.setUsage(LoginModuleConfig.LoginModuleUsage.REQUIRED);
         SecurityConfig securityConfig2 = config2.getSecurityConfig();
         securityConfig2.setEnabled(true);
-        securityConfig2.getClientLoginModuleConfigs().add(loginModuleConfig2);
+        RealmConfig realmConfig = new RealmConfig();
+        realmConfig.setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(loginModuleConfig2));
+        securityConfig2.setClientRealmConfig("realm", realmConfig);
         config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClusterName("dev1");
+        clientConfig.setClientName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClusterName("dev2");
+        clientConfig2.setClientName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         networkConfig2.setAddresses(Collections.singletonList(address2.getHost() + ":" + address2.getPort()));
 
         CredentialsFactoryConfig credentialsFactoryConfig2 = new CredentialsFactoryConfig();
-        credentialsFactoryConfig2.setImplementation(new CustomCredentialsFactory());
+        credentialsFactoryConfig2.setClassName(CustomCredentialsFactory.class.getName());
         credentialsFactoryConfig2.getProperties().setProperty("secret", "cluster2");
         ClientSecurityConfig clientSecurityConfig2 = new ClientSecurityConfig();
         clientSecurityConfig2.setCredentialsFactoryConfig(credentialsFactoryConfig2);
@@ -304,7 +315,9 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         loginModuleConfig1.setUsage(LoginModuleConfig.LoginModuleUsage.REQUIRED);
         SecurityConfig securityConfig1 = config1.getSecurityConfig();
         securityConfig1.setEnabled(true);
-        securityConfig1.getClientLoginModuleConfigs().add(loginModuleConfig1);
+        RealmConfig realmConfig = new RealmConfig();
+        realmConfig.setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(loginModuleConfig1));
+        securityConfig1.setClientRealmConfig("realm", realmConfig);
         config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
@@ -317,21 +330,21 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClusterName("dev1");
+        clientConfig.setClientName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         CredentialsFactoryConfig credentialsFactoryConfig1 = new CredentialsFactoryConfig();
-        credentialsFactoryConfig1.setImplementation(new CustomCredentialsFactory());
+        credentialsFactoryConfig1.setClassName(CustomCredentialsFactory.class.getName());
         credentialsFactoryConfig1.getProperties().setProperty("secret", "cluster1");
 
         ClientSecurityConfig clientSecurityConfig1 = clientConfig.getSecurityConfig();
         clientSecurityConfig1.setCredentialsFactoryConfig(credentialsFactoryConfig1);
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClusterName("dev2");
+        clientConfig2.setClientName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();

@@ -1,29 +1,9 @@
 package com.hazelcast.security.impl;
 
-import com.hazelcast.config.CredentialsFactoryConfig;
-import com.hazelcast.config.LoginModuleConfig;
-import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
-import com.hazelcast.config.PermissionConfig;
-import com.hazelcast.config.PermissionPolicyConfig;
-import com.hazelcast.config.SecurityConfig;
-import com.hazelcast.config.SecurityInterceptorConfig;
-import com.hazelcast.instance.impl.Node;
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.internal.nio.ClassLoaderUtil;
-import com.hazelcast.internal.nio.Connection;
-import com.hazelcast.security.Credentials;
-import com.hazelcast.security.ICredentialsFactory;
-import com.hazelcast.security.IPermissionPolicy;
-import com.hazelcast.security.Parameters;
-import com.hazelcast.security.SecureCallable;
-import com.hazelcast.security.SecurityContext;
-import com.hazelcast.security.SecurityInterceptor;
-import com.hazelcast.internal.util.ExceptionUtil;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
+import static com.hazelcast.security.impl.SecurityServiceImpl.clonePermissionConfigs;
 
-import javax.security.auth.Subject;
-import javax.security.auth.login.Configuration;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.AccessControlException;
@@ -39,9 +19,29 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
-import static com.hazelcast.internal.nio.IOUtil.closeResource;
-import static com.hazelcast.security.impl.SecurityServiceImpl.clonePermissionConfigs;
-import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
+import javax.security.auth.Subject;
+import javax.security.auth.login.Configuration;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+
+import com.hazelcast.config.LoginModuleConfig;
+import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
+import com.hazelcast.config.PermissionConfig;
+import com.hazelcast.config.PermissionPolicyConfig;
+import com.hazelcast.config.SecurityConfig;
+import com.hazelcast.config.SecurityInterceptorConfig;
+import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.nio.ClassLoaderUtil;
+import com.hazelcast.internal.nio.Connection;
+import com.hazelcast.internal.util.ExceptionUtil;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.security.Credentials;
+import com.hazelcast.security.ICredentialsFactory;
+import com.hazelcast.security.IPermissionPolicy;
+import com.hazelcast.security.Parameters;
+import com.hazelcast.security.SecureCallable;
+import com.hazelcast.security.SecurityContext;
+import com.hazelcast.security.SecurityInterceptor;
 
 public class SecurityContextImpl implements SecurityContext {
 
@@ -78,22 +78,18 @@ public class SecurityContextImpl implements SecurityContext {
         policy = tmpPolicy;
         policy.configure(node.config, policyConfig.getProperties());
 
-        CredentialsFactoryConfig credsCfg = securityConfig.getMemberCredentialsConfig();
-        if (credsCfg.getClassName() == null) {
-            credsCfg.setClassName(SecurityConstants.DEFAULT_CREDENTIALS_FACTORY_CLASS);
-        }
-        ICredentialsFactory credsFact = credsCfg.getImplementation();
+        String memberRealm = securityConfig.getMemberRealm();
+        String clientRealm = securityConfig.getClientRealm();
+
+        ICredentialsFactory credsFact = securityConfig.getRealmCredentialsFactory(memberRealm);
         if (credsFact == null) {
-            credsFact = (ICredentialsFactory) createImplInstance(node.getConfigClassLoader(), credsCfg.getClassName());
+            credsFact = new DefaultCredentialsFactory();
         }
         credentialsFactory = credsFact;
-        credentialsFactory.configure(node.config.getClusterName(), node.config.getClusterPassword(),
-                credsCfg.getProperties());
+        credentialsFactory.configure(new NodeCallbackHandler(node));
 
-        memberConfiguration = new LoginConfigurationDelegate(
-                getLoginModuleConfigs(securityConfig.getMemberLoginModuleConfigs()));
-        clientConfiguration = new LoginConfigurationDelegate(
-                getLoginModuleConfigs(securityConfig.getClientLoginModuleConfigs()));
+        memberConfiguration = new LoginConfigurationDelegate(securityConfig.getRealmLoginModuleConfigs(memberRealm));
+        clientConfiguration = new LoginConfigurationDelegate(securityConfig.getRealmLoginModuleConfigs(clientRealm));
         final List<SecurityInterceptorConfig> interceptorConfigs = securityConfig.getSecurityInterceptorConfigs();
         interceptors = new ArrayList<>(interceptorConfigs.size());
         for (SecurityInterceptorConfig interceptorConfig : interceptorConfigs) {
@@ -280,13 +276,6 @@ public class SecurityContextImpl implements SecurityContext {
             throw new IllegalArgumentException("Could not create instance of '" + className
                     + "', cause: " + e.getMessage(), e);
         }
-    }
-
-    private LoginModuleConfig[] getLoginModuleConfigs(final List<LoginModuleConfig> modules) {
-        if (modules.isEmpty()) {
-            modules.add(getDefaultLoginModuleConfig());
-        }
-        return modules.toArray(new LoginModuleConfig[0]);
     }
 
     private LoginModuleConfig getDefaultLoginModuleConfig() {

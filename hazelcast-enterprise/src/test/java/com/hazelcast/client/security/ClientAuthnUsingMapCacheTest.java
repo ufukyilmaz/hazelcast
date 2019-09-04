@@ -42,6 +42,8 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.MaxSizeConfig.MaxSizePolicy;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -145,16 +147,18 @@ public class ClientAuthnUsingMapCacheTest {
         LoginModuleConfig loginModuleConfig = new LoginModuleConfig().setClassName(ClientLoginModule.class.getName())
                 .setUsage(LoginModuleUsage.REQUIRED);
         loginModuleConfig.getProperties().setProperty(OPT_INSTANCE_NAME, instanceName);
-        config.getSecurityConfig().setEnabled(true).addClientLoginModuleConfig(loginModuleConfig)
+        config.getSecurityConfig().setEnabled(true)
+                .setClientRealmConfig("realm",
+                        new RealmConfig().setJaasAuthenticationConfig(
+                                new JaasAuthenticationConfig().addLoginModuleConfig(loginModuleConfig)))
                 .addClientPermissionConfig(new PermissionConfig(ALL, "*", null));
 
         return factory.newHazelcastInstance(config);
     }
 
-    @SuppressWarnings("deprecation")
     public static ClientConfig createClientConfig(String id) {
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClusterName(id).setClusterPassword(id);
+        clientConfig.setClientName(id);
         return clientConfig;
     }
 

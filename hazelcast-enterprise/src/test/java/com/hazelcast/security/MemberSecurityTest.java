@@ -5,6 +5,9 @@ import com.hazelcast.config.CredentialsFactoryConfig;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.config.SecurityConfig;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
+import com.hazelcast.config.security.RealmConfig;
+import com.hazelcast.config.security.StaticCredentialsFactory;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.impl.DefaultLoginModule;
@@ -22,10 +25,12 @@ import org.junit.runner.RunWith;
 
 import java.util.Properties;
 
+
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_PRINCIPALS_SIMPLE;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESULT_COMMIT;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESULT_LOGIN;
 import static com.hazelcast.security.loginmodules.TestLoginModule.VALUE_ACTION_FAIL;
+import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({ QuickTest.class, ParallelJVMTest.class })
@@ -49,30 +54,21 @@ public class MemberSecurityTest extends HazelcastTestSupport {
 
     @Test
     public void testDenyMemberWrongCredentials() {
-        final Config config = new Config();
-        final SecurityConfig secCfg = config.getSecurityConfig();
-        secCfg.setEnabled(true);
-        CredentialsFactoryConfig credentialsFactoryConfig = new CredentialsFactoryConfig();
-        credentialsFactoryConfig.setImplementation(new ICredentialsFactory() {
-            @Override
-            public Credentials newCredentials() {
-                return new UsernamePasswordCredentials("invalid", "credentials");
-            }
-
-            @Override
-            public void destroy() {
-            }
-
-            @Override
-            public void configure(String clusterName, String clusterPassword, Properties properties) {
-            }
-        });
-        secCfg.setMemberCredentialsConfig(credentialsFactoryConfig);
+        RealmConfig realmConfig = new RealmConfig().setCredentialsFactoryConfig(new CredentialsFactoryConfig()
+                .setImplementation(new StaticCredentialsFactory(new UsernamePasswordCredentials("name", "validPass"))));
+        Config config1 = new Config();
+        config1.getSecurityConfig().setEnabled(true).setMemberRealmConfig("memberRealm", realmConfig);
 
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
-        factory.newHazelcastInstance(config); // master
+        factory.newHazelcastInstance(config1); // master
+
+        RealmConfig realmConfig2 = new RealmConfig().setCredentialsFactoryConfig(new CredentialsFactoryConfig()
+                .setImplementation(new StaticCredentialsFactory(new UsernamePasswordCredentials("name", "invalidPass"))));
+        Config config2 = new Config();
+        config2.getSecurityConfig().setEnabled(true).setMemberRealmConfig("memberRealm", realmConfig2);
+
         expected.expect(IllegalStateException.class);
-        factory.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config2);
     }
 
     /**
@@ -140,7 +136,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
     @Test
     public void testDefaultLoginModuleRequiredPasses() {
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
-        final Config config = createLoginModuleStackConfig(LoginModuleUsage.REQUIRED);
+        final Config config = createLoginModuleStackConfig(LoginModuleUsage.REQUIRED, "secret");
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
@@ -156,9 +152,8 @@ public class MemberSecurityTest extends HazelcastTestSupport {
     @Test
     public void testDefaultLoginModuleRequiredFails() {
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
-        factory.newHazelcastInstance(createLoginModuleStackConfig(LoginModuleUsage.REQUIRED));
-        final Config config = createLoginModuleStackConfig(LoginModuleUsage.REQUIRED);
-        config.setClusterPassword("anotherPassword");
+        factory.newHazelcastInstance(createLoginModuleStackConfig(LoginModuleUsage.REQUIRED, "secret"));
+        final Config config = createLoginModuleStackConfig(LoginModuleUsage.REQUIRED, "anotherPassword");
         expected.expect(IllegalStateException.class);
         factory.newHazelcastInstance(config);
     }
@@ -173,9 +168,8 @@ public class MemberSecurityTest extends HazelcastTestSupport {
     @Test
     public void testDefaultLoginModuleSufficient() {
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
-        HazelcastInstance hz1 = factory.newHazelcastInstance(createLoginModuleStackConfig(LoginModuleUsage.SUFFICIENT));
-        final Config config = createLoginModuleStackConfig(LoginModuleUsage.SUFFICIENT);
-        config.setClusterPassword("anotherPassword");
+        HazelcastInstance hz1 = factory.newHazelcastInstance(createLoginModuleStackConfig(LoginModuleUsage.SUFFICIENT, "secret"));
+        final Config config = createLoginModuleStackConfig(LoginModuleUsage.SUFFICIENT, "anotherPassword");
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
     }
@@ -185,17 +179,18 @@ public class MemberSecurityTest extends HazelcastTestSupport {
      * {@link TestLoginModule} as the second.
      *
      * @param usage {@link DefaultLoginModule} flag
+     * @param password password for the member identity
      */
-    private Config createLoginModuleStackConfig(LoginModuleUsage usage) {
-        final Config config = new Config();
-        final SecurityConfig secCfg = config.getSecurityConfig();
+    private Config createLoginModuleStackConfig(LoginModuleUsage usage, String password) {
+        Config config = new Config();
         Properties properties = new Properties();
         properties.setProperty(PROPERTY_PRINCIPALS_SIMPLE, "testPrincipal");
-        secCfg.setEnabled(true);
-        secCfg.addMemberLoginModuleConfig(
-                new LoginModuleConfig().setClassName(DefaultLoginModule.class.getName()).setUsage(usage));
-        secCfg.addMemberLoginModuleConfig(new LoginModuleConfig().setClassName(TestLoginModule.class.getName())
-                .setUsage(LoginModuleUsage.REQUIRED).setProperties(properties));
+        RealmConfig realmConfig = new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig()
+                .addLoginModuleConfig(new LoginModuleConfig(DefaultLoginModule.class.getName(), usage))
+                .addLoginModuleConfig(new LoginModuleConfig(TestLoginModule.class.getName(), LoginModuleUsage.REQUIRED)
+                        .setProperties(properties)))
+                .setUsernamePasswordIdentityConfig(getTestMethodName(), password);
+        config.getSecurityConfig().setEnabled(true).setMemberRealmConfig("memberRealm", realmConfig);
         return config;
     }
 
@@ -213,7 +208,8 @@ public class MemberSecurityTest extends HazelcastTestSupport {
         loginModuleConfig.setClassName(TestLoginModule.class.getName());
         loginModuleConfig.setUsage(LoginModuleUsage.REQUIRED);
         loginModuleConfig.setProperties(properties);
-        secCfg.addMemberLoginModuleConfig(loginModuleConfig);
+        RealmConfig realmConfig = new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(loginModuleConfig));
+        secCfg.setMemberRealmConfig("memberRealm", realmConfig);
         return config;
     }
 

@@ -1,8 +1,10 @@
 package com.hazelcast.internal.ascii;
 
+import static com.hazelcast.config.LoginModuleConfig.LoginModuleUsage.REQUIRED;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_PRINCIPALS_SIMPLE;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESULT_COMMIT;
 import static com.hazelcast.security.loginmodules.TestLoginModule.VALUE_ACTION_FAIL;
+import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterStateEventually;
 import static org.junit.Assert.assertEquals;
 
@@ -15,7 +17,8 @@ import org.junit.experimental.categories.Category;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.LoginModuleConfig;
-import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.security.loginmodules.TestLoginModule;
@@ -32,7 +35,8 @@ public class RestClusterEnterpriseWithSecurityTest extends AbstractRestClusterEn
     @Override
     protected Config createConfigWithRestEnabled() {
         Config config = super.createConfigWithRestEnabled();
-        config.getSecurityConfig().setEnabled(true);
+        config.getSecurityConfig().setEnabled(true).setMemberRealmConfig("realm",
+                new RealmConfig().setUsernamePasswordIdentityConfig(getTestMethodName(), "dev-pass"));
         return config;
     }
 
@@ -87,10 +91,10 @@ public class RestClusterEnterpriseWithSecurityTest extends AbstractRestClusterEn
     }
 
     private void addCustomLoginModule(SecurityConfig securityConfig, Properties properties) {
-        LoginModuleConfig loginModuleConfig = new LoginModuleConfig();
-        loginModuleConfig.setClassName(TestLoginModule.class.getName());
-        loginModuleConfig.setUsage(LoginModuleUsage.REQUIRED);
-        loginModuleConfig.setProperties(properties);
-        securityConfig.addMemberLoginModuleConfig(loginModuleConfig);
+        LoginModuleConfig loginModuleConfig = new LoginModuleConfig(TestLoginModule.class.getName(), REQUIRED)
+                .setProperties(properties);
+        RealmConfig realmConfig = new RealmConfig()
+                .setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(loginModuleConfig));
+        securityConfig.setMemberRealmConfig("realm", realmConfig);
     }
 }

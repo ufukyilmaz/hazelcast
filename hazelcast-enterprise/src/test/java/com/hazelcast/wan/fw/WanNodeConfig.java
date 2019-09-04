@@ -128,16 +128,6 @@ class WanNodeConfig extends Config {
     }
 
     @Override
-    public String getClusterPassword() {
-        return wrappedConfig.getClusterPassword();
-    }
-
-    @Override
-    public Config setClusterPassword(String password) {
-        return wrappedConfig.setClusterPassword(password);
-    }
-
-    @Override
     public NetworkConfig getNetworkConfig() {
         return wrappedConfig.getNetworkConfig();
     }

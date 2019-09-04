@@ -29,12 +29,15 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.security.ClusterEndpointPrincipal;
 import com.hazelcast.security.ClusterIdentityPrincipal;
 import com.hazelcast.security.ClusterRolePrincipal;
 import com.hazelcast.security.ConfigCallback;
+import com.hazelcast.security.CredentialsCallback;
 import com.hazelcast.security.EndpointCallback;
 import com.hazelcast.security.HazelcastPrincipal;
+import com.hazelcast.security.UsernamePasswordCredentials;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -83,12 +86,29 @@ public class DefaultLoginModuleTest {
     }
 
     @Test
+    public void testWrongUsernameWithouIdentity() throws Exception {
+        Subject subject = new Subject();
+        DefaultLoginModule lm = new DefaultLoginModule();
+        lm.initialize(subject, new TestCallbackHandler("test", "pass", new Config().setClusterName("testX")), emptyMap(),
+                emptyMap());
+        expectedException.expect(LoginException.class);
+        lm.login();
+    }
+
+    @Test
     public void testWrongPassword() throws Exception {
         Subject subject = new Subject();
         DefaultLoginModule lm = new DefaultLoginModule();
         lm.initialize(subject, new TestCallbackHandler("test", "pass", createConfig("test", "passX")), emptyMap(), emptyMap());
         expectedException.expect(LoginException.class);
         lm.login();
+    }
+
+    @Test
+    public void testPasswordNotUsedWithoutIdentity() throws Exception {
+        Subject subject = new Subject();
+        doLogin(subject, emptyMap(), "test", "whateverpassword", new Config().setClusterName("test"));
+        assertEquals("Unexpected Identity in the Subject", "test", getIdentity(subject));
     }
 
     @Test
@@ -138,10 +158,11 @@ public class DefaultLoginModuleTest {
         assertNull(getEndpoint(subject));
     }
 
-    @SuppressWarnings("deprecation")
-    private Config createConfig(String clusterName, String groupPassword) {
+    private Config createConfig(String username, String password) {
         Config config = new Config();
-        config.setClusterName(clusterName).setClusterPassword(groupPassword);
+        config.setClusterName(username);
+        config.getSecurityConfig().setEnabled(true).setMemberRealmConfig("realm",
+                new RealmConfig().setUsernamePasswordIdentityConfig(username, password));
         return config;
     }
 
@@ -209,6 +230,8 @@ public class DefaultLoginModuleTest {
                     ((NameCallback) cb).setName(name);
                 } else if (cb instanceof PasswordCallback) {
                     ((PasswordCallback) cb).setPassword(password == null ? null : password.toCharArray());
+                } else if (cb instanceof CredentialsCallback) {
+                    ((CredentialsCallback) cb).setCredentials(new UsernamePasswordCredentials(name, password));
                 } else if (cb instanceof ConfigCallback) {
                     ((ConfigCallback) cb).setConfig(config);
                 } else {

@@ -29,6 +29,16 @@ uid: hazelcast
 description: cn=Role1,ou=Roles,dc=hazelcast,dc=com
 userPassword: imdg
 
+dn: uid=josef,ou=Users,dc=hazelcast,dc=com
+objectClass: top
+objectClass: person
+objectClass: inetOrgPerson
+cn: Locksmith
+sn: kwart
+uid: josef
+userPassword: s3crEt
+
+
 dn: ou=Roles,dc=hazelcast,dc=com
 objectclass: top
 objectclass: organizationalUnit

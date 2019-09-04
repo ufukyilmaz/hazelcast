@@ -5,7 +5,6 @@ import com.hazelcast.security.impl.WeakSecretError;
 
 import java.util.EnumSet;
 
-import static com.hazelcast.config.Config.DEFAULT_CLUSTER_PASSWORD;
 import static com.hazelcast.config.SymmetricEncryptionConfig.DEFAULT_SYMMETRIC_PASSWORD;
 import static com.hazelcast.config.SymmetricEncryptionConfig.DEFAULT_SYMMETRIC_SALT;
 import static com.hazelcast.security.impl.WeakSecretError.DEFAULT;
@@ -14,7 +13,6 @@ public class DefaultConfigValuesRule
         implements SecretStrengthRule {
 
     private static final String[] DEFAULTS = new String[] {
-            DEFAULT_CLUSTER_PASSWORD,
             DEFAULT_SYMMETRIC_PASSWORD,
             DEFAULT_SYMMETRIC_SALT,
     };

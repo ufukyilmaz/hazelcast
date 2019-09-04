@@ -3,7 +3,6 @@ package com.hazelcast.security.impl;
 import static java.util.Objects.requireNonNull;
 
 import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
@@ -11,26 +10,23 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.nio.Connection;
 import com.hazelcast.security.CertificatesCallback;
-import com.hazelcast.security.ConfigCallback;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.CredentialsCallback;
 import com.hazelcast.security.EndpointCallback;
 import com.hazelcast.security.PasswordCredentials;
-import com.hazelcast.security.SerializationServiceCallback;
 
 /**
- * ClusterCallbackHandler is responsible for handling {@link CredentialsCallback}s.
+ * ClusterCallbackHandler is responsible for handling JAAS callbacks in Hazelcast login modules.
  */
-public class ClusterCallbackHandler implements CallbackHandler {
+public class ClusterCallbackHandler extends NodeCallbackHandler {
 
     private final Credentials credentials;
     private final Connection connection;
-    private final Node node;
 
     public ClusterCallbackHandler(Credentials credentials, Connection connection, Node node) {
+        super(node);
         this.credentials = requireNonNull(credentials, "Credentials have to be provided.");
         this.connection = connection;
-        this.node = node;
     }
 
     @Override
@@ -40,7 +36,8 @@ public class ClusterCallbackHandler implements CallbackHandler {
         }
     }
 
-    private void handleCallback(Callback cb) throws UnsupportedCallbackException {
+    @Override
+    protected void handleCallback(Callback cb) throws UnsupportedCallbackException {
         if (cb instanceof NameCallback) {
             ((NameCallback) cb).setName(credentials.getName());
         } else if (cb instanceof PasswordCallback) {
@@ -49,14 +46,10 @@ public class ClusterCallbackHandler implements CallbackHandler {
             ((CredentialsCallback) cb).setCredentials(credentials);
         } else if (cb instanceof EndpointCallback) {
             handleEndpointCallback((EndpointCallback) cb);
-        } else if (cb instanceof ConfigCallback) {
-            ((ConfigCallback) cb).setConfig(node != null ? node.getConfig() : null);
-        } else if (cb instanceof SerializationServiceCallback) {
-            ((SerializationServiceCallback) cb).setSerializationService(node != null ? node.getSerializationService() : null);
         } else if (cb instanceof CertificatesCallback) {
             ((CertificatesCallback) cb).setCertificates(connection != null ? connection.getRemoteCertificates() : null);
         } else {
-            throw new UnsupportedCallbackException(cb);
+            super.handleCallback(cb);
         }
     }
 

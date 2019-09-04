@@ -6,6 +6,8 @@ import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
@@ -25,6 +27,7 @@ import java.util.Properties;
 
 import static com.hazelcast.config.PermissionConfig.PermissionType.ALL;
 import static com.hazelcast.test.HazelcastTestSupport.randomString;
+import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -153,14 +156,15 @@ public class ClientSecurityTest {
      *                   for the property names)
      */
     private Config createTestLoginModuleConfig(Properties properties) {
-        final Config config = new Config();
+        final Config config = smallInstanceConfig();
         final SecurityConfig secCfg = config.getSecurityConfig();
         secCfg.setEnabled(true);
         LoginModuleConfig loginModuleConfig = new LoginModuleConfig();
         loginModuleConfig.setClassName(TestLoginModule.class.getName());
         loginModuleConfig.setUsage(LoginModuleUsage.REQUIRED);
         loginModuleConfig.setProperties(properties);
-        secCfg.addClientLoginModuleConfig(loginModuleConfig);
+        RealmConfig realmConfig = new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(loginModuleConfig));
+        secCfg.setClientRealmConfig("clientRealm", realmConfig);
         return config;
     }
 }

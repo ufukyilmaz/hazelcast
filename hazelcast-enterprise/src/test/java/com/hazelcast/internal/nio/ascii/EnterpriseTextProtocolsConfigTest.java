@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.RestApiConfig;
 import com.hazelcast.config.RestEndpointGroup;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
@@ -32,12 +33,11 @@ public class EnterpriseTextProtocolsConfigTest extends TextProtocolsConfigTest {
                 new TestUrl(RestEndpointGroup.CLUSTER_READ, "GET", "/hazelcast/rest/license", "\"maxNodeCount\":99"));
     }
 
-    @SuppressWarnings("deprecation")
     @Test
     public void testSecurityWithAnEmptyPassword() throws Exception {
         Config config = createConfigWithEnabledGroups(RestEndpointGroup.CLUSTER_READ);
-        config.setClusterPassword("");
-        config.getSecurityConfig().setEnabled(true);
+        config.getSecurityConfig().setEnabled(true).setMemberRealmConfig("realm",
+                new RealmConfig().setUsernamePasswordIdentityConfig(getTestMethodName(), ""));
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         assertClusterState(hz, getTestMethodName() + "&notmatching", "forbidden");
         assertClusterState(hz, getTestMethodName() + "&", "active");

@@ -6,7 +6,10 @@ import com.hazelcast.config.EncryptionAtRestConfig;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.JavaKeyStoreSecureStoreConfig;
 import com.hazelcast.config.SecureStoreConfig;
+import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
+import com.hazelcast.config.security.RealmConfig;
+import com.hazelcast.config.security.UsernamePasswordIdentityConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.security.SecretStrengthPolicy;
 import com.hazelcast.security.WeakSecretException;
@@ -59,9 +62,9 @@ public class WeakSecretsConfigChecker {
     public Map<String, EnumSet<WeakSecretError>> evaluate() {
         Map<String, EnumSet<WeakSecretError>> result = new HashMap<>();
 
-        EnumSet<WeakSecretError> groupPwdWeaknesses = getWeaknesses(config.getClusterPassword());
-        if (!groupPwdWeaknesses.isEmpty()) {
-            result.put("Group Password", groupPwdWeaknesses);
+        SecurityConfig securityConfig = config.getSecurityConfig();
+        if (securityConfig != null && securityConfig.isEnabled()) {
+            checkRealmsPasswords(result, securityConfig.getRealmConfigs());
         }
 
         SymmetricEncryptionConfig sec = ConfigAccessor.getActiveMemberNetworkConfig(config).getSymmetricEncryptionConfig();
@@ -108,6 +111,21 @@ public class WeakSecretsConfigChecker {
         return secrets;
     }
 
+    private void checkRealmsPasswords(Map<String, EnumSet<WeakSecretError>> result, Map<String, RealmConfig> realms) {
+        if (realms == null) {
+            return;
+        }
+        for (Map.Entry<String, RealmConfig> entry : realms.entrySet()) {
+            UsernamePasswordIdentityConfig identityCfg = entry.getValue().getUsernamePasswordIdentityConfig();
+            if (identityCfg != null) {
+                EnumSet<WeakSecretError> pwdWeaknesses = getWeaknesses(identityCfg.getPassword());
+                if (pwdWeaknesses.isEmpty()) {
+                    result.put("Identity password in Security realm " + entry.getKey(), pwdWeaknesses);
+                }
+            }
+        }
+    }
+
     private EnumSet<WeakSecretError> getWeaknesses(String secret) {
         try {
             policy.validate(null, secret);
@@ -121,11 +139,14 @@ public class WeakSecretsConfigChecker {
     private String constructBanner(Map<String, EnumSet<WeakSecretError>> report) {
         StringBuilder banner = new StringBuilder();
 
-        banner.append(LINE_SEP).append("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ SECURITY WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        banner.append(LINE_SEP)
+              .append("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ SECURITY WARNING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
               .append(LINE_SEP);
 
         for (Map.Entry<String, EnumSet<WeakSecretError>> weakSecret : report.entrySet()) {
-            banner.append(formatMessage(weakSecret.getKey(), weakSecret.getValue())).append(LINE_SEP).append(LINE_SEP);
+            banner.append(formatMessage(weakSecret.getKey(), weakSecret.getValue()))
+                  .append(LINE_SEP)
+                  .append(LINE_SEP);
         }
 
         banner.append("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");

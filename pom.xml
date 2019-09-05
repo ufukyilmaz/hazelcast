@@ -387,7 +387,6 @@
                         <version>${maven.javadoc.plugin.version}</version>
                         <configuration>
                             <maxmemory>1024</maxmemory>
-                            <subpackages>com.hazelcast</subpackages>
                             <excludePackageNames>${maven.javadoc.plugin.excludePackageNames}</excludePackageNames>
                             <doclint>none</doclint>
                         </configuration>
@@ -416,7 +415,6 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>${maven.javadoc.plugin.version}</version>
                         <configuration>
-                            <subpackages>com.hazelcast</subpackages>
                             <excludePackageNames>${maven.javadoc.plugin.excludePackageNames}</excludePackageNames>
                             <doclint>none</doclint>
                         </configuration>

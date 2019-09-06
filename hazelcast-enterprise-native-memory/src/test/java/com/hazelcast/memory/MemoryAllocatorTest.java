@@ -11,7 +11,6 @@ import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,7 +25,7 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.internal.memory.impl.PersistentMemoryHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.memory.ParameterizedMemoryTest.newLibMallocFactory;
-import static com.hazelcast.util.OsHelper.isLinux;
+import static com.hazelcast.test.HazelcastTestSupport.assumeThatLinuxOS;
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;
 import static org.junit.Assert.assertEquals;
 
@@ -78,7 +77,7 @@ public class MemoryAllocatorTest {
     @Before
     public void setup() {
         if (persistentMemory) {
-            Assume.assumeTrue("Only Linux platform supported", isLinux());
+            assumeThatLinuxOS();
         }
         switch (mgrType) {
             case HEAP:

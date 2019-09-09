@@ -124,6 +124,8 @@ public class EnterpriseInvalidEndpointTest
             } catch (ExecutionException e) {
                 ignore(e);
             }
+
+            client.shutdown();
         } finally {
             if (proxy != null) {
                 proxy.stop();

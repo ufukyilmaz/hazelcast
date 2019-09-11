@@ -517,7 +517,7 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         assertContains(members, c1_member2);
 
         IExecutorService executorService = client.getExecutorService("exec");
-        ICountDownLatch callableStartedLatch = client.getCountDownLatch("callableStartedLatch");
+        ICountDownLatch callableStartedLatch = client.getCPSubsystem().getCountDownLatch("callableStartedLatch");
         callableStartedLatch.trySetCount(1);
         IdentifiedDataSerializableFactory.CallableSignalsRunAndSleep callable =
                 new IdentifiedDataSerializableFactory.CallableSignalsRunAndSleep("callableStartedLatch");

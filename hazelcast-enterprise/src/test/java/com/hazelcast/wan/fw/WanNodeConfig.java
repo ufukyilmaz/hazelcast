@@ -8,7 +8,6 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.CardinalityEstimatorConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigPatternMatcher;
-import com.hazelcast.config.CountDownLatchConfig;
 import com.hazelcast.config.DurableExecutorConfig;
 import com.hazelcast.config.ExecutorConfig;
 import com.hazelcast.config.FlakeIdGeneratorConfig;
@@ -429,32 +428,6 @@ class WanNodeConfig extends Config {
     public Config setAtomicReferenceConfigs(
             Map<String, AtomicReferenceConfig> atomicReferenceConfigs) {
         return wrappedConfig.setAtomicReferenceConfigs(atomicReferenceConfigs);
-    }
-
-    @Override
-    public CountDownLatchConfig findCountDownLatchConfig(String name) {
-        return wrappedConfig.findCountDownLatchConfig(name);
-    }
-
-    @Override
-    public CountDownLatchConfig getCountDownLatchConfig(String name) {
-        return wrappedConfig.getCountDownLatchConfig(name);
-    }
-
-    @Override
-    public Config addCountDownLatchConfig(CountDownLatchConfig countDownLatchConfig) {
-        return wrappedConfig.addCountDownLatchConfig(countDownLatchConfig);
-    }
-
-    @Override
-    public Map<String, CountDownLatchConfig> getCountDownLatchConfigs() {
-        return wrappedConfig.getCountDownLatchConfigs();
-    }
-
-    @Override
-    public Config setCountDownLatchConfigs(
-            Map<String, CountDownLatchConfig> countDownLatchConfigs) {
-        return wrappedConfig.setCountDownLatchConfigs(countDownLatchConfigs);
     }
 
     @Override

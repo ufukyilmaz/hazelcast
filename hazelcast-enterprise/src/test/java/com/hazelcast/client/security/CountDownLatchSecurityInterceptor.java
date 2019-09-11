@@ -2,7 +2,7 @@ package com.hazelcast.client.security;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.cp.ICountDownLatch;
-import com.hazelcast.cp.internal.datastructures.countdownlatch.RaftCountDownLatchService;
+import com.hazelcast.cp.internal.datastructures.countdownlatch.CountDownLatchService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -65,6 +65,6 @@ public class CountDownLatchSecurityInterceptor extends InterceptorTestSupport {
 
     @Override
     String getObjectType() {
-        return RaftCountDownLatchService.SERVICE_NAME;
+        return CountDownLatchService.SERVICE_NAME;
     }
 }

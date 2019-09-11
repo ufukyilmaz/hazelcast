@@ -25,16 +25,15 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.PNCounterConfig;
 import com.hazelcast.config.PartitionGroupConfig;
 import com.hazelcast.config.QueueConfig;
-import com.hazelcast.config.SplitBrainProtectionConfig;
 import com.hazelcast.config.ReliableTopicConfig;
 import com.hazelcast.config.ReplicatedMapConfig;
 import com.hazelcast.config.RingbufferConfig;
 import com.hazelcast.config.ScheduledExecutorConfig;
 import com.hazelcast.config.SecurityConfig;
-import com.hazelcast.config.SemaphoreConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.ServicesConfig;
 import com.hazelcast.config.SetConfig;
+import com.hazelcast.config.SplitBrainProtectionConfig;
 import com.hazelcast.config.TopicConfig;
 import com.hazelcast.config.UserCodeDeploymentConfig;
 import com.hazelcast.config.WanReplicationConfig;
@@ -43,7 +42,6 @@ import com.hazelcast.core.ManagedContext;
 
 import java.io.File;
 import java.net.URL;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -607,36 +605,6 @@ class WanNodeConfig extends Config {
     @Override
     public Config setPNCounterConfigs(Map<String, PNCounterConfig> pnCounterConfigs) {
         return wrappedConfig.setPNCounterConfigs(pnCounterConfigs);
-    }
-
-    @Override
-    public SemaphoreConfig findSemaphoreConfig(String name) {
-        return wrappedConfig.findSemaphoreConfig(name);
-    }
-
-    @Override
-    public SemaphoreConfig getSemaphoreConfig(String name) {
-        return wrappedConfig.getSemaphoreConfig(name);
-    }
-
-    @Override
-    public Config addSemaphoreConfig(SemaphoreConfig semaphoreConfig) {
-        return wrappedConfig.addSemaphoreConfig(semaphoreConfig);
-    }
-
-    @Override
-    public Collection<SemaphoreConfig> getSemaphoreConfigs() {
-        return wrappedConfig.getSemaphoreConfigs();
-    }
-
-    @Override
-    public Map<String, SemaphoreConfig> getSemaphoreConfigsAsMap() {
-        return wrappedConfig.getSemaphoreConfigsAsMap();
-    }
-
-    @Override
-    public Config setSemaphoreConfigs(Map<String, SemaphoreConfig> semaphoreConfigs) {
-        return wrappedConfig.setSemaphoreConfigs(semaphoreConfigs);
     }
 
     @Override

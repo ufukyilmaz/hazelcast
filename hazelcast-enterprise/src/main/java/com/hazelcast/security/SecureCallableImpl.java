@@ -333,12 +333,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public ISemaphore getSemaphore(String name) {
-            checkPermission(new SemaphorePermission(name, ActionConstants.ACTION_CREATE));
-            return getProxy(new ISemaphoreInvocationHandler(instance.getSemaphore(name)));
-        }
-
-        @Override
         public CardinalityEstimator getCardinalityEstimator(String name) {
             checkPermission(new CardinalityEstimatorPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new CardinalityEstimatorHandler(instance.getCardinalityEstimator(name)));

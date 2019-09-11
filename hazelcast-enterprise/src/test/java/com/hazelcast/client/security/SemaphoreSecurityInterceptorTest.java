@@ -1,9 +1,9 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.cp.CPSemaphoreConfig;
+import com.hazelcast.config.cp.SemaphoreConfig;
 import com.hazelcast.cp.ISemaphore;
-import com.hazelcast.cp.internal.datastructures.semaphore.RaftSemaphoreService;
+import com.hazelcast.cp.internal.datastructures.semaphore.SemaphoreService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -35,7 +35,7 @@ public class SemaphoreSecurityInterceptorTest extends InterceptorTestSupport {
     Config createConfig() {
         Config config = super.createConfig();
         config.getCPSubsystemConfig().setCPMemberCount(3)
-            .addSemaphoreConfig(new CPSemaphoreConfig(objectName).setJDKCompatible(true));
+            .addSemaphoreConfig(new SemaphoreConfig(objectName).setJDKCompatible(true));
         return config;
     }
 
@@ -128,7 +128,7 @@ public class SemaphoreSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Override
     String getObjectType() {
-        return RaftSemaphoreService.SERVICE_NAME;
+        return SemaphoreService.SERVICE_NAME;
     }
 
 }

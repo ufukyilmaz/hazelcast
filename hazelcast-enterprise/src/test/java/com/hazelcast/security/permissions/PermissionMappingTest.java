@@ -52,7 +52,6 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.lock.RaftLockService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomiclong.RaftAtomicLongService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomicref.RaftAtomicRefService.class);
-        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.semaphore.RaftSemaphoreService.class);
     }
 
     // Common methods that don't require security
@@ -108,7 +107,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "replicatedMap");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.lock.LockServiceImpl.class,
                 "lock");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.semaphore.SemaphoreService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.semaphore.SemaphoreService.class,
                 "semaphore");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.multimap.impl.MultiMapService.class,
                 "multiMap");
@@ -167,6 +166,8 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "replace", "replaceAll",
         });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.countdownlatch.CountDownLatchService.class,
+                new String[] {"getGroupId"});
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.semaphore.SemaphoreService.class,
                 new String[] {"getGroupId"});
     }
 

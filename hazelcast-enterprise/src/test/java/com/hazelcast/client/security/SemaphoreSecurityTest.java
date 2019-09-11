@@ -5,7 +5,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SecurityConfig;
-import com.hazelcast.config.cp.CPSemaphoreConfig;
+import com.hazelcast.config.cp.SemaphoreConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.ISemaphore;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -117,107 +117,12 @@ public class SemaphoreSecurityTest {
         semaphore.availablePermits();
     }
 
-    @Test
-    public void testLegacySemaphoreReadPermission() {
-        final Config config = createConfig();
-        addPermission(config)
-                .addAction(ActionConstants.ACTION_CREATE)
-                .addAction(ActionConstants.ACTION_READ);
-
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient();
-
-        ISemaphore semaphore = client.getSemaphore(testObjectName);
-        assertEquals(0, semaphore.availablePermits());
-    }
-
-    @Test
-    public void testLegacySemaphoreAcquirePermission() {
-        final Config config = createConfig();
-        addPermission(config)
-                .addAction(ActionConstants.ACTION_CREATE)
-                .addAction(ActionConstants.ACTION_ACQUIRE);
-
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient();
-
-        ISemaphore semaphore = client.getSemaphore(testObjectName);
-        semaphore.tryAcquire();
-    }
-
-    @Test
-    public void testLegacySemaphoreReleasePermission() {
-        final Config config = createConfig();
-        addPermission(config)
-                .addAction(ActionConstants.ACTION_CREATE)
-                .addAction(ActionConstants.ACTION_RELEASE);
-
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient();
-
-        ISemaphore semaphore = client.getSemaphore(testObjectName);
-        semaphore.release();
-    }
-
-    @Test
-    public void testLegacySemaphore_createFail_withoutPermission() {
-        final Config config = createConfig();
-
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient();
-
-        expectedException.expect(AccessControlException.class);
-        client.getSemaphore(testObjectName);
-    }
-
-    @Test
-    public void testLegacySemaphore_acquireFail_withoutPermission() {
-        final Config config = createConfig();
-        addPermission(config)
-                .addAction(ActionConstants.ACTION_CREATE);
-
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient();
-
-        ISemaphore semaphore = client.getSemaphore(testObjectName);
-        expectedException.expect(AccessControlException.class);
-        semaphore.tryAcquire();
-    }
-
-    @Test
-    public void testLegacySemaphore_releaseFail_withoutPermission() {
-        final Config config = createConfig();
-        addPermission(config)
-                .addAction(ActionConstants.ACTION_CREATE);
-
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient();
-
-        ISemaphore semaphore = client.getSemaphore(testObjectName);
-        expectedException.expect(AccessControlException.class);
-        semaphore.release();
-    }
-
-    @Test
-    public void testLegacySemaphore_readFail_withoutPermission() {
-        final Config config = createConfig();
-        addPermission(config)
-                .addAction(ActionConstants.ACTION_CREATE);
-
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient();
-
-        ISemaphore semaphore = client.getSemaphore(testObjectName);
-        expectedException.expect(AccessControlException.class);
-        semaphore.availablePermits();
-    }
-
     private Config createConfig() {
         Config config = new Config();
         SecurityConfig secCfg = config.getSecurityConfig();
         secCfg.setEnabled(true);
 
-        config.getCPSubsystemConfig().addSemaphoreConfig(new CPSemaphoreConfig(testObjectName).setJDKCompatible(true));
+        config.getCPSubsystemConfig().addSemaphoreConfig(new SemaphoreConfig(testObjectName).setJDKCompatible(true));
         return config;
     }
 

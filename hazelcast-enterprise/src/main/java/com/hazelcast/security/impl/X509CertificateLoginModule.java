@@ -1,17 +1,14 @@
 package com.hazelcast.security.impl;
 
+import static com.hazelcast.security.impl.LdapUtils.getAttributeValues;
+
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
 import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.FailedLoginException;
@@ -76,7 +73,7 @@ public class X509CertificateLoginModule extends ClusterLoginModule {
         X509Certificate x509Cert = (X509Certificate) certs[0];
         String roleAttribute = getStringOption(OPTION_ROLE_ATTRIBUTE, DEFAULT_ROLE_ATTRIBUTE);
         name = x509Cert.getSubjectX500Principal().getName();
-        if (!getBoolOption(OPTION_SKIP_ROLE, false)) {
+        if (!isSkipRole()) {
             try {
                 LdapName ldapName = new LdapName(name);
                 Collection<String> roles = getAttributeValues(ldapName, roleAttribute);
@@ -88,22 +85,6 @@ public class X509CertificateLoginModule extends ClusterLoginModule {
             }
         }
         return true;
-    }
-
-    private static Collection<String> getAttributeValues(LdapName ldapName, String attribute) throws NamingException {
-        Set<String> names = new HashSet<String>();
-        for (Rdn rdn : ldapName.getRdns()) {
-            Attribute attr = rdn.toAttributes().get(attribute);
-            if (attr != null) {
-                Object value = attr.get();
-                if (value != null) {
-                    String name = (value instanceof byte[]) ? new String((byte[]) value, StandardCharsets.UTF_8)
-                            : value.toString();
-                    names.add(name);
-                }
-            }
-        }
-        return names;
     }
 
     @Override

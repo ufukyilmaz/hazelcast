@@ -43,6 +43,7 @@ public abstract class ClusterLoginModule implements LoginModule {
         this.callbackHandler = callbackHandler;
         this.sharedState = sharedState;
         this.options = options;
+        onInitialize();
     }
 
     @Override
@@ -81,7 +82,7 @@ public abstract class ClusterLoginModule implements LoginModule {
         if (endpoint != null && !getBoolOption(OPTION_SKIP_ENDPOINT, false)) {
             principals.add(new ClusterEndpointPrincipal(endpoint));
         }
-        if (!getBoolOption(OPTION_SKIP_ROLE, false)) {
+        if (!isSkipRole()) {
             for (String role : assignedRoles) {
                 principals.add(new ClusterRolePrincipal(role));
             }
@@ -122,6 +123,9 @@ public abstract class ClusterLoginModule implements LoginModule {
 
     protected abstract String getName();
 
+    protected void onInitialize() {
+    }
+
     protected boolean onCommit() throws LoginException {
         return true;
     }
@@ -135,6 +139,9 @@ public abstract class ClusterLoginModule implements LoginModule {
     }
 
     protected void addRole(String roleName) {
+        if (logger.isFineEnabled()) {
+            logger.fine("Assigning role: " + roleName);
+        }
         assignedRoles.add(roleName);
     }
 
@@ -146,6 +153,15 @@ public abstract class ClusterLoginModule implements LoginModule {
     protected boolean getBoolOption(String optionName, boolean defaultValue) {
         String option = getOptionInternal(optionName);
         return option != null ? Boolean.parseBoolean(option) : defaultValue;
+    }
+
+    protected int getIntOption(String optionName, int defaultValue) {
+        String option = getOptionInternal(optionName);
+        return option != null ? Integer.parseInt(option) : defaultValue;
+    }
+
+    protected boolean isSkipRole() {
+        return getBoolOption(OPTION_SKIP_ROLE, false);
     }
 
     private String getOptionInternal(String optionName) {

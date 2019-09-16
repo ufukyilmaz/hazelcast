@@ -7,9 +7,13 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.ChangeLoggingRule;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -19,6 +23,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -41,7 +46,7 @@ import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventuall
 import static com.hazelcast.test.HazelcastTestSupport.assertContains;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.ignore;
+import static com.hazelcast.test.HazelcastTestSupport.getNodeEngineImpl;
 import static com.hazelcast.test.HazelcastTestSupport.sleepMillis;
 import static com.hazelcast.test.HazelcastTestSupport.spawn;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
@@ -66,6 +71,9 @@ import static org.junit.Assert.fail;
 public class WanAddConfigTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+
+    @ClassRule
+    public static ChangeLoggingRule changeLoggingRule = new ChangeLoggingRule("log4j2-debug.xml");
 
     private static final String MAP_NAME = "map";
     private static final String CACHE_NAME = "cache";
@@ -196,7 +204,13 @@ public class WanAddConfigTest {
 
         while (true) {
             try {
-                clusterA.addWanReplication(toBReplication);
+                NodeEngineImpl nodeEngine = getNodeEngineImpl(clusterA.getAMember());
+                ClusterService clusterService = nodeEngine.getClusterService();
+                logger.info("Adding WAN replication on " + clusterService.getLocalMember()
+                        + ", membership list: " + clusterService.getMembers()
+                        + ", partitionTable: " + nodeEngine.getPartitionService().createPartitionTableView());
+                nodeEngine.getWanReplicationService()
+                          .addWanReplicationConfig(toBReplication.getConfig());
                 logger.info("WAN replication config added");
                 break;
             } catch (HazelcastInstanceNotActiveException e) {
@@ -348,19 +362,26 @@ public class WanAddConfigTest {
     private Map<String, Integer> getSourceClusterConfigCountMap(String wanReplicationName) {
         while (true) {
             Map<String, Integer> instanceConfigCount = new HashMap<>();
-            try {
-                for (HazelcastInstance instance : clusterA.getMembers()) {
-                    WanReplicationConfig wanConfig = getNode(instance).getConfig()
-                            .getWanReplicationConfig(wanReplicationName);
-                    int configSize = wanConfig.getBatchPublisherConfigs().size();
-                    instanceConfigCount.put(instance.getName(), configSize);
+            boolean encounteredException = false;
+            for (HazelcastInstance instance : clusterA.getMembers()) {
+                Node node;
+                try {
+                    node = getNode(instance);
+                } catch (IllegalArgumentException ex) {
+                    // sleep and restart collection
+                    encounteredException = true;
+                    break;
                 }
-                return instanceConfigCount;
-            } catch (IllegalArgumentException ex) {
-                logger.warning(ex.getMessage(), ex);
-                ignore(ex);
+                WanReplicationConfig wanConfig = node.getConfig()
+                                                     .getWanReplicationConfig(wanReplicationName);
+                int configSize = wanConfig.getBatchPublisherConfigs().size();
+                instanceConfigCount.put(instance.getName(), configSize);
             }
-            sleepMillis(250);
+            if (!encounteredException) {
+                return instanceConfigCount;
+            } else {
+                sleepMillis(250);
+            }
         }
     }
 

@@ -19,8 +19,8 @@ public class EnterpriseCacheOperationProvider extends DefaultOperationProvider {
         return new WanCacheRemoveOperation(nameWithPrefix, origin, key, completionId);
     }
 
-    public Operation createWanMergeOperation(String origin, CacheMergeTypes mergingEntry,
+    public Operation createWanMergeOperation(CacheMergeTypes mergingEntry,
                                              SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy, int completionId) {
-        return new WanCacheMergeOperation(nameWithPrefix, origin, mergingEntry, mergePolicy, completionId);
+        return new WanCacheMergeOperation(nameWithPrefix, mergingEntry, mergePolicy, completionId);
     }
 }

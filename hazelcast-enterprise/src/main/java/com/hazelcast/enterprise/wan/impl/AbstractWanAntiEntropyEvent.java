@@ -1,12 +1,13 @@
-package com.hazelcast.enterprise.wan.impl.sync;
+package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.enterprise.wan.WanSyncType;
-import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventPublishOperation;
+import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventResult;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.util.SetUtil;
 import com.hazelcast.util.UuidUtil;
+import com.hazelcast.wan.WanAntiEntropyEvent;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -19,7 +20,8 @@ import static com.hazelcast.cp.internal.util.UUIDSerializationUtil.writeUUID;
 /**
  * Base class for WAN anti-entropy related events.
  */
-public abstract class WanAntiEntropyEvent implements IdentifiedDataSerializable {
+public abstract class AbstractWanAntiEntropyEvent implements IdentifiedDataSerializable,
+        WanAntiEntropyEvent {
     /**
      * The unique ID of the WAN anti-entropy events. Used to distinguish
      * between separate anti-entropy requests.
@@ -42,19 +44,19 @@ public abstract class WanAntiEntropyEvent implements IdentifiedDataSerializable 
     private transient WanAntiEntropyEventResult processingResult;
 
     @SuppressWarnings("unused")
-    public WanAntiEntropyEvent() {
+    public AbstractWanAntiEntropyEvent() {
     }
 
-    public WanAntiEntropyEvent(String mapName) {
+    public AbstractWanAntiEntropyEvent(String mapName) {
         assignUuid();
         this.mapName = mapName;
     }
 
-    protected WanAntiEntropyEvent(UUID uuid) {
+    protected AbstractWanAntiEntropyEvent(UUID uuid) {
         this.uuid = uuid;
     }
 
-    protected WanAntiEntropyEvent(UUID uuid, String mapName) {
+    protected AbstractWanAntiEntropyEvent(UUID uuid, String mapName) {
         this.uuid = uuid;
         this.mapName = mapName;
     }
@@ -63,14 +65,17 @@ public abstract class WanAntiEntropyEvent implements IdentifiedDataSerializable 
         this.uuid = UuidUtil.newUnsecureUUID();
     }
 
+    @Override
     public UUID getUuid() {
         return uuid;
     }
 
-    public String getMapName() {
+    @Override
+    public String getObjectName() {
         return mapName;
     }
 
+    @Override
     public Set<Integer> getPartitionSet() {
         return partitionSet;
     }
@@ -103,13 +108,8 @@ public abstract class WanAntiEntropyEvent implements IdentifiedDataSerializable 
         try {
             op.sendResponse(processingResult);
         } catch (Exception ex) {
-            op.getNodeEngine().getLogger(WanAntiEntropyEvent.class).warning(ex);
+            op.getNodeEngine().getLogger(AbstractWanAntiEntropyEvent.class).warning(ex);
         }
-    }
-
-    @Override
-    public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
     }
 
     /**
@@ -118,7 +118,7 @@ public abstract class WanAntiEntropyEvent implements IdentifiedDataSerializable 
      *
      * @return a cloned instance
      */
-    public abstract WanAntiEntropyEvent cloneWithoutPartitionKeys();
+    public abstract AbstractWanAntiEntropyEvent cloneWithoutPartitionKeys();
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {

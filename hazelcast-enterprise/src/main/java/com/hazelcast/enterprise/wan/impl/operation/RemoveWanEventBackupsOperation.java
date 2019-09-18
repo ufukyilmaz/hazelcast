@@ -33,10 +33,10 @@ public class RemoveWanEventBackupsOperation extends EWRBaseOperation
 
     @Override
     public void run() throws Exception {
-        AbstractWanPublisher endpoint =
-                (AbstractWanPublisher) getEWRService().getEndpointOrNull(wanReplicationName, wanPublisherId);
-        if (endpoint != null) {
-            // the endpoint may be null in cases where the backup does
+        AbstractWanPublisher publisher =
+                (AbstractWanPublisher) getEWRService().getPublisherOrNull(wanReplicationName, wanPublisherId);
+        if (publisher != null) {
+            // the publisher may be null in cases where the backup does
             // not contain the same config as the primary.
             // For instance, this can happen when dynamically adding new
             // WAN config during runtime and there is a race between
@@ -49,7 +49,7 @@ public class RemoveWanEventBackupsOperation extends EWRBaseOperation
                     continue;
                 }
 
-                endpoint.removeWanEvents(getPartitionId(), id.getServiceName(), id.getObjectName(), count);
+                publisher.removeWanEvents(getPartitionId(), id.getServiceName(), id.getObjectName(), count);
             }
         } else {
             getLogger().finest("Ignoring backup since WAN config doesn't exist with config name "

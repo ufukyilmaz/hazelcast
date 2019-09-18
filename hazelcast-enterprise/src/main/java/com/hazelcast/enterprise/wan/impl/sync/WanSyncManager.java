@@ -2,8 +2,9 @@ package com.hazelcast.enterprise.wan.impl.sync;
 
 import com.hazelcast.cluster.Member;
 import com.hazelcast.core.ExecutionCallback;
-import com.hazelcast.enterprise.wan.WanSyncEvent;
+import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.util.collection.InflatableSet;
@@ -67,23 +68,23 @@ public class WanSyncManager {
      * initiated but not yet processed.
      *
      * @param wanReplicationName name of WAN replication configuration (scheme)
-     * @param targetGroupName    WAN target cluster group name
+     * @param wanPublisherId     WAN replication publisher ID
      * @param event              the WAN anti-entropy event
      * @throws SyncFailedException if there is an ongoing anti-entropy event being processed
      */
-    public void initiateAntiEntropyRequest(final String wanReplicationName,
-                                           final String targetGroupName,
-                                           final WanAntiEntropyEvent event) {
-        // first check if endpoint exists for the given wanReplicationName and targetGroupName
-        wanReplicationService.getEndpointOrFail(wanReplicationName, targetGroupName);
+    public void initiateAntiEntropyRequest(String wanReplicationName,
+                                           String wanPublisherId,
+                                           AbstractWanAntiEntropyEvent event) {
+        // first check if publisher exists for the given wanReplicationName and wanPublisherId
+        wanReplicationService.getPublisherOrFail(wanReplicationName, wanPublisherId);
         if (!SYNC_STATUS.compareAndSet(this, WanSyncStatus.READY, WanSyncStatus.IN_PROGRESS)) {
             throw new SyncFailedException("Another anti-entropy request is already in progress.");
         }
         activeWanConfig = wanReplicationName;
-        activePublisher = targetGroupName;
+        activePublisher = wanPublisherId;
 
         node.getNodeEngine().getExecutionService().execute("hz:wan:sync:pool", () -> {
-            Operation op = new WanAntiEntropyEventStarterOperation(wanReplicationName, targetGroupName, event);
+            Operation op = new WanAntiEntropyEventStarterOperation(wanReplicationName, wanPublisherId, event);
             InternalCompletableFuture<Object> future = getOperationService()
                     .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, op, node.getThisAddress());
             future.andThen(new ExecutionCallback<Object>() {
@@ -118,18 +119,18 @@ public class WanSyncManager {
      * enqueued but not yet replicated.
      *
      * @param wanReplicationName name of WAN replication configuration (scheme)
-     * @param targetGroupName    WAN target cluster group name
+     * @param wanPublisherId     WAN replication publisher ID
      * @param event              the WAN anti-entropy event
      */
-    public void publishAntiEntropyEventOnMembers(String wanReplicationName,
-                                                 String targetGroupName,
-                                                 WanAntiEntropyEvent event) {
+    void publishAntiEntropyEventOnMembers(String wanReplicationName,
+                                          String wanPublisherId,
+                                          AbstractWanAntiEntropyEvent event) {
         int retryCount = 0;
         try {
             Set<Integer> partitionsToSync = event.getPartitionSet();
 
             while (running) {
-                broadcastEvent(wanReplicationName, targetGroupName, event, partitionsToSync);
+                broadcastEvent(wanReplicationName, wanPublisherId, event, partitionsToSync);
 
                 if (partitionsToSync.isEmpty()) {
                     break;
@@ -171,22 +172,22 @@ public class WanSyncManager {
      * enqueued but not yet replicated.
      *
      * @param wanReplicationName name of WAN replication configuration (scheme)
-     * @param targetGroupName    WAN target cluster group name
+     * @param wanPublisherId     WAN replication publisher ID
      * @param event              the WAN anti-entropy event
      * @param partitionsToSync   keys for which this this event applies to,
      */
     private void broadcastEvent(String wanReplicationName,
-                                String targetGroupName,
-                                WanAntiEntropyEvent event,
+                                String wanPublisherId,
+                                AbstractWanAntiEntropyEvent event,
                                 Set<Integer> partitionsToSync) {
         final Set<Member> members = getClusterService().getMembers();
         final List<Future<WanAntiEntropyEventResult>> futures = new ArrayList<>(members.size());
 
         for (Member member : members) {
-            WanAntiEntropyEvent clonedEvent = event.cloneWithoutPartitionKeys();
+            AbstractWanAntiEntropyEvent clonedEvent = event.cloneWithoutPartitionKeys();
             clonedEvent.setPartitionSet(partitionsToSync);
 
-            Operation operation = new WanAntiEntropyEventPublishOperation(wanReplicationName, targetGroupName, clonedEvent);
+            Operation operation = new WanAntiEntropyEventPublishOperation(wanReplicationName, wanPublisherId, clonedEvent);
             Future<WanAntiEntropyEventResult> future = getOperationService()
                     .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, operation, member.getAddress());
             futures.add(future);

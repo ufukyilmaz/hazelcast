@@ -4,9 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.serialization.PortableHook;
 import com.hazelcast.map.IMap;
@@ -14,6 +12,8 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.DynamicType;
 import org.junit.Test;
@@ -90,11 +90,10 @@ public class MapWanBatchReplicationSerializationTest extends MapWanReplicationTe
         for (HazelcastInstance instance : cluster) {
             final NodeEngineImpl nodeEngine = getNode(instance).nodeEngine;
             final EnterpriseWanReplicationService s = nodeEngine.getService(EnterpriseWanReplicationService.SERVICE_NAME);
-            final WanReplicationPublisherDelegate atob
-                    = (WanReplicationPublisherDelegate) s.getWanReplicationPublisher(publisherName);
+            final DelegatingWanReplicationScheme atob = s.getWanReplicationPublishers(publisherName);
             int failureCount = 0;
-            for (WanReplicationEndpoint endpoint : atob.getEndpoints()) {
-                final WanBatchReplication batchReplication = (WanBatchReplication) endpoint;
+            for (WanReplicationPublisher publisher : atob.getPublishers()) {
+                final WanBatchReplication batchReplication = (WanBatchReplication) publisher;
                 failureCount += batchReplication.getFailedTransmissionCount();
             }
             assertEquals("Encountered failure in WAN replication", expectedFailureCount, failureCount);

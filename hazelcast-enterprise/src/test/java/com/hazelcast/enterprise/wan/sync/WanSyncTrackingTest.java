@@ -56,7 +56,7 @@ import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
-import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationEndpoint;
+import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationPublisher;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -337,7 +337,7 @@ public class WanSyncTrackingTest {
     private TestContext setupTestContext(int suspendSyncAfterRecords, int nonEmptyPartitions, String... mapNames) {
         TestContext testContext = new TestContext(mapNames, nonEmptyPartitions);
         sourceCluster.forEachMember(member -> {
-            SyncingWanBatchReplication wanBatchReplication = (SyncingWanBatchReplication) wanReplicationEndpoint(member,
+            SyncingWanBatchReplication wanBatchReplication = (SyncingWanBatchReplication) wanReplicationPublisher(member,
                     wanReplication);
             wanBatchReplication.setup(suspendSyncAfterRecords, testContext);
             testContext.mcEventListenerMap.putIfAbsent(member, mock(ManagementCenterEventListener.class));
@@ -630,7 +630,7 @@ public class WanSyncTrackingTest {
     }
 
     private Map<String, WanSyncStats> getLastSyncResult(HazelcastInstance instance) {
-        return wanReplicationEndpoint(instance, wanReplication)
+        return wanReplicationPublisher(instance, wanReplication)
                 .getStats()
                 .getLastSyncStats();
     }

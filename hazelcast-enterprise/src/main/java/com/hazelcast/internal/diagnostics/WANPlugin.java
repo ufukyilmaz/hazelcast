@@ -1,7 +1,6 @@
 package com.hazelcast.internal.diagnostics;
 
 import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.impl.replication.MerkleTreeWanSyncStats;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.monitor.LocalWanPublisherStats;
@@ -14,6 +13,7 @@ import com.hazelcast.wan.ConsistencyCheckResult;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
 import com.hazelcast.wan.WanSyncStats;
+import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import com.hazelcast.wan.impl.WanReplicationService;
 
 import java.util.Map;
@@ -25,7 +25,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * The WANPlugin exposes WAN state to the diagnostics system. Currently it allows
  * inspecting the {@link WanSyncState} and {@link LocalWanPublisherStats} for each
- * {@link com.hazelcast.enterprise.wan.WanReplicationEndpoint}.
+ * {@link com.hazelcast.wan.WanReplicationPublisher}.
  * This allows to get an overview of the WAN system, mainly how events are being published.
  * Detailed introspection of the WAN queues is not available.
  */
@@ -159,12 +159,12 @@ public class WANPlugin extends DiagnosticsPlugin {
     /**
      * Renders the diagnostics for a single WAN replication config.
      * The config may consist of statistics for multiple
-     * {@link com.hazelcast.enterprise.wan.WanReplicationEndpoint}s.
+     * {@link com.hazelcast.wan.WanReplicationPublisher}s.
      *
      * @param writer                   the diagnostics log writer
      * @param wanReplicationConfigName the WAN replication config name
      * @param stats                    the WAN replication statistics
-     * @see WanReplicationPublisherDelegate
+     * @see DelegatingWanReplicationScheme
      */
     private void renderWanReplication(DiagnosticsLogWriter writer, String wanReplicationConfigName, LocalWanStats stats) {
         final Map<String, LocalWanPublisherStats> publisherStats = stats.getLocalWanPublisherStats();
@@ -176,16 +176,16 @@ public class WANPlugin extends DiagnosticsPlugin {
     }
 
     /**
-     * Renders the diagnostics for a single {@link com.hazelcast.enterprise.wan.WanReplicationEndpoint}.
+     * Renders the diagnostics for a single {@link com.hazelcast.wan.WanReplicationPublisher}.
      * This includes information on the current state of replication and the WAN queues
      * as well as information on events already published.
      *
-     * @param writer    the diagnostics log writer
-     * @param groupName the WAN replication group name
-     * @param stats     the statistics for the {@link com.hazelcast.enterprise.wan.WanReplicationEndpoint}
+     * @param writer         the diagnostics log writer
+     * @param wanPublisherId the publisher ID
+     * @param stats          the statistics for the {@link com.hazelcast.wan.WanReplicationPublisher}
      */
-    private void renderWanPublisher(DiagnosticsLogWriter writer, String groupName, LocalWanPublisherStats stats) {
-        writer.startSection(groupName);
+    private void renderWanPublisher(DiagnosticsLogWriter writer, String wanPublisherId, LocalWanPublisherStats stats) {
+        writer.startSection(wanPublisherId);
         writer.writeKeyValueEntry(PUBLISHER_OUTBOUND_QUEUE_SIZE_KEY, stats.getOutboundQueueSize());
         writer.writeKeyValueEntry(PUBLISHER_TOTAL_PUBLISHED_EVENT_COUNT_KEY, stats.getTotalPublishedEventCount());
         writer.writeKeyValueEntry(PUBLISHER_TOTAL_PUBLISH_LATENCY_KEY, stats.getTotalPublishLatency());

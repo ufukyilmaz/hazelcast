@@ -1,12 +1,12 @@
 package com.hazelcast.enterprise.wan.impl.operation;
 
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.operationservice.Operation;
+import com.hazelcast.wan.WanReplicationPublisher;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -44,6 +44,7 @@ public class WanEventContainerReplicationOperation extends Operation implements 
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void run() throws Exception {
         EnterpriseWanReplicationService service = getWanReplicationService();
         int partitionId = getPartitionId();
@@ -58,7 +59,7 @@ public class WanEventContainerReplicationOperation extends Operation implements 
             for (Entry<String, Object> publisherEventContainer : eventContainersByPublisherId.entrySet()) {
                 String publisherId = publisherEventContainer.getKey();
                 Object eventContainer = publisherEventContainer.getValue();
-                WanReplicationEndpoint publisher = service.getEndpointOrFail(wanReplicationScheme, publisherId);
+                WanReplicationPublisher publisher = service.getPublisherOrFail(wanReplicationScheme, publisherId);
                 publisher.processEventContainerReplicationData(partitionId, eventContainer);
             }
         }

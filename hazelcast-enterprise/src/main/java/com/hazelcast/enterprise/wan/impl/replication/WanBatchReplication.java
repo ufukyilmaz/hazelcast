@@ -7,9 +7,9 @@ import com.hazelcast.config.WanSyncConfig;
 import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.ICompletableFuture;
-import com.hazelcast.enterprise.wan.WanConsistencyCheckEvent;
-import com.hazelcast.enterprise.wan.WanSyncEvent;
-import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEvent;
+import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
+import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
+import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventResult;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.diagnostics.Diagnostics;
@@ -22,7 +22,8 @@ import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
-import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanAntiEntropyEvent;
+import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -99,15 +100,15 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
     private volatile long lastBatchSendTime = System.currentTimeMillis();
 
     private Executor wanExecutor;
-    private BlockingQueue<WanReplicationEvent> syncEvents;
+    private BlockingQueue<InternalWanReplicationEvent> syncEvents;
     private IdleStrategy idlingStrategy;
-    private ArrayList<WanReplicationEvent> eventBatchHolder;
+    private ArrayList<InternalWanReplicationEvent> eventBatchHolder;
 
     private BatchReplicationStrategy replicationStrategy;
 
     @Override
-    public void init(Node node, WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig wanPublisherConfig) {
-        super.init(node, wanReplicationConfig, wanPublisherConfig);
+    public void init(WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig wanPublisherConfig) {
+        super.init(wanReplicationConfig, wanPublisherConfig);
         this.idlingStrategy = new BackoffIdleStrategy(
                 IDLE_MAX_SPINS,
                 IDLE_MAX_YIELDS,
@@ -175,9 +176,9 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
 
         if (!syncEvents.isEmpty()) {
             BatchWanReplicationEvent batch = new BatchWanReplicationEvent(configurationContext.isSnapshotEnabled());
-            ArrayList<WanReplicationEvent> batchList = new ArrayList<>(configurationContext.getBatchSize());
+            ArrayList<InternalWanReplicationEvent> batchList = new ArrayList<>(configurationContext.getBatchSize());
             syncEvents.drainTo(batchList, configurationContext.getBatchSize());
-            for (WanReplicationEvent event : batchList) {
+            for (InternalWanReplicationEvent event : batchList) {
                 batch.addEvent(event);
             }
             boolean sent = sendBatch(endpoint, batch, true);
@@ -256,7 +257,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                 eventBatchHolder.clear();
                 eventQueueContainer.drainRandomWanQueue(partitionId, eventBatchHolder, elementsToDrain);
 
-                for (WanReplicationEvent event : eventBatchHolder) {
+                for (InternalWanReplicationEvent event : eventBatchHolder) {
                     if (batch == null) {
                         batch = new BatchWanReplicationEvent(
                                 configurationContext.isSnapshotEnabled());
@@ -326,7 +327,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
                                         boolean response,
                                         boolean isSyncBatch) {
         if (response) {
-            for (WanReplicationEvent sentEvent : batch.getEvents()) {
+            for (InternalWanReplicationEvent sentEvent : batch.getEvents()) {
                 incrementEventCount(sentEvent);
             }
 
@@ -403,10 +404,11 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
      * Publishes an anti-entropy event.
      * This method does not wait for the event processing to complete.
      *
-     * @param event the WAN anti-entropy event
+     * @param wanAntiEntropyEvent the WAN anti-entropy event
      */
     @Override
-    public void publishAntiEntropyEvent(final WanAntiEntropyEvent event) {
+    public void publishAntiEntropyEvent(WanAntiEntropyEvent wanAntiEntropyEvent) {
+        AbstractWanAntiEntropyEvent event = (AbstractWanAntiEntropyEvent) wanAntiEntropyEvent;
         liveOperations.add(event.getOp());
 
         wanExecutor.execute(() -> {
@@ -463,7 +465,7 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
      *
      * @param event the WAN event
      */
-    void putToSyncEventQueue(WanReplicationEvent event) {
+    void putToSyncEventQueue(InternalWanReplicationEvent event) {
         try {
             syncEvents.put(event);
         } catch (InterruptedException e) {

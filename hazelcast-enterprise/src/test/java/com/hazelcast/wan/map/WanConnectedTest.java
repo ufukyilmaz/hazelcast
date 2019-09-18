@@ -4,12 +4,12 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -29,11 +29,11 @@ public class WanConnectedTest extends MapWanReplicationTestSupport {
         startClusterA();
         startClusterB();
 
-        final WanReplicationEndpoint endpoint = getWanReplicationDelegate(setupName).getEndpoint("B");
+        WanReplicationPublisher publisher = getWanReplicationDelegate(setupName).getPublisher("B");
 
         createDataIn(clusterA, "map", 1, 10);
 
-        assertTrueEventually(() -> assertTrue(endpoint.getStats().isConnected()));
+        assertTrueEventually(() -> assertTrue(publisher.getStats().isConnected()));
     }
 
     @Test
@@ -51,17 +51,17 @@ public class WanConnectedTest extends MapWanReplicationTestSupport {
         startClusterA();
         startClusterB();
 
-        WanReplicationEndpoint endpoint = getWanReplicationDelegate(setupName).getEndpoint("B");
+        WanReplicationPublisher endpoint = getWanReplicationDelegate(setupName).getPublisher("B");
 
         createDataIn(clusterA, "map", 1, 10);
 
         assertTrueAllTheTime(() -> assertFalse(endpoint.getStats().isConnected()), 10);
     }
 
-    private WanReplicationPublisherDelegate getWanReplicationDelegate(String publisherName) {
+    private DelegatingWanReplicationScheme getWanReplicationDelegate(String publisherName) {
         EnterpriseWanReplicationService wanReplicationService
                 = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
-        return (WanReplicationPublisherDelegate) wanReplicationService.getWanReplicationPublisher(publisherName);
+        return wanReplicationService.getWanReplicationPublishers(publisherName);
     }
 
     @Override

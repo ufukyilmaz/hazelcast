@@ -102,9 +102,9 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
-    public Operation createWanMergeOperation(String origin, CacheMergeTypes mergingEntry,
+    public Operation createWanMergeOperation(CacheMergeTypes mergingEntry,
                                              SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy, int completionId) {
-        return new WanCacheMergeOperation(nameWithPrefix, origin, mergePolicy, mergingEntry, completionId);
+        return new WanCacheMergeOperation(nameWithPrefix, mergePolicy, mergingEntry, completionId);
     }
 
     @Override

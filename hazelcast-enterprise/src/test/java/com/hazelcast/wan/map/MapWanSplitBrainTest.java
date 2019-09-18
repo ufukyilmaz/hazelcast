@@ -9,9 +9,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -19,7 +17,9 @@ import com.hazelcast.spi.merge.PutIfAbsentMergePolicy;
 import com.hazelcast.test.SplitBrainTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.CountingWanEndpoint;
+import com.hazelcast.wan.CountingWanPublisher;
+import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -90,7 +90,7 @@ public class MapWanSplitBrainTest extends SplitBrainTestSupport {
                 .setName(WAN_REPLICATION_NAME)
                 .addCustomPublisherConfig(new CustomWanPublisherConfig()
                         .setPublisherId("customPublisherId")
-                        .setClassName(CountingWanEndpoint.class.getName()));
+                        .setClassName(CountingWanPublisher.class.getName()));
 
         return getHDConfig(super.config(), POOLED, MEMORY_SIZE)
                 .addMapConfig(mapConfig)
@@ -129,12 +129,12 @@ public class MapWanSplitBrainTest extends SplitBrainTestSupport {
         for (HazelcastInstance instance : instances) {
             EnterpriseWanReplicationService wanReplicationService
                     = (EnterpriseWanReplicationService) getNodeEngineImpl(instance).getWanReplicationService();
-            WanReplicationPublisherDelegate delegate
-                    = (WanReplicationPublisherDelegate) wanReplicationService.getWanReplicationPublisher(WAN_REPLICATION_NAME);
-            for (WanReplicationEndpoint endpoint : delegate.getEndpoints()) {
-                CountingWanEndpoint countingEndpoint = (CountingWanEndpoint) endpoint;
-                totalPublishedEvents += countingEndpoint.getCount();
-                totalPublishedBackupEvents += countingEndpoint.getBackupCount();
+            DelegatingWanReplicationScheme delegate
+                    = wanReplicationService.getWanReplicationPublishers(WAN_REPLICATION_NAME);
+            for (WanReplicationPublisher publisher : delegate.getPublishers()) {
+                CountingWanPublisher countingPublisher = (CountingWanPublisher) publisher;
+                totalPublishedEvents += countingPublisher.getCount();
+                totalPublishedBackupEvents += countingPublisher.getBackupCount();
             }
         }
         assertEquals("Expected 3 published WAN events", 3, totalPublishedEvents);

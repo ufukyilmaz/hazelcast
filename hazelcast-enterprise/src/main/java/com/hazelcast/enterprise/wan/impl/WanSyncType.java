@@ -1,4 +1,4 @@
-package com.hazelcast.enterprise.wan;
+package com.hazelcast.enterprise.wan.impl;
 
 /**
  * WAN sync types. These define the scope of entries which need to be synced.

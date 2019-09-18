@@ -25,10 +25,10 @@ public interface WanReplicationConsumer {
      * started.
      * The WAN consumer is responsible for registering itself for WAN event
      * consumption. Typically this means that you would either use the
-     * {@link ExecutionService} to schedule the consumer to run periodically
-     * or continually by having an implementation which uses blocking or
-     * spinning locks to check for new events. The implementation is free
-     * however to choose a third approach.
+     * {@link com.hazelcast.spi.impl.executionservice.ExecutionService}
+     * to schedule the consumer to run periodically or continually by having an
+     * implementation which uses blocking or spinning locks to check for new
+     * events. The implementation is free however to choose another approach.
      *
      * @param node               this node
      * @param wanReplicationName the name of the {@link WanReplicationConfig}

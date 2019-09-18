@@ -3,14 +3,14 @@ package com.hazelcast.test;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
-import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -107,18 +107,18 @@ public final class WanStatisticsRule implements TestRule {
             Set<String> replicationNames = s.getStats().keySet();
             for (String replicationName : replicationNames) {
                 sb.append("Replication: ").append(replicationName).append(LINE_SEPARATOR);
-                WanReplicationPublisherDelegate publisherDelegate = (WanReplicationPublisherDelegate) s.getWanReplicationPublisher(replicationName);
-                Collection<WanReplicationEndpoint> endpoints = publisherDelegate.getEndpoints();
-                for (WanReplicationEndpoint endpoint : endpoints) {
-                    if (endpoint instanceof WanBatchReplication) {
-                        WanBatchReplication batchReplicationEndPoint = (WanBatchReplication) endpoint;
-                        LocalWanPublisherStats stats = batchReplicationEndPoint.getStats();
-                        long failedTransmissionCount = batchReplicationEndPoint.getFailedTransmissionCount();
-                        sb.append("Target endpoints: ").append(batchReplicationEndPoint.getTargetEndpoints())
+                DelegatingWanReplicationScheme publisherDelegate = s.getWanReplicationPublishers(replicationName);
+                Collection<WanReplicationPublisher> publishers = publisherDelegate.getPublishers();
+                for (WanReplicationPublisher publisher : publishers) {
+                    if (publisher instanceof WanBatchReplication) {
+                        WanBatchReplication batchReplicationPublisher = (WanBatchReplication) publisher;
+                        LocalWanPublisherStats stats = batchReplicationPublisher.getStats();
+                        long failedTransmissionCount = batchReplicationPublisher.getFailedTransmissionCount();
+                        sb.append("Target publishers: ").append(batchReplicationPublisher.getTargetEndpoints())
                                 .append(", Stats: ").append(stats)
                                 .append(", Failed transmission count: ").append(failedTransmissionCount).append(LINE_SEPARATOR);
                     } else {
-                        sb.append("Unknown endpoint type ").append(endpoint).append(", cannot collect stats.");
+                        sb.append("Unknown publisher type ").append(publisher).append(", cannot collect stats.");
                         sb.append(LINE_SEPARATOR);
                     }
                 }

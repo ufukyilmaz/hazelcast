@@ -7,6 +7,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -59,6 +60,7 @@ public class EnterpriseMapReplicationMerkleTreeNode extends EnterpriseMapReplica
         entries = in.readObject();
     }
 
+    @Nonnull
     @Override
     public Data getKey() {
         // for all purposes, the first key is sufficient

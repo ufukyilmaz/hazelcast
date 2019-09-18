@@ -18,19 +18,19 @@ public class WanCacheRemoveOperation
         extends BackupAwareKeyBasedHiDensityCacheOperation
         implements MutableOperation {
 
-    private String wanGroupName;
+    private String origin;
 
     public WanCacheRemoveOperation() {
     }
 
-    public WanCacheRemoveOperation(String name, String wanGroupName, Data key, int completionId) {
+    public WanCacheRemoveOperation(String name, String origin, Data key, int completionId) {
         super(name, key, completionId);
-        this.wanGroupName = wanGroupName;
+        this.origin = origin;
     }
 
     @Override
     public void runInternal() {
-        response = recordStore.remove(key, getCallerUuid(), wanGroupName, completionId, WAN);
+        response = recordStore.remove(key, getCallerUuid(), origin, completionId, WAN);
     }
 
     @Override
@@ -52,13 +52,13 @@ public class WanCacheRemoveOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeUTF(wanGroupName);
+        out.writeUTF(origin);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        wanGroupName = in.readUTF();
+        origin = in.readUTF();
     }
 
     @Override

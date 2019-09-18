@@ -1,13 +1,12 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
-import com.hazelcast.enterprise.wan.WanConsistencyCheckEvent;
-import com.hazelcast.enterprise.wan.WanSyncEvent;
-import com.hazelcast.enterprise.wan.WanSyncType;
+import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
+import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
+import com.hazelcast.enterprise.wan.impl.WanSyncType;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionWrapper;
 import com.hazelcast.enterprise.wan.impl.operation.MerkleTreeNodeValueComparison;
 import com.hazelcast.enterprise.wan.impl.operation.WanMerkleTreeNodeCompareOperation;
-import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.sync.WanSyncManager;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.management.events.WanConsistencyCheckFinishedEvent;
@@ -35,6 +34,7 @@ import com.hazelcast.util.ThreadUtil;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 import com.hazelcast.wan.ConsistencyCheckResult;
+import com.hazelcast.wan.WanAntiEntropyEvent;
 import com.hazelcast.wan.WanSyncStats;
 import com.hazelcast.wan.impl.merkletree.MerkleTreeUtil;
 
@@ -114,7 +114,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
      */
     @Override
     public void processEvent(WanConsistencyCheckEvent event) throws Exception {
-        String mapName = event.getMapName();
+        String mapName = event.getObjectName();
         if (!isMapWanReplicated(mapName)) {
             throw new IllegalArgumentException("WAN consistency check requested for map " + mapName + " that is "
                     + "not configured for WAN replication");
@@ -275,7 +275,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                 }
             }
         } else {
-            String mapName = event.getMapName();
+            String mapName = event.getObjectName();
             if (!isMapWanReplicated(mapName)) {
                 throw new IllegalArgumentException("WAN synchronization requested for map " + mapName + " that is "
                         + "not configured for WAN replication");
@@ -385,20 +385,20 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
     }
 
     private void logSyncStats(MerkleTreeWanSyncStats stats) {
-            String syncStatsMsg = String.format("Synchronization finished%n%n"
-                            + "Merkle synchronization statistics:%n"
-                            + "\t Synchronization UUID: %s%n"
-                            + "\t Duration: %d secs%n"
-                            + "\t Total records synchronized: %d%n"
-                            + "\t Total partitions synchronized: %d%n"
-                            + "\t Total Merkle tree nodes synchronized: %d%n"
-                            + "\t Average records per Merkle tree node: %.2f%n"
-                            + "\t StdDev of records per Merkle tree node: %.2f%n"
-                            + "\t Minimum records per Merkle tree node: %d%n"
-                            + "\t Maximum records per Merkle tree node: %d%n",
-                    stats.getUuid(), stats.getDurationSecs(), stats.getRecordsSynced(), stats.getPartitionsSynced(),
-                    stats.getNodesSynced(), stats.getAvgEntriesPerLeaf(), stats.getStdDevEntriesPerLeaf(),
-                    stats.getMinLeafEntryCount(), stats.getMaxLeafEntryCount());
+        String syncStatsMsg = String.format("Synchronization finished%n%n"
+                        + "Merkle synchronization statistics:%n"
+                        + "\t Synchronization UUID: %s%n"
+                        + "\t Duration: %d secs%n"
+                        + "\t Total records synchronized: %d%n"
+                        + "\t Total partitions synchronized: %d%n"
+                        + "\t Total Merkle tree nodes synchronized: %d%n"
+                        + "\t Average records per Merkle tree node: %.2f%n"
+                        + "\t StdDev of records per Merkle tree node: %.2f%n"
+                        + "\t Minimum records per Merkle tree node: %d%n"
+                        + "\t Maximum records per Merkle tree node: %d%n",
+                stats.getUuid(), stats.getDurationSecs(), stats.getRecordsSynced(), stats.getPartitionsSynced(),
+                stats.getNodesSynced(), stats.getAvgEntriesPerLeaf(), stats.getStdDevEntriesPerLeaf(),
+                stats.getMinLeafEntryCount(), stats.getMaxLeafEntryCount());
         logger.info(syncStatsMsg);
     }
 
@@ -576,8 +576,8 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                         .createInvocationBuilder(serviceName, operation, connectionWrapper.getConnection().getEndPoint())
                         .setTryCount(1)
                         .setEndpointManager(connectionWrapper.getConnection().getEndpointManager())
-                                .setCallTimeout(configurationContext.getResponseTimeoutMillis())
-                                .invoke();
+                        .setCallTimeout(configurationContext.getResponseTimeoutMillis())
+                        .invoke();
                 return future.join();
             }
 

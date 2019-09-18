@@ -14,21 +14,21 @@ import java.io.IOException;
  */
 public class WanCacheRemoveOperation extends MutatingCacheOperation {
 
-    private String wanGroupName;
+    private String origin;
 
     public WanCacheRemoveOperation() {
     }
 
-    public WanCacheRemoveOperation(String name, String wanGroupName,
+    public WanCacheRemoveOperation(String name, String origin,
                                    Data key, int completionId) {
         super(name, key, completionId);
-        this.wanGroupName = wanGroupName;
+        this.origin = origin;
     }
 
     @Override
     public void run() throws Exception {
         response = recordStore.remove(key, getCallerUuid(),
-                wanGroupName, completionId, CallerProvenance.WAN);
+                origin, completionId, CallerProvenance.WAN);
     }
 
     @Override
@@ -44,13 +44,13 @@ public class WanCacheRemoveOperation extends MutatingCacheOperation {
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeUTF(wanGroupName);
+        out.writeUTF(origin);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        wanGroupName = in.readUTF();
+        origin = in.readUTF();
     }
 
     @Override

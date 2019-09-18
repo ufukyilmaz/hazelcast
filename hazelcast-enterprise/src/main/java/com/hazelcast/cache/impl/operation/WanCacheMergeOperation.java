@@ -21,17 +21,15 @@ public class WanCacheMergeOperation extends MutatingCacheOperation {
 
     private CacheMergeTypes mergingEntry;
     private SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy;
-    private String wanGroupName;
 
     public WanCacheMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, String wanGroupName, CacheMergeTypes mergingEntry,
+    public WanCacheMergeOperation(String name, CacheMergeTypes mergingEntry,
                                   SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy, int completionId) {
         super(name, mergingEntry.getKey(), completionId);
         this.mergingEntry = mergingEntry;
         this.mergePolicy = mergePolicy;
-        this.wanGroupName = wanGroupName;
     }
 
     @Override
@@ -58,7 +56,6 @@ public class WanCacheMergeOperation extends MutatingCacheOperation {
         super.writeInternal(out);
         out.writeObject(mergingEntry);
         out.writeObject(mergePolicy);
-        out.writeUTF(wanGroupName);
     }
 
     @Override
@@ -66,7 +63,6 @@ public class WanCacheMergeOperation extends MutatingCacheOperation {
         super.readInternal(in);
         mergingEntry = in.readObject();
         mergePolicy = in.readObject();
-        wanGroupName = in.readUTF();
     }
 
     @Override

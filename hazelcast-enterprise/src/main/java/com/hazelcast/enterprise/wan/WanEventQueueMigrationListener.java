@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan;
 
 /**
  * Interface for WAN queue migration related events. Can be implemented
- * by WAN endpoints to listen to WAN queue migration events, for example
+ * by WAN publishers to listen to WAN queue migration events, for example
  * to maintain the WAN event counters.
  * <p>
  * None of the methods of this interface is expected to block or fail.

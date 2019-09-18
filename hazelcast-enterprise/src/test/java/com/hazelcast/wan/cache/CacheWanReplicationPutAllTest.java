@@ -8,12 +8,12 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.CountingWanEndpoint;
+import com.hazelcast.wan.CountingWanPublisher;
+import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -70,7 +70,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
 
         ICache<Integer, Integer> cache = clusterA[0].getCacheManager().getCache(cacheName);
 
-        Map<Integer, Integer> mapForPutAll = new HashMap<Integer, Integer>(countItemsToPutAll);
+        Map<Integer, Integer> mapForPutAll = new HashMap<>(countItemsToPutAll);
         for (int i = 0; i < countItemsToPutAll; i++) {
             mapForPutAll.put(i, i);
         }
@@ -86,12 +86,11 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
         for (HazelcastInstance instance : clusterA) {
             final EnterpriseWanReplicationService wanReplicationService =
                     (EnterpriseWanReplicationService) getNodeEngineImpl(instance).getWanReplicationService();
-            final WanReplicationPublisherDelegate delegate =
-                    (WanReplicationPublisherDelegate) wanReplicationService.getWanReplicationPublisher(wanSetupName);
-            for (WanReplicationEndpoint endpoint : delegate.getEndpoints()) {
-                final CountingWanEndpoint countingEndpoint = (CountingWanEndpoint) endpoint;
-                totalPublishedEvents += countingEndpoint.getCount();
-                totalPublishedBackupEvents += countingEndpoint.getBackupCount();
+            final DelegatingWanReplicationScheme delegate = wanReplicationService.getWanReplicationPublishers(wanSetupName);
+            for (WanReplicationPublisher publisher : delegate.getPublishers()) {
+                final CountingWanPublisher countingPublisher = (CountingWanPublisher) publisher;
+                totalPublishedEvents += countingPublisher.getCount();
+                totalPublishedBackupEvents += countingPublisher.getBackupCount();
             }
         }
 
@@ -104,12 +103,12 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
         initConfigB();
 
         setupReplicateFrom(configA,
-                "customPublisherId", CountingWanEndpoint.class.getName(),
+                "customPublisherId", CountingWanPublisher.class.getName(),
                 wanSetupName, PassThroughMergePolicy.class.getName(),
                 "default", null);
         // disable WAN replication for the default cache config (it's auto-enabled by the setupReplicateFrom())
         configA.getCacheConfig("default")
-                .setWanReplicationRef(null);
+               .setWanReplicationRef(null);
 
         startClusterA();
         startClusterB();
@@ -130,7 +129,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
         EvictionConfig evictionConfig = new EvictionConfig();
         if (isNativeMemoryEnabled()) {
             evictionConfig.setSize(90)
-                    .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                          .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
             evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         }

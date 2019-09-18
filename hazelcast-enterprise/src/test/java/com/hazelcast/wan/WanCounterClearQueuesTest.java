@@ -39,7 +39,7 @@ import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanCounterTestSupport.verifyEventCountersAreEventuallyZero;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
-import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationEndpoint;
+import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationPublisher;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -146,7 +146,7 @@ public class WanCounterClearQueuesTest {
         });
 
         inTheMiddleOfLoadLatch.await(ASSERT_TRUE_EVENTUALLY_TIMEOUT, MILLISECONDS);
-        wanReplicationService(sourceCluster.getAMember()).clearQueues(REPLICATION_NAME, targetCluster.getName());
+        wanReplicationService(sourceCluster.getAMember()).removeWanEvents(REPLICATION_NAME, targetCluster.getName());
 
         verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
     }
@@ -160,7 +160,7 @@ public class WanCounterClearQueuesTest {
         fillMap(sourceCluster, MAP_NAME, 0, 1000);
 
         sourceCluster.startClusterMembers(2, new PausingClusterMemberStartAction());
-        ((QueueClearerWanPublisher) wanReplicationEndpoint(master, wanReplication))
+        ((QueueClearerWanPublisher) wanReplicationPublisher(master, wanReplication))
                 .clearQueuesOnNextMigration(master.getName());
 
         sourceCluster.startAClusterMember();

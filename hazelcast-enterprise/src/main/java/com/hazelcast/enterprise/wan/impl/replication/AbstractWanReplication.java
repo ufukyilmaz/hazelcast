@@ -9,7 +9,6 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.discovery.StaticDiscoveryProperties;
 import com.hazelcast.enterprise.wan.impl.discovery.StaticDiscoveryStrategy;
-import com.hazelcast.instance.impl.Node;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
 import com.hazelcast.spi.discovery.integration.DiscoveryService;
@@ -26,14 +25,14 @@ import static com.hazelcast.util.StringUtil.isNullOrEmpty;
  */
 public abstract class AbstractWanReplication extends AbstractWanPublisher {
 
-    protected WanConnectionManager connectionManager;
+    WanConnectionManager connectionManager;
 
     private DiscoveryService discoveryService;
 
     @Override
-    public void init(Node node, WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig publisherConfig) {
+    public void init(WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig publisherConfig) {
         WanBatchReplicationPublisherConfig batchReplicationConfig = (WanBatchReplicationPublisherConfig) publisherConfig;
-        super.init(node, wanReplicationConfig, publisherConfig);
+        super.init(wanReplicationConfig, publisherConfig);
 
         this.discoveryService = checkNotNull(createDiscoveryService(batchReplicationConfig));
         this.discoveryService.start();

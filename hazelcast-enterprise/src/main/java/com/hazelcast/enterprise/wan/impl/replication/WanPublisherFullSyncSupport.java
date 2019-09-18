@@ -1,8 +1,8 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
-import com.hazelcast.enterprise.wan.WanConsistencyCheckEvent;
-import com.hazelcast.enterprise.wan.WanSyncEvent;
-import com.hazelcast.enterprise.wan.WanSyncType;
+import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
+import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
+import com.hazelcast.enterprise.wan.impl.WanSyncType;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.sync.GetMapPartitionDataOperation;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventResult;
@@ -110,7 +110,7 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
                 }
             }
         } else {
-            String mapName = event.getMapName();
+            String mapName = event.getObjectName();
             if (!isMapWanReplicated(mapName)) {
                 throw new IllegalArgumentException("WAN synchronization requested for map " + mapName + " that is "
                         + "not configured for WAN replication");
@@ -272,7 +272,7 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
                 partitionEventCount += mapPartitionEventCount;
             }
         } else {
-            String mapName = syncEvent.getMapName();
+            String mapName = syncEvent.getObjectName();
             partitionEventCount += syncPartitionForMap(syncContext, mapName, partition);
         }
         if (partitionEventCount == 0) {

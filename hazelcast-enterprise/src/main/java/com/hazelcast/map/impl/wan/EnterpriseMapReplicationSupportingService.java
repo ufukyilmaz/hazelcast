@@ -117,7 +117,7 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
     private void republishIfNecessary(WanReplicationEvent event, String mapName) {
         final MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         if (mapContainer.isWanRepublishingEnabled()) {
-            mapContainer.getWanReplicationPublisher().republishReplicationEvent(event);
+            mapContainer.getWanReplicationDelegate().republishReplicationEvent(event);
         }
     }
 

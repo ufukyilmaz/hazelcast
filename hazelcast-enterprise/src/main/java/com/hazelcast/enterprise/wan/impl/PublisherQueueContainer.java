@@ -7,7 +7,7 @@ import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.util.MapUtil;
-import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collection;
@@ -39,9 +39,8 @@ public class PublisherQueueContainer {
      * @param partitionId    the partition of the wan event
      * @return the wan replication event
      */
-    public WanReplicationEvent pollCacheWanEvent(String nameWithPrefix, int partitionId) {
-        return getEventQueue(partitionId)
-                .pollCacheWanEvent(nameWithPrefix);
+    public InternalWanReplicationEvent pollCacheWanEvent(String nameWithPrefix, int partitionId) {
+        return getEventQueue(partitionId).pollCacheWanEvent(nameWithPrefix);
     }
 
     /**
@@ -55,7 +54,7 @@ public class PublisherQueueContainer {
      */
     public boolean publishCacheWanEvent(String nameWithPrefix,
                                         int partitionId,
-                                        WanReplicationEvent replicationEvent) {
+                                        InternalWanReplicationEvent replicationEvent) {
         return getEventQueue(partitionId)
                 .publishCacheWanEvent(nameWithPrefix, replicationEvent);
     }
@@ -68,9 +67,8 @@ public class PublisherQueueContainer {
      * @param partitionId the partition of the wan event
      * @return the wan replication event
      */
-    public WanReplicationEvent pollMapWanEvent(String mapName, int partitionId) {
-        return getEventQueue(partitionId)
-                .pollMapWanEvent(mapName);
+    public InternalWanReplicationEvent pollMapWanEvent(String mapName, int partitionId) {
+        return getEventQueue(partitionId).pollMapWanEvent(mapName);
     }
 
     /**
@@ -84,7 +82,9 @@ public class PublisherQueueContainer {
      * @return {@code true} if the element was added to this queue, else
      * {@code false}
      */
-    public boolean publishMapWanEvent(String mapName, int partitionId, WanReplicationEvent replicationEvent) {
+    public boolean publishMapWanEvent(String mapName,
+                                      int partitionId,
+                                      InternalWanReplicationEvent replicationEvent) {
         return getEventQueue(partitionId)
                 .publishMapWanEvent(mapName, replicationEvent);
     }
@@ -98,7 +98,7 @@ public class PublisherQueueContainer {
      * @param elementsToDrain the maximum number of events to drain
      */
     public void drainRandomWanQueue(int partitionId,
-                                    Collection<WanReplicationEvent> drainTo,
+                                    Collection<InternalWanReplicationEvent> drainTo,
                                     int elementsToDrain) {
         getEventQueue(partitionId)
                 .drainRandomWanQueue(drainTo, elementsToDrain);

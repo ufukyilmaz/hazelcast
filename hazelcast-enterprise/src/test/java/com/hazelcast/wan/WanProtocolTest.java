@@ -4,7 +4,6 @@ import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionWrapper;
@@ -129,9 +128,9 @@ public class WanProtocolTest extends HazelcastTestSupport {
         for (HazelcastInstance instance : sourceCluster.getMembers()) {
             if (instance != null) {
                 EnterpriseWanReplicationService service = wanReplicationService(instance);
-                WanReplicationEndpoint endpoint = service.getEndpointOrNull(setupName, targetClusterName);
-                if (endpoint != null) {
-                    assertFalse(((WanBatchReplication) endpoint).isConnected());
+                WanReplicationPublisher publisher = service.getPublisherOrNull(setupName, targetClusterName);
+                if (publisher != null) {
+                    assertFalse(((WanBatchReplication) publisher).isConnected());
                 }
             }
         }
@@ -145,9 +144,9 @@ public class WanProtocolTest extends HazelcastTestSupport {
         for (HazelcastInstance instance : sourceCluster.getMembers()) {
             if (instance != null) {
                 EnterpriseWanReplicationService service = wanReplicationService(instance);
-                WanReplicationEndpoint endpoint = service.getEndpointOrNull(setupName, targetClusterName);
-                if (endpoint != null) {
-                    WanConnectionManager manager = ((WanBatchReplication) endpoint).getConnectionManager();
+                WanReplicationPublisher publisher = service.getPublisherOrNull(setupName, targetClusterName);
+                if (publisher != null) {
+                    WanConnectionManager manager = ((WanBatchReplication) publisher).getConnectionManager();
                     for (WanConnectionWrapper wrapper : manager.getConnectionPool().values()) {
                         WanProtocolNegotiationResponse response = wrapper.getNegotiationResponse();
                         Version chosenWanProtocolVersion = response.getChosenWanProtocolVersion();

@@ -4,7 +4,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.SerializableByConvention;
-import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.io.IOException;
 import java.util.Map;
@@ -34,9 +34,10 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanRepl
      * @return {@code true} if the element was added to this queue, else
      * {@code false}
      */
-    public boolean offerEvent(WanReplicationEvent wanReplicationEvent, String distributedObjectName, int backupCount) {
-        return getOrCreateEventQueue(distributedObjectName, backupCount)
-                .offer(wanReplicationEvent);
+    public boolean offerEvent(InternalWanReplicationEvent wanReplicationEvent,
+                              String distributedObjectName,
+                              int backupCount) {
+        return getOrCreateEventQueue(distributedObjectName, backupCount).offer(wanReplicationEvent);
     }
 
     /**
@@ -46,7 +47,7 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanRepl
      * @param distributedObjectName the name of the distributed object
      * @return the WAN event
      */
-    public WanReplicationEvent pollEvent(String distributedObjectName) {
+    public InternalWanReplicationEvent pollEvent(String distributedObjectName) {
         WanReplicationEventQueue eventQueue = get(distributedObjectName);
         if (eventQueue != null) {
             return eventQueue.poll();

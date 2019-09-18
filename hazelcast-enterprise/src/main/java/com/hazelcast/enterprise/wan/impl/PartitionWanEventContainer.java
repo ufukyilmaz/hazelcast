@@ -1,8 +1,7 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.util.QueueUtil;
-import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.util.Collection;
 import java.util.Map;
@@ -11,8 +10,6 @@ import java.util.Map;
  * Contains all map/cache event queues of a partition.
  */
 public class PartitionWanEventContainer {
-
-    private static final int DEFAULT_BACKUP_COUNT = 1;
 
     private final PartitionWanEventQueueMap mapWanEventQueueMap = new PartitionWanEventQueueMap();
     private final PartitionWanEventQueueMap cacheWanEventQueueMap = new PartitionWanEventQueueMap();
@@ -25,14 +22,14 @@ public class PartitionWanEventContainer {
      * Publishes the {@code replicationEvent} for the given {@code mapName}
      * map on the partition {@code partitionId}
      *
-     * @param mapName             the name of the map for which the event is
-     *                            published
-     * @param wanReplicationEvent the published replication event
+     * @param mapName the name of the map for which the event is
+     *                published
+     * @param event   the published replication event
      * @return {@code true} if the element was added to this queue, else
      * {@code false}
      */
-    public boolean publishMapWanEvent(String mapName, WanReplicationEvent wanReplicationEvent) {
-        return mapWanEventQueueMap.offerEvent(wanReplicationEvent, mapName, getBackupCount(wanReplicationEvent));
+    public boolean publishMapWanEvent(String mapName, InternalWanReplicationEvent event) {
+        return mapWanEventQueueMap.offerEvent(event, mapName, event.getBackupCount());
     }
 
     /**
@@ -41,7 +38,7 @@ public class PartitionWanEventContainer {
      * @param mapName the map for which an event is polled
      * @return the replication event
      */
-    public WanReplicationEvent pollMapWanEvent(String mapName) {
+    public InternalWanReplicationEvent pollMapWanEvent(String mapName) {
         return mapWanEventQueueMap.pollEvent(mapName);
     }
 
@@ -51,7 +48,7 @@ public class PartitionWanEventContainer {
      * @param cacheName the cache for which an event is polled
      * @return the replication event
      */
-    public WanReplicationEvent pollCacheWanEvent(String cacheName) {
+    public InternalWanReplicationEvent pollCacheWanEvent(String cacheName) {
         return cacheWanEventQueueMap.pollEvent(cacheName);
     }
 
@@ -62,7 +59,8 @@ public class PartitionWanEventContainer {
      * @param drainTo         the collection to which to drain events to
      * @param elementsToDrain the maximum number of events to drain
      */
-    public void drainRandomWanQueue(Collection<WanReplicationEvent> drainTo, int elementsToDrain) {
+    public void drainRandomWanQueue(Collection<InternalWanReplicationEvent> drainTo,
+                                    int elementsToDrain) {
         int drained = drainRandomWanQueue(current, drainTo, elementsToDrain);
 
         if (drained == 0) {
@@ -103,7 +101,7 @@ public class PartitionWanEventContainer {
      * @return the number of elements transferred
      */
     private int drainRandomWanQueue(PartitionWanEventQueueMap eventQueueMap,
-                                    Collection<WanReplicationEvent> drainTo,
+                                    Collection<InternalWanReplicationEvent> drainTo,
                                     int elementsToDrain) {
         for (WanReplicationEventQueue eventQueue : eventQueueMap.values()) {
             if (eventQueue != null) {
@@ -114,23 +112,6 @@ public class PartitionWanEventContainer {
             }
         }
         return 0;
-    }
-
-    /**
-     * Returns the backup count for the {@code event}
-     * representing the number of backup replicas on which this event will be
-     * stored in addition to being stored on the primary replica.
-     *
-     * @param event the WAN event
-     * @return the number of backup replicas on which this event is stored
-     */
-    private int getBackupCount(WanReplicationEvent event) {
-        if (event instanceof EnterpriseReplicationEventObject) {
-            EnterpriseReplicationEventObject evObj = (EnterpriseReplicationEventObject) event;
-            return evObj.getBackupCount();
-        } else {
-            return DEFAULT_BACKUP_COUNT;
-        }
     }
 
     public PartitionWanEventQueueMap getMapEventQueueMapByBackupCount(int backupCount) {
@@ -158,14 +139,15 @@ public class PartitionWanEventContainer {
      * Publishes the {@code replicationEvent} for the given {@code cacheName}
      * cache on the partition {@code partitionId}
      *
-     * @param cacheName           the name of the cache for which the event is
-     *                            published
-     * @param wanReplicationEvent the published replication event
+     * @param cacheName the name of the cache for which the event is
+     *                  published
+     * @param event     the published replication event
      * @return {@code true} if the element was added to this queue, else
      * {@code false}
      */
-    public boolean publishCacheWanEvent(String cacheName, WanReplicationEvent wanReplicationEvent) {
-        return cacheWanEventQueueMap.offerEvent(wanReplicationEvent, cacheName, getBackupCount(wanReplicationEvent));
+    public boolean publishCacheWanEvent(String cacheName,
+                                        InternalWanReplicationEvent event) {
+        return cacheWanEventQueueMap.offerEvent(event, cacheName, event.getBackupCount());
     }
 
     public void clear() {

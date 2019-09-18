@@ -1,13 +1,14 @@
 package com.hazelcast.cache.impl.wan;
 
 import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.util.Clock;
+import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,7 +16,7 @@ import java.util.Set;
 /**
  * Base class for {@link com.hazelcast.cache.ICache} related WAN replication objects.
  */
-public abstract class CacheReplicationObject implements EnterpriseReplicationEventObject, IdentifiedDataSerializable {
+public abstract class CacheReplicationObject implements InternalWanReplicationEvent, IdentifiedDataSerializable {
 
     private String cacheName;
     private String managerPrefix;
@@ -50,6 +51,7 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
         return backupCount;
     }
 
+    @Nonnull
     @Override
     public Set<String> getGroupNames() {
         return groupNames;

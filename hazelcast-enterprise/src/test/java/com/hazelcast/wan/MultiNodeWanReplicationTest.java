@@ -7,14 +7,13 @@ import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.map.IMap;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
+import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import com.hazelcast.wan.map.MapWanReplicationTestSupport;
 import org.junit.Rule;
 import org.junit.Test;
@@ -88,12 +87,7 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
         startPuttingInClusterA(scheduler, mapOnA1, mapOnA2);
         startRemovingFromClusterAWithDelay(scheduler, mapOnA1, mapOnA2, 5);
 
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertFalse(failureMessageBuilder.toString(), testFailed.get());
-            }
-        }, 30);
+        assertTrueAllTheTime(() -> assertFalse(failureMessageBuilder.toString(), testFailed.get()), 30);
     }
 
     private void startPuttingInClusterA(ScheduledExecutorService scheduler, final IMap<String, String> mapOnA1,
@@ -125,29 +119,26 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
     private void startVerifyingStagingWanStats(final String btoaWanReplicationName, final String clusterAGroupName,
                                                ScheduledExecutorService scheduler, final AtomicBoolean testFailed,
                                                final StringBuilder failureMessageBuilder) {
-        scheduler.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                if (!testFailed.get()) {
-                    LocalWanPublisherStats staging1Stats = getWanPublisherStats(
-                            clusterB[0], btoaWanReplicationName, clusterAGroupName);
-                    LocalWanPublisherStats staging2Stats = getWanPublisherStats(
-                            clusterB[1], btoaWanReplicationName, clusterAGroupName);
-                    if (staging1Stats.getTotalPublishedEventCount() > 0
-                            || staging1Stats.getOutboundQueueSize() > 0
-                            || staging2Stats.getTotalPublishedEventCount() > 0
-                            || staging2Stats.getOutboundQueueSize() > 0) {
-                        // fail the test
-                        failureMessageBuilder.append(
-                                format("No replication events should have been created on staging cluster nodes, however"
-                                                + " there were %d published & %d queued events on staging1 and %d published"
-                                                + " & %d queued events on staging2",
-                                        staging1Stats.getTotalPublishedEventCount(),
-                                        staging1Stats.getOutboundQueueSize(),
-                                        staging2Stats.getTotalPublishedEventCount(),
-                                        staging2Stats.getOutboundQueueSize()));
-                        testFailed.set(true);
-                    }
+        scheduler.scheduleAtFixedRate(() -> {
+            if (!testFailed.get()) {
+                LocalWanPublisherStats staging1Stats = getWanPublisherStats(
+                        clusterB[0], btoaWanReplicationName, clusterAGroupName);
+                LocalWanPublisherStats staging2Stats = getWanPublisherStats(
+                        clusterB[1], btoaWanReplicationName, clusterAGroupName);
+                if (staging1Stats.getTotalPublishedEventCount() > 0
+                        || staging1Stats.getOutboundQueueSize() > 0
+                        || staging2Stats.getTotalPublishedEventCount() > 0
+                        || staging2Stats.getOutboundQueueSize() > 0) {
+                    // fail the test
+                    failureMessageBuilder.append(
+                            format("No replication events should have been created on staging cluster nodes, however"
+                                            + " there were %d published & %d queued events on staging1 and %d published"
+                                            + " & %d queued events on staging2",
+                                    staging1Stats.getTotalPublishedEventCount(),
+                                    staging1Stats.getOutboundQueueSize(),
+                                    staging2Stats.getTotalPublishedEventCount(),
+                                    staging2Stats.getOutboundQueueSize()));
+                    testFailed.set(true);
                 }
             }
         }, 0, 100, MILLISECONDS);
@@ -156,8 +147,9 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
     private LocalWanPublisherStats getWanPublisherStats(HazelcastInstance hz,
                                                         String replicationConfigName,
                                                         String targetGroupName) {
-        WanReplicationPublisherDelegate replicationPublisher = (WanReplicationPublisherDelegate) getNodeEngineImpl(hz)
-                .getWanReplicationService().getWanReplicationPublisher(replicationConfigName);
+        DelegatingWanReplicationScheme replicationPublisher =
+                getNodeEngineImpl(hz).getWanReplicationService()
+                                     .getWanReplicationPublishers(replicationConfigName);
         return replicationPublisher.getStats().get(targetGroupName);
     }
 
@@ -166,10 +158,10 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
     protected WanBatchReplicationPublisherConfig targetCluster(Config config, int count) {
         final WanBatchReplicationPublisherConfig wanConfig =
                 super.targetCluster(config, count)
-                        .setQueueCapacity(100)
-                        .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION)
-                        .setBatchSize(10)
-                        .setBatchMaxDelayMillis(100);
+                     .setQueueCapacity(100)
+                     .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION)
+                     .setBatchSize(10)
+                     .setBatchMaxDelayMillis(100);
         return wanConfig;
     }
 
@@ -177,11 +169,11 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
     protected Config getConfig() {
         final Config config = super.getConfig();
         config.getMapConfig("default")
-                .setInMemoryFormat(getMemoryFormat())
-                .setBackupCount(1)
-                .setTimeToLiveSeconds(900)
-                .setMaxIdleSeconds(900)
-                .setEvictionPolicy(EvictionPolicy.LRU);
+              .setInMemoryFormat(getMemoryFormat())
+              .setBackupCount(1)
+              .setTimeToLiveSeconds(900)
+              .setMaxIdleSeconds(900)
+              .setEvictionPolicy(EvictionPolicy.LRU);
         return config;
     }
 

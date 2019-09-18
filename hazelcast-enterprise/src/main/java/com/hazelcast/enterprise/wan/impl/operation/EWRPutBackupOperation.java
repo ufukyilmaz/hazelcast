@@ -2,7 +2,6 @@ package com.hazelcast.enterprise.wan.impl.operation;
 
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.wan.CacheReplicationObject;
-import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.internal.services.ServiceNamespaceAware;
 import com.hazelcast.map.impl.MapService;
@@ -38,8 +37,8 @@ public class EWRPutBackupOperation extends EWRBaseOperation
 
     @Override
     public void run() throws Exception {
-        WanReplicationEndpoint endpoint = getEWRService().getEndpointOrFail(wanReplicationName, wanPublisherId);
-        endpoint.putBackup(event);
+        getEWRService().getPublisherOrFail(wanReplicationName, wanPublisherId)
+                       .publishReplicationEventBackup(event);
         response = true;
     }
 

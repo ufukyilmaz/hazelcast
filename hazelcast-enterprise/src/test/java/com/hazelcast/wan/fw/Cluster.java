@@ -253,7 +253,7 @@ public class Cluster {
             for (HazelcastInstance member : clusterMembers) {
                 if (member != null) {
                     WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
-                            .getEndpointOrFail(setupName, targetClusterName);
+                            .getPublisherOrFail(setupName, targetClusterName);
                     assertFalse(endpoint.getReplicationStrategy().hasOngoingReplication());
                 }
             }
@@ -263,7 +263,7 @@ public class Cluster {
     public void clearWanQueuesOnAllMembers(WanReplication wanReplication) {
         for (HazelcastInstance instance : clusterMembers) {
             if (instance != null && instance.getLifecycleService().isRunning()) {
-                wanReplicationService(instance).clearQueues(wanReplication.getSetupName(), wanReplication.getTargetClusterName());
+                wanReplicationService(instance).removeWanEvents(wanReplication.getSetupName(), wanReplication.getTargetClusterName());
             }
         }
     }

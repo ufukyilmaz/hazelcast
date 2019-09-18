@@ -12,6 +12,7 @@ import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -55,11 +56,11 @@ class WanEventProcessor implements LiveOperationsTracker {
      *                         processing result
      */
     public void handleRepEvent(BatchWanReplicationEvent replicationEvent, WanOperation op) {
-        final Collection<WanReplicationEvent> eventList = replicationEvent.getEvents();
-        final int partitionId = eventList.isEmpty()
+        Collection<InternalWanReplicationEvent> eventList = replicationEvent.getEvents();
+        int partitionId = eventList.isEmpty()
                 ? DEFAULT_KEY_FOR_STRIPED_EXECUTORS
                 : getPartitionId(eventList.iterator().next().getKey());
-        final BatchWanEventRunnable processingRunnable = new BatchWanEventRunnable(
+        BatchWanEventRunnable processingRunnable = new BatchWanEventRunnable(
                 replicationEvent, op, partitionId, node.getNodeEngine(), liveOperations, logger);
         executeAndNotify(processingRunnable, op);
     }
@@ -72,7 +73,7 @@ class WanEventProcessor implements LiveOperationsTracker {
      * @param op    the operation which will be notified of the
      *              processing result
      */
-    public void handleRepEvent(WanReplicationEvent event, WanOperation op) {
+    public void handleRepEvent(InternalWanReplicationEvent event, WanOperation op) {
         final int partitionId = getPartitionId(event.getKey());
         final WanEventRunnable processingRunnable
                 = new WanEventRunnable(event, op, partitionId, node.getNodeEngine(), liveOperations, logger);

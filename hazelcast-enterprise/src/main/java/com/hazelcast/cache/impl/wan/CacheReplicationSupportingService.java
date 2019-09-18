@@ -182,7 +182,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
 
         SplitBrainMergePolicy mergePolicy = cacheService.getMergePolicyProvider().getMergePolicy(event.getMergePolicy());
         CacheMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
-        Operation operation = operationProvider.createWanMergeOperation(ORIGIN, mergingEntry,
+        Operation operation = operationProvider.createWanMergeOperation(mergingEntry,
                 (SplitBrainMergePolicy<Data, CacheMergeTypes>) mergePolicy, IGNORE_COMPLETION);
 
         InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);

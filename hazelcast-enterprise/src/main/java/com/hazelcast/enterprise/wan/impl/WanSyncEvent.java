@@ -1,7 +1,6 @@
-package com.hazelcast.enterprise.wan;
+package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
-import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEvent;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -12,7 +11,7 @@ import java.util.UUID;
 /**
  * A marker event to initiate WAN sync for map entries.
  */
-public class WanSyncEvent extends WanAntiEntropyEvent implements IdentifiedDataSerializable {
+public class WanSyncEvent extends AbstractWanAntiEntropyEvent implements IdentifiedDataSerializable {
     /**
      * WAN sync type. Defines the scope of entries to be synced.
      */
@@ -39,12 +38,17 @@ public class WanSyncEvent extends WanAntiEntropyEvent implements IdentifiedDataS
     }
 
     @Override
-    public WanAntiEntropyEvent cloneWithoutPartitionKeys() {
+    public AbstractWanAntiEntropyEvent cloneWithoutPartitionKeys() {
         return new WanSyncEvent(type, uuid, mapName);
     }
 
     public WanSyncType getType() {
         return type;
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EWRDataSerializerHook.F_ID;
     }
 
     @Override

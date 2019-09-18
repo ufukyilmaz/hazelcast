@@ -1,7 +1,8 @@
 package com.hazelcast.enterprise.wan.impl.sync;
 
-import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -24,17 +25,17 @@ public class WanAntiEntropyEventPublishOperation extends Operation
         implements IdentifiedDataSerializable, AllowedDuringPassiveState {
 
     private String wanReplicationName;
-    private String targetGroupName;
-    private WanAntiEntropyEvent event;
+    private String wanPublisherId;
+    private AbstractWanAntiEntropyEvent event;
 
     public WanAntiEntropyEventPublishOperation() {
     }
 
     public WanAntiEntropyEventPublishOperation(String wanReplicationName,
-                                               String targetGroupName,
-                                               WanAntiEntropyEvent event) {
+                                               String wanPublisherId,
+                                               AbstractWanAntiEntropyEvent event) {
         this.wanReplicationName = wanReplicationName;
-        this.targetGroupName = targetGroupName;
+        this.wanPublisherId = wanPublisherId;
         this.event = event;
     }
 
@@ -42,14 +43,14 @@ public class WanAntiEntropyEventPublishOperation extends Operation
     public void run() throws Exception {
         EnterpriseWanReplicationService wanReplicationService = getService();
         event.setOp(this);
-        wanReplicationService.publishAntiEntropyEvent(wanReplicationName, targetGroupName, event);
+        wanReplicationService.publishAntiEntropyEvent(wanReplicationName, wanPublisherId, event);
     }
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeUTF(wanReplicationName);
-        out.writeUTF(targetGroupName);
+        out.writeUTF(wanPublisherId);
         out.writeObject(event);
     }
 
@@ -57,7 +58,7 @@ public class WanAntiEntropyEventPublishOperation extends Operation
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         wanReplicationName = in.readUTF();
-        targetGroupName = in.readUTF();
+        wanPublisherId = in.readUTF();
         event = in.readObject();
     }
 

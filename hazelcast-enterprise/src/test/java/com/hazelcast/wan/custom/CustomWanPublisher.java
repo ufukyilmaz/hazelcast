@@ -2,17 +2,17 @@ package com.hazelcast.wan.custom;
 
 import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.WanConsistencyCheckEvent;
-import com.hazelcast.enterprise.wan.WanSyncEvent;
+import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
+import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.impl.replication.WanPublisherSyncSupport;
-import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEvent;
-import com.hazelcast.instance.impl.Node;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.wan.ConsistencyCheckResult;
+import com.hazelcast.wan.WanAntiEntropyEvent;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanSyncStats;
+import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,8 +28,8 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
     private volatile boolean running = true;
 
     @Override
-    public void init(Node node, WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig targetClusterConfig) {
-        super.init(node, wanReplicationConfig, targetClusterConfig);
+    public void init(WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig targetClusterConfig) {
+        super.init(wanReplicationConfig, targetClusterConfig);
         node.nodeEngine.getExecutionService().execute("hz:custom:wan:publisher", this);
     }
 
@@ -53,7 +53,7 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
         while (running) {
             try {
                 int batchSize = configurationContext.getBatchSize();
-                ArrayList<WanReplicationEvent> batchList = new ArrayList<>(batchSize);
+                ArrayList<InternalWanReplicationEvent> batchList = new ArrayList<>(batchSize);
 
                 for (IPartition partition : node.getPartitionService().getPartitions()) {
                     if (partition.isLocal()) {

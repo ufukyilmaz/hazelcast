@@ -1,7 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
-import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
@@ -10,6 +9,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ import static com.hazelcast.internal.serialization.impl.SerializationUtil.writeC
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
- * Container to gather batch of {@link WanReplicationEvent} objects.
+ * Container to gather batch of {@link InternalWanReplicationEvent} objects.
  * If {@link WanBatchReplicationPublisherConfig#isSnapshotEnabled()}
  * is {@code true}, only the latest event for a key will be sent.
  *
@@ -33,13 +33,13 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  */
 public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
     private transient boolean snapshotEnabled;
-    private transient Map<DistributedObjectEntryIdentifier, WanReplicationEvent> eventMap;
-    private transient List<WanReplicationEvent> coalescedEvents;
+    private transient Map<DistributedObjectEntryIdentifier, InternalWanReplicationEvent> eventMap;
+    private transient List<InternalWanReplicationEvent> coalescedEvents;
 
     private transient int primaryEventCount;
     private transient int totalEntryCount;
 
-    private Collection<WanReplicationEvent> eventList;
+    private Collection<InternalWanReplicationEvent> eventList;
 
 
     public BatchWanReplicationEvent() {
@@ -65,11 +65,11 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
      * @param event a WAN replication event
      * @see WanBatchReplicationPublisherConfig#isSnapshotEnabled()
      */
-    public void addEvent(WanReplicationEvent event) {
+    public void addEvent(InternalWanReplicationEvent event) {
         boolean isCoalesced = false;
         if (snapshotEnabled) {
             DistributedObjectEntryIdentifier id = getDistributedObjectEntryIdentifier(event);
-            WanReplicationEvent coalescedEvent = eventMap.put(id, event);
+            InternalWanReplicationEvent coalescedEvent = eventMap.put(id, event);
             if (coalescedEvent != null) {
                 coalescedEvents.add(coalescedEvent);
                 isCoalesced = true;
@@ -78,13 +78,12 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
             eventList.add(event);
         }
 
-        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event;
         if (!isCoalesced) {
-            incrementEventCount(eventObject);
+            incrementEventCount(event);
         }
 
-        if (!(eventObject instanceof EnterpriseMapReplicationMerkleTreeNode)
-                && !(eventObject instanceof EnterpriseMapReplicationSync)) {
+        if (!(event instanceof EnterpriseMapReplicationMerkleTreeNode)
+                && !(event instanceof EnterpriseMapReplicationSync)) {
             // sync events don't count against primary WAN counters
             primaryEventCount++;
         }
@@ -96,7 +95,7 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
      *
      * @param eventObject the WAN event object
      */
-    private void incrementEventCount(EnterpriseReplicationEventObject eventObject) {
+    private void incrementEventCount(InternalWanReplicationEvent eventObject) {
         if (eventObject instanceof EnterpriseMapReplicationMerkleTreeNode) {
             EnterpriseMapReplicationMerkleTreeNode node = (EnterpriseMapReplicationMerkleTreeNode) eventObject;
             totalEntryCount += node.getEntryCount();
@@ -106,7 +105,7 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
     }
 
     private DistributedObjectEntryIdentifier getDistributedObjectEntryIdentifier(WanReplicationEvent event) {
-        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) event;
+        InternalWanReplicationEvent eventObject = (InternalWanReplicationEvent) event;
         return new DistributedObjectEntryIdentifier(event.getServiceName(), eventObject.getObjectName(), eventObject.getKey());
     }
 
@@ -133,12 +132,12 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
      * Returns all events which were coalesced by other newer events in
      * {@link #getEvents()}.
      */
-    public List<WanReplicationEvent> getCoalescedEvents() {
+    public List<InternalWanReplicationEvent> getCoalescedEvents() {
         return coalescedEvents;
     }
 
     /** Returns the WAN events in this batch */
-    public Collection<WanReplicationEvent> getEvents() {
+    public Collection<InternalWanReplicationEvent> getEvents() {
         if (snapshotEnabled) {
             return eventMap == null
                     ? Collections.emptyList()

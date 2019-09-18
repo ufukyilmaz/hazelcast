@@ -1,8 +1,8 @@
 package com.hazelcast.enterprise.wan.impl.sync;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.WanSyncEvent;
-import com.hazelcast.enterprise.wan.WanSyncType;
+import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
+import com.hazelcast.enterprise.wan.impl.WanSyncType;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -55,7 +55,7 @@ public class WanSyncEventTest {
         WanSyncEvent deserialized = serializationService.toObject(serialized, WanSyncEvent.class);
 
         assertEquals(expected.getType(), deserialized.getType());
-        assertEquals(expected.getMapName(), deserialized.getMapName());
+        assertEquals(expected.getObjectName(), deserialized.getObjectName());
         assertEquals(expected.getPartitionSet(), deserialized.getPartitionSet());
         assertNull(deserialized.getOp());
     }

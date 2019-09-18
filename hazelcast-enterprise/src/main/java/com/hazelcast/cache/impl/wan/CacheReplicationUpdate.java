@@ -7,6 +7,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 
 /**
@@ -40,6 +41,7 @@ public class CacheReplicationUpdate extends CacheReplicationObject {
         return entryView;
     }
 
+    @Nonnull
     @Override
     public Data getKey() {
         return entryView.getKey();

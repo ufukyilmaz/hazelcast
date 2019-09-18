@@ -27,18 +27,16 @@ public class WanCacheMergeOperation
 
     private CacheMergeTypes mergingEntry;
     private SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy;
-    private String wanGroupName;
 
     public WanCacheMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, String wanGroupName,
+    public WanCacheMergeOperation(String name,
                                   SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy,
                                   CacheMergeTypes mergingEntry, int completionId) {
         super(name, completionId);
         this.mergingEntry = mergingEntry;
         this.mergePolicy = mergePolicy;
-        this.wanGroupName = wanGroupName;
     }
 
     @Override
@@ -80,7 +78,6 @@ public class WanCacheMergeOperation
         super.writeInternal(out);
         out.writeObject(mergingEntry);
         out.writeObject(mergePolicy);
-        out.writeUTF(wanGroupName);
     }
 
     @Override
@@ -88,7 +85,6 @@ public class WanCacheMergeOperation
         super.readInternal(in);
         mergingEntry = in.readObject();
         mergePolicy = in.readObject();
-        wanGroupName = in.readUTF();
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.enterprise.wan.impl.PublisherQueueContainer;
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -34,7 +34,9 @@ public class PollSynchronizerPublisherQueueContainer extends PublisherQueueConta
     }
 
     @Override
-    public void drainRandomWanQueue(int partitionId, Collection<WanReplicationEvent> drainTo, int elementsToDrain) {
+    public void drainRandomWanQueue(int partitionId,
+                                    Collection<InternalWanReplicationEvent> drainTo,
+                                    int elementsToDrain) {
         Lock partitionPollLock = getPartitionPollLock(partitionId);
         if (partitionPollLock.tryLock()) {
             try {

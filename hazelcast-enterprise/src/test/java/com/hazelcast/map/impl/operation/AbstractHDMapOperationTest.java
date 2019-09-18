@@ -105,7 +105,7 @@ public abstract class AbstractHDMapOperationTest {
         evictor = mock(HDEvictorImpl.class);
 
         mapContainer = mock(MapContainer.class);
-        when(mapContainer.getWanReplicationPublisher()).thenReturn(null);
+        when(mapContainer.getWanReplicationDelegate()).thenReturn(null);
         when(mapContainer.getMapConfig()).thenReturn(mapConfig);
         when(mapContainer.getEvictor()).thenReturn(evictor);
         when(mapContainer.hasInvalidationListener()).thenReturn(true);

@@ -2,8 +2,6 @@ package com.hazelcast.map.impl;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MerkleTreeConfig;
-import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
@@ -103,13 +101,8 @@ public class EnterpriseMapContainer extends MapContainer {
     @Override
     public void onDestroy() {
         deregisterMapProbes();
-        if (wanReplicationPublisher != null) {
-            if (wanReplicationPublisher instanceof WanReplicationPublisherDelegate) {
-                ((WanReplicationPublisherDelegate) wanReplicationPublisher).destroyMapData(name);
-            }
-            if (wanReplicationPublisher instanceof WanBatchReplication) {
-                ((WanBatchReplication) wanReplicationPublisher).destroyMapData(name);
-            }
+        if (wanReplicationDelegate != null) {
+            wanReplicationDelegate.destroyMapData(name);
         }
     }
 

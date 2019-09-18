@@ -19,7 +19,7 @@ import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.CountingWanEndpoint;
+import com.hazelcast.wan.CountingWanPublisher;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -62,7 +62,7 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
         WanReplicationConfig wanConfig = new WanReplicationConfig().setName("wan-replication");
         CustomWanPublisherConfig pc = new CustomWanPublisherConfig()
                 .setPublisherId("target-cluster")
-                .setClassName(CountingWanEndpoint.class.getName());
+                .setClassName(CountingWanPublisher.class.getName());
         WanConsumerConfig wanConsumerConfig = new WanConsumerConfig()
                 .setClassName(NoopWanConsumer.class.getName());
         wanConfig.addCustomPublisherConfig(pc);

@@ -11,7 +11,6 @@ import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.impl.WanReplicationPublisherDelegate;
 import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.logging.ILogger;
@@ -26,6 +25,7 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.WanStatisticsRule;
 import com.hazelcast.wan.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
+import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -202,11 +202,10 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
                 for (HazelcastInstance instance : cluster) {
                     if (instance != null && instance.getLifecycleService().isRunning()) {
                         EnterpriseWanReplicationService s = getWanReplicationService(instance);
-                        WanReplicationPublisherDelegate delegate
-                                = (WanReplicationPublisherDelegate) s.getWanReplicationPublisher(wanReplicationConfigName);
-                        AbstractWanPublisher endpoint = (AbstractWanPublisher) delegate.getEndpoint(endpointGroupName);
-                        totalEvents += endpoint.getCurrentElementCount();
-                        totalBackupEvents += endpoint.getCurrentBackupElementCount();
+                        DelegatingWanReplicationScheme delegate = s.getWanReplicationPublishers(wanReplicationConfigName);
+                        AbstractWanPublisher publisher = (AbstractWanPublisher) delegate.getPublisher(endpointGroupName);
+                        totalEvents += publisher.getCurrentElementCount();
+                        totalBackupEvents += publisher.getCurrentBackupElementCount();
                     }
                 }
                 assertEquals(primaryEvents, totalEvents);
@@ -279,7 +278,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
             public void run() {
                 for (HazelcastInstance member : cluster) {
                     WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
-                            .getEndpointOrFail(wanRepName, targetGroupName);
+                            .getPublisherOrFail(wanRepName, targetGroupName);
                     assertTrue(!endpoint.getReplicationStrategy().hasOngoingReplication());
                 }
             }
@@ -299,7 +298,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
             public void run() {
                 for (HazelcastInstance member : cluster) {
                     WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
-                            .getEndpointOrFail(wanRepName, targetGroupName);
+                            .getPublisherOrFail(wanRepName, targetGroupName);
                     assertTrue(!endpoint.getReplicationStrategy().hasOngoingReplication());
                 }
             }

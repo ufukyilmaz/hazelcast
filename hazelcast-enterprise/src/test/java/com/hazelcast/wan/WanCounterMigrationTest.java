@@ -40,7 +40,7 @@ import static com.hazelcast.wan.fw.WanCounterTestSupport.verifyEventCountersAreE
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
-import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationEndpoint;
+import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationPublisher;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static java.util.Arrays.asList;
 
@@ -220,7 +220,7 @@ public class WanCounterMigrationTest {
         fillCache(sourceCluster, CACHE_NAME, 0, 1000);
 
         sourceCluster.startClusterMembers(2);
-        ((MigrationBreakerWanPublisher) wanReplicationEndpoint(master, wanReplication)).failMigration();
+        ((MigrationBreakerWanPublisher) wanReplicationPublisher(master, wanReplication)).failMigration();
         HazelcastInstance startedMember = sourceCluster.startAClusterMember();
         startedMember.getLifecycleService().terminate();
         waitAllForSafeState(sourceCluster.getMembers());

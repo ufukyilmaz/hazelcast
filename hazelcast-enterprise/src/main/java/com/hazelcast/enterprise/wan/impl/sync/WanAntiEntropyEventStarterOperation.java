@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.sync;
 
+import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.impl.operationservice.AbstractLocalOperation;
@@ -14,17 +15,17 @@ import com.hazelcast.spi.impl.operationservice.AbstractLocalOperation;
 public class WanAntiEntropyEventStarterOperation extends AbstractLocalOperation implements AllowedDuringPassiveState {
 
     private String wanReplicationName;
-    private String targetGroupName;
-    private WanAntiEntropyEvent event;
+    private String wanPublisherId;
+    private AbstractWanAntiEntropyEvent event;
 
     public WanAntiEntropyEventStarterOperation() {
     }
 
     public WanAntiEntropyEventStarterOperation(String wanReplicationName,
-                                               String targetGroupName,
-                                               WanAntiEntropyEvent event) {
+                                               String wanPublisherId,
+                                               AbstractWanAntiEntropyEvent event) {
         this.wanReplicationName = wanReplicationName;
-        this.targetGroupName = targetGroupName;
+        this.wanPublisherId = wanPublisherId;
         this.event = event;
     }
 
@@ -32,6 +33,6 @@ public class WanAntiEntropyEventStarterOperation extends AbstractLocalOperation 
     public void run() throws Exception {
         EnterpriseWanReplicationService wanReplicationService = getService();
         wanReplicationService.getSyncManager()
-                             .publishAntiEntropyEventOnMembers(wanReplicationName, targetGroupName, event);
+                             .publishAntiEntropyEventOnMembers(wanReplicationName, wanPublisherId, event);
     }
 }

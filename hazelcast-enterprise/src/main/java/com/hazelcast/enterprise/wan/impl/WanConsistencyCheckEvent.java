@@ -1,14 +1,13 @@
-package com.hazelcast.enterprise.wan;
+package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
-import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEvent;
 
 import java.util.UUID;
 
 /**
  * A marker event to compare merkle tree roots for a single map.
  */
-public class WanConsistencyCheckEvent extends WanAntiEntropyEvent {
+public class WanConsistencyCheckEvent extends AbstractWanAntiEntropyEvent {
 
     public WanConsistencyCheckEvent() {
     }
@@ -22,8 +21,13 @@ public class WanConsistencyCheckEvent extends WanAntiEntropyEvent {
     }
 
     @Override
-    public WanAntiEntropyEvent cloneWithoutPartitionKeys() {
+    public AbstractWanAntiEntropyEvent cloneWithoutPartitionKeys() {
         return new WanConsistencyCheckEvent(uuid, mapName);
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EWRDataSerializerHook.F_ID;
     }
 
     @Override

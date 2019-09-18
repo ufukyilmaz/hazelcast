@@ -53,8 +53,6 @@ final class MemoryBlockDataInput extends VersionedObjectDataInput implements Ent
 
     private final EnterpriseSerializationService service;
 
-    private char[] charBuffer;
-
     MemoryBlockDataInput(MemoryBlock memoryBlock, int position, int offset, EnterpriseSerializationService serializationService) {
         memory = memoryBlock;
         size = memoryBlock.size();

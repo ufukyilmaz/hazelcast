@@ -187,6 +187,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         WanReplicationConfig existingConfig = wanConfigs.putIfAbsent(scheme, newConfig);
 
         if (existingConfig == null) {
+            logger.info("Added new WAN replication configuration " + newConfig);
             return;
         }
 
@@ -218,6 +219,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
             mergedConfig.setName(existingConfig.getName());
             mergedConfig.setWanPublisherConfigs(mergedPublisherConfigs);
             wanConfigs.put(scheme, mergedConfig);
+            logger.info("Added new WAN publisher configurations "
+                    + missingPublisherConfigs.values() + " to WAN replication scheme: " + scheme);
         }
     }
 

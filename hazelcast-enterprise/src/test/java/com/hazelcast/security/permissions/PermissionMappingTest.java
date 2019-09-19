@@ -2,6 +2,7 @@ package com.hazelcast.security.permissions;
 
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.cp.internal.datastructures.spi.RaftRemoteService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.services.RemoteService;
 import com.hazelcast.security.SecureCallableImpl;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,7 +52,6 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.lock.RaftLockService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomiclong.RaftAtomicLongService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomicref.RaftAtomicRefService.class);
-        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.countdownlatch.RaftCountDownLatchService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.semaphore.RaftSemaphoreService.class);
     }
 
@@ -93,7 +94,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "map");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.executor.impl.DistributedExecutorService.class,
                 "executorService");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.countdownlatch.CountDownLatchService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.countdownlatch.CountDownLatchService.class,
                 "countDownLatch");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.collection.impl.queue.QueueService.class,
                 "queue");
@@ -165,6 +166,8 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "initialize", "getQueryCache", "getTotalBackupCount", "subscribeToEventJournal",
                 "replace", "replaceAll",
         });
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.countdownlatch.CountDownLatchService.class,
+                new String[] {"getGroupId"});
     }
 
     @Test
@@ -177,8 +180,11 @@ public class PermissionMappingTest extends HazelcastTestSupport {
 
         Map<Class, Set<String>> missingPerms = new HashMap<Class, Set<String>>();
 
-        List<RemoteService> serviceList = serviceManager.getServices(RemoteService.class);
-        for (RemoteService service : serviceList) {
+        List<Object> serviceList = new ArrayList<>();
+        serviceList.addAll(serviceManager.getServices(RemoteService.class));
+        serviceList.addAll(serviceManager.getServices(RaftRemoteService.class));
+
+        for (Object service : serviceList) {
             if (INSECURE_SERVICES.contains(service.getClass())) {
                 continue;
             }
@@ -187,7 +193,12 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 fail("Remote service '" + service.getClass() + "' not listed in permission name mappings.");
             }
 
-            DistributedObject dObj = service.createDistributedObject("TestingPermissionMappings");
+            DistributedObject dObj;
+            if (service instanceof RemoteService) {
+                dObj = ((RemoteService) service).createDistributedObject("TestingPermissionMappings");
+            } else {
+                dObj = ((RaftRemoteService) service).createProxy("TestingPermissionMappings");
+            }
             Method[] methods = dObj.getClass().getMethods();
             Set<String> filteredMethods = new HashSet<String>();
 
@@ -252,11 +263,17 @@ public class PermissionMappingTest extends HazelcastTestSupport {
             }
 
             assertNotNull("Service alias " + serviceAlias + " not found in services. Obsolete service mapping?", serviceClass);
-            List<? extends RemoteService> services = serviceManager.getServices(serviceClass);
+            List<Object> services = serviceManager.getServices(serviceClass);
             assertEquals("Found more than one service with the given class " + serviceClass
                     + ": " + Arrays.toString(services.toArray()), 1, services.size());
 
-            DistributedObject proxy = services.get(0).createDistributedObject("Test");
+            Object service = services.get(0);
+            DistributedObject proxy;
+            if (service instanceof RemoteService) {
+                proxy = ((RemoteService) service).createDistributedObject("Test");
+            } else {
+                proxy = ((RaftRemoteService) service).createProxy("Test");
+            }
 
             for (String mappedMethod : permEntry.getValue()) {
                 Method match = null;

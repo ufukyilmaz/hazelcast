@@ -125,9 +125,9 @@ public class ExecutorSecurityTest {
 
             result += hz.getAtomicLong("atomic_long").incrementAndGet(); // +1
 
-            hz.getCountDownLatch("countdown_latch").trySetCount(2);
-            hz.getCountDownLatch("countdown_latch").countDown();
-            result += hz.getCountDownLatch("countdown_latch").getCount(); // +1
+            hz.getCPSubsystem().getCountDownLatch("countdown_latch").trySetCount(2);
+            hz.getCPSubsystem().getCountDownLatch("countdown_latch").countDown();
+            result += hz.getCPSubsystem().getCountDownLatch("countdown_latch").getCount(); // +1
 
             hz.getSemaphore("semaphore").init(2);
             hz.getSemaphore("semaphore").acquire();

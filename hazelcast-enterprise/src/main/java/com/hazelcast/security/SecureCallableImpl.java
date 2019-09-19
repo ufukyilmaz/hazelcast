@@ -333,12 +333,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public ICountDownLatch getCountDownLatch(String name) {
-            checkPermission(new CountDownLatchPermission(name, ActionConstants.ACTION_CREATE));
-            return getProxy(new ICountDownLatchInvocationHandler(instance.getCountDownLatch(name)));
-        }
-
-        @Override
         public ISemaphore getSemaphore(String name) {
             checkPermission(new SemaphorePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ISemaphoreInvocationHandler(instance.getSemaphore(name)));

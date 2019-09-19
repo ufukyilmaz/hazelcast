@@ -6,7 +6,7 @@ import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
-import com.hazelcast.config.WANQueueFullBehavior;
+import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
@@ -221,7 +221,7 @@ public abstract class AbstractSecureWanTest {
         WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
         c.setEndpoint(endpointName)
                 .setGroupName(clusterName)
-                .setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION)
+                .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
                 .setQueueCapacity(1000)
                 .setBatchSize(500)
                 .setBatchMaxDelayMillis(1000)

@@ -4,7 +4,7 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.wan.CacheReplicationObject;
 import com.hazelcast.config.AbstractWanPublisherConfig;
-import com.hazelcast.config.WANQueueFullBehavior;
+import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
@@ -35,7 +35,7 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.util.Clock;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
-import com.hazelcast.wan.WANReplicationQueueFullException;
+import com.hazelcast.wan.WanReplicationQueueFullException;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationPublisher;
@@ -79,7 +79,7 @@ public abstract class AbstractWanPublisher implements
     protected String localGroupName;
     protected String wanPublisherId;
     protected String wanReplicationName;
-    protected WANQueueFullBehavior queueFullBehavior;
+    protected WanQueueFullBehavior queueFullBehavior;
     protected WanConfigurationContext configurationContext;
     protected PollSynchronizerPublisherQueueContainer eventQueueContainer;
     protected WanPublisherSyncSupport syncSupport;
@@ -235,7 +235,7 @@ public abstract class AbstractWanPublisher implements
         }
 
         if (wanCounter.getPrimaryElementCount() >= queueCapacity
-                && queueFullBehavior != WANQueueFullBehavior.THROW_EXCEPTION) {
+                && queueFullBehavior != WanQueueFullBehavior.THROW_EXCEPTION) {
             long curTime = System.currentTimeMillis();
             if (curTime > lastQueueFullLogTimeMs + queueLoggerTimePeriodMs) {
                 lastQueueFullLogTimeMs = curTime;
@@ -423,15 +423,15 @@ public abstract class AbstractWanPublisher implements
      * Checks the size of the WAN replication queue and throws an exception if
      * it has been reached or crossed.
      *
-     * @throws WANReplicationQueueFullException if queue capacity has been reached and
+     * @throws WanReplicationQueueFullException if queue capacity has been reached and
      *                                          {@link
      *                                          com.hazelcast.config.WanBatchReplicationPublisherConfig#getQueueFullBehavior()}
-     *                                          is set to {@link WANQueueFullBehavior#THROW_EXCEPTION}
+     *                                          is set to {@link WanQueueFullBehavior#THROW_EXCEPTION}
      */
     @Override
     public void doPrepublicationChecks() {
         if (isThrowExceptionBehavior(queueFullBehavior) && wanCounter.getPrimaryElementCount() >= queueCapacity) {
-            throw new WANReplicationQueueFullException(
+            throw new WanReplicationQueueFullException(
                     String.format("WAN replication for WAN publisher %s is full. Queue capacity is %d",
                             wanPublisherId, queueCapacity));
         }
@@ -473,9 +473,9 @@ public abstract class AbstractWanPublisher implements
         }
     }
 
-    private boolean isThrowExceptionBehavior(WANQueueFullBehavior queueFullBehavior) {
-        return WANQueueFullBehavior.THROW_EXCEPTION == queueFullBehavior
-                || (WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE == queueFullBehavior
+    private boolean isThrowExceptionBehavior(WanQueueFullBehavior queueFullBehavior) {
+        return WanQueueFullBehavior.THROW_EXCEPTION == queueFullBehavior
+                || (WanQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE == queueFullBehavior
                 && state.isReplicateEnqueuedEvents());
     }
 

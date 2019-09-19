@@ -2,7 +2,7 @@ package com.hazelcast.nio;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
-import com.hazelcast.config.WANQueueFullBehavior;
+import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
@@ -116,7 +116,7 @@ public class AdvancedNetworkingWanCommunicationIntegrationTest extends AbstractA
                                                                                ConsistencyCheckStrategy consistencyStrategy) {
         WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
         c.setGroupName(clusterName)
-                .setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION)
+                .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
                 .setQueueCapacity(1000)
                 .setBatchSize(500)
                 .setBatchMaxDelayMillis(1000)

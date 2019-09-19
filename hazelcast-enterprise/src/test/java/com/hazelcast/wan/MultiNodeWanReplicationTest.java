@@ -3,7 +3,7 @@ package com.hazelcast.wan;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.WANQueueFullBehavior;
+import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
@@ -159,7 +159,7 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
         final WanBatchReplicationPublisherConfig wanConfig =
                 super.targetCluster(config, count)
                      .setQueueCapacity(100)
-                     .setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION)
+                     .setQueueFullBehavior(WanQueueFullBehavior.THROW_EXCEPTION)
                      .setBatchSize(10)
                      .setBatchMaxDelayMillis(100);
         return wanConfig;

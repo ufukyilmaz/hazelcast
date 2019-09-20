@@ -89,8 +89,8 @@ class WanNodeConfig extends Config {
     }
 
     @Override
-    public void setConfigPatternMatcher(ConfigPatternMatcher configPatternMatcher) {
-        wrappedConfig.setConfigPatternMatcher(configPatternMatcher);
+    public Config setConfigPatternMatcher(ConfigPatternMatcher configPatternMatcher) {
+        return wrappedConfig.setConfigPatternMatcher(configPatternMatcher);
     }
 
     @Override
@@ -109,8 +109,8 @@ class WanNodeConfig extends Config {
     }
 
     @Override
-    public void setMemberAttributeConfig(MemberAttributeConfig memberAttributeConfig) {
-        wrappedConfig.setMemberAttributeConfig(memberAttributeConfig);
+    public Config setMemberAttributeConfig(MemberAttributeConfig memberAttributeConfig) {
+        return wrappedConfig.setMemberAttributeConfig(memberAttributeConfig);
     }
 
     @Override

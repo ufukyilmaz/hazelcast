@@ -2,9 +2,9 @@ package com.hazelcast.map.impl;
 
 import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.spi.impl.NodeEngine;
-import com.hazelcast.util.ConcurrencyUtil;
-import com.hazelcast.util.ConstructorFunction;
-import com.hazelcast.util.ContextMutexFactory;
+import com.hazelcast.internal.util.ConcurrencyUtil;
+import com.hazelcast.internal.util.ConstructorFunction;
+import com.hazelcast.internal.util.ContextMutexFactory;
 import com.hazelcast.wan.impl.merkletree.ArrayMerkleTree;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 

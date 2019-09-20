@@ -3,7 +3,7 @@ package com.hazelcast.security.loginmodules;
 import com.hazelcast.security.ClusterEndpointPrincipal;
 import com.hazelcast.security.ClusterIdentityPrincipal;
 import com.hazelcast.security.ClusterRolePrincipal;
-import com.hazelcast.util.StringUtil;
+import com.hazelcast.internal.util.StringUtil;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;

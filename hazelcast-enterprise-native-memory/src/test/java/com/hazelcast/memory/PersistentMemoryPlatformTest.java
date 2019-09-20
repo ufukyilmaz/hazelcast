@@ -6,7 +6,7 @@ import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
 import org.junit.Test;
 
-import static com.hazelcast.util.OsHelper.isLinux;
+import static com.hazelcast.internal.util.OsHelper.isLinux;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 

@@ -17,7 +17,7 @@ import static com.hazelcast.security.SecurityConstants.DEFAULT_SECRET_STRENGTH_P
 import static com.hazelcast.security.SecurityConstants.SECRET_STRENGTH_POLICY_CLASS;
 import static com.hazelcast.security.WeakSecretException.ENFORCED;
 import static com.hazelcast.security.WeakSecretException.formatMessage;
-import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static java.lang.System.getProperty;
 
 public class WeakSecretsConfigChecker {

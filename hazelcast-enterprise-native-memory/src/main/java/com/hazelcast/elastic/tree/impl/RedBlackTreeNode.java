@@ -7,7 +7,7 @@ import com.hazelcast.memory.MemoryBlock;
 import java.util.Iterator;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 
 @SuppressWarnings({"checkstyle:innerassignment"})
 class RedBlackTreeNode

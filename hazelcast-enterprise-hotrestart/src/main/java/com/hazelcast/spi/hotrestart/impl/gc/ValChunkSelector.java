@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
-import com.hazelcast.util.collection.LongHashSet;
+import com.hazelcast.internal.util.collection.LongHashSet;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -18,7 +18,7 @@ import java.util.Set;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk.BY_BENEFIT_COST_DESC;
-import static com.hazelcast.util.QuickMath.log2;
+import static com.hazelcast.internal.util.QuickMath.log2;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 

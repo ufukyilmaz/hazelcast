@@ -20,8 +20,8 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.partition.IPartitionService;
-import com.hazelcast.util.ConstructorFunction;
-import com.hazelcast.util.MemoryInfoAccessor;
+import com.hazelcast.internal.util.ConstructorFunction;
+import com.hazelcast.internal.util.MemoryInfoAccessor;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.eviction.Evictor.NULL_EVICTOR;

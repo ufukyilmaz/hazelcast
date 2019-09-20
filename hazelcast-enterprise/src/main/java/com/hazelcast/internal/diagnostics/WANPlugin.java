@@ -19,7 +19,7 @@ import com.hazelcast.wan.impl.WanReplicationService;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static com.hazelcast.util.MapUtil.isNullOrEmpty;
+import static com.hazelcast.internal.util.MapUtil.isNullOrEmpty;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**

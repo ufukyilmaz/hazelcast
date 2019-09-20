@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.util.EmptyStatement.ignore;
+import static com.hazelcast.internal.util.EmptyStatement.ignore;
 import static junit.framework.TestCase.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;

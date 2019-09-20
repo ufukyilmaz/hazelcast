@@ -14,7 +14,7 @@ import java.util.EnumSet;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.security.impl.WeakSecretError.DICT_WORD;
-import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
+import static com.hazelcast.internal.util.ExceptionUtil.sneakyThrow;
 import static java.lang.System.getProperty;
 
 public class DictionaryRule

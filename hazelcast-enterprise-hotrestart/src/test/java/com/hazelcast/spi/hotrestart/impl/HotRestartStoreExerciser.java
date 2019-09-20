@@ -6,7 +6,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.testsupport.TestProfile;
-import com.hazelcast.util.collection.Long2LongHashMap;
+import com.hazelcast.internal.util.collection.Long2LongHashMap;
 
 import java.io.File;
 import java.util.Map;

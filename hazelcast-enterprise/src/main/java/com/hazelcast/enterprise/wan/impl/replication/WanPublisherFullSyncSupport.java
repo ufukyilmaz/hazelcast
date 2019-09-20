@@ -21,8 +21,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.partition.IPartition;
-import com.hazelcast.util.SetUtil;
-import com.hazelcast.util.ThreadUtil;
+import com.hazelcast.internal.util.SetUtil;
+import com.hazelcast.internal.util.ThreadUtil;
 import com.hazelcast.wan.ConsistencyCheckResult;
 import com.hazelcast.wan.WanSyncStats;
 
@@ -34,8 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import static com.hazelcast.util.CollectionUtil.isEmpty;
-import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.CollectionUtil.isEmpty;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 

@@ -8,7 +8,7 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 
-import static com.hazelcast.util.HashUtil.fastLongMix;
+import static com.hazelcast.internal.util.HashUtil.fastLongMix;
 
 /**
  * Off-heap implementation of {@link SetOfKeyHandle}.

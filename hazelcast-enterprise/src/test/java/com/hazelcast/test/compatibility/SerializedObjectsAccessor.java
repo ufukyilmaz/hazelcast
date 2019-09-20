@@ -15,7 +15,7 @@ import java.util.Map;
 
 import static com.hazelcast.test.compatibility.SamplingRunListener.INDEX_FILE_SUFFIX;
 import static com.hazelcast.test.compatibility.SamplingRunListener.SAMPLES_FILE_SUFFIX;
-import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static java.lang.Integer.parseInt;
 
 /**

@@ -17,8 +17,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor;
-import com.hazelcast.util.collection.Long2LongHashMap;
-import com.hazelcast.util.collection.Long2ObjectHashMap;
+import com.hazelcast.internal.util.collection.Long2LongHashMap;
+import com.hazelcast.internal.util.collection.Long2ObjectHashMap;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -44,8 +44,8 @@ import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FI
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
-import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
-import static com.hazelcast.util.collection.Long2LongHashMap.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.internal.util.ExceptionUtil.sneakyThrow;
+import static com.hazelcast.internal.util.collection.Long2LongHashMap.DEFAULT_LOAD_FACTOR;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 

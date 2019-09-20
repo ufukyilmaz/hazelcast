@@ -14,8 +14,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-import static com.hazelcast.util.QuickMath.isPowerOfTwo;
-import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
+import static com.hazelcast.internal.util.QuickMath.isPowerOfTwo;
+import static com.hazelcast.internal.util.QuickMath.nextPowerOfTwo;
 
 /**
  * Variant of the {@link BinaryElasticHashMap} that allows quick random sampling of its entries.

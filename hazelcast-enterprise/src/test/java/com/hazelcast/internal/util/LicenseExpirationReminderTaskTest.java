@@ -18,7 +18,7 @@ import static com.hazelcast.internal.util.LicenseExpirationReminderTask.Notifica
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.GRACE_WARNING;
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.NONE;
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.WARNING;
-import static com.hazelcast.util.Clock.currentTimeMillis;
+import static com.hazelcast.internal.util.Clock.currentTimeMillis;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;

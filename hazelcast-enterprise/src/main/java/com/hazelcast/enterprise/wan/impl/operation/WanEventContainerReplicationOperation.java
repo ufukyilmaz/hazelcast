@@ -15,8 +15,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static com.hazelcast.util.MapUtil.createHashMap;
-import static com.hazelcast.util.Preconditions.checkNotNull;
+import static com.hazelcast.internal.util.MapUtil.createHashMap;
+import static com.hazelcast.internal.util.Preconditions.checkNotNull;
 
 /**
  * Replication and migration operation for WAN event containers. This

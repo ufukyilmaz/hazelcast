@@ -5,7 +5,7 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.util.DirectoryLock;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.util.UuidUtil;
+import com.hazelcast.internal.util.UuidUtil;
 
 import java.io.File;
 import java.util.UUID;

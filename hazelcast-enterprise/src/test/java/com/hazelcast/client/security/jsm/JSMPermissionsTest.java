@@ -1,7 +1,7 @@
 package com.hazelcast.client.security.jsm;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
-import static com.hazelcast.util.StringUtil.isNullOrEmpty;
+import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;

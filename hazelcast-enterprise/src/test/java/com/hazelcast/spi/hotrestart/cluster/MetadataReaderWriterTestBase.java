@@ -4,7 +4,7 @@ import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.util.UuidUtil;
+import com.hazelcast.internal.util.UuidUtil;
 import org.junit.Before;
 import org.junit.Rule;
 

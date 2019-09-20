@@ -3,7 +3,7 @@ package com.hazelcast.internal.serialization.impl;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.util.HashUtil;
+import com.hazelcast.internal.util.HashUtil;
 
 import java.nio.ByteOrder;
 

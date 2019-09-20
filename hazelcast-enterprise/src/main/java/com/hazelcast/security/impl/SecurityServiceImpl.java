@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hazelcast.internal.util.InvocationUtil.invokeOnStableClusterSerial;
-import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 
 public class SecurityServiceImpl implements SecurityService, CoreService, PreJoinAwareService {
 

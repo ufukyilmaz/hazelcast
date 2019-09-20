@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static com.hazelcast.query.impl.AbstractIndex.NULL;
-import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
+import static com.hazelcast.internal.util.ThreadUtil.assertRunningOnPartitionThread;
 
 /**
  * Ordered index store for HD memory.

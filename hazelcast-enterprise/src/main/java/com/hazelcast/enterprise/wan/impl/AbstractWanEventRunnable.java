@@ -3,8 +3,8 @@ package com.hazelcast.enterprise.wan.impl;
 import com.hazelcast.cache.CacheNotExistsException;
 import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.util.executor.StripedRunnable;
-import com.hazelcast.util.executor.TimeoutRunnable;
+import com.hazelcast.internal.util.executor.StripedRunnable;
+import com.hazelcast.internal.util.executor.TimeoutRunnable;
 
 import java.util.concurrent.TimeUnit;
 

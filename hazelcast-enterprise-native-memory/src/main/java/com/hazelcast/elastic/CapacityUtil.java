@@ -1,6 +1,6 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.util.QuickMath;
+import com.hazelcast.internal.util.QuickMath;
 
 /**
  * Utility functions related to data structure capacity calculation.

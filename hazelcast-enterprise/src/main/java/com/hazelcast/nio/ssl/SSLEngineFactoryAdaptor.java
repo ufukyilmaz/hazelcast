@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Properties;
 
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.getProperty;
-import static com.hazelcast.util.StringUtil.intersection;
-import static com.hazelcast.util.StringUtil.splitByComma;
+import static com.hazelcast.internal.util.StringUtil.intersection;
+import static com.hazelcast.internal.util.StringUtil.splitByComma;
 
 /**
  * An {@link SSLEngineFactory} that adapts a {@link SSLContextFactory} to act like a {@link SSLEngineFactory}.

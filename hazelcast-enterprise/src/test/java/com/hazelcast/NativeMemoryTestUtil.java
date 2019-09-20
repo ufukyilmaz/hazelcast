@@ -10,8 +10,8 @@ import com.hazelcast.memory.PooledNativeMemoryStats;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.util.collection.Long2ObjectHashMap;
-import com.hazelcast.util.function.LongLongConsumer;
+import com.hazelcast.internal.util.collection.Long2ObjectHashMap;
+import com.hazelcast.internal.util.function.LongLongConsumer;
 
 import java.util.HashMap;
 import java.util.HashSet;

@@ -12,7 +12,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.nio.Connection;
 import com.hazelcast.security.impl.SecurityServiceImpl;
-import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.internal.util.ExceptionUtil;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.Configuration;
@@ -35,7 +35,7 @@ import java.util.logging.Level;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.security.impl.SecurityServiceImpl.clonePermissionConfigs;
-import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 
 public class SecurityContextImpl implements SecurityContext {
 

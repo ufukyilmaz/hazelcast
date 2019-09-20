@@ -5,9 +5,9 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.spi.discovery.AbstractDiscoveryStrategy;
 import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.SimpleDiscoveryNode;
-import com.hazelcast.util.AddressUtil;
-import com.hazelcast.util.AddressUtil.AddressHolder;
-import com.hazelcast.util.StringUtil;
+import com.hazelcast.internal.util.AddressUtil;
+import com.hazelcast.internal.util.AddressUtil.AddressHolder;
+import com.hazelcast.internal.util.StringUtil;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;

@@ -88,9 +88,9 @@ import com.hazelcast.spi.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.util.ByteArrayProcessor;
-import com.hazelcast.util.ExceptionUtil;
-import com.hazelcast.util.Preconditions;
+import com.hazelcast.internal.util.ByteArrayProcessor;
+import com.hazelcast.internal.util.ExceptionUtil;
+import com.hazelcast.internal.util.Preconditions;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.impl.WanReplicationService;
@@ -109,7 +109,7 @@ import static com.hazelcast.instance.EndpointQualifier.MEMBER;
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
 import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
-import static com.hazelcast.util.StringUtil.isNullOrEmpty;
+import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
 
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems.

@@ -4,9 +4,9 @@ import com.hazelcast.config.NativeMemoryConfig;
 
 import java.io.File;
 
-import static com.hazelcast.util.JVMUtil.is32bitJVM;
-import static com.hazelcast.util.OsHelper.OS;
-import static com.hazelcast.util.OsHelper.isLinux;
+import static com.hazelcast.internal.util.JVMUtil.is32bitJVM;
+import static com.hazelcast.internal.util.OsHelper.OS;
+import static com.hazelcast.internal.util.OsHelper.isLinux;
 
 /**
  * LibMalloc implementation for non-volatile memory. Makes JNI calls to the PMDK library

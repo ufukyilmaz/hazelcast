@@ -17,7 +17,7 @@ import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.map.impl.recordstore.EnterpriseRecordStore.HD_RECORD_MAX_TTL_MILLIS;
-import static com.hazelcast.util.RandomPicker.getInt;
+import static com.hazelcast.internal.util.RandomPicker.getInt;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 

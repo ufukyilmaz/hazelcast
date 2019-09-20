@@ -15,8 +15,8 @@ import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.sort.LongMemArrayQuickSorter;
 import com.hazelcast.internal.util.sort.MemArrayQuickSorter;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.util.Clock;
-import com.hazelcast.util.QuickMath;
+import com.hazelcast.internal.util.Clock;
+import com.hazelcast.internal.util.QuickMath;
 
 import java.util.concurrent.TimeUnit;
 

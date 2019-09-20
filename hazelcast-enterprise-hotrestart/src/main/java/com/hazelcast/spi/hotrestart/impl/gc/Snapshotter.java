@@ -10,7 +10,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.properties.HazelcastProperty;
-import com.hazelcast.util.collection.LongHashSet;
+import com.hazelcast.internal.util.collection.LongHashSet;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;

@@ -20,8 +20,8 @@ import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.util.concurrent.BackoffIdleStrategy;
-import com.hazelcast.util.concurrent.IdleStrategy;
+import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;
+import com.hazelcast.internal.util.concurrent.IdleStrategy;
 import com.hazelcast.wan.WanAntiEntropyEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
@@ -36,8 +36,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
-import static com.hazelcast.util.ExceptionUtil.rethrow;
-import static com.hazelcast.util.StringUtil.isNullOrEmpty;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.newSetFromMap;
 

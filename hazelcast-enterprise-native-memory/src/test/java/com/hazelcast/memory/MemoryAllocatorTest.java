@@ -26,7 +26,7 @@ import static com.hazelcast.internal.memory.impl.PersistentMemoryHeap.PERSISTENT
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.memory.ParameterizedMemoryTest.newLibMallocFactory;
 import static com.hazelcast.test.HazelcastTestSupport.assumeThatLinuxOS;
-import static com.hazelcast.util.QuickMath.modPowerOfTwo;
+import static com.hazelcast.internal.util.QuickMath.modPowerOfTwo;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)

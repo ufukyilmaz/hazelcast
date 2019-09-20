@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.util.QueueUtil;
+import com.hazelcast.internal.util.QueueUtil;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.util.Collection;

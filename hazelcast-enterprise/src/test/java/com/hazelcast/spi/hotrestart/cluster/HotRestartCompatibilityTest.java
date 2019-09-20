@@ -15,7 +15,7 @@ import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
-import com.hazelcast.util.UuidUtil;
+import com.hazelcast.internal.util.UuidUtil;
 import com.hazelcast.version.Version;
 import org.junit.After;
 import org.junit.Before;

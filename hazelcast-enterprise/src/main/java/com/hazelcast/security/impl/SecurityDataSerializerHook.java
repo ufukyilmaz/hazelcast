@@ -9,7 +9,7 @@ import com.hazelcast.security.ClusterEndpointPrincipal;
 import com.hazelcast.security.ClusterIdentityPrincipal;
 import com.hazelcast.security.ClusterRolePrincipal;
 import com.hazelcast.security.SecureCallableImpl;
-import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.internal.util.ConstructorFunction;
 
 import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_SECURITY_DS_FACTORY;
 import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_SECURITY_DS_FACTORY_ID;

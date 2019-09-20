@@ -17,8 +17,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.instance.impl.TestUtil.getNode;
 import static com.hazelcast.test.TestEnvironment.isMockNetwork;
-import static com.hazelcast.util.EmptyStatement.ignore;
-import static com.hazelcast.util.collection.ArrayUtils.concat;
+import static com.hazelcast.internal.util.EmptyStatement.ignore;
+import static com.hazelcast.internal.util.collection.ArrayUtils.concat;
 import static java.lang.reflect.Proxy.isProxyClass;
 import static org.junit.Assume.assumeFalse;
 

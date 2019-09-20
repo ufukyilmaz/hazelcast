@@ -15,7 +15,7 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.internal.util.ExceptionUtil;
 
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -34,7 +34,7 @@ import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOA
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.MIN_CAPACITY;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.nextCapacity;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.roundCapacity;
-import static com.hazelcast.util.HashUtil.computePerturbationValue;
+import static com.hazelcast.internal.util.HashUtil.computePerturbationValue;
 
 /**
  * A hash map of {@code Data} to {@code MemoryBlock}, implemented using open

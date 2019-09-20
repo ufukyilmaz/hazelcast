@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.util.collection.LongHashSet;
+import com.hazelcast.internal.util.collection.LongHashSet;
 
 import java.util.Set;
 

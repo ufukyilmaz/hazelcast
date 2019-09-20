@@ -6,9 +6,9 @@ import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.util.Clock;
-import com.hazelcast.util.EmptyStatement;
-import com.hazelcast.util.QuickMath;
+import com.hazelcast.internal.util.Clock;
+import com.hazelcast.internal.util.EmptyStatement;
+import com.hazelcast.internal.util.QuickMath;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Iterator;

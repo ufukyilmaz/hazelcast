@@ -8,10 +8,10 @@ import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
-import com.hazelcast.util.ExceptionUtil;
-import com.hazelcast.util.collection.Long2LongHashMap;
-import com.hazelcast.util.collection.Long2ObjectHashMap;
-import com.hazelcast.util.function.LongLongConsumer;
+import com.hazelcast.internal.util.ExceptionUtil;
+import com.hazelcast.internal.util.collection.Long2LongHashMap;
+import com.hazelcast.internal.util.collection.Long2ObjectHashMap;
+import com.hazelcast.internal.util.function.LongLongConsumer;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 

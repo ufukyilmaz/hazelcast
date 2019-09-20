@@ -1,10 +1,10 @@
 package com.hazelcast.nio;
 
-import com.hazelcast.util.ByteArrayProcessor;
+import com.hazelcast.internal.util.ByteArrayProcessor;
 
 import javax.crypto.Cipher;
 
-import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
+import static com.hazelcast.internal.util.ExceptionUtil.sneakyThrow;
 
 public class CipherByteArrayProcessor
         implements ByteArrayProcessor {

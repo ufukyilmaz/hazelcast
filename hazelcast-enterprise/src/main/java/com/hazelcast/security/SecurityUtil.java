@@ -25,7 +25,7 @@ import com.hazelcast.security.permission.SetPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.security.permission.UserCodeDeploymentPermission;
-import com.hazelcast.util.AddressUtil;
+import com.hazelcast.internal.util.AddressUtil;
 
 import java.util.Set;
 

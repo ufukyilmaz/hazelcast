@@ -6,7 +6,7 @@ import com.hazelcast.internal.services.ObjectNamespace;
 import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
-import com.hazelcast.util.MapUtil;
+import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 

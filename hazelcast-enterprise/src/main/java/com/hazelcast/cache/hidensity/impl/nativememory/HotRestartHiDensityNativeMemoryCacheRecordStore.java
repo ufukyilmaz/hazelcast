@@ -22,7 +22,7 @@ import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 import com.hazelcast.spi.impl.NodeEngine;
-import com.hazelcast.util.Clock;
+import com.hazelcast.internal.util.Clock;
 
 import java.util.Iterator;
 

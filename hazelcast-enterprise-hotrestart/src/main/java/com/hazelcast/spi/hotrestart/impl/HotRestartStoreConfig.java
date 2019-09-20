@@ -11,7 +11,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static com.hazelcast.spi.hotrestart.HotRestartStore.LOG_CATEGORY;
-import static com.hazelcast.util.Preconditions.checkNotNull;
+import static com.hazelcast.internal.util.Preconditions.checkNotNull;
 
 /**
  * Internal configuration class for the Hot Restart store.

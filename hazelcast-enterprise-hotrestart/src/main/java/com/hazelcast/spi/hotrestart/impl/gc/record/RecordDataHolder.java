@@ -4,7 +4,7 @@ import com.hazelcast.spi.hotrestart.RecordDataSink;
 
 import java.nio.ByteBuffer;
 
-import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
+import static com.hazelcast.internal.util.QuickMath.nextPowerOfTwo;
 
 /**
  * Implementation of {@link RecordDataSink}.

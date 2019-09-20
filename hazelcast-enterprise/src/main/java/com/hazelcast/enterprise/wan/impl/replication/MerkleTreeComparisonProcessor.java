@@ -4,7 +4,7 @@ import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.operation.WanMerkleTreeNodeCompareOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.util.MapUtil;
+import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.wan.impl.merkletree.MerkleTreeUtil;
 
 import java.util.Map;

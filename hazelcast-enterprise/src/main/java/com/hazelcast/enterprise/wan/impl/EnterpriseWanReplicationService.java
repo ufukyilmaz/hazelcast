@@ -61,8 +61,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.hazelcast.util.ExceptionUtil.rethrow;
-import static com.hazelcast.util.MapUtil.createHashMap;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.MapUtil.createHashMap;
 import static com.hazelcast.wan.impl.WanReplicationServiceImpl.getWanPublisherId;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;

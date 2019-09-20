@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 
-import static com.hazelcast.util.HashUtil.fastLongMix;
+import static com.hazelcast.internal.util.HashUtil.fastLongMix;
 
 /**
  * Simple implementation of {@link KeyHandleOffHeap}.

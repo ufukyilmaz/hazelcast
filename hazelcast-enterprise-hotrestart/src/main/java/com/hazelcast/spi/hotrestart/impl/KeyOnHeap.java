@@ -7,7 +7,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import static com.hazelcast.util.HashUtil.MurmurHash3_x86_32;
+import static com.hazelcast.internal.util.HashUtil.MurmurHash3_x86_32;
 import static java.lang.Character.MAX_RADIX;
 
 /**

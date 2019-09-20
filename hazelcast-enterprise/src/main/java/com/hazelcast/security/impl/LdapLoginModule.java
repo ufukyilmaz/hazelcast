@@ -2,7 +2,7 @@ package com.hazelcast.security.impl;
 
 import static com.hazelcast.security.impl.LdapUtils.getAttributeValue;
 import static com.hazelcast.security.impl.LdapUtils.replacePlaceholders;
-import static com.hazelcast.util.StringUtil.isNullOrEmpty;
+import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
 
 import java.util.Properties;
 

@@ -7,7 +7,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.io.DefaultCopyStrategy;
 import com.hazelcast.spi.hotrestart.impl.io.FileCopyStrategy;
 import com.hazelcast.spi.hotrestart.impl.io.HardLinkCopyStrategy;
-import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.internal.util.ExceptionUtil;
 
 import java.io.File;
 import java.io.PrintWriter;

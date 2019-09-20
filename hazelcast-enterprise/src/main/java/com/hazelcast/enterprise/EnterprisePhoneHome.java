@@ -7,8 +7,8 @@ import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.util.MD5Util;
-import com.hazelcast.util.PhoneHome;
+import com.hazelcast.internal.util.MD5Util;
+import com.hazelcast.internal.util.PhoneHome;
 
 import static com.hazelcast.cluster.memberselector.MemberSelectors.DATA_MEMBER_SELECTOR;
 

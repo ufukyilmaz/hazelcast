@@ -13,7 +13,7 @@ import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.properties.HazelcastProperties;
-import com.hazelcast.util.MemoryInfoAccessor;
+import com.hazelcast.internal.util.MemoryInfoAccessor;
 
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;

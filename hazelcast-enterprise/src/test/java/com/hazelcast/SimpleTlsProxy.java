@@ -25,7 +25,7 @@ import static com.hazelcast.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.loadKeyManagerFactory;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.loadTrustManagerFactory;
 import static com.hazelcast.test.HazelcastTestSupport.ignore;
-import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 
 public class SimpleTlsProxy {
 

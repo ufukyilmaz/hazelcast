@@ -16,7 +16,7 @@ import com.hazelcast.security.Parameters;
 import com.hazelcast.security.SecurityInterceptor;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.util.RandomPicker;
+import com.hazelcast.internal.util.RandomPicker;
 import org.junit.After;
 import org.junit.Before;
 

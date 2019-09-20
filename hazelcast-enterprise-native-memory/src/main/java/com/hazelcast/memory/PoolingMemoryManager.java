@@ -6,7 +6,7 @@ import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.util.QuickMath;
+import com.hazelcast.internal.util.QuickMath;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
-import static com.hazelcast.util.QuickMath.isPowerOfTwo;
+import static com.hazelcast.internal.util.QuickMath.isPowerOfTwo;
 
 /**
  * Implements a hierachical memory allocation scheme:

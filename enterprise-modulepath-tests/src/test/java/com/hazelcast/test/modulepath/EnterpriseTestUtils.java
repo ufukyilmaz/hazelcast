@@ -1,6 +1,6 @@
 package com.hazelcast.test.modulepath;
 
-import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static java.lang.Integer.getInteger;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

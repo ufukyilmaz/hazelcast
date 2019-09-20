@@ -10,7 +10,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.util.executor.StripedExecutor;
+import com.hazelcast.internal.util.executor.StripedExecutor;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 
 import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
-import static com.hazelcast.util.ThreadUtil.createThreadName;
+import static com.hazelcast.internal.util.ThreadUtil.createThreadName;
 
 /**
  * The class responsible for processing WAN events coming from a source

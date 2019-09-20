@@ -18,8 +18,8 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.util.QuickMath.log2;
-import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
+import static com.hazelcast.internal.util.QuickMath.log2;
+import static com.hazelcast.internal.util.QuickMath.nextPowerOfTwo;
 
 /**
  * Represents a single memory-mapped file used as a slab of equal-sized memory blocks.

@@ -13,7 +13,7 @@ import com.hazelcast.wan.impl.merkletree.MerkleTree;
 import java.io.IOException;
 import java.util.Iterator;
 
-import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
+import static com.hazelcast.internal.util.ThreadUtil.assertRunningOnPartitionThread;
 
 /**
  * Operation used to rebuild Merkle trees on top of a map.

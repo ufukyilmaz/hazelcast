@@ -6,7 +6,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.IMap;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Metadata;
-import com.hazelcast.util.Clock;
+import com.hazelcast.internal.util.Clock;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;

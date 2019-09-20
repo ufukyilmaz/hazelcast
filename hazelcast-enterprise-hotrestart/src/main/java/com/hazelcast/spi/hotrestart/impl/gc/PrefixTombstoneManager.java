@@ -13,10 +13,10 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
-import com.hazelcast.util.collection.Long2LongHashMap;
-import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
-import com.hazelcast.util.collection.Long2ObjectHashMap.KeyIterator;
-import com.hazelcast.util.collection.LongHashSet;
+import com.hazelcast.internal.util.collection.Long2LongHashMap;
+import com.hazelcast.internal.util.collection.Long2LongHashMap.LongLongCursor;
+import com.hazelcast.internal.util.collection.Long2ObjectHashMap.KeyIterator;
+import com.hazelcast.internal.util.collection.LongHashSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.BufferedOutputStream;

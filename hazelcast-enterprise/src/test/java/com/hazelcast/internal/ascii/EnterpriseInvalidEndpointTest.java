@@ -43,7 +43,7 @@ import static com.hazelcast.nio.ssl.TestKeyStoreUtil.getOrCreateTempFile;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.keyStore;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.trustStore;
 import static com.hazelcast.test.HazelcastTestSupport.ignore;
-import static com.hazelcast.util.ExceptionUtil.rethrow;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 

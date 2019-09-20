@@ -10,7 +10,7 @@ import com.hazelcast.map.IMap;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.SlowTest;
-import com.hazelcast.util.RandomPicker;
+import com.hazelcast.internal.util.RandomPicker;
 import com.hazelcast.wan.impl.WanSyncStatus;
 import org.junit.After;
 import org.junit.Test;

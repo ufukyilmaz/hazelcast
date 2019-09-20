@@ -19,7 +19,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hazelcast.util.StringUtil.LINE_SEPARATOR;
+import static com.hazelcast.internal.util.StringUtil.LINE_SEPARATOR;
 
 public final class WanStatisticsRule implements TestRule {
     private static final String STATS_DISABLED_MESSAGE = "Statistics explicitly disabled";

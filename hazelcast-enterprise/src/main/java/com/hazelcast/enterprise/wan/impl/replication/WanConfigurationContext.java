@@ -3,7 +3,7 @@ package com.hazelcast.enterprise.wan.impl.replication;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 
-import static com.hazelcast.util.StringUtil.isNullOrEmpty;
+import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
 
 /**
  * WAN configuration context providing eager parsing of configuration.

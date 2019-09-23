@@ -1,6 +1,5 @@
-package com.hazelcast.cp.internal.datastructures.unsafe.semaphore;
+package com.hazelcast.cp.internal.datastructures.semaphore;
 
-import com.hazelcast.cp.internal.datastructures.semaphore.RaftSessionlessSemaphoreBasicTest;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.experimental.categories.Category;

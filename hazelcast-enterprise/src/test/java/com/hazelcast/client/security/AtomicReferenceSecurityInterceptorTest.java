@@ -2,7 +2,7 @@ package com.hazelcast.client.security;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.cp.IAtomicReference;
-import com.hazelcast.cp.internal.datastructures.atomicref.RaftAtomicRefService;
+import com.hazelcast.cp.internal.datastructures.atomicref.AtomicRefService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -112,6 +112,6 @@ public class AtomicReferenceSecurityInterceptorTest extends InterceptorTestSuppo
 
     @Override
     String getObjectType() {
-        return RaftAtomicRefService.SERVICE_NAME;
+        return AtomicRefService.SERVICE_NAME;
     }
 }

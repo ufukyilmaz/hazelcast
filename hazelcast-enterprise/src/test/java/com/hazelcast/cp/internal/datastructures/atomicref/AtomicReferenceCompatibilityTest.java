@@ -1,6 +1,5 @@
-package com.hazelcast.cp.internal.datastructures.unsafe.atomicreference;
+package com.hazelcast.cp.internal.datastructures.atomicref;
 
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.experimental.categories.Category;
@@ -11,11 +10,6 @@ import org.junit.runner.RunWith;
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
-public class AtomicReferenceCompatibilityTest extends AtomicReferenceAbstractTest {
-
-    @Override
-    protected HazelcastInstance[] newInstances() {
-        return createHazelcastInstanceFactory().newInstances();
-    }
+public class AtomicReferenceCompatibilityTest extends AtomicRefBasicTest {
 
 }

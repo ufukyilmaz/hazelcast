@@ -327,12 +327,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public <E> IAtomicReference<E> getAtomicReference(String name) {
-            checkPermission(new AtomicReferencePermission(name, ActionConstants.ACTION_CREATE));
-            return getProxy(new IAtomicReferenceInvocationHandler(instance.getAtomicReference(name)));
-        }
-
-        @Override
         public CardinalityEstimator getCardinalityEstimator(String name) {
             checkPermission(new CardinalityEstimatorPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new CardinalityEstimatorHandler(instance.getCardinalityEstimator(name)));

@@ -1,6 +1,5 @@
-package com.hazelcast.cp.internal.datastructures.unsafe.countdownlatch;
+package com.hazelcast.cp.internal.datastructures.countdownlatch;
 
-import com.hazelcast.cp.internal.datastructures.countdownlatch.CountDownLatchBasicTest;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.experimental.categories.Category;

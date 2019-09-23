@@ -2,6 +2,7 @@ package com.hazelcast.security.permissions;
 
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.cp.internal.datastructures.atomicref.AtomicRefService;
 import com.hazelcast.cp.internal.datastructures.spi.RaftRemoteService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.services.RemoteService;
@@ -51,7 +52,6 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         INSECURE_SERVICES.add(com.hazelcast.transaction.impl.xa.XAService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.lock.RaftLockService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomiclong.RaftAtomicLongService.class);
-        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomicref.RaftAtomicRefService.class);
     }
 
     // Common methods that don't require security
@@ -81,7 +81,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
     static {
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.atomiclong.AtomicLongService.class,
                 "atomicLong");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.atomicreference.AtomicReferenceService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(AtomicRefService.class,
                 "atomicReference");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cardinality.impl.CardinalityEstimatorService.class,
                 "cardinalityEstimator");
@@ -168,6 +168,8 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.countdownlatch.CountDownLatchService.class,
                 new String[] {"getGroupId"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.semaphore.SemaphoreService.class,
+                new String[] {"getGroupId"});
+        PER_SERVICE_SKIP_LIST.put(AtomicRefService.class,
                 new String[] {"getGroupId"});
     }
 

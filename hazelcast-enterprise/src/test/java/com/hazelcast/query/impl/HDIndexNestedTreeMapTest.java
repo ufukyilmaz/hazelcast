@@ -1,14 +1,14 @@
 package com.hazelcast.query.impl;
 
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.elastic.tree.MapEntryFactory;
+import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.getters.Extractors;

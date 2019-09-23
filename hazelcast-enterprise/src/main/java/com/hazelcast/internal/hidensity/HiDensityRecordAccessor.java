@@ -1,8 +1,8 @@
 package com.hazelcast.internal.hidensity;
 
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryBlockAccessor;
+import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlockAccessor;
 
 /**
  * Record accessor implementation for:
@@ -19,7 +19,7 @@ import com.hazelcast.memory.MemoryBlockAccessor;
  * </ul>
  *
  * @param <R> Type of the Hi-Density record to be accessed.
- * @see com.hazelcast.memory.MemoryBlockAccessor
+ * @see com.hazelcast.internal.memory.MemoryBlockAccessor
  * @see NativeMemoryData
  * @see com.hazelcast.internal.hidensity.HiDensityRecord
  */

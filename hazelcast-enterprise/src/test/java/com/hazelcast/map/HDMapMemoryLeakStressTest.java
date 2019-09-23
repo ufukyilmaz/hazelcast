@@ -11,7 +11,7 @@ import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryStats;
+import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.query.PredicateBuilder;

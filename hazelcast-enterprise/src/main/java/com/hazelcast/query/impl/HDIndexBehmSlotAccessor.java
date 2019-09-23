@@ -1,10 +1,10 @@
 package com.hazelcast.query.impl;
 
-import com.hazelcast.elastic.map.BehmSlotAccessor;
+import com.hazelcast.internal.elastic.map.BehmSlotAccessor;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecord;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlock;
 
 import static com.hazelcast.query.impl.HDIndexBehmMemoryBlockAccessor.HD_RECORD_BIT_MASK;
 

@@ -3,7 +3,7 @@ package com.hazelcast.internal.serialization.impl;
 import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPool;
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.serialization.Data;

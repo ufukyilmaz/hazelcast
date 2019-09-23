@@ -1,7 +1,7 @@
 package com.hazelcast.query.impl;
 
-import com.hazelcast.elastic.map.BehmSlotAccessor;
-import com.hazelcast.elastic.map.BehmSlotAccessorFactory;
+import com.hazelcast.internal.elastic.map.BehmSlotAccessor;
+import com.hazelcast.internal.elastic.map.BehmSlotAccessorFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 
 /**

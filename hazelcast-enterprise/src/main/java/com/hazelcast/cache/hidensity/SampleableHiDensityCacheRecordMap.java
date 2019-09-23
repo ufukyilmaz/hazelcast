@@ -1,5 +1,6 @@
 package com.hazelcast.cache.hidensity;
 
+import com.hazelcast.cache.hidensity.impl.HiDensityCacheRecord;
 import com.hazelcast.cache.impl.record.SampleableCacheRecordMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordMap;
 import com.hazelcast.nio.serialization.Data;

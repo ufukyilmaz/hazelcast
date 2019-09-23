@@ -1,8 +1,8 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.core.EntryView;
-import com.hazelcast.elastic.SlottableIterator;
-import com.hazelcast.elastic.map.SampleableElasticHashMap;
+import com.hazelcast.internal.elastic.SlottableIterator;
+import com.hazelcast.internal.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.IMap;

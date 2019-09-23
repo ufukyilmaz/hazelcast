@@ -2,7 +2,7 @@ package com.hazelcast.nio.serialization;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.InternalSerializationService;
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 
 public interface EnterpriseSerializationService extends InternalSerializationService {
 

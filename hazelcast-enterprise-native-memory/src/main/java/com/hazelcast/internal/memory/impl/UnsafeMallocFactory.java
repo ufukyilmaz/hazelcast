@@ -1,6 +1,6 @@
 package com.hazelcast.internal.memory.impl;
 
-import com.hazelcast.memory.FreeMemoryChecker;
+import com.hazelcast.internal.memory.FreeMemoryChecker;
 
 /**
  * A factory to create {@link LibMalloc} to manage allocations in native volatile memory.

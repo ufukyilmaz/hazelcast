@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
-import com.hazelcast.elastic.LongArray;
+import com.hazelcast.internal.elastic.LongArray;
 import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.internal.util.hashslot.HashSlotCursor16byteKey;
 import com.hazelcast.internal.util.hashslot.SlotAssignmentResult;
@@ -11,7 +11,7 @@ import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 
-import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.internal.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.valueAddr2slotBase;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.toRawSizeValue;

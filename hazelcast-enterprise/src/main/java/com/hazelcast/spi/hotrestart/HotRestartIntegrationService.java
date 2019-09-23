@@ -25,7 +25,7 @@ import com.hazelcast.internal.util.DirectoryLock;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.operation.MerkleTreeRebuildOperation;
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartStatusDTOUtil;

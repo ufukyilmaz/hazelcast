@@ -2,8 +2,8 @@ package com.hazelcast.query.impl;
 
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecord;
-import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryBlockAccessor;
+import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlockAccessor;
 
 /**
  * Memory block accessor for HD index. It supports {@code NativeMemoryData} and {@code HDRecord} as a value.

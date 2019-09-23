@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart.impl;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.testsupport.TestProfile;
 import com.hazelcast.internal.util.collection.Long2LongHashMap;

@@ -1,12 +1,12 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
-import com.hazelcast.elastic.LongArray;
+import com.hazelcast.internal.elastic.LongArray;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.test.AssertEnabledFilterRule;

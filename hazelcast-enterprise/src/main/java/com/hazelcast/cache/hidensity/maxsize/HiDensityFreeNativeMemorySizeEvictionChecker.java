@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hidensity.maxsize;
 
 import com.hazelcast.internal.eviction.EvictionChecker;
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryUnit;
 
 /**

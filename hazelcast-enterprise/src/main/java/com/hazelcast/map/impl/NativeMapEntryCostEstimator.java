@@ -3,7 +3,7 @@ package com.hazelcast.map.impl;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecord;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlock;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
@@ -11,7 +11,7 @@ public class NativeMapEntryCostEstimator
         implements EntryCostEstimator<NativeMemoryData, MemoryBlock> {
 
     /**
-     * See {@link com.hazelcast.elastic.map.BehmSlotAccessor#SLOT_LENGTH}
+     * See {@link com.hazelcast.internal.elastic.map.BehmSlotAccessor#SLOT_LENGTH}
      */
     private static final int SLOT_COST_IN_BYTES = 16;
 

@@ -12,7 +12,7 @@ import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.nearcache.HDNearCacheTest;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;

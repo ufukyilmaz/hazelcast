@@ -11,7 +11,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.map.impl.operation.WithForcedEviction;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryStats;
+import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

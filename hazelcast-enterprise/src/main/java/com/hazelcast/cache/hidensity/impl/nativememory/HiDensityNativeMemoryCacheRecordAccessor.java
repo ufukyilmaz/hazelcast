@@ -3,7 +3,7 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;

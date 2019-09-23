@@ -1,6 +1,6 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
+import com.hazelcast.cache.hidensity.impl.HiDensityCacheRecord;
 import com.hazelcast.cache.impl.CacheClearResponse;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

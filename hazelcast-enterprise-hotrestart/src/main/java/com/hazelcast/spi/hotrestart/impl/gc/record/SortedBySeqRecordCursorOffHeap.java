@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
-import com.hazelcast.elastic.LongArray;
+import com.hazelcast.internal.elastic.LongArray;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;

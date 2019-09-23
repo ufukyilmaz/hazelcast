@@ -1,7 +1,7 @@
 package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.internal.hidensity.HiDensityRecordStore;
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 
 /**
  * {@link HiDensityNearCacheRecordStore} is the contract point to store keys and values as

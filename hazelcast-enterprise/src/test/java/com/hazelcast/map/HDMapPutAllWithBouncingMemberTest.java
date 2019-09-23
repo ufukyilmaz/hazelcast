@@ -2,7 +2,7 @@ package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

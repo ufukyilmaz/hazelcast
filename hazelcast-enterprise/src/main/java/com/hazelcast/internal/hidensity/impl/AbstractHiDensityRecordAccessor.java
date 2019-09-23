@@ -3,8 +3,8 @@ package com.hazelcast.internal.hidensity.impl;
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 /**

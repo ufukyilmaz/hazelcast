@@ -9,7 +9,7 @@ import com.hazelcast.internal.nearcache.impl.nativememory.NativeMemoryNearCacheR
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.monitor.NearCacheStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.AssertTask;

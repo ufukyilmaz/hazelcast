@@ -1,10 +1,10 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.HazelcastTestSupport;

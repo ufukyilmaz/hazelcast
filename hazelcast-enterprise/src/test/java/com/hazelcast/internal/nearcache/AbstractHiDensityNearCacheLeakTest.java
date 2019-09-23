@@ -3,7 +3,7 @@ package com.hazelcast.internal.nearcache;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryStats;
+import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

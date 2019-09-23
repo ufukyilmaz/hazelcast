@@ -18,10 +18,10 @@ import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.internal.nearcache.NearCacheRecord;
 import com.hazelcast.internal.nearcache.impl.store.AbstractNearCacheRecordStore;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -57,7 +57,7 @@ public class NativeMemoryNearCacheRecordStore<K, V>
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
 
     /**
-     * See {@link com.hazelcast.elastic.map.BehmSlotAccessor#SLOT_LENGTH}
+     * See {@link com.hazelcast.internal.elastic.map.BehmSlotAccessor#SLOT_LENGTH}
      */
     private static final int SLOT_COST_IN_BYTES = 16;
 

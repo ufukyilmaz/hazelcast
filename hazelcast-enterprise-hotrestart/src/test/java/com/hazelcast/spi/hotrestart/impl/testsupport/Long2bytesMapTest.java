@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.testsupport;
 
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;

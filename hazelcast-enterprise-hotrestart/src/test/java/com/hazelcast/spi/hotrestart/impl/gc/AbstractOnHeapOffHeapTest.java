@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;

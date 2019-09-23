@@ -1,11 +1,11 @@
 package com.hazelcast.spi.hotrestart.memory;
 
 import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.memory.PooledNativeMemoryStats;
-import com.hazelcast.memory.ThreadLocalPoolingMemoryManager;
+import com.hazelcast.internal.memory.PooledNativeMemoryStats;
+import com.hazelcast.internal.memory.ThreadLocalPoolingMemoryManager;
 
 /**
- * Specialization of {@link com.hazelcast.memory.ThreadLocalPoolingMemoryManager} which contributes
+ * Specialization of {@link com.hazelcast.internal.memory.ThreadLocalPoolingMemoryManager} which contributes
  * mutex locking needed to safely perform pointer validation inside
  * {@link com.hazelcast.spi.hotrestart.RamStore#copyEntry(
  * com.hazelcast.spi.hotrestart.KeyHandle, int, com.hazelcast.spi.hotrestart.RecordDataSink)} calls.

@@ -4,7 +4,7 @@ import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.hidensity.SampleableHiDensityCacheRecordMap;
 import com.hazelcast.cache.impl.CacheEntryIterationResult;
 import com.hazelcast.cache.impl.CacheKeyIterationResult;
-import com.hazelcast.elastic.SlottableIterator;
+import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.SampleableEvictableHiDensityRecordMap;

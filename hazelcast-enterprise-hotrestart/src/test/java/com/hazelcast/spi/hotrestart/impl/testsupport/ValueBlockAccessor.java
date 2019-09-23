@@ -4,7 +4,7 @@ import com.hazelcast.internal.memory.GlobalMemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryManager;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlock;
 
 import java.nio.ByteBuffer;
 

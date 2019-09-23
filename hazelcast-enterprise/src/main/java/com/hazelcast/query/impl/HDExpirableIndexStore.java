@@ -3,7 +3,7 @@ package com.hazelcast.query.impl;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.StoreAdapter;
 import com.hazelcast.map.impl.record.HDRecord;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.util.Clock;
 
 /**

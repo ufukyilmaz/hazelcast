@@ -1,6 +1,6 @@
 package com.hazelcast.internal.hidensity;
 
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 
 /**
  * {@link HiDensityRecordStore} is the contract for Hi-Density specific record store operations.

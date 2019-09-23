@@ -15,10 +15,10 @@ public class EnterpriseSerialJUnitClassRunner extends HazelcastSerialClassRunner
 
     static {
         /**
-         * {@link com.hazelcast.memory.PoolingMemoryManager}
-         * (actually {@link com.hazelcast.memory.GlobalPoolingMemoryManager)
+         * {@link com.hazelcast.internal.memory.PoolingMemoryManager}
+         * (actually {@link com.hazelcast.internal.memory.GlobalPoolingMemoryManager)
          * uses a bitmap for detecting none-page addresses with less complexity.
-         * By default it is {@link com.hazelcast.memory.GlobalPoolingMemoryManager#PAGE_LOOKUP_SIZE),
+         * By default it is {@link com.hazelcast.internal.memory.GlobalPoolingMemoryManager#PAGE_LOOKUP_SIZE),
          * but we should reduce its memory foot-print in the tests
          * because some tests uses very small native memory and the test itself relies that size.
          * Otherwise, we might be faced with native OOME.

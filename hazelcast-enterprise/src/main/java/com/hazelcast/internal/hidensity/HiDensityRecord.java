@@ -2,12 +2,12 @@ package com.hazelcast.internal.hidensity;
 
 import com.hazelcast.internal.memory.GlobalMemoryAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlock;
 
 /**
  * Base class of all record implementations for Hi-Density storage.
  *
- * @see com.hazelcast.memory.MemoryBlock
+ * @see com.hazelcast.internal.memory.MemoryBlock
  * @see NativeMemoryData
  */
 public abstract class HiDensityRecord

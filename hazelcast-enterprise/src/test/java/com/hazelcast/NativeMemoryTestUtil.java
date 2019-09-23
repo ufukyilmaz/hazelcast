@@ -4,10 +4,10 @@ import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCach
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.serialization.SerializationService;
-import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryStats;
-import com.hazelcast.memory.PooledNativeMemoryStats;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.MemoryStats;
+import com.hazelcast.internal.memory.PooledNativeMemoryStats;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.internal.util.collection.Long2ObjectHashMap;

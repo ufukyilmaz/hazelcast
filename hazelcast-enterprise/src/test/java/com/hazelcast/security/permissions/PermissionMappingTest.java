@@ -115,7 +115,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "scheduledExecutor");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.flakeidgen.impl.FlakeIdGeneratorService.class,
                 "flakeIdGenerator");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.crdt.pncounter.PNCounterService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.internal.crdt.pncounter.PNCounterService.class,
                 "PNCounter");
     }
 
@@ -151,7 +151,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "submitToMembers", "execute", "executeOnAllMembers", "awaitTermination", "shutdownNow",
                 "invokeAny", "submitToKeyOwner", "shutdown", "isShutdown", "destroy",
         });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.crdt.pncounter.PNCounterService.class, new String[]{
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.internal.crdt.pncounter.PNCounterService.class, new String[]{
                 "getCurrentTargetReplicaAddress", "setOperationTryCount", "reset",
         });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.replicatedmap.impl.ReplicatedMapService.class, new String[]{

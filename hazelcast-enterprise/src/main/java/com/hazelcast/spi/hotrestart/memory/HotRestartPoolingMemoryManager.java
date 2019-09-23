@@ -3,12 +3,12 @@ package com.hazelcast.spi.hotrestart.memory;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.PooledNativeMemoryStats;
-import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.memory.ThreadLocalPoolingMemoryManager;
+import com.hazelcast.internal.memory.PooledNativeMemoryStats;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.memory.ThreadLocalPoolingMemoryManager;
 
 /**
- * {@link com.hazelcast.memory.PoolingMemoryManager} specialized for use with the Hot Restart feature.
+ * {@link com.hazelcast.internal.memory.PoolingMemoryManager} specialized for use with the Hot Restart feature.
  */
 public class HotRestartPoolingMemoryManager extends PoolingMemoryManager {
 

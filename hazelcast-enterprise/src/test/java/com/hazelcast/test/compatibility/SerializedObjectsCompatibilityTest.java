@@ -9,10 +9,10 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.memory.FreeMemoryChecker;
+import com.hazelcast.internal.memory.FreeMemoryChecker;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;

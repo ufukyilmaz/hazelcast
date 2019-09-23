@@ -1,6 +1,6 @@
 package com.hazelcast.internal.hidensity.impl;
 
-import com.hazelcast.elastic.SlottableIterator;
+import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.eviction.Evictable;
 import com.hazelcast.internal.eviction.EvictableStore;
 import com.hazelcast.internal.eviction.EvictionCandidate;

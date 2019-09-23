@@ -2,7 +2,7 @@ package com.hazelcast.internal.hidensity;
 
 import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlock;
 
 /**
  * Record processor implementation for:
@@ -19,7 +19,7 @@ import com.hazelcast.memory.MemoryBlock;
  * </ul>
  *
  * @param <R> type of the Hi-Density record to be accessed
- * @see com.hazelcast.memory.MemoryBlockAccessor
+ * @see com.hazelcast.internal.memory.MemoryBlockAccessor
  * @see com.hazelcast.internal.hidensity.HiDensityRecordAccessor
  * @see NativeMemoryData
  * @see com.hazelcast.internal.hidensity.HiDensityRecord
@@ -51,16 +51,16 @@ public interface HiDensityRecordProcessor<R extends HiDensityRecord>
     long decreaseUsedMemory(long decreasedMemory);
 
     /**
-     * Adds given {@link com.hazelcast.memory.MemoryBlock}
+     * Adds given {@link com.hazelcast.internal.memory.MemoryBlock}
      * to this {@link com.hazelcast.internal.hidensity.HiDensityRecordProcessor} to be disposed later.
      * Possibly at the end of (succeeded or failed) operation.
      *
-     * @param memoryBlock the {@link com.hazelcast.memory.MemoryBlock} to be disposed later
+     * @param memoryBlock the {@link com.hazelcast.internal.memory.MemoryBlock} to be disposed later
      */
     void addDeferredDispose(MemoryBlock memoryBlock);
 
     /**
-     * Disposes added {@link com.hazelcast.memory.MemoryBlock} instances.
+     * Disposes added {@link com.hazelcast.internal.memory.MemoryBlock} instances.
      */
     void disposeDeferredBlocks();
 }

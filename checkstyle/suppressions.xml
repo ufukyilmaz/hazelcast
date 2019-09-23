@@ -17,7 +17,7 @@
     <suppress checks="Javadoc(Package|Type|Method|Variable)"
               files="com/hazelcast/instance/GeneratedEnterpriseBuildProperties.java"/>
     <suppress checks="Javadoc(Type|Method|Variable)" files="com/hazelcast/map/"/>
-    <suppress checks="JavadocType" files="com/hazelcast/memory"/>
+    <suppress checks="JavadocType" files="com/hazelcast/internal/memory"/>
     <suppress checks="Javadoc(Type|Method)" files="com/hazelcast/elasticmemory/"/>
     <suppress checks="Javadoc(Type|Method)" files="com/hazelcast/nio/"/>
     <suppress checks="Javadoc(Type|Method)" files="com/hazelcast/internal/serialization/"/>

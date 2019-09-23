@@ -2,7 +2,7 @@ package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.util.HashUtil;

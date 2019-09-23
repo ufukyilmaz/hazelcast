@@ -3,7 +3,7 @@ package com.hazelcast.cache.hidensity.maxsize;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordStore;
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 
 /**
  * Max-size policy implementation for {@link com.hazelcast.config.EvictionConfig.MaxSizePolicy#FREE_NATIVE_MEMORY_PERCENTAGE}.

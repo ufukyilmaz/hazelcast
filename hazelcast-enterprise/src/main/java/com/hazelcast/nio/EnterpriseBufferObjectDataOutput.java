@@ -1,6 +1,6 @@
 package com.hazelcast.nio;
 
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlock;
 
 import java.io.IOException;
 
@@ -16,7 +16,7 @@ public interface EnterpriseBufferObjectDataOutput
     /**
      * Copies the input data from given {@code memoryBlock}.
      *
-     * @param memoryBlock the {@link com.hazelcast.memory.MemoryBlock} to copy input data to here
+     * @param memoryBlock the {@link com.hazelcast.internal.memory.MemoryBlock} to copy input data to here
      * @param offset      the offset at the given {@code memoryBlock} to copy input data to here
      * @param length      the length of the input data to be copied from given {@code memoryBlock}
      */
@@ -25,7 +25,7 @@ public interface EnterpriseBufferObjectDataOutput
     /**
      * Copies the input data to given {@code memoryBlock}.
      *
-     * @param memoryBlock the {@link com.hazelcast.memory.MemoryBlock} to copy input data to there
+     * @param memoryBlock the {@link com.hazelcast.internal.memory.MemoryBlock} to copy input data to there
      * @param offset      the offset at the given {@code memoryBlock} to copy input data to there
      * @param length      the length of the input data to be copied to given {@code memoryBlock}
      */

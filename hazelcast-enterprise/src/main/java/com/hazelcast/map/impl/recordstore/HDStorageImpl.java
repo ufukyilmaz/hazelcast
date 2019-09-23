@@ -14,8 +14,8 @@ import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 

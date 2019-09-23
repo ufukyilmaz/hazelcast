@@ -1,15 +1,15 @@
 package com.hazelcast.query.impl;
 
-import com.hazelcast.elastic.map.BehmSlotAccessorFactory;
-import com.hazelcast.elastic.map.BinaryElasticHashMap;
-import com.hazelcast.elastic.map.NativeBehmSlotAccessorFactory;
-import com.hazelcast.elastic.map.NativeMemoryDataAccessor;
-import com.hazelcast.elastic.tree.MapEntryFactory;
+import com.hazelcast.internal.elastic.map.BehmSlotAccessorFactory;
+import com.hazelcast.internal.elastic.map.BinaryElasticHashMap;
+import com.hazelcast.internal.elastic.map.NativeBehmSlotAccessorFactory;
+import com.hazelcast.internal.elastic.map.NativeMemoryDataAccessor;
+import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
-import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryBlockAccessor;
+import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlockAccessor;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
@@ -20,7 +20,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hazelcast.elastic.map.BinaryElasticHashMap.loadFromOffHeapHeader;
+import static com.hazelcast.internal.elastic.map.BinaryElasticHashMap.loadFromOffHeapHeader;
 import static com.hazelcast.nio.serialization.DataType.HEAP;
 
 /**

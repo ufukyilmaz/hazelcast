@@ -7,7 +7,7 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.internal.serialization.impl.NavigableJsonInputAdapter;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;

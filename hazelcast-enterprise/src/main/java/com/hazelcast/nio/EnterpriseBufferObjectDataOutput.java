@@ -1,14 +1,15 @@
 package com.hazelcast.nio;
 
 import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.nio.BufferObjectDataOutput;
 
 import java.io.IOException;
 
 /**
- * Contract point for {@link com.hazelcast.nio.BufferObjectDataOutput} implementations on enterprise.
+ * Contract point for {@link BufferObjectDataOutput} implementations on enterprise.
  *
  * @see com.hazelcast.nio.EnterpriseObjectDataOutput
- * @see com.hazelcast.nio.BufferObjectDataOutput
+ * @see BufferObjectDataOutput
  */
 public interface EnterpriseBufferObjectDataOutput
         extends EnterpriseObjectDataOutput, BufferObjectDataOutput {

@@ -1,12 +1,12 @@
-package com.hazelcast.nio.tcp;
+package com.hazelcast.internal.nio.tcp;
 
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.internal.networking.HandlerStatus;
+import com.hazelcast.internal.nio.Bits;
+import com.hazelcast.internal.nio.IOService;
+import com.hazelcast.internal.nio.Packet;
+import com.hazelcast.internal.nio.PacketIOHelper;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.Bits;
-import com.hazelcast.nio.IOService;
-import com.hazelcast.nio.Packet;
-import com.hazelcast.nio.PacketIOHelper;
 
 import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
@@ -15,10 +15,10 @@ import java.util.function.Consumer;
 
 import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
+import static com.hazelcast.internal.nio.IOUtil.compactOrClear;
 import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
-import static com.hazelcast.nio.IOUtil.compactOrClear;
 
-@SuppressWarnings("checkstyle:npathcomplexity")
+@SuppressWarnings({"checkstyle:npathcomplexity", "checkstyle:javadoctype"})
 public class SymmetricCipherPacketDecoder extends PacketDecoder {
 
     private final ILogger logger;

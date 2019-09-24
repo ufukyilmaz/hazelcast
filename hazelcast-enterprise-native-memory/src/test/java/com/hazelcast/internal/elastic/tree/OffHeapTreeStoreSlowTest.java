@@ -6,7 +6,7 @@ import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
-import com.hazelcast.nio.Bits;
+import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.annotation.ParallelJVMTest;

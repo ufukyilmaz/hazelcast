@@ -1,7 +1,7 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

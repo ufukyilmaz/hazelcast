@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.hazelcast.internal.elastic.map.BinaryElasticHashMap.loadFromOffHeapHeader;
-import static com.hazelcast.nio.serialization.DataType.HEAP;
+import static com.hazelcast.internal.serialization.DataType.HEAP;
 
 /**
  * Nested map, so a map of maps, with two-tiers of keys.

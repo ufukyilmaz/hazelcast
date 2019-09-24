@@ -3,7 +3,7 @@ package com.hazelcast.internal.serialization.impl;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.io.EOFException;
@@ -26,14 +26,14 @@ import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_LONG_BASE_O
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_LONG_INDEX_SCALE;
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_SHORT_BASE_OFFSET;
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_SHORT_INDEX_SCALE;
-import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.DOUBLE_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.FLOAT_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
-import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.UTF_8;
+import static com.hazelcast.internal.nio.Bits.CHAR_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.DOUBLE_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.FLOAT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.NULL_ARRAY_LENGTH;
+import static com.hazelcast.internal.nio.Bits.SHORT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.UTF_8;
 
 @SuppressWarnings("checkstyle:methodcount")
 final class MemoryBlockDataInput extends VersionedObjectDataInput implements EnterpriseBufferObjectDataInput {

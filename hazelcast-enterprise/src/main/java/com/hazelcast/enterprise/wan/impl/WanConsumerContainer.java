@@ -8,7 +8,7 @@ import com.hazelcast.instance.impl.Node;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.hazelcast.nio.ClassLoaderUtil.getOrCreate;
+import static com.hazelcast.internal.nio.ClassLoaderUtil.getOrCreate;
 
 /**
  * Container responsible for handling the lifecycle of the

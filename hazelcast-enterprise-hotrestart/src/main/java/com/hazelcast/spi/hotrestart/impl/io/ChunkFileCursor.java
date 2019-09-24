@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.internal.util.BufferingInputStream;
-import com.hazelcast.nio.IOUtil;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -14,8 +14,8 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 
-import static com.hazelcast.nio.IOUtil.readFully;
-import static com.hazelcast.nio.IOUtil.readFullyOrNothing;
+import static com.hazelcast.internal.nio.IOUtil.readFully;
+import static com.hazelcast.internal.nio.IOUtil.readFullyOrNothing;
 import static com.hazelcast.spi.hotrestart.impl.HotRestarter.BUFFER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.VAL_HEADER_SIZE;

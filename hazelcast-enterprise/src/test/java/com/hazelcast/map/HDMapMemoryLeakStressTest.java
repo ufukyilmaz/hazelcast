@@ -13,7 +13,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.nio.Bits;
+import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.query.PredicateBuilder.EntryObject;
 import com.hazelcast.query.Predicates;

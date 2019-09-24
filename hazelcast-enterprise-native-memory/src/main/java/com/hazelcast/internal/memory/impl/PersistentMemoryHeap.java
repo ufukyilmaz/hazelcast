@@ -12,7 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static com.hazelcast.internal.memory.impl.PersistentMemoryMalloc.checkPlatform;
-import static com.hazelcast.nio.IOUtil.copy;
+import static com.hazelcast.internal.nio.IOUtil.copy;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 
 /**

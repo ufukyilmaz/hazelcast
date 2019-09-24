@@ -13,7 +13,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
-import com.hazelcast.nio.IOUtil;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ssl.TestKeyStoreUtil;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import org.junit.After;

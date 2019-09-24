@@ -13,9 +13,9 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
-import static com.hazelcast.nio.IOUtil.closeResource;
-import static com.hazelcast.nio.IOUtil.deleteQuietly;
-import static com.hazelcast.nio.IOUtil.rename;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.deleteQuietly;
+import static com.hazelcast.internal.nio.IOUtil.rename;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;

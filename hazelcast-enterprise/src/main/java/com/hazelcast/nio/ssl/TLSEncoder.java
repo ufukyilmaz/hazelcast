@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 import static com.hazelcast.internal.networking.ChannelOption.SO_SNDBUF;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
-import static com.hazelcast.nio.IOUtil.compactOrClear;
+import static com.hazelcast.internal.nio.IOUtil.compactOrClear;
 import static java.lang.Math.max;
 
 /**

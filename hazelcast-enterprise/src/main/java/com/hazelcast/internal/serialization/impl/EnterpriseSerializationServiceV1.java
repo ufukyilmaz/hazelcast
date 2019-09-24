@@ -9,7 +9,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
 

@@ -11,7 +11,7 @@ import com.hazelcast.test.HazelcastTestSupport;
 
 import java.nio.ByteOrder;
 
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyLong;

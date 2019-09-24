@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.internal.util.collection.LongCursor;
 import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
-import com.hazelcast.nio.IOUtil;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
@@ -26,7 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-import static com.hazelcast.nio.IOUtil.rename;
+import static com.hazelcast.internal.nio.IOUtil.rename;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

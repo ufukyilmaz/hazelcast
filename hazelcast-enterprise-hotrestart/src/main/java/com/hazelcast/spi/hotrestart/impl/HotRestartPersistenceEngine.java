@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;

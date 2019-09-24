@@ -10,7 +10,7 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.SampleableEvictableHiDensityRecordMap;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.util.Clock;
 
 import javax.cache.expiry.ExpiryPolicy;

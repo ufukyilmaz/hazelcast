@@ -1,7 +1,7 @@
 package com.hazelcast.internal.elastic.queue;
 
 import com.hazelcast.internal.elastic.LongIterator;
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 
 /**
  * Queue for primitive {@code long}s.

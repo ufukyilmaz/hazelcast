@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hazelcast.nio.serialization.DataType.HEAP;
-import static com.hazelcast.nio.serialization.DataType.NATIVE;
+import static com.hazelcast.internal.serialization.DataType.HEAP;
+import static com.hazelcast.internal.serialization.DataType.NATIVE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 

@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
-import static com.hazelcast.nio.ClassLoaderUtil.getOrCreate;
+import static com.hazelcast.internal.nio.ClassLoaderUtil.getOrCreate;
 import static com.hazelcast.internal.util.ConcurrencyUtil.getOrPutSynchronized;
 import static com.hazelcast.internal.util.MapUtil.createConcurrentHashMap;
 import static com.hazelcast.internal.util.MapUtil.createHashMap;

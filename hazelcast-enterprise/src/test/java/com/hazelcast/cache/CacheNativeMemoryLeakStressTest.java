@@ -22,7 +22,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.Bits;
+import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;

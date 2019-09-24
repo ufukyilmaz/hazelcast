@@ -1,4 +1,4 @@
-package com.hazelcast.nio.tcp;
+package com.hazelcast.internal.nio.tcp;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigAccessor;

@@ -16,7 +16,7 @@ import com.hazelcast.internal.util.sort.LongMemArrayQuickSorter;
 import com.hazelcast.internal.util.sort.MemArrayQuickSorter;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.Bits;
+import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.internal.util.QuickMath;
 

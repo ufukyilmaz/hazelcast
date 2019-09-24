@@ -11,8 +11,8 @@ import com.hazelcast.internal.util.Clock;
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.map.impl.record.AbstractRecord.EPOCH_TIME;
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 

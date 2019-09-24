@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.di;
 
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

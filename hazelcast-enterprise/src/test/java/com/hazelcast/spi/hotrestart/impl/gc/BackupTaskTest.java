@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.hotrestart.BackupTaskState;
-import com.hazelcast.nio.IOUtil;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.test.annotation.QuickTest;

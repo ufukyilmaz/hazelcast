@@ -2,6 +2,7 @@ package com.hazelcast.nio;
 
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.nio.Connection;
 import com.hazelcast.nio.CipherHelper.SymmetricCipherBuilder;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;

@@ -2,8 +2,8 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
 
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.spi.hotrestart.impl.HotRestarter.LOG_OF_BUFFER_SIZE;
 
 /**

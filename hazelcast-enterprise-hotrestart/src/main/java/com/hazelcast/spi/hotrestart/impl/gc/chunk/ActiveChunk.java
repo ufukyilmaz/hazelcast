@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.chunk;
 
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 
 /**
  * Represents a currently active chunk. The mutator adds records to this chunk. Associated with an

@@ -6,8 +6,8 @@ import org.junit.runners.model.Statement;
 
 import java.io.File;
 
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.toFileName;
+import static com.hazelcast.internal.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertTrue;
 
 /**

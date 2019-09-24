@@ -3,10 +3,10 @@ package com.hazelcast.internal.elastic;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryManager;
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
  *  Native long array.

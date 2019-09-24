@@ -9,8 +9,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import static com.hazelcast.nio.IOUtil.closeResource;
-import static com.hazelcast.nio.IOUtil.rename;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.rename;
 
 /**
  * Abstract class for writing a single metadata to a specific file

@@ -1,6 +1,6 @@
 package com.hazelcast.internal.elastic.map;
 
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 
 import java.util.Map;
 

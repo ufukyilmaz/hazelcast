@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.ObjectDataInputStream;
 import com.hazelcast.internal.serialization.impl.ObjectDataOutputStream;
-import com.hazelcast.nio.IOUtil;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.util.ExceptionUtil;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -17,9 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.createObjectDataInputStream;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.createObjectDataOutputStream;
-import static com.hazelcast.nio.Bits.combineToLong;
-import static com.hazelcast.nio.Bits.extractInt;
-import static com.hazelcast.nio.IOUtil.toFileName;
+import static com.hazelcast.internal.nio.Bits.combineToLong;
+import static com.hazelcast.internal.nio.Bits.extractInt;
+import static com.hazelcast.internal.nio.IOUtil.toFileName;
 import static java.lang.Math.max;
 
 /**

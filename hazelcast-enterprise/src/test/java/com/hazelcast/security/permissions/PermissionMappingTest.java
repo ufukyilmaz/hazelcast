@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

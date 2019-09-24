@@ -10,7 +10,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.util.Set;
 
-import static com.hazelcast.nio.serialization.DataType.HEAP;
+import static com.hazelcast.internal.serialization.DataType.HEAP;
 
 /**
  * Wrapper around BinaryElasticNestedTreeMap for the usage in IndexStores

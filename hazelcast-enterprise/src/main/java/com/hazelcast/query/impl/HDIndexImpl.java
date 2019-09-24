@@ -9,7 +9,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.getters.Extractors;
 
-import static com.hazelcast.nio.serialization.DataType.HEAP;
+import static com.hazelcast.internal.serialization.DataType.HEAP;
 
 /**
  * Provides implementation of off-heap indexes.

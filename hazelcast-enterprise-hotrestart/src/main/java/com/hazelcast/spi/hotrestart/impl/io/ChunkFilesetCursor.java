@@ -7,8 +7,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.rename;
+import static com.hazelcast.internal.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.rename;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.CHUNK_FNAME_LENGTH;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_FNAME_SUFFIX;
 import static java.lang.Long.parseLong;

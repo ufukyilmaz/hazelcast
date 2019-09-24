@@ -1,14 +1,15 @@
 package com.hazelcast.nio;
 
 import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.nio.BufferObjectDataInput;
 
 import java.io.IOException;
 
 /**
- * Contract point for {@link com.hazelcast.nio.BufferObjectDataInput} implementations on enterprise.
+ * Contract point for {@link BufferObjectDataInput} implementations on enterprise.
  *
  * @see com.hazelcast.nio.EnterpriseObjectDataInput
- * @see com.hazelcast.nio.BufferObjectDataInput
+ * @see BufferObjectDataInput
  */
 public interface EnterpriseBufferObjectDataInput
         extends EnterpriseObjectDataInput, BufferObjectDataInput {

@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.tracker;
 
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 
 /**

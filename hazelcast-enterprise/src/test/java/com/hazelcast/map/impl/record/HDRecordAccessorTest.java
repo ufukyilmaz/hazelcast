@@ -6,7 +6,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;

@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.hotrestart.BackupTaskState;
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 

@@ -3,7 +3,7 @@ package com.hazelcast.internal.serialization.impl;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

@@ -3,7 +3,7 @@ package com.hazelcast.internal.memory;
 import com.hazelcast.internal.memory.impl.HeapMemoryManager;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

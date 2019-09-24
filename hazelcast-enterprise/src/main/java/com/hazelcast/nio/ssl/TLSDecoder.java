@@ -13,9 +13,9 @@ import static com.hazelcast.internal.networking.ChannelOption.DIRECT_BUF;
 import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
-import static com.hazelcast.nio.IOUtil.compactOrClear;
-import static com.hazelcast.nio.IOUtil.newByteBuffer;
-import static com.hazelcast.nio.IOUtil.toDebugString;
+import static com.hazelcast.internal.nio.IOUtil.compactOrClear;
+import static com.hazelcast.internal.nio.IOUtil.newByteBuffer;
+import static com.hazelcast.internal.nio.IOUtil.toDebugString;
 import static java.lang.Math.max;
 
 /**

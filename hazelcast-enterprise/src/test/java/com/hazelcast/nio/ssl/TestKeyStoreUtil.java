@@ -13,7 +13,7 @@ import java.io.OutputStream;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 
 @SuppressWarnings({"WeakerAccess", "unused"})

@@ -28,7 +28,7 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.addrOfKey1At;
 import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.addrOfKey2At;
 import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.valueAddr2slotBase;
-import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createMutatorCatchup;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

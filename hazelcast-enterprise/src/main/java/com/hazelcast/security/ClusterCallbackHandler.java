@@ -9,7 +9,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.nio.Connection;
+import com.hazelcast.internal.nio.Connection;
 
 /**
  * ClusterCallbackHandler is responsible for handling {@link CredentialsCallback}s.

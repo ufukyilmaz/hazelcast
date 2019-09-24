@@ -14,7 +14,7 @@ import static com.hazelcast.internal.networking.ChannelOption.SO_LINGER;
 import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
 import static com.hazelcast.internal.networking.ChannelOption.SO_SNDBUF;
 import static com.hazelcast.internal.networking.ChannelOption.TCP_NODELAY;
-import static com.hazelcast.nio.IOService.KILO_BYTE;
+import static com.hazelcast.internal.nio.IOService.KILO_BYTE;
 import static com.hazelcast.spi.properties.GroupProperty.SOCKET_BUFFER_DIRECT;
 import static com.hazelcast.spi.properties.GroupProperty.SOCKET_KEEP_ALIVE;
 import static com.hazelcast.spi.properties.GroupProperty.SOCKET_LINGER_SECONDS;

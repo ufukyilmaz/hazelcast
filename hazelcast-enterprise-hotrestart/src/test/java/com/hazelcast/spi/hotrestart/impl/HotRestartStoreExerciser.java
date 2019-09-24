@@ -14,7 +14,7 @@ import java.util.Map;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
-import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createStoreRegistry;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.exercise;

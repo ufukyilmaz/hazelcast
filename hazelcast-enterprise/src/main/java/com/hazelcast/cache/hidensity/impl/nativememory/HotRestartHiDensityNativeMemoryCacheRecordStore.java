@@ -26,7 +26,7 @@ import com.hazelcast.internal.util.Clock;
 
 import java.util.Iterator;
 
-import static com.hazelcast.nio.serialization.DataType.NATIVE;
+import static com.hazelcast.internal.serialization.DataType.NATIVE;
 import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 
 /**

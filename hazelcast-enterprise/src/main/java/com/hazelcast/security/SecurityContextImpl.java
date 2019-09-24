@@ -9,8 +9,8 @@ import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SecurityInterceptorConfig;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.ClassLoaderUtil;
-import com.hazelcast.nio.Connection;
+import com.hazelcast.internal.nio.ClassLoaderUtil;
+import com.hazelcast.internal.nio.Connection;
 import com.hazelcast.security.impl.SecurityServiceImpl;
 import com.hazelcast.internal.util.ExceptionUtil;
 
@@ -33,7 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
-import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
 import static com.hazelcast.security.impl.SecurityServiceImpl.clonePermissionConfigs;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 

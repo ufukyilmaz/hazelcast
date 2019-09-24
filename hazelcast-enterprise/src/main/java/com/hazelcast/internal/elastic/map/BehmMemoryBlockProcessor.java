@@ -5,7 +5,7 @@ import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 /** Memory block processor for values of {@link BinaryElasticHashMap}.

@@ -1,7 +1,7 @@
 package com.hazelcast.internal.memory;
 
 import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.nio.Bits;
+import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.di;
 
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;

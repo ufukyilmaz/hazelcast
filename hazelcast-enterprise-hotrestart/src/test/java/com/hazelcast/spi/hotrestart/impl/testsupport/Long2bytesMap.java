@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 
 import java.util.Set;

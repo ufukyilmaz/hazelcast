@@ -1,7 +1,7 @@
 package com.hazelcast.internal.memory;
 
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 
 /**
  * @param <V> type of MemoryBlock

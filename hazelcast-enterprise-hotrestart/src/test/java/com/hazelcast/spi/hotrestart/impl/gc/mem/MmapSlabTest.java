@@ -15,7 +15,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.util.Random;
 
-import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMallocTest.fillBlock;
 import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMallocTest.verifyBlock;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;

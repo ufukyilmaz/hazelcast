@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.EnumSet;
 
-import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
 import static com.hazelcast.security.impl.WeakSecretError.DICT_WORD;
 import static com.hazelcast.internal.util.ExceptionUtil.sneakyThrow;
 import static java.lang.System.getProperty;

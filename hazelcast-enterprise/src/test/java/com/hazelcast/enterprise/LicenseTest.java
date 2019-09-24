@@ -35,8 +35,8 @@ import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_SMALLER_VERSIO
 import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.TWO_NODES_ENTERPRISE_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.V4_LICENSE_WITH_SECURITY_DISABLED;
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.toFileName;
+import static com.hazelcast.internal.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.toFileName;
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

@@ -17,7 +17,7 @@ import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 
 import java.util.Collection;
 import java.util.Iterator;

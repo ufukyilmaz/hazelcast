@@ -9,9 +9,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.hazelcast.nio.IOUtil.closeResource;
-import static com.hazelcast.nio.IOUtil.copy;
-import static com.hazelcast.nio.IOUtil.toByteArray;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.copy;
+import static com.hazelcast.internal.nio.IOUtil.toByteArray;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;

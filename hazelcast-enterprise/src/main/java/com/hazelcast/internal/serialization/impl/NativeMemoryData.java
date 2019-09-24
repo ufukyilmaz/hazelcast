@@ -1,7 +1,7 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.internal.memory.MemoryBlock;
-import com.hazelcast.nio.Bits;
+import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.util.HashUtil;
 
@@ -11,8 +11,8 @@ import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_O
 import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readDataSize;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readTotalSize;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readType;
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
  * NativeMemoryData is in the form of {@code |SIZE|PARTITION HASH CODE|TYPE-ID|SERIALIZER DATA|}.

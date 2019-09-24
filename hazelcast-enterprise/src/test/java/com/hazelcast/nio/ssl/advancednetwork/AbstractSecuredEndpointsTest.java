@@ -3,7 +3,7 @@ package com.hazelcast.nio.ssl.advancednetwork;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.nio.IOUtil;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ssl.SSLEngineFactorySupport;
 import com.hazelcast.nio.ssl.TestKeyStoreUtil;
 import java.io.File;

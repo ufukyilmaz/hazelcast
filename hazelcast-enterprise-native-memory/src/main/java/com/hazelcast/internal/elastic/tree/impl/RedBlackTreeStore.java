@@ -23,7 +23,7 @@ import static com.hazelcast.internal.elastic.tree.impl.RedBlackTreeNode.newNode;
 import static com.hazelcast.internal.elastic.tree.impl.RedBlackTreeNode.of;
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 
 /***

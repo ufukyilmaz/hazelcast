@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
-import com.hazelcast.nio.IOUtil;
+import com.hazelcast.internal.nio.IOUtil;
 
 import java.io.File;
 

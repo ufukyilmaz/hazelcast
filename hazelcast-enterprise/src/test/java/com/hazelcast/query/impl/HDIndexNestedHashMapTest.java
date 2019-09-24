@@ -30,8 +30,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static com.hazelcast.nio.serialization.DataType.HEAP;
-import static com.hazelcast.nio.serialization.DataType.NATIVE;
+import static com.hazelcast.internal.serialization.DataType.HEAP;
+import static com.hazelcast.internal.serialization.DataType.NATIVE;
 import static com.hazelcast.query.impl.BaseIndexStore.LOAD_FACTOR;
 import static org.junit.Assert.assertEquals;
 

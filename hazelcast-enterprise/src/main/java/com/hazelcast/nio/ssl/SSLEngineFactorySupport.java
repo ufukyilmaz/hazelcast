@@ -11,7 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Properties;
 
-import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
 
 /**
  * A support class for {@link SSLEngineFactory} and {@link SSLContextFactory} implementation that takes care of

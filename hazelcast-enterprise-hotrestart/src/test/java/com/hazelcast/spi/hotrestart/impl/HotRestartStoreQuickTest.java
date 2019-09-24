@@ -16,7 +16,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 
-import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hrStoreConfig;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;

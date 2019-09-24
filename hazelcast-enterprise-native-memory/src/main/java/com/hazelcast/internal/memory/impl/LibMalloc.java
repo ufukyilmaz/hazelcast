@@ -1,6 +1,6 @@
 package com.hazelcast.internal.memory.impl;
 
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 
 public interface LibMalloc extends Disposable {
 

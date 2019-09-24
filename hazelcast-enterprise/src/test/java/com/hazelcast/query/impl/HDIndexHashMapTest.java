@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import static com.hazelcast.nio.serialization.DataType.NATIVE;
+import static com.hazelcast.internal.serialization.DataType.NATIVE;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)

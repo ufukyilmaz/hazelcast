@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan.impl.connection;
 
 import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationResponse;
 import com.hazelcast.nio.Address;
-import com.hazelcast.nio.Connection;
+import com.hazelcast.internal.nio.Connection;
 
 /**
  * Wrapper for {@link Connection} to add extra information related to WAN replication.

@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.nio.IOUtil;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 
 import java.io.Closeable;
@@ -14,7 +14,7 @@ import java.lang.reflect.Method;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 

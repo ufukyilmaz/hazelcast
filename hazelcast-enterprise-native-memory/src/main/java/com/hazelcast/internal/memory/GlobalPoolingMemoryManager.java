@@ -7,7 +7,7 @@ import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.Bits;
+import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.internal.util.EmptyStatement;
 import com.hazelcast.internal.util.QuickMath;

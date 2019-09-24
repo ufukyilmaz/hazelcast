@@ -2,7 +2,7 @@ package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.serialization.InternalSerializationService;
-import com.hazelcast.nio.Bits;
+import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -22,7 +22,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.nio.ByteOrder;
 
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
 import static org.junit.Assert.assertEquals;
 
 /**

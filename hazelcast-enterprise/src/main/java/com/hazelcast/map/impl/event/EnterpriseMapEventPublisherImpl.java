@@ -16,7 +16,7 @@ import com.hazelcast.map.impl.wan.MapFilterProvider;
 import com.hazelcast.map.wan.MapWanEventFilter;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.internal.util.CollectionUtil;

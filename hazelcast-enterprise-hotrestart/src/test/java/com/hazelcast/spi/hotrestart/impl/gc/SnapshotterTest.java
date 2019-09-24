@@ -28,7 +28,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.Snapshotter.CHUNK_SNAPSHOT_FNAME;
 import static com.hazelcast.spi.hotrestart.impl.gc.Snapshotter.SOURCE_CHUNK_FLAG_MASK;
 import static com.hazelcast.spi.hotrestart.impl.gc.Snapshotter.SURVIVOR_FLAG_MASK;

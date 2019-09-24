@@ -18,7 +18,7 @@ import java.io.File;
 import java.util.Random;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.junit.Assert.assertEquals;

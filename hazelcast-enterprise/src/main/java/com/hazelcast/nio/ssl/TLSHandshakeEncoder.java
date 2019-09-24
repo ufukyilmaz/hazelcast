@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentMap;
 import static com.hazelcast.internal.networking.HandlerStatus.BLOCKED;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
-import static com.hazelcast.nio.IOUtil.compactOrClear;
+import static com.hazelcast.internal.nio.IOUtil.compactOrClear;
 import static com.hazelcast.nio.ssl.TLSHandshakeDecoder.newSSLException;
 import static com.hazelcast.nio.ssl.TLSUtil.publishRemoteCertificates;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_OVERFLOW;

@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl;
 
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 
 /** Set of key handles. Offers minimum support needed to track tombstone keys during restart. */

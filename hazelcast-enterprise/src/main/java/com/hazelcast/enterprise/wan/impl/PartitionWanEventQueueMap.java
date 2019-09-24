@@ -3,14 +3,14 @@ package com.hazelcast.enterprise.wan.impl;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
-import com.hazelcast.nio.serialization.SerializableByConvention;
+import com.hazelcast.internal.serialization.SerializableByConvention;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.hazelcast.nio.serialization.SerializableByConvention.Reason.PUBLIC_API;
+import static com.hazelcast.internal.serialization.SerializableByConvention.Reason.PUBLIC_API;
 
 /**
  * WAN event queue map of a partition and a specific service (map/cache).

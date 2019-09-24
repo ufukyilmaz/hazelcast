@@ -69,7 +69,7 @@ import static com.hazelcast.hotrestart.BackupTaskState.NO_TASK;
 import static com.hazelcast.hotrestart.BackupTaskState.SUCCESS;
 import static com.hazelcast.hotrestart.HotRestartService.BACKUP_DIR_PREFIX;
 import static com.hazelcast.internal.util.DirectoryLock.lockForDirectory;
-import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;

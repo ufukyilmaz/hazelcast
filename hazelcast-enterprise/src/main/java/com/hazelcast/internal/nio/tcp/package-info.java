@@ -1,4 +1,4 @@
 /**
  * This package contains enterprise encryption extensions.
  */
-package com.hazelcast.nio.tcp;
+package com.hazelcast.internal.nio.tcp;

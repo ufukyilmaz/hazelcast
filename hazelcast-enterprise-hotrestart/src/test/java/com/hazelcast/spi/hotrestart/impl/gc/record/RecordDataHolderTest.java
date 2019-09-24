@@ -9,7 +9,7 @@ import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
 
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

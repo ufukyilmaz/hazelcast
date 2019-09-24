@@ -30,7 +30,7 @@ import org.mockito.Mockito;
 
 import java.io.File;
 
-import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createBaseDiContainer;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;

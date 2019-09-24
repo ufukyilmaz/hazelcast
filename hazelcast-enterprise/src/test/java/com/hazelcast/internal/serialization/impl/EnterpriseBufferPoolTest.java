@@ -1,6 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.nio.BufferObjectDataInput;
+import com.hazelcast.internal.nio.BufferObjectDataInput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;

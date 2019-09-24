@@ -1,4 +1,4 @@
-package com.hazelcast.nio.ascii;
+package com.hazelcast.internal.nio.ascii;
 
 import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;

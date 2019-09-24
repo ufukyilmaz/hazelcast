@@ -20,8 +20,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.hazelcast.nio.IOUtil.close;
-import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.close;
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.loadKeyManagerFactory;
 import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.loadTrustManagerFactory;
 import static com.hazelcast.test.HazelcastTestSupport.ignore;

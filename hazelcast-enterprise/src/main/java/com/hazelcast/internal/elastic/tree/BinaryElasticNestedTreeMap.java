@@ -10,7 +10,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.Comparables;
@@ -24,7 +24,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static com.hazelcast.internal.elastic.map.BinaryElasticHashMap.loadFromOffHeapHeader;
-import static com.hazelcast.nio.serialization.DataType.HEAP;
+import static com.hazelcast.internal.serialization.DataType.HEAP;
 
 /**
  * Nested map, so a map of maps, with two-tiers of keys.

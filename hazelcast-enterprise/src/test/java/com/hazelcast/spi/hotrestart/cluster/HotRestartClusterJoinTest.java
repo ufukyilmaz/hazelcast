@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.nio.IOUtil.toFileName;
+import static com.hazelcast.internal.nio.IOUtil.toFileName;
 import static java.util.Collections.synchronizedList;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.emptyArray;

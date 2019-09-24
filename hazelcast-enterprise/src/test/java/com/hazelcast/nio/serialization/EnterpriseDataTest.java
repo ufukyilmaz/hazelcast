@@ -1,5 +1,6 @@
 package com.hazelcast.nio.serialization;
 
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.partition.PartitionAware;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.HeapData;

@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.mem;
 
-import com.hazelcast.nio.Disposable;
+import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 
 import java.io.File;
@@ -17,7 +17,7 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.util.QuickMath.log2;
 import static com.hazelcast.internal.util.QuickMath.nextPowerOfTwo;
 

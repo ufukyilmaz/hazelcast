@@ -28,7 +28,7 @@ import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;

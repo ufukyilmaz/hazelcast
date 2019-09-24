@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Random;
 
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 

@@ -19,7 +19,7 @@ import java.io.RandomAccessFile;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createGcHelper;

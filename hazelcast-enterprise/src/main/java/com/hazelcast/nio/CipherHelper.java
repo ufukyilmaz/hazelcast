@@ -2,6 +2,8 @@ package com.hazelcast.nio;
 
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.internal.memory.impl.EndiannessUtil;
+import com.hazelcast.internal.nio.Bits;
+import com.hazelcast.internal.nio.Connection;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 

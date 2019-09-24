@@ -61,7 +61,6 @@ public class SecurityUtilTest extends HazelcastTestSupport {
         testCreatePermission(PermissionType.SEMAPHORE, SemaphorePermission.class);
         testCreatePermission(PermissionType.SET, SetPermission.class);
         testCreatePermission(PermissionType.TOPIC, TopicPermission.class);
-        testCreatePermission(PermissionType.ID_GENERATOR, AtomicLongPermission.class);
         testCreatePermission(PermissionType.TRANSACTION, TransactionPermission.class);
         testCreatePermission(PermissionType.DURABLE_EXECUTOR_SERVICE, DurableExecutorServicePermission.class);
         testCreatePermission(PermissionType.CARDINALITY_ESTIMATOR, CardinalityEstimatorPermission.class);

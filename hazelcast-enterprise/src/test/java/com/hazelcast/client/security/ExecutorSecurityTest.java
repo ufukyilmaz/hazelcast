@@ -123,7 +123,7 @@ public class ExecutorSecurityTest {
             hz.getLock("lock").unlock();
             result++; // +1
 
-            result += hz.getAtomicLong("atomic_long").incrementAndGet(); // +1
+            result += hz.getCPSubsystem().getAtomicLong("atomic_long").incrementAndGet(); // +1
 
             hz.getCPSubsystem().getCountDownLatch("countdown_latch").trySetCount(2);
             hz.getCPSubsystem().getCountDownLatch("countdown_latch").countDown();
@@ -194,7 +194,6 @@ public class ExecutorSecurityTest {
         addAllPermission(config, PermissionType.MULTIMAP, "multimap");
         addAllPermission(config, PermissionType.LIST, "list");
         addAllPermission(config, PermissionType.SET, "set");
-        addAllPermission(config, PermissionType.ID_GENERATOR, "id_generator");
         addAllPermission(config, PermissionType.LOCK, "lock");
         addAllPermission(config, PermissionType.ATOMIC_LONG, "atomic_long");
         addAllPermission(config, PermissionType.COUNTDOWN_LATCH, "countdown_latch");

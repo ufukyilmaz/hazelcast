@@ -2,15 +2,14 @@ package com.hazelcast.security.permissions;
 
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.cp.internal.datastructures.atomicref.AtomicRefService;
 import com.hazelcast.cp.internal.datastructures.spi.RaftRemoteService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.services.RemoteService;
+import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.security.SecureCallableImpl;
 import com.hazelcast.spi.impl.servicemanager.impl.ServiceManagerImpl;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.internal.util.ExceptionUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -48,10 +47,9 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         INSECURE_SERVICES.add(com.hazelcast.serviceprovider.TestRemoteService.class);
         INSECURE_SERVICES.add(com.hazelcast.ringbuffer.impl.RingbufferService.class);
         INSECURE_SERVICES.add(com.hazelcast.topic.impl.reliable.ReliableTopicService.class);
-        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.unsafe.idgen.IdGeneratorService.class);
         INSECURE_SERVICES.add(com.hazelcast.transaction.impl.xa.XAService.class);
         INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.lock.RaftLockService.class);
-        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.atomiclong.RaftAtomicLongService.class);
+        INSECURE_SERVICES.add(com.hazelcast.internal.longregister.LongRegisterService.class);
     }
 
     // Common methods that don't require security
@@ -79,9 +77,9 @@ public class PermissionMappingTest extends HazelcastTestSupport {
     private static final Map<Class, String> SERVICE_TO_PERMSTRUCT_MAPPING = new HashMap<Class, String>();
 
     static {
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.atomiclong.AtomicLongService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.atomiclong.AtomicLongService.class,
                 "atomicLong");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(AtomicRefService.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.atomicref.AtomicRefService.class,
                 "atomicReference");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cardinality.impl.CardinalityEstimatorService.class,
                 "cardinalityEstimator");
@@ -99,8 +97,6 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "queue");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.collection.impl.list.ListService.class,
                 "list");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.idgen.IdGeneratorService.class,
-                "idGenerator");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.collection.impl.set.SetService.class,
                 "set");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.replicatedmap.impl.ReplicatedMapService.class,
@@ -169,7 +165,9 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 new String[] {"getGroupId"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.semaphore.SemaphoreService.class,
                 new String[] {"getGroupId"});
-        PER_SERVICE_SKIP_LIST.put(AtomicRefService.class,
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.atomiclong.AtomicLongService.class,
+                new String[] {"getGroupId"});
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.atomicref.AtomicRefService.class,
                 new String[] {"getGroupId"});
     }
 

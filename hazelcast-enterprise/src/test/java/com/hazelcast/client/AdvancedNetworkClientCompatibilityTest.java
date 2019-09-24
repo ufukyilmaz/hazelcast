@@ -54,7 +54,7 @@ public class AdvancedNetworkClientCompatibilityTest {
         }
 
         for (int i = 0; i < clientVersions.length; i++) {
-            IAtomicLong atomicLong = clients[i].getAtomicLong(clientVersions[i]);
+            IAtomicLong atomicLong = clients[i].getCPSubsystem().getAtomicLong(clientVersions[i]);
 
             for (int j = 0; j < 1000; j++) {
                 atomicLong.incrementAndGet();

@@ -5,9 +5,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.internal.diagnostics.Diagnostics;
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.metrics.ProbeLevel;
 import com.hazelcast.internal.metrics.renderers.ProbeRenderer;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.MapService;
@@ -50,9 +48,8 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
 
     protected Config getConfig() {
         Config cfg = super.getConfig();
-
-        cfg.setProperty(Diagnostics.METRICS_LEVEL.getName(), ProbeLevel.INFO.name())
-           .setProperty(Diagnostics.METRICS_DISTRIBUTED_DATASTRUCTURES.getName(), "true");
+        cfg.getMetricsConfig()
+           .setMetricsForDataStructuresEnabled(true);
 
         MapConfig mapWithMerkleConfig = new MapConfig(MAP_NAME_WITH_MERKLE);
         mapWithMerkleConfig.setInMemoryFormat(InMemoryFormat.BINARY);

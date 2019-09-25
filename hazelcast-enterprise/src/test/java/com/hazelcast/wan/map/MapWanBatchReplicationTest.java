@@ -18,6 +18,7 @@ import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.jmx.MBeanDataHolder;
 import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.IMap;
 import com.hazelcast.map.MapStore;
@@ -42,7 +43,6 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
-import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.wan.UninitializableWanPublisher;
 import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import com.hazelcast.wan.impl.WanReplicationService;
@@ -74,8 +74,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.config.WanPublisherState.PAUSED;
 import static com.hazelcast.config.WanPublisherState.STOPPED;
-import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_CLEANUP_PERCENTAGE;
-import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -1041,7 +1039,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
             assertEquals("missing delete operations", mapEntryCount, store.deleteCount.get());
         });
     }
-    
+
     @Test
     public void publisherIdOverridesGroupName() {
         configB.getGroupConfig().setName("targetGroup");

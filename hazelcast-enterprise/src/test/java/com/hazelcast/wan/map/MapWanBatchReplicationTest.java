@@ -673,6 +673,25 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
     }
 
     @Test
+    public void withMaxIdle() {
+        String mergePolicy = com.hazelcast.spi.merge.PassThroughMergePolicy.class.getName();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", mergePolicy);
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 100, "value");
+        IMap<Integer, String> map = getMap(clusterA, "map");
+
+        assertKeysInEventually(clusterB, "map", 0, 100);
+
+        for (int i = 0; i < 100; i++) {
+            map.set(i, "value", Long.MAX_VALUE, TimeUnit.SECONDS, 1, TimeUnit.SECONDS);
+        }
+
+        assertKeysNotInEventually(clusterB, "map", 0, 100);
+    }
+
+    @Test
     public void entryOperation() throws Exception {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
@@ -1022,25 +1041,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
             assertEquals("missing delete operations", mapEntryCount, store.deleteCount.get());
         });
     }
-
-    @Test
-    public void maxIdleFromTargetClusterIsUsedForReceivedEntries() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob",
-                PassThroughMergePolicy.class.getName());
-        configA.getMapConfig("default").setMaxIdleSeconds(2);
-        configA.setProperty(PROP_CLEANUP_PERCENTAGE, "100")
-               .setProperty(PROP_TASK_PERIOD_SECONDS, "1");
-        startClusterA();
-        startClusterB();
-
-        final String mapName = "map";
-        createDataIn(clusterA, mapName, 0, 100);
-        assertDataInFromEventually(clusterB, mapName, 0, 100, clusterA);
-
-        assertSizeEventually(0, clusterA[0].getMap(mapName));
-        assertTrueAllTheTime(() -> assertDataInFrom(clusterB, mapName, 0, 100, clusterA), 10);
-    }
-
+    
     @Test
     public void publisherIdOverridesGroupName() {
         configB.getGroupConfig().setName("targetGroup");

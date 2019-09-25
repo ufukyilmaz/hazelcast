@@ -23,7 +23,7 @@ class LazyEntryView<K, V> implements EntryView<K, V> {
     private long lastUpdateTime;
     private long version;
     private long ttl;
-    private Long maxIdle;
+    private long maxIdle;
 
     private SerializationService serializationService;
 
@@ -139,7 +139,7 @@ class LazyEntryView<K, V> implements EntryView<K, V> {
     }
 
     @Override
-    public Long getMaxIdle() {
+    public long getMaxIdle() {
         return maxIdle;
     }
 

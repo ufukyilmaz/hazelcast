@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
+import com.hazelcast.internal.util.UUIDSerializationUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.impl.NodeEngineImpl;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import static java.util.Collections.unmodifiableSet;
 
@@ -22,12 +24,12 @@ import static java.util.Collections.unmodifiableSet;
  */
 public class SendExcludedMemberUuidsOperation extends Operation implements JoinOperation {
 
-    private Set<String> excludedMemberUuids;
+    private Set<UUID> excludedMemberUuids;
 
     public SendExcludedMemberUuidsOperation() {
     }
 
-    public SendExcludedMemberUuidsOperation(Set<String> excludedMemberUuids) {
+    public SendExcludedMemberUuidsOperation(Set<UUID> excludedMemberUuids) {
         this.excludedMemberUuids = excludedMemberUuids != null ? excludedMemberUuids : Collections.emptySet();
     }
 
@@ -42,8 +44,8 @@ public class SendExcludedMemberUuidsOperation extends Operation implements JoinO
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeInt(excludedMemberUuids.size());
-        for (String uuid : excludedMemberUuids) {
-            out.writeUTF(uuid);
+        for (UUID uuid : excludedMemberUuids) {
+            UUIDSerializationUtil.writeUUID(out, uuid);
         }
     }
 
@@ -51,9 +53,9 @@ public class SendExcludedMemberUuidsOperation extends Operation implements JoinO
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        Set<String> excludedMemberUuids = new HashSet<>();
+        Set<UUID> excludedMemberUuids = new HashSet<>();
         for (int i = 0; i < size; i++) {
-            excludedMemberUuids.add(in.readUTF());
+            excludedMemberUuids.add(UUIDSerializationUtil.readUUID(in));
         }
         this.excludedMemberUuids = unmodifiableSet(excludedMemberUuids);
     }

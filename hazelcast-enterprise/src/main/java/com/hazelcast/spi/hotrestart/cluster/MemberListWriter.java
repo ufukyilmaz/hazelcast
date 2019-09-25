@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.Member;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.util.UUIDSerializationUtil;
 
 import java.io.DataOutput;
 import java.io.File;
@@ -32,7 +33,7 @@ class MemberListWriter extends AbstractMetadataWriter<Collection<Member>> {
     }
 
     private void writeMember(DataOutput out, Member member) throws IOException {
-        out.writeUTF(member.getUuid());
+        UUIDSerializationUtil.writeUUID(out, member.getUuid());
         writeAddress(out, member.getAddress());
         out.writeBoolean(member.localMember());
         out.writeUTF(member.getVersion().toString());

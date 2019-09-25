@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
+import com.hazelcast.internal.util.UUIDSerializationUtil;
 
 import java.io.DataOutput;
 import java.io.File;
@@ -40,7 +41,7 @@ final class PartitionTableWriter extends AbstractMetadataWriter<PartitionTableVi
         out.writeInt(replicaIdToIndexes.size());
         for (PartitionReplica replica : replicaIdToIndexes.keySet()) {
             writeAddress(out, replica.address());
-            out.writeUTF(replica.uuid());
+            UUIDSerializationUtil.writeUUID(out, replica.uuid());
         }
 
         writePartitionTable(partitionTable, replicaIdToIndexes, out);

@@ -38,7 +38,7 @@ import static com.hazelcast.internal.nearcache.impl.invalidation.InvalidationUti
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.operation.AbstractHDMapOperationTest.OperationType.PUT;
 import static com.hazelcast.map.impl.operation.AbstractHDMapOperationTest.OperationType.PUT_ALL;
-import static com.hazelcast.internal.util.UuidUtil.newUnsecureUuidString;
+import static com.hazelcast.internal.util.UuidUtil.newUnsecureUUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -242,7 +242,7 @@ public abstract class AbstractHDMapOperationTest {
         }
         operation.setService(mapService);
         operation.setNodeEngine(nodeEngine);
-        operation.setCallerUuid(newUnsecureUuidString());
+        operation.setCallerUuid(newUnsecureUUID());
         operation.setPartitionId(partitionId);
     }
 

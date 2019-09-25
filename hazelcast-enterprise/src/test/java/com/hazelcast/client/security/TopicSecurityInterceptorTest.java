@@ -10,6 +10,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.util.UUID;
+
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class TopicSecurityInterceptorTest extends InterceptorTestSupport {
@@ -37,7 +39,7 @@ public class TopicSecurityInterceptorTest extends InterceptorTestSupport {
         final DummyMessageListener messageListener = new DummyMessageListener();
         final String objectName = randomString();
         final ITopic topic = client.getTopic(objectName);
-        final String id = topic.addMessageListener(messageListener);
+        final UUID id = topic.addMessageListener(messageListener);
         interceptor.setExpectation(getObjectType(), objectName, "removeMessageListener", SKIP_COMPARISON_OBJECT);
         topic.removeMessageListener(id);
     }

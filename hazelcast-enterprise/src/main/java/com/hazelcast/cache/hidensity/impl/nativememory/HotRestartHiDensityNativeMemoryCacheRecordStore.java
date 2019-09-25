@@ -25,6 +25,7 @@ import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.internal.util.Clock;
 
 import java.util.Iterator;
+import java.util.UUID;
 
 import static com.hazelcast.internal.serialization.DataType.NATIVE;
 import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
@@ -125,7 +126,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected HiDensityNativeMemoryCacheRecord doPutRecord(Data key, HiDensityNativeMemoryCacheRecord record,
-                                                           String source, boolean updateJournal) {
+                                                           UUID source, boolean updateJournal) {
         HiDensityNativeMemoryCacheRecord oldRecord = super.doPutRecord(key, record, source, updateJournal);
         putToHotRestart(key, record);
         return oldRecord;
@@ -151,7 +152,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    protected HiDensityNativeMemoryCacheRecord doRemoveRecord(Data key, String source) {
+    protected HiDensityNativeMemoryCacheRecord doRemoveRecord(Data key, UUID source) {
         lookupAndRemoveFromHotRestart(key);
         return super.doRemoveRecord(key, source);
     }

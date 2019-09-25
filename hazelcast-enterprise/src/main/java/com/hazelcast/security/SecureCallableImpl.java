@@ -86,6 +86,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
@@ -375,12 +376,12 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public String addDistributedObjectListener(DistributedObjectListener distributedObjectListener) {
+        public UUID addDistributedObjectListener(DistributedObjectListener distributedObjectListener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean removeDistributedObjectListener(String registrationId) {
+        public boolean removeDistributedObjectListener(UUID registrationId) {
             throw new UnsupportedOperationException();
         }
 

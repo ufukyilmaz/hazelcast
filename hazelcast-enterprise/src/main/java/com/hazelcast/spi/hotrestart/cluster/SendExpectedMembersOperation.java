@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
+import com.hazelcast.internal.util.UUIDSerializationUtil;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -10,6 +11,7 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Sends the list of members, that is sufficient to pass await join step,
@@ -17,12 +19,12 @@ import java.util.Map;
  */
 public class SendExpectedMembersOperation extends Operation implements JoinOperation {
 
-    private Map<String, Address> expectedMembers;
+    private Map<UUID, Address> expectedMembers;
 
     public SendExpectedMembersOperation() {
     }
 
-    public SendExpectedMembersOperation(Map<String, Address> expectedMembers) {
+    public SendExpectedMembersOperation(Map<UUID, Address> expectedMembers) {
         this.expectedMembers = expectedMembers;
     }
 
@@ -48,8 +50,8 @@ public class SendExpectedMembersOperation extends Operation implements JoinOpera
             throws IOException {
         super.writeInternal(out);
         out.writeInt(expectedMembers.size());
-        for (Map.Entry<String, Address> entry : expectedMembers.entrySet()) {
-            out.writeUTF(entry.getKey());
+        for (Map.Entry<UUID, Address> entry : expectedMembers.entrySet()) {
+            UUIDSerializationUtil.writeUUID(out, entry.getKey());
             out.writeObject(entry.getValue());
         }
     }
@@ -61,7 +63,7 @@ public class SendExpectedMembersOperation extends Operation implements JoinOpera
         int size = in.readInt();
         expectedMembers = new HashMap<>(size);
         for (int i = 0; i < size; i++) {
-            String uuid = in.readUTF();
+            UUID uuid = UUIDSerializationUtil.readUUID(in);
             Address address = in.readObject();
             expectedMembers.put(uuid, address);
         }

@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.backup;
 
 import com.hazelcast.core.MemberLeftException;
+import com.hazelcast.internal.util.UUIDSerializationUtil;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -15,6 +16,7 @@ import com.hazelcast.transaction.impl.Transaction;
 import com.hazelcast.internal.util.EmptyStatement;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import static com.hazelcast.transaction.impl.Transaction.State.COMMITTING;
 import static com.hazelcast.transaction.impl.Transaction.State.PREPARING;
@@ -31,13 +33,13 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
     private Transaction.State transactionPhase;
     private long backupSeq;
     private Address initiator;
-    private String txnId;
+    private UUID txnId;
     private long leaseTime;
 
     public HotRestartBackupOperation() {
     }
 
-    private HotRestartBackupOperation(Transaction.State transactionPhase, long backupSeq, Address initiator, String txnId,
+    private HotRestartBackupOperation(Transaction.State transactionPhase, long backupSeq, Address initiator, UUID txnId,
                                       long leaseTime) {
         this.transactionPhase = transactionPhase;
         this.backupSeq = backupSeq;
@@ -54,7 +56,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
      * @param leaseTime duration in ms after which this transaction will expire
      * @return the prepare operation for hot restart backup
      */
-    public static HotRestartBackupOperation prepareOperation(Address initiator, String txnId, long leaseTime) {
+    public static HotRestartBackupOperation prepareOperation(Address initiator, UUID txnId, long leaseTime) {
         return new HotRestartBackupOperation(PREPARING, 0, initiator, txnId, leaseTime);
     }
 
@@ -66,7 +68,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
      * @param txnId     the transaction ID
      * @return the commit operation for hot restart backup
      */
-    public static HotRestartBackupOperation commitOperation(long backupSeq, Address initiator, String txnId) {
+    public static HotRestartBackupOperation commitOperation(long backupSeq, Address initiator, UUID txnId) {
         return new HotRestartBackupOperation(COMMITTING, backupSeq, initiator, txnId, 0);
     }
 
@@ -77,7 +79,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
      * @param txnId     the transaction ID
      * @return the rollback operation for hot restart backup
      */
-    public static HotRestartBackupOperation rollbackOperation(Address initiator, String txnId) {
+    public static HotRestartBackupOperation rollbackOperation(Address initiator, UUID txnId) {
         return new HotRestartBackupOperation(ROLLING_BACK, 0, initiator, txnId, 0);
     }
 
@@ -136,7 +138,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
         out.writeUTF(transactionPhase.toString());
         out.writeLong(backupSeq);
         out.writeObject(initiator);
-        out.writeUTF(txnId);
+        UUIDSerializationUtil.writeUUID(out, txnId);
         out.writeLong(leaseTime);
     }
 
@@ -151,7 +153,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
         }
         backupSeq = in.readLong();
         initiator = in.readObject();
-        txnId = in.readUTF();
+        txnId = UUIDSerializationUtil.readUUID(in);
         leaseTime = in.readLong();
     }
 

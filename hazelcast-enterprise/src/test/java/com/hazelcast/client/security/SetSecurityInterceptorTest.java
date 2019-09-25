@@ -10,6 +10,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.HashSet;
+import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
 
@@ -125,7 +126,7 @@ public class SetSecurityInterceptorTest extends InterceptorTestSupport {
     @Test
     public void removeItemListener() {
         ICollection collection = getCollection();
-        final String id = collection.addItemListener(mock(ItemListener.class), true);
+        final UUID id = collection.addItemListener(mock(ItemListener.class), true);
         interceptor.setExpectation(getObjectType(), objectName, "removeItemListener", SKIP_COMPARISON_OBJECT);
         collection.removeItemListener(id);
     }

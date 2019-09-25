@@ -18,6 +18,7 @@ import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Set;
+import java.util.UUID;
 
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
@@ -133,7 +134,7 @@ public class PartitionListenerCompatibilityTest extends HazelcastTestSupport {
     }
 
     private void assertPartitions(Set<Partition> partitions1, Set<Partition> partitions2) {
-        HashMap<Integer, String> map = new HashMap<Integer, String>();
+        HashMap<Integer, UUID> map = new HashMap<>();
         for (Partition partition : partitions2) {
             Member owner = partition.getOwner();
             assertNotNull(owner);

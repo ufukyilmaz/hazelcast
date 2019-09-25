@@ -11,6 +11,7 @@ import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.transaction.TransactionException;
 import com.hazelcast.internal.util.EmptyStatement;
+import com.hazelcast.internal.util.UuidUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -69,7 +70,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
     public void testClusterHotRestartBackupInterrupt() throws IOException {
         final int clusterSize = 3;
         resetFixture(-1, clusterSize);
-        final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
+        final HashMap<Integer, String> expectedMap = new HashMap<>();
         fillMap(expectedMap);
         final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
         final int backupSeq = 0;
@@ -85,7 +86,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final int clusterSize = 3;
         resetFixture(-1, clusterSize);
 
-        final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
+        final HashMap<Integer, String> expectedMap = new HashMap<>();
         fillMap(expectedMap);
 
         final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
@@ -114,7 +115,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final int clusterSize = 3;
         resetFixture(-1, clusterSize);
 
-        final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
+        final HashMap<Integer, String> expectedMap = new HashMap<>();
         fillMap(expectedMap);
 
         final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
@@ -122,7 +123,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
 
         final HotBackupService backupService = (HotBackupService) getNode(instancesArr[1])
                 .getNodeExtension().getHotRestartService();
-        backupService.prepareBackup(getAddress(instancesArr[2]), "dummyTx", Long.MAX_VALUE);
+        backupService.prepareBackup(getAddress(instancesArr[2]), UuidUtil.newSecureUUID(), Long.MAX_VALUE);
 
         try {
             runClusterBackupOnInstance(0, instancesArr[0]);

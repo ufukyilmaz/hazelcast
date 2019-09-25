@@ -22,7 +22,10 @@ import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.impl.WanReplicationService;
 
+import java.util.UUID;
+
 import static com.hazelcast.cache.impl.operation.MutableOperation.IGNORE_COMPLETION;
+import static com.hazelcast.internal.util.UuidUtil.NIL_UUID;
 import static com.hazelcast.spi.impl.merge.MergingValueFactory.createMergingEntry;
 
 /**
@@ -33,7 +36,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
     /**
      * Event origin.
      */
-    public static final String ORIGIN = "ENTERPRISE_WAN";
+    public static final UUID ORIGIN =  NIL_UUID;
 
     private final EnterpriseCacheService cacheService;
     private final NodeEngine nodeEngine;

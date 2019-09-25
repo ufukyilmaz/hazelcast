@@ -63,7 +63,6 @@ import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.memory.StandardMemoryManager;
-import com.hazelcast.nio.Address;
 import com.hazelcast.nio.CipherByteArrayProcessor;
 import com.hazelcast.nio.EnterpriseChannelInitializerProvider;
 import com.hazelcast.internal.nio.IOService;
@@ -99,6 +98,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
@@ -776,14 +776,14 @@ public class EnterpriseNodeExtension
     }
 
     @Override
-    public String createMemberUuid(Address address) {
+    public UUID createMemberUuid() {
         if (hotRestartService != null) {
-            String uuid = hotRestartService.getClusterMetadataManager().readMemberUuid();
+            UUID uuid = hotRestartService.getClusterMetadataManager().readMemberUuid();
             if (uuid != null) {
                 return uuid;
             }
         }
-        return super.createMemberUuid(address);
+        return super.createMemberUuid();
     }
 
     @Override

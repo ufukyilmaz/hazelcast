@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.impl.MemberImpl;
+import com.hazelcast.internal.util.UUIDSerializationUtil;
 import com.hazelcast.nio.Address;
 import com.hazelcast.version.MemberVersion;
 
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.UUID;
 
 /**
  * Reads cluster member list from a specific file if exists.
@@ -35,7 +37,7 @@ class MemberListReader extends AbstractMetadataReader {
     }
 
     static MemberImpl readMember(DataInput in) throws IOException {
-        String uuid = in.readUTF();
+        UUID uuid = UUIDSerializationUtil.readUUID(in);
         Address address = readAddress(in);
         boolean localMember = in.readBoolean();
         MemberVersion version = MemberVersion.of(in.readUTF());

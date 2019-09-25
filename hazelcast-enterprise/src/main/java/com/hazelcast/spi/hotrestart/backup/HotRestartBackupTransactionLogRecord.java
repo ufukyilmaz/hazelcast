@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.backup;
 
+import com.hazelcast.internal.util.UUIDSerializationUtil;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -9,6 +10,7 @@ import com.hazelcast.transaction.impl.TargetAwareTransactionLogRecord;
 import com.hazelcast.internal.util.Preconditions;
 
 import java.io.IOException;
+import java.util.UUID;
 
 /**
  * {@link com.hazelcast.transaction.impl.TransactionLogRecord} implementation for cluster-wide backup of hot restart data.
@@ -20,14 +22,14 @@ public class HotRestartBackupTransactionLogRecord implements TargetAwareTransact
     private long backupSeq;
     private Address initiator;
     private Address target;
-    private String txnId;
+    private UUID txnId;
     private long leaseTime;
 
     public HotRestartBackupTransactionLogRecord() {
     }
 
     public HotRestartBackupTransactionLogRecord(long backupSeq, Address initiator, Address target,
-                                                String txnId, long leaseTime) {
+                                                UUID txnId, long leaseTime) {
         Preconditions.checkNotNull(initiator);
         Preconditions.checkNotNull(target);
         Preconditions.checkNotNull(txnId);
@@ -70,7 +72,7 @@ public class HotRestartBackupTransactionLogRecord implements TargetAwareTransact
         out.writeLong(backupSeq);
         out.writeObject(initiator);
         out.writeObject(target);
-        out.writeUTF(txnId);
+        UUIDSerializationUtil.writeUUID(out, txnId);
         out.writeLong(leaseTime);
     }
 
@@ -79,7 +81,7 @@ public class HotRestartBackupTransactionLogRecord implements TargetAwareTransact
         backupSeq = in.readLong();
         initiator = in.readObject();
         target = in.readObject();
-        txnId = in.readUTF();
+        txnId = UUIDSerializationUtil.readUUID(in);
         leaseTime = in.readLong();
     }
 

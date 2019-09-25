@@ -1,12 +1,14 @@
 package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.internal.util.UUIDSerializationUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.Operation;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import static com.hazelcast.wan.impl.CallerProvenance.WAN;
 
@@ -18,12 +20,12 @@ public class WanCacheRemoveOperation
         extends BackupAwareKeyBasedHiDensityCacheOperation
         implements MutableOperation {
 
-    private String origin;
+    private UUID origin;
 
     public WanCacheRemoveOperation() {
     }
 
-    public WanCacheRemoveOperation(String name, String origin, Data key, int completionId) {
+    public WanCacheRemoveOperation(String name, UUID origin, Data key, int completionId) {
         super(name, key, completionId);
         this.origin = origin;
     }
@@ -52,13 +54,13 @@ public class WanCacheRemoveOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeUTF(origin);
+        UUIDSerializationUtil.writeUUID(out, origin);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        origin = in.readUTF();
+        origin = UUIDSerializationUtil.readUUID(in);
     }
 
     @Override

@@ -10,6 +10,7 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 
 import java.util.Set;
+import java.util.UUID;
 
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
@@ -42,7 +43,7 @@ public class AskForClusterStartResultOperation extends Operation implements Join
         OperationService operationService = nodeEngine.getOperationService();
 
         HotRestartClusterStartStatus status = clusterMetadataManager.getHotRestartStatus();
-        Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
+        Set<UUID> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
         if (clusterMetadataManager.isStartWithHotRestart() && status != CLUSTER_START_IN_PROGRESS) {
             if (logger.isFineEnabled()) {
                 logger.fine("Sending " + status + " to: " + caller + " as response for " + getClass().getSimpleName());

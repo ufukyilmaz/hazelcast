@@ -46,8 +46,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.UUID;
 
-import static com.hazelcast.internal.util.UuidUtil.newUnsecureUuidString;
+import static com.hazelcast.internal.util.UuidUtil.newUnsecureUUID;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -112,8 +113,8 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
     public void test_callId_on_correct_stream_position() throws Exception {
         InternalSerializationService serializationService = builder()
                 .setClusterVersionAware(new TestVersionAware()).build();
-        CancellationOperation operation = new CancellationOperation(newUnsecureUuidString(), true);
-        operation.setCallerUuid(newUnsecureUuidString());
+        CancellationOperation operation = new CancellationOperation(newUnsecureUUID(), true);
+        operation.setCallerUuid(newUnsecureUUID());
         OperationAccessor.setCallId(operation, 12345);
 
         Data data = serializationService.toData(operation);
@@ -221,7 +222,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
     public void testLinkedListSerialization() {
         InternalSerializationService ss = builder()
                 .setClusterVersionAware(new TestVersionAware()).build();
-        LinkedList<Person> linkedList = new LinkedList<Person>();
+        LinkedList<Person> linkedList = new LinkedList<>();
         linkedList.add(new Person(35, 180, 100, "Orhan", null));
         linkedList.add(new Person(12, 120, 60, "Osman", null));
         Data data = ss.toData(linkedList);
@@ -233,7 +234,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
     public void testArrayListSerialization() {
         InternalSerializationService ss = builder()
                 .setClusterVersionAware(new TestVersionAware()).build();
-        ArrayList<Person> arrayList = new ArrayList<Person>();
+        ArrayList<Person> arrayList = new ArrayList<>();
         arrayList.add(new Person(35, 180, 100, "Orhan", null));
         arrayList.add(new Person(12, 120, 60, "Osman", null));
         Data data = ss.toData(arrayList);
@@ -255,12 +256,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
     @Test
     public void testPartitionHash() {
         HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
-        PartitioningStrategy partitionStrategy = new PartitioningStrategy() {
-            @Override
-            public Object getPartitionKey(Object key) {
-                return key.hashCode();
-            }
-        };
+        PartitioningStrategy partitionStrategy = (PartitioningStrategy) Object::hashCode;
 
         EnterpriseSerializationService ss = builder()
                 .setAllowUnsafe(true).setUseNativeByteOrder(true)
@@ -321,7 +317,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
 
     @Test
     public void testMemberLeftException_usingMemberImpl() throws Exception {
-        String uuid = newUnsecureUuidString();
+        UUID uuid = newUnsecureUUID();
         String host = "127.0.0.1";
         int port = 5000;
 
@@ -335,7 +331,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
 
     @Test
     public void testMemberLeftException_usingSimpleMember() throws Exception {
-        String uuid = newUnsecureUuidString();
+        UUID uuid = newUnsecureUUID();
         String host = "127.0.0.1";
         int port = 5000;
 
@@ -343,7 +339,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         testMemberLeftException(uuid, host, port, member);
     }
 
-    private void testMemberLeftException(String uuid, String host, int port, Member member) throws Exception {
+    private void testMemberLeftException(UUID uuid, String host, int port, Member member) throws Exception {
 
         MemberLeftException exception = new MemberLeftException(member);
 
@@ -374,12 +370,7 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
         new EnterpriseSerializationServiceBuilder()
                 .setVersionedSerializationEnabled(true)
                 .setVersion(InternalSerializationService.VERSION_1)
-                .setClusterVersionAware(new EnterpriseClusterVersionAware() {
-                    @Override
-                    public Version getClusterVersion() {
-                        return V3_8;
-                    }
-                })
+                .setClusterVersionAware(() -> V3_8)
                 .build();
     }
 

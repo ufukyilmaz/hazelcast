@@ -7,6 +7,7 @@ import com.hazelcast.spi.annotation.PrivateApi;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * This is a sync listener. When a node calls one of the methods below during Hot Restart, it will block until the method returns.
@@ -80,7 +81,7 @@ public abstract class ClusterHotRestartEventListener implements EventListener {
      *
      * @param result result of the cluster wide load operation
      */
-    public void onHotRestartDataLoadComplete(HotRestartClusterStartStatus result, Set<String> excludedMemberUuids) {
+    public void onHotRestartDataLoadComplete(HotRestartClusterStartStatus result, Set<UUID> excludedMemberUuids) {
 
     }
 }

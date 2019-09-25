@@ -15,6 +15,7 @@ import javax.cache.processor.EntryProcessor;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Provide operations for {@link InMemoryFormat#NATIVE}.
@@ -97,7 +98,7 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
-    public Operation createWanRemoveOperation(String origin, Data key, int completionId) {
+    public Operation createWanRemoveOperation(UUID origin, Data key, int completionId) {
         return new WanCacheRemoveOperation(nameWithPrefix, origin, key, completionId);
     }
 

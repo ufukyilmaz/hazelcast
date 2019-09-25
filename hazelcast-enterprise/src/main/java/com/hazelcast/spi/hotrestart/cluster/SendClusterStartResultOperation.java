@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
+import com.hazelcast.internal.util.UUIDSerializationUtil;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_FAILED;
 
@@ -26,7 +28,7 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
 
     private HotRestartClusterStartStatus result;
 
-    private Set<String> excludedMemberUuids;
+    private Set<UUID> excludedMemberUuids;
 
     private ClusterState clusterState;
 
@@ -34,7 +36,7 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
     }
 
     public SendClusterStartResultOperation(HotRestartClusterStartStatus result,
-                                           Set<String> excludedMemberUuids,
+                                           Set<UUID> excludedMemberUuids,
                                            ClusterState clusterState) {
         this.result = result;
         this.excludedMemberUuids = excludedMemberUuids == null ? Collections.emptySet() : excludedMemberUuids;
@@ -68,8 +70,8 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
         super.writeInternal(out);
         out.writeUTF(result.name());
         out.writeInt(excludedMemberUuids.size());
-        for (String uuid : excludedMemberUuids) {
-            out.writeUTF(uuid);
+        for (UUID uuid : excludedMemberUuids) {
+            UUIDSerializationUtil.writeUUID(out, uuid);
         }
         boolean clusterStateExists = clusterState != null;
         out.writeBoolean(clusterStateExists);
@@ -85,7 +87,7 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
         int uuidCount = in.readInt();
         excludedMemberUuids = new HashSet<>();
         for (int i = 0; i < uuidCount; i++) {
-            excludedMemberUuids.add(in.readUTF());
+            excludedMemberUuids.add(UUIDSerializationUtil.readUUID(in));
         }
         boolean clusterStateExists = in.readBoolean();
         if (clusterStateExists) {

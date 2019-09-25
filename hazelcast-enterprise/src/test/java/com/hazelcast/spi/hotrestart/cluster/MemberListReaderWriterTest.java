@@ -19,7 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 
-import static com.hazelcast.internal.util.UuidUtil.newUnsecureUuidString;
+import static com.hazelcast.internal.util.UuidUtil.newUnsecureUUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -39,7 +39,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
         MemberImpl localMember = new MemberImpl.Builder(address)
                 .version(MemberVersion.of(BuildInfoProvider.getBuildInfo().getVersion()))
                 .localMember(true)
-                .uuid(newUnsecureUuidString())
+                .uuid(newUnsecureUUID())
                 .build();
         when(node.getLocalMember()).thenReturn(localMember);
     }
@@ -65,13 +65,13 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
     @Test(expected = FileNotFoundException.class)
     public void test_writeNotExistingFolder() throws Exception {
         MemberListWriter writer = new MemberListWriter(getNonExistingFolder(), node);
-        writer.write(Collections.<Member>emptyList());
+        writer.write(Collections.emptyList());
     }
 
     @Test
     public void test_EmptyWriteRead() throws Exception {
         MemberListWriter writer = new MemberListWriter(folder, node);
-        writer.write(Collections.<Member>emptyList());
+        writer.write(Collections.emptyList());
 
         MemberListReader reader = new MemberListReader(folder);
         reader.read();
@@ -100,12 +100,12 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
     @SuppressWarnings("SameParameterValue")
     private Collection<Member> initializeMembers(int memberCount) {
         PartitionReplica[] replicas = initializeReplicas(memberCount - 1);
-        Collection<Member> members = new HashSet<Member>(memberCount);
+        Collection<Member> members = new HashSet<>(memberCount);
         for (PartitionReplica replica : replicas) {
             MemberVersion version = MemberVersion.of(BuildInfoProvider.getBuildInfo().getVersion());
             members.add(new MemberImpl.Builder(replica.address())
                                 .version(version)
-                                .uuid(newUnsecureUuidString())
+                                .uuid(newUnsecureUUID())
                                 .build());
         }
         members.add(new MemberImpl(node.getLocalMember()));

@@ -6,6 +6,8 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
 
+import java.util.UUID;
+
 /**
  * Provides enterprise cache operations.
  */
@@ -15,7 +17,7 @@ public class EnterpriseCacheOperationProvider extends DefaultOperationProvider {
         super(nameWithPrefix);
     }
 
-    public Operation createWanRemoveOperation(String origin, Data key, int completionId) {
+    public Operation createWanRemoveOperation(UUID origin, Data key, int completionId) {
         return new WanCacheRemoveOperation(nameWithPrefix, origin, key, completionId);
     }
 

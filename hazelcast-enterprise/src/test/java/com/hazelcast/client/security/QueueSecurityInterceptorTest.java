@@ -12,6 +12,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.HashSet;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -37,7 +38,7 @@ public class QueueSecurityInterceptorTest extends InterceptorTestSupport {
     @Test
     public void removeItemListener() {
         final DummyListener itemListener = new DummyListener();
-        final String id = queue.addItemListener(itemListener, false);
+        final UUID id = queue.addItemListener(itemListener, false);
         interceptor.setExpectation(getObjectType(), objectName, "removeItemListener", SKIP_COMPARISON_OBJECT);
         queue.removeItemListener(id);
     }

@@ -53,6 +53,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -776,7 +777,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             }
 
             HotRestartClusterStartStatus hotRestartStatus = clusterMetadataManager.getHotRestartStatus();
-            Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
+            Set<UUID> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
             if (hotRestartStatus == CLUSTER_START_SUCCEEDED && excludedMemberUuids.contains(node.getThisUuid())) {
                 throw new ForceStartException();
             }
@@ -789,7 +790,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             throw new HotRestartException("cannot reset hot restart data since node has already started!");
         }
 
-        Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
+        Set<UUID> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
         if (!excludedMemberUuids.contains(node.getThisUuid())) {
             throw new HotRestartException("cannot reset hot restart data since this node is not excluded! excluded member UUIDs: "
                     + excludedMemberUuids);
@@ -967,12 +968,12 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     }
 
     @Override
-    public boolean isMemberExcluded(Address memberAddress, String memberUuid) {
+    public boolean isMemberExcluded(Address memberAddress, UUID memberUuid) {
         return getExcludedMemberUuids().contains(memberUuid);
     }
 
     @Override
-    public Set<String> getExcludedMemberUuids() {
+    public Set<UUID> getExcludedMemberUuids() {
         return clusterMetadataManager.getExcludedMemberUuids();
     }
 
@@ -981,7 +982,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             return;
         }
         if (clusterMetadataManager.isStartWithHotRestart() && initialState.isJoinAllowed()) {
-            String thisUuid = node.getThisUuid();
+            UUID thisUuid = node.getThisUuid();
             if (isMemberExcluded(node.getThisAddress(), thisUuid)) {
                 return;
             }
@@ -994,13 +995,13 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
     @Override
     public void notifyExcludedMember(Address memberAddress) {
-        Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
+        Set<UUID> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
         OperationService operationService = node.nodeEngine.getOperationService();
         operationService.send(new SendExcludedMemberUuidsOperation(excludedMemberUuids), memberAddress);
     }
 
     @Override
-    public void handleExcludedMemberUuids(Address sender, Set<String> excludedMemberUuids) {
+    public void handleExcludedMemberUuids(Address sender, Set<UUID> excludedMemberUuids) {
         if (!excludedMemberUuids.contains(node.getThisUuid())) {
             logger.warning("Should handle final cluster start result with excluded member UUIDs: " + excludedMemberUuids
                     + " within hot restart service since this member is not excluded. sender: " + sender);

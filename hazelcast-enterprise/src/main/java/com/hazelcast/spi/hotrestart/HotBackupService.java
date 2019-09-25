@@ -22,6 +22,7 @@ import com.hazelcast.transaction.impl.Transaction;
 import com.hazelcast.transaction.impl.TransactionManagerServiceImpl;
 
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -137,7 +138,7 @@ public class HotBackupService implements HotRestartService, TransactionalService
      * @param txnId     the transaction ID
      * @param leaseTime number of ms after which this transaction will expire
      */
-    public void prepareBackup(Address initiator, String txnId, long leaseTime) {
+    public void prepareBackup(Address initiator, UUID txnId, long leaseTime) {
         serviceLock.lock();
         try {
             if (hotRestartService.isBackupInProgress()) {
@@ -160,7 +161,7 @@ public class HotBackupService implements HotRestartService, TransactionalService
      * @param initiator the member which initated the transaction
      * @param txnId     the transaction ID
      */
-    public void commitBackup(long backupSeq, Address initiator, String txnId) {
+    public void commitBackup(long backupSeq, Address initiator, UUID txnId) {
         serviceLock.lock();
         try {
             if (hotRestartService.isBackupInProgress()) {
@@ -183,7 +184,7 @@ public class HotBackupService implements HotRestartService, TransactionalService
      * @param txnId the transaction ID
      * @return if the transaction was rolled back
      */
-    public boolean rollbackBackup(String txnId) {
+    public boolean rollbackBackup(UUID txnId) {
         serviceLock.lock();
         try {
             final LockGuard backupGuard = getBackupGuard();
@@ -223,7 +224,7 @@ public class HotBackupService implements HotRestartService, TransactionalService
     }
 
     @Override
-    public void rollbackTransaction(String transactionId) {
+    public void rollbackTransaction(UUID transactionId) {
         rollbackBackup(transactionId);
     }
 }

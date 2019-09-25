@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Executes the putAll() operation on HD caches.
@@ -51,7 +52,7 @@ public class CachePutAllOperation
 
     @Override
     protected void runInternal() {
-        String callerUuid = getCallerUuid();
+        UUID callerUuid = getCallerUuid();
 
         Iterator<Map.Entry<Data, Data>> iterator = entries.iterator();
         while (iterator.hasNext()) {

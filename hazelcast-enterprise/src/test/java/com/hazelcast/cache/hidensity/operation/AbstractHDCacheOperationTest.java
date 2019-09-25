@@ -25,8 +25,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-import static com.hazelcast.internal.util.UuidUtil.newUnsecureUuidString;
+import static com.hazelcast.internal.util.UuidUtil.newUnsecureUUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -34,7 +35,6 @@ import static org.mockito.AdditionalMatchers.geq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.atLeastOnce;
@@ -105,11 +105,11 @@ public abstract class AbstractHDCacheOperationTest {
      * @return a {@link List<Map.Entry>} instance
      */
     List<Map.Entry<Data, Data>> createEntries(int itemCount) {
-        List<Map.Entry<Data, Data>> entries = new ArrayList<Map.Entry<Data, Data>>(itemCount);
+        List<Map.Entry<Data, Data>> entries = new ArrayList<>(itemCount);
         for (int i = 0; i < itemCount; i++) {
             Data key = new HeapData(new byte[]{});
             Data value = new HeapData(new byte[]{});
-            entries.add(new MapEntrySimple<Data, Data>(key, value));
+            entries.add(new MapEntrySimple<>(key, value));
         }
         return entries;
     }
@@ -129,7 +129,7 @@ public abstract class AbstractHDCacheOperationTest {
         switch (operationType) {
             case PUT_ALL:
                 OngoingStubbing<CacheRecord> putStub = when(recordStore.put(any(Data.class), any(Data.class),
-                        any(ExpiryPolicy.class), anyString(), anyInt()));
+                        any(ExpiryPolicy.class), any(UUID.class), anyInt()));
                 if (throwNativeOOME) {
                     putStub.thenReturn(record, record, record)
                             .thenThrow(exception, exception, exception, exception, exception, exception)
@@ -142,7 +142,7 @@ public abstract class AbstractHDCacheOperationTest {
                 return;
             case PUT:
                 OngoingStubbing<Object> getAndPutStub = when(recordStore.getAndPut(any(Data.class), any(Data.class),
-                        any(ExpiryPolicy.class), anyString(), anyInt()));
+                        any(ExpiryPolicy.class), any(UUID.class), anyInt()));
                 if (throwNativeOOME) {
                     getAndPutStub.thenReturn(record, record, record)
                             .thenThrow(exception, exception, exception, exception, exception, exception)
@@ -154,7 +154,7 @@ public abstract class AbstractHDCacheOperationTest {
                 }
                 return;
             case SET_EXPIRY_POLICY:
-                OngoingStubbing<Boolean> expiryPolicyStub = when(recordStore.setExpiryPolicy(ArgumentMatchers.<Data>anyCollection(), any(Data.class), anyString()));
+                OngoingStubbing<Boolean> expiryPolicyStub = when(recordStore.setExpiryPolicy(ArgumentMatchers.anyCollection(), any(Data.class), any(UUID.class)));
                 if (throwNativeOOME) {
                     expiryPolicyStub.thenReturn(true, true, true)
                             .thenThrow(exception, exception, exception, exception, exception, exception)
@@ -206,7 +206,7 @@ public abstract class AbstractHDCacheOperationTest {
             cacheOperation.setService(cacheService);
         }
         operation.setNodeEngine(nodeEngine);
-        operation.setCallerUuid(newUnsecureUuidString());
+        operation.setCallerUuid(newUnsecureUUID());
         operation.setPartitionId(partitionId);
     }
 
@@ -224,7 +224,7 @@ public abstract class AbstractHDCacheOperationTest {
             case PUT_ALL:
                 // RecordStore.put() is called again for each entry which threw a NativeOOME
                 verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).put(any(Data.class), any(Data.class),
-                        any(ExpiryPolicy.class), anyString(), anyInt());
+                        any(ExpiryPolicy.class), any(UUID.class), anyInt());
                 if (verifyBackups) {
                     verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class),
                             anyLong(), any(ExpiryPolicy.class));
@@ -233,7 +233,7 @@ public abstract class AbstractHDCacheOperationTest {
             case PUT:
                 // RecordStore.getAndPut() is called again for each entry which threw a NativeOOME
                 verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).getAndPut(any(Data.class), any(Data.class),
-                        any(ExpiryPolicy.class), anyString(), anyInt());
+                        any(ExpiryPolicy.class), any(UUID.class), anyInt());
                 if (syncBackupCount > 0) {
                     verify(recordStore, times(ENTRY_COUNT)).getRecord(any(Data.class));
                 }
@@ -245,10 +245,10 @@ public abstract class AbstractHDCacheOperationTest {
             case SET_EXPIRY_POLICY:
                 if (verifyBackups) {
                     verify(recordStore, times((syncBackupCount + 1) * ENTRY_COUNT + numberOfNativeOOME))
-                            .setExpiryPolicy(any(Collection.class), any(), anyString());
+                            .setExpiryPolicy(any(Collection.class), any(), any(UUID.class));
                 } else {
                     verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME))
-                            .setExpiryPolicy(any(Collection.class), any(), anyString());
+                            .setExpiryPolicy(any(Collection.class), any(), any(UUID.class));
                 }
                 break;
         }

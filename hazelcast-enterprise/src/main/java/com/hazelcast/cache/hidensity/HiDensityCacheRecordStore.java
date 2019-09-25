@@ -10,6 +10,7 @@ import com.hazelcast.nio.serialization.Data;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * {@link HiDensityCacheRecordStore} is the contract for Hi-Density specific cache record store operations.
@@ -80,7 +81,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return {@code true} if the {@code value} has been put to the record store,
      * otherwise {@code false}
      */
-    boolean putIfAbsent(Data key, Object value, String caller, int completionId);
+    boolean putIfAbsent(Data key, Object value, UUID caller, int completionId);
 
     /**
      * Replaces the already stored value with the new {@code value}
@@ -93,7 +94,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return {@code true} if the {@code value} has been replaced with the specified {@code value},
      * otherwise {@code false}
      */
-    boolean replace(Data key, Object value, String caller, int completionId);
+    boolean replace(Data key, Object value, UUID caller, int completionId);
 
     /**
      * Replaces the already stored value with the new {@code value}
@@ -107,7 +108,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return {@code true} if the {@code value} has been replaced with the specified {@code value},
      * otherwise {@code false}
      */
-    boolean replace(Data key, Object oldValue, Object newValue, String caller, int completionId);
+    boolean replace(Data key, Object oldValue, Object newValue, UUID caller, int completionId);
 
     /**
      * Returns a slottable iterator for this {@link HiDensityCacheRecordStore} to iterate over records.

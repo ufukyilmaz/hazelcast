@@ -15,6 +15,8 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.internal.util.Clock;
 
+import java.util.UUID;
+
 /**
  * On-heap cache record store with Hot Restart support.
  */
@@ -34,7 +36,7 @@ public class HotRestartEnterpriseCacheRecordStore extends CacheRecordStore imple
     }
 
     @Override
-    protected CacheRecord doPutRecord(Data key, CacheRecord record, String source, boolean updateJournal) {
+    protected CacheRecord doPutRecord(Data key, CacheRecord record, UUID source, boolean updateJournal) {
         CacheRecord oldRecord = super.doPutRecord(key, record, source, updateJournal);
         putToHotRestart(key, record.getValue());
         return oldRecord;
@@ -47,7 +49,7 @@ public class HotRestartEnterpriseCacheRecordStore extends CacheRecordStore imple
     }
 
     @Override
-    protected void onRemove(Data key, Object value, String source, boolean getValue, CacheRecord record,
+    protected void onRemove(Data key, Object value, UUID source, boolean getValue, CacheRecord record,
                             boolean removed) {
         super.onRemove(key, value, source, getValue, record, removed);
         if (removed) {
@@ -71,7 +73,7 @@ public class HotRestartEnterpriseCacheRecordStore extends CacheRecordStore imple
     }
 
     @Override
-    protected void onProcessExpiredEntry(Data key, CacheRecord record, long expiryTime, long now, String source, String origin) {
+    protected void onProcessExpiredEntry(Data key, CacheRecord record, long expiryTime, long now, UUID source, UUID origin) {
         super.onProcessExpiredEntry(key, record, expiryTime, now, source, origin);
         removeFromHotRestart(key);
     }

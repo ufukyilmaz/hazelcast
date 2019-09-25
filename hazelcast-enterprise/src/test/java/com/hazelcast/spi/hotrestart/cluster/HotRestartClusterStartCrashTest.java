@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,7 +84,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         Address[] addresses = startAndTerminateInstances(4);
 
         final AtomicBoolean crash = new AtomicBoolean(false);
-        final Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
+        final Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<>();
         for (Address address : addresses) {
             listeners.put(address, new CrashMemberOnAllMembersJoin(true, crash));
         }
@@ -99,7 +100,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         Address[] addresses = startAndTerminateInstances(4);
 
         final AtomicBoolean crash = new AtomicBoolean(false);
-        final Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
+        final Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<>();
         for (Address address : addresses) {
             listeners.put(address, new CrashMemberOnAllMembersJoin(false, crash));
         }
@@ -115,7 +116,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         Address[] addresses = startAndTerminateInstances(nodeCount);
 
         final AtomicBoolean firstCrash = new AtomicBoolean(false);
-        final Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
+        final Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<>();
         for (Address address : addresses) {
             listeners.put(address, new ByzantineFailPartitionTableAfterPartitionTableValidationCompleted(firstCrash, nodeCount));
         }
@@ -137,7 +138,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         terminateInstances();
 
         final AtomicBoolean firstCrash = new AtomicBoolean(false);
-        final Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
+        final Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<>();
         for (Address address : addresses) {
             listeners.put(address, new CrashAfterLoadCompletedStatusReceivedFromMaster(firstCrash));
         }
@@ -199,7 +200,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
         private final AtomicBoolean firstCrash;
 
-        private final Set<Member> members = Collections.newSetFromMap(new ConcurrentHashMap<Member, Boolean>());
+        private final Set<Member> members = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
         private final int expectedNodeCount;
 
@@ -267,7 +268,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         }
 
         @Override
-        public void onHotRestartDataLoadComplete(HotRestartClusterStartStatus result, Set<String> excludedMemberUuids) {
+        public void onHotRestartDataLoadComplete(HotRestartClusterStartStatus result, Set<UUID> excludedMemberUuids) {
             final Node node = getNode(instance);
             if (result == CLUSTER_START_SUCCEEDED && !node.isMaster() && firstCrash.compareAndSet(false, true)) {
                 startNodeAfterTermination(node);

@@ -33,7 +33,7 @@ import org.junit.runner.RunWith;
 
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.V5_SECURITY_ONLY_LICENSE;
-import static com.hazelcast.internal.util.UuidUtil.newUnsecureUuidString;
+import static com.hazelcast.internal.util.UuidUtil.newUnsecureUUID;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -102,7 +102,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
 
     @Test
     public void test_nodeJoinRequestAllowed_whenClusterSameVersion() {
-        JoinRequest joinRequest = new JoinRequest(Packet.VERSION, buildNumber, nodeVersion, joinAddress, newUnsecureUuidString(),
+        JoinRequest joinRequest = new JoinRequest(Packet.VERSION, buildNumber, nodeVersion, joinAddress, newUnsecureUUID(),
                 false, null, null, null, null, null);
 
         nodeExtension.validateJoinRequest(joinRequest);
@@ -113,7 +113,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
         MemberVersion otherPatchVersion = MemberVersion.of(nodeVersion.getMajor(), nodeVersion.getMinor(),
                 nodeVersion.getPatch() + 1);
         JoinMessage joinMessage = new JoinMessage(Packet.VERSION, buildNumber, otherPatchVersion, joinAddress,
-                newUnsecureUuidString(), false, null, null, 0);
+                newUnsecureUUID(), false, null, null, 0);
 
         nodeExtension.validateJoinRequest(joinMessage);
     }
@@ -123,7 +123,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
         MemberVersion nextMinorVersion = MemberVersion.of(nodeVersion.getMajor(), nodeVersion.getMinor() + 1,
                 nodeVersion.getPatch());
         JoinMessage joinMessage = new JoinMessage(Packet.VERSION, buildNumber, nextMinorVersion, joinAddress,
-                newUnsecureUuidString(), false, null, null, 0);
+                newUnsecureUUID(), false, null, null, 0);
 
         nodeExtension.validateJoinRequest(joinMessage);
     }
@@ -133,7 +133,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
         MemberVersion previousMinorVersion = MemberVersion.of(nodeVersion.getMajor(), nodeVersion.getMinor() - 1,
                 nodeVersion.getPatch());
         JoinMessage joinMessage = new JoinMessage(Packet.VERSION, buildNumber, previousMinorVersion, joinAddress,
-                newUnsecureUuidString(), false, null, null, 0);
+                newUnsecureUUID(), false, null, null, 0);
 
         expected.expect(VersionMismatchException.class);
         expected.expectMessage(containsString("Rolling Member Upgrades are only supported for the next minor version"));
@@ -145,7 +145,7 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
         MemberVersion nextMajorVersion = MemberVersion.of(nodeVersion.getMajor() + 1, nodeVersion.getMinor(),
                 nodeVersion.getPatch());
         JoinMessage joinMessage = new JoinMessage(Packet.VERSION, buildNumber, nextMajorVersion, joinAddress,
-                newUnsecureUuidString(), false, null, null, 0);
+                newUnsecureUUID(), false, null, null, 0);
 
         expected.expect(VersionMismatchException.class);
         expected.expectMessage(containsString("Rolling Member Upgrades are only supported for the same major version"));

@@ -11,6 +11,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.util.UUID;
+
 import static org.mockito.Mockito.mock;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -27,7 +29,7 @@ public class ClientInstanceSecurityInterceptorTest extends InterceptorTestSuppor
     @Test
     public void removePartitionLostListener() {
         PartitionService partitionService = client.getPartitionService();
-        String registrationID = partitionService.addPartitionLostListener(mock(PartitionLostListener.class));
+        UUID registrationID = partitionService.addPartitionLostListener(mock(PartitionLostListener.class));
         interceptor.setExpectation(IPartitionService.SERVICE_NAME, null, "removePartitionLostListener", SKIP_COMPARISON_OBJECT);
         partitionService.removePartitionLostListener(registrationID);
     }
@@ -40,7 +42,7 @@ public class ClientInstanceSecurityInterceptorTest extends InterceptorTestSuppor
 
     @Test
     public void removeDistributedObjectListener() {
-        String registrationID = client.addDistributedObjectListener(mock(DistributedObjectListener.class));
+        UUID registrationID = client.addDistributedObjectListener(mock(DistributedObjectListener.class));
         interceptor.setExpectation(ProxyServiceImpl.SERVICE_NAME, null, "removeDistributedObjectListener", SKIP_COMPARISON_OBJECT);
         client.removeDistributedObjectListener(registrationID);
     }

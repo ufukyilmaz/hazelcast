@@ -40,6 +40,7 @@ import com.hazelcast.wan.impl.CallerProvenance;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("checkstyle:methodcount")
@@ -412,7 +413,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     @SuppressWarnings("checkstyle:parameternumber")
     @Override
     protected void onCreateRecordError(Data key, Object value, long expiryTime, long now,
-                                       boolean disableWriteThrough, int completionId, String origin,
+                                       boolean disableWriteThrough, int completionId, UUID origin,
                                        HiDensityNativeMemoryCacheRecord record, Throwable error) {
         if (isMemoryBlockValid(record)) {
             /*
@@ -456,7 +457,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected void onProcessExpiredEntry(Data key, HiDensityNativeMemoryCacheRecord record, long expiryTime,
-                                         long now, String source, String origin) {
+                                         long now, UUID source, UUID origin) {
         super.onProcessExpiredEntry(key, record, expiryTime, now, source, origin);
         if (isMemoryBlockValid(record)) {
             cacheRecordProcessor.dispose(record);
@@ -600,7 +601,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             "checkstyle:cyclomaticcomplexity",
             "checkstyle:npathcomplexity"
     })
-    protected void onPut(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
+    protected void onPut(Data key, Object value, ExpiryPolicy expiryPolicy, UUID caller,
                          boolean getValue, boolean disableWriteThrough, HiDensityNativeMemoryCacheRecord record,
                          Object oldValue, boolean isExpired, boolean isNewPut, boolean isSaveSucceed) {
         // old value is disposed at `onUpdateRecord`
@@ -787,7 +788,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    protected void onPutIfAbsent(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
+    protected void onPutIfAbsent(Data key, Object value, ExpiryPolicy expiryPolicy, UUID caller,
                                  boolean disableWriteThrough, HiDensityNativeMemoryCacheRecord record,
                                  boolean isExpired, boolean isSaveSucceed) {
         // if put is successful
@@ -808,14 +809,14 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public boolean putIfAbsent(Data key, Object value, String caller, int completionId) {
+    public boolean putIfAbsent(Data key, Object value, UUID caller, int completionId) {
         return putIfAbsent(key, value, defaultExpiryPolicy, caller, completionId);
     }
 
     @SuppressWarnings("checkstyle:parameternumber")
     @Override
     protected void onReplace(Data key, Object oldValue, Object newValue, ExpiryPolicy expiryPolicy,
-                             String caller, boolean getValue, HiDensityNativeMemoryCacheRecord record,
+                             UUID caller, boolean getValue, HiDensityNativeMemoryCacheRecord record,
                              boolean isExpired, boolean replaced) {
         // old value is disposed at `onUpdateRecord`
 
@@ -831,17 +832,17 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public boolean replace(Data key, Object value, String caller, int completionId) {
+    public boolean replace(Data key, Object value, UUID caller, int completionId) {
         return replace(key, value, defaultExpiryPolicy, caller, completionId);
     }
 
     @Override
-    public boolean replace(Data key, Object oldValue, Object newValue, String caller, int completionId) {
+    public boolean replace(Data key, Object oldValue, Object newValue, UUID caller, int completionId) {
         return replace(key, oldValue, newValue, defaultExpiryPolicy, caller, completionId);
     }
 
     @Override
-    protected void onRemoveError(Data key, Object value, String caller, boolean getValue,
+    protected void onRemoveError(Data key, Object value, UUID caller, boolean getValue,
                                  HiDensityNativeMemoryCacheRecord record, boolean removed, Throwable error) {
         // if record has been somehow removed and if it is still valid, dispose it and its data
         if (removed && isMemoryBlockValid(record)) {

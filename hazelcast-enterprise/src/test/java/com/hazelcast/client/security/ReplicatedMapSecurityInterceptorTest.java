@@ -12,6 +12,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -135,7 +136,7 @@ public class ReplicatedMapSecurityInterceptorTest extends InterceptorTestSupport
     @Test
     public void removeEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
-        final String id = replicatedMap.addEntryListener(entryAdapter);
+        final UUID id = replicatedMap.addEntryListener(entryAdapter);
         interceptor.setExpectation(getObjectType(), objectName, "removeEntryListener", SKIP_COMPARISON_OBJECT);
         replicatedMap.removeEntryListener(id);
     }

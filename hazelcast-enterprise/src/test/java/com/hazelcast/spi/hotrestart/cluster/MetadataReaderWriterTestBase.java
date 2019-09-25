@@ -34,7 +34,7 @@ public abstract class MetadataReaderWriterTestBase extends HazelcastTestSupport 
         PartitionReplica[] addresses = new PartitionReplica[len];
         Random random = new Random();
         for (int i = 0; i < addresses.length; i++) {
-            addresses[i] = new PartitionReplica(new Address("10.10.10." + random.nextInt(256), localAddress, i + 1), UuidUtil.newUnsecureUuidString());
+            addresses[i] = new PartitionReplica(new Address("10.10.10." + random.nextInt(256), localAddress, i + 1), UuidUtil.newUnsecureUUID());
         }
         return addresses;
     }

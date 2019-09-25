@@ -16,6 +16,7 @@ import org.junit.runner.RunWith;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -360,7 +361,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     @Test
     public void removeEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
-        final String id = map.addEntryListener(entryAdapter, false);
+        final UUID id = map.addEntryListener(entryAdapter, false);
         interceptor.setExpectation(getObjectType(), objectName, "removeEntryListener", SKIP_COMPARISON_OBJECT);
         map.removeEntryListener(id);
     }
@@ -543,7 +544,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Test
     public void removePartitionLostListener() {
-        String id = map.addPartitionLostListener(mock(MapPartitionLostListener.class));
+        UUID id = map.addPartitionLostListener(mock(MapPartitionLostListener.class));
         interceptor.setExpectation(getObjectType(), objectName, "removePartitionLostListener", SKIP_COMPARISON_OBJECT);
         map.removePartitionLostListener(id);
     }

@@ -2,11 +2,13 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
+import com.hazelcast.internal.util.UUIDSerializationUtil;
 import com.hazelcast.nio.Address;
 
 import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
 
 import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COUNT;
 
@@ -57,7 +59,7 @@ final class PartitionTableReader extends AbstractMetadataReader {
             replicas = new PartitionReplica[len];
             for (int i = 0; i < len; i++) {
                 Address address = readAddress(in);
-                String uuid = in.readUTF();
+                UUID uuid = UUIDSerializationUtil.readUUID(in);
                 replicas[i] = new PartitionReplica(address, uuid);
             }
         } catch (IOException e) {

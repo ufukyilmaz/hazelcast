@@ -32,6 +32,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -391,7 +392,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
 
         changeClusterStateEventually(instances[0], ClusterState.FROZEN);
 
-        String missingMemberUuid = getClusterService(instances[1]).getLocalMember().getUuid();
+        UUID missingMemberUuid = getClusterService(instances[1]).getLocalMember().getUuid();
         final File hotRestartHome = getHotRestartHome(instances[2]);
         instances[1].shutdown();
         instances[2].shutdown();

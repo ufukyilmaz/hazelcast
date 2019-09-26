@@ -1,6 +1,5 @@
 package com.hazelcast.security;
 
-import com.hazelcast.cp.internal.datastructures.unsafe.idgen.IdGeneratorService;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.security.permission.AllPermissions;
 import com.hazelcast.security.permission.AtomicLongPermission;
@@ -66,8 +65,6 @@ public final class SecurityUtil {
                 return new SetPermission(permissionConfig.getName(), actions);
             case TOPIC:
                 return new TopicPermission(permissionConfig.getName(), actions);
-            case ID_GENERATOR:
-                return new AtomicLongPermission(IdGeneratorService.ATOMIC_LONG_NAME + permissionConfig.getName(), actions);
             case FLAKE_ID_GENERATOR:
                 return new FlakeIdGeneratorPermission(permissionConfig.getName(), actions);
             case TRANSACTION:

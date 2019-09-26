@@ -15,7 +15,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.ICacheManager;
 import com.hazelcast.core.IExecutorService;
-import com.hazelcast.core.IdGenerator;
 import com.hazelcast.core.LifecycleService;
 import com.hazelcast.cp.CPMember;
 import com.hazelcast.cp.CPSubsystem;
@@ -24,7 +23,6 @@ import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.cp.IAtomicReference;
 import com.hazelcast.cp.ICountDownLatch;
 import com.hazelcast.cp.ISemaphore;
-import com.hazelcast.cp.internal.datastructures.unsafe.idgen.IdGeneratorService;
 import com.hazelcast.cp.lock.FencedLock;
 import com.hazelcast.cp.lock.ILock;
 import com.hazelcast.cp.session.CPSessionManagementService;
@@ -310,21 +308,9 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public IdGenerator getIdGenerator(String name) {
-            checkPermission(new AtomicLongPermission(IdGeneratorService.ATOMIC_LONG_NAME + name, ActionConstants.ACTION_CREATE));
-            return getProxy(new IdGeneratorInvocationHandler(instance.getIdGenerator(name)));
-        }
-
-        @Override
         public FlakeIdGenerator getFlakeIdGenerator(String name) {
             checkPermission(new FlakeIdGeneratorPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new FlakeIdGeneratorInvocationHandler(instance.getFlakeIdGenerator(name)));
-        }
-
-        @Override
-        public IAtomicLong getAtomicLong(String name) {
-            checkPermission(new AtomicLongPermission(name, ActionConstants.ACTION_CREATE));
-            return getProxy(new IAtomicLongInvocationHandler(instance.getAtomicLong(name)));
         }
 
         @Override
@@ -758,27 +744,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Override
         public String getStructureName() {
             return "semaphore";
-        }
-    }
-
-    private class IdGeneratorInvocationHandler extends SecureInvocationHandler {
-
-        IdGeneratorInvocationHandler(DistributedObject distributedObject) {
-            super(distributedObject);
-        }
-
-        @Override
-        public Permission getPermission(Method method, Object[] args) {
-            if (method.getName().equals("destroy")) {
-                return new AtomicLongPermission(IdGeneratorService.ATOMIC_LONG_NAME + distributedObject.getName(),
-                        ActionConstants.ACTION_DESTROY);
-            }
-            return null;
-        }
-
-        @Override
-        public String getStructureName() {
-            return "idGenerator";
         }
     }
 

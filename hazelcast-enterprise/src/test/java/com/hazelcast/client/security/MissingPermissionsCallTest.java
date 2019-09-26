@@ -158,7 +158,7 @@ public class MissingPermissionsCallTest extends HazelcastTestSupport {
 
         @Override
         public Long call() {
-            IAtomicLong atomicLong = instance.getAtomicLong(ATOMIC_LONG_REF);
+            IAtomicLong atomicLong = instance.getCPSubsystem().getAtomicLong(ATOMIC_LONG_REF);
             atomicLong.addAndGetAsync(value);
             return atomicLong.get();
         }

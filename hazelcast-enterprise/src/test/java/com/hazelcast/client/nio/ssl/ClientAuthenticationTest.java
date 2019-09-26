@@ -200,7 +200,7 @@ public class ClientAuthenticationTest {
         }
 
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
-        client.getAtomicLong("foo").incrementAndGet();
+        client.getCPSubsystem().getAtomicLong("foo").incrementAndGet();
     }
 
     private String makeFile(String relativePath) throws IOException {

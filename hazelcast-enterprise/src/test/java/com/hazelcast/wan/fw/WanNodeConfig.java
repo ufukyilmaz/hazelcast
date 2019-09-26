@@ -1,7 +1,6 @@
 package com.hazelcast.wan.fw;
 
 import com.hazelcast.config.AdvancedNetworkConfig;
-import com.hazelcast.config.AtomicLongConfig;
 import com.hazelcast.config.CRDTReplicationConfig;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.CardinalityEstimatorConfig;
@@ -383,31 +382,6 @@ class WanNodeConfig extends Config {
     @Override
     public Config setRingbufferConfigs(Map<String, RingbufferConfig> ringbufferConfigs) {
         return wrappedConfig.setRingbufferConfigs(ringbufferConfigs);
-    }
-
-    @Override
-    public AtomicLongConfig findAtomicLongConfig(String name) {
-        return wrappedConfig.findAtomicLongConfig(name);
-    }
-
-    @Override
-    public AtomicLongConfig getAtomicLongConfig(String name) {
-        return wrappedConfig.getAtomicLongConfig(name);
-    }
-
-    @Override
-    public Config addAtomicLongConfig(AtomicLongConfig atomicLongConfig) {
-        return wrappedConfig.addAtomicLongConfig(atomicLongConfig);
-    }
-
-    @Override
-    public Map<String, AtomicLongConfig> getAtomicLongConfigs() {
-        return wrappedConfig.getAtomicLongConfigs();
-    }
-
-    @Override
-    public Config setAtomicLongConfigs(Map<String, AtomicLongConfig> atomicLongConfigs) {
-        return wrappedConfig.setAtomicLongConfigs(atomicLongConfigs);
     }
 
     @Override

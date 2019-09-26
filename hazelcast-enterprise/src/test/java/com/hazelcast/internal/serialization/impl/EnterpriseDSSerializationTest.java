@@ -159,7 +159,7 @@ public class EnterpriseDSSerializationTest {
         }
 
         @Override
-        public IdentifiedDataSerializable create(int typeId, Version version) {
+        public IdentifiedDataSerializable create(int typeId, Version version, Version wanProtocolVersion) {
             if (versionedSerializationEnabled) {
                 return new IDSPerson();
             } else {

@@ -14,6 +14,7 @@ import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.internal.util.executor.CompletedFuture;
+import com.hazelcast.version.Version;
 
 import java.util.concurrent.Executor;
 
@@ -45,6 +46,9 @@ public class DefaultWanBatchSender implements WanBatchSender {
                                             Address target) {
         WanConnectionWrapper connectionWrapper = connectionManager.getConnection(target);
         if (connectionWrapper != null) {
+            Version protocolVersion = connectionWrapper.getNegotiationResponse()
+                                                       .getChosenWanProtocolVersion();
+            batchReplicationEvent.setWanProtocolVersion(protocolVersion);
             return invokeOnWanTarget(connectionWrapper, batchReplicationEvent);
         } else {
             return new CompletedFuture<>(serializationService, false, wanExecutor);

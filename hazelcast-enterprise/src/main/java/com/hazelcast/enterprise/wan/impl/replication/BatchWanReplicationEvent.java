@@ -6,8 +6,8 @@ import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
@@ -22,7 +22,6 @@ import java.util.Map;
 
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.readCollection;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.writeCollection;
-import static com.hazelcast.internal.util.Preconditions.checkNotNull;
 
 /**
  * Container to gather batch of {@link InternalWanReplicationEvent} objects.
@@ -38,6 +37,7 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
 
     private transient int primaryEventCount;
     private transient int totalEntryCount;
+    private transient Version wanProtocolVersion;
 
     private Collection<InternalWanReplicationEvent> eventList;
 
@@ -148,6 +148,26 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
                 : eventList;
     }
 
+    /**
+     * Sets the WAN protocol version with which this instance will be serialized
+     * and deserialized.
+     *
+     * @param version the negotiated WAN protocol version
+     */
+    public void setWanProtocolVersion(Version version) {
+        this.wanProtocolVersion = version;
+    }
+
+    /**
+     * Sets the WAN protocol version which determines how serialisation will be
+     * performed on the provided output stream.
+     *
+     * @param output the serialization output
+     */
+    private void setWanProtocolVersion(ObjectDataOutput output) {
+        output.setWanProtocolVersion(wanProtocolVersion);
+    }
+
     @Override
     public int getFactoryId() {
         return EWRDataSerializerHook.F_ID;
@@ -160,46 +180,12 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
+        setWanProtocolVersion(out);
         writeCollection(getEvents(), out);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         eventList = readCollection(in);
-    }
-
-    /**
-     * Identifier for a specific entry in a distributed object (e.g. specific
-     * map or cache). This can be used as a composite key to identify a single
-     * entry in the cluster.
-     */
-    private static class DistributedObjectEntryIdentifier {
-        private final String serviceName;
-        private final String objectName;
-        private final Data key;
-
-        DistributedObjectEntryIdentifier(String serviceName, String objectName, Data key) {
-            this.serviceName = checkNotNull(serviceName, "Service name must not be null");
-            this.objectName = checkNotNull(objectName, "Object name must not be null");
-            this.key = checkNotNull(key, "Entry key must not be null");
-        }
-
-        @Override
-        @SuppressWarnings("checkstyle:innerassignment")
-        public boolean equals(Object o) {
-            final DistributedObjectEntryIdentifier that;
-            return this == o || o instanceof DistributedObjectEntryIdentifier
-                    && this.serviceName.equals((that = (DistributedObjectEntryIdentifier) o).serviceName)
-                    && this.objectName.equals(that.objectName)
-                    && this.key.equals(that.key);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = serviceName.hashCode();
-            result = 31 * result + objectName.hashCode();
-            result = 31 * result + key.hashCode();
-            return result;
-        }
     }
 }

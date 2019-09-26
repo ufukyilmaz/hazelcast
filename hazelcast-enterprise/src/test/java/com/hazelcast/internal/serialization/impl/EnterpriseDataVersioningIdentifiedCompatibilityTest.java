@@ -407,7 +407,7 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         }
 
         @Override
-        public IdentifiedDataSerializable create(int typeId, Version version) {
+        public IdentifiedDataSerializable create(int typeId, Version version, Version wanProtocolVersion) {
             if (typeId == 1) {
                 return new TestVersionedIdentifiedDataSerializable();
             }

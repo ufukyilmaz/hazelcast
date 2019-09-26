@@ -1,5 +1,6 @@
 package com.hazelcast.wan;
 
+import com.hazelcast.config.Config;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -9,6 +10,17 @@ import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionWrapper;
 import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationResponse;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.internal.nio.BufferObjectDataInput;
+import com.hazelcast.internal.nio.BufferObjectDataOutput;
+import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.map.impl.SimpleEntryView;
+import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataSerializableFactory;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -17,12 +29,15 @@ import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
+import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
+import com.hazelcast.wan.impl.WanReplicationService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import static com.hazelcast.wan.WanReplicationTestSupport.getWanReplicationService;
@@ -40,10 +55,15 @@ import static org.mockito.Mockito.when;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class WanProtocolTest extends HazelcastTestSupport {
+public class WanProtocolVersionSelectionTest extends HazelcastTestSupport {
 
     private static final String WAN_REPLICATION_SCHEME = "abc";
     private static final String MAP_NAME = "dummyMap";
+    private static final int CUSTOM_FACTORY_ID = 100;
+    private static final int CUSTOM_WAN_EVENT = 1;
+    private static final Version V1_0 = Version.of(1, 0);
+    private static final Version V1_1 = Version.of(1, 1);
+    private static final Version V1_2 = Version.of(1, 2);
 
     private TestHazelcastInstanceFactory factory;
     private Cluster clusterA;
@@ -54,8 +74,8 @@ public class WanProtocolTest extends HazelcastTestSupport {
     public void initClusters() {
         factory = new CustomNodeExtensionTestInstanceFactory(
                 node -> new WanServiceMockingEnterpriseNodeExtension(node, spy(new EnterpriseWanReplicationService(node))));
-        clusterA = clusterA(factory, 2).setup();
-        clusterB = clusterB(factory, 2).setup();
+        clusterA = clusterA(factory, 1, this::getConfig).setup();
+        clusterB = clusterB(factory, 1, this::getConfig).setup();
 
         wanReplication = replicate()
                 .from(clusterA)
@@ -76,17 +96,25 @@ public class WanProtocolTest extends HazelcastTestSupport {
         }
     }
 
+    @Override
+    protected Config getConfig() {
+        Config c = smallInstanceConfig();
+        c.getSerializationConfig()
+         .addDataSerializableFactory(CUSTOM_FACTORY_ID, new CustomSerializerFactory());
+        return c;
+    }
+
     @Test
     public void testLatestWanProtocolIsSelected() {
         clusterA.startCluster();
         clusterB.startCluster();
 
-        setSupportedWanProtocolVersions(clusterA, Version.of(1, 0), Version.of(1, 1), Version.of(1, 2));
-        setSupportedWanProtocolVersions(clusterB, Version.of(1, 2));
+        setSupportedWanProtocolVersions(clusterA, V1_2, V1_1, V1_0);
+        setSupportedWanProtocolVersions(clusterB, V1_2, V1_1);
 
         fillMap(clusterA, MAP_NAME, 0, 10);
         verifyMapReplicated(clusterA, clusterB, MAP_NAME);
-        assertNegotiatedWanProtocolVersion(clusterA, wanReplication, Version.of(1, 2));
+        assertNegotiatedWanProtocolVersion(clusterA, wanReplication, V1_2);
     }
 
     @Test
@@ -94,8 +122,8 @@ public class WanProtocolTest extends HazelcastTestSupport {
         clusterA.startCluster();
         clusterB.startCluster();
 
-        setSupportedWanProtocolVersions(clusterA, Version.of(1, 0), Version.of(1, 1));
-        setSupportedWanProtocolVersions(clusterB, Version.of(1, 2));
+        setSupportedWanProtocolVersions(clusterA, V1_1, V1_0);
+        setSupportedWanProtocolVersions(clusterB, V1_2);
 
         fillMap(clusterA, MAP_NAME, 0, 10);
         assertTrueAllTheTime(() -> {
@@ -119,6 +147,34 @@ public class WanProtocolTest extends HazelcastTestSupport {
             assertTrue(clusterB.getAMember().getMap(MAP_NAME).isEmpty());
             assertNoConnection(clusterA, wanReplication);
         }, 20);
+    }
+
+    @Test
+    public void testSerializationVersion() {
+        clusterA.startCluster();
+        clusterB.startCluster();
+
+        setSupportedWanProtocolVersions(clusterA, V1_2, V1_1, V1_0);
+        setSupportedWanProtocolVersions(clusterB, V1_1, V1_0);
+
+        String key = "key";
+        String value = "value";
+
+        publishCustomMapEvent(key, value, V1_1);
+        assertTrueEventually(() -> assertEquals(value, clusterB.getAMember().getMap(MAP_NAME).get(key)), 30);
+    }
+
+    private void publishCustomMapEvent(Object key, Object value,
+                                       Version expectedSerializationVersion) {
+        NodeEngineImpl nodeEngine = getNodeEngineImpl(clusterA.getAMember());
+        WanReplicationService service = nodeEngine.getWanReplicationService();
+        DelegatingWanReplicationScheme publisher
+                = service.getWanReplicationPublishers(wanReplication.getSetupName());
+        SerializationService ss = nodeEngine.getSerializationService();
+
+        CustomEnterpriseMapReplicationObject event = new CustomEnterpriseMapReplicationObject(
+                MAP_NAME, ss.toData(key), ss.toData(value), expectedSerializationVersion);
+        publisher.publishReplicationEvent(event);
     }
 
     public void assertNoConnection(Cluster sourceCluster,
@@ -161,6 +217,58 @@ public class WanProtocolTest extends HazelcastTestSupport {
         for (HazelcastInstance member : cluster.getMembers()) {
             when(getWanReplicationService(member).getSupportedWanProtocolVersions())
                     .thenReturn(Arrays.asList(versions));
+        }
+    }
+
+    static class CustomSerializerFactory implements DataSerializableFactory {
+        @Override
+        public IdentifiedDataSerializable create(int typeId) {
+            if (typeId == CUSTOM_WAN_EVENT) {
+                return new CustomEnterpriseMapReplicationObject();
+            }
+            return null;
+        }
+    }
+
+    static class CustomEnterpriseMapReplicationObject extends EnterpriseMapReplicationUpdate {
+
+        private Version expectedSerializationVersion;
+
+        CustomEnterpriseMapReplicationObject() {
+        }
+
+        CustomEnterpriseMapReplicationObject(String mapName,
+                                             Data key,
+                                             Data value,
+                                             Version expectedSerializationVersion) {
+            super(mapName, new PassThroughMergePolicy<>(), new SimpleEntryView<>(key, value), 0);
+            this.expectedSerializationVersion = expectedSerializationVersion;
+        }
+
+        @Override
+        public int getFactoryId() {
+            return CUSTOM_FACTORY_ID;
+        }
+
+        @Override
+        public int getClassId() {
+            return CUSTOM_WAN_EVENT;
+        }
+
+        @Override
+        public void writeData(ObjectDataOutput out) throws IOException {
+            BufferObjectDataOutput dataOutput = (BufferObjectDataOutput) out;
+            out.writeObject(expectedSerializationVersion);
+            assertEquals(expectedSerializationVersion, dataOutput.getWanProtocolVersion());
+            super.writeData(out);
+        }
+
+        @Override
+        public void readData(ObjectDataInput in) throws IOException {
+            BufferObjectDataInput dataInput = (BufferObjectDataInput) in;
+            expectedSerializationVersion = in.readObject();
+            assertEquals(expectedSerializationVersion, dataInput.getWanProtocolVersion());
+            super.readData(in);
         }
     }
 }

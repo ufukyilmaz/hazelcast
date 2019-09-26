@@ -207,7 +207,7 @@ public abstract class AbstractWanPublisher implements
             return eventQueueContainer.publishCacheWanEvent(cacheName, partitionId, eventObject);
         }
 
-        logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
+        logger.warning("Unexpected replication event object type: " + eventObject.getClass().getName());
 
         return false;
     }
@@ -360,7 +360,7 @@ public abstract class AbstractWanPublisher implements
             id = new DistributedObjectIdentifier(
                     CacheService.SERVICE_NAME, cacheEvent.getNameWithPrefix(), cacheEvent.getBackupCount());
         } else {
-            logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
+            logger.warning("Unexpected replication event object type: " + eventObject.getClass().getName());
         }
         return id;
     }

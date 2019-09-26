@@ -142,38 +142,61 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
             factoryId = in.readInt();
             classId = in.readInt();
 
-            // if version was previously set while processing an outer object, keep its current value and restore it in the end
-            Version previousVersion = in.getVersion();
-            Version version = isVersioned(header) ? readVersion(in) : Version.UNKNOWN;
-            setInputVersion(in, version);
+            // if versions were previously set while processing an outer object,
+            // keep the current values and restore them in the end
+            Version previousClusterVersion = in.getVersion();
+            Version previousWanProtocolVersion = in.getWanProtocolVersion();
+
+            if (isVersioned(header)) {
+                readVersions(in);
+            } else {
+                in.setVersion(Version.UNKNOWN);
+                in.setWanProtocolVersion(Version.UNKNOWN);
+            }
 
             // populate the object
-            DataSerializable ds = instance != null ? instance : createIdentifiedDataSerializable(version, factoryId, classId);
+            DataSerializable ds = instance != null
+                    ? instance
+                    : createIdentifiedDataSerializable(in.getVersion(), in.getWanProtocolVersion(), factoryId, classId);
             ds.readData(in);
 
-            // restore the original version
-            setInputVersion(in, previousVersion);
+            // restore the original versions
+            in.setVersion(previousClusterVersion);
+            in.setWanProtocolVersion(previousWanProtocolVersion);
             return ds;
         } catch (Exception ex) {
             throw rethrowIdsReadException(factoryId, classId, ex);
         }
     }
 
-    private Version readVersion(ObjectDataInput in) throws IOException {
+    /**
+     * Reads the cluster and WAN protocol version from the serialised stream and
+     * sets them on the {@code in} object.
+     *
+     * @param in the input stream containing the cluster or WAN protocol version
+     * @throws IOException if an I/O error occurs.
+     */
+    private void readVersions(ObjectDataInput in) throws IOException {
         byte major = in.readByte();
         byte minor = in.readByte();
-        Version v = clusterVersionAware.getClusterVersion();
-        assert v != null;
-        return Version.of(major, minor);
+        assert clusterVersionAware.getClusterVersion() != null;
+        if (major < 0) {
+            in.setWanProtocolVersion(Version.of(-major, minor));
+        } else {
+            in.setVersion(Version.of(major, minor));
+        }
     }
 
-    private DataSerializable createIdentifiedDataSerializable(Version version, int factoryId, int classId) {
+    private DataSerializable createIdentifiedDataSerializable(Version clusterVersion,
+                                                              Version wanProtocolVersion,
+                                                              int factoryId,
+                                                              int classId) {
         DataSerializableFactory dsf = factories.get(factoryId);
         if (dsf == null) {
             throw new HazelcastSerializationException("No DataSerializerFactory registered for namespace: " + factoryId);
         }
         if (dsf instanceof VersionedDataSerializableFactory) {
-            return ((VersionedDataSerializableFactory) dsf).create(classId, version);
+            return ((VersionedDataSerializableFactory) dsf).create(classId, clusterVersion, wanProtocolVersion);
         } else {
             return dsf.create(classId);
         }
@@ -182,18 +205,25 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
     private DataSerializable readDataSerializable(ObjectDataInput in, byte header, DataSerializable instance) throws IOException {
         String className = in.readUTF();
         try {
-            // if version was previously set while processing an outer object, keep its current value and restore it in the end
-            Version previousVersion = in.getVersion();
-            Version version = isVersioned(header) ? readVersion(in) : Version.UNKNOWN;
-            setInputVersion(in, version);
+            // if versions were previously set while processing an outer object,
+            // keep the current values and restore them in the end
+            Version previousClusterVersion = in.getVersion();
+            Version previousWanProtocolVersion = in.getWanProtocolVersion();
+
+            if (isVersioned(header)) {
+                readVersions(in);
+            } else {
+                in.setVersion(Version.UNKNOWN);
+                in.setWanProtocolVersion(Version.UNKNOWN);
+            }
 
             DataSerializable ds = instance != null ? instance
-                    : ClassLoaderUtil.<DataSerializable>newInstance(in.getClassLoader(), className);
+                    : ClassLoaderUtil.newInstance(in.getClassLoader(), className);
             ds.readData(in);
 
-            // restore the original version
-            setInputVersion(in, previousVersion);
-
+            // restore the original versions
+            in.setVersion(previousClusterVersion);
+            in.setWanProtocolVersion(previousWanProtocolVersion);
             return ds;
         } catch (Exception ex) {
             throw rethrowDsReadException(className, ex);
@@ -202,43 +232,59 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
 
     @Override
     public void write(ObjectDataOutput out, DataSerializable obj) throws IOException {
+        // if versions were previously set while processing an outer object,
+        // keep the current values and restore them in the end
+        Version previousClusterVersion = out.getVersion();
 
-        // if version was previously set while processing an outer object, keep its current value and restore it in the end
-        Version previousVersion = out.getVersion();
-
-        Version version = (obj instanceof Versioned) ? clusterVersionAware.getClusterVersion()
-                : Version.UNKNOWN;
-        setOutputVersion(out, version);
+        if (out.getWanProtocolVersion() == Version.UNKNOWN) {
+            // if WAN protocol version has not been yet explicitly set, then
+            // check if class is Versioned to set cluster version as output version
+            Version version = (obj instanceof Versioned)
+                    ? clusterVersionAware.getClusterVersion()
+                    : Version.UNKNOWN;
+            out.setVersion(version);
+        }
 
         if (obj instanceof IdentifiedDataSerializable) {
-            writeIdentifiedDataSerializable(out, (IdentifiedDataSerializable) obj, version);
+            writeIdentifiedDataSerializable(out, (IdentifiedDataSerializable) obj, out.getVersion(), out.getWanProtocolVersion());
         } else {
-            writeDataSerializable(out, obj, version);
+            writeDataSerializable(out, obj, out.getVersion(), out.getWanProtocolVersion());
         }
         obj.writeData(out);
 
         // restore the original version
-        setOutputVersion(out, previousVersion);
+        if (out.getWanProtocolVersion() == Version.UNKNOWN) {
+            out.setVersion(previousClusterVersion);
+        }
     }
 
-    private void writeIdentifiedDataSerializable(
-            ObjectDataOutput out, IdentifiedDataSerializable obj, Version version) throws IOException {
+    private void writeIdentifiedDataSerializable(ObjectDataOutput out,
+                                                 IdentifiedDataSerializable obj,
+                                                 Version clusterVersion,
+                                                 Version wanProtocolVersion) throws IOException {
 
-        boolean versioned = version != Version.UNKNOWN;
+        boolean versioned = clusterVersion != Version.UNKNOWN || wanProtocolVersion != Version.UNKNOWN;
 
         out.writeByte(createHeader(true, versioned));
 
         out.writeInt(obj.getFactoryId());
         out.writeInt(obj.getClassId());
 
-        if (versioned) {
-            out.writeByte(version.getMajor());
-            out.writeByte(version.getMinor());
+        if (wanProtocolVersion != Version.UNKNOWN) {
+            // we write out WAN protocol versions as negative major version
+            out.writeByte(-wanProtocolVersion.getMajor());
+            out.writeByte(wanProtocolVersion.getMinor());
+        } else if (clusterVersion != Version.UNKNOWN) {
+            out.writeByte(clusterVersion.getMajor());
+            out.writeByte(clusterVersion.getMinor());
         }
     }
 
-    private void writeDataSerializable(ObjectDataOutput out, DataSerializable obj, Version version) throws IOException {
-        boolean versioned = version != Version.UNKNOWN;
+    private void writeDataSerializable(ObjectDataOutput out,
+                                       DataSerializable obj,
+                                       Version clusterVersion,
+                                       Version wanProtocolVersion) throws IOException {
+        boolean versioned = clusterVersion != Version.UNKNOWN || wanProtocolVersion != Version.UNKNOWN;
         out.writeByte(createHeader(false, versioned));
 
         if (obj instanceof TypedDataSerializable) {
@@ -247,26 +293,14 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
             out.writeUTF(obj.getClass().getName());
         }
 
-        if (versioned) {
-            out.writeByte(version.getMajor());
-            out.writeByte(version.getMinor());
+        if (wanProtocolVersion != Version.UNKNOWN) {
+            // we write out WAN protocol versions as negative major version
+            out.writeByte(-wanProtocolVersion.getMajor());
+            out.writeByte(wanProtocolVersion.getMinor());
+        } else if (clusterVersion != Version.UNKNOWN) {
+            out.writeByte(clusterVersion.getMajor());
+            out.writeByte(clusterVersion.getMinor());
         }
-    }
-
-    private static boolean areIdsCompressable(IdentifiedDataSerializable ids) {
-        return isWithinByteRange(ids.getClassId()) && isWithinByteRange(ids.getFactoryId());
-    }
-
-    private static boolean isWithinByteRange(int value) {
-        return (byte) value == value;
-    }
-
-    private static void setOutputVersion(ObjectDataOutput out, Version version) {
-        ((VersionedObjectDataOutput) out).setVersion(version);
-    }
-
-    private static void setInputVersion(ObjectDataInput in, Version version) {
-        ((VersionedObjectDataInput) in).setVersion(version);
     }
 
     private static IOException rethrowIdsReadException(int factoryId, int classId, Exception e) throws IOException {

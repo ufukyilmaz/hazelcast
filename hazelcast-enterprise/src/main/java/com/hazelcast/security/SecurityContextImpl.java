@@ -81,7 +81,8 @@ public class SecurityContextImpl implements SecurityContext {
             credsFact = (ICredentialsFactory) createImplInstance(node.getConfigClassLoader(), credsCfg.getClassName());
         }
         credentialsFactory = credsFact;
-        credentialsFactory.configure(node.config.getGroupConfig(), credsCfg.getProperties());
+        credentialsFactory.configure(node.config.getClusterName(), node.config.getClusterPassword(),
+                credsCfg.getProperties());
 
         memberConfiguration = new LoginConfigurationDelegate(
                 getLoginModuleConfigs(securityConfig.getMemberLoginModuleConfigs()));
@@ -164,7 +165,7 @@ public class SecurityContextImpl implements SecurityContext {
         ClassLoader tccl = thread.getContextClassLoader();
         try {
             thread.setContextClassLoader(SecurityContextImpl.class.getClassLoader());
-            String name = node.getConfig().getGroupConfig().getName();
+            String name = node.getConfig().getClusterName();
             ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(credentials, connection, node);
             return new LoginContext(name, new Subject(), callbackHandler, memberConfiguration);
         } finally {
@@ -178,7 +179,7 @@ public class SecurityContextImpl implements SecurityContext {
         Thread thread = Thread.currentThread();
         ClassLoader tccl = thread.getContextClassLoader();
         try {
-            String name = node.getConfig().getGroupConfig().getName();
+            String name = node.getConfig().getClusterName();
             ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(credentials, connection, node);
             return new LoginContext(name, new Subject(), callbackHandler, clientConfiguration);
         } finally {

@@ -58,7 +58,7 @@ public class WanReplication {
     }
 
     public String getTargetClusterName() {
-        return targetCluster != null ? targetCluster.getConfig().getGroupConfig().getName() : null;
+        return targetCluster != null ? targetCluster.getConfig().getClusterName() : null;
     }
 
     private WanReplication configure() {
@@ -100,7 +100,7 @@ public class WanReplication {
                                                                        Class<? extends WanReplicationPublisher> wanPublisherClass) {
         Config config = targetCluster.getConfig();
         WanBatchReplicationPublisherConfig pc = new WanBatchReplicationPublisherConfig()
-                .setGroupName(config.getGroupConfig().getName())
+                .setClusterName(config.getClusterName())
                 .setClassName(wanPublisherClass.getName());
 
         if (consistencyCheckStrategy != null) {

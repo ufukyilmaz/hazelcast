@@ -4,7 +4,6 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CredentialsFactoryConfig;
-import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.ClusterLoginModule;
@@ -203,7 +202,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         private String key2;
 
         @Override
-        public void configure(GroupConfig groupConfig, Properties properties) {
+        public void configure(String clusterName, String clusterPassword, Properties properties) {
             username = properties.getProperty("username");
             key1 = properties.getProperty("key1");
             key2 = properties.getProperty("key2");

@@ -147,8 +147,8 @@ public class Cluster {
             }
         }
 
-        String groupName = config.getGroupConfig().getName();
-        throw new IllegalStateException("All members of cluster " + groupName + " have already been started");
+        String clusterName = config.getClusterName();
+        throw new IllegalStateException("All members of cluster " + clusterName + " have already been started");
     }
 
     public void startClusterMembers(int members) {
@@ -209,7 +209,7 @@ public class Cluster {
     }
 
     public String getName() {
-        return config.getGroupConfig().getName();
+        return config.getClusterName();
     }
 
     public void pauseWanReplicationOnAllMembers(WanReplication wanReplication) {
@@ -305,7 +305,7 @@ public class Cluster {
     }
 
     public static class ClusterBuilder {
-        private String groupName;
+        private String clusterName;
         private int port;
         private Config config;
         private int clusterSize;
@@ -315,8 +315,8 @@ public class Cluster {
         private ClusterBuilder() {
         }
 
-        public ClusterBuilder groupName(String groupName) {
-            this.groupName = groupName;
+        public ClusterBuilder clusterName(String clusterName) {
+            this.clusterName = clusterName;
             return this;
         }
 
@@ -346,15 +346,14 @@ public class Cluster {
         }
 
         public Cluster setup() {
-            checkNotNull(groupName, "Group name should be provided");
+            checkNotNull(clusterName, "Cluster name should be provided");
             checkNotNull(config, "Config should be provided");
             checkNotNull(factory, "Hazelcast instance factory should be provided");
             checkPositive(clusterSize, "Cluster size should be positive");
             checkPositive(port, "Port should be positive");
 
-            config.getGroupConfig()
-                  .setName(groupName)
-                  .setPassword("H4:z3lc4st");
+            config.setClusterName(clusterName)
+                  .setClusterPassword("H4:z3lc4st");
             config.getNetworkConfig()
                   .setPortAutoIncrement(false)
                   .setPort(port);
@@ -403,16 +402,16 @@ public class Cluster {
     private static ClusterBuilder createDefaultClusterConfig(TestHazelcastInstanceFactory factory,
                                                              int clusterSize,
                                                              Supplier<Config> configSupplier,
+                                                             String clusterPrefix,
                                                              String clusterName,
-                                                             String groupName,
                                                              int port,
                                                              String clusterPostfix) {
         Config config = configSupplier != null
                 ? configSupplier.get()
                 : smallInstanceConfig();
-        config.setInstanceName(clusterName + "-" + clusterPostfix);
+        config.setInstanceName(clusterPrefix + "-" + clusterPostfix);
         return setupClusterBase(factory, config, clusterSize)
-                .groupName(groupName)
+                .clusterName(clusterName)
                 .port(port);
     }
 

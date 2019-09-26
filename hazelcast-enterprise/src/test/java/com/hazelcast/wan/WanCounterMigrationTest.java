@@ -271,7 +271,7 @@ public class WanCounterMigrationTest {
 
         @Override
         public void onMemberStarted(HazelcastInstance instance) {
-            wanReplicationService(instance).pause(REPLICATION_NAME, targetCluster.getConfig().getGroupConfig().getName());
+            wanReplicationService(instance).pause(REPLICATION_NAME, targetCluster.getConfig().getClusterName());
         }
     }
 

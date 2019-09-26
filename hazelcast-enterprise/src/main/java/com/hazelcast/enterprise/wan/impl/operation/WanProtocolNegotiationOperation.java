@@ -1,6 +1,5 @@
 package com.hazelcast.enterprise.wan.impl.operation;
 
-import com.hazelcast.config.GroupConfig;
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -15,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationStatus.GROUP_NAME_MISMATCH;
+import static com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationStatus.CLUSTER_NAME_MISMATCH;
 import static com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationStatus.OK;
 import static com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationStatus.PROTOCOL_MISMATCH;
 
@@ -26,18 +25,18 @@ import static com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiation
  */
 public class WanProtocolNegotiationOperation extends Operation implements JoinOperation {
     private List<Version> sourceWanProtocolVersions;
-    private String sourceGroupName;
-    private String targetGroupName;
+    private String sourceClusterName;
+    private String targetClusterName;
     private WanProtocolNegotiationResponse response;
 
     public WanProtocolNegotiationOperation() {
     }
 
-    public WanProtocolNegotiationOperation(String sourceGroupName,
-                                           String targetGroupName,
+    public WanProtocolNegotiationOperation(String sourceClusterName,
+                                           String targetClusterName,
                                            List<Version> sourceWanProtocolVersions) {
-        this.sourceGroupName = sourceGroupName;
-        this.targetGroupName = targetGroupName;
+        this.sourceClusterName = sourceClusterName;
+        this.targetClusterName = targetClusterName;
         this.sourceWanProtocolVersions = sourceWanProtocolVersions;
     }
 
@@ -47,13 +46,12 @@ public class WanProtocolNegotiationOperation extends Operation implements JoinOp
         Version clusterVersion = getNodeEngine().getClusterService().getClusterVersion();
         Map<String, String> metadata = Collections.emptyMap();
 
-        GroupConfig groupConfig = getNodeEngine().getConfig().getGroupConfig();
-        if (!targetGroupName.equals(groupConfig.getName())) {
+        if (!targetClusterName.equals(getNodeEngine().getConfig().getClusterName())) {
             String failureCause = String.format(
-                    "WAN protocol negotiation from (%s,%s) failed because of group name mismatch. ",
-                    sourceGroupName, getCallerAddress());
+                    "WAN protocol negotiation from (%s,%s) failed because of cluster name mismatch. ",
+                    sourceClusterName, getCallerAddress());
             getLogger().info(failureCause);
-            response = new WanProtocolNegotiationResponse(GROUP_NAME_MISMATCH, memberVersion, clusterVersion, null, metadata);
+            response = new WanProtocolNegotiationResponse(CLUSTER_NAME_MISMATCH, memberVersion, clusterVersion, null, metadata);
             return;
         }
 
@@ -67,7 +65,7 @@ public class WanProtocolNegotiationOperation extends Operation implements JoinOp
             String failureCause = String.format(
                     "WAN protocol negotiation from (%s , %s) failed because no matching WAN protocol versions were found. "
                             + "Source member supports %s, target supports %s",
-                    sourceGroupName, getCallerAddress(), sourceWanProtocolVersions, localProtocolVersions);
+                    sourceClusterName, getCallerAddress(), sourceWanProtocolVersions, localProtocolVersions);
             getLogger().info(failureCause);
             response = new WanProtocolNegotiationResponse(PROTOCOL_MISMATCH, memberVersion, clusterVersion, null, metadata);
             return;
@@ -83,8 +81,8 @@ public class WanProtocolNegotiationOperation extends Operation implements JoinOp
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        sourceGroupName = in.readUTF();
-        targetGroupName = in.readUTF();
+        sourceClusterName = in.readUTF();
+        targetClusterName = in.readUTF();
         int sourceWanProtocolVersionSize = in.readInt();
         sourceWanProtocolVersions = new ArrayList<>(sourceWanProtocolVersionSize);
         for (int i = 0; i < sourceWanProtocolVersionSize; i++) {
@@ -94,8 +92,8 @@ public class WanProtocolNegotiationOperation extends Operation implements JoinOp
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        out.writeUTF(sourceGroupName);
-        out.writeUTF(targetGroupName);
+        out.writeUTF(sourceClusterName);
+        out.writeUTF(targetClusterName);
         out.writeInt(sourceWanProtocolVersions.size());
         for (Version version : sourceWanProtocolVersions) {
             out.writeObject(version);

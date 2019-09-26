@@ -10,7 +10,6 @@ import com.hazelcast.config.ConfigPatternMatcher;
 import com.hazelcast.config.DurableExecutorConfig;
 import com.hazelcast.config.ExecutorConfig;
 import com.hazelcast.config.FlakeIdGeneratorConfig;
-import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.ListConfig;
 import com.hazelcast.config.ListenerConfig;
@@ -121,13 +120,23 @@ class WanNodeConfig extends Config {
     }
 
     @Override
-    public GroupConfig getGroupConfig() {
-        return wrappedConfig.getGroupConfig();
+    public String getClusterName() {
+        return wrappedConfig.getClusterName();
     }
 
     @Override
-    public Config setGroupConfig(GroupConfig groupConfig) {
-        return wrappedConfig.setGroupConfig(groupConfig);
+    public Config setClusterName(String clusterName) {
+        return wrappedConfig.setClusterName(clusterName);
+    }
+
+    @Override
+    public String getClusterPassword() {
+        return wrappedConfig.getClusterPassword();
+    }
+
+    @Override
+    public Config setClusterPassword(String password) {
+        return wrappedConfig.setClusterPassword(password);
     }
 
     @Override

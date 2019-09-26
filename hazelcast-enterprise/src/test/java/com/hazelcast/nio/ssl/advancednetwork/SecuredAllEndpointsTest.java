@@ -183,7 +183,7 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
                 .setEnabled(true)
                 .addWanEndpointConfig(createServerSocketConfig(WAN_PORT + 10, "WAN", props));
         addCommonWanReplication(config, WAN_PORT);
-        config.getGroupConfig().setName("not-dev-cluster");
+        config.setClusterName("not-dev-cluster");
         return config;
     }
 
@@ -232,7 +232,7 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
                                                                                ConsistencyCheckStrategy consistencyStrategy) {
         WanBatchReplicationPublisherConfig pc = new WanBatchReplicationPublisherConfig()
                 .setEndpoint("WAN")
-                .setGroupName(clusterName)
+                .setClusterName(clusterName)
                 .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
                 .setQueueCapacity(1000)
                 .setBatchSize(500)

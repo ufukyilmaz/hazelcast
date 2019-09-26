@@ -66,7 +66,7 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
     public void testTwoClustersTwoNodesReplication() {
         final String atobWanReplicationName = "atob";
         final String btoaWanReplicationName = "btoa";
-        final String clusterAGroupName = configA.getGroupConfig().getName();
+        final String clusterAName = configA.getClusterName();
         setupReplicateFrom(configA, configB, clusterB.length, atobWanReplicationName, PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, btoaWanReplicationName, PassThroughMergePolicy.class.getName());
         startClusterA();
@@ -78,7 +78,7 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
         final StringBuilder failureMessageBuilder = new StringBuilder();
 
         // check outbound queue sizes and event counters at every 100 millis
-        startVerifyingStagingWanStats(btoaWanReplicationName, clusterAGroupName, scheduler, testFailed, failureMessageBuilder);
+        startVerifyingStagingWanStats(btoaWanReplicationName, clusterAName, scheduler, testFailed, failureMessageBuilder);
 
         // add a new entry per second from each node on A cluster
         final IMap<String, String> mapOnA1 = clusterA[0].getMap(MAP_NAME);
@@ -116,15 +116,15 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
         }, delaySecs, 1, TimeUnit.SECONDS);
     }
 
-    private void startVerifyingStagingWanStats(final String btoaWanReplicationName, final String clusterAGroupName,
+    private void startVerifyingStagingWanStats(final String btoaWanReplicationName, final String clusterAName,
                                                ScheduledExecutorService scheduler, final AtomicBoolean testFailed,
                                                final StringBuilder failureMessageBuilder) {
         scheduler.scheduleAtFixedRate(() -> {
             if (!testFailed.get()) {
                 LocalWanPublisherStats staging1Stats = getWanPublisherStats(
-                        clusterB[0], btoaWanReplicationName, clusterAGroupName);
+                        clusterB[0], btoaWanReplicationName, clusterAName);
                 LocalWanPublisherStats staging2Stats = getWanPublisherStats(
-                        clusterB[1], btoaWanReplicationName, clusterAGroupName);
+                        clusterB[1], btoaWanReplicationName, clusterAName);
                 if (staging1Stats.getTotalPublishedEventCount() > 0
                         || staging1Stats.getOutboundQueueSize() > 0
                         || staging2Stats.getTotalPublishedEventCount() > 0
@@ -146,11 +146,11 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
 
     private LocalWanPublisherStats getWanPublisherStats(HazelcastInstance hz,
                                                         String replicationConfigName,
-                                                        String targetGroupName) {
+                                                        String targetClusterName) {
         DelegatingWanReplicationScheme replicationPublisher =
                 getNodeEngineImpl(hz).getWanReplicationService()
                                      .getWanReplicationPublishers(replicationConfigName);
-        return replicationPublisher.getStats().get(targetGroupName);
+        return replicationPublisher.getStats().get(targetClusterName);
     }
 
     @Override

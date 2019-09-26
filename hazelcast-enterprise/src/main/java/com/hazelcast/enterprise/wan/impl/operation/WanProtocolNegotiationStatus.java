@@ -13,9 +13,9 @@ public enum WanProtocolNegotiationStatus {
 
     /**
      * Failure response meaning protocol was not established because the source
-     * cluster is misconfigured with a wrong target group name.
+     * cluster is misconfigured with a wrong target cluster name.
      */
-    GROUP_NAME_MISMATCH((byte) 1),
+    CLUSTER_NAME_MISMATCH((byte) 1),
 
     /**
      * Failure response meaning protocol was not established because there was no

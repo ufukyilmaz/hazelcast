@@ -77,7 +77,7 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
     public void test_betweenTwoSSLEnabled() {
         Config config1 = new Config();
         config1.setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().setSSLConfig(createMemberSSlConfig(keyStore1, trustStore1));
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
@@ -85,14 +85,14 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
 
         Config config2 = new Config();
         config2.setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().setSSLConfig(createMemberSSlConfig(keyStore2, trustStore2));
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
@@ -100,7 +100,7 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
         networkConfig.setSSLConfig(createClientSSlConfig(trustStore1));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
@@ -136,28 +136,28 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
     @Test
     public void test_migrationToSSLEnabled() {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
         config2.setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().setSSLConfig(createMemberSSlConfig(keyStore2, trustStore2));
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
@@ -194,20 +194,20 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
     public void test_migrationFromSSLEnabled() {
         Config config1 = new Config();
         config1.setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().setSSLConfig(createMemberSSlConfig(keyStore1, trustStore1));
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
@@ -215,7 +215,7 @@ public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
         networkConfig.setSSLConfig(createClientSSlConfig(trustStore1));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();

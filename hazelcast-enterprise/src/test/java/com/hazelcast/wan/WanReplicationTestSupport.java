@@ -155,7 +155,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
                                                                int count,
                                                                ConsistencyCheckStrategy consistencyCheckStrategy) {
         WanBatchReplicationPublisherConfig target = new WanBatchReplicationPublisherConfig()
-                .setGroupName(config.getGroupConfig().getName())
+                .setClusterName(config.getClusterName())
                 .setTargetEndpoints(getClusterEndPoints(config, count))
                 .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
                 .setSnapshotEnabled(isSnapshotEnabled())
@@ -184,14 +184,14 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
     protected static void assertWanQueueSizesEventually(final HazelcastInstance[] cluster,
                                                         final String wanReplicationConfigName,
-                                                        final String endpointGroupName,
+                                                        final String endpointClusterName,
                                                         final int totalEvents) {
-        assertWanQueueSizesEventually(cluster, wanReplicationConfigName, endpointGroupName, totalEvents, totalEvents);
+        assertWanQueueSizesEventually(cluster, wanReplicationConfigName, endpointClusterName, totalEvents, totalEvents);
     }
 
     protected static void assertWanQueueSizesEventually(final HazelcastInstance[] cluster,
                                                         final String wanReplicationConfigName,
-                                                        final String endpointGroupName,
+                                                        final String endpointClusterName,
                                                         final int primaryEvents,
                                                         final int backupEvents) {
         assertTrueEventually(new AssertTask() {
@@ -203,7 +203,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
                     if (instance != null && instance.getLifecycleService().isRunning()) {
                         EnterpriseWanReplicationService s = getWanReplicationService(instance);
                         DelegatingWanReplicationScheme delegate = s.getWanReplicationPublishers(wanReplicationConfigName);
-                        AbstractWanPublisher publisher = (AbstractWanPublisher) delegate.getPublisher(endpointGroupName);
+                        AbstractWanPublisher publisher = (AbstractWanPublisher) delegate.getPublisher(endpointClusterName);
                         totalEvents += publisher.getCurrentElementCount();
                         totalBackupEvents += publisher.getCurrentBackupElementCount();
                     }
@@ -245,7 +245,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
     protected static void assertWanPublisherStateEventually(final HazelcastInstance[] cluster,
                                                             final String wanReplicationConfigName,
-                                                            final String endpointGroupName,
+                                                            final String endpointClusterName,
                                                             final WanPublisherState state) {
         assertTrueEventually(new AssertTask() {
             @Override
@@ -254,7 +254,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
                     final LocalWanStats localWanStats = getWanReplicationService(instance)
                             .getStats().get(wanReplicationConfigName);
                     final LocalWanPublisherStats publisherStats = localWanStats.getLocalWanPublisherStats()
-                                                                               .get(endpointGroupName);
+                                                                               .get(endpointClusterName);
                     assertEquals(state, publisherStats.getPublisherState());
                 }
             }
@@ -267,9 +267,9 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
     protected void stopWanReplication(final HazelcastInstance[] cluster,
                                       final String wanRepName,
-                                      final String targetGroupName) {
+                                      final String targetClusterName) {
         for (HazelcastInstance instance : cluster) {
-            getWanReplicationService(instance).stop(wanRepName, targetGroupName);
+            getWanReplicationService(instance).stop(wanRepName, targetClusterName);
         }
 
         // wait until WAN replication threads have observed the stopped state
@@ -278,7 +278,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
             public void run() {
                 for (HazelcastInstance member : cluster) {
                     WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
-                            .getPublisherOrFail(wanRepName, targetGroupName);
+                            .getPublisherOrFail(wanRepName, targetClusterName);
                     assertTrue(!endpoint.getReplicationStrategy().hasOngoingReplication());
                 }
             }
@@ -287,9 +287,9 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
     protected void pauseWanReplication(final HazelcastInstance[] cluster,
                                        final String wanRepName,
-                                       final String targetGroupName) {
+                                       final String targetClusterName) {
         for (HazelcastInstance instance : cluster) {
-            getWanReplicationService(instance).pause(wanRepName, targetGroupName);
+            getWanReplicationService(instance).pause(wanRepName, targetClusterName);
         }
 
         // wait until WAN replication threads have observed the paused state
@@ -298,16 +298,16 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
             public void run() {
                 for (HazelcastInstance member : cluster) {
                     WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
-                            .getPublisherOrFail(wanRepName, targetGroupName);
+                            .getPublisherOrFail(wanRepName, targetClusterName);
                     assertTrue(!endpoint.getReplicationStrategy().hasOngoingReplication());
                 }
             }
         });
     }
 
-    protected void resumeWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetGroupName) {
+    protected void resumeWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetClusterName) {
         for (HazelcastInstance instance : cluster) {
-            getWanReplicationService(instance).resume(wanRepName, targetGroupName);
+            getWanReplicationService(instance).resume(wanRepName, targetClusterName);
         }
     }
 

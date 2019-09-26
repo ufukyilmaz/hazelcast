@@ -46,7 +46,7 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         final IMap<Integer, String> m2 = singleNodeA[0].getMap(mapName2);
         final int end = 1000;
         for (int i = 0; i < end; i++) {
-            final String value = configA.getGroupConfig().getName() + i;
+            final String value = configA.getClusterName() + i;
             m1.put(i, value + 2);
             m1.put(i, value + 1);
             m1.put(i, value);
@@ -58,7 +58,7 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         assertKeysInEventually(singleNodeB, mapName1, 0, end);
         assertKeysInEventually(singleNodeB, mapName2, 0, end);
 
-        assertWanQueueSizesEventually(singleNodeA, replicaName, configB.getGroupConfig().getName(), 0);
+        assertWanQueueSizesEventually(singleNodeA, replicaName, configB.getClusterName(), 0);
     }
 
     @Test
@@ -84,8 +84,8 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         assertDataSizeEventually(clusterB, mapName, 0);
         assertDataSizeEventually(clusterC, mapName, 0);
 
-        assertWanQueueSizesEventually(clusterA, replicaName, configB.getGroupConfig().getName(), 0);
-        assertWanQueueSizesEventually(clusterA, replicaName, configC.getGroupConfig().getName(), 0);
+        assertWanQueueSizesEventually(clusterA, replicaName, configB.getClusterName(), 0);
+        assertWanQueueSizesEventually(clusterA, replicaName, configC.getClusterName(), 0);
     }
 
     @Test
@@ -120,8 +120,8 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
         // cluster should still should have the keys mapped to 'dummy' as we have the Put-If-Absent policy
         assertKeyRangeMappedToValueAllTheTime("dummy", 0, 200, mapC, 10);
 
-        assertWanQueueSizesEventually(clusterA, atocReplicationName, configC.getGroupConfig().getName(), 0);
-        assertWanQueueSizesEventually(clusterB, btocReplicationName, configC.getGroupConfig().getName(), 0);
+        assertWanQueueSizesEventually(clusterA, atocReplicationName, configC.getClusterName(), 0);
+        assertWanQueueSizesEventually(clusterB, btocReplicationName, configC.getClusterName(), 0);
     }
 
     private static <V> void assertKeyRangeMappedToValue(V expectedValue, int rangeFromInclusive, int rangeToExclusive,

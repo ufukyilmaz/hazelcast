@@ -172,7 +172,7 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
 
     private WanReplicationConfig getExampleWanConfig() {
         WanBatchReplicationPublisherConfig newPublisherConfig = new WanBatchReplicationPublisherConfig()
-                .setGroupName("B")
+                .setClusterName("B")
                 .setTargetEndpoints("1.1.1.1:5701")
                 .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
 

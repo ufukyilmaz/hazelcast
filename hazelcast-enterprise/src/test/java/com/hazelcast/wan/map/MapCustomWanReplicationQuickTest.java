@@ -36,7 +36,7 @@ public class MapCustomWanReplicationQuickTest extends MapWanReplicationTestSuppo
         initCluster(targetCluster, configB);
 
         createDataIn(sourceCluster, "map", 0, 100);
-        assertDataInFromEventually(targetCluster, "map", 0, 100, configA.getGroupConfig().getName());
+        assertDataInFromEventually(targetCluster, "map", 0, 100, configA.getClusterName());
     }
 
     private void initializeConsumerConfig(Config config) {

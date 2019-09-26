@@ -2,7 +2,6 @@ package com.hazelcast.security;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CredentialsFactoryConfig;
-import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.config.SecurityConfig;
@@ -65,7 +64,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
             }
 
             @Override
-            public void configure(GroupConfig groupConfig, Properties properties) {
+            public void configure(String clusterName, String clusterPassword, Properties properties) {
             }
         });
         secCfg.setMemberCredentialsConfig(credentialsFactoryConfig);
@@ -159,7 +158,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         factory.newHazelcastInstance(createLoginModuleStackConfig(LoginModuleUsage.REQUIRED));
         final Config config = createLoginModuleStackConfig(LoginModuleUsage.REQUIRED);
-        config.getGroupConfig().setPassword("anotherPassword");
+        config.setClusterPassword("anotherPassword");
         expected.expect(IllegalStateException.class);
         factory.newHazelcastInstance(config);
     }
@@ -176,7 +175,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz1 = factory.newHazelcastInstance(createLoginModuleStackConfig(LoginModuleUsage.SUFFICIENT));
         final Config config = createLoginModuleStackConfig(LoginModuleUsage.SUFFICIENT);
-        config.getGroupConfig().setPassword("anotherPassword");
+        config.setClusterPassword("anotherPassword");
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
     }

@@ -71,26 +71,26 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
     @Test
     public void blacklistViaCommand() {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -125,26 +125,26 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
     @Test
     public void blacklistViaCommand_checkInitialMembershipListeners() throws InterruptedException {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -195,27 +195,27 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
     @Test
     public void blacklistViaCommand_differentPartitionCount_clientShouldShutdown() {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
         config2.setProperty(GroupProperty.PARTITION_COUNT.getName(), "2");
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -249,26 +249,26 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
     @Test
     public void blacklistViaCommand_listenerBehaviour() {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -317,27 +317,27 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
     @Test
     public void blacklistViaCommand_nearCacheCleanup() {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -390,27 +390,27 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
     @Test
     public void blacklistViaCommand_queryCacheBehaviour() {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -466,7 +466,7 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
     @Test(expected = TargetDisconnectedException.class)
     public void blacklistViaCommand_waitingOperationsGetsException() throws Throwable {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         addDataSerializableFactory(config1.getSerializationConfig());
         HazelcastInstance c1_instance1 = Hazelcast.newHazelcastInstance(config1);
         HazelcastInstance c1_instance2 = Hazelcast.newHazelcastInstance(config1);
@@ -474,21 +474,21 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         assertClusterSizeEventually(2, c1_instance1, c1_instance2);
         Config config2 = new Config();
         addDataSerializableFactory(config2.getSerializationConfig());
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         ClientConfig clientConfig = new ClientConfig();
         addDataSerializableFactory(clientConfig.getSerializationConfig());
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member c1_member1 = toMember(c1_instance1);
         Address address1 = c1_member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         addDataSerializableFactory(clientConfig2.getSerializationConfig());
         Member c2_member2 = (Member) instance2.getLocalEndpoint();
@@ -544,26 +544,26 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
     @Test(expected = InvalidConfigurationException.class)
     public void clientWontStartWithIllegalConfig() {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -634,24 +634,24 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
     @Test
     public void testBlue_toGreen_toBackToBlue() throws InterruptedException {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().addMember("127.0.0.1:5701").setEnabled(true);
         HazelcastInstance cluster1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().addMember("127.0.0.1:5702").setEnabled(true);
         HazelcastInstance cluster2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         networkConfig.addAddress("127.0.0.1:5701");
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         networkConfig2.addAddress("127.0.0.1:5702");
 

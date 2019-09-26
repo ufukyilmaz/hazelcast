@@ -49,20 +49,20 @@ public class RestClusterEnterpriseWithSecurityTest extends RestClusterTest {
         Config config = createConfigWithRestEnabled();
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         HTTPCommunicator communicator = new HTTPCommunicator(instance);
-        String groupName = config.getGroupConfig().getName();
-        assertEquals(STATUS_FORBIDDEN, communicator.shutdownMember(groupName, WRONG_PASSWORD));
-        assertEquals(STATUS_FORBIDDEN, communicator.changeClusterState(groupName, WRONG_PASSWORD, "frozen").response);
-        assertEquals(STATUS_FORBIDDEN, communicator.changeClusterVersion(groupName, WRONG_PASSWORD,
+        String clusterName = config.getClusterName();
+        assertEquals(STATUS_FORBIDDEN, communicator.shutdownMember(clusterName, WRONG_PASSWORD));
+        assertEquals(STATUS_FORBIDDEN, communicator.changeClusterState(clusterName, WRONG_PASSWORD, "frozen").response);
+        assertEquals(STATUS_FORBIDDEN, communicator.changeClusterVersion(clusterName, WRONG_PASSWORD,
                 instance.getCluster().getClusterVersion().toString()).response);
-        assertEquals(STATUS_FORBIDDEN, communicator.hotBackup(groupName, WRONG_PASSWORD).response);
-        assertEquals(STATUS_FORBIDDEN, communicator.hotBackupInterrupt(groupName, WRONG_PASSWORD).response);
-        assertEquals(STATUS_FORBIDDEN, communicator.forceStart(groupName, WRONG_PASSWORD).response);
-        assertEquals(STATUS_FORBIDDEN, communicator.partialStart(groupName, WRONG_PASSWORD).response);
+        assertEquals(STATUS_FORBIDDEN, communicator.hotBackup(clusterName, WRONG_PASSWORD).response);
+        assertEquals(STATUS_FORBIDDEN, communicator.hotBackupInterrupt(clusterName, WRONG_PASSWORD).response);
+        assertEquals(STATUS_FORBIDDEN, communicator.forceStart(clusterName, WRONG_PASSWORD).response);
+        assertEquals(STATUS_FORBIDDEN, communicator.partialStart(clusterName, WRONG_PASSWORD).response);
         assertEquals(403,
-                communicator.changeManagementCenterUrl(groupName, WRONG_PASSWORD, "http://bla").responseCode);
-        assertEquals(STATUS_FORBIDDEN, communicator.listClusterNodes(groupName, WRONG_PASSWORD));
-        assertEquals(STATUS_FORBIDDEN, communicator.shutdownCluster(groupName, WRONG_PASSWORD).response);
-        assertEquals(STATUS_FORBIDDEN, communicator.getClusterState(groupName, WRONG_PASSWORD));
+                communicator.changeManagementCenterUrl(clusterName, WRONG_PASSWORD, "http://bla").responseCode);
+        assertEquals(STATUS_FORBIDDEN, communicator.listClusterNodes(clusterName, WRONG_PASSWORD));
+        assertEquals(STATUS_FORBIDDEN, communicator.shutdownCluster(clusterName, WRONG_PASSWORD).response);
+        assertEquals(STATUS_FORBIDDEN, communicator.getClusterState(clusterName, WRONG_PASSWORD));
     }
 
     @Test

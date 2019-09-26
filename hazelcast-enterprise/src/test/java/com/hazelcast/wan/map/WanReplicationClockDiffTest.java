@@ -29,7 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.config.GroupConfig.DEFAULT_GROUP_NAME;
+import static com.hazelcast.config.Config.DEFAULT_CLUSTER_NAME;
 import static com.hazelcast.test.OverridePropertyRule.set;
 import static com.hazelcast.test.TestEnvironment.HAZELCAST_TEST_USE_NETWORK;
 
@@ -153,7 +153,7 @@ public class WanReplicationClockDiffTest extends HazelcastTestSupport {
 
     private HazelcastInstance startSourceNode() {
         WanBatchReplicationPublisherConfig pc = new WanBatchReplicationPublisherConfig()
-                .setGroupName(DEFAULT_GROUP_NAME)
+                .setClusterName(DEFAULT_CLUSTER_NAME)
                 .setTargetEndpoints("127.0.0.1:5701");
 
         Config config = smallInstanceConfig();
@@ -165,7 +165,7 @@ public class WanReplicationClockDiffTest extends HazelcastTestSupport {
                 .setEnabled(true)
                 .addMember("127.0.0.1");
 
-        config.getGroupConfig().setName("B");
+        config.setClusterName("B");
         config.setInstanceName("confB-" + UUID.randomUUID() + "-");
         config.getNetworkConfig().setPort(5801);
         config.addWanReplicationConfig(new WanReplicationConfig().setName(WAN_REPLICATION_SCHEME)

@@ -2,7 +2,6 @@ package com.hazelcast.security.impl;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigAccessor;
-import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.security.SecretStrengthPolicy;
@@ -56,8 +55,7 @@ public class WeakSecretsConfigChecker {
     public Map<String, EnumSet<WeakSecretError>> evaluate() {
         Map<String, EnumSet<WeakSecretError>> result = new HashMap<String, EnumSet<WeakSecretError>>();
 
-        GroupConfig gc = config.getGroupConfig();
-        EnumSet<WeakSecretError> groupPwdWeaknesses = getWeaknesses(gc.getPassword());
+        EnumSet<WeakSecretError> groupPwdWeaknesses = getWeaknesses(config.getClusterPassword());
         if (!groupPwdWeaknesses.isEmpty()) {
             result.put("Group Password", groupPwdWeaknesses);
         }

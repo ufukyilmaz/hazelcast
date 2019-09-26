@@ -13,12 +13,12 @@ import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRI
  */
 public abstract class AbstractSplitBrainUpgradeTest extends SplitBrainTestSupport {
 
-    private String groupName;
+    private String clusterName;
 
     @Override
     protected void onBeforeSetup() {
         System.setProperty("hazelcast.max.join.seconds", "10");
-        groupName = randomName();
+        clusterName = randomName();
     }
 
     @Override
@@ -36,7 +36,7 @@ public abstract class AbstractSplitBrainUpgradeTest extends SplitBrainTestSuppor
     @Override
     protected Config config() {
         Config config = super.config();
-        config.getGroupConfig().setName(groupName);
+        config.setClusterName(clusterName);
         return config;
     }
 

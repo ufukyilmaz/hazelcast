@@ -84,8 +84,8 @@ public class WANPluginTest extends MapWanReplicationTestSupport {
                 wanPluginClusterA.run(logWriter);
                 final String content = getContent();
                 assertContains(content, "WAN");
-                assertContains(content, configB.getGroupConfig().getName() + "[");
-                assertContains(content, configC.getGroupConfig().getName() + "[");
+                assertContains(content, configB.getClusterName() + "[");
+                assertContains(content, configC.getClusterName() + "[");
                 assertContains(content, "activeWanConfigName");
                 assertContains(content, "activePublisherName");
                 assertContains(content, "totalPublishLatency");

@@ -105,11 +105,11 @@ public class WanProtocolTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testGroupNameMismatch() {
+    public void testClusterNameMismatch() {
         WanReplicationConfig wanRepConfig = clusterA.getConfig().getWanReplicationConfig(WAN_REPLICATION_SCHEME);
         WanBatchReplicationPublisherConfig wanPublisherConfig
                 = wanRepConfig.getBatchPublisherConfigs().iterator().next();
-        wanPublisherConfig.setGroupName(wanPublisherConfig.getGroupName() + "-wrong");
+        wanPublisherConfig.setClusterName(wanPublisherConfig.getClusterName() + "-wrong");
 
         clusterA.startCluster();
         clusterB.startCluster();

@@ -9,7 +9,6 @@ import com.hazelcast.client.impl.ClientSelectors;
 import com.hazelcast.client.test.ClientTestSupport;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CredentialsFactoryConfig;
-import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.Hazelcast;
@@ -126,7 +125,7 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         private String secret;
 
         @Override
-        public void configure(GroupConfig groupConfig, Properties properties) {
+        public void configure(String clusterName, String clusterPassword, Properties properties) {
             secret = properties.getProperty("secret");
         }
 
@@ -152,7 +151,7 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         SecurityConfig securityConfig1 = config1.getSecurityConfig();
         securityConfig1.setEnabled(true);
         securityConfig1.getClientLoginModuleConfigs().add(loginModuleConfig1);
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
@@ -166,13 +165,13 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         SecurityConfig securityConfig2 = config2.getSecurityConfig();
         securityConfig2.setEnabled(true);
         securityConfig2.getClientLoginModuleConfigs().add(loginModuleConfig2);
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
@@ -186,7 +185,7 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         clientSecurityConfig1.setCredentialsFactoryConfig(credentialsFactoryConfig1);
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
@@ -229,7 +228,7 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
     @Test
     public void test_migrationToSecurityEnabled() {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
@@ -243,20 +242,20 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         SecurityConfig securityConfig2 = config2.getSecurityConfig();
         securityConfig2.setEnabled(true);
         securityConfig2.getClientLoginModuleConfigs().add(loginModuleConfig2);
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
@@ -306,19 +305,19 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         SecurityConfig securityConfig1 = config1.getSecurityConfig();
         securityConfig1.setEnabled(true);
         securityConfig1.getClientLoginModuleConfigs().add(loginModuleConfig1);
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
@@ -332,7 +331,7 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
         clientSecurityConfig1.setCredentialsFactoryConfig(credentialsFactoryConfig1);
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();

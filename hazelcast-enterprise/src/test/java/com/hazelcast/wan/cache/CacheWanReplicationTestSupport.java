@@ -110,7 +110,7 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
             if (removeBeforePut) {
                 myCache.remove(start);
             }
-            final String value = getNode(cluster).getConfig().getGroupConfig().getName() + start;
+            final String value = getNode(cluster).getConfig().getClusterName() + start;
             if (usePutAll) {
                 putAllMap.put(start, value);
             } else if (expiryPolicy == null) {
@@ -147,11 +147,11 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
 
     protected boolean checkCacheDataInFrom(HazelcastInstance[] targetCluster, final String cacheName, final int start,
                                            final int end, HazelcastInstance[] sourceCluster) {
-        final String sourceGroupName = getNode(sourceCluster).getConfig().getGroupConfig().getName();
+        final String sourceClusterName = getNode(sourceCluster).getConfig().getClusterName();
         final ICache<Integer, String> cache = getNode(targetCluster).getCacheManager().getCache(cacheName);
         assertTrueEventually(() -> {
             for (int i = start; i < end; i++) {
-                assertEquals(sourceGroupName + i, cache.get(i));
+                assertEquals(sourceClusterName + i, cache.get(i));
             }
         });
 
@@ -187,11 +187,10 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
         }
     }
 
-    private Config createConfig(String groupName, String instanceName, int port, boolean nativeMemoryEnabled) {
+    private Config createConfig(String clusterName, String instanceName, int port, boolean nativeMemoryEnabled) {
         final Config config = getConfig()
                 .setInstanceName(instanceName);
-        config.getGroupConfig()
-              .setName(groupName);
+        config.setClusterName(clusterName);
         config.getNetworkConfig()
               .setPortAutoIncrement(false)
               .setPort(port);

@@ -123,7 +123,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      * @return the WAN publisher or {@code null} if there is no configuration for the
      * given parameters
      * @see WanReplicationConfig#getName
-     * @see WanBatchReplicationPublisherConfig#getGroupName()
+     * @see WanBatchReplicationPublisherConfig#getClusterName()
      * @see AbstractWanPublisherConfig#getPublisherId()
      */
     public WanReplicationPublisher getPublisherOrNull(String wanReplicationName,
@@ -147,7 +147,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      *                                       with the name {@code wanReplicationName}
      *                                       and publisher ID {@code wanPublisherId}
      * @see WanReplicationConfig#getName
-     * @see WanBatchReplicationPublisherConfig#getGroupName()
+     * @see WanBatchReplicationPublisherConfig#getClusterName()
      * @see AbstractWanPublisherConfig#getPublisherId()
      */
     public WanReplicationPublisher getPublisherOrFail(String wanReplicationName,

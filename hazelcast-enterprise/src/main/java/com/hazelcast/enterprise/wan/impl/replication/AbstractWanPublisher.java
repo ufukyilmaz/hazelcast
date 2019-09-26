@@ -76,7 +76,7 @@ public abstract class AbstractWanPublisher implements
     protected int queueLoggerTimePeriodMs = QUEUE_LOGGER_PERIOD_MILLIS;
     protected Node node;
     protected ILogger logger;
-    protected String localGroupName;
+    protected String localClusterName;
     protected String wanPublisherId;
     protected String wanReplicationName;
     protected WanQueueFullBehavior queueFullBehavior;
@@ -101,7 +101,7 @@ public abstract class AbstractWanPublisher implements
         this.wanPublisherId = getWanPublisherId(publisherConfig);
         this.logger = node.getLogger(getClass());
         this.queueCapacity = publisherConfig.getQueueCapacity();
-        this.localGroupName = node.getNodeEngine().getConfig().getGroupConfig().getName();
+        this.localClusterName = node.getNodeEngine().getConfig().getClusterName();
         this.eventQueueContainer = new PollSynchronizerPublisherQueueContainer(node);
         this.queueFullBehavior = publisherConfig.getQueueFullBehavior();
         this.wanService = (EnterpriseWanReplicationService) node.getNodeEngine().getWanReplicationService();
@@ -169,12 +169,12 @@ public abstract class AbstractWanPublisher implements
             return;
         }
 
-        if (eventObject.getGroupNames()
-                       .contains(configurationContext.getGroupName())) {
+        if (eventObject.getClusterNames()
+                       .contains(configurationContext.getClusterName())) {
             return;
         }
 
-        eventObject.getGroupNames().add(localGroupName);
+        eventObject.getClusterNames().add(localClusterName);
 
         boolean eventPublished = publishEventInternal(eventObject);
         if (eventPublished) {

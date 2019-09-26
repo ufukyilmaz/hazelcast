@@ -86,7 +86,7 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         initCluster(basicCluster, configA);
         for (HazelcastInstance instance : basicCluster) {
             ChangeWanStateOperation changeWanStateOperation = new ChangeWanStateOperation("atob",
-                    configB.getGroupConfig().getName(), PAUSED);
+                    configB.getClusterName(), PAUSED);
             getOperationService(instance).createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
                     changeWanStateOperation, getNode(instance).address).invoke().get();
         }
@@ -117,14 +117,14 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         pc.setQueueCapacity(1000)
           .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION);
         initCluster(singleNodeA, configA);
-        pauseWanReplication(singleNodeA, "atob", configB.getGroupConfig().getName());
+        pauseWanReplication(singleNodeA, "atob", configB.getClusterName());
         createDataIn(singleNodeA, "map", 0, 1000);
         EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(singleNodeA[0]);
-        WanReplicationPublisher publisher = wanReplicationService.getPublisherOrFail("atob", configB.getGroupConfig().getName());
+        WanReplicationPublisher publisher = wanReplicationService.getPublisherOrFail("atob", configB.getClusterName());
         assertTrueEventually(() -> {
             assert publisher.getStats().getOutboundQueueSize() == 1000;
         });
-        wanReplicationService.removeWanEvents("atob", configB.getGroupConfig().getName());
+        wanReplicationService.removeWanEvents("atob", configB.getClusterName());
         assertTrueEventually(() -> {
             assert publisher.getStats().getOutboundQueueSize() == 0;
         });

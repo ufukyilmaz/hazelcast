@@ -230,7 +230,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigA();
         initConfigB();
         final String wanReplicationConfigName = "atob";
-        final String targetGroupName = configB.getGroupConfig().getName();
+        final String targetClusterName = configB.getClusterName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
@@ -239,19 +239,19 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
         checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
 
-        pauseWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.PAUSED);
+        pauseWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.PAUSED);
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 50, 100, false);
         checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 50);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 50);
 
 
-        resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.REPLICATING);
+        resumeWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.REPLICATING);
         checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 100, clusterA);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
     }
 
     @Test
@@ -259,7 +259,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigA();
         initConfigB();
         final String wanReplicationConfigName = "atob";
-        final String targetGroupName = configB.getGroupConfig().getName();
+        final String targetClusterName = configB.getClusterName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
@@ -268,21 +268,21 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
 
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 0, 50, false);
         checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 0, 50, clusterA);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
 
-        stopWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.STOPPED);
+        stopWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.STOPPED);
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 50, 100, false);
         checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
 
-        resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.REPLICATING);
+        resumeWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.REPLICATING);
 
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 100, 200, false);
         checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 100, 200, clusterA);
         checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
     }
 
     @Test
@@ -290,7 +290,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigA();
         initConfigB();
         final String wanReplicationConfigName = "atob";
-        final String targetGroupName = configB.getGroupConfig().getName();
+        final String targetClusterName = configB.getClusterName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
@@ -303,17 +303,17 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterB();
 
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 50, 100, false);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.STOPPED);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.STOPPED);
         checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
 
-        resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.REPLICATING);
+        resumeWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.REPLICATING);
 
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 100, 200, false);
         checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 100, 200, clusterA);
         checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
     }
 
     @Test
@@ -321,7 +321,7 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         initConfigA();
         initConfigB();
         final String wanReplicationConfigName = "atob";
-        final String targetGroupName = configB.getGroupConfig().getName();
+        final String targetClusterName = configB.getClusterName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName(),
                 DEFAULT_CACHE_NAME);
 
@@ -334,15 +334,15 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         startClusterB();
 
         createCacheDataIn(clusterA, DEFAULT_CACHE_NAME, 50, 100, false);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.PAUSED);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.PAUSED);
         checkKeysNotIn(clusterB, DEFAULT_CACHE_NAME, 50, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 50);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 50);
 
 
-        resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.REPLICATING);
+        resumeWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.REPLICATING);
         checkCacheDataInFrom(clusterB, DEFAULT_CACHE_NAME, 50, 100, clusterA);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
     }
 
     @Test

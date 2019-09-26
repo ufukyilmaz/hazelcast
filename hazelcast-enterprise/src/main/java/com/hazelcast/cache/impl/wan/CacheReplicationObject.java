@@ -20,7 +20,7 @@ public abstract class CacheReplicationObject implements InternalWanReplicationEv
 
     private String cacheName;
     private String managerPrefix;
-    private Set<String> groupNames = new HashSet<>();
+    private Set<String> clusterNames = new HashSet<>();
     private int backupCount;
     private long creationTime;
 
@@ -53,8 +53,8 @@ public abstract class CacheReplicationObject implements InternalWanReplicationEv
 
     @Nonnull
     @Override
-    public Set<String> getGroupNames() {
-        return groupNames;
+    public Set<String> getClusterNames() {
+        return clusterNames;
     }
 
     @Override
@@ -67,9 +67,9 @@ public abstract class CacheReplicationObject implements InternalWanReplicationEv
         out.writeUTF(cacheName);
         out.writeUTF(managerPrefix);
         out.writeInt(backupCount);
-        out.writeInt(groupNames.size());
-        for (String groupName : groupNames) {
-            out.writeUTF(groupName);
+        out.writeInt(clusterNames.size());
+        for (String clusterName : clusterNames) {
+            out.writeUTF(clusterName);
         }
     }
 
@@ -78,9 +78,9 @@ public abstract class CacheReplicationObject implements InternalWanReplicationEv
         cacheName = in.readUTF();
         managerPrefix = in.readUTF();
         backupCount = in.readInt();
-        int groupNameCount = in.readInt();
-        for (int i = 0; i < groupNameCount; i++) {
-            groupNames.add(in.readUTF());
+        int clusterNameCount = in.readInt();
+        for (int i = 0; i < clusterNameCount; i++) {
+            clusterNames.add(in.readUTF());
         }
     }
 

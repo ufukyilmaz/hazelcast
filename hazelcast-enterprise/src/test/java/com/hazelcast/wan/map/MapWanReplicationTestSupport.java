@@ -26,17 +26,17 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
     @Before
     public void setup() {
         configA = getConfig();
-        configA.getGroupConfig().setName("A");
+        configA.setClusterName("A");
         configA.setInstanceName("confA-" + UUID.randomUUID() + "-");
         configA.getNetworkConfig().setPort(5701);
 
         configB = getConfig();
-        configB.getGroupConfig().setName("B");
+        configB.setClusterName("B");
         configB.setInstanceName("confB-" + UUID.randomUUID() + "-");
         configB.getNetworkConfig().setPort(5801);
 
         configC = getConfig();
-        configC.getGroupConfig().setName("C");
+        configC.setClusterName("C");
         configC.setInstanceName("confC-" + UUID.randomUUID() + "-");
         configC.getNetworkConfig().setPort(5901);
     }
@@ -124,7 +124,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         HazelcastInstance node = getNode(cluster);
         IMap<Integer, String> m = node.getMap(mapName);
         for (; start < end; start++) {
-            m.put(start, node.getConfig().getGroupConfig().getName() + start);
+            m.put(start, node.getConfig().getClusterName() + start);
             if (latch != null) {
                 latch.countDown();
             }
@@ -167,17 +167,17 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
     }
 
     public static void assertDataInFrom(HazelcastInstance[] targetCluster, String mapName, int start, int end, HazelcastInstance[] sourceCluster) {
-        String sourceGroupName = getNode(sourceCluster).getConfig().getGroupConfig().getName();
-        assertDataInFrom(targetCluster, mapName, start, end, sourceGroupName);
+        String sourceClusterName = getNode(sourceCluster).getConfig().getClusterName();
+        assertDataInFrom(targetCluster, mapName, start, end, sourceClusterName);
     }
 
-    public static void assertDataInFrom(HazelcastInstance[] targetCluster, String mapName, int start, int end, String sourceGroupName) {
+    public static void assertDataInFrom(HazelcastInstance[] targetCluster, String mapName, int start, int end, String sourceClusterName) {
         HazelcastInstance node = getNode(targetCluster);
 
         IMap m = node.getMap(mapName);
         for (; start < end; start++) {
             Object v = m.get(start);
-            assertEquals(sourceGroupName + start, v);
+            assertEquals(sourceClusterName + start, v);
         }
     }
 
@@ -202,8 +202,8 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         assertTrueEventually(() -> assertKeysIn(cluster, mapName, start, end), ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    public static void assertDataInFromEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
-        assertTrueEventually(() -> assertDataInFrom(cluster, mapName, start, end, sourceGroupName), ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
+    public static void assertDataInFromEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceClusterName) {
+        assertTrueEventually(() -> assertDataInFrom(cluster, mapName, start, end, sourceClusterName), ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
     public static void assertDataInFromEventually(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
@@ -219,7 +219,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         IMap<Integer, String> m = node.getMap(mapName);
         for (; start < end; start++) {
             m.remove(start);
-            m.put(start, node.getConfig().getGroupConfig().getName() + start);
+            m.put(start, node.getConfig().getClusterName() + start);
         }
     }
 

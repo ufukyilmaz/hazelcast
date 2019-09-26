@@ -176,7 +176,7 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
                 .setEnabled(true)
                 .addWanEndpointConfig(createServerSocketConfig(WAN_PORT + 10, "WAN", sslProperties));
         addCommonWanReplication(config, port);
-        config.getGroupConfig().setName("not-dev-cluster");
+        config.setClusterName("not-dev-cluster");
         return config;
     }
 
@@ -205,7 +205,7 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
                                                                                ConsistencyCheckStrategy consistencyStrategy) {
         WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
         c.setEndpoint("WAN")
-                .setGroupName(clusterName)
+                .setClusterName(clusterName)
                 .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
                 .setQueueCapacity(1000)
                 .setBatchSize(500)

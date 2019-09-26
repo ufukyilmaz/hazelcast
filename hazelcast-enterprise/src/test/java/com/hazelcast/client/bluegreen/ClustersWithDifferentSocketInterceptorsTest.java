@@ -91,7 +91,7 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         socketInterceptorConfig1.setEnabled(true);
         socketInterceptorConfig1.setProperty("secret", "cluster1Secret");
         socketInterceptorConfig1.setClassName(CustomSocketInterceptor.class.getName());
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         config1.getNetworkConfig().setSocketInterceptorConfig(socketInterceptorConfig1);
@@ -104,13 +104,13 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         socketInterceptorConfig2.setProperty("secret", "cluster2Secret");
         socketInterceptorConfig2.setClassName(CustomSocketInterceptor.class.getName());
         config2.getNetworkConfig().setSocketInterceptorConfig(socketInterceptorConfig2);
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
@@ -123,7 +123,7 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         networkConfig.setSocketInterceptorConfig(clientSocketInterceptorConfig1);
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
@@ -164,7 +164,7 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
     @Test
     public void test_migrationToSocketInterceptorEnabled() {
         Config config1 = new Config();
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
@@ -176,20 +176,20 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         socketInterceptorConfig2.setProperty("secret", "cluster2Secret");
         socketInterceptorConfig2.setClassName(CustomSocketInterceptor.class.getName());
         config2.getNetworkConfig().setSocketInterceptorConfig(socketInterceptorConfig2);
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
@@ -236,19 +236,19 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         socketInterceptorConfig1.setProperty("secret", "cluster1Secret");
         socketInterceptorConfig1.setClassName(CustomSocketInterceptor.class.getName());
         config1.getNetworkConfig().setSocketInterceptorConfig(socketInterceptorConfig1);
-        config1.getGroupConfig().setName("dev1");
+        config1.setClusterName("dev1");
         config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.getGroupConfig().setName("dev2");
+        config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
@@ -261,7 +261,7 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         networkConfig.setSocketInterceptorConfig(clientSocketInterceptorConfig1);
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.getGroupConfig().setName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();

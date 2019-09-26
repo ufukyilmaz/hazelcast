@@ -148,7 +148,7 @@ public abstract class AbstractSecureWanTest {
 
     protected Config prepareConfig(String clusterName, int memberPort) {
         Config config = smallInstanceConfig();
-        config.getGroupConfig().setName(clusterName);
+        config.setClusterName(clusterName);
         JoinConfig join = config.getAdvancedNetworkConfig().getJoin();
         join.getTcpIpConfig().setEnabled(true);
         join.getMulticastConfig().setEnabled(false);
@@ -196,12 +196,12 @@ public abstract class AbstractSecureWanTest {
         return props;
     }
 
-    protected static void addCommonWanReplication(Config config, String mapName, String groupName, int port,
+    protected static void addCommonWanReplication(Config config, String mapName, String clusterName, int port,
                                                   String endpointName) {
         WanReplicationConfig wrConfig = new WanReplicationConfig();
         wrConfig.setName("wan-cluster-for-" + mapName);
         WanBatchReplicationPublisherConfig londonPublisherConfig = createWanPublisherConfig(
-                groupName,
+                clusterName,
                 "127.0.0.1:" + port,
                 endpointName
         );
@@ -220,7 +220,7 @@ public abstract class AbstractSecureWanTest {
     private static WanBatchReplicationPublisherConfig createWanPublisherConfig(String clusterName, String endpoints, String endpointName) {
         WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
         c.setEndpoint(endpointName)
-                .setGroupName(clusterName)
+                .setClusterName(clusterName)
                 .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
                 .setQueueCapacity(1000)
                 .setBatchSize(500)

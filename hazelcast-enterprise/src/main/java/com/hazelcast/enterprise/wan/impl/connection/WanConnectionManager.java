@@ -357,14 +357,14 @@ public class WanConnectionManager implements ConnectionListener {
      * @return the negotiation response or null if the negotiation failed
      */
     private WanProtocolNegotiationResponse negotiateWanProtocol(Connection conn) {
-        String targetGroupName = configurationContext.getGroupName();
+        String targetClusterName = configurationContext.getClusterName();
         List<Version> supportedWanProtocolVersions = node.getNodeEngine()
                                                          .getWanReplicationService()
                                                          .getSupportedWanProtocolVersions();
-        String sourceGroupName = node.getConfig().getGroupConfig().getName();
+        String sourceClusterName = node.getConfig().getClusterName();
 
         Operation negotiationOp = new WanProtocolNegotiationOperation(
-                sourceGroupName, targetGroupName, supportedWanProtocolVersions);
+                sourceClusterName, targetClusterName, supportedWanProtocolVersions);
         Future<WanProtocolNegotiationResponse> future =
                 node.getNodeEngine()
                     .getOperationService()
@@ -383,11 +383,11 @@ public class WanConnectionManager implements ConnectionListener {
                 return response;
             }
 
-            errorMsg = "WAN protocol negotiation failed for group name " + targetGroupName
+            errorMsg = "WAN protocol negotiation failed for cluster name " + targetClusterName
                     + " and target " + conn.getEndPoint() + " with status " + status;
         } catch (Exception exception) {
             negotiationException = exception;
-            errorMsg = "WAN protocol negotiation failed for group name " + targetGroupName
+            errorMsg = "WAN protocol negotiation failed for cluster name " + targetClusterName
                     + " and target " + conn.getEndPoint();
         }
         conn.close(errorMsg, null);

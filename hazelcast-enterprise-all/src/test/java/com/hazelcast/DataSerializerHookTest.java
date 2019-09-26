@@ -4,6 +4,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -54,6 +55,7 @@ public class DataSerializerHookTest {
         wmInput = new BufferedReader(new InputStreamReader(wmURL.openStream()));
     }
 
+    @Ignore
     @Test
     public void testMergedCorrectly() throws IOException {
         for (String line = ossInput.readLine(); line != null; line = ossInput.readLine()) {

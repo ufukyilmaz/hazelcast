@@ -36,7 +36,7 @@ public class EnterpriseTextProtocolsConfigTest extends TextProtocolsConfigTest {
     @Test
     public void testSecurityWithAnEmptyPassword() throws Exception {
         Config config = createConfigWithEnabledGroups(RestEndpointGroup.CLUSTER_READ);
-        config.getGroupConfig().setPassword("");
+        config.setClusterPassword("");
         config.getSecurityConfig().setEnabled(true);
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         assertClusterState(hz, getTestMethodName() + "&notmatching", "forbidden");

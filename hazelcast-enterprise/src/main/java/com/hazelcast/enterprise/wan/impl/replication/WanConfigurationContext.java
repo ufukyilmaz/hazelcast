@@ -16,7 +16,7 @@ public class WanConfigurationContext {
     private final long responseTimeoutMillis;
     private final WanAcknowledgeType acknowledgeType;
     private final boolean useEndpointPrivateAddress;
-    private final String groupName;
+    private final String clusterName;
     private final int maxEndpoints;
     private final int discoveryPeriodSeconds;
     private final String endpoints;
@@ -32,7 +32,7 @@ public class WanConfigurationContext {
         this.batchMaxDelayMillis = publisherConfig.getBatchMaxDelayMillis();
         this.responseTimeoutMillis = publisherConfig.getResponseTimeoutMillis();
         this.acknowledgeType = publisherConfig.getAcknowledgeType();
-        this.groupName = publisherConfig.getGroupName();
+        this.clusterName = publisherConfig.getClusterName();
         this.useEndpointPrivateAddress = publisherConfig.isUseEndpointPrivateAddress();
         this.discoveryPeriodSeconds = publisherConfig.getDiscoveryPeriodSeconds();
         this.endpoints = publisherConfig.getTargetEndpoints();
@@ -108,12 +108,12 @@ public class WanConfigurationContext {
     }
 
     /**
-     * Returns the group name of target cluster.
+     * Returns the cluster name of target cluster.
      *
-     * @see WanBatchReplicationPublisherConfig#getGroupName()
+     * @see WanBatchReplicationPublisherConfig#getClusterName()
      */
-    public String getGroupName() {
-        return groupName;
+    public String getClusterName() {
+        return clusterName;
     }
 
     /**

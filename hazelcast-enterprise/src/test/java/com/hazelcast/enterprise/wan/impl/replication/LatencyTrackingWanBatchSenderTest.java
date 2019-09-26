@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class LatencyTrackingWanBatchSenderTest extends HazelcastTestSupport {
 
-    private static final String GROUP_NAME = "groupName";
+    private static final String CLUSTER_NAME = "clusterName";
 
     private StoreLatencyPlugin plugin;
     private WanBatchSender delegate;
@@ -38,7 +38,7 @@ public class LatencyTrackingWanBatchSenderTest extends HazelcastTestSupport {
         final HazelcastInstance hz = createHazelcastInstance();
         plugin = new StoreLatencyPlugin(getNodeEngineImpl(hz));
         delegate = mock(WanBatchSender.class);
-        wanBatchSender = new LatencyTrackingWanBatchSender(delegate, plugin, GROUP_NAME,
+        wanBatchSender = new LatencyTrackingWanBatchSender(delegate, plugin, CLUSTER_NAME,
                 Executors.newSingleThreadExecutor());
     }
 
@@ -62,7 +62,7 @@ public class LatencyTrackingWanBatchSenderTest extends HazelcastTestSupport {
         assertEqualsEventually(new Callable<Long>() {
             @Override
             public Long call() {
-                return plugin.count(LatencyTrackingWanBatchSender.KEY, GROUP_NAME, address.toString());
+                return plugin.count(LatencyTrackingWanBatchSender.KEY, CLUSTER_NAME, address.toString());
 
             }
         }, times);

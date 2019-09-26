@@ -154,7 +154,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         clusterA[0].shutdown();
         sleepSeconds(10);
         startClusterB();
-        assertDataInFromEventually(clusterB, "map", 0, 1000, getNode(clusterA[1]).getConfig().getGroupConfig().getName());
+        assertDataInFromEventually(clusterB, "map", 0, 1000, getNode(clusterA[1]).getConfig().getClusterName());
     }
 
     @Test
@@ -252,7 +252,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
         initCluster(clusterB, configB);
 
-        assertDataInFromEventually(clusterB, "map", 0, 1000, singleNodeC[0].getConfig().getGroupConfig().getName());
+        assertDataInFromEventually(clusterB, "map", 0, 1000, singleNodeC[0].getConfig().getClusterName());
     }
 
     @Test
@@ -588,10 +588,10 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
     @Test
     public void checkAuthorization() {
-        String groupName = configB.getGroupConfig().getName();
-        configB.getGroupConfig().setName("wrongGroupName");
+        String clusterName = configB.getClusterName();
+        configB.setClusterName("wrongClusterName");
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        configB.getGroupConfig().setName(groupName);
+        configB.setClusterName(clusterName);
         startClusterA();
         startClusterB();
         createDataIn(clusterA, "map", 0, 10);
@@ -623,7 +623,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         map.putAll(inputMap);
 
         assertKeysInEventually(clusterB, "map", 0, 10);
-        assertWanQueueSizesEventually(clusterA, "atob", configB.getGroupConfig().getName(), 0);
+        assertWanQueueSizesEventually(clusterA, "atob", configB.getClusterName(), 0);
     }
 
     @Test
@@ -637,7 +637,7 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         createDataIn(clusterA, "map", 0, 100, "value");
         IMap<Integer, Integer> map = getMap(clusterA, "map");
 
-        assertWanQueueSizesEventually(clusterA, "atob", configB.getGroupConfig().getName(), 0);
+        assertWanQueueSizesEventually(clusterA, "atob", configB.getClusterName(), 0);
 
         for (int i = 0; i < 100; i++) {
             map.setTtl(i, 1, TimeUnit.SECONDS);
@@ -659,8 +659,8 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         IMap<Integer, Integer> mapA = getMap(clusterA, "map");
         IMap<Integer, Integer> mapB = getMap(clusterB, "map");
 
-        assertWanQueueSizesEventually(clusterA, "atob", configB.getGroupConfig().getName(), 0);
-        assertWanQueueSizesEventually(clusterB, "btoa", configA.getGroupConfig().getName(), 0);
+        assertWanQueueSizesEventually(clusterA, "atob", configB.getClusterName(), 0);
+        assertWanQueueSizesEventually(clusterB, "btoa", configA.getClusterName(), 0);
 
         for (int i = 0; i < 50; i++) {
             mapA.setTtl(i, 1, TimeUnit.SECONDS);
@@ -796,11 +796,11 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
         startClusterA();
         getMap(clusterA, "stored-map").loadAll(true);
-        assertWanQueueSizesEventually(clusterA, setupName, configB.getGroupConfig().getName(), 10);
+        assertWanQueueSizesEventually(clusterA, setupName, configB.getClusterName(), 10);
 
         startClusterB();
         assertKeysInEventually(clusterB, "stored-map", startKey, endKey);
-        assertWanQueueSizesEventually(clusterA, setupName, configB.getGroupConfig().getName(), 0);
+        assertWanQueueSizesEventually(clusterA, setupName, configB.getClusterName(), 0);
     }
 
     @Test
@@ -836,57 +836,57 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
     @Test
     public void testStopResume() {
         final String wanReplicationConfigName = "atob";
-        final String targetGroupName = configB.getGroupConfig().getName();
+        final String targetClusterName = configB.getClusterName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 50);
         assertDataInFromEventually(clusterB, "map", 0, 50, clusterA);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
 
-        stopWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), STOPPED);
+        stopWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, "atob", configB.getClusterName(), STOPPED);
         createDataIn(clusterA, "map", 50, 100);
         assertKeysNotInEventually(clusterB, "map", 50, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
 
-        resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), WanPublisherState.REPLICATING);
+        resumeWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, "atob", configB.getClusterName(), WanPublisherState.REPLICATING);
         createDataIn(clusterA, "map2", 0, 100);
         assertKeysInEventually(clusterB, "map2", 0, 100);
         assertKeysNotInEventually(clusterB, "map", 50, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
     }
 
     @Test
     public void testPauseResume() {
         final String wanReplicationConfigName = "atob";
-        final String targetGroupName = configB.getGroupConfig().getName();
+        final String targetClusterName = configB.getClusterName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 50);
         assertDataInFromEventually(clusterB, "map", 0, 50, clusterA);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
 
-        pauseWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.PAUSED);
+        pauseWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.PAUSED);
         createDataIn(clusterA, "map", 50, 100);
         assertKeysNotInEventually(clusterB, "map", 50, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 50);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 50);
 
-        resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.REPLICATING);
+        resumeWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.REPLICATING);
         assertKeysInEventually(clusterB, "map", 0, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
     }
 
     @Test
     public void testPublisherInitialStateStopped() {
         final String wanReplicationConfigName = "atob";
-        final String targetGroupName = configB.getGroupConfig().getName();
+        final String targetClusterName = configB.getClusterName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
 
         WanBatchReplicationPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
@@ -898,22 +898,22 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 100);
-        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), STOPPED);
+        assertWanPublisherStateEventually(clusterA, "atob", configB.getClusterName(), STOPPED);
         assertKeysNotInEventually(clusterB, "map", 0, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
 
-        resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), WanPublisherState.REPLICATING);
+        resumeWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, "atob", configB.getClusterName(), WanPublisherState.REPLICATING);
         createDataIn(clusterA, "map2", 0, 100);
         assertKeysInEventually(clusterB, "map2", 0, 100);
         assertKeysNotInEventually(clusterB, "map", 0, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
     }
 
     @Test
     public void testPublisherInitialStatePaused() {
         final String wanReplicationConfigName = "atob";
-        final String targetGroupName = configB.getGroupConfig().getName();
+        final String targetClusterName = configB.getClusterName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
 
         WanBatchReplicationPublisherConfig targetClusterConfig = configA.getWanReplicationConfig("atob")
@@ -925,28 +925,28 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 100);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.PAUSED);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.PAUSED);
         assertKeysNotInEventually(clusterB, "map", 0, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 100);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 100);
 
-        resumeWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetGroupName, WanPublisherState.REPLICATING);
+        resumeWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, wanReplicationConfigName, targetClusterName, WanPublisherState.REPLICATING);
         assertKeysInEventually(clusterB, "map", 0, 100);
-        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetGroupName, 0);
+        assertWanQueueSizesEventually(clusterA, wanReplicationConfigName, targetClusterName, 0);
     }
 
     private static String getMBeanWanReplicationPublisherState(
             MBeanDataHolder mBeanDataHolder,
             String wanReplicationConfigName,
-            String targetGroupName) throws Exception {
+            String targetClusterName) throws Exception {
         return (String) mBeanDataHolder.getMBeanAttribute(
-                "WanReplicationPublisher", wanReplicationConfigName + "." + targetGroupName, "state");
+                "WanReplicationPublisher", wanReplicationConfigName + "." + targetClusterName, "state");
     }
 
     @Test
     public void wanPublisherStateIsVisibleViaJMX() throws Exception {
         final String wanReplicationConfigName = "atob";
-        final String targetGroupName = configB.getGroupConfig().getName();
+        final String targetClusterName = configB.getClusterName();
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationConfigName, PassThroughMergePolicy.class.getName());
         configA.setProperty(GroupProperty.ENABLE_JMX.getName(), "true");
         startClusterA();
@@ -955,13 +955,13 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
 
         final MBeanDataHolder mBeanDataHolder = new MBeanDataHolder(clusterA[0]);
         assertEquals(WanPublisherState.REPLICATING.name(),
-                getMBeanWanReplicationPublisherState(mBeanDataHolder, wanReplicationConfigName, targetGroupName));
+                getMBeanWanReplicationPublisherState(mBeanDataHolder, wanReplicationConfigName, targetClusterName));
 
-        stopWanReplication(clusterA, wanReplicationConfigName, targetGroupName);
-        assertWanPublisherStateEventually(clusterA, "atob", configB.getGroupConfig().getName(), STOPPED);
+        stopWanReplication(clusterA, wanReplicationConfigName, targetClusterName);
+        assertWanPublisherStateEventually(clusterA, "atob", configB.getClusterName(), STOPPED);
 
         assertEquals(STOPPED.name(),
-                getMBeanWanReplicationPublisherState(mBeanDataHolder, wanReplicationConfigName, targetGroupName));
+                getMBeanWanReplicationPublisherState(mBeanDataHolder, wanReplicationConfigName, targetClusterName));
     }
 
     @Test
@@ -1041,9 +1041,9 @@ public class MapWanBatchReplicationTest extends MapWanReplicationTestSupport {
     }
 
     @Test
-    public void publisherIdOverridesGroupName() {
-        configB.getGroupConfig().setName("targetGroup");
-        configC.getGroupConfig().setName("targetGroup");
+    public void publisherIdOverridesClusterName() {
+        configB.setClusterName("targetCluster");
+        configC.setClusterName("targetCluster");
         String wanReplicationScheme = "replicationScheme";
 
         setupReplicateFrom(configA, configB, clusterB.length, wanReplicationScheme, PassThroughMergePolicy.class.getName());

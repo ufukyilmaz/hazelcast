@@ -139,9 +139,9 @@ public class DefaultLoginModuleTest {
     }
 
     @SuppressWarnings("deprecation")
-    private Config createConfig(String groupName, String groupPassword) {
+    private Config createConfig(String clusterName, String groupPassword) {
         Config config = new Config();
-        config.getGroupConfig().setName(groupName).setPassword(groupPassword);
+        config.setClusterName(clusterName).setClusterPassword(groupPassword);
         return config;
     }
 

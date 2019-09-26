@@ -154,7 +154,7 @@ public class ClientAuthnUsingMapCacheTest {
     @SuppressWarnings("deprecation")
     public static ClientConfig createClientConfig(String id) {
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getGroupConfig().setName(id).setPassword(id);
+        clientConfig.setClusterName(id).setClusterPassword(id);
         return clientConfig;
     }
 

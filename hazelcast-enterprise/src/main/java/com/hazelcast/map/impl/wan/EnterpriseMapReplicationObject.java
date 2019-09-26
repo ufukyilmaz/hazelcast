@@ -21,7 +21,7 @@ import java.util.Set;
 public abstract class EnterpriseMapReplicationObject
         implements InternalWanReplicationEvent, IdentifiedDataSerializable {
 
-    private Set<String> groupNames = new HashSet<>();
+    private Set<String> clusterNames = new HashSet<>();
     private String mapName;
     private int backupCount;
     private long creationTime;
@@ -46,8 +46,8 @@ public abstract class EnterpriseMapReplicationObject
 
     @Nonnull
     @Override
-    public Set<String> getGroupNames() {
-        return groupNames;
+    public Set<String> getClusterNames() {
+        return clusterNames;
     }
 
     @Override
@@ -59,9 +59,9 @@ public abstract class EnterpriseMapReplicationObject
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeUTF(mapName);
         out.writeInt(backupCount);
-        out.writeInt(groupNames.size());
-        for (String groupName : groupNames) {
-            out.writeUTF(groupName);
+        out.writeInt(clusterNames.size());
+        for (String clusterName : clusterNames) {
+            out.writeUTF(clusterName);
         }
     }
 
@@ -69,9 +69,9 @@ public abstract class EnterpriseMapReplicationObject
     public void readData(ObjectDataInput in) throws IOException {
         mapName = in.readUTF();
         backupCount = in.readInt();
-        int groupNameCount = in.readInt();
-        for (int i = 0; i < groupNameCount; i++) {
-            groupNames.add(in.readUTF());
+        int clusterNameCount = in.readInt();
+        for (int i = 0; i < clusterNameCount; i++) {
+            clusterNames.add(in.readUTF());
         }
     }
 

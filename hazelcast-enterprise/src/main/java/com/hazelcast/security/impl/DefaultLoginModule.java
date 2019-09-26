@@ -40,12 +40,12 @@ public class DefaultLoginModule extends ClusterLoginModule implements LoginModul
         name = ncb.getName();
         char[] pass = pcb.getPassword();
         Config cfg = ccb.getConfig();
-        if (cfg == null || cfg.getGroupConfig() == null) {
-            throw new LoginException("Group Configuration is not available.");
+        if (cfg == null) {
+            throw new LoginException("Cluster Configuration is not available.");
         }
-        String group = cfg.getGroupConfig().getName();
-        String expectedPass = cfg.getGroupConfig().getPassword();
-        if (group != null && group.equals(name)
+        String clusterName = cfg.getClusterName();
+        String expectedPass = cfg.getClusterPassword();
+        if (clusterName != null && clusterName.equals(name)
                 && expectedPass != null && Arrays.equals(pass, expectedPass.toCharArray())) {
             addRole(name);
             return true;

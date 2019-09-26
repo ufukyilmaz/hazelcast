@@ -26,14 +26,14 @@ public class WanCacheTestSupport {
     public static int fillCache(HazelcastInstance instance, String cacheName, int start, int end) {
         ICache<Integer, String> cache = getOrCreateCache(instance, cacheName);
 
-        String valuePrefix = instance.getConfig().getGroupConfig().getName();
+        String valuePrefix = instance.getConfig().getClusterName();
         return fillCache(start, end, cache, valuePrefix);
     }
 
     public static int fillCache(Cluster cluster, String cacheName, int start, int end) {
         ICache<Integer, String> cache = getOrCreateCache(cluster, cacheName);
 
-        String valuePrefix = cluster.config.getGroupConfig().getName();
+        String valuePrefix = cluster.config.getClusterName();
         return fillCache(start, end, cache, valuePrefix);
     }
 

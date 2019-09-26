@@ -35,7 +35,7 @@ public class AdvancedNetworkingWanCommunicationIntegrationTest extends AbstractA
     @Test
     public void testWanConnectionToEndpoints() {
         Config config = createCompleteMultiSocketConfig();
-        config.getGroupConfig().setName(CLUSTER_A_NAME);
+        config.setClusterName(CLUSTER_A_NAME);
         final HazelcastInstance hz = newHazelcastInstance(config);
 
         Config config2 = prepareWanAdvancedNetworkConfig(WAN1_PORT);
@@ -115,7 +115,7 @@ public class AdvancedNetworkingWanCommunicationIntegrationTest extends AbstractA
                                                                                String endpoints,
                                                                                ConsistencyCheckStrategy consistencyStrategy) {
         WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
-        c.setGroupName(clusterName)
+        c.setClusterName(clusterName)
                 .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
                 .setQueueCapacity(1000)
                 .setBatchSize(500)

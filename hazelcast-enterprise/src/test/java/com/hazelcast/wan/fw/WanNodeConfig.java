@@ -12,7 +12,6 @@ import com.hazelcast.config.FlakeIdGeneratorConfig;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.ListConfig;
 import com.hazelcast.config.ListenerConfig;
-import com.hazelcast.config.LockConfig;
 import com.hazelcast.config.ManagementCenterConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MemberAttributeConfig;
@@ -231,31 +230,6 @@ class WanNodeConfig extends Config {
     @Override
     public Config setQueueConfigs(Map<String, QueueConfig> queueConfigs) {
         return wrappedConfig.setQueueConfigs(queueConfigs);
-    }
-
-    @Override
-    public LockConfig findLockConfig(String name) {
-        return wrappedConfig.findLockConfig(name);
-    }
-
-    @Override
-    public LockConfig getLockConfig(String name) {
-        return wrappedConfig.getLockConfig(name);
-    }
-
-    @Override
-    public Config addLockConfig(LockConfig lockConfig) {
-        return wrappedConfig.addLockConfig(lockConfig);
-    }
-
-    @Override
-    public Map<String, LockConfig> getLockConfigs() {
-        return wrappedConfig.getLockConfigs();
-    }
-
-    @Override
-    public Config setLockConfigs(Map<String, LockConfig> lockConfigs) {
-        return wrappedConfig.setLockConfigs(lockConfigs);
     }
 
     @Override

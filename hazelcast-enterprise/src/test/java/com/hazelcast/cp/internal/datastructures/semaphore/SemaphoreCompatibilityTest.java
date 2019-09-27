@@ -10,6 +10,6 @@ import org.junit.runner.RunWith;
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
-public class SemaphoreCompatibilityTest extends RaftSessionlessSemaphoreBasicTest {
+public class SemaphoreCompatibilityTest extends SessionlessSemaphoreBasicTest {
 
 }

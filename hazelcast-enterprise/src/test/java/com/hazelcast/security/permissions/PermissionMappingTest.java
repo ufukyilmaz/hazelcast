@@ -48,7 +48,6 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         INSECURE_SERVICES.add(com.hazelcast.ringbuffer.impl.RingbufferService.class);
         INSECURE_SERVICES.add(com.hazelcast.topic.impl.reliable.ReliableTopicService.class);
         INSECURE_SERVICES.add(com.hazelcast.transaction.impl.xa.XAService.class);
-        INSECURE_SERVICES.add(com.hazelcast.cp.internal.datastructures.lock.RaftLockService.class);
         INSECURE_SERVICES.add(com.hazelcast.internal.longregister.LongRegisterService.class);
     }
 
@@ -101,7 +100,7 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "set");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.replicatedmap.impl.ReplicatedMapService.class,
                 "replicatedMap");
-        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.unsafe.lock.LockServiceImpl.class,
+        SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.lock.LockService.class,
                 "lock");
         SERVICE_TO_PERMSTRUCT_MAPPING.put(com.hazelcast.cp.internal.datastructures.semaphore.SemaphoreService.class,
                 "semaphore");
@@ -161,6 +160,8 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "initialize", "getQueryCache", "getTotalBackupCount", "subscribeToEventJournal",
                 "replace", "replaceAll",
         });
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.lock.LockService.class,
+                new String[] {"getGroupId", "getObjectName"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.countdownlatch.CountDownLatchService.class,
                 new String[] {"getGroupId"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.semaphore.SemaphoreService.class,

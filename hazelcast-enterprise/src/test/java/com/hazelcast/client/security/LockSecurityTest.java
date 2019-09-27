@@ -6,7 +6,6 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.cp.lock.ILock;
 import com.hazelcast.cp.lock.FencedLock;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.permission.ActionConstants;
@@ -37,40 +36,6 @@ public class LockSecurityTest {
     @After
     public void cleanup() {
         factory.terminateAll();
-    }
-
-    @Test
-    public void testLockPermission() {
-        final Config config = createConfig();
-        addPermission(config)
-                .addAction(ActionConstants.ACTION_CREATE).addAction(ActionConstants.ACTION_LOCK);
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient();
-        assertTrue(client.getLock(testObjectName).tryLock());
-        client.getLock(testObjectName).unlock();
-    }
-
-    @Test
-    public void testLockPermissionFail() {
-        final Config config = createConfig();
-        addPermission(config)
-                .addAction(ActionConstants.ACTION_LOCK);
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient();
-        expectedException.expect(AccessControlException.class);
-        client.getLock(testObjectName);
-    }
-
-    @Test
-    public void testLockPermissionFail2() {
-        final Config config = createConfig();
-        addPermission(config)
-                .addAction(ActionConstants.ACTION_CREATE);
-        factory.newHazelcastInstance(config);
-        HazelcastInstance client = factory.newHazelcastClient();
-        ILock lock = client.getLock(testObjectName);
-        expectedException.expect(AccessControlException.class);
-        lock.tryLock();
     }
 
     @Test

@@ -6,7 +6,7 @@ import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
+import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 

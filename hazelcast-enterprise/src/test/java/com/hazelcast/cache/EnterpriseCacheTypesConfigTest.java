@@ -15,7 +15,7 @@ import com.hazelcast.enterprise.wan.WanReplicationConsumer;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

@@ -9,9 +9,9 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.hotrestart.HotRestartKey;
-import com.hazelcast.spi.hotrestart.HotRestartStore;
-import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
+import com.hazelcast.internal.hotrestart.HotRestartKey;
+import com.hazelcast.internal.hotrestart.HotRestartStore;
+import com.hazelcast.internal.hotrestart.impl.KeyOffHeap;
 
 import java.util.Iterator;
 

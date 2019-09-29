@@ -8,7 +8,7 @@
 
     <!-- Exclude all files from header check, so we can keep a common checkstyle.xml configuration -->
     <suppress checks="RegexpHeader" files="package-info.java"/>
-    <suppress checks="RegexpHeader" files="com.hazelcast.spi.hotrestart.impl.gc.ChunkPriorityQueue.java"/>
+    <suppress checks="RegexpHeader" files="com.hazelcast.internal.hotrestart.impl.gc.ChunkPriorityQueue.java"/>
 
     <!-- Javadoc suppressions -->
     <suppress checks="Javadoc(Package|Type|Method|Variable)" files="/impl/"/>
@@ -24,8 +24,8 @@
     <suppress checks="Javadoc(Type|Method|Variable)" files="com/hazelcast/instance/GeneratedEnterpriseBuildProperties.java"/>
 
     <!-- Hot restart module -->
-    <suppress checks="VisibilityModifier|InnerAssignment" files="com/hazelcast/spi/hotrestart/impl"/>
-    <suppress checks="FileLength" files="com/hazelcast/spi/hotrestart/cluster/ClusterMetadataManager\.java"/>
+    <suppress checks="VisibilityModifier|InnerAssignment" files="com/hazelcast/internal/hotrestart/impl"/>
+    <suppress checks="FileLength" files="com/hazelcast/internal/hotrestart/cluster/ClusterMetadataManager\.java"/>
     <suppress checks="OuterTypeNumber" files="com/hazelcast/internal/util/collection/AbstractConcurrentArrayQueue\.java"/>
 
     <!-- SerializerHook -->
@@ -53,7 +53,7 @@
             checks="ExplicitInitialization|EqualsHashCode|MissingSwitchDefault|TrailingComment"
             files="[\\/]src[\\/]test[\\/]"/>
     <suppress checks="OuterTypeNumber"
-              files="src[\\/]test[\\/]java[\\/]com[\\/]hazelcast[\\/]spi[\\/]hotrestart[\\/]impl[\\/]di[\\/]DiContainerTest"/>
+              files="src[\\/]test[\\/]java[\\/]com[\\/]hazelcast[\\/]internal[\\/]hotrestart[\\/]impl[\\/]di[\\/]DiContainerTest"/>
 
     <!-- module-info.java -->
     <suppress checks="" files="[\\/]module-info"/>

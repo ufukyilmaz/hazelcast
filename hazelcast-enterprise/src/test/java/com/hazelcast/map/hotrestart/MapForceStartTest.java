@@ -8,7 +8,7 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.map.IMap;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
+import com.hazelcast.internal.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

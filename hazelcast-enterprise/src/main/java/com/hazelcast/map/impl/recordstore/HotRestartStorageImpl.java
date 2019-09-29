@@ -10,9 +10,9 @@ import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.hotrestart.HotRestartKey;
-import com.hazelcast.spi.hotrestart.HotRestartStore;
-import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
+import com.hazelcast.internal.hotrestart.HotRestartKey;
+import com.hazelcast.internal.hotrestart.HotRestartStore;
+import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
 
 import java.util.Collection;
 import java.util.Iterator;

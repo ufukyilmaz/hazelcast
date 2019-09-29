@@ -4,7 +4,7 @@ import com.hazelcast.client.ClientClusterRestartEventTest;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;

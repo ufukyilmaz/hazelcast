@@ -3,13 +3,13 @@ package com.hazelcast.map.impl.recordstore;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.RamStore;
-import com.hazelcast.spi.hotrestart.RamStoreHelper;
-import com.hazelcast.spi.hotrestart.RecordDataSink;
-import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
-import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.hotrestart.HotRestartException;
+import com.hazelcast.internal.hotrestart.KeyHandle;
+import com.hazelcast.internal.hotrestart.RamStore;
+import com.hazelcast.internal.hotrestart.RamStoreHelper;
+import com.hazelcast.internal.hotrestart.RecordDataSink;
+import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
+import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.internal.util.Clock;
 
 /**

@@ -6,14 +6,14 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
-import com.hazelcast.spi.hotrestart.RamStore;
-import com.hazelcast.spi.hotrestart.RamStoreHelper;
-import com.hazelcast.spi.hotrestart.RecordDataSink;
-import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
-import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
+import com.hazelcast.hotrestart.HotRestartException;
+import com.hazelcast.internal.hotrestart.KeyHandle;
+import com.hazelcast.internal.hotrestart.KeyHandleOffHeap;
+import com.hazelcast.internal.hotrestart.RamStore;
+import com.hazelcast.internal.hotrestart.RamStoreHelper;
+import com.hazelcast.internal.hotrestart.RecordDataSink;
+import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.internal.hotrestart.impl.SimpleHandleOffHeap;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 

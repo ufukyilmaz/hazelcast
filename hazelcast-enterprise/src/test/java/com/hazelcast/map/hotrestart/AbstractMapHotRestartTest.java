@@ -10,7 +10,7 @@ import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.hotrestart.HotRestartTestSupport;
+import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.properties.GroupProperty;
 import org.junit.runners.Parameterized.Parameter;
 

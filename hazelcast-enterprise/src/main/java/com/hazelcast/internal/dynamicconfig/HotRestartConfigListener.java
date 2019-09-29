@@ -4,8 +4,8 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
-import com.hazelcast.spi.hotrestart.LoadedConfigurationListener;
+import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
+import com.hazelcast.internal.hotrestart.LoadedConfigurationListener;
 
 /**
  * Persist dynamic configurations into HotRestart when enabled

@@ -6,8 +6,8 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.hotrestart.HotRestartStore;
-import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
+import com.hazelcast.internal.hotrestart.HotRestartStore;
+import com.hazelcast.internal.hotrestart.impl.KeyOffHeap;
 
 import java.util.ArrayList;
 import java.util.List;

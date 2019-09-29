@@ -9,7 +9,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

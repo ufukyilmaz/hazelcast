@@ -13,7 +13,7 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;

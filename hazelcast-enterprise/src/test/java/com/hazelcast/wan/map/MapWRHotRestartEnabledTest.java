@@ -5,7 +5,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.spi.hotrestart.HotRestartFolderRule;
+import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

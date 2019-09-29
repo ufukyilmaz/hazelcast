@@ -2,10 +2,10 @@ The package com.hazelcast.internal.util.concurrent
 contains code originating from the Agrona project
 (https://github.com/real-logic/Agrona).
 
-The class com.hazelcast.spi.hotrestart.impl.gc.ChunkPriorityQueue
+The class com.hazelcast.internal.hotrestart.impl.gc.ChunkPriorityQueue
 contains code originating from the Apache Lucene project
 (https://lucene.apache.org/).
 
-The package com.hazelcast.spi.hotrestart.impl.lz4
+The package com.hazelcast.internal.hotrestart.impl.lz4
 contains code originating from Adrien Grand's lz4-java project
 (https://github.com/jpountz/lz4-java)

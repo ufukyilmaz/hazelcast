@@ -10,7 +10,7 @@ import com.hazelcast.cache.hidensity.impl.nativememory.HotRestartHiDensityNative
 import com.hazelcast.cache.hidensity.operation.CacheSegmentShutdownOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
-import com.hazelcast.cache.hotrestart.HotRestartEnterpriseCacheRecordStore;
+import com.hazelcast.cache.impl.hotrestart.HotRestartEnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
 import com.hazelcast.cache.impl.merge.entry.LazyCacheEntryView;
@@ -39,10 +39,10 @@ import com.hazelcast.internal.util.LocalRetryableExecution;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
-import com.hazelcast.spi.hotrestart.HotRestartStore;
-import com.hazelcast.spi.hotrestart.RamStore;
-import com.hazelcast.spi.hotrestart.RamStoreRegistry;
+import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
+import com.hazelcast.internal.hotrestart.HotRestartStore;
+import com.hazelcast.internal.hotrestart.RamStore;
+import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.OperationService;
@@ -64,7 +64,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.cache.impl.AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.spi.hotrestart.PersistentConfigDescriptors.toPartitionId;
+import static com.hazelcast.internal.hotrestart.PersistentConfigDescriptors.toPartitionId;
 import static java.lang.Thread.currentThread;
 
 /**

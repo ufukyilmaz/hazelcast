@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl;
 
 import com.hazelcast.map.impl.wan.MapFilterProvider;
-import com.hazelcast.spi.hotrestart.HotRestartStore;
+import com.hazelcast.internal.hotrestart.HotRestartStore;
 
 /**
  * Enterprise version of {@link com.hazelcast.map.impl.MapServiceContext}.

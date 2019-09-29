@@ -15,7 +15,7 @@ import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.hotrestart.RamStore;
+import com.hazelcast.internal.hotrestart.RamStore;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.OperationService;

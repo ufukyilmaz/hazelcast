@@ -13,7 +13,13 @@ import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
+import com.hazelcast.config.cp.CPSubsystemConfig;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
+import com.hazelcast.cp.internal.RaftGroupId;
+import com.hazelcast.cp.internal.raft.impl.persistence.LogFileStructure;
+import com.hazelcast.cp.internal.raft.impl.persistence.RaftStateStore;
+import com.hazelcast.cp.persistence.CPMemberMetadataStoreImpl;
+import com.hazelcast.cp.persistence.CPPersistenceService;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.hotrestart.HotRestartService;
@@ -51,8 +57,8 @@ import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
-import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.monitor.impl.jmx.EnterpriseManagementService;
 import com.hazelcast.internal.monitor.impl.jmx.LicenseInfoMBean;
 import com.hazelcast.internal.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
@@ -102,6 +108,8 @@ import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -147,6 +155,7 @@ public class EnterpriseNodeExtension
     private static final NoopInternalHotRestartService NOOP_INTERNAL_HOT_RESTART_SERVICE = new NoopInternalHotRestartService();
     private static final NoOpHotRestartService NO_OP_HOT_RESTART_SERVICE = new NoOpHotRestartService();
 
+    private final CPPersistenceService cpPersistenceService;
     private final HotRestartIntegrationService hotRestartService;
     private final HotBackupService hotBackupService;
     private final SecurityService securityService;
@@ -164,10 +173,16 @@ public class EnterpriseNodeExtension
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
+        cpPersistenceService = createCPPersistenceService(node);
         hotRestartService = createHotRestartService(node);
         hotBackupService = createHotBackupService(node, hotRestartService);
         securityService = createSecurityService(node);
         auditlogService = createAuditlogService(node);
+    }
+
+    private CPPersistenceService createCPPersistenceService(Node node) {
+        CPSubsystemConfig config = node.getConfig().getCPSubsystemConfig();
+        return config.isPersistenceEnabled() ? new CPPersistenceService(node, config.getBaseDir()) : null;
     }
 
     private SecurityService createSecurityService(Node node) {
@@ -406,6 +421,17 @@ public class EnterpriseNodeExtension
             } catch (Throwable e) {
                 logger.severe("Hot Restart procedure failed", e);
                 node.shutdown(true);
+                return;
+            }
+        }
+
+        if (cpPersistenceService != null) {
+            try {
+                cpPersistenceService.restore();
+            } catch (Exception e) {
+                logger.severe("CP restore failed", e);
+                node.shutdown(true);
+                return;
             }
         }
 
@@ -491,6 +517,11 @@ public class EnterpriseNodeExtension
         if (hotRestartService != null) {
             return hotRestartService.isStartCompleted();
         }
+
+        if (cpPersistenceService != null) {
+            return cpPersistenceService.isStartCompleted();
+        }
+
         return super.isStartCompleted();
     }
 
@@ -1007,5 +1038,15 @@ public class EnterpriseNodeExtension
     @Override
     public AuditlogService getAuditlogService() {
         return auditlogService;
+    }
+
+    public CPMemberMetadataStoreImpl getCPMemberMetadataStore() {
+        return cpPersistenceService.getCpMemberMetadataStore();
+    }
+
+    public RaftStateStore createRaftStateStore(
+            @Nonnull RaftGroupId groupId, @Nullable LogFileStructure logFileStructure
+    ) {
+        return cpPersistenceService.createRaftStateStore(groupId, logFileStructure);
     }
 }

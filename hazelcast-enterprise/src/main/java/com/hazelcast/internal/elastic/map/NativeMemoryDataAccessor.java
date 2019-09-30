@@ -3,7 +3,7 @@ package com.hazelcast.internal.elastic.map;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
 /**
  * Accessor for Native Memory Data (me loves checkstyle)

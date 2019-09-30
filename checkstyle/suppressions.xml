@@ -21,6 +21,7 @@
     <suppress checks="Javadoc(Type|Method)" files="com/hazelcast/elasticmemory/"/>
     <suppress checks="Javadoc(Type|Method)" files="com/hazelcast/nio/"/>
     <suppress checks="Javadoc(Type|Method)" files="com/hazelcast/internal/serialization/"/>
+    <suppress checks="Javadoc(Type|Method)" files="com/hazelcast/internal/nio/"/>
     <suppress checks="Javadoc(Type|Method|Variable)" files="com/hazelcast/instance/GeneratedEnterpriseBuildProperties.java"/>
 
     <!-- Hot restart module -->

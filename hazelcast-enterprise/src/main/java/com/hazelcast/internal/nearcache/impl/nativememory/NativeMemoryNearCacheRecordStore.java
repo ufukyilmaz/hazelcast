@@ -1,11 +1,11 @@
 package com.hazelcast.internal.nearcache.impl.nativememory;
 
-import com.hazelcast.cache.hidensity.impl.nativememory.CacheHiDensityRecordProcessor;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityEntryCountEvictionChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeEvictionChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageEvictionChecker;
-import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeEvictionChecker;
+import com.hazelcast.cache.impl.hidensity.nativememory.CacheHiDensityRecordProcessor;
+import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityEntryCountEvictionChecker;
+import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
+import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityFreeNativeMemorySizeEvictionChecker;
+import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageEvictionChecker;
+import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityUsedNativeMemorySizeEvictionChecker;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.adapter.DataStructureAdapter;
@@ -25,7 +25,7 @@ import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.util.Clock;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;

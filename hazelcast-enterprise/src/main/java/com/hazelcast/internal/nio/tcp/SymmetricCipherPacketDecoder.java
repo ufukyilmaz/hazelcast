@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.internal.nio.IOUtil.compactOrClear;
-import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
+import static com.hazelcast.internal.nio.CipherHelper.createSymmetricReaderCipher;
 
 @SuppressWarnings({"checkstyle:npathcomplexity", "checkstyle:javadoctype"})
 public class SymmetricCipherPacketDecoder extends PacketDecoder {

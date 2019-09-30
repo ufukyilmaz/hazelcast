@@ -5,7 +5,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
 import java.util.Collection;
 import java.util.Map;

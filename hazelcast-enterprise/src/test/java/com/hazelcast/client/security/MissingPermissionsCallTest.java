@@ -10,7 +10,7 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
-import com.hazelcast.security.SecureCallableImpl;
+import com.hazelcast.security.impl.SecureCallableImpl;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;

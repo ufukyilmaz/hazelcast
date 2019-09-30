@@ -5,7 +5,7 @@ import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
 public class SamplingEnterpriseSerializationService extends SamplingSerializationService
         implements EnterpriseSerializationService {

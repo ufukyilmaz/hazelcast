@@ -4,6 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.EnterprisePhoneHome;
 import com.hazelcast.internal.util.LicenseExpirationReminderTask;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;

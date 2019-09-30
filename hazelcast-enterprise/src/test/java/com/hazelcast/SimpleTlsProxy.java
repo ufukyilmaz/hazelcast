@@ -22,8 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.internal.nio.IOUtil.close;
 import static com.hazelcast.internal.nio.IOUtil.closeResource;
-import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.loadKeyManagerFactory;
-import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.loadTrustManagerFactory;
+import static com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport.loadKeyManagerFactory;
+import static com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport.loadTrustManagerFactory;
 import static com.hazelcast.test.HazelcastTestSupport.ignore;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 

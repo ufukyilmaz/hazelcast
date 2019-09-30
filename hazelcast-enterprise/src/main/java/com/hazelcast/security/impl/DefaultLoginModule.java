@@ -18,7 +18,7 @@ import javax.security.auth.spi.LoginModule;
 /**
  * The default {@link LoginModule}.
  *
- * This class is not unused, it's set via {@link com.hazelcast.security.SecurityConstants#DEFAULT_LOGIN_MODULE}.
+ * This class is not unused, it's set via {@link SecurityConstants#DEFAULT_LOGIN_MODULE}.
  */
 @SuppressWarnings("unused")
 public class DefaultLoginModule extends ClusterLoginModule implements LoginModule {

@@ -3,13 +3,13 @@ package com.hazelcast.cache.impl;
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheEventType;
 import com.hazelcast.cache.CacheNotExistsException;
-import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
-import com.hazelcast.cache.hidensity.HiDensityCacheStorageInfo;
-import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
-import com.hazelcast.cache.hidensity.impl.nativememory.HotRestartHiDensityNativeMemoryCacheRecordStore;
-import com.hazelcast.cache.hidensity.operation.CacheSegmentShutdownOperation;
-import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
-import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
+import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecordStore;
+import com.hazelcast.cache.impl.hidensity.HiDensityCacheStorageInfo;
+import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.impl.hidensity.nativememory.HotRestartHiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.impl.hidensity.operation.CacheSegmentShutdownOperation;
+import com.hazelcast.cache.impl.hidensity.operation.HiDensityCacheOperationProvider;
+import com.hazelcast.cache.impl.hidensity.operation.HiDensityCacheReplicationOperation;
 import com.hazelcast.cache.impl.hotrestart.HotRestartEnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
@@ -33,12 +33,12 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.services.ReplicationSupportingService;
 import com.hazelcast.internal.util.InvocationUtil;
 import com.hazelcast.internal.util.LocalRetryableExecution;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.RamStore;
@@ -168,7 +168,7 @@ public class EnterpriseCacheService
      * @param partitionId         the partition ID which cache record store is created on
      * @return the created {@link ICacheRecordStore}
      * @see com.hazelcast.cache.impl.CacheRecordStore
-     * @see com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore
+     * @see com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore
      */
     @Override
     protected ICacheRecordStore createNewRecordStore(String cacheNameWithPrefix, int partitionId) {

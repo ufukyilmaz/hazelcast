@@ -15,7 +15,7 @@ import static com.hazelcast.internal.networking.ChannelOption.SO_SNDBUF;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
 import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
-import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
+import static com.hazelcast.internal.nio.CipherHelper.createSymmetricWriterCipher;
 import static com.hazelcast.internal.nio.IOUtil.compactOrClear;
 
 /**

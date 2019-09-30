@@ -2,7 +2,7 @@
 # It needs to be added/removed from here manually
 
 # enterprise hooks
-com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook
+com.hazelcast.cache.impl.hidensity.operation.HiDensityCacheDataSerializerHook
 com.hazelcast.cache.impl.operation.EnterpriseCacheDataSerializerHook
 com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook
 com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook

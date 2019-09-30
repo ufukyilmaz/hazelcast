@@ -20,7 +20,7 @@ import javax.net.ssl.SSLEngine;
 
 import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
-import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
+import static com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

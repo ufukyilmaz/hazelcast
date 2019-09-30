@@ -7,7 +7,7 @@ import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 

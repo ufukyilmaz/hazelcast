@@ -3,7 +3,7 @@ package com.hazelcast.test.compatibility;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.serialization.InternalSerializationService;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
 /**
  * Used by reflection in MockNodeContext, for properly setting up the serialization service to sample

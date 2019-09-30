@@ -28,14 +28,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
-import static com.hazelcast.security.SecurityUtil.addressMatches;
-import static com.hazelcast.security.SecurityUtil.createPermission;
+import static com.hazelcast.security.impl.SecurityUtil.addressMatches;
+import static com.hazelcast.security.impl.SecurityUtil.createPermission;
 import static java.lang.Thread.currentThread;
 
 /**
  * The default {@link IPermissionPolicy}.
  *
- * This class is not unused, it's set via {@link com.hazelcast.security.SecurityConstants#DEFAULT_POLICY_CLASS}.
+ * This class is not unused, it's set via {@link SecurityConstants#DEFAULT_POLICY_CLASS}.
  */
 @SuppressWarnings("unused")
 public class DefaultPermissionPolicy implements IPermissionPolicy {

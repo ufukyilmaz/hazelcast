@@ -12,8 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.hazelcast.internal.nio.ClassLoaderUtil.newInstance;
-import static com.hazelcast.security.SecurityConstants.DEFAULT_SECRET_STRENGTH_POLICY_CLASS;
-import static com.hazelcast.security.SecurityConstants.SECRET_STRENGTH_POLICY_CLASS;
+import static com.hazelcast.security.impl.SecurityConstants.DEFAULT_SECRET_STRENGTH_POLICY_CLASS;
+import static com.hazelcast.security.impl.SecurityConstants.SECRET_STRENGTH_POLICY_CLASS;
 import static com.hazelcast.security.WeakSecretException.ENFORCED;
 import static com.hazelcast.security.WeakSecretException.formatMessage;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;

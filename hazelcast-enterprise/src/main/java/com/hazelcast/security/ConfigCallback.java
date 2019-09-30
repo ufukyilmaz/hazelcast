@@ -6,7 +6,7 @@ import com.hazelcast.config.Config;
 
 /**
  * This JAAS {@link Callback} is used to retrieve member {@link Config}.
- * It can be passed to {@link ClusterCallbackHandler}
+ * It can be passed to {@link com.hazelcast.security.impl.ClusterCallbackHandler}
  * and used by {@link javax.security.auth.spi.LoginModule LoginModules}
  * during login process.
  */

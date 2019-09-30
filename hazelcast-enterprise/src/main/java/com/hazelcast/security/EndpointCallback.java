@@ -4,7 +4,7 @@ import javax.security.auth.callback.Callback;
 
 /**
  * The EndpointCallback is used to retrieve remote endpoint address.
- * It can be passed to {@link ClusterCallbackHandler}
+ * It can be passed to {@link com.hazelcast.security.impl.ClusterCallbackHandler}
  * and used by {@link javax.security.auth.spi.LoginModule LoginModules}
  * during login process.
  */

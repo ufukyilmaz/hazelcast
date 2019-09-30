@@ -7,7 +7,7 @@ import java.lang.reflect.Constructor;
 import static com.hazelcast.test.starter.HazelcastProxyFactory.proxyArgumentsIfNeeded;
 import static com.hazelcast.test.starter.ReflectionUtils.getFieldValueReflectively;
 
-@HazelcastStarterConstructor(classNames = {"com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord"})
+@HazelcastStarterConstructor(classNames = {"com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecord"})
 public class HiDensityNativeMemoryCacheRecordConstructor extends AbstractStarterObjectConstructor {
 
     public HiDensityNativeMemoryCacheRecordConstructor(Class<?> targetClass) {

@@ -2,10 +2,10 @@ package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.internal.serialization.InputOutputFactory;
 import com.hazelcast.internal.serialization.InternalSerializationService;
-import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
-import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
+import com.hazelcast.internal.nio.EnterpriseBufferObjectDataInput;
+import com.hazelcast.internal.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
 import java.nio.ByteOrder;
 

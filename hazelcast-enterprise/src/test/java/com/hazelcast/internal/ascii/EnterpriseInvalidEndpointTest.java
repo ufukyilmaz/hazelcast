@@ -34,8 +34,8 @@ import java.util.concurrent.ExecutionException;
 
 import static com.hazelcast.instance.EndpointQualifier.MEMCACHE;
 import static com.hazelcast.instance.EndpointQualifier.REST;
-import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.loadKeyManagerFactory;
-import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.loadTrustManagerFactory;
+import static com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport.loadKeyManagerFactory;
+import static com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport.loadTrustManagerFactory;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;

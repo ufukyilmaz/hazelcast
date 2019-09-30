@@ -26,7 +26,7 @@ import java.util.Properties;
 
 import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
-import static com.hazelcast.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
+import static com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport.JAVA_NET_SSL_PREFIX;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static org.hamcrest.CoreMatchers.containsString;

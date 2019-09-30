@@ -4,7 +4,7 @@ import javax.security.auth.callback.Callback;
 
 /**
  * CredentialsCallback is used to retrieve {@link Credentials}.
- * It is passed to {@link ClusterCallbackHandler}
+ * It is passed to {@link com.hazelcast.security.impl.ClusterCallbackHandler}
  * and used by {@link javax.security.auth.spi.LoginModule}s
  * during login process.
  */

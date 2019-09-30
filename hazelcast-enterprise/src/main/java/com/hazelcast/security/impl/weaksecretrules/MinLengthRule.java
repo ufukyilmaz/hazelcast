@@ -1,6 +1,6 @@
 package com.hazelcast.security.impl.weaksecretrules;
 
-import com.hazelcast.security.SecurityConstants;
+import com.hazelcast.security.impl.SecurityConstants;
 import com.hazelcast.security.impl.SecretStrengthRule;
 import com.hazelcast.security.impl.WeakSecretError;
 

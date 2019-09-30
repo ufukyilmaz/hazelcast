@@ -30,7 +30,7 @@ import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.nio.SocketInterceptor;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.internal.util.ExceptionUtil;

@@ -2,6 +2,7 @@ package com.hazelcast.nio;
 
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.nio.CipherByteArrayProcessor;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.internal.util.ByteArrayProcessor;
 import org.junit.Test;
@@ -10,8 +11,8 @@ import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 
-import static com.hazelcast.nio.CipherHelper.createSymmetricReaderCipher;
-import static com.hazelcast.nio.CipherHelper.createSymmetricWriterCipher;
+import static com.hazelcast.internal.nio.CipherHelper.createSymmetricReaderCipher;
+import static com.hazelcast.internal.nio.CipherHelper.createSymmetricWriterCipher;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 

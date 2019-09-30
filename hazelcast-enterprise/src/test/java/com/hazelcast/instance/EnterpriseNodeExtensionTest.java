@@ -11,7 +11,7 @@ import com.hazelcast.internal.cluster.impl.JoinRequest;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.nio.Address;
-import com.hazelcast.nio.CipherByteArrayProcessor;
+import com.hazelcast.internal.nio.CipherByteArrayProcessor;
 import com.hazelcast.internal.nio.NodeIOService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

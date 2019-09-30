@@ -1,6 +1,7 @@
 package com.hazelcast.nio.ssl;
 
 import com.hazelcast.config.InvalidConfigurationException;
+import com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import io.netty.buffer.UnpooledByteBufAllocator;

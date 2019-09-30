@@ -1,5 +1,7 @@
 package com.hazelcast.nio.ssl;
 
+import com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport;
+
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;

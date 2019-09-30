@@ -1,9 +1,9 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.internal.memory.MemoryBlock;
-import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
+import com.hazelcast.internal.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
 import java.io.IOException;
 import java.nio.ByteOrder;

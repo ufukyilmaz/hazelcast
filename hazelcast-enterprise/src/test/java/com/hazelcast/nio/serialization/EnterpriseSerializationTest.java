@@ -6,6 +6,7 @@ import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.internal.serialization.DataType;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.executor.impl.operations.CancellationOperation;
 import com.hazelcast.instance.BuildInfoProvider;

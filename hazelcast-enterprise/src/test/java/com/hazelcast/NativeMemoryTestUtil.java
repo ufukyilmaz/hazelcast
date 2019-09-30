@@ -1,6 +1,6 @@
 package com.hazelcast;
 
-import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
+import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.serialization.SerializationService;
@@ -8,7 +8,7 @@ import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.memory.PooledNativeMemoryStats;
 import com.hazelcast.internal.memory.StandardMemoryManager;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.internal.util.collection.Long2ObjectHashMap;
 import com.hazelcast.internal.util.function.LongLongConsumer;

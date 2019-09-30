@@ -1,6 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook;
+import com.hazelcast.cache.impl.hidensity.operation.HiDensityCacheDataSerializerHook;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

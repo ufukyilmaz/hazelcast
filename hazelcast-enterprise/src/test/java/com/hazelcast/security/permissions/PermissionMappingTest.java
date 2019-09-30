@@ -6,7 +6,7 @@ import com.hazelcast.cp.internal.datastructures.spi.RaftRemoteService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.services.RemoteService;
 import com.hazelcast.internal.util.ExceptionUtil;
-import com.hazelcast.security.SecureCallableImpl;
+import com.hazelcast.security.impl.SecureCallableImpl;
 import com.hazelcast.spi.impl.servicemanager.impl.ServiceManagerImpl;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;

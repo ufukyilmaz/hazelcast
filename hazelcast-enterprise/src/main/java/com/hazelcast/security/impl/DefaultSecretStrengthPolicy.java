@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 
 /**
- *  This class is not unused, it's set via {@link com.hazelcast.security.SecurityConstants#SECRET_STRENGTH_POLICY_CLASS}.
+ *  This class is not unused, it's set via {@link SecurityConstants#SECRET_STRENGTH_POLICY_CLASS}.
  */
 public class DefaultSecretStrengthPolicy
         implements SecretStrengthPolicy {

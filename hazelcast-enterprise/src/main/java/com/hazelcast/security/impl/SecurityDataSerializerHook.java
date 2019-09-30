@@ -8,7 +8,6 @@ import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.security.ClusterEndpointPrincipal;
 import com.hazelcast.security.ClusterIdentityPrincipal;
 import com.hazelcast.security.ClusterRolePrincipal;
-import com.hazelcast.security.SecureCallableImpl;
 import com.hazelcast.internal.util.ConstructorFunction;
 
 import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_SECURITY_DS_FACTORY;

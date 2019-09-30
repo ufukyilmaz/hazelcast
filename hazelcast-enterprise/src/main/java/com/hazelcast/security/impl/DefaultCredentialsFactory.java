@@ -9,7 +9,7 @@ import java.util.Properties;
 /**
  * The default {@link ICredentialsFactory}.
  *
- * This class is not unused, it's set via {@link com.hazelcast.security.SecurityConstants#DEFAULT_CREDENTIALS_FACTORY_CLASS}.
+ * This class is not unused, it's set via {@link SecurityConstants#DEFAULT_CREDENTIALS_FACTORY_CLASS}.
  */
 @SuppressWarnings("unused")
 public class DefaultCredentialsFactory implements ICredentialsFactory {

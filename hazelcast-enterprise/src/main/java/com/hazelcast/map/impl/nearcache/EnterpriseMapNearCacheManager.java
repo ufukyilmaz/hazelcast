@@ -4,7 +4,7 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.nearcache.HiDensityNearCache;
 import com.hazelcast.internal.nearcache.NearCache;
 import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.properties.HazelcastProperties;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;

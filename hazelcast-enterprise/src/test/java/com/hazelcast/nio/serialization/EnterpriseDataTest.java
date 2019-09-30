@@ -1,6 +1,7 @@
 package com.hazelcast.nio.serialization;
 
 import com.hazelcast.internal.serialization.DataType;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.partition.PartitionAware;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.HeapData;
@@ -76,9 +77,9 @@ public class EnterpriseDataTest {
         HazelcastMemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         try {
             EnterpriseSerializationService ss = createSerializationServiceBuilder().setMemoryManager(memPool)
-                    .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(byteOrder)
-                    .setPartitioningStrategy(new DefaultPartitioningStrategy())
-                    .build();
+                                                                                   .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(byteOrder)
+                                                                                   .setPartitioningStrategy(new DefaultPartitioningStrategy())
+                                                                                   .build();
 
             Object[] objects = new Object[]{
                     System.currentTimeMillis(),

@@ -7,7 +7,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.hazelcast.security.SecurityConstants.SECRET_STRENGTH_POLICY_ENFORCED;
+import static com.hazelcast.security.impl.SecurityConstants.SECRET_STRENGTH_POLICY_ENFORCED;
 import static com.hazelcast.security.impl.WeakSecretError.DEFAULT;
 import static com.hazelcast.security.impl.WeakSecretError.DICT_WORD;
 import static com.hazelcast.security.impl.WeakSecretError.MIN_LEN;

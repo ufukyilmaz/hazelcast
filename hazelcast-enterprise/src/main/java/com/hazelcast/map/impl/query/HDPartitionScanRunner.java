@@ -6,7 +6,7 @@ import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStore;
-import com.hazelcast.query.Metadata;
+import com.hazelcast.query.impl.Metadata;
 
 /**
  * Used only with Hi-Density memory.

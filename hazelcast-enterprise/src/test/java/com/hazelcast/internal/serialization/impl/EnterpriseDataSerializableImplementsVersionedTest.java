@@ -1,12 +1,12 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.nio.EnterpriseObjectDataInput;
-import com.hazelcast.nio.EnterpriseObjectDataOutput;
+import com.hazelcast.internal.nio.EnterpriseObjectDataInput;
+import com.hazelcast.internal.nio.EnterpriseObjectDataOutput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.test.annotation.ParallelJVMTest;

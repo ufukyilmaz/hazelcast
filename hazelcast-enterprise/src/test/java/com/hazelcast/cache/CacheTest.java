@@ -1,15 +1,15 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.hidensity.operation.CacheContainsKeyOperation;
-import com.hazelcast.cache.hidensity.operation.CacheEntryProcessorOperation;
-import com.hazelcast.cache.hidensity.operation.CacheGetAndRemoveOperation;
-import com.hazelcast.cache.hidensity.operation.CacheGetAndReplaceOperation;
-import com.hazelcast.cache.hidensity.operation.CacheLoadAllOperationFactory;
-import com.hazelcast.cache.hidensity.operation.CachePutIfAbsentOperation;
-import com.hazelcast.cache.hidensity.operation.CacheReplaceOperation;
-import com.hazelcast.cache.hidensity.operation.CacheSizeOperation;
-import com.hazelcast.cache.hidensity.operation.CacheSizeOperationFactory;
-import com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook;
+import com.hazelcast.cache.impl.hidensity.operation.CacheContainsKeyOperation;
+import com.hazelcast.cache.impl.hidensity.operation.CacheEntryProcessorOperation;
+import com.hazelcast.cache.impl.hidensity.operation.CacheGetAndRemoveOperation;
+import com.hazelcast.cache.impl.hidensity.operation.CacheGetAndReplaceOperation;
+import com.hazelcast.cache.impl.hidensity.operation.CacheLoadAllOperationFactory;
+import com.hazelcast.cache.impl.hidensity.operation.CachePutIfAbsentOperation;
+import com.hazelcast.cache.impl.hidensity.operation.CacheReplaceOperation;
+import com.hazelcast.cache.impl.hidensity.operation.CacheSizeOperation;
+import com.hazelcast.cache.impl.hidensity.operation.CacheSizeOperationFactory;
+import com.hazelcast.cache.impl.hidensity.operation.HiDensityCacheDataSerializerHook;
 import com.hazelcast.cache.impl.CacheEventListener;
 import com.hazelcast.cache.impl.CacheKeyIterationResult;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;

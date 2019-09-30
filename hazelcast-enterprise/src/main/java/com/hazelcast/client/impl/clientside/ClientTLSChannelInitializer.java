@@ -7,8 +7,8 @@ import com.hazelcast.client.impl.protocol.ClientMessage;
 import com.hazelcast.client.impl.protocol.util.ClientMessageEncoder;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.internal.networking.Channel;
-import com.hazelcast.nio.ssl.AbstractTLSChannelInitializer;
-import com.hazelcast.nio.ssl.UnifiedTLSChannelInitializer;
+import com.hazelcast.internal.nio.ssl.AbstractTLSChannelInitializer;
+import com.hazelcast.internal.nio.ssl.UnifiedTLSChannelInitializer;
 
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;

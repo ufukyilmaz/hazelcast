@@ -215,7 +215,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                 syncManager.incrementSyncedPartitionCount();
                 syncStats.onSyncPartition();
 
-                writeManagementCenterProgressUpdateEvent(syncContext.getUuid(), mapName, syncStats.getPartitionsToSync(),
+                writeManagementCenterProgressUpdateEvent(syncContext.getUuid(), mapName, syncStats.getPartitionsSynced(),
                         syncStats, syncStats.getRecordsSynced());
 
                 completeSyncContext(syncContext, mapName, syncStats);

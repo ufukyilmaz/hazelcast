@@ -17,6 +17,7 @@ import com.hazelcast.internal.management.events.WanSyncProgressUpdateEvent;
 import com.hazelcast.internal.management.events.WanSyncStartedEvent;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -36,21 +37,18 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
 import static com.hazelcast.config.WanPublisherState.STOPPED;
-import static com.hazelcast.test.HazelcastTestSupport.assertInstanceOf;
-import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.ignore;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
@@ -71,7 +69,7 @@ import static org.mockito.Mockito.verify;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class WanSyncTrackingTest {
+public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     private static final String MAP1_NAME = "map1";
     private static final String MAP2_NAME = "map2";
@@ -436,6 +434,15 @@ public class WanSyncTrackingTest {
             assertEquals(String.format("Total synced partitions for %s should be %d, but it is %d", uuid,
                     expectedPartitionsSynced, actualPartitionsSynced), expectedPartitionsSynced, actualPartitionsSynced);
         }
+
+        // verify synced partitions increases by one in every progress update event
+        testContext.allCapturedProgressUpdatesMap.values().forEach(updateEventList -> {
+            int lastPartitionsSynced = 0;
+            for (WanSyncProgressUpdateEvent updateEvent : updateEventList) {
+                assertEquals(lastPartitionsSynced + 1, updateEvent.getPartitionsSynced());
+                lastPartitionsSynced = updateEvent.getPartitionsSynced();
+            }
+        });
     }
 
     private void verifyAllPartitionsSyncedOverlapped(TestContext testContext) {
@@ -479,7 +486,7 @@ public class WanSyncTrackingTest {
 
             verify(mcEventListener, atLeastOnce()).onEventLogged(eventCaptor.capture());
 
-            processUpdateEvents(recordsSyncedMap, instance, eventCaptor, updateEvent -> totalUpdateEvents.getAndIncrement());
+            processUpdateEvents(recordsSyncedMap, instance, eventCaptor, updateEventConsumer(testContext, totalUpdateEvents));
 
             Event lastEvent = eventCaptor.getValue();
             if (consistencyCheckStrategy == NONE) {
@@ -490,7 +497,6 @@ public class WanSyncTrackingTest {
             } else {
                 assertInstanceOf(WanSyncProgressUpdateEvent.class, lastEvent);
 
-                int expectedMapSyncs = testContext.mapNames.length * sourceCluster.size();
                 verify(mcEventListener, atLeastOnce()).onEventLogged(any(WanConsistencyCheckStartedEvent.class));
                 verify(mcEventListener, atMost(syncedMaps)).onEventLogged(any(WanConsistencyCheckStartedEvent.class));
                 verify(mcEventListener, atLeastOnce()).onEventLogged(any(WanConsistencyCheckFinishedEvent.class));
@@ -524,7 +530,7 @@ public class WanSyncTrackingTest {
 
             verify(mcEventListener, atLeastOnce()).onEventLogged(eventCaptor.capture());
 
-            processUpdateEvents(recordsSyncedMap, instance, eventCaptor, updateEvent -> totalUpdateEvents.getAndIncrement());
+            processUpdateEvents(recordsSyncedMap, instance, eventCaptor, updateEventConsumer(testContext, totalUpdateEvents));
 
             Event lastEvent = eventCaptor.getValue();
 
@@ -564,7 +570,7 @@ public class WanSyncTrackingTest {
 
             verify(mcEventListener, atLeastOnce()).onEventLogged(eventCaptor.capture());
 
-            processUpdateEvents(recordsSyncedMap, instance, eventCaptor, updateEvent -> totalUpdateEvents.getAndIncrement());
+            processUpdateEvents(recordsSyncedMap, instance, eventCaptor, updateEventConsumer(testContext, totalUpdateEvents));
 
             Event lastEvent = eventCaptor.getValue();
             if (consistencyCheckStrategy == NONE) {
@@ -600,7 +606,8 @@ public class WanSyncTrackingTest {
     }
 
     private void processUpdateEvents(Map<SyncKey, Integer> recordsSyncedMap, HazelcastInstance instance,
-                                     ArgumentCaptor<Event> eventCaptor, Consumer<WanSyncProgressUpdateEvent> consumer) {
+                                     ArgumentCaptor<Event> eventCaptor,
+                                     BiConsumer<SyncKey, WanSyncProgressUpdateEvent> consumer) {
         // we need to work around a Mockito limitation here
         // ArgumentCaptor currently does not offer a feature for capturing arguments with a filter
         // that means here we capture every kind of event: start, update and finish
@@ -617,9 +624,17 @@ public class WanSyncTrackingTest {
                             recordsSyncedUpdate >= lastRecordsSynced);
                 }
                 recordsSyncedMap.put(key, recordsSyncedUpdate);
-                consumer.accept(updateEvent);
+                consumer.accept(key, updateEvent);
             }
         });
+    }
+
+    private BiConsumer<SyncKey, WanSyncProgressUpdateEvent> updateEventConsumer(TestContext testContext,
+                                                                                AtomicInteger totalUpdateEvents) {
+        return (key, updateEvent) -> {
+            testContext.allCapturedProgressUpdatesMap.computeIfAbsent(key, k -> new LinkedList<>()).add(updateEvent);
+            totalUpdateEvents.getAndIncrement();
+        };
     }
 
     private void registerMcEventListener(TestContext listener) {
@@ -645,6 +660,7 @@ public class WanSyncTrackingTest {
         private final int totalPartitions = getNode(sourceCluster.getAMember()).getPartitionService().getPartitionCount();
         private final int nonEmptyPartitions;
         private Map<SyncKey, WanSyncStats> syncStatsMap = new HashMap<>();
+        private Map<SyncKey, List<WanSyncProgressUpdateEvent>> allCapturedProgressUpdatesMap = new HashMap<>();
 
         private TestContext(String[] mapNames, int nonEmptyPartitions) {
             this.mapNames = mapNames;

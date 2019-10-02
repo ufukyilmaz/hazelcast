@@ -33,6 +33,7 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.services.ReplicationSupportingService;
 import com.hazelcast.internal.util.InvocationUtil;
@@ -297,7 +298,10 @@ public class EnterpriseCacheService
     }
 
     private void registerCacheProbes(HiDensityStorageInfo cacheInfo, String cacheName) {
-        ((NodeEngineImpl) nodeEngine).getMetricsRegistry().scanAndRegister(cacheInfo, "cache[" + cacheName + "]");
+        MetricsRegistry registry = ((NodeEngineImpl) nodeEngine).getMetricsRegistry();
+        registry.newProbeBuilder("cache")
+                .withTag("name", cacheName)
+                .scanAndRegister(cacheInfo);
     }
 
     private void deregisterCacheProbes(HiDensityStorageInfo cacheInfo) {

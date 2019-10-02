@@ -6,6 +6,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.eviction.MapEvictionPolicy;
@@ -108,8 +109,10 @@ public class EnterpriseMapContainer extends MapContainer {
 
     private void initStorageInfoAndRegisterMapProbes() {
         storageInfo = new HiDensityStorageInfo(name);
-        ((NodeEngineImpl) mapServiceContext.getNodeEngine()).getMetricsRegistry()
-                                                            .scanAndRegister(storageInfo, "map[" + name + "]");
+        MetricsRegistry registry = ((NodeEngineImpl) mapServiceContext.getNodeEngine()).getMetricsRegistry();
+        registry.newProbeBuilder("map")
+                .withTag("name", name)
+                .scanAndRegister(storageInfo);
     }
 
     private void deregisterMapProbes() {

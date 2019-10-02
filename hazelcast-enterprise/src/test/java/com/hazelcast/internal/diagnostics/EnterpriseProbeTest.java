@@ -49,25 +49,25 @@ public class EnterpriseProbeTest extends AbstractDiagnosticsPluginTest {
         map.put("key", "value");
         map.put("key2", "value2");
         plugin.run(logWriter);
-        assertContains("map[default].entryCount=2");
-        assertContains("map[default].forceEvictionCount=");
-        assertContains("map[default].usedMemory=");
+        assertContains("[name=default,unit=count,metric=map.entryCount]=2");
+        assertContains("[name=default,unit=count,metric=map.forceEvictionCount]=");
+        assertContains("[name=default,unit=count,metric=map.usedMemory]=");
 
         map.remove("key2");
         plugin.run(logWriter);
-        assertContains("map[default].entryCount=1");
+        assertContains("[name=default,unit=count,metric=map.entryCount]=1");
 
         map.put("key", "changed_value");
         plugin.run(logWriter);
-        assertContains("map[default].entryCount=1");
+        assertContains("[name=default,unit=count,metric=map.entryCount]=1");
 
         map.clear();
         plugin.run(logWriter);
-        assertContains("map[default].entryCount=0");
+        assertContains("[name=default,unit=count,metric=map.entryCount]=0");
 
         map.put("new_key", "new_value");
         map.destroy();
         plugin.run(logWriter);
-        assertContains("map[default].entryCount=0");
+        assertContains("[name=default,unit=count,metric=map.entryCount]=0");
     }
 }

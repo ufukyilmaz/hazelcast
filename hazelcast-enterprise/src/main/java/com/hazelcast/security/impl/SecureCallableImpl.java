@@ -24,7 +24,6 @@ import com.hazelcast.cp.IAtomicReference;
 import com.hazelcast.cp.ICountDownLatch;
 import com.hazelcast.cp.ISemaphore;
 import com.hazelcast.cp.lock.FencedLock;
-import com.hazelcast.cp.lock.ILock;
 import com.hazelcast.cp.session.CPSessionManagementService;
 import com.hazelcast.crdt.pncounter.PNCounter;
 import com.hazelcast.durableexecutor.DurableExecutorService;
@@ -211,12 +210,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
 
         HazelcastInstanceDelegate(HazelcastInstance instance) {
             this.instance = instance;
-        }
-
-        @Override
-        public ILock getLock(String key) {
-            checkPermission(new LockPermission(key, ActionConstants.ACTION_CREATE));
-            return getProxy(new LockInvocationHandler(instance.getLock(key)));
         }
 
         @Override

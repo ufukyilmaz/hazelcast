@@ -1,7 +1,7 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.cp.internal.datastructures.lock.RaftLockService;
+import com.hazelcast.cp.internal.datastructures.lock.LockService;
 import com.hazelcast.cp.lock.FencedLock;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -109,6 +109,6 @@ public class FencedLockSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Override
     String getObjectType() {
-        return RaftLockService.SERVICE_NAME;
+        return LockService.SERVICE_NAME;
     }
 }

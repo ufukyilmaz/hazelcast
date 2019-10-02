@@ -11,10 +11,9 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.cp.lock.ILock;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
+import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.multimap.MultiMap;
@@ -42,7 +41,6 @@ import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKn
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getOldestKnownVersion;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
@@ -61,9 +59,8 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
                 {"Cache", newValidators(cacheValidator(), cacheHDValidator())},
                 {"MultiMap", newValidators(multiMapValidator(), multiMapLockValidator())},
                 {"Queue", newValidators(queueValidator())},
-                {"Lock", newValidators(lockValidator())},
                 {"All", newValidators(mapValidator(), mapHDValidator(), mapLockValidator(), cacheValidator(), cacheHDValidator(),
-                        multiMapValidator(), queueValidator(), lockValidator())},
+                        multiMapValidator(), queueValidator())},
         });
     }
 
@@ -365,10 +362,6 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
         return new MapLockValidator("map", lockKeys());
     }
 
-    private static LockValidator lockValidator() {
-        return new LockValidator(lockKeys());
-    }
-
     private static QueueValidator queueValidator() {
         return new QueueValidator("queue");
     }
@@ -541,32 +534,6 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
             IQueue<Object> queue = instance.getQueue(name);
             for (int i = 0; i < 100; i++) {
                 assertEquals(i, queue.poll());
-            }
-        }
-    }
-
-    private static class LockValidator implements DataStructureValidator {
-
-        final String[] keys;
-
-        private LockValidator(String[] keys) {
-            this.keys = keys;
-        }
-
-        @Override
-        public void init(HazelcastInstance instance) {
-            for (String key : keys) {
-                ILock lock = instance.getLock(key);
-                lock.lock();
-            }
-        }
-
-        @Override
-        public void validate(HazelcastInstance instance) {
-            for (String key : keys) {
-                ILock lock = instance.getLock(key);
-                assertTrue(lock.isLockedByCurrentThread());
-                lock.unlock();
             }
         }
     }

@@ -119,8 +119,8 @@ public class ExecutorSecurityTest {
             hz.getFlakeIdGenerator("flake_id_generator").newId();
             result++; // +1
 
-            hz.getLock("lock").lock();
-            hz.getLock("lock").unlock();
+            hz.getCPSubsystem().getLock("lock").lock();
+            hz.getCPSubsystem().getLock("lock").unlock();
             result++; // +1
 
             result += hz.getCPSubsystem().getAtomicLong("atomic_long").incrementAndGet(); // +1

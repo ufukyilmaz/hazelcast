@@ -7,6 +7,15 @@ import com.hazelcast.config.MetadataPolicy;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
+import com.hazelcast.internal.hotrestart.HotRestartStore;
+import com.hazelcast.internal.hotrestart.PersistentConfigDescriptors;
+import com.hazelcast.internal.hotrestart.RamStore;
+import com.hazelcast.internal.hotrestart.RamStoreRegistry;
+import com.hazelcast.internal.serialization.DataType;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.util.ConstructorFunction;
 import com.hazelcast.internal.util.comparators.NativeValueComparator;
 import com.hazelcast.internal.util.comparators.ValueComparator;
 import com.hazelcast.logging.ILogger;
@@ -29,21 +38,13 @@ import com.hazelcast.map.impl.recordstore.RecordStoreMutationObserver;
 import com.hazelcast.map.impl.wan.MapFilterProvider;
 import com.hazelcast.map.impl.wan.MerkleTreeUpdaterRecordStoreMutationObserver;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.serialization.DataType;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.HDIndexProvider;
 import com.hazelcast.query.impl.IndexProvider;
 import com.hazelcast.query.impl.predicates.QueryOptimizer;
-import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
-import com.hazelcast.internal.hotrestart.HotRestartStore;
-import com.hazelcast.internal.hotrestart.PersistentConfigDescriptors;
-import com.hazelcast.internal.hotrestart.RamStore;
-import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
-import com.hazelcast.internal.util.ConstructorFunction;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
 import java.util.ArrayList;
@@ -77,15 +78,16 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     EnterpriseMapServiceContextImpl(NodeEngine nodeEngine) {
         super(nodeEngine);
         this.mapFilterProvider = new MapFilterProvider(nodeEngine);
+        this.hdMapQueryRunner = createHDMapQueryRunner(new HDPartitionScanRunner(this),
+                getQueryOptimizer(), getResultProcessorRegistry());
+        this.hdIndexProvider = new HDIndexProvider();
+
         Node node = ((NodeEngineImpl) nodeEngine).getNode();
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
         if (nodeExtension.isHotRestartEnabled()) {
-            hotRestartService = (HotRestartIntegrationService) nodeExtension.getInternalHotRestartService();
-            hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
+            this.hotRestartService = (HotRestartIntegrationService) nodeExtension.getInternalHotRestartService();
+            this.hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
         }
-        this.hdMapQueryRunner = createHDMapQueryRunner(
-                new HDPartitionScanRunner(this), getQueryOptimizer(), getResultProcessorRegistry());
-        this.hdIndexProvider = new HDIndexProvider();
     }
 
     private QueryRunner createHDMapQueryRunner(HDPartitionScanRunner runner,
@@ -272,18 +274,22 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     protected void addMetadataInitializerObserver(Collection<RecordStoreMutationObserver<Record>> observers,
                                                   String mapName, int partitionId) {
         MapContainer mapContainer = getMapContainer(mapName);
-        MetadataPolicy policy = mapContainer.getMapConfig().getMetadataPolicy();
-        if (policy == MetadataPolicy.CREATE_ON_UPDATE) {
-            RecordStoreMutationObserver<Record> observer;
-            if (mapContainer.getMapConfig().getInMemoryFormat() == NATIVE) {
-                observer = new EnterpriseMetadataRecordStoreMutationObserver(getSerializationService(),
-                        JsonMetadataInitializer.INSTANCE, this, mapName, partitionId);
-            } else {
-                observer = new JsonMetadataRecordStoreMutationObserver(getSerializationService(),
-                        JsonMetadataInitializer.INSTANCE);
-            }
-            observers.add(observer);
+        MapConfig mapConfig = mapContainer.getMapConfig();
+        MetadataPolicy policy = mapConfig.getMetadataPolicy();
+
+        if (policy != MetadataPolicy.CREATE_ON_UPDATE) {
+            return;
         }
+
+        InternalSerializationService ss = ((InternalSerializationService) mapContainer.getMapServiceContext()
+                .getNodeEngine().getSerializationService());
+
+        RecordStoreMutationObserver<Record> observer = mapConfig.getInMemoryFormat() == NATIVE
+                ? new EnterpriseMetadataRecordStoreMutationObserver(ss, JsonMetadataInitializer.INSTANCE,
+                this, mapName, partitionId)
+                : new JsonMetadataRecordStoreMutationObserver(ss, JsonMetadataInitializer.INSTANCE);
+
+        observers.add(observer);
     }
 
     /**

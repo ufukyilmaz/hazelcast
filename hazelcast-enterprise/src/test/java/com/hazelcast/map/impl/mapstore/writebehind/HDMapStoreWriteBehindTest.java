@@ -1,4 +1,4 @@
-package com.hazelcast.map.impl.mapstore;
+package com.hazelcast.map.impl.mapstore.writebehind;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;

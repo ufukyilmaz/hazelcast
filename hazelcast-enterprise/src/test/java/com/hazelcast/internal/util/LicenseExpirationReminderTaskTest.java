@@ -1,32 +1,56 @@
 package com.hazelcast.internal.util;
 
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.license.domain.License;
+import com.hazelcast.license.exception.InvalidLicenseException;
+import com.hazelcast.spi.impl.executionservice.TaskScheduler;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 
 import java.util.Calendar;
 import java.util.Date;
 
+import static com.hazelcast.enterprise.SampleLicense.V5_ENTERPRISE_HD_SEC_10NODES_2099EXP;
+import static com.hazelcast.enterprise.SampleLicense.V5_ENTERPRISE_HD_SEC_40NODES_2080EXP;
+import static com.hazelcast.enterprise.SampleLicense.V5_ENTERPRISE_HD_SEC_40NODES_2099EXP;
+import static com.hazelcast.enterprise.SampleLicense.V5_ENTERPRISE_HD_SEC_CF_RU_40NODES_2099EXP;
+import static com.hazelcast.internal.util.Clock.currentTimeMillis;
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.ADVISORY;
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.ALERT;
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.GRACE_ALERT;
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.GRACE_WARNING;
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.NONE;
 import static com.hazelcast.internal.util.LicenseExpirationReminderTask.NotificationPeriod.WARNING;
-import static com.hazelcast.internal.util.Clock.currentTimeMillis;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.whenNew;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(PowerMockRunner.class)
+@PowerMockRunnerDelegate(EnterpriseSerialJUnitClassRunner.class)
+@PrepareForTest(LicenseExpirationReminderTask.Factory.class)
+@PowerMockIgnore({"javax.*", "com.sun.*", "org.apache.logging.log4j.*"})
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class LicenseExpirationReminderTaskTest extends HazelcastTestSupport {
 
@@ -36,6 +60,11 @@ public class LicenseExpirationReminderTaskTest extends HazelcastTestSupport {
 
     private static String msg(long nowInMillis) {
         return format("failed for nowInMillis: %d", nowInMillis);
+    }
+
+    @Before
+    public void before() {
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
     }
 
     @Test
@@ -306,4 +335,59 @@ public class LicenseExpirationReminderTaskTest extends HazelcastTestSupport {
         cal.add(Calendar.HOUR, 1);
         return (int) MILLISECONDS.toDays(cal.getTimeInMillis() - nowInMillis);
     }
+
+    @Test
+    public void testReminderTaskRescheduled_whenLicenseUpdated() throws Exception {
+        LicenseExpirationReminderTask mock = mock(LicenseExpirationReminderTask.class);
+        whenNew(LicenseExpirationReminderTask.class)
+                .withArguments(any(TaskScheduler.class), any(License.class), any(Long.class)).thenReturn(mock);
+        HazelcastInstance instance = createHazelcastInstance();
+        setLicense(instance, V5_ENTERPRISE_HD_SEC_40NODES_2099EXP);
+        ArgumentCaptor<License> captor = ArgumentCaptor.forClass(License.class);
+        verify(mock).rescheduleWithNewLicense(captor.capture());
+        License actual = captor.getValue();
+        assertNotNull(actual);
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(actual.getExpiryDate());
+        assertEquals(2099, cal.get(Calendar.YEAR));
+    }
+
+    private void doTestReminderTaskInvalidLicense(String licenseKey) {
+        LicenseExpirationReminderTask mock = mock(LicenseExpirationReminderTask.class);
+        HazelcastInstance instance = createHazelcastInstance();
+        try {
+            setLicense(instance, licenseKey);
+            fail("Exception expected");
+        } catch (InvalidLicenseException e) {
+            // expected
+        }
+        verify(mock, never()).rescheduleWithNewLicense(any(License.class));
+    }
+
+    @Test
+    public void testReminderTaskNotRescheduled_whenLicenseInvalid() {
+        doTestReminderTaskInvalidLicense("invalid");
+    }
+
+    @Test
+    public void testReminderTaskNotRescheduled_whenLicenseIncompatibleFeatures() {
+        doTestReminderTaskInvalidLicense(V5_ENTERPRISE_HD_SEC_CF_RU_40NODES_2099EXP);
+    }
+
+    @Test
+    public void testReminderTaskNotRescheduled_whenLicenseDifferentAllowedNumberOfNodes() {
+        doTestReminderTaskInvalidLicense(V5_ENTERPRISE_HD_SEC_10NODES_2099EXP);
+    }
+
+    @Test
+    public void testReminderTaskNotRescheduled_whenLicenseOlderExpiryDate() {
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2099EXP);
+        doTestReminderTaskInvalidLicense(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
+    }
+
+    private static void setLicense(HazelcastInstance instance, String licenseKey) {
+        EnterpriseNodeExtension enterpriseExtension = (EnterpriseNodeExtension) getNode(instance).getNodeExtension();
+        enterpriseExtension.setLicenseKey(licenseKey);
+    }
+
 }

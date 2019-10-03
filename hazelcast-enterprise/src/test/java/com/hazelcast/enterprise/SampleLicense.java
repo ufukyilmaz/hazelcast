@@ -37,4 +37,14 @@ public final class SampleLicense {
             = "SECURITY_DISABLED#10Nodes#5w0yHlJK7Uua6NbmfATFj1SrkVEOI1811011110900101101999500220000";
     public static final String V4_LICENSE_WITH_HOT_RESTART_DISABLED
             = "HOT_RESTART_DISABLED#10Nodes#bTKAOE1wjaFf6VyNJlHI5umr07kUS1010011050210109990911102100100";
+    public static final String V5_ENTERPRISE_HD_SEC_40NODES_2099EXP
+            = "HazelcastEnterprise#HDMemory#Security#40Nodes#Exp:2099#40Nodes#i9gkflQBXNS0UGM1wqZdTPEYbuCn62j5WmAKyD8OJH14000570910094000090010000100090000100010010";
+    public static final String V5_ENTERPRISE_HD_SEC_40NODES_2080EXP
+            = "HazelcastEnterprise#HDMemory#Security#40Nodes#Exp:2080#40Nodes#NSKHuignT5GX1kfElC0DZObd26yA9U8MqJBYWjPmwQ16000090000901000040000000000111071000150080";
+    public static final String V5_ENTERPRISE_HD_SEC_10NODES_2099EXP
+            = "HazelcastEnterprise#HDMemory#Security#10Nodes#Exp:2099#10Nodes#AO9UWyMZmC0B6kdP8iblQuD1NnGJTH2XfKS5EgwqjY59000090010000900001100000000091010905701100";
+    public static final String V5_ENTERPRISE_HD_SEC_CF_RU_40NODES_2099EXP
+            = "HazelcastEnterprise#HDMemory#Security#ClientFiltering#RollingUpgrade#40Nodes#Exp:2099#40Nodes#JjBfODMylbk8HUAWTdZNKw69Qui20qSgYXn1EGP5Cm20000041101700000100100000000090100109900915";
+    public static final String V4_ENTERPRISE_HD_SEC_WS_RU_40NODES_2099EXP
+            = "HazelcastEnterprise#HDMemory#Security#WebSessions#RollingUpgrade#40Nodes#Exp:2099#40Nodes#1HIUkSO60bm7KAVjFfuywJNlTa5rE6441000590919001100901010007001";
 }

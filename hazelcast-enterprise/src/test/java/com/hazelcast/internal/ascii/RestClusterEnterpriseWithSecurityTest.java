@@ -11,7 +11,6 @@ import java.util.Properties;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
@@ -19,16 +18,14 @@ import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.loginmodules.TestLoginModule;
 import com.hazelcast.test.annotation.QuickTest;
 
 /**
  * Tests REST API calls with security enabled on Hazelcast members.
  */
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class RestClusterEnterpriseWithSecurityTest extends RestClusterTest {
+public class RestClusterEnterpriseWithSecurityTest extends AbstractRestClusterEnterpriseTest {
 
     private static final String WRONG_PASSWORD = "foo";
 

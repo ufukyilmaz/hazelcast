@@ -14,19 +14,13 @@ import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
-import com.hazelcast.internal.EnterprisePhoneHome;
-import com.hazelcast.internal.monitor.impl.jmx.EnterpriseManagementService;
-import com.hazelcast.internal.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
-import com.hazelcast.internal.monitor.impl.management.EnterpriseTimedMemberStateFactory;
-import com.hazelcast.internal.monitor.impl.rest.EnterpriseTextCommandServiceImpl;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.hotrestart.HotRestartService;
-import com.hazelcast.internal.hotrestart.InternalHotRestartService;
-import com.hazelcast.internal.hotrestart.NoOpHotRestartService;
-import com.hazelcast.internal.hotrestart.NoopInternalHotRestartService;
 import com.hazelcast.instance.BuildInfo;
 import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.EndpointQualifier;
+import com.hazelcast.internal.EnterprisePhoneHome;
 import com.hazelcast.internal.ascii.TextCommandService;
 import com.hazelcast.internal.auditlog.AuditlogService;
 import com.hazelcast.internal.auditlog.impl.ILoggerAuditlogService;
@@ -38,69 +32,81 @@ import com.hazelcast.internal.diagnostics.Diagnostics;
 import com.hazelcast.internal.diagnostics.WANPlugin;
 import com.hazelcast.internal.dynamicconfig.DynamicConfigListener;
 import com.hazelcast.internal.dynamicconfig.HotRestartConfigListener;
+import com.hazelcast.internal.hotrestart.HotBackupService;
+import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
+import com.hazelcast.internal.hotrestart.InternalHotRestartService;
+import com.hazelcast.internal.hotrestart.NoOpHotRestartService;
+import com.hazelcast.internal.hotrestart.NoopInternalHotRestartService;
+import com.hazelcast.internal.hotrestart.cluster.ClusterHotRestartEventListener;
+import com.hazelcast.internal.hotrestart.memory.HotRestartPoolingMemoryManager;
+import com.hazelcast.internal.jmx.HazelcastMBean;
 import com.hazelcast.internal.jmx.ManagementService;
 import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
+import com.hazelcast.internal.memory.FreeMemoryChecker;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.MemoryStats;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.metrics.MetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.monitor.impl.jmx.EnterpriseManagementService;
+import com.hazelcast.internal.monitor.impl.jmx.LicenseInfoMBean;
+import com.hazelcast.internal.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
+import com.hazelcast.internal.monitor.impl.management.EnterpriseTimedMemberStateFactory;
+import com.hazelcast.internal.monitor.impl.rest.EnterpriseTextCommandServiceImpl;
+import com.hazelcast.internal.monitor.impl.rest.LicenseInfoImpl;
 import com.hazelcast.internal.networking.ChannelInitializerProvider;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
+import com.hazelcast.internal.nio.CipherByteArrayProcessor;
+import com.hazelcast.internal.nio.EnterpriseChannelInitializerProvider;
+import com.hazelcast.internal.nio.IOService;
+import com.hazelcast.internal.nio.tcp.SymmetricCipherPacketDecoder;
+import com.hazelcast.internal.nio.tcp.SymmetricCipherPacketEncoder;
+import com.hazelcast.internal.nio.tcp.TcpIpConnection;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListener;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.util.ByteArrayProcessor;
+import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.internal.util.LicenseExpirationReminderTask;
+import com.hazelcast.internal.util.Preconditions;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.domain.LicenseVersion;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.internal.memory.FreeMemoryChecker;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.memory.PoolingMemoryManager;
-import com.hazelcast.internal.memory.StandardMemoryManager;
-import com.hazelcast.internal.nio.CipherByteArrayProcessor;
-import com.hazelcast.internal.nio.EnterpriseChannelInitializerProvider;
-import com.hazelcast.internal.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.nio.tcp.SymmetricCipherPacketDecoder;
-import com.hazelcast.internal.nio.tcp.SymmetricCipherPacketEncoder;
-import com.hazelcast.internal.nio.tcp.TcpIpConnection;
 import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.security.SecurityContext;
-import com.hazelcast.security.impl.SecurityContextImpl;
 import com.hazelcast.security.SecurityService;
+import com.hazelcast.security.impl.SecurityContextImpl;
 import com.hazelcast.security.impl.SecurityServiceImpl;
 import com.hazelcast.security.impl.WeakSecretsConfigChecker;
 import com.hazelcast.security.jsm.HazelcastRuntimePermission;
-import com.hazelcast.internal.hotrestart.HotBackupService;
-import com.hazelcast.hotrestart.HotRestartException;
-import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
-import com.hazelcast.internal.hotrestart.cluster.ClusterHotRestartEventListener;
-import com.hazelcast.internal.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.internal.util.ByteArrayProcessor;
-import com.hazelcast.internal.util.ExceptionUtil;
-import com.hazelcast.internal.util.Preconditions;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -109,10 +115,10 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import static com.hazelcast.instance.EndpointQualifier.MEMBER;
-import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
 import static com.hazelcast.internal.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.internal.nio.CipherHelper.createSymmetricWriterCipher;
 import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
+import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
 
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems.
@@ -125,6 +131,17 @@ import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
 public class EnterpriseNodeExtension
         extends DefaultNodeExtension
         implements NodeExtension, MetricsProvider {
+
+    /**
+     * A map of compatible license feature replacements introduced per license version. Used when updating
+     * from an older version license to a newer version license.
+     */
+    private static final Map<LicenseVersion, Map<Feature, Feature>> LICENSE_FEATURE_REPLACEMENTS
+            = new HashMap<>();
+    static {
+        LICENSE_FEATURE_REPLACEMENTS.put(LicenseVersion.V5,
+                Collections.singletonMap(Feature.WEB_SESSION, Feature.CLIENT_FILTERING));
+    }
 
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
     private static final NoopInternalHotRestartService NOOP_INTERNAL_HOT_RESTART_SERVICE = new NoopInternalHotRestartService();
@@ -142,7 +159,8 @@ public class EnterpriseNodeExtension
     private volatile SecurityContext securityContext;
     private volatile HazelcastMemoryManager memoryManager;
     private final ConcurrentMap<EndpointQualifier, MemberSocketInterceptor> socketInterceptors
-            = new ConcurrentHashMap<EndpointQualifier, MemberSocketInterceptor>();
+            = new ConcurrentHashMap<>();
+    private volatile LicenseExpirationReminderTask licenseExpirationReminderTask;
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
@@ -188,15 +206,97 @@ public class EnterpriseNodeExtension
             if (licenseKey == null || licenseKey.isEmpty()) {
                 licenseKey = node.getConfig().getLicenseKey();
             }
-            node.config.setLicenseKey(licenseKey);
-            license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
-            logger.log(Level.INFO, license.toString());
+            setLicenseInternal(LicenseHelper.getLicense(licenseKey, buildInfo.getVersion()), licenseKey);
         } else {
             logger.log(Level.FINE, "This is an OEM version of Hazelcast Enterprise.");
         }
 
         createSecurityContext(node);
         createMemoryManager(node);
+    }
+
+    private void setLicenseInternal(License lic, String licenseKey) {
+        license = lic;
+        node.config.setLicenseKey(licenseKey);
+        logger.log(Level.INFO, license.toString());
+    }
+
+    @Override
+    public void setLicenseKey(String licenseKey) {
+        License userLicense = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
+        checkLicenseCompatible(license, userLicense);
+
+        synchronized (this) {
+            setLicenseInternal(userLicense, licenseKey);
+            onLicenseChanged(userLicense);
+        }
+
+        /* No need to recreate the security context and the memory manager
+           since the licensed features don't change. */
+
+        logger.log(Level.WARNING, "License updated at run time - please make sure to update the license "
+                + "in the persistent configuration to avoid losing the changes on restart.");
+    }
+
+    private void onLicenseChanged(License newLicense) {
+        // license reminder task
+        initLicenseExpReminder(newLicense);
+
+        // license info MBean
+        initLicenseMBean(newLicense);
+    }
+
+    private static void checkLicenseCompatible(License current, License newLicense) {
+        if (newLicense.getExpiryDate().getTime() < current.getExpiryDate().getTime()) {
+            throw new InvalidLicenseException("License expires before the current license");
+        }
+
+        if (current.getVersion().getCode() > newLicense.getVersion().getCode()) {
+            throw new InvalidLicenseException("Cannot update to an older version license");
+        }
+
+        if (newLicense.getAllowedNumberOfNodes() < current.getAllowedNumberOfNodes()) {
+            throw new InvalidLicenseException("License allows a smaller number of nodes "
+                    + newLicense.getAllowedNumberOfNodes() + " than the current license " + current.getAllowedNumberOfNodes());
+        }
+        checkFeaturesCompatible(current, newLicense);
+    }
+
+    private static void checkFeaturesCompatible(License current, License newLicense) {
+        Set<Feature> newFeatures =
+                newLicense.getFeatures() == null ? Collections.emptySet() : new HashSet<>(newLicense.getFeatures());
+        Set<Feature> currentFeatures =
+                current.getFeatures() == null ? Collections.emptySet() : new HashSet<>(current.getFeatures());
+        Set<Feature> currentFeaturesReplaced = processLicenseFeatureReplacements(currentFeatures, current.getVersion(),
+                newLicense.getVersion());
+        if (!newFeatures.equals(currentFeaturesReplaced)) {
+            throw new InvalidLicenseException(
+                    "License has incompatible features " + newLicense.getFeatures() + " with the current license " + current
+                            .getFeatures());
+        }
+    }
+
+    private static Set<Feature> processLicenseFeatureReplacements(Set<Feature> features, LicenseVersion fromVersion,
+                                                                  LicenseVersion toVersion) {
+        if (fromVersion.getCode() >= toVersion.getCode()) {
+            return features;
+        }
+        Set<Feature> replaced = new HashSet<Feature>(features);
+        for (int step = fromVersion.getCode() + 1; step <= toVersion.getCode(); step++) {
+            LicenseVersion stepVersion = LicenseVersion.getLicenseVersion(step);
+            Map<Feature, Feature> replacements = LICENSE_FEATURE_REPLACEMENTS.get(stepVersion);
+            if (replacements != null) {
+                for (Map.Entry<Feature, Feature> entry : replacements.entrySet()) {
+                    if (entry.getKey() != null) {
+                        replaced.remove(entry.getKey());
+                    }
+                    if (entry.getValue() != null) {
+                        replaced.add(entry.getValue());
+                    }
+                }
+            }
+        }
+        return replaced;
     }
 
     private boolean isRollingUpgradeLicensed() {
@@ -329,7 +429,7 @@ public class EnterpriseNodeExtension
         }
 
         initWanConsumers();
-        initLicenseExpReminder();
+        initLicenseExpReminder(license);
     }
 
     private void refreshClusterPermissions() {
@@ -340,19 +440,36 @@ public class EnterpriseNodeExtension
         }
     }
 
-    private void initLicenseExpReminder() {
-        // don't start reminder task in case of "built-in license" (NLC mode)
-        if (LicenseHelper.isBuiltInLicense(license)) {
-            return;
-        }
-
-        TaskScheduler scheduler = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();
+    private void initLicenseExpReminder(License lic) {
+        boolean builtInLicense = LicenseHelper.isBuiltInLicense(lic);
         try {
-            LicenseExpirationReminderTask.scheduleWith(scheduler, license);
+            if (licenseExpirationReminderTask == null) {
+                // schedule a new task
+                if (!builtInLicense) {
+                    TaskScheduler taskScheduler = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();
+                    licenseExpirationReminderTask = LicenseExpirationReminderTask.scheduleWith(taskScheduler, lic);
+                }
+            } else {
+                // cancel/reschedule the current task
+                licenseExpirationReminderTask
+                        = licenseExpirationReminderTask.rescheduleWithNewLicense(builtInLicense ? null : lic);
+            }
         } catch (RejectedExecutionException e) {
             if (node.isRunning()) {
                 throw e;
             }
+        }
+    }
+
+    private void initLicenseMBean(License lic) {
+        // if a license MBean exists, unregisters it and register a new one
+        ManagementService managementService = node.hazelcastInstance.getManagementService();
+        EnterpriseManagementService.EnterpriseInstanceMBean instanceMBean
+                = (EnterpriseManagementService.EnterpriseInstanceMBean) managementService.getInstanceMBean();
+        if (instanceMBean != null) {
+            LicenseInfoMBean licenseInfoMBean = instanceMBean.getLicenseInfoMBean();
+            HazelcastMBean.unregister(licenseInfoMBean);
+            HazelcastMBean.register(new LicenseInfoMBean(new LicenseInfoImpl(lic), node, managementService));
         }
     }
 

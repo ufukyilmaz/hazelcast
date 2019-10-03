@@ -14,7 +14,7 @@ import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
-import com.hazelcast.internal.metrics.MetricsProvider;
+import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.internal.nearcache.NearCacheManager;
@@ -41,7 +41,7 @@ import java.util.concurrent.Executor;
 /**
  * Enterprise implementation of {@code ClientExtension}.
  */
-public class EnterpriseClientExtension extends DefaultClientExtension implements MetricsProvider {
+public class EnterpriseClientExtension extends DefaultClientExtension implements StaticMetricsProvider {
 
     private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
     private final EnterpriseClientVersionAware versionAware = new EnterpriseClientVersionAware(buildInfo.getVersion());
@@ -162,11 +162,11 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     }
 
     @Override
-    public void provideMetrics(MetricsRegistry registry) {
+    public void provideStaticMetrics(MetricsRegistry registry) {
         if (memoryManager != null) {
-            registry.scanAndRegister(memoryManager, "memorymanager");
-            if (memoryManager instanceof MetricsProvider) {
-                ((MetricsProvider) memoryManager).provideMetrics(registry);
+            registry.registerStaticMetrics(memoryManager, "memorymanager");
+            if (memoryManager instanceof StaticMetricsProvider) {
+                ((StaticMetricsProvider) memoryManager).provideStaticMetrics(registry);
             }
         }
     }

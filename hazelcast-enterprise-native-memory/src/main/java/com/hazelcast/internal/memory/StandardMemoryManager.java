@@ -3,7 +3,7 @@ package com.hazelcast.internal.memory;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
-import com.hazelcast.internal.metrics.MetricsProvider;
+import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
@@ -16,7 +16,7 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
-public final class StandardMemoryManager implements HazelcastMemoryManager, MetricsProvider {
+public final class StandardMemoryManager implements HazelcastMemoryManager, StaticMetricsProvider {
 
     /**
      * System property to enable the debug mode of {@link StandardMemoryManager}.
@@ -221,8 +221,8 @@ public final class StandardMemoryManager implements HazelcastMemoryManager, Metr
     }
 
     @Override
-    public void provideMetrics(MetricsRegistry registry) {
-        registry.scanAndRegister(memoryStats, "memorymanager.stats");
+    public void provideStaticMetrics(MetricsRegistry registry) {
+        registry.registerStaticMetrics(memoryStats, "memorymanager.stats");
     }
 
     public synchronized void forEachAllocatedBlock(LongLongConsumer consumer) {

@@ -6,8 +6,11 @@ import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
-import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.util.ConstructorFunction;
+import com.hazelcast.internal.util.MemoryInfoAccessor;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.eviction.MapEvictionPolicy;
 import com.hazelcast.map.impl.eviction.HDEvictionChecker;
@@ -16,13 +19,8 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.NodeEngine;
-import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.partition.IPartitionService;
-import com.hazelcast.internal.util.ConstructorFunction;
-import com.hazelcast.internal.util.MemoryInfoAccessor;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.eviction.Evictor.NULL_EVICTOR;
@@ -43,8 +41,7 @@ public class EnterpriseMapContainer extends MapContainer {
 
     @Override
     public void initEvictor() {
-        // this can't be located in the constructor since the superclass constructor calls initEvictor() at its end
-        initStorageInfoAndRegisterMapProbes();
+        storageInfo = new HiDensityStorageInfo(name);
         if (NATIVE == mapConfig.getInMemoryFormat()) {
             MapEvictionPolicy mapEvictionPolicy = getMapEvictionPolicy();
             if (mapEvictionPolicy != null) {
@@ -101,22 +98,8 @@ public class EnterpriseMapContainer extends MapContainer {
 
     @Override
     public void onDestroy() {
-        deregisterMapProbes();
         if (wanReplicationDelegate != null) {
             wanReplicationDelegate.destroyMapData(name);
         }
-    }
-
-    private void initStorageInfoAndRegisterMapProbes() {
-        storageInfo = new HiDensityStorageInfo(name);
-        MetricsRegistry registry = ((NodeEngineImpl) mapServiceContext.getNodeEngine()).getMetricsRegistry();
-        registry.newProbeBuilder("map")
-                .withTag("name", name)
-                .scanAndRegister(storageInfo);
-    }
-
-    private void deregisterMapProbes() {
-        ((NodeEngineImpl) mapServiceContext.getNodeEngine()).getMetricsRegistry()
-                                                            .deregister(storageInfo);
     }
 }

@@ -69,12 +69,12 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
         MetricsRegistryImpl metricsRegistry = clientImpl.getMetricsRegistry();
         Set<String> metrics = metricsRegistry.getNames();
 
-        assertContains(metrics, "memorymanager.stats.committedNative");
-        assertContains(metrics, "memorymanager.stats.freeNative");
-        assertContains(metrics, "memorymanager.stats.maxMetadata");
-        assertContains(metrics, "memorymanager.stats.maxNative");
-        assertContains(metrics, "memorymanager.stats.usedMetadata");
-        assertContains(metrics, "memorymanager.stats.usedNative");
+        assertContains(metrics, "[unit=count,metric=memorymanager.stats.committedNative]");
+        assertContains(metrics, "[unit=count,metric=memorymanager.stats.freeNative]");
+        assertContains(metrics, "[unit=count,metric=memorymanager.stats.maxMetadata]");
+        assertContains(metrics, "[unit=count,metric=memorymanager.stats.maxNative]");
+        assertContains(metrics, "[unit=count,metric=memorymanager.stats.usedMetadata]");
+        assertContains(metrics, "[unit=count,metric=memorymanager.stats.usedNative]");
     }
 
     @Test
@@ -86,18 +86,17 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
         MetricsRegistryImpl metricsRegistry = clientImpl.getMetricsRegistry();
         Set<String> metrics = metricsRegistry.getNames();
 
-        assertNotContains(metrics, "memorymanager.stats.committedNative");
-        assertNotContains(metrics, "memorymanager.stats.freeNative");
-        assertNotContains(metrics, "memorymanager.stats.maxMetadata");
-        assertNotContains(metrics, "memorymanager.stats.maxNative");
-        assertNotContains(metrics, "memorymanager.stats.usedMetadata");
-        assertNotContains(metrics, "memorymanager.stats.usedNative");
+        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.committedNative]");
+        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.freeNative]");
+        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.maxMetadata]");
+        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.maxNative]");
+        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.usedMetadata]");
+        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.usedNative]");
     }
 
     private ClientConfig makeClientConfig(boolean enableNativeMemory) throws Exception {
         ClientConfig clientConfig = new ClientConfig()
                 .setProperty("hazelcast.diagnostics.enabled", "true")
-                .setProperty("hazelcast.diagnostics.metric.level", "INFO")
                 .setProperty("hazelcast.diagnostics.directory", temporaryFolder.newFolder().getAbsolutePath());
         if (enableNativeMemory) {
             clientConfig.setNativeMemoryConfig(makeNativeMemoryConfig());

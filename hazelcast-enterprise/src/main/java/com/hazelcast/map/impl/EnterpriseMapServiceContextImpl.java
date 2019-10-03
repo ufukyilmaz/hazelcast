@@ -12,6 +12,10 @@ import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.PersistentConfigDescriptors;
 import com.hazelcast.internal.hotrestart.RamStore;
 import com.hazelcast.internal.hotrestart.RamStoreRegistry;
+import com.hazelcast.internal.metrics.DynamicMetricsProvider;
+import com.hazelcast.internal.metrics.MetricTagger;
+import com.hazelcast.internal.metrics.MetricTaggerSupplier;
+import com.hazelcast.internal.metrics.MetricsExtractor;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
@@ -51,6 +55,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -88,6 +93,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             this.hotRestartService = (HotRestartIntegrationService) nodeExtension.getInternalHotRestartService();
             this.hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
         }
+        ((NodeEngineImpl) nodeEngine).getMetricsRegistry()
+                                     .registerDynamicMetricsProvider(new MetricsProvider(getMapContainers()));
     }
 
     private QueryRunner createHDMapQueryRunner(HDPartitionScanRunner runner,
@@ -308,6 +315,24 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         if (merkleTree != null) {
             observers.add(new MerkleTreeUpdaterRecordStoreMutationObserver<>(merkleTree,
                     getNodeEngine().getSerializationService()));
+        }
+    }
+
+    private static final class MetricsProvider implements DynamicMetricsProvider {
+        private final Map<String, MapContainer> mapContainers;
+
+        private MetricsProvider(Map<String, MapContainer> mapContainers) {
+            this.mapContainers = mapContainers;
+        }
+
+        @Override
+        public void provideDynamicMetrics(MetricTaggerSupplier taggerSupplier, MetricsExtractor extractor) {
+            for (MapContainer mapContainer : mapContainers.values()) {
+                if (mapContainer instanceof EnterpriseMapContainer) {
+                    MetricTagger tagger = taggerSupplier.getMetricTagger("map").withIdTag("name", mapContainer.name);
+                    extractor.extractMetrics(tagger, ((EnterpriseMapContainer) mapContainer).getStorageInfo());
+                }
+            }
         }
     }
 }

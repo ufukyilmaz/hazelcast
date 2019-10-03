@@ -6,7 +6,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.metrics.renderers.ProbeRenderer;
+import com.hazelcast.internal.metrics.collectors.MetricsCollector;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
@@ -89,8 +89,8 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
         assertTrueEventually(() -> {
             ProbeCatcher probesWithMerkle = new ProbeCatcher(MAP_NAME_WITH_MERKLE);
             ProbeCatcher probesWithoutMerkle = new ProbeCatcher(MAP_NAME_WITHOUT_MERKLE);
-            registry.render(probesWithMerkle);
-            registry.render(probesWithoutMerkle);
+            registry.collect(probesWithMerkle);
+            registry.collect(probesWithoutMerkle);
 
             assertEquals(heapCostWithoutMerkle + merkleFootprintWithMerkle, probesWithMerkle.heapCost);
             assertEquals(merkleFootprintWithMerkle, probesWithMerkle.merkleTreesCost);
@@ -130,7 +130,7 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
         return merkleTreesFootprint;
     }
 
-    static class ProbeCatcher implements ProbeRenderer {
+    static class ProbeCatcher implements MetricsCollector {
         private final String prefix;
         private long heapCost;
         private long merkleTreesCost;
@@ -140,7 +140,7 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
         }
 
         @Override
-        public void renderLong(String name, long value) {
+        public void collectLong(String name, long value) {
             if (name.equals(prefix + "heapCost")) {
                 heapCost = value;
             } else if (name.equals(prefix + "merkleTreesCost")) {
@@ -149,15 +149,15 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
         }
 
         @Override
-        public void renderDouble(String name, double value) {
+        public void collectDouble(String name, double value) {
         }
 
         @Override
-        public void renderException(String name, Exception e) {
+        public void collectException(String name, Exception e) {
         }
 
         @Override
-        public void renderNoValue(String name) {
+        public void collectNoValue(String name) {
         }
     }
 

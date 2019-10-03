@@ -102,8 +102,8 @@ public class ChunkManager implements Disposable {
         this.backupExecutor = backupExecutor;
         this.storeName = storeName;
         final String metricsPrefix = "hot-restart." + storeName;
-        metrics.scanAndRegister(this, metricsPrefix);
-        metrics.scanAndRegister(trackers, metricsPrefix);
+        metrics.registerStaticMetrics(this, metricsPrefix);
+        metrics.registerStaticMetrics(trackers, metricsPrefix);
     }
 
     /** @return the number of distinct keys known to this {@code ChunkManager} */

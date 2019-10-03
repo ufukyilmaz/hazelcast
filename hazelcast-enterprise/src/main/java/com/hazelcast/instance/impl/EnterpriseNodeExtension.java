@@ -51,7 +51,7 @@ import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
-import com.hazelcast.internal.metrics.MetricsProvider;
+import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.monitor.impl.jmx.EnterpriseManagementService;
 import com.hazelcast.internal.monitor.impl.jmx.LicenseInfoMBean;
@@ -130,7 +130,7 @@ import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpri
 })
 public class EnterpriseNodeExtension
         extends DefaultNodeExtension
-        implements NodeExtension, MetricsProvider {
+        implements NodeExtension, StaticMetricsProvider {
 
     /**
      * A map of compatible license feature replacements introduced per license version. Used when updating
@@ -916,11 +916,11 @@ public class EnterpriseNodeExtension
     }
 
     @Override
-    public void provideMetrics(MetricsRegistry registry) {
+    public void provideStaticMetrics(MetricsRegistry registry) {
         if (memoryManager != null) {
-            registry.scanAndRegister(memoryManager, "memorymanager");
-            if (memoryManager instanceof MetricsProvider) {
-                ((MetricsProvider) memoryManager).provideMetrics(registry);
+            registry.registerStaticMetrics(memoryManager, "memorymanager");
+            if (memoryManager instanceof StaticMetricsProvider) {
+                ((StaticMetricsProvider) memoryManager).provideStaticMetrics(registry);
             }
         }
     }

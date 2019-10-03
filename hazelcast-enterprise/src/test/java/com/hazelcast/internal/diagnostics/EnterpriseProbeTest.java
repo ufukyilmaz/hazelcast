@@ -2,8 +2,8 @@ package com.hazelcast.internal.diagnostics;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.map.IMap;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -26,9 +26,10 @@ public class EnterpriseProbeTest extends AbstractDiagnosticsPluginTest {
 
     @Before
     public void setup() {
-        Config config = getHDConfig()
-                .setProperty(Diagnostics.ENABLED.getName(), "true")
-                .setProperty(MetricsPlugin.PERIOD_SECONDS.getName(), "1");
+        Config config = getHDConfig();
+                config.getMetricsConfig()
+                .setMetricsForDataStructuresEnabled(true)
+                .setCollectionIntervalSeconds(1);
         hz = createHazelcastInstance(config);
 
         NodeEngineImpl nodeEngineImpl = getNodeEngineImpl(hz);

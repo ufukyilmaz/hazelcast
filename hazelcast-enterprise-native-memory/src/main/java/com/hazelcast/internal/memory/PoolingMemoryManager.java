@@ -3,7 +3,7 @@ package com.hazelcast.internal.memory;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
-import com.hazelcast.internal.metrics.MetricsProvider;
+import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.util.QuickMath;
 import com.hazelcast.memory.MemorySize;
@@ -49,7 +49,7 @@ import static com.hazelcast.internal.util.QuickMath.isPowerOfTwo;
  * dedicated to that thread will be looked up (or created); otherwise the request will be forwarded to the
  * global manager.
  */
-public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageCollectable, MetricsProvider {
+public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageCollectable, StaticMetricsProvider {
 
     @SuppressWarnings("checkstyle:magicnumber")
     static final int MIN_MIN_BLOCK_SIZE = 1 << 3;
@@ -316,7 +316,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
     }
 
     @Override
-    public void provideMetrics(MetricsRegistry registry) {
-        registry.scanAndRegister(memoryStats, "memorymanager.stats");
+    public void provideStaticMetrics(MetricsRegistry registry) {
+        registry.registerStaticMetrics(memoryStats, "memorymanager.stats");
     }
 }

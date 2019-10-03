@@ -3,6 +3,8 @@ package com.hazelcast.cache.impl;
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.CacheEventType;
 import com.hazelcast.cache.CacheNotExistsException;
+import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
+import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
 import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.hidensity.HiDensityCacheStorageInfo;
 import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
@@ -11,8 +13,6 @@ import com.hazelcast.cache.impl.hidensity.operation.CacheSegmentShutdownOperatio
 import com.hazelcast.cache.impl.hidensity.operation.HiDensityCacheOperationProvider;
 import com.hazelcast.cache.impl.hidensity.operation.HiDensityCacheReplicationOperation;
 import com.hazelcast.cache.impl.hotrestart.HotRestartEnterpriseCacheRecordStore;
-import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
-import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
 import com.hazelcast.cache.impl.merge.entry.LazyCacheEntryView;
 import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
 import com.hazelcast.cache.impl.operation.CacheSegmentDestroyOperation;
@@ -33,24 +33,27 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
-import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.services.ReplicationSupportingService;
-import com.hazelcast.internal.util.InvocationUtil;
-import com.hazelcast.internal.util.LocalRetryableExecution;
-import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.RamStore;
 import com.hazelcast.internal.hotrestart.RamStoreRegistry;
+import com.hazelcast.internal.metrics.DynamicMetricsProvider;
+import com.hazelcast.internal.metrics.MetricTagger;
+import com.hazelcast.internal.metrics.MetricTaggerSupplier;
+import com.hazelcast.internal.metrics.MetricsExtractor;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.services.ReplicationSupportingService;
+import com.hazelcast.internal.util.CollectionUtil;
+import com.hazelcast.internal.util.ConcurrencyUtil;
+import com.hazelcast.internal.util.ConstructorFunction;
+import com.hazelcast.internal.util.InvocationUtil;
+import com.hazelcast.internal.util.LocalRetryableExecution;
+import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.partition.IPartitionService;
-import com.hazelcast.internal.util.CollectionUtil;
-import com.hazelcast.internal.util.ConcurrencyUtil;
-import com.hazelcast.internal.util.ConstructorFunction;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import com.hazelcast.wan.impl.WanReplicationService;
@@ -58,6 +61,7 @@ import com.hazelcast.wan.impl.WanReplicationService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -103,9 +107,7 @@ public class EnterpriseCacheService
                             + " is already destroyed or not created yet, on " + nodeEngine.getLocalMember());
                 }
                 CacheContext cacheContext = getOrCreateCacheContext(cacheNameWithPrefix);
-                HiDensityCacheStorageInfo storageInfo = new HiDensityCacheStorageInfo(cacheNameWithPrefix, cacheContext);
-                registerCacheProbes(storageInfo, cacheNameWithPrefix);
-                return storageInfo;
+                return new HiDensityCacheStorageInfo(cacheNameWithPrefix, cacheContext);
             };
 
     private IPartitionService partitionService;
@@ -135,6 +137,8 @@ public class EnterpriseCacheService
                 }
             });
         }
+        ((NodeEngineImpl) nodeEngine).getMetricsRegistry()
+                                     .registerDynamicMetricsProvider(new HDStorageInfoMetricsProvider(hiDensityCacheInfoMap));
     }
 
     @Override
@@ -256,10 +260,7 @@ public class EnterpriseCacheService
 
         String cacheNameWithPrefix = cacheConfig.getNameWithPrefix();
         destroySegmentsInternal(cacheNameWithPrefix);
-        HiDensityStorageInfo storageInfo = hiDensityCacheInfoMap.remove(cacheNameWithPrefix);
-        if (storageInfo != null) {
-            deregisterCacheProbes(storageInfo);
-        }
+        hiDensityCacheInfoMap.remove(cacheNameWithPrefix);
     }
 
     /**
@@ -295,17 +296,6 @@ public class EnterpriseCacheService
                 nodeEngine.getLogger(getClass()).warning(e);
             }
         }
-    }
-
-    private void registerCacheProbes(HiDensityStorageInfo cacheInfo, String cacheName) {
-        MetricsRegistry registry = ((NodeEngineImpl) nodeEngine).getMetricsRegistry();
-        registry.newProbeBuilder("cache")
-                .withTag("name", cacheName)
-                .scanAndRegister(cacheInfo);
-    }
-
-    private void deregisterCacheProbes(HiDensityStorageInfo cacheInfo) {
-        ((NodeEngineImpl) nodeEngine).getMetricsRegistry().deregister(cacheInfo);
     }
 
     /**
@@ -666,5 +656,25 @@ public class EnterpriseCacheService
     @Override
     public CacheWanEventPublisher getCacheWanEventPublisher() {
         return cacheWanEventPublisher;
+    }
+
+    private static final class HDStorageInfoMetricsProvider implements DynamicMetricsProvider {
+
+        private final ConcurrentMap<String, HiDensityStorageInfo> hiDensityCacheInfoMap;
+
+        private HDStorageInfoMetricsProvider(ConcurrentMap<String, HiDensityStorageInfo> hiDensityCacheInfoMap) {
+            this.hiDensityCacheInfoMap = hiDensityCacheInfoMap;
+        }
+
+        @Override
+        public void provideDynamicMetrics(MetricTaggerSupplier taggerSupplier, MetricsExtractor extractor) {
+            for (Map.Entry<String, HiDensityStorageInfo> entry : hiDensityCacheInfoMap.entrySet()) {
+                String cacheName = entry.getKey();
+                HiDensityStorageInfo storageInfo = entry.getValue();
+
+                MetricTagger tagger = taggerSupplier.getMetricTagger("cache").withIdTag("name", cacheName);
+                extractor.extractMetrics(tagger, storageInfo);
+            }
+        }
     }
 }

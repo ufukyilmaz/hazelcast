@@ -1,5 +1,9 @@
+Current PMDK version is 1.7
+
 To update PMDK version, follow the steps on a linux machine
 
+- Build PMDK (https://github.com/pmem/pmdk), follow instructions on github page
+- Copy libpmem.a libpmem.h libvmem.h libvmem.a files (non-debug libs) and replace existing ones in this directory
 - Run "make", libpmdk-x86-64.so will be created in resources/libpmdk/linux-x86_64.
 
 

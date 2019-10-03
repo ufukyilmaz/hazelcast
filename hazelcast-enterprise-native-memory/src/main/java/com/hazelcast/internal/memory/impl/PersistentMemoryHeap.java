@@ -101,8 +101,8 @@ public final class PersistentMemoryHeap {
         return realloc0(poolHandle, address, size);
     }
 
-    long free(long address) {
-        return free0(poolHandle, address);
+    void free(long address) {
+        free0(poolHandle, address);
     }
 
     private static void deleteFile(Path filePath) {
@@ -147,5 +147,5 @@ public final class PersistentMemoryHeap {
 
     private static native long realloc0(long handle, long address, long size);
 
-    private static native long free0(long handle, long address);
+    private static native void free0(long handle, long address);
 }

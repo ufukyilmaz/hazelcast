@@ -21,12 +21,19 @@ public class PersistentMemoryPlatformTest extends ParameterizedMemoryTest {
         NativeMemoryConfig config = new NativeMemoryConfig();
         config.setPersistentMemoryDirectory(PERSISTENT_MEMORY_DIRECTORY);
         LibMallocFactory libMallocFactory = new PersistentMemoryMallocFactory(config);
+
+        LibMalloc libMalloc = null;
+
         try {
-            LibMalloc libMalloc = libMallocFactory.create(nativeMemorySize.bytes());
+            libMalloc = libMallocFactory.create(nativeMemorySize.bytes());
             assertNotNull(libMalloc);
             assertTrue(isLinux());
         } catch (UnsupportedOperationException e) {
             assertTrue(!isLinux());
+        } finally {
+            if (libMalloc != null) {
+                libMalloc.dispose();
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ import com.hazelcast.internal.util.RandomPicker;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -140,6 +141,7 @@ public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceT
     }
 
     @Test
+    @Ignore
     public void whenClusterRestart_whileOperationsOngoing_then_recoversData() throws Exception {
         final IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
         final AtomicLong increments = new AtomicLong();

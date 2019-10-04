@@ -646,6 +646,11 @@ public class EnterpriseCacheService
     @Override
     public boolean isWanReplicationEnabled(String cacheNameWithPrefix) {
         final CacheConfig config = getCacheConfig(cacheNameWithPrefix);
+        // config can be null if cache is concurrently
+        // used and destroyed using different instances
+        if (config == null) {
+            return false;
+        }
         final WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
         final WanReplicationService wanService = nodeEngine.getWanReplicationService();
 

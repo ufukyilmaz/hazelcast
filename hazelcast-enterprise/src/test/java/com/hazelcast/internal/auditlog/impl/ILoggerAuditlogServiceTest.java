@@ -19,7 +19,6 @@ import org.junit.runner.RunWith;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.internal.auditlog.impl.AuditlogTypeIds;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestAwareInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;

@@ -2,7 +2,8 @@ package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.impl.HazelcastInstanceProxy;
@@ -72,11 +73,11 @@ public class HDIndexLeakTest
         config.getNativeMemoryConfig().setSize(MemorySize.parse("4", MemoryUnit.GIGABYTES));
         config.getMapConfig("default").setInMemoryFormat(format);
 
-        MapIndexConfig indexConfig = new MapIndexConfig();
-        indexConfig.setOrdered(sorted);
-        indexConfig.setAttribute("age");
+        IndexConfig indexConfig = new IndexConfig();
+        indexConfig.setType(sorted ? IndexType.SORTED : IndexType.HASH);
+        indexConfig.addAttribute("age");
 
-        config.getMapConfig("default").addMapIndexConfig(indexConfig);
+        config.getMapConfig("default").addIndexConfig(indexConfig);
 
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(1);
         return factory.newHazelcastInstance(config);

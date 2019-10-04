@@ -2,6 +2,7 @@ package com.hazelcast.client.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.IndexType;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.monitor.LocalIndexStats;
 import com.hazelcast.monitor.LocalMapStats;
@@ -38,7 +39,7 @@ public class HDClientIndexStatsTest extends ClientIndexStatsTest {
     @Test
     @Override
     public void testQueryCounting_WhenPartitionPredicateIsUsed() {
-        map.addIndex("this", false);
+        addIndex(map, "this", false);
 
         for (int i = 0; i < 100; ++i) {
             map.put(i, i);

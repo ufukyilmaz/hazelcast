@@ -37,7 +37,7 @@ public class HDLocalIndexStatsTest extends LocalIndexStatsTest {
     @Test
     @Override
     public void testQueryCounting_WhenPartitionPredicateIsUsed() {
-        map.addIndex("this", false);
+        addIndex(map, "this", false);
 
         for (int i = 0; i < 100; ++i) {
             map.put(i, i);

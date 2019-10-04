@@ -2,8 +2,9 @@ package com.hazelcast.map.impl.query;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
@@ -43,7 +44,7 @@ public class HDQueryCompatibilityTest {
     public InMemoryFormat inMemoryFormat;
 
     @Parameter(1)
-    public MapIndexConfig mapIndexConfig;
+    public IndexConfig indexConfig;
 
     private TestHazelcastInstanceFactory factory;
     private String[] versions;
@@ -54,14 +55,14 @@ public class HDQueryCompatibilityTest {
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {NATIVE, null},
-                {NATIVE, new MapIndexConfig("power", false)},
-                {NATIVE, new MapIndexConfig("power", true)},
+                {NATIVE, new IndexConfig(IndexType.HASH, "power")},
+                {NATIVE, new IndexConfig(IndexType.SORTED, "power")},
                 {BINARY, null},
-                {BINARY, new MapIndexConfig("power", false)},
-                {BINARY, new MapIndexConfig("power", true)},
+                {BINARY, new IndexConfig(IndexType.HASH, "power")},
+                {BINARY, new IndexConfig(IndexType.SORTED, "power")},
                 {OBJECT, null},
-                {OBJECT, new MapIndexConfig("power", false)},
-                {OBJECT, new MapIndexConfig("power", true)},
+                {OBJECT, new IndexConfig(IndexType.HASH, "power")},
+                {OBJECT, new IndexConfig(IndexType.SORTED, "power")},
         });
     }
 
@@ -77,8 +78,8 @@ public class HDQueryCompatibilityTest {
         Config config = getHDConfig();
         MapConfig mapConfig = config.getMapConfig(mapName);
         mapConfig.setInMemoryFormat(inMemoryFormat);
-        if (mapIndexConfig != null) {
-            mapConfig.addMapIndexConfig(mapIndexConfig);
+        if (indexConfig != null) {
+            mapConfig.addIndexConfig(indexConfig);
         }
         config.addMapConfig(mapConfig);
 

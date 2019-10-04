@@ -1,5 +1,7 @@
 package com.hazelcast.client.security;
 
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
 import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -437,9 +439,9 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Test
     public void addIndex() {
-        final String key = randomString();
-        interceptor.setExpectation(getObjectType(), objectName, "addIndex", key, false);
-        map.addIndex(key, false);
+        IndexConfig config = new IndexConfig().setType(IndexType.HASH).setName(randomString()).addAttribute(randomString());
+        interceptor.setExpectation(getObjectType(), objectName, "addIndex", config);
+        map.addIndex(config);
     }
 
     @Test

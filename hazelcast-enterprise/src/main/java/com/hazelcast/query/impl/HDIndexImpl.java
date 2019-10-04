@@ -1,5 +1,6 @@
 package com.hazelcast.query.impl;
 
+import com.hazelcast.config.IndexConfig;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -20,10 +21,15 @@ public class HDIndexImpl extends AbstractIndex {
 
     private int indexedPartition = UNINDEXED;
 
-    public HDIndexImpl(String name, String[] components, boolean ordered, EnterpriseSerializationService ss,
-                       Extractors extractors, PerIndexStats stats, StoreAdapter partitionStoreAdapter) {
+    public HDIndexImpl(
+        IndexConfig config,
+        EnterpriseSerializationService ss,
+        Extractors extractors,
+        PerIndexStats stats,
+        StoreAdapter partitionStoreAdapter
+    ) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
-        super(name, components, ordered, ss, extractors, IndexCopyBehavior.NEVER, stats, partitionStoreAdapter);
+        super(config, ss, extractors, IndexCopyBehavior.NEVER, stats, partitionStoreAdapter);
     }
 
     @Override

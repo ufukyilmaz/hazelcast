@@ -1,5 +1,6 @@
 package com.hazelcast.map;
 
+import com.hazelcast.config.IndexType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.impl.MapService;
@@ -53,7 +54,7 @@ public class MapIndexReplicationCompatibilityTest extends HazelcastTestSupport {
         // start previous member
         instances[0] = factory.newHazelcastInstance();
         IMap mapOn39Master = instances[0].getMap(MAP_NAME);
-        mapOn39Master.addIndex("name", false);
+        mapOn39Master.addIndex(IndexType.HASH, "name");
         mapOn39Master.put("1", new Person("1"));
 
         // start current member to join on previous cluster version
@@ -87,7 +88,7 @@ public class MapIndexReplicationCompatibilityTest extends HazelcastTestSupport {
         // start previous member
         instances[0] = factory.newHazelcastInstance();
         IMap mapOn39Master = instances[0].getMap(MAP_NAME);
-        mapOn39Master.addIndex("name", false);
+        mapOn39Master.addIndex(IndexType.HASH, "name");
         mapOn39Master.put("1", new Person("1"));
 
         // start current member to join on previous cluster version
@@ -125,7 +126,7 @@ public class MapIndexReplicationCompatibilityTest extends HazelcastTestSupport {
         // start previous member
         instances[0] = factory.newHazelcastInstance();
         IMap mapOn39 = instances[0].getMap(MAP_NAME);
-        mapOn39.addIndex("name", false);
+        mapOn39.addIndex(IndexType.HASH, "name");
         mapOn39.put("1", new Person("1"));
 
         // start current member to join on previous cluster version

@@ -3,8 +3,9 @@ package com.hazelcast.map.hotrestart;
 import com.hazelcast.aggregation.Aggregators;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import com.hazelcast.map.impl.MapService;
@@ -229,7 +230,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
         Config config = super.makeConfig(backupCount);
         MapConfig mapConfig = config.getMapConfig(mapName);
         if (addIndex) {
-            mapConfig.addMapIndexConfig(new MapIndexConfig(QueryConstants.THIS_ATTRIBUTE_NAME.value(), false));
+            mapConfig.addIndexConfig(new IndexConfig(IndexType.HASH, QueryConstants.THIS_ATTRIBUTE_NAME.value()));
         }
         return config;
     }

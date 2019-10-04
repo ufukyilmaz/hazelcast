@@ -4,6 +4,7 @@ import com.hazelcast.config.CacheDeserializedValues;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.NativeMemoryConfig;
@@ -100,7 +101,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
 
         IMap<Integer, byte[]> map = hz1.getMap(MAP_NAME);
-        map.addIndex("__key", true);
+        map.addIndex(IndexType.SORTED, "__key");
 
         final AtomicBoolean stopBouncingThread = new AtomicBoolean(false);
         Thread bouncingThread = new Thread(() -> {

@@ -3,8 +3,9 @@ package com.hazelcast.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -147,7 +148,7 @@ public class HDEvictionTest extends EvictionTest {
         MapConfig mapConfig = config.getMapConfig(mapName);
         mapConfig.setEvictionPolicy(LFU);
         mapConfig.getMaxSizeConfig().setSize(mapMaxSize);
-        mapConfig.addMapIndexConfig(new MapIndexConfig().setAttribute("age").setOrdered(true));
+        mapConfig.addIndexConfig(new IndexConfig().addAttribute("age").setType(IndexType.SORTED));
 
         // 640K ought to be enough for anybody
         config.getNativeMemoryConfig()
@@ -183,7 +184,7 @@ public class HDEvictionTest extends EvictionTest {
         config.setProperty(PROP_TASK_PERIOD_SECONDS, Integer.toString(MAX_VALUE));
 
         MapConfig mapConfig = config.getMapConfig(mapName);
-        mapConfig.addMapIndexConfig(new MapIndexConfig().setAttribute("age").setOrdered(ordered));
+        mapConfig.addIndexConfig(new IndexConfig().addAttribute("age").setType(IndexType.SORTED));
 
         HazelcastInstance node = createHazelcastInstance(config);
         IMap<Integer, Person> map = node.getMap(mapName);

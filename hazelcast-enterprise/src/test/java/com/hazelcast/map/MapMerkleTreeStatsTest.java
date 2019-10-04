@@ -5,6 +5,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.metrics.MetricTarget;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.collectors.MetricsCollector;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
@@ -21,6 +22,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -140,7 +143,7 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
         }
 
         @Override
-        public void collectLong(String name, long value) {
+        public void collectLong(String name, long value, Set<MetricTarget> excludedTargets) {
             if (name.equals(prefix + "heapCost")) {
                 heapCost = value;
             } else if (name.equals(prefix + "merkleTreesCost")) {
@@ -149,15 +152,15 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
         }
 
         @Override
-        public void collectDouble(String name, double value) {
+        public void collectDouble(String name, double value, Set<MetricTarget> excludedTargets) {
         }
 
         @Override
-        public void collectException(String name, Exception e) {
+        public void collectException(String name, Exception e, Set<MetricTarget> excludedTargets) {
         }
 
         @Override
-        public void collectNoValue(String name) {
+        public void collectNoValue(String name, Set<MetricTarget> excludedTargets) {
         }
     }
 

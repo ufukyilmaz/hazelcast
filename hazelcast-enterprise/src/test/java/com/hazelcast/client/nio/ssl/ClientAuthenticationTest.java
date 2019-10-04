@@ -191,10 +191,10 @@ public class ClientAuthenticationTest {
         serverProps.setProperty("javax.net.ssl.protocol", "TLS");
         ClientConfig clientConfig = new ClientConfig();
         ClientNetworkConfig clientNetworkConfig = clientConfig.getNetworkConfig()
-                .setConnectionAttemptLimit(1)
                 .setSSLConfig(new SSLConfig()
                         .setEnabled(true)
                         .setProperties(clientProps));
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setMaxBackoffMillis(2000);
         if (openSsl) {
             clientNetworkConfig.getSSLConfig().setFactoryImplementation(new OpenSSLEngineFactory());
         }

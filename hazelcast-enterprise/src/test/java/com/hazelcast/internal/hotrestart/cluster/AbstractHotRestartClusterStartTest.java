@@ -303,14 +303,6 @@ public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSu
         return addresses;
     }
 
-    Address[] getAddresses(HazelcastInstance[] instances) {
-        Address[] addresses = new Address[instances.length];
-        for (int i = 0; i < addresses.length; i++) {
-            addresses[i] = getAddress(instances[i]);
-        }
-        return addresses;
-    }
-
     private List<File> collectHotRestartClusterDirs(HazelcastInstance... instances) {
         List<File> dirs = new ArrayList<File>();
         for (HazelcastInstance instance : instances) {

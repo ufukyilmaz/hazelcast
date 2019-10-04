@@ -115,14 +115,6 @@ public class HotRestartSplitBrainTest extends SplitBrainTestSupport {
         }
     }
 
-    private Address[] getAddresses(HazelcastInstance[] instances) {
-        Address[] addresses = new Address[instances.length];
-        for (int i = 0; i < addresses.length; i++) {
-            addresses[i] = getAddress(instances[i]);
-        }
-        return addresses;
-    }
-
     private HazelcastInstance[] restartCluster(final Address[] addresses) throws Exception {
         int[] brains = brains();
         int clusterSize = brains[0] + brains[1];

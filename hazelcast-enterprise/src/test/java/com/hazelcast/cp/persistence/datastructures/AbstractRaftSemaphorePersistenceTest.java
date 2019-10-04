@@ -4,6 +4,7 @@ import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.ISemaphore;
 import com.hazelcast.internal.util.RandomPicker;
 import com.hazelcast.test.AssertTask;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.Callable;
@@ -94,6 +95,7 @@ public abstract class AbstractRaftSemaphorePersistenceTest extends RaftDataStruc
     }
 
     @Test
+    @Ignore
     public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
         final ISemaphore semaphore = proxyInstance.getCPSubsystem().getSemaphore("test");
         final int acquires = 5000;

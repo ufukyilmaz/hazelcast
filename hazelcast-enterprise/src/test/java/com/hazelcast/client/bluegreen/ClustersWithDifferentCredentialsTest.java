@@ -18,7 +18,7 @@ import com.hazelcast.core.LifecycleListener;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.CredentialsCallback;
 import com.hazelcast.security.ICredentialsFactory;

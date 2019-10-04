@@ -7,7 +7,7 @@ import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.services.TransactionalService;
 import com.hazelcast.internal.util.LockGuard;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.spi.exception.TargetNotMemberException;
 import com.hazelcast.internal.hotrestart.backup.HotRestartBackupInterruptOperation;
 import com.hazelcast.internal.hotrestart.backup.HotRestartBackupTransactionLogRecord;

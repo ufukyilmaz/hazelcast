@@ -3,7 +3,7 @@ package com.hazelcast.internal.hotrestart.cluster;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.internal.util.UUIDSerializationUtil;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 
 import java.io.DataInput;
 import java.io.File;

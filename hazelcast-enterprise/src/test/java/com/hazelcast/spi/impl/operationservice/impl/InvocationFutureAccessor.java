@@ -1,7 +1,7 @@
 package com.hazelcast.spi.impl.operationservice.impl;
 
 import com.hazelcast.logging.Logger;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 
 import java.net.UnknownHostException;
 
@@ -11,7 +11,7 @@ public class InvocationFutureAccessor {
     // suitable for explicit completion by test code where a mock would be used.
     public static InvocationFuture dummyInvocationFuture() throws UnknownHostException {
         Invocation.Context context = new Invocation.Context(
-            null, null, null, null, null, 250L, null, null,
+                null, null, null, null, null, 250L, null, null,
                 Logger.getLogger(InvocationFutureAccessor.class),
                 null, null, null, null, null, null, null, null, null, null
         );

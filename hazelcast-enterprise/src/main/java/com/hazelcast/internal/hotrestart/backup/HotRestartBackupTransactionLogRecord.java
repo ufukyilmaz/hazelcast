@@ -1,7 +1,7 @@
 package com.hazelcast.internal.hotrestart.backup;
 
 import com.hazelcast.internal.util.UUIDSerializationUtil;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.internal.hotrestart.HotBackupService;

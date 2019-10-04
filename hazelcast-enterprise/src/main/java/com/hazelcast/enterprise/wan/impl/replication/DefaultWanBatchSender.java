@@ -5,8 +5,8 @@ import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionWrapper;
 import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.nio.EndpointManager;
-import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
@@ -38,11 +38,11 @@ public class DefaultWanBatchSender implements WanBatchSender {
 
     @Override
     public InternalCompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent,
-                                            Address target) {
+                                                   Address target) {
         WanConnectionWrapper connectionWrapper = connectionManager.getConnection(target);
         if (connectionWrapper != null) {
             Version protocolVersion = connectionWrapper.getNegotiationResponse()
-                                                       .getChosenWanProtocolVersion();
+                    .getChosenWanProtocolVersion();
             return invokeOnWanTarget(connectionWrapper, batchReplicationEvent, protocolVersion);
         } else {
             return InternalCompletableFuture.newCompletedFuture(false, wanExecutor);

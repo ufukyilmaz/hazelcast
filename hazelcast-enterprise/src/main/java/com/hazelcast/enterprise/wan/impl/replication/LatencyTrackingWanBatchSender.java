@@ -3,9 +3,9 @@ package com.hazelcast.enterprise.wan.impl.replication;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin.LatencyProbe;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.util.ConcurrencyUtil;
 import com.hazelcast.internal.util.ConstructorFunction;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 
 import java.util.concurrent.ConcurrentHashMap;

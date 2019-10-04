@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.impl.connection;
 
 import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationResponse;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.nio.Connection;
 
 /**

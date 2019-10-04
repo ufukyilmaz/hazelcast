@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 
 import java.util.Collections;
 import java.util.List;

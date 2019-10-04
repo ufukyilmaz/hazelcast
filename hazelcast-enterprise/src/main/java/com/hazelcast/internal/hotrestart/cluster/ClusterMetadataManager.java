@@ -13,7 +13,7 @@ import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.hotrestart.ForceStartException;
 import com.hazelcast.hotrestart.HotRestartException;

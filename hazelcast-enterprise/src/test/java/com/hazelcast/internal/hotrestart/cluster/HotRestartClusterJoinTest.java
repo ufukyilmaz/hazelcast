@@ -12,7 +12,7 @@ import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.internal.partition.impl.FrozenPartitionTableTest.NonRetryablePartitionOperation;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.spi.exception.TargetNotMemberException;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;

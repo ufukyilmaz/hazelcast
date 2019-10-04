@@ -1,7 +1,7 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
 import com.hazelcast.internal.partition.PartitionReplica;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.internal.util.UuidUtil;

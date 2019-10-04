@@ -7,7 +7,7 @@ import com.hazelcast.cluster.Member;
 import com.hazelcast.cp.CPMember;
 import com.hazelcast.cp.internal.HazelcastRaftTestSupport;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastSerialClassRunner;

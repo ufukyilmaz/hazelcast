@@ -12,7 +12,7 @@ import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.impl.PartitionTableUtil;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.partition.PartitionLostEvent;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;

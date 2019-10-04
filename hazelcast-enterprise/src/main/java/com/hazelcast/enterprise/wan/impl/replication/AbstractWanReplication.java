@@ -9,7 +9,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.discovery.StaticDiscoveryProperties;
 import com.hazelcast.enterprise.wan.impl.discovery.StaticDiscoveryStrategy;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
 import com.hazelcast.spi.discovery.integration.DiscoveryService;
 

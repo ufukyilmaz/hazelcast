@@ -1,8 +1,8 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
+import com.hazelcast.cluster.Address;
 
 /**
  * The WanBatchSender is responsible for transmitting the WAN event batch

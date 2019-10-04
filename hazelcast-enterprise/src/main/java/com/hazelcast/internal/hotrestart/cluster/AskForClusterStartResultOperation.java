@@ -3,7 +3,7 @@ package com.hazelcast.internal.hotrestart.cluster;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.Operation;

@@ -11,7 +11,7 @@ import com.hazelcast.instance.impl.NodeState;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.properties.GroupProperty;

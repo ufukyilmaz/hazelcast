@@ -1,6 +1,6 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 
 import java.io.BufferedInputStream;
 import java.io.DataInput;

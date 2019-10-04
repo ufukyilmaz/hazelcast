@@ -2,7 +2,7 @@ package com.hazelcast.internal.hotrestart.cluster;
 
 import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.internal.util.UUIDSerializationUtil;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.version.MemberVersion;
 
 import java.io.DataInput;

@@ -35,7 +35,7 @@ import com.hazelcast.internal.util.UuidUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.operation.MerkleTreeRebuildOperation;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationThread;
@@ -434,15 +434,15 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
                 mapPartitionRebuildCounter.incrementAndGet();
                 os.invokeOnTarget(MapService.SERVICE_NAME, op, thisAddress)
-                  .whenCompleteAsync((response, t) -> {
-                      if (t == null) {
-                          mapPartitionRebuildCounter.decrementAndGet();
-                          rebuiltAllLatch.countDown();
-                      } else {
-                          // not logging the exception here, it's already logged on the operation thread
-                          rebuiltAllLatch.countDown();
-                      }
-                  });
+                        .whenCompleteAsync((response, t) -> {
+                            if (t == null) {
+                                mapPartitionRebuildCounter.decrementAndGet();
+                                rebuiltAllLatch.countDown();
+                            } else {
+                                // not logging the exception here, it's already logged on the operation thread
+                                rebuiltAllLatch.countDown();
+                            }
+                        });
             }
         }
 
@@ -502,6 +502,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
     /**
      * Returns the member specific backup directory for requested backup sequence
+     *
      * @param sequence backup sequence
      * @return backup directory
      */

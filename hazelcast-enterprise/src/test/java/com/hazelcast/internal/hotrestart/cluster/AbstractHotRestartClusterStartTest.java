@@ -13,7 +13,7 @@ import com.hazelcast.instance.impl.NodeExtension;
 import com.hazelcast.instance.impl.NodeState;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.nio.Address;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.partition.PartitionLostListenerStressTest.EventCollectingPartitionLostListener;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;

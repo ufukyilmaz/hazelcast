@@ -48,18 +48,18 @@ public class DefaultWanBatchSender implements WanBatchSender {
         if (connectionWrapper != null) {
             Version protocolVersion = connectionWrapper.getNegotiationResponse()
                                                        .getChosenWanProtocolVersion();
-            batchReplicationEvent.setWanProtocolVersion(protocolVersion);
-            return invokeOnWanTarget(connectionWrapper, batchReplicationEvent);
+            return invokeOnWanTarget(connectionWrapper, batchReplicationEvent, protocolVersion);
         } else {
             return new CompletedFuture<>(serializationService, false, wanExecutor);
         }
     }
 
     private InternalCompletableFuture<Boolean> invokeOnWanTarget(WanConnectionWrapper connectionWrapper,
-                                                                 IdentifiedDataSerializable event) {
+                                                                 IdentifiedDataSerializable event,
+                                                                 Version wanProtocolVersion) {
         EndpointManager endpointManager = connectionWrapper.getConnection().getEndpointManager();
         Address target = connectionWrapper.getConnection().getEndPoint();
-        Operation wanOperation = new WanOperation(event, configurationContext.getAcknowledgeType());
+        Operation wanOperation = new WanOperation(event, configurationContext.getAcknowledgeType(), wanProtocolVersion);
         String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
         return operationService.createInvocationBuilder(serviceName, wanOperation, target)
                 .setTryCount(1)

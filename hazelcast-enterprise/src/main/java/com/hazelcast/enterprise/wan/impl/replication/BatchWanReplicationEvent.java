@@ -7,7 +7,6 @@ import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
@@ -37,7 +36,6 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
 
     private transient int primaryEventCount;
     private transient int totalEntryCount;
-    private transient Version wanProtocolVersion;
 
     private Collection<InternalWanReplicationEvent> eventList;
 
@@ -148,26 +146,6 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
                 : eventList;
     }
 
-    /**
-     * Sets the WAN protocol version with which this instance will be serialized
-     * and deserialized.
-     *
-     * @param version the negotiated WAN protocol version
-     */
-    public void setWanProtocolVersion(Version version) {
-        this.wanProtocolVersion = version;
-    }
-
-    /**
-     * Sets the WAN protocol version which determines how serialisation will be
-     * performed on the provided output stream.
-     *
-     * @param output the serialization output
-     */
-    private void setWanProtocolVersion(ObjectDataOutput output) {
-        output.setWanProtocolVersion(wanProtocolVersion);
-    }
-
     @Override
     public int getFactoryId() {
         return EWRDataSerializerHook.F_ID;
@@ -180,7 +158,6 @@ public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        setWanProtocolVersion(out);
         writeCollection(getEvents(), out);
     }
 

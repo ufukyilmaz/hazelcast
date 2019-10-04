@@ -8,6 +8,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.impl.operationservice.Operation;
+import com.hazelcast.version.Version;
 
 import java.io.IOException;
 
@@ -28,13 +29,29 @@ public class WanOperation extends Operation
 
     private IdentifiedDataSerializable event;
     private WanAcknowledgeType acknowledgeType;
+    // can be written and read from different threads
+    private final transient Version wanProtocolVersion;
 
     public WanOperation() {
+        wanProtocolVersion = Version.UNKNOWN;
     }
 
-    public WanOperation(IdentifiedDataSerializable event, WanAcknowledgeType acknowledgeType) {
+    public WanOperation(IdentifiedDataSerializable event,
+                        WanAcknowledgeType acknowledgeType,
+                        Version wanProtocolVersion) {
         this.event = event;
         this.acknowledgeType = acknowledgeType;
+        this.wanProtocolVersion = wanProtocolVersion;
+    }
+
+    /**
+     * Sets the WAN protocol version which determines how serialisation will be
+     * performed on the provided output stream.
+     *
+     * @param output the serialization output
+     */
+    private void setWanProtocolVersion(ObjectDataOutput output) {
+        output.setWanProtocolVersion(wanProtocolVersion);
     }
 
     @Override
@@ -61,6 +78,7 @@ public class WanOperation extends Operation
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
+        setWanProtocolVersion(out);
         out.writeObject(event);
         out.writeInt(acknowledgeType.getId());
     }

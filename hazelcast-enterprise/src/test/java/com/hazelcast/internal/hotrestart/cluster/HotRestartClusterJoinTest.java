@@ -436,12 +436,12 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
             PartitionReplica replica = newPartitionTable0.getReplica(i, 0);
             if (missingMemberUuid.equals(replica.uuid())) {
                 try {
-                    f.join();
+                    f.joinInternal();
                     fail("Invocation to missing member should have failed!");
                 } catch (TargetNotMemberException ignored) {
                 }
             } else {
-                f.join();
+                f.joinInternal();
             }
         }
     }

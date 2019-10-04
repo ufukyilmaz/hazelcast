@@ -4,24 +4,23 @@ import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanSyncConfig;
-import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastException;
-import com.hazelcast.core.ICompletableFuture;
+import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
-import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventResult;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.diagnostics.Diagnostics;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin;
-import com.hazelcast.internal.partition.InternalPartitionService;
-import com.hazelcast.nio.Address;
 import com.hazelcast.internal.nio.ClassLoaderUtil;
+import com.hazelcast.internal.partition.InternalPartitionService;
+import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;
+import com.hazelcast.internal.util.concurrent.IdleStrategy;
+import com.hazelcast.nio.Address;
+import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;
-import com.hazelcast.internal.util.concurrent.IdleStrategy;
 import com.hazelcast.wan.WanAntiEntropyEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
@@ -295,15 +294,11 @@ public class WanBatchReplication extends AbstractWanReplication implements Runna
         }
 
         try {
-            ICompletableFuture<Boolean> future = wanBatchSender.send(batch, endpoint);
-            future.andThen(new ExecutionCallback<Boolean>() {
-                @Override
-                public void onResponse(Boolean response) {
+            InternalCompletableFuture<Boolean> future = wanBatchSender.send(batch, endpoint);
+            future.whenCompleteAsync((response, t) -> {
+                if (t == null) {
                     handleWanBatchResponse(batch, endpoint, response, isSyncBatch);
-                }
-
-                @Override
-                public void onFailure(Throwable t) {
+                } else {
                     handleWanBatchError(batch, endpoint, t, isSyncBatch);
                 }
             }, wanExecutor);

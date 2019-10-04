@@ -169,25 +169,25 @@ public class CacheTest extends AbstractCacheTest {
         final ICache<String, String> cache = createCache();
         final String key = "key";
         cache.put(key, "value1");
-        Future f = cache.getAsync(key);
+        Future f = cache.getAsync(key).toCompletableFuture();
         assertEquals("value1", f.get());
 
         cache.putAsync(key, "value2");
         assertTrueEventually(() -> assertEquals("value2", cache.get(key)));
 
-        f = cache.getAndPutAsync(key, "value3");
+        f = cache.getAndPutAsync(key, "value3").toCompletableFuture();
         assertEquals("value2", f.get());
         assertEquals("value3", cache.get(key));
 
-        f = cache.removeAsync("key2");
+        f = cache.removeAsync("key2").toCompletableFuture();
         assertFalse((Boolean) f.get());
-        f = cache.removeAsync(key);
+        f = cache.removeAsync(key).toCompletableFuture();
         assertTrue((Boolean) f.get());
 
         cache.put(key, "value4");
-        f = cache.getAndRemoveAsync("key2");
+        f = cache.getAndRemoveAsync("key2").toCompletableFuture();
         assertNull(f.get());
-        f = cache.getAndRemoveAsync(key);
+        f = cache.getAndRemoveAsync(key).toCompletableFuture();
         assertEquals("value4", f.get());
     }
 
@@ -393,7 +393,7 @@ public class CacheTest extends AbstractCacheTest {
         assertEquals(0, cache.size());
 
         cache.put(key, "value4");
-        Future f = cache.getAndPutAsync(key, "value5", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
+        Future f = cache.getAndPutAsync(key, "value5", ttlToExpiryPolicy(1, TimeUnit.SECONDS)).toCompletableFuture();
         assertEquals("value4", f.get());
 
         assertTrueEventually(() -> assertNull(cache.get(key)));

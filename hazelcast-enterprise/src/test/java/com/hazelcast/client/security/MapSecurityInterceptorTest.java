@@ -121,7 +121,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     public void getAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "get", key);
-        map.getAsync(key).get();
+        map.getAsync(key).toCompletableFuture().get();
     }
 
     @Test
@@ -129,7 +129,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
         final String key = randomString();
         final String val = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "put", key, val);
-        map.putAsync(key, val).get();
+        map.putAsync(key, val).toCompletableFuture().get();
     }
 
     @Test
@@ -138,7 +138,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
         final String val = randomString();
         final long ttl = randomLong();
         interceptor.setExpectation(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS);
-        map.putAsync(key, val, ttl, TimeUnit.MILLISECONDS).get();
+        map.putAsync(key, val, ttl, TimeUnit.MILLISECONDS).toCompletableFuture().get();
     }
 
     @Test
@@ -149,14 +149,15 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
         final long maxIdle = randomInt(MIN_ALLOWED_MAX_IDLE_IN_MILLIS, Integer.MAX_VALUE);
         interceptor.setExpectation(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS,
                 maxIdle, TimeUnit.MILLISECONDS);
-        map.putAsync(key, val, ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS).get();
+        map.putAsync(key, val, ttl, TimeUnit.MILLISECONDS, maxIdle, TimeUnit.MILLISECONDS)
+           .toCompletableFuture().get();
     }
 
     @Test
     public void removeAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
         interceptor.setExpectation(getObjectType(), objectName, "remove", key);
-        map.removeAsync(key).get();
+        map.removeAsync(key).toCompletableFuture().get();
     }
 
     @Test
@@ -457,7 +458,7 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
         final String key = randomString();
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
         interceptor.setExpectation(getObjectType(), objectName, "submitToKey", key, entryProcessor);
-        map.submitToKey(key, entryProcessor).get();
+        map.submitToKey(key, entryProcessor).toCompletableFuture().get();
     }
 
     @Test

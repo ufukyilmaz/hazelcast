@@ -160,7 +160,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                 IGNORE_COMPLETION);
         final InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
         if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
-            future.join();
+            future.joinInternal();
         }
     }
 
@@ -191,7 +191,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
 
         if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
-            future.join();
+            future.joinInternal();
         }
     }
 

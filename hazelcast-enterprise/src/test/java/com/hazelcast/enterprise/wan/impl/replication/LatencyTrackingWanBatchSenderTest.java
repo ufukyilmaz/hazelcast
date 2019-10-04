@@ -7,7 +7,6 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.internal.util.executor.CompletedFuture;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -18,6 +17,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
+import static com.hazelcast.spi.impl.InternalCompletableFuture.newCompletedFuture;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -48,9 +48,9 @@ public class LatencyTrackingWanBatchSenderTest extends HazelcastTestSupport {
         final Address failingHost = new Address("localhost", 1235);
         final BatchWanReplicationEvent batchEvent = new BatchWanReplicationEvent(false);
         when(delegate.send(batchEvent, successfulHost))
-                .thenReturn(new CompletedFuture<Boolean>(null, true, null));
+                .thenReturn(newCompletedFuture(true));
         when(delegate.send(batchEvent, failingHost))
-                .thenReturn(new CompletedFuture<Boolean>(null, false, null));
+                .thenReturn(newCompletedFuture(false));
 
         assertTrue(wanBatchSender.send(batchEvent, successfulHost).get());
         assertFalse(wanBatchSender.send(batchEvent, failingHost).get());

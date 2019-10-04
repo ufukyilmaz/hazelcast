@@ -191,7 +191,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             InternalCompletableFuture<Integer> future =
                     nodeEngine.getOperationService()
                               .invokeOnPartition(MapService.SERVICE_NAME, op, partitionId);
-            Integer count = future.join();
+            Integer count = future.joinInternal();
             entryCount += count;
         }
 
@@ -370,7 +370,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             InternalCompletableFuture<Collection<MerkleTreeNodeEntries>> future =
                     nodeEngine.getOperationService()
                               .invokeOnPartition(MapService.SERVICE_NAME, op, partitionId);
-            Collection<MerkleTreeNodeEntries> partitionEntries = future.join();
+            Collection<MerkleTreeNodeEntries> partitionEntries = future.joinInternal();
 
             for (MerkleTreeNodeEntries nodeEntries : partitionEntries) {
                 if (!nodeEntries.getNodeEntries().isEmpty()) {
@@ -578,7 +578,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                         .setEndpointManager(connectionWrapper.getConnection().getEndpointManager())
                         .setCallTimeout(configurationContext.getResponseTimeoutMillis())
                         .invoke();
-                return future.join();
+                return future.joinInternal();
             }
 
             wanTargetInvocationIdleStrategy.idle(idleStep++);

@@ -1,12 +1,12 @@
 package com.hazelcast.security.impl;
 
 import com.hazelcast.config.PermissionConfig;
-import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.management.operation.UpdatePermissionConfigOperation;
 import com.hazelcast.internal.services.CoreService;
 import com.hazelcast.internal.services.PreJoinAwareService;
 import com.hazelcast.security.SecurityService;
+import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
 
 import java.util.HashSet;
@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hazelcast.internal.util.InvocationUtil.invokeOnStableClusterSerial;
-import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 
 public class SecurityServiceImpl implements SecurityService, CoreService, PreJoinAwareService {
 
@@ -35,12 +34,8 @@ public class SecurityServiceImpl implements SecurityService, CoreService, PreJoi
         Set<PermissionConfig> clonedConfigs = clonePermissionConfigs(permissionConfigs);
 
         Supplier<Operation> supplier = new UpdatePermissionConfigOperationSupplier(clonedConfigs);
-        ICompletableFuture<Object> future = invokeOnStableClusterSerial(node.nodeEngine, supplier, RETRY_COUNT);
-        try {
-            future.get();
-        } catch (Exception e) {
-            throw rethrow(e);
-        }
+        InternalCompletableFuture<Object> future = invokeOnStableClusterSerial(node.nodeEngine, supplier, RETRY_COUNT);
+        future.joinInternal();
     }
 
     public static Set<PermissionConfig> clonePermissionConfigs(Set<PermissionConfig> permissionConfigs) {

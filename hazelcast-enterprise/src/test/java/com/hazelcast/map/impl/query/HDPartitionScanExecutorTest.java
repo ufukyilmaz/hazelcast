@@ -1,15 +1,16 @@
 package com.hazelcast.map.impl.query;
 
+import com.hazelcast.internal.util.IterationType;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.hazelcast.spi.impl.operationservice.InvocationBuilder;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
+import com.hazelcast.spi.impl.operationservice.impl.InvocationFuture;
+import com.hazelcast.spi.impl.operationservice.impl.InvocationFutureAccessor;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.internal.util.IterationType;
-import com.hazelcast.internal.util.executor.CompletedFuture;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -34,17 +35,20 @@ public class HDPartitionScanExecutorTest {
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
-    private HDPartitionScanExecutor executor(HDPartitionScanRunner runner) {
+    private HDPartitionScanExecutor executor(HDPartitionScanRunner runner) throws Exception {
+        InvocationFuture future = InvocationFutureAccessor.dummyInvocationFuture();
+        future.complete(new ArrayList<>());
+
         OperationService operationService = mock(OperationService.class);
         InvocationBuilder builder = mock(InvocationBuilder.class);
-        when(builder.invoke()).thenReturn(new CompletedFuture<Object>(null, new ArrayList(), null));
+        when(builder.invoke()).thenReturn(future);
 
         when(operationService.createInvocationBuilder(anyString(), any(Operation.class), anyInt())).thenReturn(builder);
         return new HDPartitionScanExecutor(runner);
     }
 
     @Test
-    public void execute_success() {
+    public void execute_success() throws Exception {
         HDPartitionScanRunner runner = mock(HDPartitionScanRunner.class);
         HDPartitionScanExecutor executor = executor(runner);
         Predicate predicate = Predicates.equal("attribute", 1);

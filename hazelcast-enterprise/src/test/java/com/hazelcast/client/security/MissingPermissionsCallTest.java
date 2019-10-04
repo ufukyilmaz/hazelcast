@@ -4,7 +4,6 @@ import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.SecurityConfig;
-import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.cp.IAtomicLong;
@@ -106,18 +105,13 @@ public class MissingPermissionsCallTest extends HazelcastTestSupport {
         final CountDownLatch lock = new CountDownLatch(1);
 
         DurableExecutorService executor = client.getDurableExecutorService(DURABLE_EXEC_NAME);
-        executor.submit(new SampleTask()).andThen(new ExecutionCallback<Long>() {
-            @Override
-            public void onResponse(Long response) {
+        executor.submit(new SampleTask()).whenCompleteAsync((response, t) -> {
+            if (t == null) {
                 MissingPermissionsCallTest.this.response = response;
-                lock.countDown();
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
+            } else {
                 MissingPermissionsCallTest.this.error = t;
-                lock.countDown();
             }
+            lock.countDown();
         });
 
         try {
@@ -127,7 +121,7 @@ public class MissingPermissionsCallTest extends HazelcastTestSupport {
         }
 
         if (policy) {
-            assertEquals(AccessControlException.class, error.getCause().getClass());
+            assertInstanceOf(AccessControlException.class, MissingPermissionsCallTest.this.error);
             assertThat(error.getMessage(), allOf(containsString("permission-mapping"), containsString("addAndGetAsync")));
         } else {
             assertEquals(2L, (long) response);

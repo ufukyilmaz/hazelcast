@@ -2,7 +2,6 @@ package com.hazelcast.map.impl.wan;
 
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.core.EntryView;
-import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.internal.services.ReplicationSupportingService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapContainer;
@@ -22,8 +21,8 @@ import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.WanReplicationEvent;
 
-import static com.hazelcast.spi.impl.merge.MergingValueFactory.createMergingEntry;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
+import static com.hazelcast.spi.impl.merge.MergingValueFactory.createMergingEntry;
 
 /**
  * This class handles incoming map WAN replication events.
@@ -145,7 +144,7 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
 
         final InternalCompletableFuture future = invokeOnPartition(key, operation);
         if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
-            future.join();
+            future.joinInternal();
         }
     }
 
@@ -166,7 +165,7 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
         final MapOperation operation = operationProvider.createDeleteOperation(mapName, event.getKey(), true);
         final InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
         if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
-            future.join();
+            future.joinInternal();
         }
     }
 
@@ -183,14 +182,8 @@ public class EnterpriseMapReplicationSupportingService implements ReplicationSup
         MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
         MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
         InternalCompletableFuture<Boolean> future = invokeOnPartition(mergingEntry.getKey(), operation);
-        future.andThen(new ExecutionCallback<Boolean>() {
-            @Override
-            public void onResponse(Boolean response) {
-                // nothing to do after sync, we only care not to silently ignore errors
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
+        future.whenCompleteAsync((v, t) -> {
+            if (t != null) {
                 logger.warning("Failed to process WAN sync event", t);
             }
         });

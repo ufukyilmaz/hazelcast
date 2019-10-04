@@ -6,7 +6,6 @@ import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.hotrestart.BackupTaskStatus;
 import com.hazelcast.hotrestart.HotRestartException;
@@ -435,15 +434,11 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
                 mapPartitionRebuildCounter.incrementAndGet();
                 os.invokeOnTarget(MapService.SERVICE_NAME, op, thisAddress)
-                  .andThen(new ExecutionCallback<Object>() {
-                      @Override
-                      public void onResponse(Object response) {
+                  .whenCompleteAsync((response, t) -> {
+                      if (t == null) {
                           mapPartitionRebuildCounter.decrementAndGet();
                           rebuiltAllLatch.countDown();
-                      }
-
-                      @Override
-                      public void onFailure(Throwable t) {
+                      } else {
                           // not logging the exception here, it's already logged on the operation thread
                           rebuiltAllLatch.countDown();
                       }

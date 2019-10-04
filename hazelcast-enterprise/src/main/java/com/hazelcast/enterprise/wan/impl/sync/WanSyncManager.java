@@ -1,7 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.sync;
 
 import com.hazelcast.cluster.Member;
-import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
@@ -87,14 +86,10 @@ public class WanSyncManager {
             Operation op = new WanAntiEntropyEventStarterOperation(wanReplicationName, wanPublisherId, event);
             InternalCompletableFuture<Object> future = getOperationService()
                     .invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME, op, node.getThisAddress());
-            future.andThen(new ExecutionCallback<Object>() {
-                @Override
-                public void onResponse(Object response) {
+            future.whenCompleteAsync((response, t) -> {
+                if (t == null) {
                     logger.info("WAN anti-entropy request " + event + " has been processed");
-                }
-
-                @Override
-                public void onFailure(Throwable t) {
+                } else {
                     logger.warning("WAN anti-entropy request " + event + " processing failed", t);
                 }
             });

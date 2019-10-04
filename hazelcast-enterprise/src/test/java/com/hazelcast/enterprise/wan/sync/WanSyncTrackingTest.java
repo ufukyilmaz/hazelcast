@@ -2,7 +2,6 @@ package com.hazelcast.enterprise.wan.sync;
 
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.impl.replication.DefaultWanBatchSender;
@@ -16,6 +15,7 @@ import com.hazelcast.internal.management.events.WanMerkleSyncFinishedEvent;
 import com.hazelcast.internal.management.events.WanSyncProgressUpdateEvent;
 import com.hazelcast.internal.management.events.WanSyncStartedEvent;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -681,7 +681,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
         private volatile TestContext testContext;
 
         @Override
-        public ICompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent, Address target) {
+        public InternalCompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent, Address target) {
             int syncEntryCount = batchReplicationEvent.getTotalEntryCount();
 
             if (eventCount.addAndGet(syncEntryCount) > suspendSyncAfterRecords) {

@@ -1,6 +1,5 @@
 package com.hazelcast.enterprise.wan.impl.operation;
 
-import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.cluster.impl.operations.WanReplicationOperation;
 import com.hazelcast.map.impl.MapService;
@@ -17,6 +16,7 @@ import com.hazelcast.spi.impl.operationservice.OperationService;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
 
 import static com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication.WAN_EXECUTOR;
 
@@ -52,7 +52,7 @@ public class WanMerkleTreeNodeCompareOperation extends Operation
      * The invocations for fetching local merkle tree values is offloaded
      * to the {@link WanBatchReplication#WAN_EXECUTOR} wanExecutor.
      */
-    private final class OffloadedMerkleTreeComparison extends Offload implements ExecutionCallback<Map<Integer, int[]>> {
+    private final class OffloadedMerkleTreeComparison extends Offload implements BiConsumer<Map<Integer, int[]>, Throwable> {
 
         private OffloadedMerkleTreeComparison() {
             super(WanMerkleTreeNodeCompareOperation.this);
@@ -65,21 +65,20 @@ public class WanMerkleTreeNodeCompareOperation extends Operation
                 OperationService os = getNodeEngine().getOperationService();
                 Executor wanExecutor = nodeEngine.getExecutionService().getExecutor(WAN_EXECUTOR);
                 os.<int[]>invokeOnPartitionsAsync(MapService.SERVICE_NAME, factory, remoteLevels.getPartitionIds())
-                        .andThen(this, wanExecutor);
+                        .whenCompleteAsync(this, wanExecutor);
             } catch (Exception e) {
                 WanMerkleTreeNodeCompareOperation.this.sendResponse(e);
             }
         }
 
         @Override
-        public void onResponse(Map<Integer, int[]> response) {
-            MerkleTreeNodeValueComparison comparison = new MerkleTreeNodeValueComparison(response);
-            WanMerkleTreeNodeCompareOperation.this.sendResponse(comparison);
-        }
-
-        @Override
-        public void onFailure(Throwable t) {
-            WanMerkleTreeNodeCompareOperation.this.sendResponse(t);
+        public void accept(Map<Integer, int[]> response, Throwable throwable) {
+            if (throwable == null) {
+                MerkleTreeNodeValueComparison comparison = new MerkleTreeNodeValueComparison(response);
+                WanMerkleTreeNodeCompareOperation.this.sendResponse(comparison);
+            } else {
+                WanMerkleTreeNodeCompareOperation.this.sendResponse(throwable);
+            }
         }
     }
 
@@ -104,4 +103,6 @@ public class WanMerkleTreeNodeCompareOperation extends Operation
         mapName = in.readUTF();
         remoteLevels = in.readObject();
     }
+
+
 }

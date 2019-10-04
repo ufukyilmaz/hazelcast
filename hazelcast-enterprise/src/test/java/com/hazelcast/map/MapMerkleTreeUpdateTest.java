@@ -7,7 +7,6 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.MapService;
@@ -33,6 +32,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -131,36 +131,36 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
 
     @Test
     public void putAsyncUpdatesMerkleTree() throws Exception {
-        ICompletableFuture<String> future = map.putAsync("42", "42");
+        CompletableFuture<String> future = map.putAsync("42", "42").toCompletableFuture();
         future.get();
         assertNotEquals(0, rootHash());
     }
 
     @Test
     public void secondPutAsyncWithSameValueDoesNotUpdateMerkleTree() throws Exception {
-        ICompletableFuture<String> future = map.putAsync("42", "42");
+        CompletableFuture<String> future = map.putAsync("42", "42").toCompletableFuture();
         future.get();
         int rootHashBeforeReplace = rootHash();
         assertNotEquals(0, rootHashBeforeReplace);
-        future = map.putAsync("42", "42");
+        future = map.putAsync("42", "42").toCompletableFuture();
         future.get();
         assertEquals(rootHashBeforeReplace, rootHash());
     }
 
     @Test
     public void putAsyncTtlUpdatesMerkleTree() throws Exception {
-        ICompletableFuture<String> future = map.putAsync("42", "42", 1, SECONDS);
+        CompletableFuture<String> future = map.putAsync("42", "42", 1, SECONDS).toCompletableFuture();
         future.get();
         assertNotEquals(0, rootHash());
     }
 
     @Test
     public void secondPutAsyncTtlWithSameValueDoesNotUpdateMerkleTree() throws Exception {
-        ICompletableFuture<String> future = map.putAsync("42", "42", 1, SECONDS);
+        CompletableFuture<String> future = map.putAsync("42", "42", 1, SECONDS).toCompletableFuture();
         future.get();
         int rootHashBeforeReplace = rootHash();
         assertNotEquals(0, rootHashBeforeReplace);
-        future = map.putAsync("42", "42", 1, SECONDS);
+        future = map.putAsync("42", "42", 1, SECONDS).toCompletableFuture();
         future.get();
         assertEquals(rootHashBeforeReplace, rootHash());
     }
@@ -247,18 +247,18 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
 
     @Test
     public void setAsyncUpdatesMerkleTree() throws Exception {
-        ICompletableFuture<Void> future = map.setAsync("42", "42", 1, SECONDS);
+        CompletableFuture<Void> future = map.setAsync("42", "42", 1, SECONDS).toCompletableFuture();
         future.get();
         assertNotEquals(0, rootHash());
     }
 
     @Test
     public void secondSetAsyncWithSameValueDoesNotUpdateMerkleTree() throws Exception {
-        ICompletableFuture<Void> future = map.setAsync("42", "42", 1, SECONDS);
+        CompletableFuture<Void> future = map.setAsync("42", "42", 1, SECONDS).toCompletableFuture();
         future.get();
         int rootHashBeforeReplace = rootHash();
         assertNotEquals(0, rootHashBeforeReplace);
-        future = map.setAsync("42", "42", 1, SECONDS);
+        future = map.setAsync("42", "42", 1, SECONDS).toCompletableFuture();
         future.get();
         assertEquals(rootHashBeforeReplace, rootHash());
     }
@@ -318,7 +318,7 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     public void removeAsyncUpdatesMerkleTree() throws Exception {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
-        ICompletableFuture<String> future = map.removeAsync("42");
+        CompletableFuture<String> future = map.removeAsync("42").toCompletableFuture();
         future.get();
         assertEquals(0, rootHash());
     }
@@ -434,11 +434,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
         final int rootHashBeforeReplace = rootHash();
-        ICompletableFuture future = map.submitToKey("42",
+        CompletableFuture future = map.submitToKey("42",
                 entry -> {
                     entry.setValue("42x");
                     return null;
-                });
+                }).toCompletableFuture();
         future.get();
         assertNotEquals(0, rootHash());
         assertNotEquals(rootHashBeforeReplace, rootHash());
@@ -465,11 +465,11 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
     public void submitToKeyRemoveUpdatesMerkleTree() throws Exception {
         map.put("42", "42");
         assertNotEquals(0, rootHash());
-        ICompletableFuture future = map.submitToKey("42",
+        CompletableFuture future = map.submitToKey("42",
                 entry -> {
                     entry.setValue(null);
                     return null;
-                });
+                }).toCompletableFuture();
         future.get();
         assertEquals(0, rootHash());
     }

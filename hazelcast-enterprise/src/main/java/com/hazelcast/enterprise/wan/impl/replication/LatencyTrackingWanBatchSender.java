@@ -1,13 +1,12 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
-import com.hazelcast.core.ExecutionCallback;
-import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin;
 import com.hazelcast.internal.diagnostics.StoreLatencyPlugin.LatencyProbe;
-import com.hazelcast.nio.Address;
 import com.hazelcast.internal.util.ConcurrencyUtil;
 import com.hazelcast.internal.util.ConstructorFunction;
+import com.hazelcast.nio.Address;
+import com.hazelcast.spi.impl.InternalCompletableFuture;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -49,21 +48,11 @@ public class LatencyTrackingWanBatchSender implements WanBatchSender {
     }
 
     @Override
-    public ICompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent,
-                                            final Address target) {
+    public InternalCompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent,
+                                                   final Address target) {
         final long startNanos = System.nanoTime();
-        ICompletableFuture<Boolean> result = delegate.send(batchReplicationEvent, target);
-        result.andThen(new ExecutionCallback<Boolean>() {
-            @Override
-            public void onResponse(Boolean response) {
-                recordLatency(target, startNanos);
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-                recordLatency(target, startNanos);
-            }
-        }, responseExecutor);
+        InternalCompletableFuture<Boolean> result = delegate.send(batchReplicationEvent, target);
+        result.whenCompleteAsync((response, t) -> recordLatency(target, startNanos), responseExecutor);
         return result;
     }
 

@@ -15,6 +15,7 @@ public class RaftSessionAwareSemaphorePersistenceClientTest extends RaftSessionA
     protected HazelcastInstance createProxyInstance(Config config) {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getNetworkConfig().setRedoOperation(true);
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setFailOnMaxBackoff(false);
         return factory.newHazelcastClient(clientConfig);
     }
 

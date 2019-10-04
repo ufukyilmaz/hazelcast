@@ -1,8 +1,9 @@
 package com.hazelcast.internal.hotrestart.impl.io;
 
 import com.hazelcast.core.HazelcastException;
+import com.hazelcast.internal.hotrestart.impl.encryption.EncryptionManager;
 import com.hazelcast.internal.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -12,6 +13,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -19,21 +24,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.hotrestart.impl.io.ChunkFilesetCursor.removeActiveSuffix;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.assertRecordEquals;
+import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createEncryptionMgr;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createGcHelper;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.generateRandomRecords;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.populateChunkFile;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(HazelcastParallelClassRunner.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class ChunkFilesetCursorIntegrationTest {
 
@@ -43,13 +50,23 @@ public class ChunkFilesetCursorIntegrationTest {
     private final AtomicInteger counter = new AtomicInteger(1);
 
     private File testingHome;
+    private EncryptionManager encryptionMgr;
     private GcHelper gcHelper;
+
+    @Parameters(name = "encrypted:{0}")
+    public static Object[] data() {
+        return new Object[] { false, true };
+    }
+
+    @Parameter
+    public boolean encrypted;
 
     @Before
     public void before() {
         testingHome = isolatedFolder(getClass(), testName);
         createFolder(testingHome);
-        gcHelper = createGcHelper(testingHome);
+        encryptionMgr = createEncryptionMgr(testingHome, encrypted);
+        gcHelper = createGcHelper(testingHome, encryptionMgr);
     }
 
     @After
@@ -74,13 +91,13 @@ public class ChunkFilesetCursorIntegrationTest {
         // Given
         final File emptyFile = generateFileWithGivenRecords(1, Collections.<TestRecord>emptyList(), true);
         assertTrue(emptyFile.exists());
-        final List<File> chunkFiles = new ArrayList<File>(asList(
+        final List<File> chunkFiles = new ArrayList<>(asList(
                 emptyFile,
                 generateFileWithGivenRecords(2, generateRandomRecords(counter, 1), true)
         ));
 
         // When
-        final ChunkFilesetCursor cursor = new ChunkFilesetCursor.Val(chunkFiles);
+        final ChunkFilesetCursor cursor = new ChunkFilesetCursor.Val(chunkFiles, encryptionMgr);
 
         // Then
         assertTrue(cursor.advance());
@@ -101,13 +118,13 @@ public class ChunkFilesetCursorIntegrationTest {
         List<TestRecord> recordsSecond = generateRandomRecords(counter, recordSizeSecond);
 
         // GIVEN files with records
-        List<File> files = new ArrayList<File>();
+        List<File> files = new ArrayList<>();
         files.add(generateFileWithGivenRecords(1, recordsFirst, createValueChunks));
         files.add(generateFileWithGivenRecords(2, recordsSecond, createValueChunks));
 
         // WHEN
         ChunkFilesetCursor cursor = createValueChunks
-                ? new ChunkFilesetCursor.Val(files) : new ChunkFilesetCursor.Tomb(files);
+                ? new ChunkFilesetCursor.Val(files, encryptionMgr) : new ChunkFilesetCursor.Tomb(files, encryptionMgr);
 
         // THEN
         int count = 0;
@@ -128,13 +145,14 @@ public class ChunkFilesetCursorIntegrationTest {
     }
 
     private File generateFileWithGivenRecords(int chunkSeq, List<TestRecord> records, boolean valueRecords) {
-        return populateChunkFile(gcHelper.chunkFile("testing", chunkSeq, ".chunk", true), records, valueRecords);
+        return populateChunkFile(gcHelper.chunkFile("testing", chunkSeq, ".chunk", true), records,
+                valueRecords, encryptionMgr);
     }
 
     private static List<TestRecord> buildListWillAllRecordsInIterationOrder(ChunkFileRecord firstReadRecord,
                                                                             List<TestRecord> recordsFirst,
                                                                             List<TestRecord> recordsSecond) {
-        List<TestRecord> recordsAllInOrder = new ArrayList<TestRecord>();
+        List<TestRecord> recordsAllInOrder = new ArrayList<>();
         if (firstReadRecord.recordSeq() == recordsFirst.get(0).recordSeq) {
             recordsAllInOrder.addAll(recordsFirst);
             recordsAllInOrder.addAll(recordsSecond);

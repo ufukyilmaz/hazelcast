@@ -1,15 +1,11 @@
 package com.hazelcast.internal.hotrestart.impl;
 
-import com.hazelcast.internal.util.BufferingInputStream;
-import com.hazelcast.internal.util.concurrent.ConcurrentConveyor;
-import com.hazelcast.internal.util.concurrent.ConcurrentConveyorException;
-import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
-import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.KeyHandle;
 import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.internal.hotrestart.impl.di.Inject;
 import com.hazelcast.internal.hotrestart.impl.di.Name;
+import com.hazelcast.internal.hotrestart.impl.encryption.EncryptionManager;
 import com.hazelcast.internal.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.internal.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.internal.hotrestart.impl.gc.PrefixTombstoneManager;
@@ -17,8 +13,13 @@ import com.hazelcast.internal.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.internal.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.internal.hotrestart.impl.io.ChunkFilesetCursor;
+import com.hazelcast.internal.nio.IOUtil;
+import com.hazelcast.internal.util.BufferingInputStream;
 import com.hazelcast.internal.util.collection.Long2LongHashMap;
 import com.hazelcast.internal.util.collection.Long2ObjectHashMap;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyor;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyorException;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -34,9 +35,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
-import static com.hazelcast.internal.util.concurrent.ConcurrentConveyor.SUBMIT_IDLER;
-import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
-import static com.hazelcast.internal.nio.IOUtil.readFullyOrNothing;
 import static com.hazelcast.internal.hotrestart.impl.RamStoreRestartLoop.DRAIN_IDLER;
 import static com.hazelcast.internal.hotrestart.impl.RestartItem.clearedItem;
 import static com.hazelcast.internal.hotrestart.impl.gc.GcHelper.BUCKET_DIRNAME_DIGITS;
@@ -44,8 +42,11 @@ import static com.hazelcast.internal.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTON
 import static com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
 import static com.hazelcast.internal.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
+import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.internal.nio.IOUtil.readFullyOrNothing;
 import static com.hazelcast.internal.util.ExceptionUtil.sneakyThrow;
 import static com.hazelcast.internal.util.collection.Long2LongHashMap.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.internal.util.concurrent.ConcurrentConveyor.SUBMIT_IDLER;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 
@@ -101,6 +102,7 @@ public final class HotRestarter {
     private final ConcurrentConveyorSingleQueue<RestartItem>[] valueSenders;
     private final GcLogger logger;
     private final RamStoreRegistry reg;
+    private final EncryptionManager encryptionMgr;
 
     private Rebuilder rebuilder;
     private Long2LongHashMap prefixTombstones;
@@ -109,8 +111,8 @@ public final class HotRestarter {
     @SuppressWarnings("checkstyle:parameternumber")
     HotRestarter(
             Rebuilder rebuilder, PrefixTombstoneManager pfixTombstoMgr, GcHelper gcHelper, RamStoreRegistry reg, GcLogger logger,
-            @Name("homeDir") File homeDir, @Name("storeName") String storeName, @Name("storeCount") Integer storeCount,
-            @Name("keyConveyors") ConcurrentConveyorSingleQueue<RestartItem>[] keySenders,
+            EncryptionManager encryptionMgr, @Name("homeDir") File homeDir, @Name("storeName") String storeName,
+            @Name("storeCount") Integer storeCount, @Name("keyConveyors") ConcurrentConveyorSingleQueue<RestartItem>[] keySenders,
             @Name("keyHandleConveyor") ConcurrentConveyor<RestartItem> keyHandleReceiver,
             @Name("valueConveyors") ConcurrentConveyorSingleQueue<RestartItem>[] valueSenders
     ) {
@@ -119,6 +121,7 @@ public final class HotRestarter {
         this.gcHelper = gcHelper;
         this.reg = reg;
         this.logger = logger;
+        this.encryptionMgr = encryptionMgr;
         this.homeDir = homeDir;
         this.storeName = storeName;
         this.storeCount = storeCount;
@@ -136,8 +139,8 @@ public final class HotRestarter {
             pfixTombstoMgr.setPrefixTombstones(prefixTombstones);
             this.prefixTombstones = prefixTombstones;
             rebuilder.setMaxSeq(pfixTombstoMgr.maxRecordSeq());
-            final ChunkFilesetCursor tombCursor = new ChunkFilesetCursor.Tomb(sortedChunkFiles(TOMB_BASEDIR));
-            final ChunkFilesetCursor valCursor = new ChunkFilesetCursor.Val(sortedChunkFiles(VAL_BASEDIR));
+            final ChunkFilesetCursor tombCursor = new ChunkFilesetCursor.Tomb(sortedChunkFiles(TOMB_BASEDIR), encryptionMgr);
+            final ChunkFilesetCursor valCursor = new ChunkFilesetCursor.Val(sortedChunkFiles(VAL_BASEDIR), encryptionMgr);
             if (failIfAnyData && (tombCursor.advance() || valCursor.advance())) {
                 throw new HotRestartException("failIfAnyData == true and there's data to reload");
             }

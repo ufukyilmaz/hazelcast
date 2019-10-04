@@ -27,6 +27,7 @@ import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCach
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.internal.hotrestart.encryption.TestHotRestartEncryptionUtils.withBasicEncryptionAtRestConfig;
 import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport {
@@ -44,6 +45,9 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
 
     @Parameter(3)
     public boolean evictionEnabled;
+
+    @Parameter(4)
+    public boolean encrypted;
 
     String cacheName;
 
@@ -118,6 +122,11 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
                     .setSize(getNativeMemorySize())
                     .setMetadataSpacePercentage(20);
         }
+
+        if (encrypted) {
+            config = withBasicEncryptionAtRestConfig(config);
+        }
+
         return config;
     }
 

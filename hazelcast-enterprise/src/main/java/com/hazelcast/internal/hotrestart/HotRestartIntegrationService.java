@@ -15,18 +15,6 @@ import com.hazelcast.instance.impl.Node;
 import com.hazelcast.instance.impl.NodeState;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
-import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
-import com.hazelcast.internal.partition.InternalPartition;
-import com.hazelcast.internal.partition.InternalPartitionService;
-import com.hazelcast.internal.partition.PartitionReplica;
-import com.hazelcast.internal.partition.operation.SafeStateCheckOperation;
-import com.hazelcast.internal.services.ManagedService;
-import com.hazelcast.internal.util.DirectoryLock;
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.operation.MerkleTreeRebuildOperation;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.nio.Address;
 import com.hazelcast.internal.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.internal.hotrestart.cluster.ClusterHotRestartStatusDTOUtil;
 import com.hazelcast.internal.hotrestart.cluster.ClusterMetadataManager;
@@ -35,13 +23,26 @@ import com.hazelcast.internal.hotrestart.cluster.SendExcludedMemberUuidsOperatio
 import com.hazelcast.internal.hotrestart.cluster.TriggerForceStartOnMasterOperation;
 import com.hazelcast.internal.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.internal.hotrestart.impl.RamStoreRestartLoop;
+import com.hazelcast.internal.hotrestart.impl.encryption.HotRestartStoreEncryptionConfig;
+import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.partition.InternalPartition;
+import com.hazelcast.internal.partition.InternalPartitionService;
+import com.hazelcast.internal.partition.PartitionReplica;
+import com.hazelcast.internal.partition.operation.SafeStateCheckOperation;
+import com.hazelcast.internal.services.ManagedService;
+import com.hazelcast.internal.util.DirectoryLock;
+import com.hazelcast.internal.util.UuidUtil;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.operation.MerkleTreeRebuildOperation;
+import com.hazelcast.nio.Address;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationThread;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
-import com.hazelcast.internal.util.UuidUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,13 +70,13 @@ import static com.hazelcast.hotrestart.BackupTaskState.IN_PROGRESS;
 import static com.hazelcast.hotrestart.BackupTaskState.NO_TASK;
 import static com.hazelcast.hotrestart.BackupTaskState.SUCCESS;
 import static com.hazelcast.hotrestart.HotRestartService.BACKUP_DIR_PREFIX;
-import static com.hazelcast.internal.util.DirectoryLock.lockForDirectory;
-import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.hotrestart.PersistentConfigDescriptors.toPartitionId;
 import static com.hazelcast.internal.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 import static com.hazelcast.internal.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
 import static com.hazelcast.internal.hotrestart.impl.HotRestartModule.newOnHeapHotRestartStore;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.util.Clock.currentTimeMillis;
+import static com.hazelcast.internal.util.DirectoryLock.lockForDirectory;
 import static com.hazelcast.internal.util.MapUtil.createConcurrentHashMap;
 import static com.hazelcast.internal.util.ThreadUtil.createThreadName;
 import static java.lang.Thread.currentThread;
@@ -114,6 +115,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private final boolean autoRemoveStaleData;
     private final List<LoadedConfigurationListener> loadedConfigurationListeners;
     private final boolean legacyHotRestartDir;
+    private final EncryptionHelper encryptionHelper;
 
     private volatile HotRestartStore[] onHeapStores;
     private volatile HotRestartStore[] offHeapStores;
@@ -134,6 +136,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         this.persistentConfigDescriptors = new PersistentConfigDescriptors(hotRestartHome);
         this.dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(config.getDataLoadTimeoutSeconds());
         this.loadedConfigurationListeners = new ArrayList<>();
+        this.encryptionHelper = new EncryptionHelper(config.getEncryptionAtRestConfig());
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
@@ -309,6 +312,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         }
         persistentConfigDescriptors.restore(node.getSerializationService(), loadedConfigurationListeners);
         clusterMetadataManager.prepare();
+        encryptionHelper.prepare(node, this::rotateEncryptionKey);
         createHotRestartStores();
     }
 
@@ -641,6 +645,9 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         logger.fine("Closing all hot-restart stores");
         closeHotRestartStores();
 
+        logger.fine("Closing encryption subsystem");
+        encryptionHelper.dispose();
+
         directoryLock.release();
 
         if (logger.isFineEnabled()) {
@@ -700,12 +707,15 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private HotRestartStoreConfig newHotRestartStoreConfig(int storeId, boolean onheap) {
         File dir = storeDir(storeId, onheap);
         String name = createThreadName(node.hazelcastInstance.getName(), dir.getName());
-        return new HotRestartStoreConfig()
-                .setStoreName(name)
+        HotRestartStoreEncryptionConfig encryptionConfig = new HotRestartStoreEncryptionConfig()
+                .setCipherBuilder(encryptionHelper.newCipherBuilder()).setInitialKeysSupplier(encryptionHelper)
+                .setKeySize(encryptionHelper.getKeySize());
+        return new HotRestartStoreConfig().setStoreName(name)
                 .setHomeDir(dir)
                 .setRamStoreRegistry(this)
                 .setLoggingService(node.loggingService)
-                .setMetricsRegistry(node.nodeEngine.getMetricsRegistry());
+                .setMetricsRegistry(node.nodeEngine.getMetricsRegistry())
+                .setEncryptionConfig(encryptionConfig);
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
@@ -900,7 +910,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
     private OperationExecutor getOperationExecutor() {
         NodeEngineImpl nodeEngine = node.getNodeEngine();
-        OperationServiceImpl operationService = (OperationServiceImpl) nodeEngine.getOperationService();
+        OperationServiceImpl operationService = nodeEngine.getOperationService();
         return operationService.getOperationExecutor();
     }
 
@@ -1053,5 +1063,18 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
     public File getHotRestartHome() {
         return hotRestartHome;
+    }
+
+    private void rotateEncryptionKey(byte[] key) {
+        rotateEncryptionKey(key, onHeapStores);
+        rotateEncryptionKey(key, offHeapStores);
+    }
+
+    private void rotateEncryptionKey(byte[] key, HotRestartStore[] stores) {
+        if (stores != null) {
+            for (int i = 0; i < storeCount; i++) {
+                stores[i].rotateMasterEncryptionKey(key);
+            }
+        }
     }
 }

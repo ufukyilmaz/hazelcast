@@ -125,4 +125,10 @@ public interface HotRestartStore {
      * Interrupts the backup task if one is currently running. The contents of the target backup directory will be left as-is
      */
     void interruptBackupTask();
+
+    /**
+     * Rotates the master encryption key to the specified key. No-op if encryption is not enabled.
+     * @param key the key to rotate to
+     */
+    void rotateMasterEncryptionKey(byte[] key);
 }

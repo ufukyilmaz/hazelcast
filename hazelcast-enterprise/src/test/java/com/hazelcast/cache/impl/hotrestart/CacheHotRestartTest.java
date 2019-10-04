@@ -32,17 +32,18 @@ import static org.junit.Assert.assertThat;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
 
-    @Parameters(name = "memoryFormat:{0} fsync:{2} clusterSize:{4}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2} encrypted:{4} clusterSize:{5}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY, KEY_COUNT, false, false, 1},
-                {InMemoryFormat.BINARY, KEY_COUNT, false, false, 3},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, 1},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, 3},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, false, 1},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, false, 3},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, false, 1},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, false, 3},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, true, 1},
         });
     }
 
-    @Parameter(4)
+    @Parameter(5)
     public int clusterSize;
 
     private ICache<Integer, String> cache;

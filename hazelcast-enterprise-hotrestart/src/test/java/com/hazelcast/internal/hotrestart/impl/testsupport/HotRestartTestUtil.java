@@ -1,9 +1,13 @@
 package com.hazelcast.internal.hotrestart.impl.testsupport;
 
+import com.hazelcast.config.EncryptionAtRestConfig;
 import com.hazelcast.instance.BuildInfo;
 import com.hazelcast.internal.hotrestart.impl.ConcurrentHotRestartStore;
 import com.hazelcast.internal.hotrestart.impl.HotRestartStoreConfig;
+import com.hazelcast.internal.hotrestart.impl.encryption.HotRestartStoreEncryptionConfig;
 import com.hazelcast.internal.hotrestart.impl.di.DiContainer;
+import com.hazelcast.internal.hotrestart.impl.encryption.EncryptionManager;
+import com.hazelcast.internal.hotrestart.impl.encryption.HotRestartCipherBuilder;
 import com.hazelcast.internal.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.internal.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.internal.hotrestart.impl.gc.GcLogger;
@@ -15,11 +19,13 @@ import com.hazelcast.internal.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
 import com.hazelcast.internal.hotrestart.impl.io.ChunkFileOut;
 import com.hazelcast.internal.hotrestart.impl.io.ChunkFileRecord;
+import com.hazelcast.internal.hotrestart.impl.io.EncryptedChunkFileOut;
 import com.hazelcast.internal.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
+import com.hazelcast.internal.util.StringUtil;
 import com.hazelcast.internal.util.collection.Long2LongHashMap;
 import com.hazelcast.internal.util.collection.Long2LongHashMap.LongLongCursor;
 import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
@@ -38,6 +44,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +76,10 @@ public class HotRestartTestUtil {
     public static ILogger logger;
 
     private static final String LOGGER_NAME = "com.hazelcast.internal.hotrestart";
+
+    private static final String AES_CBC_PKCS5PADDING = "AES/CBC/PKCS5Padding";
+    private static final String SALT = "sugar";
+    private static final byte[] KEY_BYTES = StringUtil.stringToBytes("0123456789012345");
 
     public static void fillStore(MockStoreRegistry reg, TestProfile profile) {
         int totalPutCount = profile.keysetSize * profile.prefixCount;
@@ -243,14 +254,12 @@ public class HotRestartTestUtil {
         }
     }
 
-    public static HotRestartStoreConfig hrStoreConfig(File testingHome) {
+    public static HotRestartStoreConfig hrStoreConfig(File testingHome, boolean encrypted) {
         LoggingService loggingService = createLoggingService();
         logger = loggingService.getLogger(LOGGER_NAME);
-        return new HotRestartStoreConfig()
-                .setStoreName("hr-store")
-                .setHomeDir(new File(testingHome, "hr-store"))
-                .setLoggingService(loggingService)
-                .setMetricsRegistry(metricsRegistry(loggingService));
+        return new HotRestartStoreConfig().setStoreName("hr-store").setHomeDir(new File(testingHome, "hr-store"))
+                                          .setLoggingService(loggingService).setMetricsRegistry(metricsRegistry(loggingService))
+                                          .setEncryptionConfig(createHotRestartStoreEncryptionConfig(encrypted));
     }
 
     public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) {
@@ -277,24 +286,18 @@ public class HotRestartTestUtil {
     public static MutatorCatchup createMutatorCatchup() {
         return createBaseDiContainer()
                 .dep("gcConveyor", concurrentConveyorSingleQueue(null, new OneToOneConcurrentArrayQueue<Runnable>(1)))
-                .dep(Snapshotter.class, mock(Snapshotter.class))
-                .dep(MutatorCatchup.class)
-                .wireAndInitializeAll()
+                .dep(Snapshotter.class, mock(Snapshotter.class)).dep(MutatorCatchup.class).wireAndInitializeAll()
                 .get(MutatorCatchup.class);
     }
 
-    public static GcHelper createGcHelper(File homeDir) {
-        return createBaseDiContainer()
-                .dep("homeDir", homeDir)
-                .wireAndInitializeAll()
-                .instantiate(GcHelper.OnHeap.class);
+    public static GcHelper createGcHelper(File homeDir, EncryptionManager encryptionMgr) {
+        return createBaseDiContainer().dep("homeDir", homeDir).dep(encryptionMgr).wireAndInitializeAll()
+                                      .instantiate(GcHelper.OnHeap.class);
     }
 
     public static DiContainer createBaseDiContainer() {
-        return new DiContainer()
-                .dep(ILogger.class, createHotRestartLogger())
-                .dep(new HazelcastProperties(new Properties()))
-                .dep(GcLogger.class);
+        return new DiContainer().dep(ILogger.class, createHotRestartLogger()).dep(new HazelcastProperties(new Properties()))
+                                .dep(GcLogger.class);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -302,8 +305,7 @@ public class HotRestartTestUtil {
         ((ConcurrentHotRestartStore) reg.hrStore).getDi().get(GcExecutor.class).runWhileGcPaused(task);
     }
 
-    public static void assertRecordEquals(TestRecord expected, DataInputStream actual, boolean valueChunk)
-            throws Exception {
+    public static void assertRecordEquals(TestRecord expected, DataInputStream actual, boolean valueChunk) throws Exception {
         assertRecordEquals("", expected, actual, valueChunk);
     }
 
@@ -317,11 +319,11 @@ public class HotRestartTestUtil {
         }
 
         byte[] actualKeyBytes = new byte[expected.keyBytes.length];
-        actual.read(actualKeyBytes, 0, expected.keyBytes.length);
+        actual.readFully(actualKeyBytes);
         assertArrayEquals(msg, expected.keyBytes, actualKeyBytes);
         if (valueChunk) {
             byte[] actualValueBytes = new byte[expected.valueBytes.length];
-            actual.read(actualValueBytes, 0, expected.valueBytes.length);
+            actual.readFully(actualValueBytes);
             assertArrayEquals(msg, expected.valueBytes, actualValueBytes);
         }
     }
@@ -339,13 +341,15 @@ public class HotRestartTestUtil {
         assertRecordEquals("", expected, actual, valueChunk);
     }
 
-    public static File populateChunkFile(File file, List<TestRecord> records, boolean wantValueChunk) {
+    public static File populateChunkFile(File file, List<TestRecord> records, boolean wantValueChunk,
+                                         EncryptionManager encryptionMgr) {
         ChunkFileOut out = null;
         try {
-            out = new ChunkFileOut(file, createMutatorCatchup());
-            ActiveChunk chunk = wantValueChunk
-                    ? new ActiveValChunk(0, null, out, mock(GcHelper.class))
-                    : new WriteThroughTombChunk(0, ACTIVE_FNAME_SUFFIX, null, out, mock(GcHelper.class));
+            MutatorCatchup mc = createMutatorCatchup();
+            out = encryptionMgr.isEncryptionEnabled() ? new EncryptedChunkFileOut(file, mc,
+                    encryptionMgr.newWriteCipher()) : new ChunkFileOut(file, mc);
+            ActiveChunk chunk = wantValueChunk ? new ActiveValChunk(0, null, out,
+                    mock(GcHelper.class)) : new WriteThroughTombChunk(0, ACTIVE_FNAME_SUFFIX, null, out, mock(GcHelper.class));
             for (TestRecord record : records) {
                 chunk.addStep1(record.recordSeq, record.keyPrefix, record.keyBytes, record.valueBytes);
             }
@@ -357,8 +361,8 @@ public class HotRestartTestUtil {
         }
     }
 
-    public static File populateTombRecordFile(File file, List<TestRecord> records) {
-        return populateChunkFile(file, records, false);
+    public static File populateTombRecordFile(File file, List<TestRecord> records, EncryptionManager encryptionMgr) {
+        return populateChunkFile(file, records, false, encryptionMgr);
     }
 
     public static List<TestRecord> generateRandomRecords(AtomicInteger counter, int count) {
@@ -388,4 +392,23 @@ public class HotRestartTestUtil {
             }
         }
     }
+
+    public static EncryptionManager createEncryptionMgr(File homeDir, boolean encrypted) {
+        HotRestartStoreEncryptionConfig encryptionConfig = createHotRestartStoreEncryptionConfig(encrypted);
+        return new EncryptionManager(homeDir, encryptionConfig);
+    }
+
+    public static HotRestartStoreEncryptionConfig createHotRestartStoreEncryptionConfig(boolean encrypted) {
+        EncryptionAtRestConfig encryptionAtRestConfig = new EncryptionAtRestConfig();
+        if (encrypted) {
+            encryptionAtRestConfig.setEnabled(true);
+            encryptionAtRestConfig.setAlgorithm(AES_CBC_PKCS5PADDING);
+            encryptionAtRestConfig.setSalt(SALT);
+        }
+        return new HotRestartStoreEncryptionConfig()
+                .setCipherBuilder(encryptionAtRestConfig.isEnabled() ? new HotRestartCipherBuilder(encryptionAtRestConfig) : null)
+                .setInitialKeysSupplier(() -> Collections.singletonList(KEY_BYTES))
+                .setKeySize(encryptionAtRestConfig.getKeySize());
+    }
+
 }

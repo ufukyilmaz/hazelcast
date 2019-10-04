@@ -1,20 +1,17 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.config.ServiceConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
-import com.hazelcast.cluster.Member;
+import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.instance.impl.NodeExtension;
 import com.hazelcast.instance.impl.NodeState;
-import com.hazelcast.internal.partition.PartitionTableView;
-import com.hazelcast.internal.services.ManagedService;
-import com.hazelcast.nio.Address;
-import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.KeyHandle;
@@ -23,6 +20,9 @@ import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.internal.hotrestart.RecordDataSink;
 import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.internal.partition.PartitionTableView;
+import com.hazelcast.internal.services.ManagedService;
+import com.hazelcast.nio.Address;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
@@ -36,6 +36,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
@@ -55,6 +56,7 @@ import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartCluste
 import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.NEVER;
 import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.SOMETIMES;
 import static com.hazelcast.internal.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS;
+import static com.hazelcast.internal.hotrestart.encryption.TestHotRestartEncryptionUtils.withBasicEncryptionAtRestConfig;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -66,16 +68,20 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameters(name = "reuseAddress:{0}")
-    public static Collection<Object> parameters() {
-        return asList(new Object[]{
-                ALWAYS,
-                SOMETIMES,
-                NEVER
+    @Parameters(name = "reuseAddress:{0} encrypted:{1}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {ALWAYS, false},
+                {SOMETIMES, false},
+                {NEVER, false},
+                {ALWAYS, true},
         });
     }
 
     private final int nodeCount = 3;
+
+    @Parameter(1)
+    public boolean encrypted;
 
     @Test
     public void testForceStart_onMissingNode() {
@@ -276,6 +282,9 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
         Config config = super.newConfig(listener, clusterStartPolicy);
         config.getServicesConfig().addServiceConfig(serviceConfig);
+        if (encrypted) {
+            config = withBasicEncryptionAtRestConfig(config);
+        }
         return config;
     }
 

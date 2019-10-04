@@ -2,7 +2,6 @@ package com.hazelcast.internal.nio;
 
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.internal.nio.CipherHelper.SymmetricCipherBuilder;
 import com.hazelcast.internal.util.RootCauseMatcher;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
@@ -18,7 +17,6 @@ import java.security.NoSuchAlgorithmException;
 
 import static com.hazelcast.internal.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.internal.nio.CipherHelper.createSymmetricWriterCipher;
-import static com.hazelcast.internal.nio.CipherHelper.initBouncySecurityProvider;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isNull;
@@ -55,7 +53,7 @@ public class CipherHelperTest extends HazelcastTestSupport {
         try {
             System.setProperty("hazelcast.security.bouncy.enabled", "true");
 
-            initBouncySecurityProvider();
+            CipherHelper.initBouncySecurityProvider();
         } finally {
             System.clearProperty("hazelcast.security.bouncy.enabled");
         }
@@ -63,10 +61,8 @@ public class CipherHelperTest extends HazelcastTestSupport {
 
     @Test
     public void testCreateCipher_withInvalidConfiguration() {
-        SymmetricCipherBuilder builder = new SymmetricCipherBuilder(invalidConfiguration);
-
         expectedException.expect(new RootCauseMatcher(NoSuchAlgorithmException.class));
-        builder.create(true);
+        CipherHelper.createSymmetricWriterCipher(invalidConfiguration);
     }
 
     @Test

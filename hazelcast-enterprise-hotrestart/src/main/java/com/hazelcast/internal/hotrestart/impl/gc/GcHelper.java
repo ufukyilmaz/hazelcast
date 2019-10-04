@@ -1,13 +1,10 @@
 package com.hazelcast.internal.hotrestart.impl.gc;
 
-import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.memory.MemoryManager;
-import com.hazelcast.internal.memory.impl.MemoryManagerBean;
-import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.internal.hotrestart.impl.di.Inject;
 import com.hazelcast.internal.hotrestart.impl.di.Name;
+import com.hazelcast.internal.hotrestart.impl.encryption.EncryptionManager;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.StableChunk;
@@ -22,20 +19,26 @@ import com.hazelcast.internal.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.internal.hotrestart.impl.gc.tracker.TrackerMapOffHeap;
 import com.hazelcast.internal.hotrestart.impl.gc.tracker.TrackerMapOnHeap;
 import com.hazelcast.internal.hotrestart.impl.io.ChunkFileOut;
+import com.hazelcast.internal.hotrestart.impl.io.EncryptedChunkFileOut;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
+import com.hazelcast.internal.nio.Disposable;
 
+import javax.crypto.Cipher;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.internal.nio.IOUtil.delete;
-import static com.hazelcast.internal.nio.IOUtil.rename;
 import static com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk.ACTIVE_FNAME_SUFFIX;
 import static com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk.SURVIVOR_FNAME_SUFFIX;
 import static com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
 import static com.hazelcast.internal.hotrestart.impl.gc.record.RecordMapOffHeap.newRecordMapOffHeap;
 import static com.hazelcast.internal.hotrestart.impl.gc.record.RecordMapOffHeap.newTombstoneMapOffHeap;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.nio.IOUtil.delete;
+import static com.hazelcast.internal.nio.IOUtil.rename;
 
 /**
  * Contains common constants, global counters, static utility methods, and system resource-oriented methods used
@@ -73,14 +76,16 @@ public abstract class GcHelper implements Disposable {
 
     /** Hot Restart Store's home directory. */
     final File homeDir;
+    final EncryptionManager encryptionMgr;
     final GcLogger logger;
 
     private final AtomicLong chunkSeq = new AtomicLong();
     private volatile long recordSeq;
 
-    GcHelper(File homeDir, GcLogger logger) {
+    GcHelper(File homeDir, GcLogger logger, EncryptionManager encryptionMgr) {
         this.homeDir = homeDir;
         this.logger = logger;
+        this.encryptionMgr = encryptionMgr;
     }
 
     /** Creates a new active value chunk file and returns an instance of {@link ActiveValChunk} that wraps it. */
@@ -118,10 +123,12 @@ public abstract class GcHelper implements Disposable {
                 this);
     }
 
-    private static ChunkFileOut chunkFileOut(File f, MutatorCatchup mc) {
+    private ChunkFileOut chunkFileOut(File f, MutatorCatchup mc) {
         try {
-            return new ChunkFileOut(f, mc);
-        } catch (FileNotFoundException e) {
+            // newWriteCipher() returns null if encryption is not enabled
+            Cipher cipher = encryptionMgr.newWriteCipher();
+            return cipher == null ? new ChunkFileOut(f, mc) : new EncryptedChunkFileOut(f, mc, cipher);
+        } catch (IOException e) {
             throw new HotRestartException(e);
         }
     }
@@ -246,8 +253,8 @@ public abstract class GcHelper implements Disposable {
     public static final class OnHeap extends GcHelper {
 
         @Inject
-        private OnHeap(@Name("homeDir") File homeDir, GcLogger logger) {
-            super(homeDir, logger);
+        private OnHeap(@Name("homeDir") File homeDir, GcLogger logger, EncryptionManager encryptionMgr) {
+            super(homeDir, logger, encryptionMgr);
         }
 
         @Override
@@ -282,8 +289,8 @@ public abstract class GcHelper implements Disposable {
         private final MemoryManager mmapMgrWithCompaction;
 
         @Inject
-        private OffHeap(MemoryAllocator malloc, @Name("homeDir") File homeDir, GcLogger logger) {
-            super(homeDir, logger);
+        private OffHeap(MemoryAllocator malloc, @Name("homeDir") File homeDir, GcLogger logger, EncryptionManager encryptionMgr) {
+            super(homeDir, logger, encryptionMgr);
             this.ramMgr = wrapWithAmem(malloc);
             this.mmapMgr = wrapWithAmem(new MmapMalloc(new File(homeDir, "mmap"), false));
             this.mmapMgrWithCompaction =

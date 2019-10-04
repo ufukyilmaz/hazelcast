@@ -1,20 +1,19 @@
 package com.hazelcast.internal.hotrestart.impl;
 
-import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.logging.LoggingService;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.hotrestart.impl.testsupport.MockStoreRegistry;
 import com.hazelcast.internal.hotrestart.impl.testsupport.TestProfile;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.util.collection.Long2LongHashMap;
+import com.hazelcast.logging.LoggingService;
+import com.hazelcast.memory.MemorySize;
 
 import java.io.File;
 import java.util.Map;
 
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
-import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
-import static com.hazelcast.internal.nio.IOUtil.delete;
+import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createHotRestartStoreEncryptionConfig;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createStoreRegistry;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.exercise;
@@ -23,6 +22,8 @@ import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestU
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.metricsRegistry;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.summarize;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.verifyRestartedStore;
+import static com.hazelcast.internal.nio.IOUtil.delete;
+import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.test.HazelcastTestSupport.sleepMillis;
 import static com.hazelcast.test.HazelcastTestSupport.sleepSeconds;
 import static java.lang.Thread.currentThread;
@@ -41,7 +42,8 @@ class HotRestartStoreExerciser {
                 .setStoreName("hr-store")
                 .setHomeDir(new File(testingHome, "hr-store"))
                 .setLoggingService(loggingService)
-                .setMetricsRegistry(metricsRegistry(loggingService));
+                .setMetricsRegistry(metricsRegistry(loggingService))
+                .setEncryptionConfig(createHotRestartStoreEncryptionConfig(profile.encrypted));
         final int offHeapMb = profile.offHeapMb;
         if (offHeapMb > 0) {
             final PoolingMemoryManager malloc = new PoolingMemoryManager(

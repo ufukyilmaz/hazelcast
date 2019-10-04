@@ -50,7 +50,7 @@ final class ValEvacuator {
     }
 
     void evacuate() {
-        this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
+        this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<>();
         final SortedBySeqRecordCursor liveRecords = sortedLiveRecords();
         logger.finest("ValueGC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
         moveToSurvivors(liveRecords);

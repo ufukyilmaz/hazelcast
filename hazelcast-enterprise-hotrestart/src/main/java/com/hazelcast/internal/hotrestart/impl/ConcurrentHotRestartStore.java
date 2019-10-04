@@ -123,6 +123,11 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
     }
 
     @Override
+    public void rotateMasterEncryptionKey(byte[] key) {
+        submitAndProceedWhenAllowed(persistence.new RotateMasterEncryptionKey(key));
+    }
+
+    @Override
     public String name() {
         return name;
     }

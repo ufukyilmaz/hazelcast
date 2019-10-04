@@ -19,12 +19,13 @@ import static java.util.Arrays.asList;
 @Category({SlowTest.class, ParallelJVMTest.class})
 public class CacheOperationsSlowTest extends CacheOperationsTest {
 
-    @Parameters(name = "memoryFormat:{0} fsync:{2}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2} encrypted:{4}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.OBJECT, KEY_COUNT, true, false},
-                {InMemoryFormat.BINARY, KEY_COUNT, true, false},
-                {InMemoryFormat.NATIVE, KEY_COUNT, true, false},
+                {InMemoryFormat.OBJECT, KEY_COUNT, true, false, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, true, false, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, true, false, false},
+                {InMemoryFormat.OBJECT, KEY_COUNT, true, false, true},
         });
     }
 }

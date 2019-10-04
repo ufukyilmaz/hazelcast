@@ -1,11 +1,12 @@
 package com.hazelcast.internal.hotrestart.impl;
 
+import com.hazelcast.hotrestart.HotRestartException;
+import com.hazelcast.internal.hotrestart.RamStoreRegistry;
+import com.hazelcast.internal.hotrestart.impl.encryption.HotRestartStoreEncryptionConfig;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggingService;
-import com.hazelcast.hotrestart.HotRestartException;
-import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +24,8 @@ public class HotRestartStoreConfig {
     private ILogger logger;
     private MetricsRegistry metricsRegistry;
     private MemoryAllocator malloc;
+
+    private HotRestartStoreEncryptionConfig encryptionConfig;
 
     public HotRestartStoreConfig setStoreName(String storeName) {
         this.storeName = storeName;
@@ -51,6 +54,11 @@ public class HotRestartStoreConfig {
 
     public HotRestartStoreConfig setMalloc(MemoryAllocator malloc) {
         this.malloc = malloc;
+        return this;
+    }
+
+    public HotRestartStoreConfig setEncryptionConfig(HotRestartStoreEncryptionConfig encryptionConfig) {
+        this.encryptionConfig = encryptionConfig;
         return this;
     }
 
@@ -92,6 +100,10 @@ public class HotRestartStoreConfig {
 
     public MetricsRegistry metricsRegistry() {
         return metricsRegistry;
+    }
+
+    public HotRestartStoreEncryptionConfig encryptionConfig() {
+        return encryptionConfig;
     }
 
 }

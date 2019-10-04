@@ -1,12 +1,11 @@
 package com.hazelcast.internal.hotrestart.impl;
 
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.HotRestartKey;
 import com.hazelcast.internal.hotrestart.impl.di.DiContainer;
 import com.hazelcast.internal.hotrestart.impl.di.Inject;
 import com.hazelcast.internal.hotrestart.impl.di.Name;
+import com.hazelcast.internal.hotrestart.impl.encryption.EncryptionManager;
 import com.hazelcast.internal.hotrestart.impl.gc.ChunkManager;
 import com.hazelcast.internal.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.internal.hotrestart.impl.gc.GcHelper;
@@ -14,6 +13,8 @@ import com.hazelcast.internal.hotrestart.impl.gc.PrefixTombstoneManager;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.internal.hotrestart.impl.gc.record.Record;
+import com.hazelcast.internal.nio.Disposable;
+import com.hazelcast.logging.ILogger;
 
 import java.io.File;
 
@@ -28,17 +29,19 @@ public final class HotRestartPersistenceEngine {
     private final GcExecutor gcExec;
     private final GcHelper gcHelper;
     private final PrefixTombstoneManager pfixTombstoMgr;
+    private final EncryptionManager encryptionMgr;
 
     private ActiveChunk activeValChunk;
     private ActiveChunk activeTombChunk;
 
     @Inject
-    HotRestartPersistenceEngine(
-            DiContainer di, GcExecutor gcExec, GcHelper gcHelper, PrefixTombstoneManager pfixTombstoMgr) {
+    HotRestartPersistenceEngine(DiContainer di, GcExecutor gcExec, GcHelper gcHelper, PrefixTombstoneManager pfixTombstoMgr,
+                                EncryptionManager encryptionMgr) {
         this.di = di;
         this.gcExec = gcExec;
         this.gcHelper = gcHelper;
         this.pfixTombstoMgr = pfixTombstoMgr;
+        this.encryptionMgr = encryptionMgr;
     }
 
     public void start(ILogger logger, ChunkManager chunkMgr, @Name("storeName") String name) {
@@ -61,9 +64,14 @@ public final class HotRestartPersistenceEngine {
 
     void backup(File targetDir) {
         pfixTombstoMgr.backup(targetDir);
+        encryptionMgr.backup(targetDir);
         replaceActiveChunk(activeValChunk, false);
         replaceActiveChunk(activeTombChunk, true);
         gcExec.submitBackup(targetDir);
+    }
+
+    void rotateMasterEncryptionKey(byte[] key) {
+        encryptionMgr.rotateMasterKey(key);
     }
 
     @SuppressWarnings("checkstyle:innerassignment")
@@ -192,7 +200,6 @@ public final class HotRestartPersistenceEngine {
         }
     }
 
-
     final class Clear extends RunnableWithStatus {
         final long[] prefixes;
 
@@ -204,6 +211,20 @@ public final class HotRestartPersistenceEngine {
         @Override
         public void run() {
             clear(prefixes);
+        }
+    }
+
+    final class RotateMasterEncryptionKey extends RunnableWithStatus {
+        private final byte[] key;
+
+        RotateMasterEncryptionKey(byte[] key) {
+            super(true);
+            this.key = key;
+        }
+
+        @Override
+        public void run() {
+            rotateMasterEncryptionKey(key);
         }
     }
 }

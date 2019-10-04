@@ -1,7 +1,7 @@
 package com.hazelcast.internal.hotrestart.impl;
 
 import com.hazelcast.internal.hotrestart.impl.testsupport.TestProfile;
-import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import org.junit.After;
@@ -11,14 +11,19 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
 
-import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
 @Category({NightlyTest.class, ParallelJVMTest.class})
 public class HotRestartStoreNightlyTest {
 
@@ -26,6 +31,14 @@ public class HotRestartStoreNightlyTest {
     public final TestName testName = new TestName();
 
     private File testingHome;
+
+    @Parameters(name = "encrypted:{0}")
+    public static Object[] data() {
+        return new Object[] { false, true };
+    }
+
+    @Parameter
+    public boolean encrypted;
 
     @Before
     public void setUp() {
@@ -63,6 +76,7 @@ public class HotRestartStoreNightlyTest {
         p.offHeapMb = offHeap ? 1024 : 0;
         p.offHeapMetadataPercentage = 15f;
         p.restartCount = 0;
+        p.encrypted = encrypted;
         new HotRestartStoreExerciser(testingHome, p).proceed();
     }
 }

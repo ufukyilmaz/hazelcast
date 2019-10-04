@@ -1,13 +1,9 @@
 package com.hazelcast.internal.hotrestart.impl;
 
-import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.util.concurrent.ManyToOneConcurrentArrayQueue;
-import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.internal.hotrestart.impl.di.DiContainer;
+import com.hazelcast.internal.hotrestart.impl.encryption.EncryptionManager;
 import com.hazelcast.internal.hotrestart.impl.gc.BackupExecutor;
 import com.hazelcast.internal.hotrestart.impl.gc.ChunkManager;
 import com.hazelcast.internal.hotrestart.impl.gc.GcExecutor;
@@ -19,12 +15,17 @@ import com.hazelcast.internal.hotrestart.impl.gc.PrefixTombstoneManager;
 import com.hazelcast.internal.hotrestart.impl.gc.Snapshotter;
 import com.hazelcast.internal.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.internal.hotrestart.impl.io.TombFileAccessor;
-import com.hazelcast.spi.properties.HazelcastProperties;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.util.ExceptionUtil;
+import com.hazelcast.internal.util.concurrent.ManyToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.spi.properties.HazelcastProperties;
 
-import static com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 import static com.hazelcast.internal.hotrestart.impl.ConcurrentHotRestartStore.MUTATOR_QUEUE_CAPACITY;
 import static com.hazelcast.internal.hotrestart.impl.gc.GcExecutor.COLLECTOR_QUEUE_CAPACITY;
+import static com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 
 /**
  * Contains Hot Restart Store factory methods.
@@ -54,7 +55,7 @@ public final class HotRestartModule {
     }
 
     private static HotRestartStore hrStore(HotRestartStoreConfig cfg, boolean isOffHeap, HazelcastProperties properties) {
-       // fail fast when the explicit DirectByteBuffer clean-up is not available (i.e. TombFileAccessor.<clinit> fails)
+        // fail fast when the explicit DirectByteBuffer clean-up is not available (i.e. TombFileAccessor.<clinit> fails)
         try {
             Class.forName(TombFileAccessor.class.getName());
         } catch (ClassNotFoundException e) {
@@ -84,6 +85,8 @@ public final class HotRestartModule {
 
           .dep("testGcMutex", new Object())
           .dep(new RecordDataHolder())
+          .dep(cfg.encryptionConfig())
+          .dep(EncryptionManager.class)
           .dep(GcLogger.class)
           .dep(GcHelper.class, gcHelperClass).disposable()
           .dep("persistenceConveyor", concurrentConveyorSingleQueue(null,
@@ -96,8 +99,7 @@ public final class HotRestartModule {
           .dep(PrefixTombstoneManager.class)
           .dep(GcMainLoop.class)
           .dep(GcExecutor.class)
-          .dep(HotRestartPersistenceEngine.class)
-        ;
+          .dep(HotRestartPersistenceEngine.class);
         di.wireAndInitializeAll();
         return di.instantiate(ConcurrentHotRestartStore.class);
     }

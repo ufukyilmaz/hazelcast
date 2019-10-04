@@ -1,8 +1,9 @@
 package com.hazelcast.internal.hotrestart.impl.io;
 
 import com.hazelcast.hotrestart.HotRestartException;
+import com.hazelcast.internal.hotrestart.impl.encryption.EncryptionManager;
 import com.hazelcast.internal.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -13,20 +14,25 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
+import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createEncryptionMgr;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createGcHelper;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.generateRandomRecords;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.populateChunkFile;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.populateTombRecordFile;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -34,7 +40,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(HazelcastParallelClassRunner.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class ChunkFileCursorIntegrationTest {
 
@@ -47,14 +54,24 @@ public class ChunkFileCursorIntegrationTest {
     private final AtomicInteger counter = new AtomicInteger();
 
     private File testingHome;
+    private EncryptionManager encryptionMgr;
     private GcHelper gcHelper;
     private ChunkFileCursor cursor;
+
+    @Parameters(name = "encrypted:{0}")
+    public static Object[] data() {
+        return new Object[] { false, true };
+    }
+
+    @Parameter
+    public boolean encrypted;
 
     @Before
     public void before() {
         testingHome = isolatedFolder(getClass(), testName);
         createFolder(testingHome);
-        gcHelper = createGcHelper(testingHome);
+        encryptionMgr = createEncryptionMgr(testingHome, encrypted);
+        gcHelper = createGcHelper(testingHome, encryptionMgr);
     }
 
     @After
@@ -69,8 +86,8 @@ public class ChunkFileCursorIntegrationTest {
     public void valueOnTombCursorReturnsNull() {
         // GIVEN
         File file = populateTombRecordFile(gcHelper.chunkFile("testing", 1, ".chunk", true),
-                singletonList(new TestRecord(counter)));
-        cursor = new ChunkFileCursor.Tomb(file);
+                singletonList(new TestRecord(counter)), encryptionMgr);
+        cursor = new ChunkFileCursor.Tomb(file, encryptionMgr);
         assertTrue(cursor.advance());
 
         // WHEN - THEN
@@ -89,7 +106,7 @@ public class ChunkFileCursorIntegrationTest {
 
     @Test(expected = HotRestartException.class)
     public void whenCantCreateFile_thenException() {
-        new ChunkFileCursor.Val(gcHelper.chunkFile("testing", 1, ".chunk", false));
+        new ChunkFileCursor.Val(gcHelper.chunkFile("testing", 1, ".chunk", false), encryptionMgr);
     }
 
     @Test
@@ -97,11 +114,11 @@ public class ChunkFileCursorIntegrationTest {
         // Given
         final int recordCount = 2;
         final File chunkFile = populateChunkFile(gcHelper.chunkFile("testing", 1, ".chunk.active", true),
-                generateRandomRecords(counter, recordCount), true);
+                generateRandomRecords(counter, recordCount), true, encryptionMgr);
 
         // When
         removeLastByte(chunkFile);
-        cursor = new ChunkFileCursor.Val(chunkFile);
+        cursor = new ChunkFileCursor.Val(chunkFile, encryptionMgr);
 
         // Then
         assertTrue(cursor.advance());
@@ -114,11 +131,11 @@ public class ChunkFileCursorIntegrationTest {
         // Given
         final int recordCount = 2;
         final File chunkFile = populateChunkFile(gcHelper.chunkFile("testing", 1, ".chunk", true),
-                generateRandomRecords(counter, recordCount), true);
+                generateRandomRecords(counter, recordCount), true, encryptionMgr);
 
         // When
         removeLastByte(chunkFile);
-        cursor = new ChunkFileCursor.Val(chunkFile);
+        cursor = new ChunkFileCursor.Val(chunkFile, encryptionMgr);
 
         // Then
         assertTrue(cursor.advance());
@@ -137,10 +154,11 @@ public class ChunkFileCursorIntegrationTest {
         // GIVEN
         List<TestRecord> recs = generateRandomRecords(counter, 128);
         final int chunkSeq = 1;
-        File file = populateChunkFile(gcHelper.chunkFile("testing", chunkSeq, ".chunk", true), recs, wantValueChunk);
+        File file = populateChunkFile(gcHelper.chunkFile("testing", chunkSeq, ".chunk", true), recs,
+                wantValueChunk, encryptionMgr);
 
         // THEN
-        cursor = wantValueChunk ? new ChunkFileCursor.Val(file) : new ChunkFileCursor.Tomb(file);
+        cursor = wantValueChunk ? new ChunkFileCursor.Val(file, encryptionMgr) : new ChunkFileCursor.Tomb(file, encryptionMgr);
         assertEquals(chunkSeq, cursor.chunkSeq());
         for (TestRecord rec : recs) {
             assertTrue(cursor.advance());

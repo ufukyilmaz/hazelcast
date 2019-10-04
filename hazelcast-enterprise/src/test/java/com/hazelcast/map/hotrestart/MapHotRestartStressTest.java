@@ -5,8 +5,8 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.XmlConfigBuilder;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.SampleLicense;
+import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
@@ -34,6 +34,7 @@ import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;
 import static com.hazelcast.internal.util.FutureUtil.waitWithDeadline;
+import static com.hazelcast.internal.hotrestart.encryption.TestHotRestartEncryptionUtils.withBasicEncryptionAtRestConfig;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -46,11 +47,12 @@ public class MapHotRestartStressTest extends HotRestartTestSupport {
     private static final int INSTANCE_COUNT = 4;
     private static final int THREAD_COUNT = 4;
 
-    @Parameters(name = "memoryFormat:{0} fsync:{2}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2} encrypted:{3}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY, 1000, false},
-                {InMemoryFormat.NATIVE, 1000, false},
+                {InMemoryFormat.BINARY, 1000, false, false},
+                {InMemoryFormat.NATIVE, 1000, false, false},
+                {InMemoryFormat.BINARY, 1000, false, true},
         });
     }
 
@@ -62,6 +64,9 @@ public class MapHotRestartStressTest extends HotRestartTestSupport {
 
     @Parameter(2)
     public boolean fsyncEnabled;
+
+    @Parameter(3)
+    public boolean encrypted;
 
     private ConcurrentMap<Integer, Integer> localMap;
     private IMap<Integer, Integer> map;
@@ -151,6 +156,10 @@ public class MapHotRestartStressTest extends HotRestartTestSupport {
         mapConfig.getHotRestartConfig()
                 .setEnabled(true)
                 .setFsync(fsyncEnabled);
+
+        if (encrypted) {
+            config = withBasicEncryptionAtRestConfig(config);
+        }
 
         return config;
     }

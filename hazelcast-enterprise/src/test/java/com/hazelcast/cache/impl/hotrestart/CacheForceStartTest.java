@@ -31,11 +31,12 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
 
     private static final int CLUSTER_SIZE = 3;
 
-    @Parameters(name = "memoryFormat:{0} fsync:{2}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2} encrypted:{4}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY, KEY_COUNT, false, false},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, true},
         });
     }
 

@@ -1,8 +1,9 @@
 package com.hazelcast.internal.hotrestart.impl.io;
 
-import com.hazelcast.internal.util.BufferingInputStream;
-import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.hotrestart.HotRestartException;
+import com.hazelcast.internal.nio.IOUtil;
+import com.hazelcast.internal.util.BufferingInputStream;
+import com.hazelcast.internal.hotrestart.impl.encryption.EncryptionManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.EOFException;
@@ -14,13 +15,14 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 
-import static com.hazelcast.internal.nio.IOUtil.readFully;
-import static com.hazelcast.internal.nio.IOUtil.readFullyOrNothing;
 import static com.hazelcast.internal.hotrestart.impl.HotRestarter.BUFFER_SIZE;
 import static com.hazelcast.internal.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.internal.hotrestart.impl.gc.record.Record.VAL_HEADER_SIZE;
 import static com.hazelcast.internal.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
 import static com.hazelcast.internal.hotrestart.impl.io.ChunkFilesetCursor.seq;
+import static com.hazelcast.internal.nio.IOUtil.readFully;
+import static com.hazelcast.internal.nio.IOUtil.readFullyOrNothing;
+import static com.hazelcast.internal.nio.IOUtil.rename;
 
 /**
  * A cursor over a chunk file's contents. Common base class for tombstone and value chunk
@@ -31,19 +33,26 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
     final ByteBuffer headerBuf;
     byte[] key;
     int truncationPoint;
+    long seq;
+    long prefix;
     private final File chunkFile;
     private final long chunkSeq;
-    private final InputStream in;
-    private long seq;
-    private long prefix;
+    private InputStream in;
+    private final EncryptionManager encryptionMgr;
 
-    public ChunkFileCursor(int headerSize, File chunkFile) {
+    ChunkFileCursor(int headerSize, File chunkFile, EncryptionManager encryptionMgr) {
         this.chunkFile = chunkFile;
         this.headerBuf = ByteBuffer.allocate(headerSize);
         this.chunkSeq = seq(chunkFile);
+        this.in = openChunkFile(chunkFile, encryptionMgr);
+        this.encryptionMgr = encryptionMgr;
+    }
+
+    private static InputStream openChunkFile(File chunkFile, EncryptionManager encryptionMgr) {
         try {
-            final FileInputStream fileIn = new FileInputStream(chunkFile);
-            this.in = new BufferingInputStream(fileIn, BUFFER_SIZE);
+            InputStream is = new FileInputStream(chunkFile);
+            is = encryptionMgr.wrap(is);
+            return new BufferingInputStream(is, BUFFER_SIZE);
         } catch (FileNotFoundException e) {
             throw new HotRestartException("Failed to open chunk file " + chunkFile);
         }
@@ -142,13 +151,21 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         if (!isActiveChunkFile(chunkFile)) {
             return false;
         }
+        if (encryptionMgr.isEncryptionEnabled()) {
+            removeBrokenTailOfEncryptedChunk();
+        } else {
+            removeBrokenTail();
+        }
+        return true;
+    }
+
+    private void removeBrokenTail() {
         RandomAccessFile raf = null;
         try {
             in.close();
             raf = new RandomAccessFile(chunkFile, "rw");
             raf.setLength(truncationPoint);
             raf.getFD().sync();
-            return true;
         } catch (IOException e) {
             throw new HotRestartException(e);
         } finally {
@@ -156,12 +173,40 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
+    private void removeBrokenTailOfEncryptedChunk() {
+        int pos = 0;
+        ChunkFileOut out = null;
+        try {
+            in.close();
+            in = openChunkFile(chunkFile, encryptionMgr);
+            File tmpFile = File.createTempFile(chunkFile.getName(), null, chunkFile.getParentFile());
+            out = new EncryptedChunkFileOut(tmpFile, null, encryptionMgr.newWriteCipher());
+            while (pos < truncationPoint) {
+                headerBuf.clear();
+                readFully(in, headerBuf.array());
+                loadRecord();
+                writeRecord(out);
+                pos += size();
+            }
+            out.close();
+            in.close();
+            rename(tmpFile, chunkFile);
+        } catch (IOException e) {
+            throw new HotRestartException(e);
+        } finally {
+            IOUtil.closeResource(out);
+            IOUtil.closeResource(in);
+        }
+    }
+
+    abstract void writeRecord(ChunkFileOut out);
+
     /**
      * Specialization of {@code ChunkFileCursor} to tombstone chunk.
      */
     public static final class Tomb extends ChunkFileCursor {
-        public Tomb(File chunkFile) {
-            super(TOMB_HEADER_SIZE, chunkFile);
+        public Tomb(File chunkFile, EncryptionManager encryptionMgr) {
+            super(TOMB_HEADER_SIZE, chunkFile, encryptionMgr);
         }
 
         @Override
@@ -179,6 +224,11 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         public byte[] value() {
             return null;
         }
+
+        @Override
+        void writeRecord(ChunkFileOut out) {
+            out.writeTombstone(seq, prefix, key);
+        }
     }
 
     /**
@@ -187,8 +237,8 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
     static final class Val extends ChunkFileCursor {
         private byte[] value;
 
-        Val(File chunkFile) {
-            super(VAL_HEADER_SIZE, chunkFile);
+        Val(File chunkFile, EncryptionManager encryptionMgr) {
+            super(VAL_HEADER_SIZE, chunkFile, encryptionMgr);
         }
 
         @Override
@@ -213,6 +263,11 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         @Override
         public int size() {
             return super.size() + value.length;
+        }
+
+        @Override
+        void writeRecord(ChunkFileOut out) {
+            out.writeValueRecord(seq, prefix, key, value);
         }
     }
 }

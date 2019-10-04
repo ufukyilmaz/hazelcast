@@ -1,7 +1,9 @@
 package com.hazelcast.internal.nio;
 
+import com.hazelcast.config.AbstractSymmetricEncryptionConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
-import com.hazelcast.internal.nio.CipherHelper.SymmetricCipherBuilder;
+import com.hazelcast.internal.util.BasicSymmetricCipherBuilder;
+import com.hazelcast.internal.util.BasicSymmetricCipherBuilderTest;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -14,58 +16,68 @@ import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Random;
 
-import static com.hazelcast.internal.nio.CipherHelper.findKeyAlgorithm;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class SymmetricCipherBuilderTest {
+public class SymmetricCipherBuilderTest extends BasicSymmetricCipherBuilderTest {
 
-    @Parameter
-    public String algorithm;
+    @Parameter(2)
+    public String password;
 
-    @Parameter(1)
-    public int keySize;
+    @Parameter(3)
+    public int iterationCount;
 
-    @Parameters(name = "algorithm:{0}, keySize:{1}")
+    @Parameters(name = "algorithm:{0}, keySize:{1}, password:{2}, iterationCount:{3}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                {"AES", 128},
-                {"AES/CBC/PKCS5Padding", 128},
-                {"Blowfish", 128},
-                {"DESede", 112},
-                {"DESede", 168},
-                {"DES", 56},
-                {"PBEWithMD5AndDES", 0},
+                {"AES", 128, null, 0},
+                {"AES/CBC/PKCS5Padding", 128, null, 0},
+                {"Blowfish", 128, null, 0},
+                {"DESede", 112, null, 0},
+                {"DESede", 168, null, 0},
+                {"DES", 56, null, 0},
+                {"PBEWithMD5AndDES", 0, "password", 10},
+                {"PBEWithMD5AndDES", 0, null, 10},
         });
     }
 
     @Test
-    public void testCreateCipher() throws Exception {
-        SymmetricEncryptionConfig config = new SymmetricEncryptionConfig()
+    @Override
+    public void testEncryptDecrypt_whenNullKey() throws Exception {
+        // null key triggers key auto-generation
+        AbstractSymmetricEncryptionConfig config = config();
+        byte[] data = new byte[16 * 1024];
+        new Random().nextBytes(data);
+        Cipher encryptCipher = createCipher(config, true, null);
+        Cipher decryptCipher = createCipher(config, false, null);
+        assertArrayEquals(data, decryptCipher.doFinal(encryptCipher.doFinal(data)));
+    }
+
+    @Override
+    protected BasicSymmetricCipherBuilder builder(AbstractSymmetricEncryptionConfig<?> config) {
+        return new CipherHelper.SymmetricCipherBuilder((SymmetricEncryptionConfig) config);
+    }
+
+    @Override
+    protected SymmetricEncryptionConfig config() {
+        return new SymmetricEncryptionConfig()
                 .setEnabled(true)
                 .setAlgorithm(algorithm)
-                .setKey(getKey());
-
-        Cipher cipher = new SymmetricCipherBuilder(config).create(true);
-
-        assertEquals(algorithm, cipher.getAlgorithm());
+                .setPassword(password)
+                .setIterationCount(iterationCount);
     }
 
-    private byte[] getKey() throws Exception {
-        if (keySize == 0) {
-            return null;
-        }
-
-        KeyGenerator keyGenerator = KeyGenerator.getInstance(findKeyAlgorithm(algorithm));
-        keyGenerator.init(keySize);
-        SecretKey secretKey = keyGenerator.generateKey();
-        return secretKey.getEncoded();
+    @Override
+    protected AbstractSymmetricEncryptionConfig<?> invalidConfig() {
+        return new SymmetricEncryptionConfig() { }
+                .setEnabled(true)
+                .setAlgorithm("invalidAlgorithm");
     }
+
 }

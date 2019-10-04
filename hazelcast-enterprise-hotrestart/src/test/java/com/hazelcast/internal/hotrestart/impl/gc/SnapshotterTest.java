@@ -1,6 +1,5 @@
 package com.hazelcast.internal.hotrestart.impl.gc;
 
-import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.hotrestart.impl.di.DiContainer;
 import com.hazelcast.internal.hotrestart.impl.gc.GcHelper.OnHeap;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.ActiveValChunk;
@@ -8,10 +7,11 @@ import com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.WriteThroughChunk;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
+import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.util.collection.Long2ObjectHashMap;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.internal.util.collection.Long2ObjectHashMap;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,13 +28,14 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.hotrestart.impl.gc.Snapshotter.CHUNK_SNAPSHOT_FNAME;
 import static com.hazelcast.internal.hotrestart.impl.gc.Snapshotter.SOURCE_CHUNK_FLAG_MASK;
 import static com.hazelcast.internal.hotrestart.impl.gc.Snapshotter.SURVIVOR_FLAG_MASK;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createBaseDiContainer;
+import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createEncryptionMgr;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -66,6 +67,7 @@ public class SnapshotterTest {
         snapshotter = di.dep(di)
                 .dep("homeDir", testingHome)
                 .dep("storeName", "test-hrstore")
+                .dep(createEncryptionMgr(testingHome, false))
                 .dep(GcHelper.class, OnHeap.class)
                 .dep(BackupExecutor.class, mock(BackupExecutor.class))
                 .dep(MetricsRegistry.class, mock(MetricsRegistry.class))

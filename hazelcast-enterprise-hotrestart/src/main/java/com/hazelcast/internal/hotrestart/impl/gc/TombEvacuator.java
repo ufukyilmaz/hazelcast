@@ -2,6 +2,7 @@ package com.hazelcast.internal.hotrestart.impl.gc;
 
 import com.hazelcast.internal.hotrestart.KeyHandle;
 import com.hazelcast.internal.hotrestart.impl.di.Inject;
+import com.hazelcast.internal.hotrestart.impl.encryption.EncryptionManager;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.StableTombChunk;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.WriteThroughChunk;
@@ -26,6 +27,7 @@ final class TombEvacuator {
     @Inject private GcHelper gcHelper;
     @Inject private MutatorCatchup mc;
     @Inject private ChunkManager chunkMgr;
+    @Inject private EncryptionManager encryptionMgr;
 
     private Long2ObjectHashMap<WriteThroughChunk> survivorMap;
     private TrackerMap trackers;
@@ -37,7 +39,7 @@ final class TombEvacuator {
     }
 
     void evacuate() {
-        this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
+        this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<>();
         this.trackers = chunkMgr.trackers;
         for (StableTombChunk chunk : srcChunks) {
             evacuate(chunk);
@@ -48,7 +50,7 @@ final class TombEvacuator {
     }
 
     private void evacuate(StableTombChunk chunk) {
-        final TombFileAccessor tfa = new TombFileAccessor(gcHelper.stableChunkFile(chunk, false));
+        final TombFileAccessor tfa = new TombFileAccessor(gcHelper.stableChunkFile(chunk, false), encryptionMgr);
         final int[] filePositions = chunk.initFilePosToKeyHandle();
         try {
             for (int filePos : filePositions) {

@@ -4,12 +4,14 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.internal.hotrestart.InternalHotRestartService;
 import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
+import com.hazelcast.internal.hotrestart.InternalHotRestartService;
+import com.hazelcast.map.IMap;
 import com.hazelcast.spi.properties.GroupProperty;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.util.Collection;
@@ -17,12 +19,21 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
+import static com.hazelcast.internal.hotrestart.encryption.TestHotRestartEncryptionUtils.withBasicEncryptionAtRestConfig;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport {
 
     private static final String MAP_NAME = "mappy";
     private static final int KEY_COUNT = 10 * 1000;
+
+    @Parameters(name = "encrypted:{0}")
+    public static Object[] data() {
+        return new Object[] { false, true };
+    }
+
+    @Parameter
+    public boolean encrypted;
 
     protected IMap<Integer, Object> map;
 
@@ -34,7 +45,7 @@ public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport
 
         mapConfig.getHotRestartConfig().setEnabled(true);
 
-        final Config config = new Config()
+        Config config = new Config()
                 .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE)
                 .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
                 .addMapConfig(mapConfig);
@@ -50,6 +61,10 @@ public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport
         }
         if (setBackupDir) {
             persistenceConfig.setBackupDir(nodeBackupDir);
+        }
+
+        if (encrypted) {
+            config = withBasicEncryptionAtRestConfig(config);
         }
 
         return config;

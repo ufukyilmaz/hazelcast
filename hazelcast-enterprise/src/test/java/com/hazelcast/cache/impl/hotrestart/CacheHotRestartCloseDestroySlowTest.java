@@ -19,11 +19,12 @@ import static java.util.Arrays.asList;
 @Category({SlowTest.class, ParallelJVMTest.class})
 public class CacheHotRestartCloseDestroySlowTest extends CacheHotRestartCloseDestroyTest {
 
-    @Parameters(name = "memoryFormat:{0} fsync:{2}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2} encrypted:{4}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.NATIVE, OPERATION_COUNT, true, false},
-                {InMemoryFormat.BINARY, OPERATION_COUNT, true, false},
+                {InMemoryFormat.NATIVE, OPERATION_COUNT, true, false, false},
+                {InMemoryFormat.BINARY, OPERATION_COUNT, true, false, false},
+                {InMemoryFormat.NATIVE, OPERATION_COUNT, true, false, true},
         });
     }
 }

@@ -26,11 +26,12 @@ import static org.junit.Assert.assertNull;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class MapHotRestartExpiryTest extends AbstractMapHotRestartTest {
 
-    @Parameters(name = "memoryFormat:{0} fsync:{2}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2} encrypted:{4}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.NATIVE, KEY_COUNT, false, false},
-                {InMemoryFormat.BINARY, KEY_COUNT, false, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, true},
         });
     }
 

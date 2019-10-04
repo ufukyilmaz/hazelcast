@@ -1,13 +1,13 @@
 package com.hazelcast.internal.hotrestart.impl;
 
-import com.hazelcast.internal.metrics.LongGauge;
-import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
 import com.hazelcast.internal.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.internal.hotrestart.impl.gc.MutatorCatchup.CatchupRunnable;
 import com.hazelcast.internal.hotrestart.impl.gc.record.Record;
 import com.hazelcast.internal.hotrestart.impl.testsupport.MockStoreRegistry;
-import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.internal.metrics.LongGauge;
+import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
+import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -18,23 +18,29 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
 
-import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
-import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk.SYSPROP_TOMB_CHUNK_SIZE_LIMIT;
 import static com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk.SYSPROP_VAL_CHUNK_SIZE_LIMIT;
 import static com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
 import static com.hazelcast.internal.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
+import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createHotRestartStoreEncryptionConfig;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.runWithPausedGC;
+import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@RunWith(HazelcastParallelClassRunner.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
 
@@ -51,6 +57,14 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
     private MetricsRegistry metrics;
     private MockStoreRegistry store;
 
+    @Parameters(name = "encrypted:{0}")
+    public static Object[] data() {
+        return new Object[] { false, true };
+    }
+
+    @Parameter
+    public boolean encrypted;
+
     @Before
     public void setup() {
         System.setProperty(SYSPROP_TOMB_CHUNK_SIZE_LIMIT, String.valueOf(8));
@@ -61,7 +75,8 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
         cfg.setStoreName(storeName).setHomeDir(new File(testingHome, storeName))
                 .setLoggingService(createLoggingService())
-                .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), MANDATORY));
+                .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), MANDATORY))
+                .setEncryptionConfig(createHotRestartStoreEncryptionConfig(encrypted));
         metrics = cfg.metricsRegistry();
         store = new MockStoreRegistry(cfg, null, true);
     }

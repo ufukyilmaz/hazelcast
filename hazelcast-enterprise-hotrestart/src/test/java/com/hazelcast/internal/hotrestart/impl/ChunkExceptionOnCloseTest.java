@@ -33,7 +33,7 @@ public class ChunkExceptionOnCloseTest {
         doReturn(tombChunk).when(helper).newActiveTombChunk();
 
         final HotRestartPersistenceEngine engine =
-                new HotRestartPersistenceEngine(new DiContainer(), mock(GcExecutor.class), helper, null);
+                new HotRestartPersistenceEngine(new DiContainer(), mock(GcExecutor.class), helper, null, null);
         engine.start(mock(ILogger.class), mock(ChunkManager.class), "");
         try {
             engine.put(new KeyOnHeap(0, new byte[0]), new byte[0], true);

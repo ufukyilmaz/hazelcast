@@ -3,7 +3,7 @@ package com.hazelcast.internal.hotrestart.impl;
 import com.hazelcast.internal.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.internal.hotrestart.impl.testsupport.MockStoreRegistry;
 import com.hazelcast.internal.hotrestart.impl.testsupport.TestProfile;
-import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -13,17 +13,22 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
 
-import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.hrStoreConfig;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HotRestartStoreQuickTest {
 
@@ -33,11 +38,20 @@ public class HotRestartStoreQuickTest {
     private File testingHome;
     private TestProfile profile;
 
+    @Parameters(name = "encrypted:{0}")
+    public static Object[] data() {
+        return new Object[] { false, true };
+    }
+
+    @Parameter
+    public boolean encrypted;
+
     @Before
     public void setup() {
         testingHome = isolatedFolder(getClass(), testName);
         createFolder(testingHome);
         profile = new TestProfile.Default();
+        profile.encrypted = encrypted;
     }
 
     @After
@@ -62,7 +76,7 @@ public class HotRestartStoreQuickTest {
     @Test
     public void testRemoveAllKeys() {
         profile.keysetSize = 100;
-        final HotRestartStoreConfig cfg = hrStoreConfig(testingHome);
+        final HotRestartStoreConfig cfg = hrStoreConfig(testingHome, encrypted);
         MockStoreRegistry reg = new MockStoreRegistry(cfg, null, false);
         putAll(reg);
         removeAll(reg);
@@ -75,7 +89,7 @@ public class HotRestartStoreQuickTest {
 
     @Test
     public void checkMaxChunkSeqOnRestart() {
-        final HotRestartStoreConfig cfg = hrStoreConfig(testingHome);
+        final HotRestartStoreConfig cfg = hrStoreConfig(testingHome, encrypted);
         MockStoreRegistry reg = new MockStoreRegistry(cfg, null, true);
         GcHelper helper = ((ConcurrentHotRestartStore) reg.hrStore).getDi().get(GcHelper.class);
         assertNotNull(helper);

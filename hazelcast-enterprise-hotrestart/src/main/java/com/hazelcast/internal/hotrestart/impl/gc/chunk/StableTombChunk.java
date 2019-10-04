@@ -48,7 +48,7 @@ public final class StableTombChunk extends StableChunk {
      */
     public int[] initFilePosToKeyHandle() {
         final int[] filePositions = new int[liveRecordCount];
-        filePosToKeyHandle = new Long2ObjectHashMap<KeyHandle>(liveRecordCount);
+        filePosToKeyHandle = new Long2ObjectHashMap<>(liveRecordCount);
         int i = 0;
         for (Cursor cursor = records.cursor(); cursor.advance();) {
             final Record r = cursor.asRecord();

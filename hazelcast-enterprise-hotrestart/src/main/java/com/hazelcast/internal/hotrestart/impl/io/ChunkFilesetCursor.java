@@ -2,6 +2,7 @@ package com.hazelcast.internal.hotrestart.impl.io;
 
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.internal.hotrestart.impl.encryption.EncryptionManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,11 +20,13 @@ import static java.lang.Long.parseLong;
 public abstract class ChunkFilesetCursor {
     private static final int HEX_RADIX = 16;
 
-    ChunkFileCursor currentChunkCursor;
+    final EncryptionManager encryptionMgr;
+    private ChunkFileCursor currentChunkCursor;
     private final List<File> chunkFiles;
 
-    ChunkFilesetCursor(List<File> chunkFiles) {
+    ChunkFilesetCursor(List<File> chunkFiles, EncryptionManager encryptionMgr) {
         this.chunkFiles = chunkFiles;
+        this.encryptionMgr = encryptionMgr;
     }
 
     /**
@@ -98,12 +101,16 @@ public abstract class ChunkFilesetCursor {
     private File findNonemptyFile() {
         while (!chunkFiles.isEmpty()) {
             final File f = chunkFiles.remove(chunkFiles.size() - 1);
-            if (f.length() != 0) {
+            if (!isEmptyChunk(f)) {
                 return f;
             }
             delete(f);
         }
         return null;
+    }
+
+    private boolean isEmptyChunk(File chunkFile) {
+        return encryptionMgr.isEffectivelyEmpty(chunkFile);
     }
 
     /**
@@ -118,26 +125,26 @@ public abstract class ChunkFilesetCursor {
 
     /** Specialization of {@code ChunkFileSetCursor} to value chunks */
     public static class Val extends ChunkFilesetCursor {
-        public Val(List<File> chunkFiles) {
-            super(chunkFiles);
+        public Val(List<File> chunkFiles, EncryptionManager encryptionMgr) {
+            super(chunkFiles, encryptionMgr);
         }
 
         @Override
-        ChunkFileCursor openCursor(File chunkFile) throws IOException {
-            return new ChunkFileCursor.Val(chunkFile);
+        ChunkFileCursor openCursor(File chunkFile) {
+            return new ChunkFileCursor.Val(chunkFile, encryptionMgr);
         }
     }
 
 
     /** Specialization of {@code ChunkFileSetCursor} to tombstone chunks */
     public static class Tomb extends ChunkFilesetCursor {
-        public Tomb(List<File> chunkFiles) {
-            super(chunkFiles);
+        public Tomb(List<File> chunkFiles, EncryptionManager encryptionMgr) {
+            super(chunkFiles, encryptionMgr);
         }
 
         @Override
-        ChunkFileCursor openCursor(File chunkFile) throws IOException {
-            return new ChunkFileCursor.Tomb(chunkFile);
+        ChunkFileCursor openCursor(File chunkFile) {
+            return new ChunkFileCursor.Tomb(chunkFile, encryptionMgr);
         }
     }
 }

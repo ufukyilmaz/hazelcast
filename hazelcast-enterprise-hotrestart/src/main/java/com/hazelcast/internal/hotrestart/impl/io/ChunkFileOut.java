@@ -3,12 +3,14 @@ package com.hazelcast.internal.hotrestart.impl.io;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.internal.hotrestart.impl.gc.record.Record;
+import com.hazelcast.internal.nio.IOUtil;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -22,8 +24,8 @@ public class ChunkFileOut implements Closeable {
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int FSYNC_INTERVAL_BYTES = 4 << 20;
     public final File file;
+    final FileOutputStream fileOut;
     private final ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
-    private final FileOutputStream fileOut;
     private final FileChannel fileChan;
     private final MutatorCatchup mc;
     private boolean needsFsyncBeforeClosing;
@@ -105,6 +107,21 @@ public class ChunkFileOut implements Closeable {
     }
 
     /**
+     * Writes a tombstone record to the chunk file.
+     * @param seq record seq
+     * @param prefix key prefix
+     * @param keyStream input stream containing, among other data, the key blob and positioned at it
+     * @param keySize size of the key
+     */
+    public void writeTombstone(long seq, long prefix, InputStream keyStream, int keySize) {
+        ensureRoomForHeader(Record.TOMB_HEADER_SIZE);
+        buf.putLong(seq);
+        buf.putLong(prefix);
+        buf.putInt(keySize);
+        write(keyStream, keySize);
+    }
+
+    /**
      * Sets whether to execute an {@code fsync} operation on the chunk file before closing it.
      */
     public void flagForFsyncOnClose(boolean fsyncOnClose) {
@@ -125,6 +142,7 @@ public class ChunkFileOut implements Closeable {
     public void close() {
         flushLocalBuffer();
         try {
+            prepareClose(fileOut);
             if (needsFsyncBeforeClosing) {
                 fileFsync();
             }
@@ -150,12 +168,14 @@ public class ChunkFileOut implements Closeable {
         int position = offset;
         int remaining = length;
         try {
+            // While remaining data size is larger than local buffer size,
+            // skip the local buffer and transfer data directly to the output stream
             while (remaining > BUFFER_SIZE) {
                 flushLocalBuffer();
-                fileOut.write(b, position, BUFFER_SIZE);
-                flushedDataSize += BUFFER_SIZE;
-                position += BUFFER_SIZE;
-                remaining -= BUFFER_SIZE;
+                int written = doWrite(fileOut, b, position, BUFFER_SIZE);
+                flushedDataSize += written;
+                position += written;
+                remaining -= written;
             }
             while (remaining > 0) {
                 final int transferredCount = Math.min(BUFFER_SIZE - buf.position(), remaining);
@@ -163,6 +183,33 @@ public class ChunkFileOut implements Closeable {
                 position += transferredCount;
                 remaining -= transferredCount;
                 ensureBufHasRoom();
+            }
+        } catch (IOException e) {
+            throw new HotRestartException(e);
+        }
+    }
+
+    private void write(InputStream in, int length) {
+        int remaining = length;
+        try {
+            // While remaining data size is larger than local buffer size,
+            // skip the local buffer and transfer data directly to the output stream
+            while (remaining > BUFFER_SIZE) {
+                flushLocalBuffer();
+                int written = doWrite(fileOut, in, BUFFER_SIZE);
+                flushedDataSize += written;
+                remaining -= written;
+            }
+            int transferredCount;
+            while (remaining > 0 && -1 != (transferredCount =
+                    in.read(buf.array(), buf.position(), Math.min(buf.remaining(), remaining)))) {
+                buf.position(buf.position() + transferredCount);
+                remaining -= transferredCount;
+                ensureBufHasRoom();
+            }
+            if (remaining > 0) {
+                throw new HotRestartException("Partial write: " + (length - remaining) + ", requested: " + length
+                        + ", chunk file: " + file);
             }
         } catch (IOException e) {
             throw new HotRestartException(e);
@@ -178,7 +225,9 @@ public class ChunkFileOut implements Closeable {
             // skip the local buffer and transfer data directly to the file channel
             while (from.remaining() > BUFFER_SIZE) {
                 flushLocalBuffer();
-                flushedDataSize += fileChan.write(from);
+                from.limit(from.position() + BUFFER_SIZE);
+                flushedDataSize += doWrite(fileChan, from);
+                from.limit(localLimit);
                 catchup();
             }
             if (from.remaining() > buf.remaining()) {
@@ -206,8 +255,7 @@ public class ChunkFileOut implements Closeable {
             return;
         }
         try {
-            fileOut.write(buf.array());
-            flushedDataSize += BUFFER_SIZE;
+            flushedDataSize += doWrite(fileOut, buf.array(), 0, BUFFER_SIZE);
             catchup();
         } catch (IOException e) {
             throw new HotRestartException(e);
@@ -222,7 +270,7 @@ public class ChunkFileOut implements Closeable {
         buf.flip();
         try {
             while (buf.hasRemaining()) {
-                flushedDataSize += fileChan.write(buf);
+                flushedDataSize += doWrite(fileChan, buf);
                 catchup();
             }
         } catch (IOException e) {
@@ -257,4 +305,22 @@ public class ChunkFileOut implements Closeable {
         );
         return true;
     }
+
+    protected int doWrite(FileChannel chan, ByteBuffer from) throws IOException {
+        return chan.write(from);
+    }
+
+    protected int doWrite(FileOutputStream out, byte[] b, int off, int len) throws IOException {
+        out.write(b, off, len);
+        return len;
+    }
+
+    protected int doWrite(FileOutputStream out, InputStream in, int len) throws IOException {
+        IOUtil.drainTo(in, out, len);
+        return len;
+    }
+
+    protected void prepareClose(FileOutputStream out) throws IOException {
+    }
+
 }

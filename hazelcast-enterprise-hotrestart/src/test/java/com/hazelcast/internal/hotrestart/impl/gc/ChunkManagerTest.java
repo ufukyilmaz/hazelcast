@@ -1,6 +1,5 @@
 package com.hazelcast.internal.hotrestart.impl.gc;
 
-import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.hotrestart.HotRestartKey;
 import com.hazelcast.internal.hotrestart.KeyHandle;
 import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
@@ -16,6 +15,7 @@ import com.hazelcast.internal.hotrestart.impl.gc.record.RecordMapOnHeap;
 import com.hazelcast.internal.hotrestart.impl.gc.tracker.Tracker;
 import com.hazelcast.internal.hotrestart.impl.gc.tracker.TrackerMap.Cursor;
 import com.hazelcast.internal.hotrestart.impl.io.ChunkFileOut;
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -30,10 +30,11 @@ import org.mockito.Mockito;
 
 import java.io.File;
 
-import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createBaseDiContainer;
+import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createEncryptionMgr;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createFolder;
 import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -66,6 +67,7 @@ public class ChunkManagerTest {
         di.dep(di)
                 .dep("homeDir", testingHome)
                 .dep("storeName", "test-hrstore")
+                .dep(createEncryptionMgr(testingHome, false))
                 .dep(GcHelper.class, GcHelper.OnHeap.class)
                 .dep(BackupExecutor.class, mock(BackupExecutor.class))
                 .dep(MetricsRegistry.class, mock(MetricsRegistry.class));

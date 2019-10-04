@@ -54,11 +54,12 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     private static final int MIN_VALUE_SIZE = 32;
     private static final int MAX_VALUE_SIZE = 4096;
 
-    @Parameters(name = "memoryFormat:{0} fsync:{2}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2} encrypted:{4}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.NATIVE, 25000, false, true},
-                {InMemoryFormat.BINARY, 25000, false, true},
+                {InMemoryFormat.NATIVE, 25000, false, true, false},
+                {InMemoryFormat.BINARY, 25000, false, true, false},
+                {InMemoryFormat.BINARY, 25000, false, true, true},
         });
     }
 

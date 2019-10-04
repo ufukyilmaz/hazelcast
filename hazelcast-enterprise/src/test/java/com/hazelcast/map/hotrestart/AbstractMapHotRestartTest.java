@@ -6,8 +6,8 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.SampleLicense;
+import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
@@ -18,6 +18,7 @@ import java.util.function.Supplier;
 
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;
+import static com.hazelcast.internal.hotrestart.encryption.TestHotRestartEncryptionUtils.withBasicEncryptionAtRestConfig;
 import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractMapHotRestartTest extends HotRestartTestSupport {
@@ -35,6 +36,9 @@ public abstract class AbstractMapHotRestartTest extends HotRestartTestSupport {
 
     @Parameter(3)
     public boolean evictionEnabled;
+
+    @Parameter(4)
+    public boolean encrypted;
 
     String mapName;
 
@@ -114,6 +118,9 @@ public abstract class AbstractMapHotRestartTest extends HotRestartTestSupport {
                     .setFsync(fsyncEnabled);
             setEvictionConfig(mapConfig);
             config.addMapConfig(mapConfig);
+        }
+        if (encrypted) {
+            config = withBasicEncryptionAtRestConfig(config);
         }
 
         return config;

@@ -24,11 +24,12 @@ public class MapHotRestartClearDestroyTest extends AbstractMapHotRestartTest {
 
     static final int OPERATION_COUNT = 10000;
 
-    @Parameters(name = "memoryFormat:{0} fsync:{2}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2} encrypted:{4}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.NATIVE, OPERATION_COUNT, false, false},
-                {InMemoryFormat.BINARY, OPERATION_COUNT, false, false},
+                {InMemoryFormat.NATIVE, OPERATION_COUNT, false, false, false},
+                {InMemoryFormat.BINARY, OPERATION_COUNT, false, false, false},
+                {InMemoryFormat.NATIVE, OPERATION_COUNT, false, false, true},
         });
     }
 

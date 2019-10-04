@@ -107,7 +107,7 @@ final class PersistentMemoryDirectory {
                 }
             }
         }
-        throw new HazelcastException("Unable to create persitent memory directory at " + pmemDirectory);
+        throw new HazelcastException("Unable to create persistent memory directory at " + pmemDirectory);
     }
 
     private File newDatafile() {

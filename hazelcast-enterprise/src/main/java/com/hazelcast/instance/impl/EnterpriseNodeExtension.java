@@ -13,7 +13,10 @@ import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
+import com.hazelcast.config.cp.CPSubsystemConfig;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
+import com.hazelcast.cp.internal.persistence.CPPersistenceService;
+import com.hazelcast.cp.persistence.CPPersistenceServiceImpl;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.hotrestart.HotRestartService;
@@ -51,8 +54,8 @@ import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
-import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.monitor.impl.jmx.EnterpriseManagementService;
 import com.hazelcast.internal.monitor.impl.jmx.LicenseInfoMBean;
 import com.hazelcast.internal.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
@@ -147,6 +150,7 @@ public class EnterpriseNodeExtension
     private static final NoopInternalHotRestartService NOOP_INTERNAL_HOT_RESTART_SERVICE = new NoopInternalHotRestartService();
     private static final NoOpHotRestartService NO_OP_HOT_RESTART_SERVICE = new NoOpHotRestartService();
 
+    private final CPPersistenceServiceImpl cpPersistenceService;
     private final HotRestartIntegrationService hotRestartService;
     private final HotBackupService hotBackupService;
     private final SecurityService securityService;
@@ -164,10 +168,16 @@ public class EnterpriseNodeExtension
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
+        cpPersistenceService = createCPPersistenceService(node);
         hotRestartService = createHotRestartService(node);
         hotBackupService = createHotBackupService(node, hotRestartService);
         securityService = createSecurityService(node);
         auditlogService = createAuditlogService(node);
+    }
+
+    private CPPersistenceServiceImpl createCPPersistenceService(Node node) {
+        CPSubsystemConfig config = node.getConfig().getCPSubsystemConfig();
+        return config.isPersistenceEnabled() ? new CPPersistenceServiceImpl(node) : null;
     }
 
     private SecurityService createSecurityService(Node node) {
@@ -356,6 +366,10 @@ public class EnterpriseNodeExtension
             LicenseHelper.checkLicensePerFeature(license, Feature.HOT_RESTART);
             hotRestartService.prepare();
         }
+        if (cpPersistenceService != null) {
+            // TODO: We'll have a separate license feature in 4.0
+            LicenseHelper.checkLicensePerFeature(license, Feature.HOT_RESTART);
+        }
         if (node.getConfig().getNativeMemoryConfig().isEnabled()) {
             LicenseHelper.checkLicensePerFeature(license, Feature.HD_MEMORY);
         }
@@ -385,6 +399,7 @@ public class EnterpriseNodeExtension
     }
 
     @Override
+    @SuppressWarnings("checkstyle:npathcomplexity")
     public void afterStart() {
         if (license == null) {
             logger.log(Level.SEVERE, "Hazelcast Enterprise license could not be found!");
@@ -400,12 +415,23 @@ public class EnterpriseNodeExtension
             return;
         }
 
+        if (cpPersistenceService != null) {
+            try {
+                cpPersistenceService.start();
+            } catch (Throwable e) {
+                logger.severe("CP restore failed", e);
+                node.shutdown(true);
+                return;
+            }
+        }
+
         if (hotRestartService != null) {
             try {
                 hotRestartService.start();
             } catch (Throwable e) {
                 logger.severe("Hot Restart procedure failed", e);
                 node.shutdown(true);
+                return;
             }
         }
 
@@ -488,10 +514,17 @@ public class EnterpriseNodeExtension
 
     @Override
     public boolean isStartCompleted() {
+        boolean hotRestartStartCompleted = true;
         if (hotRestartService != null) {
-            return hotRestartService.isStartCompleted();
+            hotRestartStartCompleted = hotRestartService.isStartCompleted();
         }
-        return super.isStartCompleted();
+
+        boolean cpPersistenceStartCompleted = true;
+        if (cpPersistenceService != null) {
+            cpPersistenceStartCompleted = cpPersistenceService.isStartCompleted();
+        }
+
+        return hotRestartStartCompleted && cpPersistenceStartCompleted && super.isStartCompleted();
     }
 
     public License getLicense() {
@@ -700,6 +733,9 @@ public class EnterpriseNodeExtension
         super.beforeShutdown();
         if (hotRestartService != null) {
             hotRestartService.shutdown();
+        }
+        if (cpPersistenceService != null) {
+            cpPersistenceService.shutdown();
         }
     }
 
@@ -1007,5 +1043,10 @@ public class EnterpriseNodeExtension
     @Override
     public AuditlogService getAuditlogService() {
         return auditlogService;
+    }
+
+    @Override
+    public CPPersistenceService getCPPersistenceService() {
+        return cpPersistenceService != null ? cpPersistenceService : super.getCPPersistenceService();
     }
 }

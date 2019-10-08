@@ -38,7 +38,7 @@ import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
 import static com.hazelcast.internal.nio.IOUtil.closeResource;
 import static com.hazelcast.internal.nio.IOUtil.copy;
 import static com.hazelcast.internal.nio.IOUtil.toByteArray;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static org.junit.Assert.assertEquals;
@@ -113,7 +113,7 @@ public class TlsHandshakeTest {
         Config config = createMemberConfig();
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        assertClusterSize(2, hz1, hz2);
+        assertClusterSizeEventually(2, hz1, hz2);
         byte[] clientHello = getResource(helloReourc);
         CyclicBarrier cbAfterWrite = new CyclicBarrier(6);
         CyclicBarrier cbBeforeClose = new CyclicBarrier(6);
@@ -125,7 +125,7 @@ public class TlsHandshakeTest {
         cbAfterWrite.await();
         try {
             HazelcastInstance hz3 = factory.newHazelcastInstance(config);
-            assertClusterSize(3, hz1, hz2, hz3);
+            assertClusterSizeEventually(3, hz1, hz2, hz3);
 
             HazelcastInstance client = factory.newHazelcastClient(createClientConfig());
             assertEquals(0, client.getMap("test").size());

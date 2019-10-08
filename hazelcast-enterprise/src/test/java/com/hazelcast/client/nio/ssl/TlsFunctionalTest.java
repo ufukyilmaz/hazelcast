@@ -56,7 +56,7 @@ import static com.hazelcast.TestEnvironmentUtil.assumeNoIbmJvm;
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
 import static com.hazelcast.config.ConfigAccessor.getActiveMemberNetworkConfig;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
@@ -168,7 +168,7 @@ public class TlsFunctionalTest {
         Config config = createMemberConfig();
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        assertClusterSize(2, hz1, hz2);
+        assertClusterSizeEventually(2, hz1, hz2);
         factory.newHazelcastClient(createClientConfig()).getMap("test").put("a", "b");
     }
 
@@ -249,7 +249,7 @@ public class TlsFunctionalTest {
             // expected
         }
 
-        assertClusterSize(1, hz1);
+        assertClusterSizeEventually(1, hz1);
         try {
             ClientConfig clientConfig = createClientConfig();
             sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
@@ -288,7 +288,7 @@ public class TlsFunctionalTest {
         sslConfig.setProperty("ciphersuites", cipherSuites);
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        assertClusterSize(2, hz1, hz2);
+        assertClusterSizeEventually(2, hz1, hz2);
         ClientConfig clientConfig = createClientConfig();
         sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("ciphersuites", cipherSuites);
@@ -345,7 +345,7 @@ public class TlsFunctionalTest {
         getSSLConfig(config).setProperty("protocol", "TLS");
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        assertClusterSize(2, hz1, hz2);
+        assertClusterSizeEventually(2, hz1, hz2);
 
         ClientConfig clientConfig = createClientConfig();
         clientConfig.getNetworkConfig().getSSLConfig().setProperty("protocol", "TLS");
@@ -373,7 +373,7 @@ public class TlsFunctionalTest {
         sslConfig.setProperty("ciphersuites", "TLS_AES_128_GCM_SHA256");
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        assertClusterSize(2, hz1, hz2);
+        assertClusterSizeEventually(2, hz1, hz2);
 
         ClientConfig clientConfig = createClientConfig();
         SSLConfig clientSslConfig = clientConfig.getNetworkConfig().getSSLConfig();
@@ -426,7 +426,7 @@ public class TlsFunctionalTest {
         }
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        assertClusterSize(2, hz1, hz2);
+        assertClusterSizeEventually(2, hz1, hz2);
     }
 
     /**
@@ -461,7 +461,7 @@ public class TlsFunctionalTest {
         }
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        assertClusterSize(2, hz1, hz2);
+        assertClusterSizeEventually(2, hz1, hz2);
     }
 
     /**
@@ -500,7 +500,7 @@ public class TlsFunctionalTest {
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         clientConfig.getNetworkConfig().setSSLConfig(clientSSLConfig);
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
-        assertClusterSize(1, hz, client);
+        assertClusterSizeEventually(1, hz, client);
     }
 
     /**
@@ -556,7 +556,7 @@ public class TlsFunctionalTest {
         }
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        assertClusterSize(2, hz1, hz2);
+        assertClusterSizeEventually(2, hz1, hz2);
     }
 
     /**

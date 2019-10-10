@@ -539,8 +539,7 @@ final class MemoryBlockDataInput extends VersionedObjectDataInput implements Ent
     }
 
     @Override
-    @Deprecated
-    public String readLine() throws IOException {
+    public String readLine() {
         throw new UnsupportedOperationException();
     }
 

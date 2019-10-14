@@ -110,7 +110,7 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
@@ -123,7 +123,7 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         networkConfig.setSocketInterceptorConfig(clientSocketInterceptorConfig1);
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
@@ -182,14 +182,14 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();
@@ -248,7 +248,7 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
@@ -261,7 +261,7 @@ public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSuppo
         networkConfig.setSocketInterceptorConfig(clientSocketInterceptorConfig1);
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = toMember(instance2);
         Address address2 = member2.getAddress();

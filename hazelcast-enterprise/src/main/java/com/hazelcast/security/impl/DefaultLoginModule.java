@@ -11,6 +11,7 @@ import javax.security.auth.spi.LoginModule;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.security.ClusterLoginModule;
+import com.hazelcast.security.ClusterNameCallback;
 import com.hazelcast.security.ConfigCallback;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.CredentialsCallback;
@@ -30,14 +31,16 @@ public class DefaultLoginModule extends ClusterLoginModule implements LoginModul
     public boolean onLogin() throws LoginException {
         CredentialsCallback credcb = new CredentialsCallback();
         ConfigCallback ccb = new ConfigCallback();
+        ClusterNameCallback cncb = new ClusterNameCallback();
 
         try {
-            callbackHandler.handle(new Callback[] { credcb, ccb });
+            callbackHandler.handle(new Callback[] { credcb, ccb, cncb });
         } catch (IOException | UnsupportedCallbackException e) {
             logger.warning("Retrieving the password failed.", e);
             throw new LoginException("Unable to retrieve the password");
         }
         Credentials credentials = credcb.getCredentials();
+        String clusterName = cncb.getClusterName();
         name = credentials.getName();
         Config cfg = ccb.getConfig();
         if (cfg == null) {
@@ -49,7 +52,9 @@ public class DefaultLoginModule extends ClusterLoginModule implements LoginModul
                 addRole(name);
                 return true;
             }
-        } else if (name.equals(cfg.getClusterName())) {
+        } else if (clusterName != null && clusterName.equals(cfg.getClusterName())) {
+            logger.fine("Username-password identity is not configured, only the cluster names are compared!");
+            name = clusterName;
             addRole(name);
             return true;
         }

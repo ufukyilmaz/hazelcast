@@ -83,14 +83,14 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -137,14 +137,14 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -208,14 +208,14 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -261,14 +261,14 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -330,14 +330,14 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -403,14 +403,14 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -481,14 +481,14 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         ClientConfig clientConfig = new ClientConfig();
         addDataSerializableFactory(clientConfig.getSerializationConfig());
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member c1_member1 = toMember(c1_instance1);
         Address address1 = c1_member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         addDataSerializableFactory(clientConfig2.getSerializationConfig());
         Member c2_member2 = (Member) instance2.getLocalEndpoint();
@@ -556,14 +556,14 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         Member member1 = toMember(instance1);
         Address address1 = member1.getAddress();
         networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         Member member2 = (Member) instance2.getLocalEndpoint();
         Address address2 = member2.getAddress();
@@ -646,12 +646,12 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         HazelcastInstance cluster2 = Hazelcast.newHazelcastInstance(config2);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName("dev1");
+        clientConfig.setClusterName("dev1");
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         networkConfig.addAddress("127.0.0.1:5701");
 
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClientName("dev2");
+        clientConfig2.setClusterName("dev2");
         ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
         networkConfig2.addAddress("127.0.0.1:5702");
 

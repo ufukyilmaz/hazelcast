@@ -74,7 +74,8 @@ public abstract class InterceptorTestSupport extends HazelcastTestSupport {
         Config config = new Config();
         PermissionConfig perm = new PermissionConfig(PermissionConfig.PermissionType.ALL, "", null);
         SecurityConfig securityConfig = config.getSecurityConfig();
-        securityConfig.setEnabled(true).addClientPermissionConfig(perm);
+        securityConfig.setEnabled(true)
+            .addClientPermissionConfig(perm);
 
         SecurityInterceptorConfig interceptorConfig = new SecurityInterceptorConfig();
         interceptorConfig.setImplementation(interceptor);

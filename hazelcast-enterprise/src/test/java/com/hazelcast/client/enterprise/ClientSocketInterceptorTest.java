@@ -34,7 +34,6 @@ public class ClientSocketInterceptorTest {
     @Test(timeout = 120000)
     public void testSuccessfulSocketInterceptor() {
         Config config = new Config();
-        config.getSecurityConfig().setEnabled(true);
         SocketInterceptorConfig socketInterceptorConfig = new SocketInterceptorConfig();
         MySocketInterceptor mySocketInterceptor = new MySocketInterceptor(true);
         socketInterceptorConfig.setImplementation(mySocketInterceptor).setEnabled(true);
@@ -71,7 +70,6 @@ public class ClientSocketInterceptorTest {
     @Test(timeout = 120000)
     public void testFailingSocketInterceptor() {
         Config config = new Config();
-        config.getSecurityConfig().setEnabled(true);
         SocketInterceptorConfig socketInterceptorConfig = new SocketInterceptorConfig();
         MySocketInterceptor mySocketInterceptor = new MySocketInterceptor(true);
         socketInterceptorConfig.setImplementation(mySocketInterceptor).setEnabled(true);
@@ -82,8 +80,9 @@ public class ClientSocketInterceptorTest {
 
         ClientConfig clientConfig = new ClientConfig();
         MySocketInterceptor myClientSocketInterceptor = new MySocketInterceptor(false);
-        clientConfig.getNetworkConfig().setSocketInterceptorConfig(new SocketInterceptorConfig().setEnabled(true)
-                .setImplementation(myClientSocketInterceptor));
+        clientConfig.getNetworkConfig()
+            .setSocketInterceptorConfig(new SocketInterceptorConfig().setEnabled(true)
+            .setImplementation(myClientSocketInterceptor));
 
         try {
             HazelcastClient.newHazelcastClient(clientConfig);

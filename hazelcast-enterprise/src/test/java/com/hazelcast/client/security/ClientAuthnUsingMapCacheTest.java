@@ -158,7 +158,7 @@ public class ClientAuthnUsingMapCacheTest {
 
     public static ClientConfig createClientConfig(String id) {
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClientName(id);
+        clientConfig.setClusterName(id);
         return clientConfig;
     }
 

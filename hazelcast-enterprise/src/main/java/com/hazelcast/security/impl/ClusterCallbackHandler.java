@@ -10,6 +10,7 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.nio.Connection;
 import com.hazelcast.security.CertificatesCallback;
+import com.hazelcast.security.ClusterNameCallback;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.CredentialsCallback;
 import com.hazelcast.security.EndpointCallback;
@@ -20,11 +21,13 @@ import com.hazelcast.security.PasswordCredentials;
  */
 public class ClusterCallbackHandler extends NodeCallbackHandler {
 
+    private final String clusterName;
     private final Credentials credentials;
     private final Connection connection;
 
-    public ClusterCallbackHandler(Credentials credentials, Connection connection, Node node) {
+    public ClusterCallbackHandler(String clusterName, Credentials credentials, Connection connection, Node node) {
         super(node);
+        this.clusterName = clusterName;
         this.credentials = requireNonNull(credentials, "Credentials have to be provided.");
         this.connection = connection;
     }
@@ -48,6 +51,8 @@ public class ClusterCallbackHandler extends NodeCallbackHandler {
             handleEndpointCallback((EndpointCallback) cb);
         } else if (cb instanceof CertificatesCallback) {
             ((CertificatesCallback) cb).setCertificates(connection != null ? connection.getRemoteCertificates() : null);
+        } else if (cb instanceof ClusterNameCallback) {
+            ((ClusterNameCallback) cb).setClusterName(clusterName);
         } else {
             super.handleCallback(cb);
         }

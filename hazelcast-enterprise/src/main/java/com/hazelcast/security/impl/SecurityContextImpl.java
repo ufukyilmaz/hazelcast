@@ -161,14 +161,15 @@ public class SecurityContextImpl implements SecurityContext {
     }
 
     @Override
-    public LoginContext createMemberLoginContext(Credentials credentials, Connection connection) throws LoginException {
+    public LoginContext createMemberLoginContext(String clusterName, Credentials credentials, Connection connection)
+            throws LoginException {
         logger.log(Level.FINEST, "Creating Member LoginContext for: " + credentials);
         Thread thread = Thread.currentThread();
         ClassLoader tccl = thread.getContextClassLoader();
         try {
             thread.setContextClassLoader(SecurityContextImpl.class.getClassLoader());
             String name = node.getConfig().getClusterName();
-            ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(credentials, connection, node);
+            ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(clusterName, credentials, connection, node);
             return new LoginContext(name, new Subject(), callbackHandler, memberConfiguration);
         } finally {
             thread.setContextClassLoader(tccl);
@@ -176,13 +177,14 @@ public class SecurityContextImpl implements SecurityContext {
     }
 
     @Override
-    public LoginContext createClientLoginContext(Credentials credentials, Connection connection) throws LoginException {
+    public LoginContext createClientLoginContext(String clusterName, Credentials credentials, Connection connection)
+            throws LoginException {
         logger.log(Level.FINEST, "Creating Client LoginContext for: " + credentials);
         Thread thread = Thread.currentThread();
         ClassLoader tccl = thread.getContextClassLoader();
         try {
             String name = node.getConfig().getClusterName();
-            ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(credentials, connection, node);
+            ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(clusterName, credentials, connection, node);
             return new LoginContext(name, new Subject(), callbackHandler, clientConfiguration);
         } finally {
             thread.setContextClassLoader(tccl);

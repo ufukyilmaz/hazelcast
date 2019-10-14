@@ -5,7 +5,6 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.PreJoinCacheConfig;
-import com.hazelcast.cache.impl.operation.CacheCreateConfigOperation;
 import com.hazelcast.cache.impl.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.WanAcknowledgeType;
@@ -96,7 +95,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
      *
      * @param cacheReplicationObject the WAN replication object for the cache
      * @return the local cache config
-     * @see CacheCreateConfigOperation
+     * @see com.hazelcast.cache.impl.operation.AddCacheConfigOperation
      */
     private CacheConfig getCacheConfig(CacheReplicationObject cacheReplicationObject) {
         CacheConfig cacheConfig;

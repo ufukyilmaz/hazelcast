@@ -101,26 +101,31 @@ public class EncryptionManager {
             return null;
         }
         InputStream in = null;
+        byte[] key = null;
+        boolean reencrypt = false;
         try {
             in = new BufferedInputStream(new FileInputStream(keyFile));
             byte[] keyHashBytes = readKeyHashBytes(in);
             for (byte[] masterKeyBytes : masterKeys) {
                 byte[] masterKeyHashBytes = computeKeyHash(masterKeyBytes);
                 if (Arrays.equals(keyHashBytes, masterKeyHashBytes)) {
-                    byte[] result = readEncryptionKey(in, masterKeyBytes);
-                    if (!Arrays.equals(masterKeyBytes, currentMasterKey)) {
-                        // the file was encrypted using an older master key: re-encrypt
-                        writeKeyFile(result);
-                    }
-                    return result;
+                    key = readEncryptionKey(in, masterKeyBytes);
+                    reencrypt = !Arrays.equals(masterKeyBytes, currentMasterKey);
+                    break;
                 }
             }
-            throw new HotRestartException("Cannot find master encryption key for key hash: " + keyHashToString(keyHashBytes));
+            if (key == null) {
+                throw new HotRestartException("Cannot find master encryption key for key hash: " + keyHashToString(keyHashBytes));
+            }
         } catch (IOException e) {
             throw new HotRestartException(e);
         } finally {
             closeResource(in);
         }
+        if (reencrypt) {
+            writeKeyFile(key);
+        }
+        return key;
     }
 
     @SuppressWarnings("checkstyle:magicnumber")

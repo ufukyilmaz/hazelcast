@@ -155,21 +155,20 @@ public abstract class AbstractHotRestartReencryptionIntegrationTest extends HotR
     }
 
     private boolean areAllKeyFilesReencrypted(byte[] masterKey) {
+        List<Path> keyFiles;
         try {
-            List<Path> keyFiles = collectKeyFiles();
-            return keyFiles.stream().allMatch(path -> isEncryptedUsingKey(path, masterKey));
-        } catch (IOException e) {
-            // there may be IO errors when the chunk gets deleted in the meantime etc.
+            keyFiles = Files
+                    .find(baseDir.toPath(), Integer.MAX_VALUE, (path, attr) -> path.endsWith(EncryptionManager.KEY_FILE_NAME))
+                    .collect(Collectors.toList());
+            if (!keyFiles.stream().allMatch(path -> isEncryptedUsingKey(path, masterKey))) {
+                return false;
+            }
+        } catch (Exception e) {
+            // there may be (checked, unchecked) IO errors when the files gets deleted/modified concurrently etc.
             return false;
         }
-    }
-
-    private List<Path> collectKeyFiles() throws IOException {
-        List<Path> chunks = Files
-                .find(baseDir.toPath(), Integer.MAX_VALUE, (path, attr) -> path.endsWith(EncryptionManager.KEY_FILE_NAME))
-                .collect(Collectors.toList());
-        assertEquals(clusterSize, chunks.size());
-        return chunks;
+        assertEquals(clusterSize, keyFiles.size());
+        return true;
     }
 
     private static boolean isEncryptedUsingKey(Path keyFilePath, byte[] keyBytes) {

@@ -9,7 +9,6 @@ import com.hazelcast.cp.internal.raft.impl.RaftNodeImpl;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.test.AssertTask;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runners.Parameterized.Parameter;
@@ -81,49 +80,43 @@ public abstract class PersistenceTestSupport extends HazelcastRaftTestSupport {
         config.setProperty(ALLOW_IP_ADDRESS_CHANGE.getName(), Boolean.toString(allowAddressChange));
 
         boolean favorOwnAddress = true;
-        if (restartAddressPolicy == AddressPolicy.REUSE_RANDOM) {
+        if (restartAddressPolicy == REUSE_RANDOM) {
             favorOwnAddress = false;
         }
         config.setProperty(FAVOR_OWN_PERSISTENCE_DIRECTORY.getName(), Boolean.toString(favorOwnAddress));
         return config;
     }
 
-    protected void assertCommitIndexesSame(final HazelcastInstance[] instances, final RaftGroupId groupId) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                RaftNodeImpl node = getRaftNode(instances[0], groupId);
-                assertNotNull(node);
-                long referenceCommitIndex = getCommitIndex(node);
+    protected void assertCommitIndexesSame(HazelcastInstance[] instances, RaftGroupId groupId) {
+        assertTrueEventually(() -> {
+            RaftNodeImpl node = getRaftNode(instances[0], groupId);
+            assertNotNull(node);
+            long referenceCommitIndex = getCommitIndex(node);
 
-                for (HazelcastInstance instance : instances) {
-                    RaftNodeImpl raftNode = getRaftNode(instance, groupId);
-                    assertNotNull(raftNode);
-                    long commitIndex = getCommitIndex(raftNode);
-                    assertEquals(referenceCommitIndex, commitIndex);
-                }
+            for (HazelcastInstance instance : instances) {
+                RaftNodeImpl raftNode = getRaftNode(instance, groupId);
+                assertNotNull(raftNode);
+                long commitIndex = getCommitIndex(raftNode);
+                assertEquals(referenceCommitIndex, commitIndex);
             }
         });
     }
 
-    protected HazelcastInstance[] restartInstances(Address[] addresses, final Config config) {
-        final List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<HazelcastInstance>());
-        final CountDownLatch latch = new CountDownLatch(addresses.length);
+    protected HazelcastInstance[] restartInstances(Address[] addresses, Config config) {
+        List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<>());
+        CountDownLatch latch = new CountDownLatch(addresses.length);
 
-        for (final Address address : addresses) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        HazelcastInstance instance = factory.newHazelcastInstance(restartingAddress(address), config);
-                        instancesList.add(instance);
-                    } catch (Throwable e) {
-                        logger.severe(e);
-                    } finally {
-                        latch.countDown();
-                    }
-
+        for (Address address : addresses) {
+            new Thread(() -> {
+                try {
+                    HazelcastInstance instance = factory.newHazelcastInstance(restartingAddress(address), config);
+                    instancesList.add(instance);
+                } catch (Throwable e) {
+                    logger.severe(e);
+                } finally {
+                    latch.countDown();
                 }
+
             }, "Restart thread for " + address).start();
         }
 
@@ -137,6 +130,6 @@ public abstract class PersistenceTestSupport extends HazelcastRaftTestSupport {
     }
 
     protected Address restartingAddress(Address address) {
-        return restartAddressPolicy != AddressPolicy.PICK_NEW ? address : factory.nextAddress();
+        return restartAddressPolicy != PICK_NEW ? address : factory.nextAddress();
     }
 }

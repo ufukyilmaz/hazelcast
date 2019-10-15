@@ -5,7 +5,6 @@ import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.ICountDownLatch;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.internal.util.RandomPicker;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -14,7 +13,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -74,28 +72,21 @@ public class RaftCountdownLatchPersistenceTest extends RaftDataStructurePersiste
 
     @Test
     public void when_memberRestarts_then_restoresData() throws Exception {
-        final ICountDownLatch latch = proxyInstance.getCPSubsystem().getCountDownLatch("test");
+        ICountDownLatch latch = proxyInstance.getCPSubsystem().getCountDownLatch("test");
         latch.trySetCount(1);
 
         // shutdown majority
         instances[0].shutdown();
         instances[1].shutdown();
 
-        final Future<Void> f = spawn(new Callable<Void>() {
-            @Override
-            public Void call() {
-                latch.countDown();
-                return null;
-            }
+        Future<Void> f = spawn(() -> {
+
+            latch.countDown();
+            return null;
         });
 
         // Invocation cannot complete without majority
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertFalse(f.isDone());
-            }
-        }, 3);
+        assertTrueAllTheTime(() -> assertFalse(f.isDone()), 3);
 
         // restart majority back
         instances[0] = restartInstance(addresses[0], config);
@@ -108,18 +99,15 @@ public class RaftCountdownLatchPersistenceTest extends RaftDataStructurePersiste
 
     @Test
     public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
-        final ICountDownLatch latch = proxyInstance.getCPSubsystem().getCountDownLatch("test");
-        final int permits = 5000;
+        ICountDownLatch latch = proxyInstance.getCPSubsystem().getCountDownLatch("test");
+        int permits = 5000;
         latch.trySetCount(permits);
-        final Future<Void> f = spawn(new Callable<Void>() {
-            @Override
-            public Void call() {
-                for (int i = 0; i < permits; i++) {
-                    latch.countDown();
-                    sleepMillis(1);
-                }
-                return null;
+        Future<Void> f = spawn(() -> {
+            for (int i = 0; i < permits; i++) {
+                latch.countDown();
+                sleepMillis(1);
             }
+            return null;
         });
 
         sleepSeconds(1);
@@ -164,19 +152,16 @@ public class RaftCountdownLatchPersistenceTest extends RaftDataStructurePersiste
 
     @Test
     public void when_CPMembersRestart_whileAPMemberBlocked() throws Exception {
-        final ICountDownLatch latch = proxyInstance.getCPSubsystem().getCountDownLatch("test");
+        ICountDownLatch latch = proxyInstance.getCPSubsystem().getCountDownLatch("test");
         latch.trySetCount(1);
 
         for (HazelcastInstance instance : instances) {
             instance.getLifecycleService().terminate();
         }
 
-        Future<Object> f = spawn(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                latch.await(2, TimeUnit.MINUTES);
-                return null;
-            }
+        Future<Object> f = spawn(() -> {
+            latch.await(2, TimeUnit.MINUTES);
+            return null;
         });
 
         restartInstances(addresses, config);

@@ -3,7 +3,6 @@ package com.hazelcast.cp.persistence.datastructures;
 import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.IAtomicReference;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -12,7 +11,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -73,29 +71,21 @@ public class RaftAtomicReferencePersistenceTest extends RaftDataStructurePersist
 
     @Test
     public void when_memberRestarts_then_restoresData() throws Exception {
-        final IAtomicReference<String> atomicRef = proxyInstance.getCPSubsystem().getAtomicReference("test");
+        IAtomicReference<String> atomicRef = proxyInstance.getCPSubsystem().getAtomicReference("test");
         atomicRef.set(randomString());
 
         // shutdown majority
         instances[0].shutdown();
         instances[1].shutdown();
 
-        final String value = randomString();
-        final Future<String> f = spawn(new Callable<String>() {
-            @Override
-            public String call() {
-                atomicRef.set(value);
-                return value;
-            }
+        String value = randomString();
+        Future<String> f = spawn(() -> {
+            atomicRef.set(value);
+            return value;
         });
 
         // Invocation cannot complete without majority
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertFalse(f.isDone());
-            }
-        }, 3);
+        assertTrueAllTheTime(() -> assertFalse(f.isDone()), 3);
 
         // restart majority back
         instances[0] = restartInstance(addresses[0], config);
@@ -106,20 +96,17 @@ public class RaftAtomicReferencePersistenceTest extends RaftDataStructurePersist
 
     @Test
     public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
-        final IAtomicReference<String> atomicRef = proxyInstance.getCPSubsystem().getAtomicReference("test");
-        final int increments = 5000;
-        final AtomicReference<String> ref = new AtomicReference<String>();
-        final Future<String> f = spawn(new Callable<String>() {
-            @Override
-            public String call() {
-                for (int i = 0; i < increments; i++) {
-                    String value = randomString();
-                    atomicRef.set(value);
-                    ref.set(value);
-                    sleepMillis(1);
-                }
-                return atomicRef.get();
+        IAtomicReference<String> atomicRef = proxyInstance.getCPSubsystem().getAtomicReference("test");
+        int increments = 5000;
+        AtomicReference<String> ref = new AtomicReference<>();
+        Future<String> f = spawn(() -> {
+            for (int i = 0; i < increments; i++) {
+                String value = randomString();
+                atomicRef.set(value);
+                ref.set(value);
+                sleepMillis(1);
             }
+            return atomicRef.get();
         });
 
         sleepSeconds(1);
@@ -140,20 +127,17 @@ public class RaftAtomicReferencePersistenceTest extends RaftDataStructurePersist
 
     @Test
     public void whenClusterRestart_whileOperationsOngoing_then_recoversData() throws Exception {
-        final IAtomicReference<String> atomicRef = proxyInstance.getCPSubsystem().getAtomicReference("test");
-        final int increments = 5000;
-        final AtomicReference<String> ref = new AtomicReference<String>();
-        final Future<String> f = spawn(new Callable<String>() {
-            @Override
-            public String call() {
-                for (int i = 0; i < increments; i++) {
-                    String value = randomString();
-                    atomicRef.set(value);
-                    ref.set(value);
-                    sleepMillis(1);
-                }
-                return atomicRef.get();
+        IAtomicReference<String> atomicRef = proxyInstance.getCPSubsystem().getAtomicReference("test");
+        int increments = 5000;
+        AtomicReference<String> ref = new AtomicReference<>();
+        Future<String> f = spawn(() -> {
+            for (int i = 0; i < increments; i++) {
+                String value = randomString();
+                atomicRef.set(value);
+                ref.set(value);
+                sleepMillis(1);
             }
+            return atomicRef.get();
         });
         sleepSeconds(1);
         terminateMembers();

@@ -17,7 +17,9 @@ import com.hazelcast.cp.internal.raft.impl.RaftNode;
 import com.hazelcast.cp.internal.raft.impl.RaftNodeImpl;
 import com.hazelcast.cp.internal.raftop.metadata.TriggerDestroyRaftGroupOp;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
-import com.hazelcast.test.AssertTask;
+import com.hazelcast.internal.nio.IOUtil;
+import com.hazelcast.internal.util.DirectoryLock;
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -34,9 +36,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import static com.hazelcast.cp.internal.raft.impl.RaftUtil.getTerm;
@@ -72,7 +74,7 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         Address[] addresses = getAddresses(instances);
         waitUntilCPDiscoveryCompleted(instances);
 
-        Set<CPMember> cpMembers = new HashSet<CPMember>();
+        Set<CPMember> cpMembers = new HashSet<>();
         for (HazelcastInstance instance : instances) {
             cpMembers.add(instance.getCPSubsystem().getLocalCPMember());
         }
@@ -90,7 +92,7 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
 
         waitUntilCPDiscoveryCompleted(instances);
 
-        Set<UUID> uuids = new HashSet<UUID>();
+        Set<UUID> uuids = new HashSet<>();
         for (CPMember cpMember : cpMembers) {
             uuids.add(cpMember.getUuid());
         }
@@ -126,7 +128,7 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
             RaftGroupId group2 = invocationManager.createRaftGroup("group2").join();
             RaftGroupId group3 = invocationManager.createRaftGroup("group3").join();
 
-            Map<RaftGroupId, Integer> terms = new HashMap<RaftGroupId, Integer>();
+            Map<RaftGroupId, Integer> terms = new HashMap<>();
             terms.put(metadataGroupId, awaitLeaderElectionAndGetTerm(instances, metadataGroupId));
             terms.put(group1, awaitLeaderElectionAndGetTerm(instances, group1));
             terms.put(group2, awaitLeaderElectionAndGetTerm(instances, group2));
@@ -135,14 +137,9 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
             factory.terminateAll();
 
             instances = restartInstances(addresses, config);
-            final RaftService raftService = getRaftService(instances[0]);
+            RaftService raftService = getRaftService(instances[0]);
 
-            assertTrueEventually(new AssertTask() {
-                @Override
-                public void run() throws Exception {
-                    assertThat(raftService.getCPGroupIds().get(), hasSize(4));
-                }
-            });
+            assertTrueEventually(() -> assertThat(raftService.getCPGroupIds().get(), hasSize(4)));
 
             Collection<CPGroupId> groupIds = raftService.getCPGroupIds().get();
             assertThat(groupIds, hasItem(group1));
@@ -170,21 +167,16 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         HazelcastInstance[] instances = factory.newInstances(config, 3);
         waitUntilCPDiscoveryCompleted(instances);
 
-        final RaftGroupId groupId = getMetadataGroupId(instances[0]);
+        RaftGroupId groupId = getMetadataGroupId(instances[0]);
         HazelcastInstance leaderInstance = getLeaderInstance(instances, groupId);
-        final HazelcastInstance followerInstance = getRandomFollowerInstance(instances, groupId);
+        HazelcastInstance followerInstance = getRandomFollowerInstance(instances, groupId);
 
-        final RaftNodeImpl node = getRaftNode(followerInstance, groupId);
-        final RaftEndpoint leader = node.getLeader();
+        RaftNodeImpl node = getRaftNode(followerInstance, groupId);
+        RaftEndpoint leader = node.getLeader();
         CPMember leaderMember = leaderInstance.getCPSubsystem().getLocalCPMember();
         leaderInstance.shutdown();
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertNotEquals(leader, node.getLeader());
-            }
-        });
+        assertTrueEventually(() -> assertNotEquals(leader, node.getLeader()));
 
         Collection<CPMember> members = followerInstance.getCPSubsystem()
                 .getCPSubsystemManagementService().getCPMembers().get();
@@ -225,11 +217,11 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
     @Test
     public void when_memberRestarts_then_restoresData() throws Exception {
         Config config = createConfig(3, 3);
-        final HazelcastInstance[] instances = factory.newInstances(config, 3);
+        HazelcastInstance[] instances = factory.newInstances(config, 3);
         Address[] addresses = getAddresses(instances);
 
-        final RaftInvocationManager invocationManager = getRaftInvocationManager(instances[2]);
-        final RaftGroupId group = invocationManager.createRaftGroup("group").join();
+        RaftInvocationManager invocationManager = getRaftInvocationManager(instances[2]);
+        RaftGroupId group = invocationManager.createRaftGroup("group").join();
 
         invocationManager.invoke(group, new RaftTestApplyOp(1)).join();
 
@@ -237,21 +229,11 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         instances[0].shutdown();
         instances[1].shutdown();
 
-        final long newValue = 2;
-        final Future<Long> f = spawn(new Callable<Long>() {
-            @Override
-            public Long call() {
-                return invocationManager.<Long>invoke(group, new RaftTestApplyOp(newValue)).join();
-            }
-        });
+        long newValue = 2;
+        Future<Long> f = spawn(() -> invocationManager.<Long>invoke(group, new RaftTestApplyOp(newValue)).join());
 
         // Invocation cannot complete without majority
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertFalse(f.isDone());
-            }
-        }, 3);
+        assertTrueAllTheTime(() -> assertFalse(f.isDone()), 3);
 
         // restart majority back
         instances[0] = restartInstance(addresses[0], config);
@@ -271,19 +253,16 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         HazelcastInstance[] instances = factory.newInstances(config, 3);
         Address[] addresses = getAddresses(instances);
 
-        final RaftInvocationManager invocationManager = getRaftInvocationManager(instances[2]);
-        final RaftGroupId group = invocationManager.createRaftGroup("group").join();
+        RaftInvocationManager invocationManager = getRaftInvocationManager(instances[2]);
+        RaftGroupId group = invocationManager.createRaftGroup("group").join();
 
-        final int increments = 5000;
-        final Future<Integer> f = spawn(new Callable<Integer>() {
-            @Override
-            public Integer call() {
-                for (int i = 0; i < increments; i++) {
-                    invocationManager.invoke(group, new RaftTestApplyOp(i + 1)).join();
-                    sleepMillis(1);
-                }
-                return invocationManager.<Integer>query(group, new RaftTestQueryOp(), QueryPolicy.LINEARIZABLE).join();
+        int increments = 5000;
+        Future<Integer> f = spawn(() -> {
+            for (int i = 0; i < increments; i++) {
+                invocationManager.invoke(group, new RaftTestApplyOp(i + 1)).join();
+                sleepMillis(1);
             }
+            return invocationManager.<Integer>query(group, new RaftTestQueryOp(), QueryPolicy.LINEARIZABLE).join();
         });
 
         sleepSeconds(1);
@@ -312,15 +291,15 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
 
         Config config = createConfig(3, 3);
         config.getCPSubsystemConfig().setSessionTimeToLiveSeconds(20).setMissingCPMemberAutoRemovalSeconds(20);
-        final HazelcastInstance[] instances = factory.newInstances(config, 3);
+        HazelcastInstance[] instances = factory.newInstances(config, 3);
         Address[] addresses = getAddresses(instances);
 
         for (HazelcastInstance instance : instances) {
             instance.getCPSubsystem().getCPSubsystemManagementService().awaitUntilDiscoveryCompleted(120, SECONDS);
         }
 
-        final CPMember cpMember0 = instances[0].getCPSubsystem().getLocalCPMember();
-        final CPMember cpMember1 = instances[1].getCPSubsystem().getLocalCPMember();
+        CPMember cpMember0 = instances[0].getCPSubsystem().getLocalCPMember();
+        CPMember cpMember1 = instances[1].getCPSubsystem().getLocalCPMember();
 
         sleepSeconds(1);
         instances[0].getLifecycleService().terminate();
@@ -340,27 +319,19 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
             }
         }
 
-        final HazelcastInstance restartedInstance = restartInstance(addresses[0], config);
+        HazelcastInstance restartedInstance = restartInstance(addresses[0], config);
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertNotNull(restartedInstance.getCPSubsystem().getLocalCPMember());
-            }
-        });
+        assertTrueEventually(() -> assertNotNull(restartedInstance.getCPSubsystem().getLocalCPMember()));
 
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                Collection<CPMember> cpMembers = instances[2].getCPSubsystem()
-                                                             .getCPSubsystemManagementService()
-                                                             .getCPMembers()
-                                                             .get();
+        assertTrueAllTheTime(() -> {
+            Collection<CPMember> cpMembers = instances[2].getCPSubsystem()
+                                                         .getCPSubsystemManagementService()
+                                                         .getCPMembers()
+                                                         .get();
 
-                assertTrue(cpMembers.contains(restartedInstance.getCPSubsystem().getLocalCPMember()));
-                assertTrue(cpMembers.contains(cpMember0));
-                assertFalse(cpMembers.contains(cpMember1));
-            }
+            assertTrue(cpMembers.contains(restartedInstance.getCPSubsystem().getLocalCPMember()));
+            assertTrue(cpMembers.contains(cpMember0));
+            assertFalse(cpMembers.contains(cpMember1));
         }, 20);
     }
 
@@ -369,7 +340,7 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         Config config = createConfig(3, 3);
         config.setProperty(OPERATION_CALL_TIMEOUT_MILLIS.getName(), "30000");
 
-        final HazelcastInstance[] instances = factory.newInstances(config, 4);
+        HazelcastInstance[] instances = factory.newInstances(config, 4);
         assertClusterSizeEventually(4, instances);
 
         for (HazelcastInstance instance : Arrays.asList(instances).subList(0, 3)) {
@@ -418,11 +389,11 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         assumeThat("This test does not involve restart", restartAddressPolicy, equalTo(AddressPolicy.REUSE_EXACT));
 
         Config config = createConfig(3, 3);
-        final HazelcastInstance[] instances = factory.newInstances(config, 3);
+        HazelcastInstance[] instances = factory.newInstances(config, 3);
 
         for (int i = 0; i < 3; i++) {
             RaftInvocationManager invocationManager = getRaftInvocationManager(instances[0]);
-            final RaftGroupId group = invocationManager.createRaftGroup("group" + i).join();
+            RaftGroupId group = invocationManager.createRaftGroup("group" + i).join();
 
             if (waitLeaderElection) {
                 waitAllForLeaderElection(instances, group);
@@ -434,30 +405,26 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
                 destroyRaftGroup(instances[0], group);
             }
 
-            assertTrueEventually(new AssertTask() {
-                @Override
-                public void run() throws Exception {
-                    for (HazelcastInstance instance : instances) {
-                        // TODO: Do we guarantee this?
-                        // RaftService raftService = getRaftService(instance);
-                        // RaftNode raftNode = raftService.getRaftNode(group);
-                        // assertNull(raftNode);
+            assertTrueEventually(() -> {
+                for (HazelcastInstance instance : instances) {
+                    // TODO: Do we guarantee this?
+                    // RaftService raftService = getRaftService(instance);
+                    // RaftNode raftNode = raftService.getRaftNode(group);
+                    // assertNull(raftNode);
 
-                        CPPersistenceServiceImpl cpPersistenceService = getCpPersistenceService(instance);
-                        File groupDir = cpPersistenceService.getGroupDir(group);
-                        assertFalse(group + " directory '" + groupDir + "' should not exist!", groupDir.exists());
-                    }
-
-                    RaftService raftService = getRaftService(instances[0]);
-                    Collection<CPGroupId> groupIds = raftService.getCPGroupIds().get();
-                    assertThat("Groups: " + groupIds, groupIds, hasSize(1));
-                    assertThat(groupIds, not(hasItem(group)));
-                    assertNull(raftService.getCPGroup(group.getName()).get());
+                    CPPersistenceServiceImpl cpPersistenceService = getCpPersistenceService(instance);
+                    File groupDir = cpPersistenceService.getGroupDir(group);
+                    assertFalse(group + " directory '" + groupDir + "' should not exist!", groupDir.exists());
                 }
+
+                RaftService raftService = getRaftService(instances[0]);
+                Collection<CPGroupId> groupIds = raftService.getCPGroupIds().get();
+                assertThat("Groups: " + groupIds, groupIds, hasSize(1));
+                assertThat(groupIds, not(hasItem(group)));
+                assertNull(raftService.getCPGroup(group.getName()).get());
             });
         }
     }
-
 
     @Test
     public void when_groupDestroyed_then_itShouldNotBeRestored() throws Exception {
@@ -476,8 +443,8 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
 
         for (int i = 0; i < 3; i++) {
             RaftInvocationManager invocationManager = getRaftInvocationManager(instances[0]);
-            final RaftGroupId group1 = invocationManager.createRaftGroup("group1").join();
-            final RaftGroupId group2 = invocationManager.createRaftGroup("group2").join();
+            RaftGroupId group1 = invocationManager.createRaftGroup("group1").join();
+            RaftGroupId group2 = invocationManager.createRaftGroup("group2").join();
 
             if (forceDestroy) {
                 getRaftService(instances[0]).forceDestroyCPGroup(group2.getName()).get();
@@ -489,28 +456,25 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
 
             instances = restartInstances(addresses, config);
 
-            final HazelcastInstance[] finalInstances = instances;
-            assertTrueEventually(new AssertTask() {
-                @Override
-                public void run() throws Exception {
-                    for (HazelcastInstance instance : finalInstances) {
-                        RaftService raftService = getRaftService(instance);
-                        assertNull(raftService.getRaftNode(group2));
+            HazelcastInstance[] finalInstances = instances;
+            assertTrueEventually(() -> {
+                for (HazelcastInstance instance : finalInstances) {
+                    RaftService raftService = getRaftService(instance);
+                    assertNull(raftService.getRaftNode(group2));
 
-                        CPPersistenceServiceImpl cpPersistenceService = getCpPersistenceService(instance);
-                        File groupDir = cpPersistenceService.getGroupDir(group2);
-                        assertFalse(group2 + " directory '" + groupDir + "' should not exist!", groupDir.exists());
-                    }
-
-                    RaftService raftService = getRaftService(finalInstances[0]);
-                    Collection<CPGroupId> groupIds = raftService.getCPGroupIds().get();
-                    assertThat("Groups: " + groupIds, groupIds, hasSize(2));
-                    assertThat(groupIds, hasItem(group1));
-                    assertThat(groupIds, not(hasItem(group2)));
-
-                    assertEquals(group1, raftService.getCPGroup(group1.getName()).get().id());
-                    assertNull(raftService.getCPGroup(group2.getName()).get());
+                    CPPersistenceServiceImpl cpPersistenceService = getCpPersistenceService(instance);
+                    File groupDir = cpPersistenceService.getGroupDir(group2);
+                    assertFalse(group2 + " directory '" + groupDir + "' should not exist!", groupDir.exists());
                 }
+
+                RaftService raftService = getRaftService(finalInstances[0]);
+                Collection<CPGroupId> groupIds = raftService.getCPGroupIds().get();
+                assertThat("Groups: " + groupIds, groupIds, hasSize(2));
+                assertThat(groupIds, hasItem(group1));
+                assertThat(groupIds, not(hasItem(group2)));
+
+                assertEquals(group1, raftService.getCPGroup(group1.getName()).get().id());
+                assertNull(raftService.getCPGroup(group2.getName()).get());
             });
         }
     }
@@ -528,12 +492,12 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
     @Test
     public void when_membersRollingRestarted_then_recoverDataAndMakeProgress() {
         Config config = createConfig(5, 5);
-        final HazelcastInstance[] instances = factory.newInstances(config, 5);
+        HazelcastInstance[] instances = factory.newInstances(config, 5);
         waitUntilCPDiscoveryCompleted(instances);
 
         HazelcastInstance proxyInstance = factory.newHazelcastInstance(config);
         RaftService raftService = getRaftService(proxyInstance);
-        final List<RaftGroupId> groups = new ArrayList<>();
+        List<RaftGroupId> groups = new ArrayList<>();
 
         for (int i = 0; i < 3; i++) {
             for (int k = 0; k < instances.length; k++) {
@@ -550,16 +514,13 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
             }
         }
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                for (HazelcastInstance instance : instances) {
-                    RaftService raftService = getRaftService(instance);
-                    for (RaftGroupId groupId : groups) {
-                        RaftNode raftNode = raftService.getRaftNode(groupId);
-                        assertNotNull(raftNode);
-                        assertEquals(groupId, raftNode.getGroupId());
-                    }
+        assertTrueEventually(() -> {
+            for (HazelcastInstance instance : instances) {
+                RaftService raftService1 = getRaftService(instance);
+                for (RaftGroupId groupId : groups) {
+                    RaftNode raftNode = raftService1.getRaftNode(groupId);
+                    assertNotNull(raftNode);
+                    assertEquals(groupId, raftNode.getGroupId());
                 }
             }
         });
@@ -568,7 +529,7 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
     @Test
     public void when_memberRestarted_afterItIsRemovedFromCP_then_itShouldFail() throws Exception {
         Config config = createConfig(5, 5);
-        final HazelcastInstance[] instances = factory.newInstances(config, 5);
+        HazelcastInstance[] instances = factory.newInstances(config, 5);
         waitUntilCPDiscoveryCompleted(instances);
 
         CPMember cpMember = instances[0].getCPSubsystem().getLocalCPMember();
@@ -583,4 +544,78 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         } catch (IllegalStateException ignored) {
         }
     }
+
+    @Test
+    public void when_cpMemberRestartsWithoutCPMemberFile_then_restartFails() throws Exception {
+        Config config = createConfig(3, 3);
+        HazelcastInstance[] instances = factory.newInstances(config, 3);
+        waitUntilCPDiscoveryCompleted(instances);
+
+        CPMember cpMember = instances[0].getCPSubsystem().getLocalCPMember();
+        instances[0].getLifecycleService().shutdown();
+
+        ILogger logger = instances[1].getLoggingService().getLogger(getClass());
+
+        File[] memberDirs = baseDir.listFiles((dir, name) -> dir.isDirectory());
+        assertNotNull(memberDirs);
+
+        Optional<File> memberDirOpt = Arrays.stream(memberDirs).filter(dir -> {
+            try {
+                DirectoryLock lock = DirectoryLock.lockForDirectory(dir, logger);
+                lock.release();
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }).findFirst();
+
+        assertTrue(memberDirOpt.isPresent());
+
+        IOUtil.delete(new File(memberDirOpt.get(), CPMetadataStoreImpl.CP_MEMBER_FILE_NAME));
+
+        try {
+            restartInstance(cpMember.getAddress(), config);
+            fail(cpMember + " should not be able to restart with missing CP member file!");
+        } catch (IllegalStateException ignored) {
+        }
+    }
+
+    @Test
+    public void when_cpMemberRestartsWithAPMemberFile_then_restartFails() throws Exception {
+        Config config = createConfig(3, 3);
+        HazelcastInstance[] instances = factory.newInstances(config, 3);
+        waitUntilCPDiscoveryCompleted(instances);
+
+        CPMember cpMember = instances[0].getCPSubsystem().getLocalCPMember();
+        instances[0].getLifecycleService().shutdown();
+
+        ILogger logger = instances[1].getLoggingService().getLogger(getClass());
+
+        File[] memberDirs = baseDir.listFiles((dir, name) -> dir.isDirectory());
+        assertNotNull(memberDirs);
+
+        Optional<File> memberDirOpt = Arrays.stream(memberDirs).filter(dir -> {
+            try {
+                DirectoryLock lock = DirectoryLock.lockForDirectory(dir, logger);
+                lock.release();
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }).findFirst();
+
+        assertTrue(memberDirOpt.isPresent());
+
+        File cpMemberFile = new File(memberDirOpt.get(), CPMetadataStoreImpl.CP_MEMBER_FILE_NAME);
+        IOUtil.delete(cpMemberFile);
+        boolean created = cpMemberFile.createNewFile();
+        assertTrue(created);
+
+        try {
+            restartInstance(cpMember.getAddress(), config);
+            fail(cpMember + " should not be able to restart with missing CP member file!");
+        } catch (IllegalStateException ignored) {
+        }
+    }
+
 }

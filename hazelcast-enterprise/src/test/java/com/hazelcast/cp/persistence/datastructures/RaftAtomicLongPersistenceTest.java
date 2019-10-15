@@ -4,7 +4,6 @@ import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.internal.util.RandomPicker;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Ignore;
@@ -14,7 +13,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -73,27 +71,17 @@ public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceT
 
     @Test
     public void when_memberRestarts_then_restoresData() throws Exception {
-        final IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
+        IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
         long value = atomicLong.addAndGet(RandomPicker.getInt(100));
 
         // shutdown majority
         instances[0].shutdown();
         instances[1].shutdown();
 
-        final Future<Long> f = spawn(new Callable<Long>() {
-            @Override
-            public Long call() {
-                return atomicLong.incrementAndGet();
-            }
-        });
+        Future<Long> f = spawn(atomicLong::incrementAndGet);
 
         // Invocation cannot complete without majority
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertFalse(f.isDone());
-            }
-        }, 3);
+        assertTrueAllTheTime(() -> assertFalse(f.isDone()), 3);
 
         // restart majority back
         instances[0] = restartInstance(addresses[0], config);
@@ -105,19 +93,16 @@ public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceT
 
     @Test
     public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
-        final IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
-        final AtomicLong increments = new AtomicLong();
-        final AtomicBoolean done = new AtomicBoolean();
-        final Future<Long> f = spawn(new Callable<Long>() {
-            @Override
-            public Long call() {
-                while (!done.get()) {
-                    atomicLong.incrementAndGet();
-                    increments.incrementAndGet();
-                    LockSupport.parkNanos(1);
-                }
-                return atomicLong.get();
+        IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
+        AtomicLong increments = new AtomicLong();
+        AtomicBoolean done = new AtomicBoolean();
+        Future<Long> f = spawn(() -> {
+            while (!done.get()) {
+                atomicLong.incrementAndGet();
+                increments.incrementAndGet();
+                LockSupport.parkNanos(1);
             }
+            return atomicLong.get();
         });
 
         sleepSeconds(1);
@@ -143,19 +128,16 @@ public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceT
     @Test
     @Ignore
     public void whenClusterRestart_whileOperationsOngoing_then_recoversData() throws Exception {
-        final IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
-        final AtomicLong increments = new AtomicLong();
-        final AtomicBoolean done = new AtomicBoolean();
-        final Future<Long> f = spawn(new Callable<Long>() {
-            @Override
-            public Long call() {
-                while (!done.get()) {
-                    atomicLong.incrementAndGet();
-                    increments.incrementAndGet();
-                    LockSupport.parkNanos(1);
-                }
-                return atomicLong.get();
+        IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
+        AtomicLong increments = new AtomicLong();
+        AtomicBoolean done = new AtomicBoolean();
+        Future<Long> f = spawn(() -> {
+            while (!done.get()) {
+                atomicLong.incrementAndGet();
+                increments.incrementAndGet();
+                LockSupport.parkNanos(1);
             }
+            return atomicLong.get();
         });
 
         sleepSeconds(1);

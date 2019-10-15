@@ -5,7 +5,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.lock.FencedLock;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -14,7 +13,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -68,30 +66,20 @@ public class FencedLockPersistenceTest extends RaftDataStructurePersistenceTestS
 
     @Test
     public void when_memberRestarts_then_restoresData() throws Exception {
-        final FencedLock lock = proxyInstance.getCPSubsystem().getLock("test");
+        FencedLock lock = proxyInstance.getCPSubsystem().getLock("test");
         long fence0 = lock.lockAndGetFence();
 
         // shutdown majority
         instances[0].shutdown();
         instances[1].shutdown();
 
-        final Future<Long> f = spawn(new Callable<Long>() {
-            @Override
-            public Long call() {
-                return lock.lockAndGetFence();
-            }
-        });
+        Future<Long> f = spawn(lock::lockAndGetFence);
 
         // restart majority back
         instances[0] = restartInstance(addresses[0], config);
         instances[1] = restartInstance(addresses[1], config);
 
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertFalse(f.isDone());
-            }
-        }, 3);
+        assertTrueAllTheTime(() -> assertFalse(f.isDone()), 3);
 
         lock.unlock();
 
@@ -102,17 +90,14 @@ public class FencedLockPersistenceTest extends RaftDataStructurePersistenceTestS
 
     @Test
     public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
-        final FencedLock lock = proxyInstance.getCPSubsystem().getLock("test");
-        final int count = 5000;
-        final Future<Long> f = spawn(new Callable<Long>() {
-            @Override
-            public Long call() {
-                for (int i = 0; i < count; i++) {
-                    lock.lock();
-                    sleepMillis(1);
-                }
-                return lock.getFence();
+        FencedLock lock = proxyInstance.getCPSubsystem().getLock("test");
+        int count = 5000;
+        Future<Long> f = spawn(() -> {
+            for (int i = 0; i < count; i++) {
+                lock.lock();
+                sleepMillis(1);
             }
+            return lock.getFence();
         });
 
         sleepSeconds(1);

@@ -25,7 +25,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -292,7 +291,7 @@ public class OnDiskRaftStateStoreTest {
         assertEquals(1, snapshotEntry.term());
         assertEquals(5, snapshotEntry.index());
         assertEquals(0, snapshotEntry.groupMembersLogIndex());
-        assertEquals(members, new ArrayList<RaftEndpoint>(snapshotEntry.groupMembers()));
+        assertEquals(members, new ArrayList<>(snapshotEntry.groupMembers()));
         RestoreSnapshotRaftRunnable restored = (RestoreSnapshotRaftRunnable) snapshotEntry.operation();
         assertEquals("snapshotAt5", restored.getSnapshot());
         assertSingleRaftLogFile(5);
@@ -321,7 +320,7 @@ public class OnDiskRaftStateStoreTest {
         assertEquals(1, snapshotEntry.term());
         assertEquals(5, snapshotEntry.index());
         assertEquals(0, snapshotEntry.groupMembersLogIndex());
-        assertEquals(members, new ArrayList<RaftEndpoint>(snapshotEntry.groupMembers()));
+        assertEquals(members, new ArrayList<>(snapshotEntry.groupMembers()));
         RestoreSnapshotRaftRunnable restored = (RestoreSnapshotRaftRunnable) snapshotEntry.operation();
         assertEquals("snapshotAt5", restored.getSnapshot());
         assertSingleRaftLogFile(5);
@@ -824,12 +823,7 @@ public class OnDiskRaftStateStoreTest {
     }
 
     private void assertSingleRaftLogFile(long logIndex) {
-        String[] logFileNames = baseDir.list(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.startsWith(RAFT_LOG_PREFIX);
-            }
-        });
+        String[] logFileNames = baseDir.list((dir, name) -> name.startsWith(RAFT_LOG_PREFIX));
 
         assertNotNull(logFileNames);
         assertEquals(1, logFileNames.length);
@@ -869,12 +863,7 @@ public class OnDiskRaftStateStoreTest {
     }
 
     private File getRaftLogFile() {
-        File[] logFiles = baseDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.startsWith(RAFT_LOG_PREFIX);
-            }
-        });
+        File[] logFiles = baseDir.listFiles((dir, name) -> name.startsWith(RAFT_LOG_PREFIX));
 
         assertNotNull(logFiles);
         assertEquals(1, logFiles.length);

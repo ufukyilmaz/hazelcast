@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.UUID;
 
 import static com.hazelcast.internal.nio.IOUtil.closeResource;
@@ -26,8 +27,8 @@ import static com.hazelcast.internal.util.UUIDSerializationUtil.writeUUID;
  */
 public class CPMetadataStoreImpl implements CPMetadataStore {
 
-    private static final String CP_MEMBER_FILE_NAME = "cp-member";
-    private static final String METADATA_GROUP_ID_FILE_NAME = "metadata-group-id";
+    static final String CP_MEMBER_FILE_NAME = "cp-member";
+    private static final String METADATA_GROUP_ID_FILE_NAME_PREFIX = "metadata-group-id-";
 
     private final File dir;
 
@@ -51,8 +52,8 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
     }
 
     @Override
-    public boolean hasMetadata() {
-        File file = new File(dir, METADATA_GROUP_ID_FILE_NAME);
+    public boolean containsLocalMemberFile() {
+        File file = new File(dir, CP_MEMBER_FILE_NAME);
         return file.exists() && file.length() > 0;
     }
 
@@ -93,7 +94,8 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
 
     @Override
     public void persistMetadataGroupId(RaftGroupId groupId) throws IOException {
-        File tmp = new File(dir, METADATA_GROUP_ID_FILE_NAME + ".tmp");
+        String fileName = getMetadataGroupIdFileName(groupId);
+        File tmp = new File(dir, "tmp-" + fileName);
         FileOutputStream fileOutputStream = new FileOutputStream(tmp);
         DataOutputStream out = new DataOutputStream(new BufferedOutputStream(fileOutputStream));
         try {
@@ -106,15 +108,37 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
             closeResource(fileOutputStream);
             closeResource(out);
         }
-        IOUtil.rename(tmp, new File(dir, METADATA_GROUP_ID_FILE_NAME));
+        IOUtil.rename(tmp, new File(dir, fileName));
+        deleteStaleMetadataGroupIdFiles(groupId);
+    }
+
+    private void deleteStaleMetadataGroupIdFiles(RaftGroupId groupId) {
+        String latestMetadataGroupIdFileName = getMetadataGroupIdFileName(groupId);
+        String[] metadataGroupIdFileNames = getMetadataGroupIdFileNames();
+
+        assert metadataGroupIdFileNames != null && metadataGroupIdFileNames.length > 0;
+
+        Arrays.sort(metadataGroupIdFileNames);
+        for (String name : metadataGroupIdFileNames) {
+            if (name.equals(latestMetadataGroupIdFileName)) {
+                return;
+            }
+
+            IOUtil.deleteQuietly(new File(dir, name));
+        }
     }
 
     @Override
     public RaftGroupId readMetadataGroupId() throws IOException {
-        File file = new File(dir, METADATA_GROUP_ID_FILE_NAME);
-        if (!file.exists()) {
+        String[] metadataGroupIdFileNames = getMetadataGroupIdFileNames();
+        if (metadataGroupIdFileNames == null || metadataGroupIdFileNames.length == 0) {
             return null;
         }
+
+        Arrays.sort(metadataGroupIdFileNames);
+        String metadataGroupIdFileName = metadataGroupIdFileNames[metadataGroupIdFileNames.length - 1];
+
+        File file = new File(dir, metadataGroupIdFileName);
         DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
         try {
             String name = in.readUTF();
@@ -126,8 +150,30 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
         }
     }
 
+    private String[] getMetadataGroupIdFileNames() {
+        return dir.list((dir, name) -> name.startsWith(METADATA_GROUP_ID_FILE_NAME_PREFIX));
+    }
+
+    private String getMetadataGroupIdFileName(RaftGroupId groupId) {
+        return String.format(METADATA_GROUP_ID_FILE_NAME_PREFIX + "%016x", groupId.getSeed());
+    }
+
+    static boolean isCPMemberFile(File dir, String fileName) {
+        if (!(dir.exists() && dir.isDirectory())) {
+            return false;
+        }
+
+        File file = new File(dir, fileName);
+        return file.exists() && file.isFile() && fileName.equals(CP_MEMBER_FILE_NAME);
+    }
+
+    static boolean isMetadataGroupIdFile(File dir, String fileName) {
+        File file = new File(dir, fileName);
+        return file.exists() && file.isFile() && fileName.startsWith(METADATA_GROUP_ID_FILE_NAME_PREFIX);
+    }
+
     static boolean isCPDirectory(File dir) {
-        return new File(dir, CP_MEMBER_FILE_NAME).exists();
+        return isCPMemberFile(dir, CP_MEMBER_FILE_NAME);
     }
 
 }

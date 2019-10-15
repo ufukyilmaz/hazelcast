@@ -4,6 +4,7 @@ import com.hazelcast.cluster.Address;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.cp.CPSubsystemConfig;
 import com.hazelcast.core.HazelcastException;
+import com.hazelcast.cp.CPMember;
 import com.hazelcast.cp.internal.CPMemberInfo;
 import com.hazelcast.cp.internal.MetadataRaftGroupSnapshot;
 import com.hazelcast.cp.internal.RaftGroupId;
@@ -44,6 +45,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -59,6 +61,7 @@ import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.util.DirectoryLock.lockForDirectory;
 import static com.hazelcast.internal.util.FutureUtil.RETHROW_EVERYTHING;
 import static com.hazelcast.internal.util.FutureUtil.waitWithDeadline;
+import static com.hazelcast.internal.util.Preconditions.checkTrue;
 import static com.hazelcast.internal.util.ThreadUtil.createThreadName;
 import static com.hazelcast.spi.impl.executionservice.ExecutionService.ASYNC_EXECUTOR;
 import static java.util.Arrays.sort;
@@ -112,7 +115,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         this.cpSubsystemConfig = node.getConfig().getCPSubsystemConfig();
     }
 
-    @SuppressWarnings("checkstyle:npathcomplexity")
+    @SuppressWarnings({"checkstyle:npathcomplexity", "checkstyle:cyclomaticcomplexity"})
     private DirectoryLock acquireDir(CPSubsystemConfig config) {
         File baseDir = config.getBaseDir();
         if (!baseDir.exists() && !baseDir.mkdirs() && !baseDir.exists()) {
@@ -124,10 +127,25 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         }
 
         File[] dirs = baseDir.listFiles(f -> {
+            if (f.isFile()) {
+                return false;
+            }
+
             boolean cpDirectory = isCPDirectory(f);
             if (!cpDirectory) {
+                verifyNoCPGroupDirExists(f);
                 logger.fine(f.getAbsolutePath() + " is not a valid CP data directory.");
+            } else {
+                try {
+                    CPMember cpMember = new CPMetadataStoreImpl(f).readLocalCPMember();
+                    if (cpMember == null) {
+                        verifyNoCPGroupDirExists(f);
+                    }
+                } catch (IOException e) {
+                    throw new HazelcastException("Could not read local CP member file in " + f.getAbsolutePath(), e);
+                }
             }
+
             return cpDirectory;
         });
 
@@ -199,6 +217,25 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
     public void reset() {
         File[] files = dir.listFiles((dir, name) -> !DirectoryLock.FILE_NAME.equals(name));
         if (files != null) {
+            // files are deleted in the following order:
+            // 1. cp member file
+            // 2. cp group dirs
+            // 3. metadata group id file
+
+            Arrays.sort(files, (f1, f2) -> {
+                if (CPMetadataStoreImpl.isCPMemberFile(dir, f1.getName())) {
+                    return -1;
+                } else if (CPMetadataStoreImpl.isCPMemberFile(dir, f2.getName())) {
+                    return 1;
+                } else if (CPMetadataStoreImpl.isMetadataGroupIdFile(dir, f1.getName())) {
+                    return 1;
+                } else if (CPMetadataStoreImpl.isMetadataGroupIdFile(dir, f2.getName())) {
+                    return -1;
+                }
+
+                return 0;
+            });
+
             for (File f : files) {
                 delete(f);
             }
@@ -223,6 +260,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         try {
             localCPMember = metadataStore.readLocalCPMember();
             if (localCPMember == null) {
+                verifyNoCPGroupDirExists(dir);
                 logger.info("Nothing to restore in " + dir.getAbsolutePath());
                 startCompleted = true;
                 return;
@@ -262,6 +300,20 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
 
         this.startCompleted = true;
         logger.fine("CP restore completed...");
+    }
+
+    private void verifyNoCPGroupDirExists(File dir) {
+        checkTrue(dir.isDirectory(), dir.getAbsolutePath() + " is not a directory!");
+        File[] files = dir.listFiles((d, name) -> !DirectoryLock.FILE_NAME.equals(name));
+        if (files != null && files.length > 0) {
+            for (File file : files) {
+                if (!(CPMetadataStoreImpl.isCPMemberFile(dir, file.getName())
+                        || CPMetadataStoreImpl.isMetadataGroupIdFile(dir, file.getName()))) {
+                    throw new IllegalStateException(dir.getAbsolutePath()
+                            + " contains CP persistence files without CP member identity file!");
+                }
+            }
+        }
     }
 
     private void publishLocalAddressChange(Future<Void> futureToCheck) {

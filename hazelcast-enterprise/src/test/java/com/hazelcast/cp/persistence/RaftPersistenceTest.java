@@ -7,6 +7,7 @@ import com.hazelcast.cp.internal.raft.impl.dataservice.ApplyRaftRunnable;
 import com.hazelcast.cp.internal.raft.impl.dataservice.RaftDataService;
 import com.hazelcast.cp.internal.raft.impl.dataservice.RestoreSnapshotRaftRunnable;
 import com.hazelcast.cp.internal.raft.impl.dto.AppendRequest;
+import com.hazelcast.cp.internal.raft.impl.dto.PreVoteRequest;
 import com.hazelcast.cp.internal.raft.impl.log.LogEntry;
 import com.hazelcast.cp.internal.raft.impl.log.SnapshotEntry;
 import com.hazelcast.cp.internal.raft.impl.persistence.RaftStateLoader;
@@ -67,21 +68,20 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
     private InternalSerializationService serializationService = new DefaultSerializationServiceBuilder().build();
 
     private final BiFunctionEx<RaftEndpoint, RaftAlgorithmConfig, RaftStateLoader> stateLoaderFactory =
-            (BiFunctionEx<RaftEndpoint, RaftAlgorithmConfig, RaftStateLoader>) (endpoint, config) ->
-                    getStateLoader(endpoint, config.getUncommittedEntryCountToRejectNewAppends());
+            (endpoint, config) -> getStateLoader(endpoint, config.getUncommittedEntryCountToRejectNewAppends());
 
     private final BiFunctionEx<RaftEndpoint, RaftAlgorithmConfig, RaftStateStore> stateStoreFactory =
-            (BiFunctionEx<RaftEndpoint, RaftAlgorithmConfig, RaftStateStore>) (endpoint, config) -> {
-        OnDiskRaftStateLoader loader = (OnDiskRaftStateLoader) stateLoaderFactory.apply(endpoint, config);
-        try {
-            loader.load();
-            return new OnDiskRaftStateStore(getDirectory(endpoint), serializationService,
-                    config.getUncommittedEntryCountToRejectNewAppends(), loader.logFileStructure());
-        } catch (Exception e) {
-            return new OnDiskRaftStateStore(getDirectory(endpoint), serializationService,
-                    config.getUncommittedEntryCountToRejectNewAppends(), null);
-        }
-    };
+            (endpoint, config) -> {
+                OnDiskRaftStateLoader loader = (OnDiskRaftStateLoader) stateLoaderFactory.apply(endpoint, config);
+                try {
+                    loader.load();
+                    return new OnDiskRaftStateStore(getDirectory(endpoint), serializationService,
+                            config.getUncommittedEntryCountToRejectNewAppends(), loader.logFileStructure());
+                } catch (Exception e) {
+                    return new OnDiskRaftStateStore(getDirectory(endpoint), serializationService,
+                            config.getUncommittedEntryCountToRejectNewAppends(), null);
+                }
+            };
 
     private LocalRaftGroup group;
 
@@ -366,6 +366,10 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
         int term = getTerm(leader);
         long commitIndex = getCommitIndex(leader);
 
+        // Block voting between followers
+        // to avoid a leader election before leader restarts.
+        blockVotingBetweenFollowers();
+
         RaftEndpoint terminatedEndpoint = leader.getLocalMember();
         group.terminateNode(terminatedEndpoint);
         OnDiskRaftStateLoader loader = getStateLoader(
@@ -549,6 +553,10 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
         int term = getTerm(leader);
         long commitIndex = getCommitIndex(leader);
 
+        // Block voting between followers
+        // to avoid a leader election before leader restarts.
+        blockVotingBetweenFollowers();
+
         RaftEndpoint terminatedEndpoint = leader.getLocalMember();
         group.terminateNode(terminatedEndpoint);
         OnDiskRaftStateLoader loader = getStateLoader(
@@ -589,6 +597,10 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
         leader.replicateMembershipChange(removedFollower.getLocalMember(), REMOVE).get();
 
         RaftEndpoint terminatedEndpoint = leader.getLocalMember();
+
+        // Block voting between followers
+        // to avoid a leader election before leader restarts.
+        blockVotingBetweenFollowers();
 
         group.terminateNode(terminatedEndpoint);
         OnDiskRaftStateLoader loader = getStateLoader(
@@ -672,6 +684,10 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
         }
 
         ensureFlush(leader);
+
+        // Block voting between followers
+        // to avoid a leader election before leader restarts.
+        blockVotingBetweenFollowers();
 
         RaftEndpoint terminatedEndpoint = leader.getLocalMember();
         group.terminateNode(terminatedEndpoint);
@@ -822,6 +838,15 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
         }
 
         assertOpenEventually(latch);
+    }
+
+    private void blockVotingBetweenFollowers() {
+        RaftEndpoint[] endpoints = group.getFollowerEndpoints();
+        for (RaftEndpoint endpoint : endpoints) {
+            if (group.isRunning(endpoint)) {
+                group.dropMessagesToAll(endpoint, PreVoteRequest.class);
+            }
+        }
     }
 
 }

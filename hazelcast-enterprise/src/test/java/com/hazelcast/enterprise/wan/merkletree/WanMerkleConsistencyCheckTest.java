@@ -27,7 +27,7 @@ import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
-import static com.hazelcast.config.WanPublisherState.STOPPED;
+import static com.hazelcast.wan.WanPublisherState.STOPPED;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;

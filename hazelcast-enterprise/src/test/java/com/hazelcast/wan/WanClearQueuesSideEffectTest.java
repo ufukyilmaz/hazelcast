@@ -1,6 +1,5 @@
 package com.hazelcast.wan;
 
-import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -13,9 +12,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.config.WanPublisherState.PAUSED;
-import static com.hazelcast.config.WanPublisherState.REPLICATING;
-import static com.hazelcast.config.WanPublisherState.STOPPED;
+import static com.hazelcast.wan.WanPublisherState.PAUSED;
+import static com.hazelcast.wan.WanPublisherState.REPLICATING;
+import static com.hazelcast.wan.WanPublisherState.STOPPED;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanReplication.replicate;

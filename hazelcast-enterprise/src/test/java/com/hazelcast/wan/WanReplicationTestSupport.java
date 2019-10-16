@@ -7,7 +7,6 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
-import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;

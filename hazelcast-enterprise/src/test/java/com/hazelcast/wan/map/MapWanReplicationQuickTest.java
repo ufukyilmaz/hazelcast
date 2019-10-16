@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
-import com.hazelcast.config.WanPublisherState;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
@@ -32,7 +32,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.config.WanPublisherState.PAUSED;
+import static com.hazelcast.wan.WanPublisherState.PAUSED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 

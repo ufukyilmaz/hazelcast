@@ -25,7 +25,7 @@ import java.util.Map;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
-import static com.hazelcast.config.WanPublisherState.STOPPED;
+import static com.hazelcast.wan.WanPublisherState.STOPPED;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanAntiEntropyTestSupport.getLastCheckResults;

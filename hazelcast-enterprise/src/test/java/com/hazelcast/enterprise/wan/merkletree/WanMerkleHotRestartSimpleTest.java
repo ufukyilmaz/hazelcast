@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.merkletree;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.WanPublisherState;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;

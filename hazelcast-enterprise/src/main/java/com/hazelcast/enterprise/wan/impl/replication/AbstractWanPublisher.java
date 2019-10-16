@@ -6,7 +6,7 @@ import com.hazelcast.cache.impl.wan.CacheReplicationObject;
 import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
-import com.hazelcast.config.WanPublisherState;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;

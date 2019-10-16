@@ -3,7 +3,6 @@ package com.hazelcast.wan;
 import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.WanPublisherState;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;

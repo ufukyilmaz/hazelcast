@@ -131,8 +131,8 @@ public class HDRecordAccessorTest {
         assertAligned(address, HDRecord.LAST_UPDATE_TIME_OFFSET, 4);
         AMEM.getInt(address + HDRecord.LAST_UPDATE_TIME_OFFSET);
 
-        assertAligned(address, HDRecord.HITS, 4);
-        AMEM.getInt(address + HDRecord.HITS);
+        assertAligned(address, HDRecord.HITS_OFFSET, 4);
+        AMEM.getInt(address + HDRecord.HITS_OFFSET);
 
         assertAligned(address, HDRecord.LAST_STORED_TIME_OFFSET, 4);
         AMEM.getInt(address + HDRecord.LAST_STORED_TIME_OFFSET);

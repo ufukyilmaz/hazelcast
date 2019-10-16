@@ -22,7 +22,7 @@ public class HDRecordAccessor
 
     @Override
     protected HDRecord createRecord() {
-        return new HDRecord(this);
+        return new HDRecord();
     }
 
     @Override

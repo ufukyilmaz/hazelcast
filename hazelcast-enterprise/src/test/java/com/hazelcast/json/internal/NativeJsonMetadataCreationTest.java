@@ -46,7 +46,8 @@ public class NativeJsonMetadataCreationTest extends JsonMetadataCreationTest {
         int partitionId = getPartitionService(instance).getPartitionId(key);
         NodeEngineImpl nodeEngine = getNodeEngineImpl(getBackupInstance(instances, partitionId, replicaIndex));
         MapService mapService = nodeEngine.getService(MapService.SERVICE_NAME);
-        EnterpriseRecordStore enterpriseRecordStore = (EnterpriseRecordStore) mapService.getMapServiceContext().getPartitionContainer(partitionId).getRecordStore(mapName);
+        EnterpriseRecordStore enterpriseRecordStore
+                = (EnterpriseRecordStore) mapService.getMapServiceContext().getPartitionContainer(partitionId).getRecordStore(mapName);
         return enterpriseRecordStore.getMetadataStore().get(keyData);
     }
 

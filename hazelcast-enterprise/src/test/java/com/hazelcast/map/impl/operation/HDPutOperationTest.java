@@ -64,7 +64,7 @@ public class HDPutOperationTest extends AbstractHDMapOperationTest {
         // HDPutOperation
         List<Operation> list = new ArrayList<Operation>(ENTRY_COUNT);
         for (int i = 0; i < ENTRY_COUNT; i++) {
-            TestHDPutOperation operation = new TestHDPutOperation(MAP_NAME, dataKey, dataValue);
+            PutOperation operation = new PutOperation(MAP_NAME, dataKey, dataValue);
             executeOperation(operation, PARTITION_ID);
 
             if (syncBackupCount > 0) {
@@ -74,7 +74,7 @@ public class HDPutOperationTest extends AbstractHDMapOperationTest {
         verifyRecordStoreAfterRun(PUT, false);
         verifyHDEvictor(PUT);
 
-        // HDPutBackupOperation
+        // PutBackupOperation
         if (syncBackupCount > 0) {
             for (Operation operation : list) {
                 executeOperation(operation, PARTITION_ID);
@@ -87,15 +87,5 @@ public class HDPutOperationTest extends AbstractHDMapOperationTest {
     @Override
     String getMapName() {
         return MAP_NAME;
-    }
-
-    public class TestHDPutOperation extends PutOperation {
-
-        public TestHDPutOperation() {
-        }
-
-        public TestHDPutOperation(String name, Data dataKey, Data value) {
-            super(name, dataKey, value);
-        }
     }
 }

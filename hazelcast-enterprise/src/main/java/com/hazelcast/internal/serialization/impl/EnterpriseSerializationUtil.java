@@ -23,10 +23,8 @@ public final class EnterpriseSerializationUtil {
     private EnterpriseSerializationUtil() {
     }
 
-    public static Data readDataInternal(
-            EnterpriseObjectDataInput in, DataType type, MemoryAllocator malloc,
-            boolean readToHeapOnOOME)
-    throws IOException {
+    public static Data readDataInternal(EnterpriseObjectDataInput in, DataType type,
+                                        MemoryAllocator malloc, boolean readToHeapOnOOME) throws IOException {
         if (type == DataType.HEAP) {
             return in.readData();
         }
@@ -77,10 +75,8 @@ public final class EnterpriseSerializationUtil {
     }
 
     @SuppressFBWarnings("SR_NOT_CHECKED")
-    public static NativeMemoryData allocateNativeData(
-            EnterpriseObjectDataInput in, MemoryAllocator malloc, int memSize, int size,
-            boolean skipBytesOnOome)
-    throws IOException {
+    public static NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, MemoryAllocator malloc,
+                                                      int memSize, int size, boolean skipBytesOnOome) throws IOException {
         if (malloc == null) {
             throw new HazelcastSerializationException("MemoryManager is required!");
         }

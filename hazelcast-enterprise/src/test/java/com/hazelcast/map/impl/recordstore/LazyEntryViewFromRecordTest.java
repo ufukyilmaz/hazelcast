@@ -82,7 +82,7 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
         when(recordOtherExpirationTime.getExpirationTime()).thenReturn(1251241512L);
 
         HDRecord recordOtherHits = getHDRecord(dataKey, dataValue);
-        when(recordOtherHits.getHits()).thenReturn(2342L);
+        when(recordOtherHits.getHits()).thenReturn(2342);
 
         HDRecord recordOtherLastAccessTime = getHDRecord(dataKey, dataValue);
         when(recordOtherLastAccessTime.getLastAccessTime()).thenReturn(32424515466L);

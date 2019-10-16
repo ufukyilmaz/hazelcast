@@ -3,7 +3,12 @@ package com.hazelcast.map.impl.recordstore;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hotrestart.RamStore;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.util.Clock;
+import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapContainer;
@@ -12,15 +17,10 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.hotrestart.RamStore;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.internal.util.Clock;
-import com.hazelcast.internal.util.ExceptionUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +31,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.map.impl.record.HDRecordFactory.NOT_AVAILABLE;
+import static com.hazelcast.map.impl.record.Record.DEFAULT_MAX_IDLE;
+import static com.hazelcast.map.impl.record.Record.DEFAULT_TTL;
+import static com.hazelcast.map.impl.record.Record.NOT_AVAILABLE;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -69,7 +71,8 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     public void init() {
         super.init();
         if (prefix != -1) {
-            this.ramStore = inMemoryFormat == NATIVE ? new RamStoreHDImpl(this, memoryManager) : new RamStoreImpl(this);
+            this.ramStore = inMemoryFormat == NATIVE
+                    ? new RamStoreHDImpl(this, memoryManager) : new RamStoreImpl(this);
         }
     }
 
@@ -78,12 +81,16 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     }
 
     /**
-     * The reason of overriding this method is an optimization which we did to fit a {@link HDRecord} size in a 64 bit
-     * HD block. One of the changes for this was converting a long ttl to an int ttl. As a result of that change,
-     * an infinite ttl is represented with an {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS} instead of Long.MAX_VALUE.
+     * The reason of overriding this method is an optimization which
+     * we did to fit a {@link HDRecord} size in a 64 bit HD block.
+     * One of the changes for this was converting a long ttl to an int
+     * ttl. As a result of that change, an infinite ttl is represented
+     * with an {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}
+     * instead of Long.MAX_VALUE.
      * <p>
-     * When marking a record-store as expirable we should also take care of this new case and should not mark a record-store
-     * as expirable if a ttl was set to {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}.
+     * When marking a record-store as expirable we should also take care of
+     * this new case and should not mark a record-store as expirable if a ttl
+     * was set to {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}.
      *
      * @param ttl ttl in milliseconds.
      */
@@ -97,7 +104,8 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     @Override
     public Storage createStorage(RecordFactory recordFactory, InMemoryFormat memoryFormat) {
-        EnterpriseMapServiceContext mapServiceContext = (EnterpriseMapServiceContext) mapContainer.getMapServiceContext();
+        EnterpriseMapServiceContext mapServiceContext
+                = (EnterpriseMapServiceContext) mapContainer.getMapServiceContext();
         if (NATIVE == inMemoryFormat) {
             EnterpriseSerializationService serializationService
                     = (EnterpriseSerializationService) this.serializationService;
@@ -123,7 +131,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     public HDRecord createRecord(Data keyData, Object value, long sequence) {
         return (HDRecord) createRecordInternal(keyData, value, DEFAULT_TTL, DEFAULT_MAX_IDLE,
-                                               Clock.currentTimeMillis(), sequence);
+                Clock.currentTimeMillis(), sequence);
     }
 
     @Override

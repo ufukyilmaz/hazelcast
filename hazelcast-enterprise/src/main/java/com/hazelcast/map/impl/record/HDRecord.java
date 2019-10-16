@@ -1,61 +1,53 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.internal.hidensity.HiDensityRecord;
-import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.IMap;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.impl.Metadata;
-import com.hazelcast.internal.util.Clock;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.map.impl.record.AbstractRecord.EPOCH_TIME;
 import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static com.hazelcast.map.impl.record.RecordReaderWriter.DATA_RECORD_WITH_STATS_READER_WRITER;
 
 /**
+ * Structure:
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * | Key Address              |   8 bytes (long)   |
+ * +--------------------------+--------------------+
+ * | Value Address            |   8 bytes (long)   |
+ * +--------------------------+--------------------+
+ * | Version                  |   8 bytes (long)   |
+ * +--------------------------+--------------------+
+ * | Creation Time            |   4 bytes (int)    |
+ * +--------------------------+--------------------+
+ * | Time To live             |   4 bytes (int)    |
+ * +--------------------------+--------------------+
+ * | Max Idle                 |   4 bytes (int)    |
+ * +--------------------------+--------------------+
+ * | Last Access Time         |   4 bytes (int)    |
+ * +--------------------------+--------------------+
+ * | Last Update Time         |   4 bytes (int)    |
+ * +--------------------------+--------------------+
+ * | Hits                     |   4 bytes (int)    |
+ * +--------------------------+--------------------+
+ * | Last Stored Time         |   4 bytes (int)    |
+ * +--------------------------+--------------------+
+ * | Expiration Time          |   4 bytes (int)    |
+ * +--------------------------+--------------------+
+ * | Sequence                 |   4 bytes (int)    |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ * Total size = 60 bytes
+ *
+ * All fields are aligned.
+ *
  * Represents simple Hi-Density backed {@link
- * Record} implementation for {@link IMap IMap}.
+ * Record} implementation for {@link com.hazelcast.map.IMap IMap}.
  */
 @SuppressWarnings("checkstyle:methodcount")
 public class HDRecord extends HiDensityRecord implements Record<Data> {
-
-    /*
-     * Structure:
-     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * | Key Address              |   8 bytes (long)   |
-     * +--------------------------+--------------------+
-     * | Value Address            |   8 bytes (long)   |
-     * +--------------------------+--------------------+
-     * | Version                  |   8 bytes (long)   |
-     * +--------------------------+--------------------+
-     * | Creation Time            |   4 bytes (int)    |
-     * +--------------------------+--------------------+
-     * | Time To live             |   4 bytes (int)    |
-     * +--------------------------+--------------------+
-     * | Max Idle                 |   4 bytes (int)    |
-     * +--------------------------+--------------------+
-     * | Last Access Time         |   4 bytes (int)    |
-     * +--------------------------+--------------------+
-     * | Last Update Time         |   4 bytes (int)    |
-     * +--------------------------+--------------------+
-     * | Hits                     |   4 bytes (int)    |
-     * +--------------------------+--------------------+
-     * | Last Stored Time         |   4 bytes (int)    |
-     * +--------------------------+--------------------+
-     * | Expiration Time          |   4 bytes (int)    |
-     * +--------------------------+--------------------+
-     * | Sequence                 |   4 bytes (int)    |
-     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *
-     * Total size = 60 bytes
-     *
-     * All fields are aligned.
-     */
-
     /**
      * Gives the size of an {@link HDRecord}.
      */
@@ -69,8 +61,8 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     static final int MAX_IDLE_OFFSET = TTL_OFFSET + INT_SIZE_IN_BYTES;
     static final int LAST_ACCESS_TIME_OFFSET = MAX_IDLE_OFFSET + INT_SIZE_IN_BYTES;
     static final int LAST_UPDATE_TIME_OFFSET = LAST_ACCESS_TIME_OFFSET + INT_SIZE_IN_BYTES;
-    static final int HITS = LAST_UPDATE_TIME_OFFSET + INT_SIZE_IN_BYTES;
-    static final int LAST_STORED_TIME_OFFSET = HITS + INT_SIZE_IN_BYTES;
+    static final int HITS_OFFSET = LAST_UPDATE_TIME_OFFSET + INT_SIZE_IN_BYTES;
+    static final int LAST_STORED_TIME_OFFSET = HITS_OFFSET + INT_SIZE_IN_BYTES;
     static final int EXPIRATION_TIME_OFFSET = LAST_STORED_TIME_OFFSET + INT_SIZE_IN_BYTES;
     static final int SEQUENCE_OFFSET = EXPIRATION_TIME_OFFSET + INT_SIZE_IN_BYTES;
 
@@ -78,11 +70,8 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
         SIZE = SEQUENCE_OFFSET + INT_SIZE_IN_BYTES;
     }
 
-    protected final HiDensityRecordAccessor<HDRecord> recordAccessor;
-
-    public HDRecord(HiDensityRecordAccessor<HDRecord> recordAccessor) {
+    public HDRecord() {
         super(AMEM);
-        this.recordAccessor = recordAccessor;
         setSize(getSize());
     }
 
@@ -99,7 +88,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
         if (valueAddress == NULL_PTR) {
             return null;
         }
-        return recordAccessor.readData(valueAddress);
+        return new NativeMemoryData().reset(valueAddress);
     }
 
     @Override
@@ -126,30 +115,12 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
         if (address == NULL_PTR) {
             return null;
         } else {
-            return recordAccessor.readData(getKeyAddress());
+            long keyAddress = getKeyAddress();
+            if (keyAddress == NULL_PTR) {
+                return null;
+            }
+            return new NativeMemoryData().reset(keyAddress);
         }
-    }
-
-    @Override
-    public void onAccess(long now) {
-        setHits(getHits() + 1);
-        setLastAccessTime(now);
-    }
-
-    @Override
-    public void onAccessSafe(long now) {
-        onAccess(now);
-    }
-
-    @Override
-    public void onUpdate(long now) {
-        setVersion(getVersion() + 1L);
-        setLastUpdateTime(now);
-    }
-
-    @Override
-    public void onStore() {
-        setLastStoredTime(Clock.currentTimeMillis());
     }
 
     @Override
@@ -164,8 +135,8 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     }
 
     /**
-     * Since the address can be re-used, sequence provides a unique number () for the pointer.
-     * Sequence is used for Hot Restart.
+     * Since the address can be re-used, sequence provides a unique
+     * number () for the pointer. Sequence is used for Hot Restart.
      *
      * @param sequence
      */
@@ -236,84 +207,53 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
 
     @Override
     public long getCreationTime() {
-        return getWithBaseTime(CREATION_TIME_OFFSET);
+        return recomputeWithBaseTime(readInt(CREATION_TIME_OFFSET));
     }
 
     @Override
     public void setCreationTime(long creationTime) {
-        setWithBaseTime(CREATION_TIME_OFFSET, creationTime);
-    }
+        writeInt(CREATION_TIME_OFFSET, stripBaseTime(creationTime));
 
-    @Override
-    public long getTtl() {
-        int value = readInt(TTL_OFFSET);
-        return value == Integer.MAX_VALUE ? Long.MAX_VALUE : SECONDS.toMillis(value);
-    }
-
-    @Override
-    public void setTtl(long ttl) {
-        long ttlSeconds = MILLISECONDS.toSeconds(ttl);
-        if (ttlSeconds == 0 && ttl != 0) {
-            ttlSeconds = 1;
-        }
-        int value = ttlSeconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) ttlSeconds;
-        writeInt(TTL_OFFSET, value);
-    }
-
-    @Override
-    public void setMaxIdle(long maxIdle) {
-        long maxIdleSeconds = MILLISECONDS.toSeconds(maxIdle);
-        if (maxIdleSeconds == 0 && maxIdle != 0) {
-            maxIdleSeconds = 1;
-        }
-        int value = maxIdleSeconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) maxIdleSeconds;
-        writeInt(MAX_IDLE_OFFSET, value);
-    }
-
-    @Override
-    public long getMaxIdle() {
-        int value = readInt(MAX_IDLE_OFFSET);
-        return value == Integer.MAX_VALUE ? Long.MAX_VALUE : SECONDS.toMillis(value);
     }
 
     @Override
     public long getLastAccessTime() {
-        return getWithBaseTime(LAST_ACCESS_TIME_OFFSET);
+        return recomputeWithBaseTime(readInt(LAST_ACCESS_TIME_OFFSET));
     }
 
     @Override
     public void setLastAccessTime(long lastAccessTime) {
-        setWithBaseTime(LAST_ACCESS_TIME_OFFSET, lastAccessTime);
+        writeInt(LAST_ACCESS_TIME_OFFSET, stripBaseTime(lastAccessTime));
     }
 
     @Override
     public long getLastUpdateTime() {
-        return getWithBaseTime(LAST_UPDATE_TIME_OFFSET);
+        return recomputeWithBaseTime(readInt(LAST_UPDATE_TIME_OFFSET));
     }
 
     @Override
     public void setLastUpdateTime(long lastUpdatedTime) {
-        setWithBaseTime(LAST_UPDATE_TIME_OFFSET, lastUpdatedTime);
+        writeInt(LAST_UPDATE_TIME_OFFSET, stripBaseTime(lastUpdatedTime));
     }
 
     @Override
-    public long getHits() {
-        return readInt(HITS);
+    public int getHits() {
+        return readInt(HITS_OFFSET);
     }
 
     @Override
-    public void setHits(long hits) {
-        writeInt(HITS, (int) hits);
+    public void setHits(int hits) {
+        writeInt(HITS_OFFSET, hits);
     }
 
     @Override
     public long getLastStoredTime() {
-        return getWithBaseTime(LAST_STORED_TIME_OFFSET);
+        return recomputeWithBaseTime(readInt(LAST_STORED_TIME_OFFSET));
     }
 
     @Override
     public void setLastStoredTime(long lastStoredTime) {
-        setWithBaseTime(LAST_STORED_TIME_OFFSET, lastStoredTime);
+        writeInt(LAST_STORED_TIME_OFFSET, stripBaseTime(lastStoredTime));
     }
 
     @Override
@@ -333,7 +273,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
             return;
         }
 
-        setWithBaseTime(EXPIRATION_TIME_OFFSET, expirationTime);
+        writeInt(EXPIRATION_TIME_OFFSET, stripBaseTime(expirationTime));
     }
 
     /**
@@ -361,34 +301,95 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     }
 
     @Override
-    public boolean equals(Object o) {
-        return super.equals(o);
+    public RecordReaderWriter getMatchingRecordReaderWriter() {
+        return DATA_RECORD_WITH_STATS_READER_WRITER;
     }
 
     @Override
-    public int hashCode() {
-        return super.hashCode();
+    public int getRawTtl() {
+        return readInt(TTL_OFFSET);
     }
 
-    private long getWithBaseTime(int offset) {
-        int value = readInt(offset);
-        return recomputeWithBaseTime(value);
+    @Override
+    public int getRawMaxIdle() {
+        return readInt(MAX_IDLE_OFFSET);
     }
 
-    private long recomputeWithBaseTime(int value) {
-        if (value == NOT_AVAILABLE) {
-            return 0L;
-        }
-        return SECONDS.toMillis(value) + EPOCH_TIME;
+    @Override
+    public void setRawTtl(int ttl) {
+        writeInt(TTL_OFFSET, ttl);
     }
 
-    private void setWithBaseTime(int offset, long value) {
-        int diff = NOT_AVAILABLE;
-        if (value > 0) {
-            diff = (int) MILLISECONDS.toSeconds(value - EPOCH_TIME);
-        }
-        writeInt(offset, diff);
+    @Override
+    public void setRawMaxIdle(int maxIdle) {
+        writeInt(MAX_IDLE_OFFSET, maxIdle);
     }
 
+    @Override
+    public int getRawCreationTime() {
+        return readInt(CREATION_TIME_OFFSET);
+    }
+
+    @Override
+    public void setRawCreationTime(int time) {
+        writeInt(CREATION_TIME_OFFSET, time);
+    }
+
+    @Override
+    public int getRawLastAccessTime() {
+        return readInt(LAST_ACCESS_TIME_OFFSET);
+    }
+
+    @Override
+    public void setRawLastAccessTime(int time) {
+        writeInt(LAST_ACCESS_TIME_OFFSET, time);
+    }
+
+    @Override
+    public int getRawLastUpdateTime() {
+        return readInt(LAST_UPDATE_TIME_OFFSET);
+    }
+
+    @Override
+    public void setRawLastUpdateTime(int time) {
+        writeInt(LAST_UPDATE_TIME_OFFSET, time);
+    }
+
+    @Override
+    public int getRawLastStoredTime() {
+        return readInt(LAST_STORED_TIME_OFFSET);
+    }
+
+    @Override
+    public void setRawLastStoredTime(int time) {
+        writeInt(LAST_STORED_TIME_OFFSET, time);
+    }
+
+    @Override
+    public int getRawExpirationTime() {
+        return readInt(EXPIRATION_TIME_OFFSET);
+    }
+
+    @Override
+    public void setRawExpirationTime(int time) {
+        writeInt(EXPIRATION_TIME_OFFSET, time);
+    }
+
+    @Override
+    public String toString() {
+        return address() == NULL_PTR
+                ? "HDRecord{NULL}"
+                : "HDRecord{version: " + getVersion()
+                + ", creationTime: " + getCreationTime()
+                + ", lastAccessTime: " + getLastAccessTime()
+                + ", lastUpdateTime: " + getLastUpdateTime()
+                + ", lastStoredTime: " + getLastStoredTime()
+                + ", expirationTime: " + getExpirationTime()
+                + ", hits: " + getHits()
+                + ", ttl: " + getTtl()
+                + ", maxIdle: " + getMaxIdle()
+                + ", sequence: " + getSequence()
+                + ", valueAddress: " + getValueAddress()
+                + " }";
+    }
 }
-

@@ -7,6 +7,7 @@ import com.hazelcast.internal.nearcache.impl.invalidation.Invalidation;
 import com.hazelcast.internal.nearcache.impl.invalidation.Invalidator;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.logging.Logger;
+import com.hazelcast.map.impl.InterceptorRegistry;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.MapService;
@@ -35,10 +36,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.internal.nearcache.impl.invalidation.InvalidationUtils.TRUE_FILTER;
+import static com.hazelcast.internal.util.UuidUtil.newUnsecureUUID;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.operation.AbstractHDMapOperationTest.OperationType.PUT;
 import static com.hazelcast.map.impl.operation.AbstractHDMapOperationTest.OperationType.PUT_ALL;
-import static com.hazelcast.internal.util.UuidUtil.newUnsecureUUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -109,19 +110,20 @@ public abstract class AbstractHDMapOperationTest {
         when(mapContainer.getMapConfig()).thenReturn(mapConfig);
         when(mapContainer.getEvictor()).thenReturn(evictor);
         when(mapContainer.hasInvalidationListener()).thenReturn(true);
+        when(mapContainer.getInterceptorRegistry()).thenReturn(new InterceptorRegistry());
 
         MapDataStore mapDataStore = mock(MapDataStore.class);
 
         Record record = mock(Record.class);
+        when(record.getKey()).thenReturn(new HeapData());
 
         recordStore = mock(RecordStore.class);
         when(recordStore.getMapDataStore()).thenReturn(mapDataStore);
         when(recordStore.getMapContainer()).thenReturn(mapContainer);
         when(recordStore.getRecord(any(Data.class))).thenReturn(record);
-        when(recordStore.putBackup(any(Data.class), any(), any(CallerProvenance.class))).thenReturn(record);
-        when(recordStore.putBackup(any(Data.class), any(Data.class), anyLong(), anyLong(), anyBoolean(), any(CallerProvenance.class))).thenReturn(record);
+        when(recordStore.putBackup(any(Record.class), anyBoolean(), any(CallerProvenance.class))).thenReturn(record);
 
-        partitionMaps = new ConcurrentHashMap<String, RecordStore>();
+        partitionMaps = new ConcurrentHashMap<>();
 
         PartitionContainer partitionContainer = mock(PartitionContainer.class);
         when(partitionContainer.getRecordStore(eq(getMapName()))).thenReturn(recordStore);
@@ -271,9 +273,9 @@ public abstract class AbstractHDMapOperationTest {
 
         if (verifyBackups) {
             if (operationType == PUT_ALL) {
-                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(), any(CallerProvenance.class));
+                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Record.class), anyBoolean(), any(CallerProvenance.class));
             } else {
-                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Data.class), any(Data.class), anyLong(), anyLong(), anyBoolean(), any(CallerProvenance.class));
+                verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Record.class), anyBoolean(), any(CallerProvenance.class));
             }
         }
 
@@ -281,7 +283,7 @@ public abstract class AbstractHDMapOperationTest {
     }
 
     /**
-     * Verifies the {@link Invalidator} mock after a {@link HDPutAllOperation#afterRun()} call.
+     * Verifies the {@link Invalidator} mock after a {@link PutAllOperation#afterRun()} call.
      */
     void verifyNearCacheInvalidatorAfterRun() {
         assertEquals("NearCacheInvalidator should have received all keys", nearCacheInvalidator.getCount(), ENTRY_COUNT);

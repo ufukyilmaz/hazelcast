@@ -63,16 +63,17 @@ public class HDPutAllOperationTest extends AbstractHDMapOperationTest {
         configureBackups();
         configureRecordStore(PUT_ALL);
 
-        // HDPutAllOperation
-        TestHDPutAllOperation operation = new TestHDPutAllOperation(MAP_NAME, mapEntries);
+        // PutAllOperation
+        PutAllOperation operation = new PutAllOperation(MAP_NAME, mapEntries);
         executeOperation(operation, PARTITION_ID);
+
         assertBackupConfiguration(operation);
 
         verifyRecordStoreAfterRun(PUT_ALL, false);
         verifyNearCacheInvalidatorAfterRun();
         verifyHDEvictor(PUT_ALL);
 
-        // HDPutAllBackupOperation
+        // PutAllBackupOperation
         if (syncBackupCount > 0) {
             executeOperation(operation.getBackupOperation(), PARTITION_ID);
 
@@ -85,15 +86,5 @@ public class HDPutAllOperationTest extends AbstractHDMapOperationTest {
     @Override
     String getMapName() {
         return MAP_NAME;
-    }
-
-    public class TestHDPutAllOperation extends PutAllOperation {
-
-        public TestHDPutAllOperation() {
-        }
-
-        public TestHDPutAllOperation(String name, MapEntries mapEntries) {
-            super(name, mapEntries);
-        }
     }
 }

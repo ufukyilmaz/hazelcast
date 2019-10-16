@@ -51,8 +51,8 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
     }
 
     @Override
-    public boolean hasMetadata() {
-        File file = new File(dir, METADATA_GROUP_ID_FILE_NAME);
+    public boolean containsLocalMemberFile() {
+        File file = new File(dir, CP_MEMBER_FILE_NAME);
         return file.exists() && file.length() > 0;
     }
 

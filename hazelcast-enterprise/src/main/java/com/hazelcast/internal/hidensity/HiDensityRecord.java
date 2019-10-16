@@ -10,8 +10,7 @@ import com.hazelcast.internal.memory.MemoryBlock;
  * @see com.hazelcast.internal.memory.MemoryBlock
  * @see NativeMemoryData
  */
-public abstract class HiDensityRecord
-        extends MemoryBlock {
+public abstract class HiDensityRecord extends MemoryBlock {
 
     protected HiDensityRecord(GlobalMemoryAccessor memoryAccessor) {
         super(memoryAccessor);

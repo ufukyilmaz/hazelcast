@@ -10,17 +10,13 @@ import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
+import static com.hazelcast.map.impl.record.Record.NOT_AVAILABLE;
 
 /**
  * Factory for creating Hi-Density backed records. Created for every
  * partition. The records will be created in Hi-Density memory storage.
  */
 public class HDRecordFactory implements RecordFactory<Data> {
-
-    /**
-     * Not available indicator. For example, used to indicate unset lastAccessTime.
-     */
-    public static final int NOT_AVAILABLE = -1;
 
     private final HiDensityRecordProcessor<HDRecord> recordProcessor;
     private final EnterpriseSerializationService serializationService;

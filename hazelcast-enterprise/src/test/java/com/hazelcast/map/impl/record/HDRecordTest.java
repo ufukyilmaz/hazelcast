@@ -1,13 +1,13 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.util.Clock;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.internal.util.Clock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +30,7 @@ public class HDRecordTest extends HazelcastTestSupport {
         memoryManager = new PoolingMemoryManager(memorySize);
         memoryManager.registerThread(Thread.currentThread());
 
-        record = new HDRecord(null);
+        record = new HDRecord();
         record.reset(memoryManager.allocate(HDRecord.SIZE));
     }
 
@@ -49,7 +49,7 @@ public class HDRecordTest extends HazelcastTestSupport {
 
         long expirationTime = creationTime + 500000;
 
-        long hits = 1000;
+        int hits = 1000;
         long ttl = 10000;
         long maxIdle = 5000;
 

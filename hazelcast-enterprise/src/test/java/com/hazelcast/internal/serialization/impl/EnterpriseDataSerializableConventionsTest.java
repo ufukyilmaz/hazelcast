@@ -43,6 +43,7 @@ public class EnterpriseDataSerializableConventionsTest extends DataSerializableC
     protected Set<Class> getWhitelistedClasses() {
         Set<Class> classes = super.getWhitelistedClasses();
         classes.add(WanCacheEntryView.class);
+
         for (String className : WHITELISTED_CLASS_NAMES) {
             addToWhiteList(classes, className);
         }

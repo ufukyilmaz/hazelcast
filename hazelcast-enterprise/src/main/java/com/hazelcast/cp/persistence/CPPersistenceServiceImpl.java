@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static com.hazelcast.cluster.memberselector.MemberSelectors.NON_LOCAL_MEMBER_SELECTOR;
 import static com.hazelcast.cp.CPGroup.METADATA_CP_GROUP_NAME;
@@ -285,7 +286,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
 
         runAsync("notify-metadata-group-thread", () -> verifyRestartedCPMember(verificationFuture));
 
-        File[] groupDirs = getGroupDirs();
+        File[] groupDirs = getGroupDirs(dir);
         if (groupDirs == null || groupDirs.length == 0) {
             logger.info("No CP group to restore in " + dir.getAbsolutePath());
         } else {
@@ -304,15 +305,14 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
 
     private void verifyNoCPGroupDirExists(File dir) {
         checkTrue(dir.isDirectory(), dir.getAbsolutePath() + " is not a directory!");
-        File[] files = dir.listFiles((d, name) -> !DirectoryLock.FILE_NAME.equals(name));
-        if (files != null && files.length > 0) {
-            for (File file : files) {
-                if (!(CPMetadataStoreImpl.isCPMemberFile(dir, file.getName())
-                        || CPMetadataStoreImpl.isMetadataGroupIdFile(dir, file.getName()))) {
-                    throw new IllegalStateException(dir.getAbsolutePath()
-                            + " contains CP persistence files without CP member identity file!");
-                }
-            }
+        File[] groupDirs = getGroupDirs(dir);
+        if (groupDirs != null && groupDirs.length > 0) {
+            List<String> invalidDirNames = Arrays.stream(groupDirs)
+                                                 .map(File::getName)
+                                                 .collect(Collectors.toList());
+
+            throw new IllegalStateException(dir.getAbsolutePath() + " contains CP group directories: " + invalidDirNames
+                    + " without CP member identity file!");
         }
     }
 
@@ -376,12 +376,14 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
 
     private RaftGroupId getGroupId(File groupDir) {
         String[] split = groupDir.getName().split("@");
-        assert split.length == 3;
+        if (split.length != 3) {
+            throw new IllegalArgumentException("Invalid CP group persistence directory: " + groupDir.getName());
+        }
 
         return new RaftGroupId(split[0], Long.parseLong(split[1]), Long.parseLong(split[2]));
     }
 
-    private File[] getGroupDirs() {
+    private File[] getGroupDirs(File dir) {
         return dir.listFiles(path ->
                 path.isDirectory() && new File(path, MEMBERS_FILENAME).exists() && new File(path, TERM_FILENAME).exists());
     }

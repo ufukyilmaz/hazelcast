@@ -77,14 +77,6 @@ public class VaultSecureStoreIntegrationTest extends AbstractHotRestartSecureSto
     }
 
     @Override
-    protected VaultSecureStoreConfig createSecureStoreUnusableKeysConfig() {
-        VaultSecureStoreConfig vaultConfig = new VaultSecureStoreConfig("http://dummy", MockVaultServer.SECRET_PATH_UNUSABLE_KEY,
-                MockVaultServer.TOKEN);
-        vault = vaultStartCatchExceptions(vaultConfig);
-        return vaultConfig;
-    }
-
-    @Override
     protected VaultSecureStoreConfig createSecureStoreNoKeysConfig() {
         VaultSecureStoreConfig vaultConfig = new VaultSecureStoreConfig("http://dummy", MockVaultServer.SECRET_PATH_WITHOUT_SECRET,
                 MockVaultServer.TOKEN);

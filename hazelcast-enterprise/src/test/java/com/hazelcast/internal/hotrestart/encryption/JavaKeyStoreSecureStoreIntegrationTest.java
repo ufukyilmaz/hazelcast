@@ -56,11 +56,6 @@ public class JavaKeyStoreSecureStoreIntegrationTest extends AbstractHotRestartSe
     }
 
     @Override
-    protected JavaKeyStoreSecureStoreConfig createSecureStoreUnusableKeysConfig() {
-        return createJavaKeyStore(newTempFileSafe(), keyStoreType, KEYSTORE_PASSWORD, new byte[1]);
-    }
-
-    @Override
     protected JavaKeyStoreSecureStoreConfig createSecureStoreNoKeysConfig() {
         return createJavaKeyStore(newTempFileSafe(), keyStoreType, KEYSTORE_PASSWORD);
     }

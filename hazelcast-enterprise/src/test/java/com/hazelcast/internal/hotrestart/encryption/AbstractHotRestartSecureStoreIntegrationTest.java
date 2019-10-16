@@ -26,8 +26,6 @@ public abstract class AbstractHotRestartSecureStoreIntegrationTest extends HotRe
 
     protected abstract SecureStoreConfig createSecureStoreNotAccessibleConfig();
 
-    protected abstract SecureStoreConfig createSecureStoreUnusableKeysConfig();
-
     protected abstract SecureStoreConfig createSecureStoreNoKeysConfig();
 
     @Test
@@ -43,16 +41,6 @@ public abstract class AbstractHotRestartSecureStoreIntegrationTest extends HotRe
             fail("Exception expected");
         } catch (Exception e) {
             startupFailure(e, "SecureStoreException");
-        }
-    }
-
-    @Test
-    public void testFailFast_whenEncryptionKeyUnusable() {
-        try {
-            newHazelcastInstance(() -> makeConfig(this::createSecureStoreUnusableKeysConfig));
-            fail("Exception expected");
-        } catch (Exception e) {
-            startupFailure(e, "Unable to create Cipher");
         }
     }
 

@@ -3,6 +3,7 @@ package com.hazelcast.spi.impl.securestore.impl;
 import com.hazelcast.config.JavaKeyStoreSecureStoreConfig;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.util.StringUtil;
 import com.hazelcast.internal.util.function.ConsumerEx;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
@@ -89,9 +90,12 @@ public class JavaKeyStoreSecureStoreTest extends HazelcastTestSupport {
             + "6AlXxqnGQPY2y8Lv+YqdESqoT40lsA65eB0HmOKWsgs1XC853DkJ1s2a6AvH0zhh\n"
             + "xcAiyLovhciZ5GsNHvNTDGFyETPSNfRb4xwLii\n-----END CERTIFICATE-----";
 
+    private static final byte[] ANOTHER_KEY_BYTES = StringUtil.stringToBytes("1111222233334444");
+
     private Node getNode() {
         return getNode(createHazelcastInstance());
     }
+
 
     @Test
     public void testNonExistentPath() {
@@ -114,14 +118,14 @@ public class JavaKeyStoreSecureStoreTest extends HazelcastTestSupport {
 
     @Test
     public void testRetrieveEncryptionKeys() throws IOException {
-        JavaKeyStoreSecureStoreConfig config = createJavaKeyStore(tf.newFile(), keyStoreType, KEYSTORE_PASSWORD, new byte[]{0},
-                new byte[]{1});
+        JavaKeyStoreSecureStoreConfig config = createJavaKeyStore(tf.newFile(), keyStoreType, KEYSTORE_PASSWORD,
+                ANOTHER_KEY_BYTES, KEY_BYTES);
         JavaKeyStoreSecureStore store = new JavaKeyStoreSecureStore(config, getNode());
         List<byte[]> keys = store.retrieveEncryptionKeys();
         assertNotNull(keys);
         assertEquals(2, keys.size());
-        assertArrayEquals(new byte[]{1}, keys.get(0));
-        assertArrayEquals(new byte[]{0}, keys.get(1));
+        assertArrayEquals(KEY_BYTES, keys.get(0));
+        assertArrayEquals(ANOTHER_KEY_BYTES, keys.get(1));
     }
 
     @Test
@@ -160,7 +164,8 @@ public class JavaKeyStoreSecureStoreTest extends HazelcastTestSupport {
             KeyStore.ProtectionParameter entryPassword = new KeyStore.PasswordProtection(config.getPassword().toCharArray());
             byte i = 0;
             for (String alias : aliases) {
-                SecretKey secretKey = new SecretKeySpec(new byte[]{i++}, "AES");
+                byte[] key = simpleKey(i++);
+                SecretKey secretKey = new SecretKeySpec(key, "AES");
                 KeyStore.SecretKeyEntry secret = new KeyStore.SecretKeyEntry(secretKey);
                 ks.setEntry(alias, secret, entryPassword);
             }
@@ -170,14 +175,20 @@ public class JavaKeyStoreSecureStoreTest extends HazelcastTestSupport {
         List<byte[]> keys = store.retrieveEncryptionKeys();
         assertNotNull(keys);
         assertEquals(4, keys.size());
-        assertArrayEquals(new byte[]{2}, keys.get(0));
+        assertArrayEquals(simpleKey((byte) 2), keys.get(0));
+    }
+
+    private static byte[] simpleKey(byte i) {
+        byte[] key = new byte[16];
+        key[0] = i;
+        return key;
     }
 
     @Test
     public void testRetrieveEncryptionKeys_whenKeyWrongPassword() throws IOException, GeneralSecurityException {
         JavaKeyStoreSecureStoreConfig config = createJavaKeyStore(tf.newFile(), keyStoreType, KEYSTORE_PASSWORD);
         withKeyStore(config, ks -> {
-            SecretKey secretKey = new SecretKeySpec(new byte[]{0}, "AES");
+            SecretKey secretKey = new SecretKeySpec(KEY_BYTES, "AES");
             KeyStore.SecretKeyEntry secret = new KeyStore.SecretKeyEntry(secretKey);
             KeyStore.ProtectionParameter entryPassword = new KeyStore.PasswordProtection("other-password".toCharArray());
             ks.setEntry("a", secret, entryPassword);
@@ -189,36 +200,36 @@ public class JavaKeyStoreSecureStoreTest extends HazelcastTestSupport {
 
     @Test
     public void testRetrieveEncryptionKeys_whenCertificateEntry() throws IOException, GeneralSecurityException {
-        JavaKeyStoreSecureStoreConfig config = createJavaKeyStore(tf.newFile(), keyStoreType, KEYSTORE_PASSWORD, new byte[]{0});
+        JavaKeyStoreSecureStoreConfig config = createJavaKeyStore(tf.newFile(), keyStoreType, KEYSTORE_PASSWORD, KEY_BYTES);
         withKeyStore(config, ks -> {
             Certificate cert = CertificateFactory.getInstance("X.509")
-                                                 .generateCertificate(new ByteArrayInputStream(TEST_CERTIFICATE.getBytes()));
+                    .generateCertificate(new ByteArrayInputStream(TEST_CERTIFICATE.getBytes()));
             ks.setCertificateEntry("certificate-entry", cert);
         });
         JavaKeyStoreSecureStore store = new JavaKeyStoreSecureStore(config, getNode());
         List<byte[]> keys = store.retrieveEncryptionKeys();
         assertNotNull(keys);
         assertEquals(1, keys.size());
-        assertArrayEquals(new byte[]{0}, keys.get(0));
+        assertArrayEquals(KEY_BYTES, keys.get(0));
     }
 
     @Test
     public void testRetrieveEncryptionKeys_whenPrivateKey() throws IOException, GeneralSecurityException {
-        JavaKeyStoreSecureStoreConfig config = createJavaKeyStore(tf.newFile(), keyStoreType, KEYSTORE_PASSWORD, new byte[]{0});
+        JavaKeyStoreSecureStoreConfig config = createJavaKeyStore(tf.newFile(), keyStoreType, KEYSTORE_PASSWORD, KEY_BYTES);
         withKeyStore(config, ks -> {
             KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA");
             keyPairGen.initialize(1024);
             KeyPair pair = keyPairGen.generateKeyPair();
             PrivateKey privateKey = pair.getPrivate();
             Certificate cert = CertificateFactory.getInstance("X.509")
-                                                 .generateCertificate(new ByteArrayInputStream(TEST_CERTIFICATE.getBytes()));
+                    .generateCertificate(new ByteArrayInputStream(TEST_CERTIFICATE.getBytes()));
             ks.setKeyEntry("private-key", privateKey, KEYSTORE_PASSWORD.toCharArray(), new Certificate[]{cert});
         });
         JavaKeyStoreSecureStore store = new JavaKeyStoreSecureStore(config, getNode());
         List<byte[]> keys = store.retrieveEncryptionKeys();
         assertNotNull(keys);
         assertEquals(1, keys.size());
-        assertArrayEquals(new byte[]{0}, keys.get(0));
+        assertArrayEquals(KEY_BYTES, keys.get(0));
     }
 
     @Test
@@ -233,20 +244,23 @@ public class JavaKeyStoreSecureStoreTest extends HazelcastTestSupport {
 
     @Test
     public void testWatchChanges() throws IOException, InterruptedException {
+        byte[] KEY0 = StringUtil.stringToBytes("0000000000000000");
+        byte[] KEY1 = StringUtil.stringToBytes("1000000000000000");
+        byte[] KEY2 = StringUtil.stringToBytes("2000000000000000");
+        byte[] KEY3 = StringUtil.stringToBytes("3000000000000000");
         File keystoreFile = tf.newFile();
-        JavaKeyStoreSecureStoreConfig config = createJavaKeyStore(keystoreFile, keyStoreType, KEYSTORE_PASSWORD, new byte[]{0},
-                new byte[]{1});
+        JavaKeyStoreSecureStoreConfig config = createJavaKeyStore(keystoreFile, keyStoreType, KEYSTORE_PASSWORD, KEY0,
+                KEY1);
         config.setPollingInterval(2);
 
         Node node = getNode();
 
         assertJavaKeyStoreChange(() -> new JavaKeyStoreSecureStore(config, node),
-                () -> createJavaKeyStore(keystoreFile, keyStoreType, KEYSTORE_PASSWORD, new byte[]{3}, new byte[]{4}),
-                new byte[]{4});
-
+                () -> createJavaKeyStore(keystoreFile, keyStoreType, KEYSTORE_PASSWORD, KEY2, KEY3),
+                KEY3);
         assertJavaKeyStoreChange(() -> new JavaKeyStoreSecureStore(config, node),
-                () -> createJavaKeyStore(keystoreFile, keyStoreType, KEYSTORE_PASSWORD, new byte[]{5}, new byte[]{6}),
-                new byte[]{6});
+                () -> createJavaKeyStore(keystoreFile, keyStoreType, KEYSTORE_PASSWORD, KEY1),
+                KEY1);
     }
 
     private static void assertJavaKeyStoreChange(Supplier<JavaKeyStoreSecureStore> storeFn, Runnable updateKeyStoreFn,
@@ -287,5 +301,4 @@ public class JavaKeyStoreSecureStoreTest extends HazelcastTestSupport {
             ks.store(out, config.getPassword().toCharArray());
         }
     }
-
 }

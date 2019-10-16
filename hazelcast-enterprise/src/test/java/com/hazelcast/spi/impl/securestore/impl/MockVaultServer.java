@@ -351,14 +351,14 @@ public class MockVaultServer {
         if (keyStoreFile != null) {
             SSLContext sslContext = SSLContext.getInstance("TLS");
 
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerAlgorithmName());
             KeyStore ks = KeyStore.getInstance("PKCS12");
             try (FileInputStream in = new FileInputStream(keyStoreFile)) {
                 ks.load(in, TEST_KEYSTORE_PASSWORD);
             }
             kmf.init(ks, TEST_KEYSTORE_PASSWORD);
 
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(keyManagerAlgorithmName());
             tmf.init(ks);
 
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
@@ -397,11 +397,11 @@ public class MockVaultServer {
             sslConfig = new SSLConfig();
             sslConfig.setProperty("keyStore", httpsKeyStoreFile.getAbsolutePath());
             sslConfig.setProperty("keyStorePassword", "password");
-            sslConfig.setProperty("keyManagerAlgorithm", "SunX509");
+            sslConfig.setProperty("keyManagerAlgorithm", keyManagerAlgorithmName());
             sslConfig.setProperty("keyStoreType", "PKCS12");
             sslConfig.setProperty("trustStore", httpsKeyStoreFile.getAbsolutePath());
             sslConfig.setProperty("trustStorePassword", "password");
-            sslConfig.setProperty("trustManagerAlgorithm", "SunX509");
+            sslConfig.setProperty("trustManagerAlgorithm", keyManagerAlgorithmName());
             sslConfig.setProperty("trustStoreType", "PKCS12");
             sslConfig.setEnabled(true);
         }
@@ -423,8 +423,21 @@ public class MockVaultServer {
     }
 
     private static void keytool(String cmdline) throws Exception {
-        Class<?> clazz = ClassLoaderUtil.loadClass(null, "sun.security.tools.keytool.Main");
+        Class<?> clazz = ClassLoaderUtil.loadClass(null, keyToolClassName());
         Method main = clazz.getMethod("main", String[].class);
         main.invoke(null, (Object) cmdline.trim().split("\\s+"));
+    }
+
+    private static boolean isIbm() {
+        String vendor = System.getProperty("java.vendor");
+        return vendor != null && vendor.toLowerCase().contains("ibm");
+    }
+
+    private static String keyManagerAlgorithmName() {
+        return isIbm() ? "IbmX509" : "SunX509";
+    }
+
+    private static String keyToolClassName() {
+        return isIbm() ? "com.ibm.crypto.tools.KeyTool" : "sun.security.tools.keytool.Main";
     }
 }

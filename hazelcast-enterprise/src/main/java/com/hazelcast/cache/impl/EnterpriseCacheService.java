@@ -40,7 +40,7 @@ import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.internal.metrics.DynamicMetricsProvider;
 import com.hazelcast.internal.metrics.MetricTagger;
 import com.hazelcast.internal.metrics.MetricTaggerSupplier;
-import com.hazelcast.internal.metrics.MetricsExtractor;
+import com.hazelcast.internal.metrics.MetricsCollectionContext;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.services.ReplicationSupportingService;
 import com.hazelcast.internal.util.CollectionUtil;
@@ -672,13 +672,13 @@ public class EnterpriseCacheService
         }
 
         @Override
-        public void provideDynamicMetrics(MetricTaggerSupplier taggerSupplier, MetricsExtractor extractor) {
+        public void provideDynamicMetrics(MetricTaggerSupplier taggerSupplier, MetricsCollectionContext context) {
             for (Map.Entry<String, HiDensityStorageInfo> entry : hiDensityCacheInfoMap.entrySet()) {
                 String cacheName = entry.getKey();
                 HiDensityStorageInfo storageInfo = entry.getValue();
 
                 MetricTagger tagger = taggerSupplier.getMetricTagger("cache").withIdTag("name", cacheName);
-                extractor.extractMetrics(tagger, storageInfo);
+                context.collect(tagger, storageInfo);
             }
         }
     }

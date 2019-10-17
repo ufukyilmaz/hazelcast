@@ -160,7 +160,7 @@ public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceT
         IAtomicLong atomicLong2 = cpSubsystem.getAtomicLong("test@group");
         atomicLong2.addAndGet(RandomPicker.getInt(100));
 
-        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart().get();
+        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart().toCompletableFuture().get();
         long seed = getMetadataGroupId(instances[0]).getSeed();
         waitUntilCPDiscoveryCompleted(instances);
 

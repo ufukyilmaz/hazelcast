@@ -135,7 +135,8 @@ public class RaftCountdownLatchPersistenceTest extends RaftDataStructurePersiste
         ICountDownLatch latch2 = cpSubsystem.getCountDownLatch("test@group");
         latch2.trySetCount(100);
 
-        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart().get();
+        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart()
+                    .toCompletableFuture().get();
         long seed = getMetadataGroupId(instances[0]).getSeed();
         waitUntilCPDiscoveryCompleted(instances);
 

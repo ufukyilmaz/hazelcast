@@ -122,7 +122,8 @@ public abstract class AbstractRaftSemaphorePersistenceTest extends RaftDataStruc
         ISemaphore semaphore2 = cpSubsystem.getSemaphore("test@group");
         semaphore2.init(100);
 
-        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart().get();
+        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart()
+                    .toCompletableFuture().get();
         long seed = getMetadataGroupId(instances[0]).getSeed();
         waitUntilCPDiscoveryCompleted(instances);
 

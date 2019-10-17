@@ -66,7 +66,8 @@ public class HotRestartCPSubsystemTest extends HazelcastRaftTestSupport {
         instances[0].getLifecycleService().terminate();
         assertClusterSizeEventually(2, instances[1], instances[2]);
 
-        instances[1].getCPSubsystem().getCPSubsystemManagementService().removeCPMember(localCpMember.getUuid()).get();
+        instances[1].getCPSubsystem().getCPSubsystemManagementService().removeCPMember(localCpMember.getUuid())
+                    .toCompletableFuture().get();
 
         instances[0] = factory.newHazelcastInstance(localMember.getAddress(), newConfig(cpMemberCount));
 

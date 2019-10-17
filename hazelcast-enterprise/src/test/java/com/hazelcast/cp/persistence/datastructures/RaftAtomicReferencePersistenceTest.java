@@ -155,7 +155,8 @@ public class RaftAtomicReferencePersistenceTest extends RaftDataStructurePersist
         IAtomicReference<String> atomicRef2 = cpSubsystem.getAtomicReference("test@group");
         atomicRef2.set(randomString());
 
-        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart().get();
+        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart()
+                    .toCompletableFuture().get();
         long seed = getMetadataGroupId(instances[0]).getSeed();
         waitUntilCPDiscoveryCompleted(instances);
 

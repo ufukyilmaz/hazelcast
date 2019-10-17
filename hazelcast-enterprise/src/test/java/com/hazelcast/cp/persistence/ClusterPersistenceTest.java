@@ -179,7 +179,8 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         assertTrueEventually(() -> assertNotEquals(leader, node.getLeader()));
 
         Collection<CPMember> members = followerInstance.getCPSubsystem()
-                .getCPSubsystemManagementService().getCPMembers().get();
+                .getCPSubsystemManagementService().getCPMembers()
+                .toCompletableFuture().get();
         assertEquals(3, members.size());
         assertThat(members, hasItem(leaderMember));
     }
@@ -195,7 +196,8 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         RaftGroupId group2 = invocationManager.createRaftGroup("group2").join();
         RaftGroupId group3 = invocationManager.createRaftGroup("group3").join();
 
-        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart().get();
+        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart()
+                    .toCompletableFuture().get();
         long seed = getMetadataGroupId(instances[0]).getSeed();
         waitUntilCPDiscoveryCompleted(instances);
 
@@ -327,7 +329,8 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
             Collection<CPMember> cpMembers = instances[2].getCPSubsystem()
                                                          .getCPSubsystemManagementService()
                                                          .getCPMembers()
-                                                         .get();
+                                                         .toCompletableFuture()
+                                                             .get();
 
             assertTrue(cpMembers.contains(restartedInstance.getCPSubsystem().getLocalCPMember()));
             assertTrue(cpMembers.contains(cpMember0));
@@ -351,7 +354,8 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         instances[0].getLifecycleService().terminate();
 
         assertClusterSizeEventually(3, instances[1]);
-        instances[1].getCPSubsystem().getCPSubsystemManagementService().restart().get();
+        instances[1].getCPSubsystem().getCPSubsystemManagementService().restart()
+                    .toCompletableFuture().get();
 
         for (HazelcastInstance instance : Arrays.asList(instances[1], instances[2], instances[3])) {
             instance.getCPSubsystem().getCPSubsystemManagementService().awaitUntilDiscoveryCompleted(120, SECONDS);
@@ -536,7 +540,8 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         instances[0].getLifecycleService().terminate();
 
         assertClusterSizeEventually(4, instances[1]);
-        instances[1].getCPSubsystem().getCPSubsystemManagementService().removeCPMember(cpMember.getUuid()).get();
+        instances[1].getCPSubsystem().getCPSubsystemManagementService().removeCPMember(cpMember.getUuid())
+                    .toCompletableFuture().get();
 
         try {
             restartInstance(cpMember.getAddress(), config);

@@ -1,18 +1,18 @@
 package com.hazelcast.nio.ssl;
 
+import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
-import com.hazelcast.cluster.Member;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 import com.hazelcast.instance.impl.TestUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
+import com.hazelcast.map.IMap;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestAwareInstanceFactory;
@@ -341,8 +341,8 @@ public class SSLConnectionTest {
 
     private Config getConfig(Properties sslProperties) {
         Config config = smallInstanceConfig()
-            .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1")
-            .setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
+                .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1")
+                .setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
 
@@ -350,20 +350,23 @@ public class SSLConnectionTest {
             config.getAdvancedNetworkConfig().setEnabled(true);
             ServerSocketEndpointConfig memberEndpoint
                     = (ServerSocketEndpointConfig) config.getAdvancedNetworkConfig()
-                                                         .getEndpointConfigs().get(MEMBER);
+                    .getEndpointConfigs().get(MEMBER);
             memberEndpoint.setSSLConfig(
-                    new SSLConfig().setEnabled(true)
-                                   .setProperties(sslProperties));
+                    new SSLConfig()
+                            .setFactoryClassName(BasicSSLContextFactory.class.getName())
+                            .setEnabled(true)
+                            .setProperties(sslProperties));
 
             config.getAdvancedNetworkConfig().getJoin()
-                  .getTcpIpConfig().setEnabled(true)
-                                   .setConnectionTimeoutSeconds(30);
+                    .getTcpIpConfig().setEnabled(true)
+                    .setConnectionTimeoutSeconds(30);
         } else {
             config.getNetworkConfig().setSSLConfig(
-                    new SSLConfig().setEnabled(true)
-                                   .setProperties(sslProperties))
-                                    .getJoin().getTcpIpConfig().setEnabled(true)
-                                                               .setConnectionTimeoutSeconds(30);
+                    new SSLConfig().setFactoryClassName(BasicSSLContextFactory.class.getName())
+                            .setEnabled(true)
+                            .setProperties(sslProperties))
+                    .getJoin().getTcpIpConfig().setEnabled(true)
+                    .setConnectionTimeoutSeconds(30);
         }
 
         return config;
@@ -374,6 +377,7 @@ public class SSLConnectionTest {
         props.setProperty(propertyName, propertyValue);
 
         SSLConfig sslConfig = new SSLConfig()
+                .setFactoryClassName(BasicSSLContextFactory.class.getName())
                 .setEnabled(true)
                 .setProperties(props);
 

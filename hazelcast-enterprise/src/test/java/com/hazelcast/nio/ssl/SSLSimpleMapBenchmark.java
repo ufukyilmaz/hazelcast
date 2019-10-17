@@ -60,7 +60,9 @@ public final class SSLSimpleMapBenchmark {
         Config cfg = new XmlConfigBuilder().build();
 
         Properties props = TestKeyStoreUtil.createSslProperties();
-        cfg.getNetworkConfig().setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props));
+        cfg.getNetworkConfig().setSSLConfig(new SSLConfig()
+                .setFactoryClassName(BasicSSLContextFactory.class.getName())
+                .setEnabled(true).setProperties(props));
         cfg.setClusterName("simple-ssl-test");
         Hazelcast.newHazelcastInstance(cfg);
         instance = Hazelcast.newHazelcastInstance(cfg);

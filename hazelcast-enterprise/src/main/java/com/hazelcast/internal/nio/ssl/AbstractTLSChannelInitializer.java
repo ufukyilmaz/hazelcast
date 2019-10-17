@@ -5,9 +5,14 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.networking.ChannelInitializer;
+import com.hazelcast.internal.util.JavaVersion;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
+import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.nio.ssl.SSLContextFactory;
 import com.hazelcast.nio.ssl.SSLEngineFactory;
+import io.netty.handler.ssl.OpenSsl;
 
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
@@ -17,6 +22,7 @@ import java.util.concurrent.Executor;
 import static com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport.getProperty;
 
 public abstract class AbstractTLSChannelInitializer implements ChannelInitializer {
+    private final ILogger logger = Logger.getLogger(AbstractTLSChannelInitializer.class);
 
     private final SSLConfig sslConfig;
     private final SSLEngineFactory sslEngineFactory;
@@ -39,7 +45,7 @@ public abstract class AbstractTLSChannelInitializer implements ChannelInitialize
             }
 
             if (implementation == null) {
-                implementation = new BasicSSLContextFactory();
+                implementation = loadDefaultImplementation();
             }
 
             if (implementation instanceof SSLContextFactory) {
@@ -57,6 +63,33 @@ public abstract class AbstractTLSChannelInitializer implements ChannelInitialize
             throw new InvalidConfigurationException("Error while loading SSL engine for: " + getClass().getSimpleName(), e);
         } catch (Exception e) {
             throw new HazelcastException(e);
+        }
+    }
+
+
+    private Object loadDefaultImplementation() {
+        if (JavaVersion.isAtLeast(JavaVersion.JAVA_11)) {
+            // due to improved TLS performance in Java 11, we no longer default to OpenSSL even if it is possible.
+            logger.info("Java " + JavaVersion.JAVA_11.getMajorVersion() + " detected, defaulting to "
+                    + BasicSSLContextFactory.class.getName());
+            return new BasicSSLContextFactory();
+        } else {
+            if (isOpenSSLAvailable()) {
+                logger.info("OpenSSL capability detected, defaulting to " + OpenSSLEngineFactory.class.getName());
+                return new OpenSSLEngineFactory();
+            } else {
+                logger.info("OpenSSL capability not detected, defaulting to " + BasicSSLContextFactory.class.getName());
+                return new BasicSSLContextFactory();
+            }
+        }
+    }
+
+    private boolean isOpenSSLAvailable() {
+        try {
+            return OpenSsl.isAvailable();
+        } catch (NoClassDefFoundError e) {
+            logger.fine("Netty OpenSSL support has not been found on the classpath.");
+            return false;
         }
     }
 

@@ -1,6 +1,5 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.config.Config;
 import com.hazelcast.cp.IAtomicReference;
 import com.hazelcast.cp.internal.datastructures.atomicref.AtomicRefService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -20,19 +19,8 @@ public class AtomicReferenceSecurityInterceptorTest extends InterceptorTestSuppo
 
     @Before
     public void setup() {
-        Config config = createConfig();
-        factory.newHazelcastInstance(config);
-        factory.newHazelcastInstance(config);
-
         objectName = randomString();
         atomicReference = client.getCPSubsystem().getAtomicReference(objectName);
-    }
-
-    @Override
-    Config createConfig() {
-        Config config = super.createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
-        return config;
     }
 
     @Test

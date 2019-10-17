@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class LockSecurityTest {
+public class FencedLockSecurityTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -41,7 +41,6 @@ public class LockSecurityTest {
     @Test
     public void testFencedLockPermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE).addAction(ActionConstants.ACTION_LOCK);
         HazelcastInstance client = newClient(config);
@@ -53,7 +52,6 @@ public class LockSecurityTest {
     @Test
     public void testFencedLock_lockFail_withoutPermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE);
         HazelcastInstance client = newClient(config);
@@ -76,8 +74,6 @@ public class LockSecurityTest {
     }
 
     private HazelcastInstance newClient(Config config) {
-        factory.newHazelcastInstance(config);
-        factory.newHazelcastInstance(config);
         factory.newHazelcastInstance(config);
         return factory.newHazelcastClient();
     }

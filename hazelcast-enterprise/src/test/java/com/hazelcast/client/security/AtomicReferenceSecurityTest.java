@@ -41,7 +41,6 @@ public class AtomicReferenceSecurityTest {
     @Test
     public void testAtomicReferenceReadPermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE)
                 .addAction(ActionConstants.ACTION_READ);
@@ -54,7 +53,6 @@ public class AtomicReferenceSecurityTest {
     @Test
     public void testAtomicReferenceWritePermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE)
                 .addAction(ActionConstants.ACTION_MODIFY);
@@ -67,7 +65,6 @@ public class AtomicReferenceSecurityTest {
     @Test
     public void testAtomicReference_modifyFail_withoutPermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE);
 
@@ -80,7 +77,6 @@ public class AtomicReferenceSecurityTest {
     @Test
     public void testAtomicReference_readFail_withoutPermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE);
 
@@ -104,8 +100,6 @@ public class AtomicReferenceSecurityTest {
     }
 
     private HazelcastInstance newClient(Config config) {
-        factory.newHazelcastInstance(config);
-        factory.newHazelcastInstance(config);
         factory.newHazelcastInstance(config);
         return factory.newHazelcastClient();
     }

@@ -3,11 +3,9 @@ package com.hazelcast.cp.persistence.datastructures;
 import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.ISemaphore;
 import com.hazelcast.internal.util.RandomPicker;
-import com.hazelcast.test.AssertTask;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
@@ -63,28 +61,20 @@ public abstract class AbstractRaftSemaphorePersistenceTest extends RaftDataStruc
 
     @Test
     public void when_memberRestarts_then_restoresData() throws Exception {
-        final ISemaphore semaphore = proxyInstance.getCPSubsystem().getSemaphore("test");
+        ISemaphore semaphore = proxyInstance.getCPSubsystem().getSemaphore("test");
         semaphore.init(10);
 
         // shutdown majority
         instances[0].shutdown();
         instances[1].shutdown();
 
-        final Future<Void> f = spawn(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                semaphore.acquire();
-                return null;
-            }
+        Future<Void> f = spawn(() -> {
+            semaphore.acquire();
+            return null;
         });
 
         // Invocation cannot complete without majority
-        assertTrueAllTheTime(new AssertTask() {
-            @Override
-            public void run() {
-                assertFalse(f.isDone());
-            }
-        }, 3);
+        assertTrueAllTheTime(() -> assertFalse(f.isDone()), 3);
 
         // restart majority back
         instances[0] = restartInstance(addresses[0], config);
@@ -97,18 +87,15 @@ public abstract class AbstractRaftSemaphorePersistenceTest extends RaftDataStruc
     @Test
     @Ignore
     public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
-        final ISemaphore semaphore = proxyInstance.getCPSubsystem().getSemaphore("test");
-        final int acquires = 5000;
+        ISemaphore semaphore = proxyInstance.getCPSubsystem().getSemaphore("test");
+        int acquires = 5000;
         semaphore.init(acquires + 1); // +1 permit for indeterminate retry
-        final Future<Integer> f = spawn(new Callable<Integer>() {
-            @Override
-            public Integer call() throws InterruptedException {
-                for (int i = 0; i < acquires; i++) {
-                    semaphore.acquire();
-                    sleepMillis(1);
-                }
-                return semaphore.availablePermits();
+        Future<Integer> f = spawn(() -> {
+            for (int i = 0; i < acquires; i++) {
+                semaphore.acquire();
+                sleepMillis(1);
             }
+            return semaphore.availablePermits();
         });
 
         sleepSeconds(1);
@@ -152,17 +139,14 @@ public abstract class AbstractRaftSemaphorePersistenceTest extends RaftDataStruc
 
     @Test
     public void when_cpMembersRestart_whileInvocationBlocked() throws Exception {
-        final ISemaphore semaphore = proxyInstance.getCPSubsystem().getSemaphore("test");
+        ISemaphore semaphore = proxyInstance.getCPSubsystem().getSemaphore("test");
         semaphore.init(1);
 
         terminateMembers();
 
-        Future<Object> f = spawn(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                semaphore.acquire();
-                return null;
-            }
+        Future<Object> f = spawn(() -> {
+            semaphore.acquire();
+            return null;
         });
 
         restartInstances(addresses, config);

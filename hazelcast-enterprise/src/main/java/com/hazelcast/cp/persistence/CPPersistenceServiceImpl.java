@@ -4,6 +4,7 @@ import com.hazelcast.cluster.Address;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.cp.CPSubsystemConfig;
 import com.hazelcast.core.HazelcastException;
+import com.hazelcast.cp.CPMember;
 import com.hazelcast.cp.internal.CPMemberInfo;
 import com.hazelcast.cp.internal.MetadataRaftGroupSnapshot;
 import com.hazelcast.cp.internal.RaftGroupId;
@@ -44,11 +45,13 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static com.hazelcast.cluster.memberselector.MemberSelectors.NON_LOCAL_MEMBER_SELECTOR;
 import static com.hazelcast.cp.CPGroup.METADATA_CP_GROUP_NAME;
@@ -59,6 +62,7 @@ import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.util.DirectoryLock.lockForDirectory;
 import static com.hazelcast.internal.util.FutureUtil.RETHROW_EVERYTHING;
 import static com.hazelcast.internal.util.FutureUtil.waitWithDeadline;
+import static com.hazelcast.internal.util.Preconditions.checkTrue;
 import static com.hazelcast.internal.util.ThreadUtil.createThreadName;
 import static com.hazelcast.spi.impl.executionservice.ExecutionService.ASYNC_EXECUTOR;
 import static java.util.Arrays.sort;
@@ -112,7 +116,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         this.cpSubsystemConfig = node.getConfig().getCPSubsystemConfig();
     }
 
-    @SuppressWarnings("checkstyle:npathcomplexity")
+    @SuppressWarnings({"checkstyle:npathcomplexity", "checkstyle:cyclomaticcomplexity"})
     private DirectoryLock acquireDir(CPSubsystemConfig config) {
         File baseDir = config.getBaseDir();
         if (!baseDir.exists() && !baseDir.mkdirs() && !baseDir.exists()) {
@@ -124,10 +128,25 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         }
 
         File[] dirs = baseDir.listFiles(f -> {
+            if (f.isFile()) {
+                return false;
+            }
+
             boolean cpDirectory = isCPDirectory(f);
             if (!cpDirectory) {
+                verifyNoCPGroupDirExists(f);
                 logger.fine(f.getAbsolutePath() + " is not a valid CP data directory.");
+            } else {
+                try {
+                    CPMember cpMember = new CPMetadataStoreImpl(f).readLocalCPMember();
+                    if (cpMember == null) {
+                        verifyNoCPGroupDirExists(f);
+                    }
+                } catch (IOException e) {
+                    throw new HazelcastException("Could not read local CP member file in " + f.getAbsolutePath(), e);
+                }
             }
+
             return cpDirectory;
         });
 
@@ -199,6 +218,25 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
     public void reset() {
         File[] files = dir.listFiles((dir, name) -> !DirectoryLock.FILE_NAME.equals(name));
         if (files != null) {
+            // files are deleted in the following order:
+            // 1. cp member file
+            // 2. cp group dirs
+            // 3. metadata group id file
+
+            Arrays.sort(files, (f1, f2) -> {
+                if (CPMetadataStoreImpl.isCPMemberFile(dir, f1.getName())) {
+                    return -1;
+                } else if (CPMetadataStoreImpl.isCPMemberFile(dir, f2.getName())) {
+                    return 1;
+                } else if (CPMetadataStoreImpl.isMetadataGroupIdFile(dir, f1.getName())) {
+                    return 1;
+                } else if (CPMetadataStoreImpl.isMetadataGroupIdFile(dir, f2.getName())) {
+                    return -1;
+                }
+
+                return 0;
+            });
+
             for (File f : files) {
                 delete(f);
             }
@@ -223,6 +261,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         try {
             localCPMember = metadataStore.readLocalCPMember();
             if (localCPMember == null) {
+                verifyNoCPGroupDirExists(dir);
                 logger.info("Nothing to restore in " + dir.getAbsolutePath());
                 startCompleted = true;
                 return;
@@ -247,7 +286,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
 
         runAsync("notify-metadata-group-thread", () -> verifyRestartedCPMember(verificationFuture));
 
-        File[] groupDirs = getGroupDirs();
+        File[] groupDirs = getGroupDirs(dir);
         if (groupDirs == null || groupDirs.length == 0) {
             logger.info("No CP group to restore in " + dir.getAbsolutePath());
         } else {
@@ -262,6 +301,19 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
 
         this.startCompleted = true;
         logger.fine("CP restore completed...");
+    }
+
+    private void verifyNoCPGroupDirExists(File dir) {
+        checkTrue(dir.isDirectory(), dir.getAbsolutePath() + " is not a directory!");
+        File[] groupDirs = getGroupDirs(dir);
+        if (groupDirs != null && groupDirs.length > 0) {
+            List<String> invalidDirNames = Arrays.stream(groupDirs)
+                                                 .map(File::getName)
+                                                 .collect(Collectors.toList());
+
+            throw new IllegalStateException(dir.getAbsolutePath() + " contains CP group directories: " + invalidDirNames
+                    + " without CP member identity file!");
+        }
     }
 
     private void publishLocalAddressChange(Future<Void> futureToCheck) {
@@ -324,12 +376,14 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
 
     private RaftGroupId getGroupId(File groupDir) {
         String[] split = groupDir.getName().split("@");
-        assert split.length == 3;
+        if (split.length != 3) {
+            throw new IllegalArgumentException("Invalid CP group persistence directory: " + groupDir.getName());
+        }
 
         return new RaftGroupId(split[0], Long.parseLong(split[1]), Long.parseLong(split[2]));
     }
 
-    private File[] getGroupDirs() {
+    private File[] getGroupDirs(File dir) {
         return dir.listFiles(path ->
                 path.isDirectory() && new File(path, MEMBERS_FILENAME).exists() && new File(path, TERM_FILENAME).exists());
     }

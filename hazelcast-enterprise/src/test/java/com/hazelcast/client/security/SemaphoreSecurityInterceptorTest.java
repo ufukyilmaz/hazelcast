@@ -23,10 +23,6 @@ public class SemaphoreSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Before
     public void setup() {
-        Config config = createConfig();
-        factory.newHazelcastInstance(config);
-        factory.newHazelcastInstance(config);
-
         semaphore = client.getCPSubsystem().getSemaphore(objectName);
         semaphore.init(100);
     }
@@ -34,7 +30,7 @@ public class SemaphoreSecurityInterceptorTest extends InterceptorTestSupport {
     @Override
     Config createConfig() {
         Config config = super.createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3)
+        config.getCPSubsystemConfig()
             .addSemaphoreConfig(new SemaphoreConfig(objectName).setJDKCompatible(true));
         return config;
     }

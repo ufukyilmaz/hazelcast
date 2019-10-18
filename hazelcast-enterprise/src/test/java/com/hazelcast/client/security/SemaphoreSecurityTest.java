@@ -42,7 +42,6 @@ public class SemaphoreSecurityTest {
     @Test
     public void testSemaphoreReadPermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE)
                 .addAction(ActionConstants.ACTION_READ);
@@ -55,7 +54,6 @@ public class SemaphoreSecurityTest {
     @Test
     public void testSemaphoreAcquirePermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE)
                 .addAction(ActionConstants.ACTION_ACQUIRE);
@@ -68,7 +66,6 @@ public class SemaphoreSecurityTest {
     @Test
     public void testSemaphoreReleasePermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE)
                 .addAction(ActionConstants.ACTION_RELEASE);
@@ -81,7 +78,6 @@ public class SemaphoreSecurityTest {
     @Test
     public void testSemaphore_acquireFail_withoutPermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE);
 
@@ -94,7 +90,6 @@ public class SemaphoreSecurityTest {
     @Test
     public void testSemaphore_releaseFail_withoutPermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE);
 
@@ -107,7 +102,6 @@ public class SemaphoreSecurityTest {
     @Test
     public void testSemaphore_readFail_withoutPermission() {
         final Config config = createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
         addPermission(config)
                 .addAction(ActionConstants.ACTION_CREATE);
 
@@ -133,8 +127,6 @@ public class SemaphoreSecurityTest {
     }
 
     private HazelcastInstance newClient(Config config) {
-        factory.newHazelcastInstance(config);
-        factory.newHazelcastInstance(config);
         factory.newHazelcastInstance(config);
         return factory.newHazelcastClient();
     }

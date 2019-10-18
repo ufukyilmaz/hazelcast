@@ -1,6 +1,5 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.config.Config;
 import com.hazelcast.cp.internal.datastructures.lock.LockService;
 import com.hazelcast.cp.lock.FencedLock;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -22,19 +21,8 @@ public class FencedLockSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Before
     public void setup() {
-        Config config = createConfig();
-        factory.newHazelcastInstance(config);
-        factory.newHazelcastInstance(config);
-
         objectName = randomString();
         lock = client.getCPSubsystem().getLock(objectName);
-    }
-
-    @Override
-    Config createConfig() {
-        Config config = super.createConfig();
-        config.getCPSubsystemConfig().setCPMemberCount(3);
-        return config;
     }
 
     @Test

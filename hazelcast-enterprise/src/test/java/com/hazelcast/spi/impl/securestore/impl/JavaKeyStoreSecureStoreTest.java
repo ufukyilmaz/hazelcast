@@ -4,7 +4,7 @@ import com.hazelcast.config.JavaKeyStoreSecureStoreConfig;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.util.StringUtil;
-import com.hazelcast.internal.util.function.ConsumerEx;
+import com.hazelcast.function.ConsumerEx;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.spi.impl.securestore.SecureStoreException;

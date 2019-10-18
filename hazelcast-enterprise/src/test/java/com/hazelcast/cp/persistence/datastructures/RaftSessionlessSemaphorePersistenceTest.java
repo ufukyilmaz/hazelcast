@@ -18,7 +18,7 @@ public class RaftSessionlessSemaphorePersistenceTest extends AbstractRaftSemapho
     @Override
     protected Config createConfig(int cpMemberCount, int groupSize) {
         Config config = super.createConfig(cpMemberCount, groupSize);
-        SemaphoreConfig semaphoreConfig = new SemaphoreConfig("*", true);
+        SemaphoreConfig semaphoreConfig = new SemaphoreConfig("*", true, 0);
         config.getCPSubsystemConfig().addSemaphoreConfig(semaphoreConfig);
         return config;
     }

@@ -196,8 +196,7 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         RaftGroupId group2 = invocationManager.createRaftGroup("group2").join();
         RaftGroupId group3 = invocationManager.createRaftGroup("group3").join();
 
-        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart()
-                    .toCompletableFuture().get();
+        instances[0].getCPSubsystem().getCPSubsystemManagementService().reset().toCompletableFuture().get();
         long seed = getMetadataGroupId(instances[0]).getSeed();
         waitUntilCPDiscoveryCompleted(instances);
 
@@ -354,8 +353,7 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         instances[0].getLifecycleService().terminate();
 
         assertClusterSizeEventually(3, instances[1]);
-        instances[1].getCPSubsystem().getCPSubsystemManagementService().restart()
-                    .toCompletableFuture().get();
+        instances[1].getCPSubsystem().getCPSubsystemManagementService().reset().toCompletableFuture().get();
 
         for (HazelcastInstance instance : Arrays.asList(instances[1], instances[2], instances[3])) {
             instance.getCPSubsystem().getCPSubsystemManagementService().awaitUntilDiscoveryCompleted(120, SECONDS);

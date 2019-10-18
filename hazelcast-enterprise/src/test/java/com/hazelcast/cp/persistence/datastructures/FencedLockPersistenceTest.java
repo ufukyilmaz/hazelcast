@@ -125,7 +125,7 @@ public class FencedLockPersistenceTest extends RaftDataStructurePersistenceTestS
         FencedLock lock2 = cpSubsystem.getLock("test@group");
         lock2.lock();
 
-        instances[0].getCPSubsystem().getCPSubsystemManagementService().restart().toCompletableFuture().get();
+        instances[0].getCPSubsystem().getCPSubsystemManagementService().reset().toCompletableFuture().get();
         long seed = getMetadataGroupId(instances[0]).getSeed();
         waitUntilCPDiscoveryCompleted(instances);
 

@@ -8,11 +8,11 @@ import com.hazelcast.cp.internal.raft.impl.persistence.LogFileStructure;
 import com.hazelcast.cp.internal.raft.impl.persistence.RaftStateLoader;
 import com.hazelcast.cp.internal.raft.impl.persistence.RestoredRaftState;
 import com.hazelcast.cp.persistence.BufferedRaf.BufRafObjectDataIn;
+import com.hazelcast.cp.persistence.FileIOSupport.Readable;
 import com.hazelcast.cp.persistence.RestoredLogFile.LoadMode;
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.util.BiTuple;
-import com.hazelcast.nio.ObjectDataInput;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -194,21 +194,8 @@ public class OnDiskRaftStateLoader implements RaftStateLoader {
         });
     }
 
-    private <T1, T2> BiTuple<T1, T2> runRead(String filename, ReadTask<T1, T2> task) throws IOException {
-        File f = new File(baseDir, filename);
-        BufferedRaf raf = new BufferedRaf(new RandomAccessFile(f, "r"));
-        BufRafObjectDataIn in = raf.asObjectDataInputStream(serializationService);
-        try {
-            BiTuple<T1, T2> result = task.readFrom(in);
-            in.checkCrc32();
-            return result;
-        } finally {
-            IOUtil.closeResource(in);
-        }
-    }
-
-    private interface ReadTask<T1, T2> {
-        BiTuple<T1, T2> readFrom(ObjectDataInput in) throws IOException;
+    private <T> T runRead(String filename, Readable<T> task) throws IOException {
+        return FileIOSupport.readWithChecksum(baseDir, filename, serializationService, task);
     }
 
     private void deleteAllExcept(String[] allFilenames, String chosen) {

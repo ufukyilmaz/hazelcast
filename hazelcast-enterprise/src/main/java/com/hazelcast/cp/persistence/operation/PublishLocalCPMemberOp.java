@@ -1,6 +1,6 @@
 package com.hazelcast.cp.persistence.operation;
 
-import com.hazelcast.cp.internal.CPMemberInfo;
+import com.hazelcast.cp.CPMember;
 import com.hazelcast.cp.internal.RaftService;
 import com.hazelcast.cp.internal.RaftSystemOperation;
 import com.hazelcast.cp.persistence.CPPersistenceDataSerializerHook;
@@ -23,12 +23,12 @@ import java.io.IOException;
  */
 public class PublishLocalCPMemberOp extends Operation implements IdentifiedDataSerializable, RaftSystemOperation {
 
-    private CPMemberInfo localMember;
+    private CPMember localMember;
 
     public PublishLocalCPMemberOp() {
     }
 
-    public PublishLocalCPMemberOp(CPMemberInfo localMember) {
+    public PublishLocalCPMemberOp(CPMember localMember) {
         this.localMember = localMember;
     }
 

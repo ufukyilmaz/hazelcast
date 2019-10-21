@@ -13,7 +13,6 @@ import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
-import com.hazelcast.config.cp.CPSubsystemConfig;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.cp.internal.persistence.CPPersistenceService;
 import com.hazelcast.cp.persistence.CPPersistenceServiceImpl;
@@ -150,7 +149,6 @@ public class EnterpriseNodeExtension
     private static final NoopInternalHotRestartService NOOP_INTERNAL_HOT_RESTART_SERVICE = new NoopInternalHotRestartService();
     private static final NoOpHotRestartService NO_OP_HOT_RESTART_SERVICE = new NoOpHotRestartService();
 
-    private final CPPersistenceServiceImpl cpPersistenceService;
     private final HotRestartIntegrationService hotRestartService;
     private final HotBackupService hotBackupService;
     private final SecurityService securityService;
@@ -158,7 +156,9 @@ public class EnterpriseNodeExtension
     private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
     private final ClusterVersionAutoUpgradeHelper clusterVersionAutoUpgradeHelper
             = new ClusterVersionAutoUpgradeHelper();
+    private final boolean cpPersistenceEnabled;
 
+    private volatile CPPersistenceServiceImpl cpPersistenceService;
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile HazelcastMemoryManager memoryManager;
@@ -168,16 +168,11 @@ public class EnterpriseNodeExtension
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
-        cpPersistenceService = createCPPersistenceService(node);
         hotRestartService = createHotRestartService(node);
         hotBackupService = createHotBackupService(node, hotRestartService);
         securityService = createSecurityService(node);
         auditlogService = createAuditlogService(node);
-    }
-
-    private CPPersistenceServiceImpl createCPPersistenceService(Node node) {
-        CPSubsystemConfig config = node.getConfig().getCPSubsystemConfig();
-        return config.isPersistenceEnabled() ? new CPPersistenceServiceImpl(node) : null;
+        cpPersistenceEnabled = node.getConfig().getCPSubsystemConfig().isPersistenceEnabled();
     }
 
     private SecurityService createSecurityService(Node node) {
@@ -366,6 +361,9 @@ public class EnterpriseNodeExtension
             LicenseHelper.checkLicensePerFeature(license, Feature.HOT_RESTART);
             hotRestartService.prepare();
         }
+
+        // Creating CpPersistenceService after node is fully initialized.
+        cpPersistenceService = createCPPersistenceService(node);
         if (cpPersistenceService != null) {
             // TODO: We'll have a separate license feature in 4.0
             LicenseHelper.checkLicensePerFeature(license, Feature.HOT_RESTART);
@@ -373,6 +371,10 @@ public class EnterpriseNodeExtension
         if (node.getConfig().getNativeMemoryConfig().isEnabled()) {
             LicenseHelper.checkLicensePerFeature(license, Feature.HD_MEMORY);
         }
+    }
+
+    private CPPersistenceServiceImpl createCPPersistenceService(Node node) {
+        return cpPersistenceEnabled ? new CPPersistenceServiceImpl(node) : null;
     }
 
     @Override
@@ -1047,6 +1049,12 @@ public class EnterpriseNodeExtension
 
     @Override
     public CPPersistenceService getCPPersistenceService() {
-        return cpPersistenceService != null ? cpPersistenceService : super.getCPPersistenceService();
+        if (cpPersistenceEnabled) {
+            if (cpPersistenceService == null) {
+                throw new IllegalStateException("CP persistence service is not initialized yet!");
+            }
+            return cpPersistenceService;
+        }
+        return super.getCPPersistenceService();
     }
 }

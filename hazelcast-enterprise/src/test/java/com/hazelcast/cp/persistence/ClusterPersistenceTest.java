@@ -17,9 +17,6 @@ import com.hazelcast.cp.internal.raft.impl.RaftNode;
 import com.hazelcast.cp.internal.raft.impl.RaftNodeImpl;
 import com.hazelcast.cp.internal.raftop.metadata.TriggerDestroyRaftGroupOp;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
-import com.hazelcast.internal.nio.IOUtil;
-import com.hazelcast.internal.util.DirectoryLock;
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -36,7 +33,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Future;
@@ -109,7 +105,7 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         return newTerm;
     }
 
-    private int awaitLeaderElectionAndGetTerm(HazelcastInstance[] instances, RaftGroupId groupId) {
+    static int awaitLeaderElectionAndGetTerm(HazelcastInstance[] instances, RaftGroupId groupId) {
         waitAllForLeaderElection(instances, groupId);
         RaftNodeImpl raftNode = getRaftNode(instances[0], groupId);
         return getTerm(raftNode);
@@ -313,7 +309,7 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
                 continue;
             }
 
-            CPMemberInfo cpMember = new CPMetadataStoreImpl(persistenceDirectory).readLocalCPMember();
+            CPMemberInfo cpMember = new CPMetadataStoreImpl(persistenceDirectory, getSerializationService(instances[2])).readLocalCPMember();
             if (cpMember0.equals(cpMember)) {
                 delete(persistenceDirectory);
                 break;
@@ -409,10 +405,8 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
 
             assertTrueEventually(() -> {
                 for (HazelcastInstance instance : instances) {
-                    // TODO: Do we guarantee this?
-                    // RaftService raftService = getRaftService(instance);
-                    // RaftNode raftNode = raftService.getRaftNode(group);
-                    // assertNull(raftNode);
+                    RaftService raftService = getRaftService(instance);
+                    assertNull(raftService.getRaftNode(group));
 
                     CPPersistenceServiceImpl cpPersistenceService = getCpPersistenceService(instance);
                     File groupDir = cpPersistenceService.getGroupDir(group);
@@ -481,7 +475,7 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         }
     }
 
-    private CPPersistenceServiceImpl getCpPersistenceService(HazelcastInstance instance) {
+    static CPPersistenceServiceImpl getCpPersistenceService(HazelcastInstance instance) {
         return (CPPersistenceServiceImpl) getNode(instance).getNodeExtension().getCPPersistenceService();
     }
 
@@ -547,78 +541,4 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         } catch (IllegalStateException ignored) {
         }
     }
-
-    @Test
-    public void when_cpMemberRestartsWithoutCPMemberFile_then_restartFails() throws Exception {
-        Config config = createConfig(3, 3);
-        HazelcastInstance[] instances = factory.newInstances(config, 3);
-        waitUntilCPDiscoveryCompleted(instances);
-
-        CPMember cpMember = instances[0].getCPSubsystem().getLocalCPMember();
-        instances[0].getLifecycleService().shutdown();
-
-        ILogger logger = instances[1].getLoggingService().getLogger(getClass());
-
-        File[] memberDirs = baseDir.listFiles((dir, name) -> dir.isDirectory());
-        assertNotNull(memberDirs);
-
-        Optional<File> memberDirOpt = Arrays.stream(memberDirs).filter(dir -> {
-            try {
-                DirectoryLock lock = DirectoryLock.lockForDirectory(dir, logger);
-                lock.release();
-                return true;
-            } catch (Exception e) {
-                return false;
-            }
-        }).findFirst();
-
-        assertTrue(memberDirOpt.isPresent());
-
-        IOUtil.delete(new File(memberDirOpt.get(), CPMetadataStoreImpl.CP_MEMBER_FILE_NAME));
-
-        try {
-            restartInstance(cpMember.getAddress(), config);
-            fail(cpMember + " should not be able to restart with missing CP member file!");
-        } catch (IllegalStateException ignored) {
-        }
-    }
-
-    @Test
-    public void when_cpMemberRestartsWithAPMemberFile_then_restartFails() throws Exception {
-        Config config = createConfig(3, 3);
-        HazelcastInstance[] instances = factory.newInstances(config, 3);
-        waitUntilCPDiscoveryCompleted(instances);
-
-        CPMember cpMember = instances[0].getCPSubsystem().getLocalCPMember();
-        instances[0].getLifecycleService().shutdown();
-
-        ILogger logger = instances[1].getLoggingService().getLogger(getClass());
-
-        File[] memberDirs = baseDir.listFiles((dir, name) -> dir.isDirectory());
-        assertNotNull(memberDirs);
-
-        Optional<File> memberDirOpt = Arrays.stream(memberDirs).filter(dir -> {
-            try {
-                DirectoryLock lock = DirectoryLock.lockForDirectory(dir, logger);
-                lock.release();
-                return true;
-            } catch (Exception e) {
-                return false;
-            }
-        }).findFirst();
-
-        assertTrue(memberDirOpt.isPresent());
-
-        File cpMemberFile = new File(memberDirOpt.get(), CPMetadataStoreImpl.CP_MEMBER_FILE_NAME);
-        IOUtil.delete(cpMemberFile);
-        boolean created = cpMemberFile.createNewFile();
-        assertTrue(created);
-
-        try {
-            restartInstance(cpMember.getAddress(), config);
-            fail(cpMember + " should not be able to restart with missing CP member file!");
-        } catch (IllegalStateException ignored) {
-        }
-    }
-
 }

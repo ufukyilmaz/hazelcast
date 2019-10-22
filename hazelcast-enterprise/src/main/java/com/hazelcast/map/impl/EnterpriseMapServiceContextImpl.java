@@ -3,7 +3,6 @@ package com.hazelcast.map.impl;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MetadataPolicy;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.instance.impl.Node;
@@ -18,7 +17,6 @@ import com.hazelcast.internal.metrics.MetricTaggerSupplier;
 import com.hazelcast.internal.metrics.MetricsCollectionContext;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.util.ConstructorFunction;
 import com.hazelcast.internal.util.comparators.NativeValueComparator;
 import com.hazelcast.internal.util.comparators.ValueComparator;
@@ -32,15 +30,10 @@ import com.hazelcast.map.impl.query.HDPartitionScanExecutor;
 import com.hazelcast.map.impl.query.HDPartitionScanRunner;
 import com.hazelcast.map.impl.query.QueryRunner;
 import com.hazelcast.map.impl.query.ResultProcessorRegistry;
-import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
-import com.hazelcast.map.impl.recordstore.EnterpriseMetadataRecordStoreMutationObserver;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
-import com.hazelcast.map.impl.recordstore.JsonMetadataRecordStoreMutationObserver;
 import com.hazelcast.map.impl.recordstore.RecordStore;
-import com.hazelcast.map.impl.recordstore.RecordStoreMutationObserver;
 import com.hazelcast.map.impl.wan.MapFilterProvider;
-import com.hazelcast.map.impl.wan.MerkleTreeUpdaterRecordStoreMutationObserver;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.impl.HDIndexProvider;
 import com.hazelcast.query.impl.IndexProvider;
@@ -49,11 +42,8 @@ import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
-import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -265,57 +255,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             return super.getIndexProvider(mapConfig);
         }
         return hdIndexProvider;
-    }
-
-    @Override
-    public Collection<RecordStoreMutationObserver<Record>> createRecordStoreMutationObservers(String mapName, int partitionId) {
-        Collection<RecordStoreMutationObserver<Record>> observers = new LinkedList<>();
-        addMerkleTreeUpdaterObserver(observers, mapName, partitionId);
-
-        observers.addAll(super.createRecordStoreMutationObservers(mapName, partitionId));
-
-        return observers;
-    }
-
-    @Override
-    protected void addMetadataInitializerObserver(Collection<RecordStoreMutationObserver<Record>> observers,
-                                                  String mapName, int partitionId) {
-        MapContainer mapContainer = getMapContainer(mapName);
-        MapConfig mapConfig = mapContainer.getMapConfig();
-        MetadataPolicy policy = mapConfig.getMetadataPolicy();
-
-        if (policy != MetadataPolicy.CREATE_ON_UPDATE) {
-            return;
-        }
-
-        InternalSerializationService ss = ((InternalSerializationService) mapContainer.getMapServiceContext()
-                .getNodeEngine().getSerializationService());
-
-        RecordStoreMutationObserver<Record> observer = mapConfig.getInMemoryFormat() == NATIVE
-                ? new EnterpriseMetadataRecordStoreMutationObserver(ss, JsonMetadataInitializer.INSTANCE,
-                this, mapName, partitionId)
-                : new JsonMetadataRecordStoreMutationObserver(ss, JsonMetadataInitializer.INSTANCE);
-
-        observers.add(observer);
-    }
-
-    /**
-     * Adds a merkle tree record store observer to {@code observers} if merkle
-     * trees are configured for the map with the {@code mapName} name.
-     *
-     * @param observers   the collection of record store observers
-     * @param mapName     the map name
-     * @param partitionId The partition ID
-     */
-    private void addMerkleTreeUpdaterObserver(Collection<RecordStoreMutationObserver<Record>> observers,
-                                              String mapName, int partitionId) {
-        EnterprisePartitionContainer partitionContainer
-                = (EnterprisePartitionContainer) getPartitionContainer(partitionId);
-        MerkleTree merkleTree = partitionContainer.getOrCreateMerkleTree(mapName);
-        if (merkleTree != null) {
-            observers.add(new MerkleTreeUpdaterRecordStoreMutationObserver<>(merkleTree,
-                    getNodeEngine().getSerializationService()));
-        }
     }
 
     private static final class MetricsProvider implements DynamicMetricsProvider {

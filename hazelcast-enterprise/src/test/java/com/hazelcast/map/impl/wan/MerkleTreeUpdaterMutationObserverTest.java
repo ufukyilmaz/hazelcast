@@ -3,7 +3,7 @@ package com.hazelcast.map.impl.wan;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.map.impl.recordstore.RecordStoreMutationObserver;
+import com.hazelcast.map.impl.recordstore.MutationObserver;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -22,7 +22,7 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class MerkleTreeUpdaterRecordStoreMutationObserverTest {
+public class MerkleTreeUpdaterMutationObserverTest {
 
     @Mock
     private MerkleTree merkleTreeMock;
@@ -30,12 +30,12 @@ public class MerkleTreeUpdaterRecordStoreMutationObserverTest {
     @Mock
     private SerializationService serializationServiceMock;
 
-    private RecordStoreMutationObserver<Record> observer;
+    private MutationObserver<Record> observer;
 
     @Before
     public void setUp() {
         initMocks(this);
-        observer = new MerkleTreeUpdaterRecordStoreMutationObserver<Record>(merkleTreeMock, serializationServiceMock);
+        observer = new MerkleTreeUpdaterMutationObserver<Record>(merkleTreeMock, serializationServiceMock);
     }
 
     @Test

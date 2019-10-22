@@ -5,12 +5,12 @@ import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
-import com.hazelcast.map.impl.recordstore.RecordStoreMutationObserver;
+import com.hazelcast.map.impl.recordstore.MutationObserver;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
 /**
- * {@link RecordStoreMutationObserver} instance, which updates the provided
+ * {@link MutationObserver} instance, which updates the provided
  * {@link MerkleTree} when updating the observed {@link RecordStore}
  * <p>
  * In this class we need the Java objects to be converted to {@link Data}
@@ -26,18 +26,18 @@ import com.hazelcast.wan.impl.merkletree.MerkleTree;
  *
  * @param <R> The type of the records in the {@link RecordStore}
  */
-public class MerkleTreeUpdaterRecordStoreMutationObserver<R extends Record> implements RecordStoreMutationObserver<R> {
+public class MerkleTreeUpdaterMutationObserver<R extends Record> implements MutationObserver<R> {
     private final MerkleTree merkleTree;
     private final SerializationService serializationService;
 
     /**
-     * Creates a {@link MerkleTreeUpdaterRecordStoreMutationObserver} instance
+     * Creates a {@link MerkleTreeUpdaterMutationObserver} instance
      *
      * @param merkleTree           The Merkle tree to update
      * @param serializationService The serialization service used for
      *                             {@link Data} conversion
      */
-    public MerkleTreeUpdaterRecordStoreMutationObserver(MerkleTree merkleTree, SerializationService serializationService) {
+    public MerkleTreeUpdaterMutationObserver(MerkleTree merkleTree, SerializationService serializationService) {
         this.merkleTree = merkleTree;
         this.serializationService = serializationService;
     }

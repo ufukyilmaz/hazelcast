@@ -58,7 +58,7 @@ public class EnterprisePartitionContainer extends PartitionContainer {
      * @return the merkle tree implementation or {@code null} if merkle trees
      * are disabled
      */
-    MerkleTree getOrCreateMerkleTree(String mapName) {
+    public MerkleTree getOrCreateMerkleTree(String mapName) {
         final MerkleTreeConfig config = getMerkleTreeConfig(mapName);
         if (!config.isEnabled()) {
             return null;

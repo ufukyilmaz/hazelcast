@@ -11,16 +11,20 @@ import com.hazelcast.internal.util.Clock;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
+import com.hazelcast.map.impl.EnterprisePartitionContainer;
+import com.hazelcast.map.impl.JsonMetadataInitializer;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapKeyLoader;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
+import com.hazelcast.map.impl.wan.MerkleTreeUpdaterMutationObserver;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.OperationService;
+import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,9 +72,35 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     @Override
     public void init() {
         super.init();
+
         if (prefix != -1) {
             this.ramStore = inMemoryFormat == NATIVE
-                    ? new RamStoreHDImpl(this, memoryManager) : new RamStoreImpl(this);
+                    ? new RamStoreHDImpl(this, memoryManager)
+                    : new RamStoreImpl(this);
+        }
+    }
+
+    @Override
+    protected void addMutationObservers() {
+        super.addMutationObservers();
+
+        // Add observer for merkle tree
+        EnterprisePartitionContainer partitionContainer
+                = (EnterprisePartitionContainer) mapServiceContext.getPartitionContainer(partitionId);
+        MerkleTree merkleTree = partitionContainer.getOrCreateMerkleTree(name);
+        if (merkleTree != null) {
+            mutationObserver.add(new MerkleTreeUpdaterMutationObserver<>(merkleTree, serializationService));
+        }
+
+    }
+
+    @Override
+    protected void addJsonMetadataMutationObserver() {
+        if (inMemoryFormat == NATIVE) {
+            mutationObserver.add(new HDJsonMetadataMutationObserver(serializationService,
+                    JsonMetadataInitializer.INSTANCE, this));
+        } else {
+            super.addJsonMetadataMutationObserver();
         }
     }
 

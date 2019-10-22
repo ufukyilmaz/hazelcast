@@ -21,6 +21,8 @@ import java.security.spec.KeySpec;
 
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static com.hazelcast.internal.util.StringUtil.stringToBytes;
+import static java.lang.Math.min;
+import static java.lang.System.arraycopy;
 
 public final class CipherHelper {
 
@@ -93,12 +95,17 @@ public final class CipherHelper {
         public Cipher create(boolean encryptMode, byte[] keyBytes) {
             if (keyBytes == null) {
                 try {
-                    MessageDigest md = MessageDigest.getInstance("MD5");
-                    // 32-bit digest key = pass + salt (used only if the key supplied in create() is null)
-                    ByteBuffer bbPass = ByteBuffer.allocate(32);
-                    bbPass.put(md.digest(stringToBytes(passPhrase)));
-                    bbPass.put(saltDigest);
-                    keyBytes = bbPass.array();
+                    int maxAllowedKeyBitsLen = Cipher.getMaxAllowedKeyLength(algorithm);
+                    MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+                    byte[] passPhraseBytes = stringToBytes(passPhrase);
+                    ByteBuffer combined = ByteBuffer.wrap(new byte[passPhraseBytes.length + salt.length]);
+                    combined.put(passPhraseBytes);
+                    combined.put(salt);
+
+                    int maxAllowedKeyBytesLen = min(maxAllowedKeyBitsLen / 8, 32 /* 256bit hash */);
+                    keyBytes = new byte[maxAllowedKeyBytesLen];
+                    arraycopy(md.digest(combined.array()), 0, keyBytes, 0, maxAllowedKeyBytesLen);
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }

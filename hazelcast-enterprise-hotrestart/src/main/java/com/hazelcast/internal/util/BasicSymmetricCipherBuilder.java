@@ -102,8 +102,10 @@ public class BasicSymmetricCipherBuilder {
         for (char c : chars) {
             hash = prime * hash + c;
         }
+
         byte[] result = new byte[Bits.LONG_SIZE_IN_BYTES];
         EndiannessUtil.writeLongB(BYTE_ARRAY_ACCESS, result, 0, hash);
+
         return result;
     }
 

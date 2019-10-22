@@ -31,9 +31,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.map.impl.record.Record.DEFAULT_MAX_IDLE;
-import static com.hazelcast.map.impl.record.Record.DEFAULT_TTL;
-import static com.hazelcast.map.impl.record.Record.NOT_AVAILABLE;
+import static com.hazelcast.map.impl.record.Record.UNSET;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -130,7 +128,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     }
 
     public HDRecord createRecord(Data keyData, Object value, long sequence) {
-        return (HDRecord) createRecordInternal(keyData, value, DEFAULT_TTL, DEFAULT_MAX_IDLE,
+        return (HDRecord) createRecordInternal(keyData, value, UNSET, UNSET,
                 Clock.currentTimeMillis(), sequence);
     }
 
@@ -202,7 +200,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         if (memoryManager != null && ramStore != null) {
             return memoryManager.newSequence();
         }
-        return NOT_AVAILABLE;
+        return UNSET;
     }
 
     private class ReadBackupDataTask extends FutureTask<Data> implements PartitionSpecificRunnable {

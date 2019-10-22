@@ -1,16 +1,16 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.internal.serialization.SerializationService;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.nio.serialization.Data;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
-import static com.hazelcast.map.impl.record.Record.NOT_AVAILABLE;
+import static com.hazelcast.map.impl.record.Record.UNSET;
 
 /**
  * Factory for creating Hi-Density backed records. Created for every
@@ -40,7 +40,7 @@ public class HDRecordFactory implements RecordFactory<Data> {
 
             dataValue = recordProcessor.toData(value, DataType.NATIVE);
             record.setValue(dataValue);
-            record.setLastAccessTime(NOT_AVAILABLE);
+            record.setLastAccessTime(UNSET);
 
             return record;
         } catch (NativeOutOfMemoryError error) {

@@ -498,17 +498,17 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
         waitUntilCPDiscoveryCompleted(instances);
 
         HazelcastInstance proxyInstance = factory.newHazelcastInstance(config);
-        RaftService raftService = getRaftService(proxyInstance);
+        RaftInvocationManager invocationManager = getRaftInvocationManager(proxyInstance);
+
         List<RaftGroupId> groups = new ArrayList<>();
 
         for (int i = 0; i < 3; i++) {
             for (int k = 0; k < instances.length; k++) {
                 Address address = getAddress(instances[k]);
                 instances[k].getLifecycleService().terminate();
-                sleepSeconds(1);
 
                 int val = i + k;
-                RaftGroupId groupId = raftService.createRaftGroupForProxy("group-" + val);
+                RaftGroupId groupId = invocationManager.createRaftGroup("group-" + val).joinInternal();
                 groups.add(groupId);
 
                 instances[k] = restartInstance(address, config);
@@ -518,9 +518,9 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
 
         assertTrueEventually(() -> {
             for (HazelcastInstance instance : instances) {
-                RaftService raftService1 = getRaftService(instance);
+                RaftService raftService = getRaftService(instance);
                 for (RaftGroupId groupId : groups) {
-                    RaftNode raftNode = raftService1.getRaftNode(groupId);
+                    RaftNode raftNode = raftService.getRaftNode(groupId);
                     assertNotNull(raftNode);
                     assertEquals(groupId, raftNode.getGroupId());
                 }

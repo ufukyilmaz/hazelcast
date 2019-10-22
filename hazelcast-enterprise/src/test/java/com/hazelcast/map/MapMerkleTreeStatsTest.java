@@ -5,14 +5,14 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.internal.metrics.MetricTarget;
 import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.metrics.MetricDescriptor;
 import com.hazelcast.internal.metrics.collectors.MetricsCollector;
+import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
-import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.NightlyTest;
@@ -22,8 +22,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -143,7 +141,8 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
         }
 
         @Override
-        public void collectLong(String name, long value, Set<MetricTarget> excludedTargets) {
+        public void collectLong(MetricDescriptor descriptor, long value) {
+            String name = descriptor.toString();
             if (name.equals(String.format(pattern, "heapCost"))) {
                 heapCost = value;
             } else if (name.equals(String.format(pattern, "merkleTreesCost"))) {
@@ -152,15 +151,15 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
         }
 
         @Override
-        public void collectDouble(String name, double value, Set<MetricTarget> excludedTargets) {
+        public void collectDouble(MetricDescriptor descriptor, double value) {
         }
 
         @Override
-        public void collectException(String name, Exception e, Set<MetricTarget> excludedTargets) {
+        public void collectException(MetricDescriptor descriptor, Exception e) {
         }
 
         @Override
-        public void collectNoValue(String name, Set<MetricTarget> excludedTargets) {
+        public void collectNoValue(MetricDescriptor descriptor) {
         }
     }
 

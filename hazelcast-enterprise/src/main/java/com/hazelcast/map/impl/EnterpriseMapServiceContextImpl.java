@@ -12,9 +12,8 @@ import com.hazelcast.internal.hotrestart.PersistentConfigDescriptors;
 import com.hazelcast.internal.hotrestart.RamStore;
 import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.internal.metrics.DynamicMetricsProvider;
-import com.hazelcast.internal.metrics.MetricTagger;
-import com.hazelcast.internal.metrics.MetricTaggerSupplier;
 import com.hazelcast.internal.metrics.MetricsCollectionContext;
+import com.hazelcast.internal.metrics.MetricDescriptor;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.util.ConstructorFunction;
@@ -265,11 +264,13 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         }
 
         @Override
-        public void provideDynamicMetrics(MetricTaggerSupplier taggerSupplier, MetricsCollectionContext context) {
+        public void provideDynamicMetrics(MetricDescriptor descriptor, MetricsCollectionContext context) {
+            descriptor.withPrefix("map");
             for (MapContainer mapContainer : mapContainers.values()) {
                 if (mapContainer instanceof EnterpriseMapContainer) {
-                    MetricTagger tagger = taggerSupplier.getMetricTagger("map").withIdTag("name", mapContainer.name);
-                    context.collect(tagger, ((EnterpriseMapContainer) mapContainer).getStorageInfo());
+                    context.collect(descriptor.copy()
+                                              .withDiscriminator("name", mapContainer.name),
+                            ((EnterpriseMapContainer) mapContainer).getStorageInfo());
                 }
             }
         }

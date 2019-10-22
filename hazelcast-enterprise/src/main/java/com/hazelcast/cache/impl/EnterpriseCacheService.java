@@ -38,9 +38,9 @@ import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.RamStore;
 import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.internal.metrics.DynamicMetricsProvider;
-import com.hazelcast.internal.metrics.MetricTagger;
-import com.hazelcast.internal.metrics.MetricTaggerSupplier;
 import com.hazelcast.internal.metrics.MetricsCollectionContext;
+import com.hazelcast.internal.metrics.MetricDescriptor;
+import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.services.ReplicationSupportingService;
 import com.hazelcast.internal.util.CollectionUtil;
@@ -53,7 +53,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import com.hazelcast.wan.impl.WanReplicationService;
@@ -672,13 +671,14 @@ public class EnterpriseCacheService
         }
 
         @Override
-        public void provideDynamicMetrics(MetricTaggerSupplier taggerSupplier, MetricsCollectionContext context) {
+        public void provideDynamicMetrics(MetricDescriptor descriptor,
+                                          MetricsCollectionContext context) {
+            descriptor.withPrefix("cache");
             for (Map.Entry<String, HiDensityStorageInfo> entry : hiDensityCacheInfoMap.entrySet()) {
                 String cacheName = entry.getKey();
                 HiDensityStorageInfo storageInfo = entry.getValue();
 
-                MetricTagger tagger = taggerSupplier.getMetricTagger("cache").withIdTag("name", cacheName);
-                context.collect(tagger, storageInfo);
+                context.collect(descriptor.copy().withDiscriminator("name", cacheName), storageInfo);
             }
         }
     }

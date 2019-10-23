@@ -70,6 +70,7 @@ import com.hazelcast.transaction.TransactionOptions;
 import com.hazelcast.transaction.TransactionalTask;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import javax.annotation.Nonnull;
 import javax.security.auth.Subject;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
@@ -213,13 +214,14 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public <T> T executeTransaction(TransactionalTask<T> task) throws TransactionException {
+        public <T> T executeTransaction(@Nonnull TransactionalTask<T> task) throws TransactionException {
             checkPermission(new TransactionPermission());
             return instance.executeTransaction(task);
         }
 
         @Override
-        public <T> T executeTransaction(TransactionOptions options, TransactionalTask<T> task) throws TransactionException {
+        public <T> T executeTransaction(@Nonnull TransactionOptions options,
+                                        @Nonnull TransactionalTask<T> task) throws TransactionException {
             checkPermission(new TransactionPermission());
             return instance.executeTransaction(options, task);
         }
@@ -231,95 +233,108 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public TransactionContext newTransactionContext(TransactionOptions options) {
+        public TransactionContext newTransactionContext(@Nonnull TransactionOptions options) {
             checkPermission(new TransactionPermission());
             return instance.newTransactionContext(options);
         }
 
+        @Nonnull
         @Override
-        public <T extends DistributedObject> T getDistributedObject(String serviceName, String name) {
+        public <T extends DistributedObject> T getDistributedObject(@Nonnull String serviceName, @Nonnull String name) {
             throw new UnsupportedOperationException();
         }
 
+        @Nonnull
         @Override
         public ConcurrentMap<String, Object> getUserContext() {
             return instance.getUserContext();
         }
 
+        @Nonnull
         @Override
-        public <E> IQueue<E> getQueue(String name) {
+        public <E> IQueue<E> getQueue(@Nonnull String name) {
             checkPermission(new QueuePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IQueueInvocationHandler(instance.getQueue(name)));
         }
 
+        @Nonnull
         @Override
-        public <E> ITopic<E> getTopic(String name) {
+        public <E> ITopic<E> getTopic(@Nonnull String name) {
             checkPermission(new TopicPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ITopicInvocationHandler(instance.getTopic(name)));
         }
 
+        @Nonnull
         @Override
-        public <E> ISet<E> getSet(String name) {
+        public <E> ISet<E> getSet(@Nonnull String name) {
             checkPermission(new SetPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ISetInvocationHandler(instance.getSet(name)));
         }
 
+        @Nonnull
         @Override
-        public <E> IList<E> getList(String name) {
+        public <E> IList<E> getList(@Nonnull String name) {
             checkPermission(new ListPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IListInvocationHandler(instance.getList(name)));
         }
 
+        @Nonnull
         @Override
-        public <K, V> IMap<K, V> getMap(String name) {
+        public <K, V> IMap<K, V> getMap(@Nonnull String name) {
             checkPermission(new MapPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IMapInvocationHandler(instance.getMap(name)));
         }
 
+        @Nonnull
         @Override
-        public <K, V> ReplicatedMap<K, V> getReplicatedMap(String name) {
+        public <K, V> ReplicatedMap<K, V> getReplicatedMap(@Nonnull String name) {
             checkPermission(new ReplicatedMapPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ReplicatedMapInvocationHandler(instance.getReplicatedMap(name)));
         }
 
+        @Nonnull
         @Override
-        public <K, V> MultiMap<K, V> getMultiMap(String name) {
+        public <K, V> MultiMap<K, V> getMultiMap(@Nonnull String name) {
             checkPermission(new MultiMapPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new MultiMapInvocationHandler(instance.getMultiMap(name)));
         }
 
+        @Nonnull
         @Override
-        public IExecutorService getExecutorService(String name) {
+        public IExecutorService getExecutorService(@Nonnull String name) {
             checkPermission(new ExecutorServicePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ExecutorServiceInvocationHandler(instance.getExecutorService(name)));
         }
 
+        @Nonnull
         @Override
-        public DurableExecutorService getDurableExecutorService(String name) {
+        public DurableExecutorService getDurableExecutorService(@Nonnull String name) {
             checkPermission(new DurableExecutorServicePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new DurableExecutorServiceInvocationHandler(instance.getDurableExecutorService(name)));
         }
 
         @Override
-        public FlakeIdGenerator getFlakeIdGenerator(String name) {
+        public FlakeIdGenerator getFlakeIdGenerator(@Nonnull String name) {
             checkPermission(new FlakeIdGeneratorPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new FlakeIdGeneratorInvocationHandler(instance.getFlakeIdGenerator(name)));
         }
 
         @Override
-        public CardinalityEstimator getCardinalityEstimator(String name) {
+        public CardinalityEstimator getCardinalityEstimator(@Nonnull String name) {
             checkPermission(new CardinalityEstimatorPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new CardinalityEstimatorHandler(instance.getCardinalityEstimator(name)));
         }
 
+        @Nonnull
         @Override
-        public PNCounter getPNCounter(String name) {
+        public PNCounter getPNCounter(@Nonnull String name) {
             checkPermission(new PNCounterPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new PNCounterHandler(instance.getPNCounter(name)));
         }
 
+        @Nonnull
         @Override
-        public IScheduledExecutorService getScheduledExecutorService(String name) {
+        public IScheduledExecutorService getScheduledExecutorService(@Nonnull String name) {
             checkPermission(new ScheduledExecutorPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ScheduledExecutorHandler(instance.getScheduledExecutorService(name)));
         }
@@ -329,16 +344,19 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             return new CacheManagerDelegate(instance.getCacheManager());
         }
 
+        @Nonnull
         @Override
         public Cluster getCluster() {
             return instance.getCluster();
         }
 
+        @Nonnull
         @Override
         public Endpoint getLocalEndpoint() {
             return instance.getLocalEndpoint();
         }
 
+        @Nonnull
         @Override
         public String getName() {
             return instance.getName();
@@ -355,60 +373,70 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         }
 
         @Override
-        public UUID addDistributedObjectListener(DistributedObjectListener distributedObjectListener) {
+        public UUID addDistributedObjectListener(@Nonnull DistributedObjectListener distributedObjectListener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean removeDistributedObjectListener(UUID registrationId) {
+        public boolean removeDistributedObjectListener(@Nonnull UUID registrationId) {
             throw new UnsupportedOperationException();
         }
 
+        @Nonnull
         @Override
         public Config getConfig() {
             return instance.getConfig();
         }
 
+        @Nonnull
         @Override
         public PartitionService getPartitionService() {
             return instance.getPartitionService();
         }
 
+        @Nonnull
         @Override
         public ClientService getClientService() {
             return instance.getClientService();
         }
 
+        @Nonnull
         @Override
         public LoggingService getLoggingService() {
             return instance.getLoggingService();
         }
 
+        @Nonnull
         @Override
         public LifecycleService getLifecycleService() {
             throw new UnsupportedOperationException();
         }
 
+        @Nonnull
         @Override
         public SplitBrainProtectionService getSplitBrainProtectionService() {
             return instance.getSplitBrainProtectionService();
         }
 
+        @Nonnull
         @Override
-        public <E> Ringbuffer<E> getRingbuffer(String name) {
+        public <E> Ringbuffer<E> getRingbuffer(@Nonnull String name) {
             return instance.getRingbuffer(name);
         }
 
+        @Nonnull
         @Override
-        public <E> ITopic<E> getReliableTopic(String name) {
+        public <E> ITopic<E> getReliableTopic(@Nonnull String name) {
             return instance.getReliableTopic(name);
         }
 
+        @Nonnull
         @Override
         public HazelcastXAResource getXAResource() {
             return instance.getXAResource();
         }
 
+        @Nonnull
         @Override
         public CPSubsystem getCPSubsystem() {
             return new CPSubsystemDelegate(instance.getCPSubsystem());

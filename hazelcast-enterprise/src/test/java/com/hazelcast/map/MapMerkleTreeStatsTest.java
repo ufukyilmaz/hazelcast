@@ -134,19 +134,19 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
     }
 
     static class ProbeCatcher implements MetricsCollector {
-        private final String prefix;
+        private final String pattern;
         private long heapCost;
         private long merkleTreesCost;
 
         ProbeCatcher(String mapName) {
-            this.prefix = "map[" + mapName + "].";
+            this.pattern = "[name=" + mapName + ",unit=count,metric=map.%s]";
         }
 
         @Override
         public void collectLong(String name, long value, Set<MetricTarget> excludedTargets) {
-            if (name.equals(prefix + "heapCost")) {
+            if (name.equals(String.format(pattern, "heapCost"))) {
                 heapCost = value;
-            } else if (name.equals(prefix + "merkleTreesCost")) {
+            } else if (name.equals(String.format(pattern, "merkleTreesCost"))) {
                 merkleTreesCost = value;
             }
         }

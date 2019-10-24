@@ -63,11 +63,6 @@ class HDIndexNestedTreeMap<T extends QueryableEntry> {
         return recordMap.tailMap(fromValueData, inclusive);
     }
 
-    public Set<T> exceptMap(Comparable exceptValue) {
-        Data exceptValueData = ess.toData(exceptValue, HEAP);
-        return recordMap.exceptMap(exceptValueData);
-    }
-
     public Set<T> get(Comparable searchedValue) {
         Data searchedValueData = ess.toData(searchedValue, HEAP);
         return recordMap.get(searchedValueData);

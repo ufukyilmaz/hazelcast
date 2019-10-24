@@ -411,28 +411,6 @@ public class HDIndexNestedTreeMapTest {
     }
 
     @Test
-    public void exceptMap() throws IOException {
-        // GIVEN
-        putToSegment(2, 201, 300);
-        putToSegment(1, 101, 200);
-        putToSegment(3, 301, 400);
-
-        // WHEN & THEN
-        Set<QueryableEntry> records = map.exceptMap(1);
-        assertSegmentContent(records, 201, 400);
-
-        records = map.exceptMap(3);
-        assertSegmentContent(records, 101, 300);
-
-        records = map.exceptMap(4);
-        assertSegmentContent(records, 101, 400);
-
-        records = map.exceptMap(null);
-        assertSegmentContent(records, 101, 400);
-    }
-
-
-    @Test
     public void putClear_dispose_allDeallocated() throws IOException {
         List<QueryableEntry> localAllocations = new ArrayList<QueryableEntry>();
 

@@ -484,30 +484,6 @@ public class BinaryElasticNestedTreeMapTest {
         assertSegmentContent(records, 101, 400);
     }
 
-    @Test
-    public void exceptMap() throws IOException {
-        // GIVEN
-        putToSegment(2, 201, 300);
-        putToSegment(1, 101, 200);
-        putToSegment(3, 301, 400);
-
-        // WHEN & THEN
-        Set<Map.Entry> records = map.exceptMap(heapData(1));
-        assertSegmentContent(records, 201, 400);
-
-        records = map.exceptMap(heapData(3));
-        assertSegmentContent(records, 101, 300);
-
-        records = map.exceptMap(heapData(4));
-        assertSegmentContent(records, 101, 400);
-
-        records = map.exceptMap(null);
-        assertSegmentContent(records, 101, 400);
-
-        records = map.exceptMap(new HeapData());
-        assertSegmentContent(records, 101, 400);
-    }
-
     private void assertSegmentContent(Set<Map.Entry> records, int expectedFromKey, int expectedToKey) {
         Set<Integer> foundKeys = new HashSet<Integer>();
         for (Map.Entry entry : records) {

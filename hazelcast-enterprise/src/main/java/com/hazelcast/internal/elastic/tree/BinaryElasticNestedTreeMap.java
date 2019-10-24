@@ -328,24 +328,6 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
         return subMap(fromSegmentKey, inclusive, null, true);
     }
 
-    public Set<T> exceptMap(Data exceptSegmentKey) {
-        EntryIterator iterator = new EntryIterator();
-        Set<T> result = new HashSet<T>();
-        while (iterator.hasNext()) {
-            BinaryElasticHashMap<MemoryBlock> map = iterator.next();
-            // The equal call below may produce a deserialization on every
-            // iteration, but luckily enough exceptMap is not used by the query
-            // engine currently: NotEqualPredicate is marked as unindexed, so
-            // it's never hitting the indexes; basically, Comparison.NOT_EQUAL
-            // is never used by any part of Hazelcast except tests.
-            if (exceptSegmentKey != null && equal(exceptSegmentKey, iterator.getKey())) {
-                continue;
-            }
-            addEntries(result, map.entrySet());
-        }
-        return result;
-    }
-
     private boolean equal(Data lhs, Data rhs) {
         if (lhs.equals(rhs)) {
             return true;

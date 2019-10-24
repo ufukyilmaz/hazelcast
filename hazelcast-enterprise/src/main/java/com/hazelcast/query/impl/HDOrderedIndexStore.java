@@ -122,9 +122,6 @@ class HDOrderedIndexStore extends HDExpirableIndexStore {
             case GREATER_OR_EQUAL:
                 results = records.tailMap(value, true);
                 break;
-            case NOT_EQUAL:
-                results = records.exceptMap(value);
-                break;
             default:
                 throw new IllegalArgumentException("Unrecognized comparison: " + comparison);
         }

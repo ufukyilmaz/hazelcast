@@ -6,11 +6,11 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.impl.HazelcastInstanceProxy;
 import com.hazelcast.internal.metrics.LongGauge;
 import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -22,8 +22,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({SlowTest.class})
@@ -55,13 +55,18 @@ public class HDMapForcedEvictionTest extends HazelcastTestSupport {
     public void testForcedEviction() {
         int testDurationSeconds = 30;
 
+        // ".forceEvictionCount" is a dynamic metric, so we need a metric
+        // collection to take place before we can read out non-zero value
+        // from this gauge
+        // creating it before the time-consuming part of the test to ensure
+        // there is at least one metric collection before the assertion
+        LongGauge forceEvictionCount = getMetricsRegistry().newLongGauge("map[" + MAP_NAME + "].forceEvictionCount");
         long deadLine = System.currentTimeMillis() + (testDurationSeconds * 1000);
         IMap<Integer, Integer> map = hazelcastInstance.getMap(MAP_NAME);
         for (int i = 0; System.currentTimeMillis() < deadLine; i++) {
             map.put(i, i);
         }
-        LongGauge forceEvictionCount = getMetricsRegistry().newLongGauge(
-                findMetricWithGivenStringAndSuffix(MAP_NAME, ".forceEvictionCount"));
+
         assertThat(forceEvictionCount.read(), greaterThan(0L));
 
         // intentionally no other assert, it's enough when the test does not throw NativeOutOfMemoryError
@@ -85,13 +90,4 @@ public class HDMapForcedEvictionTest extends HazelcastTestSupport {
         return ((HazelcastInstanceProxy) hazelcastInstance).getOriginal().node.nodeEngine.getMetricsRegistry();
     }
 
-    private String findMetricWithGivenStringAndSuffix(String string, String suffix) {
-        MetricsRegistry registry = getMetricsRegistry();
-        for (String name : registry.getNames()) {
-            if (name.endsWith(suffix) && name.contains(string)) {
-                return name;
-            }
-        }
-        throw new IllegalArgumentException("Could not find a metric with the given suffix " + suffix);
-    }
 }

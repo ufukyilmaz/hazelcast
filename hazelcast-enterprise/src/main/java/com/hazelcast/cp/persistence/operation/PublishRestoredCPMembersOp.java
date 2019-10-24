@@ -1,5 +1,6 @@
 package com.hazelcast.cp.persistence.operation;
 
+import com.hazelcast.cp.CPMember;
 import com.hazelcast.cp.internal.CPMemberInfo;
 import com.hazelcast.cp.internal.RaftGroupId;
 import com.hazelcast.cp.internal.RaftService;
@@ -8,8 +9,8 @@ import com.hazelcast.cp.persistence.CPPersistenceDataSerializerHook;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.impl.operationservice.Operation;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,12 +28,12 @@ public class PublishRestoredCPMembersOp extends Operation implements IdentifiedD
 
     private RaftGroupId metadataGroupId;
     private long membersCommitIndex;
-    private Collection<CPMemberInfo> members;
+    private Collection<CPMember> members;
 
     public PublishRestoredCPMembersOp() {
     }
 
-    public PublishRestoredCPMembersOp(RaftGroupId metadataGroupId, long membersCommitIndex, Collection<CPMemberInfo> members) {
+    public PublishRestoredCPMembersOp(RaftGroupId metadataGroupId, long membersCommitIndex, Collection<CPMember> members) {
         this.metadataGroupId = metadataGroupId;
         this.membersCommitIndex = membersCommitIndex;
         this.members = members;
@@ -76,7 +77,7 @@ public class PublishRestoredCPMembersOp extends Operation implements IdentifiedD
         out.writeObject(metadataGroupId);
         out.writeLong(membersCommitIndex);
         out.writeInt(members.size());
-        for (CPMemberInfo member : members) {
+        for (CPMember member : members) {
             out.writeObject(member);
         }
     }

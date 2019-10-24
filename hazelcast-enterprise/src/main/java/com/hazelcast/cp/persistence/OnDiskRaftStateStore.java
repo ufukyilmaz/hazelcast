@@ -6,9 +6,8 @@ import com.hazelcast.cp.internal.raft.impl.log.SnapshotEntry;
 import com.hazelcast.cp.internal.raft.impl.persistence.LogFileStructure;
 import com.hazelcast.cp.internal.raft.impl.persistence.RaftStateStore;
 import com.hazelcast.cp.persistence.BufferedRaf.BufRafObjectDataOut;
-import com.hazelcast.internal.nio.IOUtil;
+import com.hazelcast.cp.persistence.FileIOSupport.Writable;
 import com.hazelcast.internal.serialization.InternalSerializationService;
-import com.hazelcast.nio.ObjectDataOutput;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -17,6 +16,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Collection;
 
+import static com.hazelcast.cp.persistence.FileIOSupport.writeWithChecksum;
+import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.writeCollection;
 import static java.lang.Math.max;
 
@@ -28,7 +29,6 @@ public class OnDiskRaftStateStore implements RaftStateStore {
     static final String RAFT_LOG_PREFIX = "raftlog-";
     static final String MEMBERS_FILENAME = "members";
     static final String TERM_FILENAME = "term";
-    private static final String TMP_SUFFIX = ".tmp";
 
     private final File baseDir;
     private final InternalSerializationService serializationService;
@@ -102,7 +102,7 @@ public class OnDiskRaftStateStore implements RaftStateStore {
             danglingFile = currentFile;
             flushCalledOnCurrFile = false;
         } else {
-            IOUtil.delete(currentFile);
+            delete(currentFile);
         }
         currentFile = newFile;
     }
@@ -140,7 +140,7 @@ public class OnDiskRaftStateStore implements RaftStateStore {
         logRaf.force();
         flushCalledOnCurrFile = true;
         if (danglingFile != null) {
-            IOUtil.delete(danglingFile);
+            delete(danglingFile);
             danglingFile = null;
         }
     }
@@ -166,19 +166,8 @@ public class OnDiskRaftStateStore implements RaftStateStore {
         return newFile;
     }
 
-    private void runWrite(String filename, WriteTask writeTask) throws IOException {
-        File tmpFile = new File(baseDir, filename + TMP_SUFFIX);
-        BufferedRaf bufRaf = new BufferedRaf(new RandomAccessFile(tmpFile, "rw"));
-        BufRafObjectDataOut out = bufRaf.asObjectDataOutputStream(serializationService);
-        try {
-            writeTask.writeTo(out);
-            out.writeCrc32();
-            out.flush();
-            bufRaf.force();
-        } finally {
-            IOUtil.closeResource(out);
-        }
-        IOUtil.rename(tmpFile, new File(baseDir, filename));
+    private void runWrite(String filename, Writable writable) throws IOException {
+        writeWithChecksum(baseDir, filename, serializationService, writable);
     }
 
     @Nonnull
@@ -191,9 +180,5 @@ public class OnDiskRaftStateStore implements RaftStateStore {
     @Nonnull
     static String getRaftLogFileName(long entryIndex) {
         return String.format(RAFT_LOG_PREFIX + "%016x", entryIndex);
-    }
-
-    private interface WriteTask {
-        void writeTo(ObjectDataOutput out) throws IOException;
     }
 }

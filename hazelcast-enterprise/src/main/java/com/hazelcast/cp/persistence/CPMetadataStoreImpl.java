@@ -1,26 +1,21 @@
 package com.hazelcast.cp.persistence;
 
-import com.hazelcast.cluster.Address;
 import com.hazelcast.cp.CPMember;
 import com.hazelcast.cp.internal.CPMemberInfo;
 import com.hazelcast.cp.internal.RaftGroupId;
 import com.hazelcast.cp.internal.persistence.CPMetadataStore;
-import com.hazelcast.internal.nio.IOUtil;
+import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.nio.ObjectDataInput;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.UUID;
+import java.util.Collection;
 
-import static com.hazelcast.internal.nio.IOUtil.closeResource;
-import static com.hazelcast.internal.util.UUIDSerializationUtil.readUUID;
-import static com.hazelcast.internal.util.UUIDSerializationUtil.writeUUID;
+import static com.hazelcast.cp.persistence.FileIOSupport.TMP_SUFFIX;
+import static com.hazelcast.cp.persistence.FileIOSupport.readWithChecksum;
+import static com.hazelcast.cp.persistence.FileIOSupport.writeWithChecksum;
+import static com.hazelcast.internal.nio.IOUtil.deleteQuietly;
+import static java.util.Arrays.sort;
 
 /**
  * Persists and restores CP member metadata of the local member.
@@ -28,12 +23,15 @@ import static com.hazelcast.internal.util.UUIDSerializationUtil.writeUUID;
 public class CPMetadataStoreImpl implements CPMetadataStore {
 
     static final String CP_MEMBER_FILE_NAME = "cp-member";
+    static final String ACTIVE_CP_MEMBERS_FILE_NAME = "active-members";
     private static final String METADATA_GROUP_ID_FILE_NAME_PREFIX = "metadata-group-id-";
 
     private final File dir;
+    private final InternalSerializationService serializationService;
 
-    CPMetadataStoreImpl(File dir) {
+    CPMetadataStoreImpl(File dir, InternalSerializationService serializationService) {
         this.dir = dir;
+        this.serializationService = serializationService;
     }
 
     @Override
@@ -59,21 +57,7 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
 
     @Override
     public void persistLocalCPMember(CPMember member) throws IOException {
-        File tmp = new File(dir, CP_MEMBER_FILE_NAME + ".tmp");
-        FileOutputStream fileOutputStream = new FileOutputStream(tmp);
-        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(fileOutputStream));
-        try {
-            writeUUID(out, member.getUuid());
-            Address address = member.getAddress();
-            out.writeUTF(address.getHost());
-            out.writeInt(address.getPort());
-            out.flush();
-            fileOutputStream.getFD().sync();
-        } finally {
-            closeResource(fileOutputStream);
-            closeResource(out);
-        }
-        IOUtil.rename(tmp, new File(dir, CP_MEMBER_FILE_NAME));
+        writeWithChecksum(dir, CP_MEMBER_FILE_NAME, serializationService, out -> out.writeObject(member));
     }
 
     @Override
@@ -82,33 +66,50 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
         if (!file.exists() || file.length() == 0) {
             return null;
         }
-        DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
         try {
-            UUID uuid = readUUID(in);
-            Address address = new Address(in.readUTF(), in.readInt());
-            return new CPMemberInfo(uuid, address);
-        } finally {
-            closeResource(in);
+            return readWithChecksum(dir, CP_MEMBER_FILE_NAME, serializationService, ObjectDataInput::readObject);
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Cannot read local CP member", e);
+        }
+    }
+
+    @Override
+    public void persistActiveCPMembers(Collection<? extends CPMember> members, long commitIndex) throws IOException {
+        writeWithChecksum(dir, ACTIVE_CP_MEMBERS_FILE_NAME, serializationService, out -> {
+            out.writeLong(commitIndex);
+            out.writeInt(members.size());
+            for (CPMember member : members) {
+                out.writeObject(member);
+            }
+        });
+    }
+
+    @Override
+    public long readActiveCPMembers(Collection<CPMember> members) throws IOException {
+        try {
+            Long result = readWithChecksum(dir, ACTIVE_CP_MEMBERS_FILE_NAME, serializationService, in -> {
+                long commitIndex = in.readLong();
+                int count = in.readInt();
+                for (int i = 0; i < count; i++) {
+                    CPMember member = in.readObject();
+                    members.add(member);
+                }
+                return commitIndex;
+            });
+            return result != null ? result : 0L;
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Cannot read active CP members", e);
         }
     }
 
     @Override
     public void persistMetadataGroupId(RaftGroupId groupId) throws IOException {
         String fileName = getMetadataGroupIdFileName(groupId);
-        File tmp = new File(dir, "tmp-" + fileName);
-        FileOutputStream fileOutputStream = new FileOutputStream(tmp);
-        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(fileOutputStream));
-        try {
-            out.writeUTF(groupId.getName());
-            out.writeLong(groupId.getSeed());
-            out.writeLong(groupId.getId());
-            out.flush();
-            fileOutputStream.getFD().sync();
-        } finally {
-            closeResource(fileOutputStream);
-            closeResource(out);
-        }
-        IOUtil.rename(tmp, new File(dir, fileName));
+        writeWithChecksum(dir, fileName, serializationService, out -> out.writeObject(groupId));
         deleteStaleMetadataGroupIdFiles(groupId);
     }
 
@@ -118,13 +119,11 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
 
         assert metadataGroupIdFileNames != null && metadataGroupIdFileNames.length > 0;
 
-        Arrays.sort(metadataGroupIdFileNames);
         for (String name : metadataGroupIdFileNames) {
             if (name.equals(latestMetadataGroupIdFileName)) {
                 return;
             }
-
-            IOUtil.deleteQuietly(new File(dir, name));
+            deleteQuietly(new File(dir, name));
         }
     }
 
@@ -135,26 +134,24 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
             return null;
         }
 
-        Arrays.sort(metadataGroupIdFileNames);
-        String metadataGroupIdFileName = metadataGroupIdFileNames[metadataGroupIdFileNames.length - 1];
+        sort(metadataGroupIdFileNames);
+        String fileName = metadataGroupIdFileNames[metadataGroupIdFileNames.length - 1];
 
-        File file = new File(dir, metadataGroupIdFileName);
-        DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
         try {
-            String name = in.readUTF();
-            long seed = in.readLong();
-            long commitIndex = in.readLong();
-            return new RaftGroupId(name, seed, commitIndex);
-        } finally {
-            closeResource(in);
+            return readWithChecksum(dir, fileName, serializationService, ObjectDataInput::readObject);
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Cannot read metadata group id", e);
         }
     }
 
     private String[] getMetadataGroupIdFileNames() {
-        return dir.list((dir, name) -> name.startsWith(METADATA_GROUP_ID_FILE_NAME_PREFIX));
+        return dir.list((dir, name) ->
+                name.startsWith(METADATA_GROUP_ID_FILE_NAME_PREFIX) && !name.endsWith(TMP_SUFFIX));
     }
 
-    private String getMetadataGroupIdFileName(RaftGroupId groupId) {
+    static String getMetadataGroupIdFileName(RaftGroupId groupId) {
         return String.format(METADATA_GROUP_ID_FILE_NAME_PREFIX + "%016x", groupId.getSeed());
     }
 

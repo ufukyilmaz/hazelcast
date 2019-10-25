@@ -1,21 +1,23 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.cluster.Member;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.instance.impl.NodeExtension;
+import com.hazelcast.internal.cluster.Versions;
+import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
+import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.internal.partition.impl.FrozenPartitionTableTest.NonRetryablePartitionOperation;
-import com.hazelcast.cluster.Address;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.spi.exception.TargetNotMemberException;
-import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
-import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.test.HazelcastSerialClassRunner;
@@ -29,11 +31,15 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -58,6 +64,8 @@ import static org.junit.Assert.fail;
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HotRestartClusterJoinTest extends HazelcastTestSupport {
+
+    private static final ILogger LOGGER = Logger.getLogger(HotRestartClusterJoinTest.class);
 
     @Rule
     public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
@@ -453,7 +461,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
     private HazelcastInstance[] startInstances(Address[] addresses) {
         final List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<HazelcastInstance>());
         final CountDownLatch latch = new CountDownLatch(addresses.length);
-
+        final Map<Address, Object> result = new ConcurrentHashMap<>();
         for (final Address address : addresses) {
             new Thread(new Runnable() {
                 @Override
@@ -461,8 +469,11 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
                     try {
                         HazelcastInstance instance = factory.newHazelcastInstance(address, newConfig(address));
                         instancesList.add(instance);
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                        result.put(address, Boolean.TRUE);
+                    } catch (Throwable e) {
+                        StringWriter sw = new StringWriter();
+                        e.printStackTrace(new PrintWriter(sw));
+                        result.put(address, sw.toString());
                     } finally {
                         latch.countDown();
                     }
@@ -470,6 +481,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
             }).start();
         }
         assertOpenEventually(latch);
+        LOGGER.info("Started instances: " + result);
         return instancesList.toArray(new HazelcastInstance[instancesList.size()]);
     }
 

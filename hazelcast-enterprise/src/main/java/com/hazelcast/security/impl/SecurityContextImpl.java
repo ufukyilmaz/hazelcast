@@ -24,6 +24,7 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.config.PermissionConfig;
@@ -78,8 +79,8 @@ public class SecurityContextImpl implements SecurityContext {
         policy = tmpPolicy;
         policy.configure(node.config, policyConfig.getProperties());
 
-        String memberRealm = securityConfig.getMemberRealm();
-        String clientRealm = securityConfig.getClientRealm();
+        String memberRealm = checkRealmExists(securityConfig.getMemberRealm(), securityConfig, "Member");
+        String clientRealm = checkRealmExists(securityConfig.getClientRealm(), securityConfig, "Client");
 
         ICredentialsFactory credsFact = securityConfig.getRealmCredentialsFactory(memberRealm);
         if (credsFact == null) {
@@ -98,6 +99,14 @@ public class SecurityContextImpl implements SecurityContext {
 
         fillServiceToMethodMap();
 
+    }
+
+    private String checkRealmExists(String realmName, SecurityConfig securityConfig, String mappingName) {
+        if (realmName == null || securityConfig.isRealm(realmName)) {
+            return realmName;
+        }
+        throw new InvalidConfigurationException(
+                "Realm name '" + realmName + "' used in " + mappingName + " configuration doesn't exists");
     }
 
     private void fillServiceToMethodMap() {

@@ -2,6 +2,7 @@ package com.hazelcast.security;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CredentialsFactoryConfig;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.config.SecurityConfig;
@@ -24,7 +25,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.Properties;
-
 
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_PRINCIPALS_SIMPLE;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESULT_COMMIT;
@@ -174,6 +174,44 @@ public class MemberSecurityTest extends HazelcastTestSupport {
         assertClusterSize(2, hz1, hz2);
     }
 
+    @Test
+    public void testDenyMember() {
+        final Config config = new Config();
+        final SecurityConfig secCfg = config.getSecurityConfig();
+        secCfg.setEnabled(true);
+
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        factory.newHazelcastInstance(config); // master
+        expected.expect(IllegalStateException.class);
+        factory.newHazelcastInstance(new Config());
+    }
+
+    /**
+     * Check fail-fast approach when member realm is configured to non-existing realm.
+     */
+    @Test
+    public void testRealmDoesntExistMember() {
+        final Config config = new Config();
+        final SecurityConfig secCfg = config.getSecurityConfig();
+        secCfg.setEnabled(true).setMemberRealm("noSuchRealm");
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        expected.expect(InvalidConfigurationException.class);
+        factory.newHazelcastInstance(config);
+    }
+
+    /**
+     * Check fail-fast approach when member realm is configured to non-existing realm.
+     */
+    @Test
+    public void testRealmDoesntExistClient() {
+        final Config config = new Config();
+        final SecurityConfig secCfg = config.getSecurityConfig();
+        secCfg.setEnabled(true).setClientRealm("noSuchRealm");
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        expected.expect(InvalidConfigurationException.class);
+        factory.newHazelcastInstance(config);
+    }
+
     /**
      * Creates a member configuration with a member login module stack used - {@link DefaultLoginModule} as the first LoginModule and
      * {@link TestLoginModule} as the second.
@@ -211,16 +249,5 @@ public class MemberSecurityTest extends HazelcastTestSupport {
         RealmConfig realmConfig = new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(loginModuleConfig));
         secCfg.setMemberRealmConfig("memberRealm", realmConfig);
         return config;
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testDenyMember() {
-        final Config config = new Config();
-        final SecurityConfig secCfg = config.getSecurityConfig();
-        secCfg.setEnabled(true);
-
-        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
-        factory.newHazelcastInstance(config); // master
-        factory.newHazelcastInstance(new Config());
     }
 }

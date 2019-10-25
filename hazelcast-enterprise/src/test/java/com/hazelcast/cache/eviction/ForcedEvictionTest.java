@@ -59,14 +59,19 @@ public class ForcedEvictionTest extends CacheTestSupport {
     @Test(timeout = 12000000)
     public void testForcedEviction() {
         int testDurationSeconds = 30;
-
-        long deadLine = System.currentTimeMillis() + (testDurationSeconds * 1000);
         ICache<Integer, Integer> cache = createCache();
+
+        // ".forceEvictionCount" is a dynamic metric, so we need a metric
+        // collection to take place before we can read out non-zero value
+        // from this gauge
+        // creating it before the time-consuming part of the test to ensure
+        // there is at least one metric collection before the assertion
+        LongGauge forceEvictionCount = getMetricsRegistry()
+                .newLongGauge("cache[" + cache.getPrefixedName() + "].forceEvictionCount");
+        long deadLine = System.currentTimeMillis() + (testDurationSeconds * 1000);
         for (int i = 0; System.currentTimeMillis() < deadLine; i++) {
             cache.put(i, i);
         }
-        LongGauge forceEvictionCount = getMetricsRegistry().newLongGauge(
-                findMetricWithGivenStringAndSuffix(cache.getName(), ".forceEvictionCount"));
         assertThat(forceEvictionCount.read(), greaterThan(0L));
 
         // intentionally no other assert, it's enough when the test does not throw NativeOutOfMemoryError
@@ -74,16 +79,6 @@ public class ForcedEvictionTest extends CacheTestSupport {
 
     private MetricsRegistry getMetricsRegistry() {
         return ((HazelcastInstanceProxy) hazelcastInstance).getOriginal().node.nodeEngine.getMetricsRegistry();
-    }
-
-    private String findMetricWithGivenStringAndSuffix(String string, String suffix) {
-        MetricsRegistry registry = getMetricsRegistry();
-        for (String name : registry.getNames()) {
-            if (name.endsWith(suffix) && name.contains(string)) {
-                return name;
-            }
-        }
-        throw new IllegalArgumentException("Could not find a metric with the given suffix " + suffix);
     }
 
     @Override

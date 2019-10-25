@@ -263,8 +263,21 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
         env.put(Context.SECURITY_AUTHENTICATION, "simple");
         env.put(Context.SECURITY_PRINCIPAL, login);
         env.put(Context.SECURITY_CREDENTIALS, password);
-        logger.fine("Creating an LDAP context");
+        logLdapContextProperties(env);
         return new InitialLdapContext(env, null);
+    }
+
+    protected void logLdapContextProperties(Properties env) {
+        logger.fine("Creating an LDAP context");
+        if (logger.isFinestEnabled()) {
+            Properties filteredProps = env;
+            if (filteredProps.containsKey(Context.SECURITY_CREDENTIALS)) {
+                filteredProps = new Properties();
+                filteredProps.putAll(env);
+                filteredProps.put(Context.SECURITY_CREDENTIALS, "***");
+            }
+            logger.finest("LDAP context properties: " + filteredProps);
+        }
     }
 
     private void addRolesFromAttribute() throws NamingException {

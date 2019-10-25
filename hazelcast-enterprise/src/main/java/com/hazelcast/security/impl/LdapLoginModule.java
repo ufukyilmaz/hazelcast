@@ -140,7 +140,7 @@ public class LdapLoginModule extends BasicLdapLoginModule {
         Properties env = new Properties();
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
         env.putAll(options);
-
+        logLdapContextProperties(env);
         return new InitialLdapContext(env, null);
     }
 
@@ -154,6 +154,7 @@ public class LdapLoginModule extends BasicLdapLoginModule {
         env.setProperty(Context.SECURITY_PRINCIPAL, principalDn);
         env.setProperty(Context.SECURITY_CREDENTIALS, password);
         try {
+            logLdapContextProperties(env);
             new InitialLdapContext(env, null).close();
         } catch (NamingException e) {
             logger.finest(e);

@@ -17,24 +17,28 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.Future;
 
-import static com.hazelcast.cp.persistence.CPMetadataStoreImpl.ACTIVE_CP_MEMBERS_FILE_NAME;
+import static com.hazelcast.cp.persistence.CPMetadataStoreImpl.ACTIVE_CP_MEMBERS_FILE_NAME_PREFIX;
 import static com.hazelcast.cp.persistence.CPMetadataStoreImpl.CP_MEMBER_FILE_NAME;
 import static com.hazelcast.cp.persistence.CPMetadataStoreImpl.getMetadataGroupIdFileName;
 import static com.hazelcast.cp.persistence.ClusterPersistenceTest.awaitLeaderElectionAndGetTerm;
+import static com.hazelcast.cp.persistence.FileIOSupport.TMP_SUFFIX;
 import static com.hazelcast.internal.nio.IOUtil.delete;
 import static java.nio.file.Files.copy;
 import static java.nio.file.Files.move;
 import static java.nio.file.Files.write;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.util.Objects.requireNonNull;
 import static org.hamcrest.Matchers.emptyArray;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -204,16 +208,17 @@ public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
         assertNotNull(dirs);
         assertEquals(addresses.length, dirs.length);
         for (File dir : dirs) {
-            File file = new File(dir, ACTIVE_CP_MEMBERS_FILE_NAME);
-            File backup = new File(dir, file.getName() + ".backup");
-            copy(file.toPath(), backup.toPath());
-            // Delete active CP members file
-            delete(file);
+            Arrays.stream(requireNonNull(dir.listFiles(f -> f.getName().startsWith(ACTIVE_CP_MEMBERS_FILE_NAME_PREFIX))))
+                    .forEach(f -> {
+                        assertThat(f.getName(), not(endsWith(TMP_SUFFIX)));
+                        File backup = new File(dir, f.getName() + TMP_SUFFIX);
+                        try {
+                            move(f.toPath(), backup.toPath(), REPLACE_EXISTING);
+                        } catch (IOException e) {
+                            throw new AssertionError(e);
+                        }
+                    });
         }
-
-        Future f = spawn(() -> {
-            restartInstances(addresses, config);
-        });
 
         Config configTmp = createConfig(3, 3);
         configTmp.getCPSubsystemConfig().setDataLoadTimeoutSeconds(5);
@@ -223,9 +228,17 @@ public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
 
         // Restore active CP members
         for (File dir : dirs) {
-            Path backup = dir.toPath().resolve(ACTIVE_CP_MEMBERS_FILE_NAME + ".backup");
-            Path file = backup.resolveSibling(ACTIVE_CP_MEMBERS_FILE_NAME);
-            move(backup, file, REPLACE_EXISTING);
+            Arrays.stream(requireNonNull(dir.listFiles(f -> f.getName().startsWith(ACTIVE_CP_MEMBERS_FILE_NAME_PREFIX))))
+                    .forEach(f -> {
+                        assertThat(f.getName(), endsWith(TMP_SUFFIX));
+                        Path backup = f.toPath();
+                        Path file = backup.resolveSibling(f.getName().replaceAll(TMP_SUFFIX, ""));
+                        try {
+                            move(backup, file, REPLACE_EXISTING);
+                        } catch (IOException e) {
+                            throw new AssertionError(e);
+                        }
+                    });
         }
 
         // All instances should be able to restore
@@ -253,12 +266,18 @@ public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
         assertNotNull(dirs);
         assertEquals(addresses.length, dirs.length);
         for (File dir : dirs) {
-            File file = new File(dir, ACTIVE_CP_MEMBERS_FILE_NAME);
-            File backup = new File(dir, file.getName() + ".backup");
-            copy(file.toPath(), backup.toPath());
-            // Corrupt active CP members file
-            delete(file);
-            write(file.toPath(), randomString().getBytes());
+            Arrays.stream(requireNonNull(dir.listFiles(f -> f.getName().startsWith(ACTIVE_CP_MEMBERS_FILE_NAME_PREFIX))))
+                    .forEach(f -> {
+                        assertThat(f.getName(), not(endsWith(TMP_SUFFIX)));
+                        File backup = new File(dir, f.getName() + TMP_SUFFIX);
+                        try {
+                            copy(f.toPath(), backup.toPath());
+                            // Corrupt active CP members file
+                            write(f.toPath(), randomString().getBytes());
+                        } catch (IOException e) {
+                            throw new AssertionError(e);
+                        }
+                    });
         }
 
         Config configTmp = createConfig(3, 3);
@@ -269,9 +288,18 @@ public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
 
         // Restore active CP members
         for (File dir : dirs) {
-            Path backup = dir.toPath().resolve(ACTIVE_CP_MEMBERS_FILE_NAME + ".backup");
-            Path file = backup.resolveSibling(ACTIVE_CP_MEMBERS_FILE_NAME);
-            move(backup, file, REPLACE_EXISTING);
+            File[] files = dir.listFiles(f ->
+                    f.getName().startsWith(ACTIVE_CP_MEMBERS_FILE_NAME_PREFIX) && f.getName().endsWith(TMP_SUFFIX));
+            Arrays.stream(requireNonNull(files))
+                    .forEach(f -> {
+                        Path backup = f.toPath();
+                        Path file = backup.resolveSibling(f.getName().replaceAll(TMP_SUFFIX, ""));
+                        try {
+                            move(backup, file, REPLACE_EXISTING);
+                        } catch (IOException e) {
+                            throw new AssertionError(e);
+                        }
+                    });
         }
 
         // All instances should be able to restore

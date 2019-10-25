@@ -23,7 +23,7 @@ import static java.util.Arrays.sort;
 public class CPMetadataStoreImpl implements CPMetadataStore {
 
     static final String CP_MEMBER_FILE_NAME = "cp-member";
-    static final String ACTIVE_CP_MEMBERS_FILE_NAME = "active-members";
+    static final String ACTIVE_CP_MEMBERS_FILE_NAME_PREFIX = "active-members-";
     private static final String METADATA_GROUP_ID_FILE_NAME_PREFIX = "metadata-group-id-";
 
     private final File dir;
@@ -77,19 +77,26 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
 
     @Override
     public void persistActiveCPMembers(Collection<? extends CPMember> members, long commitIndex) throws IOException {
-        writeWithChecksum(dir, ACTIVE_CP_MEMBERS_FILE_NAME, serializationService, out -> {
+        String fileName = getActiveCpMembersFileName(commitIndex);
+        writeWithChecksum(dir, fileName, serializationService, out -> {
             out.writeLong(commitIndex);
             out.writeInt(members.size());
             for (CPMember member : members) {
                 out.writeObject(member);
             }
         });
+        deleteStaleFiles(ACTIVE_CP_MEMBERS_FILE_NAME_PREFIX);
     }
 
     @Override
     public long readActiveCPMembers(Collection<CPMember> members) throws IOException {
+        String latestFileName = getLatestFileName(ACTIVE_CP_MEMBERS_FILE_NAME_PREFIX);
+        if (latestFileName == null) {
+            return 0L;
+        }
+
         try {
-            Long result = readWithChecksum(dir, ACTIVE_CP_MEMBERS_FILE_NAME, serializationService, in -> {
+            Long result = readWithChecksum(dir, latestFileName, serializationService, in -> {
                 long commitIndex = in.readLong();
                 int count = in.readInt();
                 for (int i = 0; i < count; i++) {
@@ -108,37 +115,20 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
 
     @Override
     public void persistMetadataGroupId(RaftGroupId groupId) throws IOException {
-        String fileName = getMetadataGroupIdFileName(groupId);
+        String fileName = getMetadataGroupIdFileName(groupId.getSeed());
         writeWithChecksum(dir, fileName, serializationService, out -> out.writeObject(groupId));
-        deleteStaleMetadataGroupIdFiles(groupId);
-    }
-
-    private void deleteStaleMetadataGroupIdFiles(RaftGroupId groupId) {
-        String latestMetadataGroupIdFileName = getMetadataGroupIdFileName(groupId);
-        String[] metadataGroupIdFileNames = getMetadataGroupIdFileNames();
-
-        assert metadataGroupIdFileNames != null && metadataGroupIdFileNames.length > 0;
-
-        for (String name : metadataGroupIdFileNames) {
-            if (name.equals(latestMetadataGroupIdFileName)) {
-                return;
-            }
-            deleteQuietly(new File(dir, name));
-        }
+        deleteStaleFiles(METADATA_GROUP_ID_FILE_NAME_PREFIX);
     }
 
     @Override
     public RaftGroupId readMetadataGroupId() throws IOException {
-        String[] metadataGroupIdFileNames = getMetadataGroupIdFileNames();
-        if (metadataGroupIdFileNames == null || metadataGroupIdFileNames.length == 0) {
+        String latestFileName = getLatestFileName(METADATA_GROUP_ID_FILE_NAME_PREFIX);
+        if (latestFileName == null) {
             return null;
         }
 
-        sort(metadataGroupIdFileNames);
-        String fileName = metadataGroupIdFileNames[metadataGroupIdFileNames.length - 1];
-
         try {
-            return readWithChecksum(dir, fileName, serializationService, ObjectDataInput::readObject);
+            return readWithChecksum(dir, latestFileName, serializationService, ObjectDataInput::readObject);
         } catch (IOException e) {
             throw e;
         } catch (Exception e) {
@@ -146,13 +136,49 @@ public class CPMetadataStoreImpl implements CPMetadataStore {
         }
     }
 
-    private String[] getMetadataGroupIdFileNames() {
-        return dir.list((dir, name) ->
-                name.startsWith(METADATA_GROUP_ID_FILE_NAME_PREFIX) && !name.endsWith(TMP_SUFFIX));
+    private String getLatestFileName(String prefix) {
+        String[] fileNames = getFileNamesWithPrefix(prefix);
+        if (fileNames == null || fileNames.length == 0) {
+            return null;
+        }
+
+        sort(fileNames);
+        return fileNames[fileNames.length - 1];
+    }
+
+    private void deleteStaleFiles(String prefix) {
+        String[] allFileNames = getFileNamesWithPrefix(prefix);
+        assert allFileNames != null && allFileNames.length > 0;
+
+        sort(allFileNames);
+        String latestFileName = allFileNames[allFileNames.length - 1];
+
+        for (String name : allFileNames) {
+            if (name.equals(latestFileName)) {
+                continue;
+            }
+            deleteQuietly(new File(dir, name));
+        }
     }
 
     static String getMetadataGroupIdFileName(RaftGroupId groupId) {
-        return String.format(METADATA_GROUP_ID_FILE_NAME_PREFIX + "%016x", groupId.getSeed());
+        return getFileNameWithPrefixAndSuffix(METADATA_GROUP_ID_FILE_NAME_PREFIX, groupId.getSeed());
+    }
+
+    private static String getMetadataGroupIdFileName(long seed) {
+        return getFileNameWithPrefixAndSuffix(METADATA_GROUP_ID_FILE_NAME_PREFIX, seed);
+    }
+
+    private static String getActiveCpMembersFileName(long commitIndex) {
+        return getFileNameWithPrefixAndSuffix(ACTIVE_CP_MEMBERS_FILE_NAME_PREFIX, commitIndex);
+    }
+
+    private static String getFileNameWithPrefixAndSuffix(String prefix, long suffix) {
+        return String.format(prefix + "%016x", suffix);
+    }
+
+    private String[] getFileNamesWithPrefix(String prefix) {
+        return dir.list((dir, name) -> name.startsWith(prefix) && !name.endsWith(TMP_SUFFIX));
     }
 
     static boolean isCPMemberFile(File dir, String fileName) {

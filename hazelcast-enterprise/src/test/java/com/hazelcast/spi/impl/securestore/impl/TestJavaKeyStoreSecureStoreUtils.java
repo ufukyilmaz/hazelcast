@@ -36,10 +36,16 @@ public class TestJavaKeyStoreSecureStoreUtils {
 
     /**
      * Creates a Java KeyStore with specified type, password, and keys.
+     * <p>
+     * The only reason why this method is synchronized is to eliminate the race
+     * condition in OpenJDK's sun.security.x509.AlgorithmId.oidTable initialization
+     * (see https://bugs.openjdk.java.net/browse/JDK-8156584, fixed in OpenJDK 9
+     * and higher). If multiple KeyStores are created concurrently, it may trigger
+     * the above issue, causing unexpected test failures.
      *
      * @return a {@link JavaKeyStoreSecureStoreConfig} corresponding to the created KeyStore
      */
-    public static JavaKeyStoreSecureStoreConfig createJavaKeyStore(File path, String type, String password,
+    public static synchronized JavaKeyStoreSecureStoreConfig createJavaKeyStore(File path, String type, String password,
                                                                    byte[]... keys) {
         JavaKeyStoreSecureStoreConfig config = new JavaKeyStoreSecureStoreConfig(path).setPassword(password).setType(type);
         try {

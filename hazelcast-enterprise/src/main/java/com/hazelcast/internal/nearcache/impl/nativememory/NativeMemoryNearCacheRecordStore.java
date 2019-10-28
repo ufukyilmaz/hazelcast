@@ -402,7 +402,7 @@ public class NativeMemoryNearCacheRecordStore<K, V>
     @Override
     public void doExpiration() {
         checkAvailable();
-        records.scanByNumberToDeleteExpired(recordEvictionListener,
+        records.scanAndDeleteExpired(recordEvictionListener,
                 recordExpirationChecker, maxScannableEntryCountPerLoop);
     }
 

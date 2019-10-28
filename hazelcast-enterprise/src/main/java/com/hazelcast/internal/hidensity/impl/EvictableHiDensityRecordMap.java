@@ -11,11 +11,13 @@ import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.util.Clock;
+import com.hazelcast.nio.serialization.Data;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
 /**
  * @param <R> type of the {@link HiDensityRecord} to be stored
@@ -95,32 +97,41 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
      *
      * @param evictionListener  used to listen evicted entries
      * @param expirationChecker used to check entries for expiry
-     * @param maxScannableNum   scan at most this number of entries
+     * @param scanLimit         scan at most this number of entries
      * @see #initExpirationIterator()
      */
-    public void scanByNumberToDeleteExpired(EvictionListener<Data, R> evictionListener,
-                                            ExpirationChecker<R> expirationChecker, int maxScannableNum) {
+    public void scanAndDeleteExpired(EvictionListener<Data, R> evictionListener,
+                                     ExpirationChecker<R> expirationChecker, int scanLimit) {
 
         long now = Clock.currentTimeMillis();
-        int scannedNum = 0;
+        int scannedSoFar = 0;
         initExpirationIterator();
 
+        // 1. Collect expired entries
+        Queue<Entry<Data, R>> expiredEntries = new LinkedList<>();
         while (expirationIterator.hasNext()) {
-            if (scannedNum >= maxScannableNum) {
+            if (scannedSoFar >= scanLimit) {
                 break;
             }
-            scannedNum++;
+
             Entry<Data, R> entry = expirationIterator.next();
             R record = entry.getValue();
-            if (record == null) {
-                continue;
+            if (record != null && expirationChecker == null
+                    ? record.isExpiredAt(now)
+                    : expirationChecker.isExpired(record)) {
+                expiredEntries.offer(entry);
             }
 
-            boolean expired = expirationChecker == null
-                    ? record.isExpiredAt(now) : expirationChecker.isExpired(record);
+            scannedSoFar++;
+        }
 
-            if (expired) {
-                Data keyData = entry.getKey();
+        // 2. Delete collected entries
+        Entry<Data, R> entry;
+        while ((entry = expiredEntries.poll()) != null) {
+            Data keyData = entry.getKey();
+
+            if (containsKey(keyData)) {
+                R record = entry.getValue();
                 onEvict(keyData, record, true);
                 if (evictionListener != null) {
                     evictionListener.onEvict(keyData, record, true);

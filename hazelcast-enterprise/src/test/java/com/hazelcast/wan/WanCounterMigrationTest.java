@@ -7,6 +7,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
@@ -55,10 +56,8 @@ public class WanCounterMigrationTest {
     @Parameters(name = "backups:{0} snapshot:{1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                // ignored cases for now, known to be broken
-                // see issue EE #2091
-                // {0, false},
-                // {0, true},
+                {0, false},
+                {0, true},
                 {1, false},
                 {1, true},
                 {2, false},
@@ -278,8 +277,8 @@ public class WanCounterMigrationTest {
         private final AtomicBoolean failMigration = new AtomicBoolean();
 
         @Override
-        public void onMigrationStart(int partitionId, int currentReplicaIndex, int newReplicaIndex) {
-            super.onMigrationStart(partitionId, currentReplicaIndex, newReplicaIndex);
+        public void onMigrationStart(PartitionMigrationEvent event) {
+            super.onMigrationStart(event);
             if (failMigration.compareAndSet(true, false)) {
                 throw new RuntimeException("Intentionally failing migration");
             }

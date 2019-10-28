@@ -2,9 +2,9 @@ package com.hazelcast.wan.custom;
 
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanConsumerConfig;
-import com.hazelcast.enterprise.wan.WanReplicationConsumer;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.wan.WanReplicationConsumer;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

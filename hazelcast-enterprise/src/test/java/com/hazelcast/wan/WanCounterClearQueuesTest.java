@@ -7,6 +7,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.partition.PartitionMigrationEvent;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -184,8 +185,8 @@ public class WanCounterClearQueuesTest {
         private final AtomicReference<String> nodeName = new AtomicReference<>();
 
         @Override
-        public void onMigrationCommit(int partitionId, int currentReplicaIndex, int newReplicaIndex) {
-            super.onMigrationCommit(partitionId, currentReplicaIndex, newReplicaIndex);
+        public void onMigrationCommit(PartitionMigrationEvent event) {
+            super.onMigrationCommit(event);
 
             if (node.getNodeEngine().getHazelcastInstance().getName().equals(nodeName.get())
                     && clearQueuesFlag.get()

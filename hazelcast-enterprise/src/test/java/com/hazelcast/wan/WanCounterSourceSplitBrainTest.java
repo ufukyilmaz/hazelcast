@@ -57,9 +57,7 @@ public class WanCounterSourceSplitBrainTest {
     @Parameters(name = "cluster:{0} isolated:{1} backup:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                // ignored case for now, known to be broken
-                // see issue EE #2091
-                // {2, 1, 0},
+                {2, 1, 0},
                 {2, 1, 1},
                 {3, 1, 1},
                 {3, 1, 2},

@@ -4,13 +4,11 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.wan.CacheReplicationObject;
 import com.hazelcast.config.AbstractWanPublisherConfig;
-import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
-import com.hazelcast.wan.WanPublisherState;
+import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
-import com.hazelcast.enterprise.wan.WanEventQueueMigrationListener;
 import com.hazelcast.enterprise.wan.impl.DistributedObjectIdentifier;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.PartitionWanEventQueueMap;
@@ -22,6 +20,7 @@ import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.services.ServiceNamespace;
+import com.hazelcast.internal.util.Clock;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
@@ -32,11 +31,13 @@ import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
+import com.hazelcast.spi.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
-import com.hazelcast.internal.util.Clock;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
-import com.hazelcast.wan.WanReplicationQueueFullException;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanReplicationPublisherMigrationListener;
+import com.hazelcast.wan.WanReplicationQueueFullException;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationPublisher;
 
@@ -62,7 +63,7 @@ import static java.util.Collections.unmodifiableMap;
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
 public abstract class AbstractWanPublisher implements
         InternalWanReplicationPublisher<WanEventMigrationContainer>,
-        WanEventQueueMigrationListener, HazelcastInstanceAware {
+        WanReplicationPublisherMigrationListener, HazelcastInstanceAware {
 
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
 
@@ -536,23 +537,18 @@ public abstract class AbstractWanPublisher implements
     }
 
     @Override
-    public void onMigrationStart(int partitionId, int currentReplicaIndex, int newReplicaIndex) {
-        wanQueueMigrationSupport.onMigrationStart(partitionId, currentReplicaIndex, newReplicaIndex);
+    public void onMigrationStart(PartitionMigrationEvent event) {
+        wanQueueMigrationSupport.onMigrationStart(event);
     }
 
     @Override
-    public void onMigrationCommit(int partitionId, int currentReplicaIndex, int newReplicaIndex) {
-        wanQueueMigrationSupport.onMigrationCommit(partitionId, currentReplicaIndex, newReplicaIndex);
+    public void onMigrationCommit(PartitionMigrationEvent event) {
+        wanQueueMigrationSupport.onMigrationCommit(event);
     }
 
     @Override
-    public void onMigrationRollback(int partitionId, int currentReplicaIndex, int newReplicaIndex) {
-        wanQueueMigrationSupport.onMigrationRollback(partitionId, currentReplicaIndex, newReplicaIndex);
-    }
-
-    @Override
-    public void onWanQueueClearedDuringMigration(int partitionId, int currentReplicaIndex, int clearedQueueDepth) {
-        wanQueueMigrationSupport.onWanQueueClearedDuringMigration(partitionId, currentReplicaIndex, clearedQueueDepth);
+    public void onMigrationRollback(PartitionMigrationEvent event) {
+        wanQueueMigrationSupport.onMigrationRollback(event);
     }
 
     /**
@@ -586,26 +582,6 @@ public abstract class AbstractWanPublisher implements
     @Override
     public void collectAllServiceNamespaces(PartitionReplicationEvent event, Set<ServiceNamespace> namespaces) {
         eventQueueContainer.collectAllServiceNamespaces(event, namespaces);
-    }
-
-    @Override
-    public int removeWanEvents(int partitionId, String serviceName) {
-        int size = 0;
-        switch (serviceName) {
-            case MapService.SERVICE_NAME:
-                size += eventQueueContainer.drainMapQueues(partitionId);
-                break;
-            case ICacheService.SERVICE_NAME:
-                size += eventQueueContainer.drainCacheQueues(partitionId);
-                break;
-            default:
-                String msg = "Unexpected replication event service name: " + serviceName;
-                assert false : msg;
-                logger.warning(msg);
-                break;
-        }
-
-        return size;
     }
 
     @Override
@@ -656,6 +632,34 @@ public abstract class AbstractWanPublisher implements
         decrementCounter(removedMapEvents + removedCacheEvents, isPrimaryReplica);
         publishEvents(partitionId, mapQueues);
         publishEvents(partitionId, cacheQueues);
+    }
+
+    /**
+     * Removes all WAN events awaiting replication and belonging to the provided
+     * service and partition.
+     * If the publisher does not store WAN events, this method is a no-op.
+     * Invoked when migrating WAN replication data between members in a cluster.
+     *
+     * @param serviceName the service name of the WAN events should be removed
+     * @param partitionId the partition ID of the WAN events should be removed
+     */
+    private int removeWanEvents(int partitionId, String serviceName) {
+        int size = 0;
+        switch (serviceName) {
+            case MapService.SERVICE_NAME:
+                size += eventQueueContainer.drainMapQueuesMatchingPredicate(partitionId, q -> true);
+                break;
+            case ICacheService.SERVICE_NAME:
+                size += eventQueueContainer.drainCacheQueuesMatchingPredicate(partitionId, q -> true);
+                break;
+            default:
+                String msg = "Unexpected replication event service name: " + serviceName;
+                assert false : msg;
+                logger.warning(msg);
+                break;
+        }
+
+        return size;
     }
 
     private void publishEvents(int partitionId, PartitionWanEventQueueMap queues) {

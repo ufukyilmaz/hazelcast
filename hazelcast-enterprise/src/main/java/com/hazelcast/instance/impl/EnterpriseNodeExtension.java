@@ -505,7 +505,7 @@ public class EnterpriseNodeExtension
      * Constructs and initializes all WAN consumers defined in the WAN
      * configuration
      *
-     * @see com.hazelcast.enterprise.wan.WanReplicationConsumer
+     * @see com.hazelcast.wan.WanReplicationConsumer
      */
     private void initWanConsumers() {
         WanReplicationService wanReplicationService = node.nodeEngine.getWanReplicationService();

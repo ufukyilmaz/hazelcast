@@ -6,7 +6,6 @@ import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
-import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.impl.operation.AddWanConfigOperationFactory;
 import com.hazelcast.enterprise.wan.impl.operation.PostJoinWanOperation;
@@ -39,12 +38,13 @@ import com.hazelcast.spi.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.impl.AddWanConfigResult;
+import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 import com.hazelcast.wan.impl.WanEventCounters;
-import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
@@ -297,7 +297,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      * Constructs and initializes all WAN consumers defined in the WAN
      * configuration
      *
-     * @see com.hazelcast.enterprise.wan.WanReplicationConsumer
+     * @see com.hazelcast.wan.WanReplicationConsumer
      */
     public void initializeCustomConsumers() {
         consumerContainer.initializeCustomConsumers();

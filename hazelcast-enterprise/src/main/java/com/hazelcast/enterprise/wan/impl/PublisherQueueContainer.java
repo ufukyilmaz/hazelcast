@@ -4,15 +4,16 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.services.ObjectNamespace;
 import com.hazelcast.internal.services.ServiceNamespace;
+import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
-import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * WAN event queue container for WAN replication publishers. Each WAN queue
@@ -135,7 +136,9 @@ public class PublisherQueueContainer {
         Map<Integer, Integer> partitionDrainsMap = MapUtil.createHashMap(containers.length);
         for (int partitionId = 0; partitionId < containers.length; partitionId++) {
             PartitionWanEventContainer partitionWanEventContainer = getEventQueue(partitionId);
-            int drained = partitionWanEventContainer.drain();
+            int drained = 0;
+            drained += partitionWanEventContainer.drainMap(q -> true);
+            drained += partitionWanEventContainer.drainCache(q -> true);
             partitionDrainsMap.put(partitionId, drained);
         }
 
@@ -143,33 +146,28 @@ public class PublisherQueueContainer {
     }
 
     /**
-     * Drains all the queues maintained for the given partition.
-     *
-     * @param partitionId the partition ID for which queues need to be drained
-     * @return the number of drained elements
-     */
-    public int drainQueues(int partitionId) {
-        return getEventQueue(partitionId).drain();
-    }
-
-    /**
      * Drains all the map queues maintained for the given partition.
      *
      * @param partitionId the partition ID for which queues need to be drained
+     * @param predicate   a predicate which returns {@code true} for queues to be
+     *                    removed
      * @return the number of drained elements
      */
-    public int drainMapQueues(int partitionId) {
-        return getEventQueue(partitionId).drainMap();
+    public int drainMapQueuesMatchingPredicate(int partitionId,
+                                               Predicate<WanReplicationEventQueue> predicate) {
+        return getEventQueue(partitionId).drainMap(predicate);
     }
 
     /**
      * Drains all the cache queues maintained for the given partition.
      *
      * @param partitionId the partition ID for which queues need to be drained
+     * @param predicate   a predicate which returns {@code true} for queues to be
+     *                    removed
      * @return the number of drained elements
      */
-    public int drainCacheQueues(int partitionId) {
-        return getEventQueue(partitionId).drainCache();
+    public int drainCacheQueuesMatchingPredicate(int partitionId, Predicate<WanReplicationEventQueue> predicate) {
+        return getEventQueue(partitionId).drainCache(predicate);
     }
 
     /**

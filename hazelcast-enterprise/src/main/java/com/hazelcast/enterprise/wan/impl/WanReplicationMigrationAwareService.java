@@ -2,7 +2,6 @@ package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.WanEventQueueMigrationListener;
 import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerReplicationOperation;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.services.ObjectNamespace;
@@ -10,10 +9,10 @@ import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.partition.FragmentedMigrationAwareService;
-import com.hazelcast.spi.partition.MigrationEndpoint;
 import com.hazelcast.spi.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.wan.WanReplicationPublisherMigrationListener;
 import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 
 import java.util.Collection;
@@ -95,9 +94,8 @@ class WanReplicationMigrationAwareService implements FragmentedMigrationAwareSer
     public void beforeMigration(PartitionMigrationEvent event) {
         for (DelegatingWanReplicationScheme wanReplication : getWanReplications().values()) {
             for (WanReplicationPublisher publisher : wanReplication.getPublishers()) {
-                if (publisher instanceof WanEventQueueMigrationListener) {
-                    ((WanEventQueueMigrationListener) publisher).onMigrationStart(event.getPartitionId(), event
-                            .getCurrentReplicaIndex(), event.getNewReplicaIndex());
+                if (publisher instanceof WanReplicationPublisherMigrationListener) {
+                    ((WanReplicationPublisherMigrationListener) publisher).onMigrationStart(event);
                 }
             }
         }
@@ -105,19 +103,11 @@ class WanReplicationMigrationAwareService implements FragmentedMigrationAwareSer
 
     @Override
     public void commitMigration(PartitionMigrationEvent event) {
-        // TODO clearing the WAN queues ignore the backupCount of the replicated datastructures, see EE GH issue #2091
-        if (event.getMigrationEndpoint() == MigrationEndpoint.SOURCE
-                && (event.getNewReplicaIndex() == -1 || event.getNewReplicaIndex() > 1)) {
-            clearMigrationData(event.getPartitionId(), event.getCurrentReplicaIndex());
-        }
-
-        final ConcurrentHashMap<String, DelegatingWanReplicationScheme> wanReplications = getWanReplications();
+        ConcurrentHashMap<String, DelegatingWanReplicationScheme> wanReplications = getWanReplications();
         for (DelegatingWanReplicationScheme wanReplication : wanReplications.values()) {
             for (WanReplicationPublisher publisher : wanReplication.getPublishers()) {
-                if (publisher instanceof WanEventQueueMigrationListener) {
-                    ((WanEventQueueMigrationListener) publisher)
-                            .onMigrationCommit(event.getPartitionId(), event.getCurrentReplicaIndex(),
-                                    event.getNewReplicaIndex());
+                if (publisher instanceof WanReplicationPublisherMigrationListener) {
+                    ((WanReplicationPublisherMigrationListener) publisher).onMigrationCommit(event);
                 }
             }
         }
@@ -125,38 +115,11 @@ class WanReplicationMigrationAwareService implements FragmentedMigrationAwareSer
 
     @Override
     public void rollbackMigration(PartitionMigrationEvent event) {
-        if (event.getMigrationEndpoint() == MigrationEndpoint.DESTINATION) {
-            clearMigrationData(event.getPartitionId(), event.getCurrentReplicaIndex());
-        }
-
-        final ConcurrentHashMap<String, DelegatingWanReplicationScheme> wanReplications = getWanReplications();
+        ConcurrentHashMap<String, DelegatingWanReplicationScheme> wanReplications = getWanReplications();
         for (DelegatingWanReplicationScheme wanReplication : wanReplications.values()) {
             for (WanReplicationPublisher publisher : wanReplication.getPublishers()) {
-                if (publisher instanceof WanEventQueueMigrationListener) {
-                    ((WanEventQueueMigrationListener) publisher)
-                            .onMigrationRollback(event.getPartitionId(), event.getCurrentReplicaIndex(),
-                                    event.getNewReplicaIndex());
-                }
-            }
-        }
-    }
-
-    private void clearMigrationData(int partitionId, int currentReplicaIndex) {
-        final ConcurrentHashMap<String, DelegatingWanReplicationScheme> wanReplications = getWanReplications();
-        for (DelegatingWanReplicationScheme wanReplication : wanReplications.values()) {
-            for (WanReplicationPublisher publisher : wanReplication.getPublishers()) {
-                if (publisher != null) {
-                    // queue depth cannot change between invocations of the size() and the drain() methods, since
-                    // 1) we are on a partition operation thread -> no operations can emit WAN events
-                    // 2) polling the queue is disabled for the time of the migration
-                    int sizeBeforeClear = 0;
-                    sizeBeforeClear += publisher.removeWanEvents(partitionId, MapService.SERVICE_NAME);
-                    sizeBeforeClear += publisher.removeWanEvents(partitionId, CacheService.SERVICE_NAME);
-
-                    if (publisher instanceof WanEventQueueMigrationListener) {
-                        ((WanEventQueueMigrationListener) publisher)
-                                .onWanQueueClearedDuringMigration(partitionId, currentReplicaIndex, sizeBeforeClear);
-                    }
+                if (publisher instanceof WanReplicationPublisherMigrationListener) {
+                    ((WanReplicationPublisherMigrationListener) publisher).onMigrationRollback(event);
                 }
             }
         }

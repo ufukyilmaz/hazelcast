@@ -5,6 +5,7 @@ import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * Contains all map/cache event queues of a partition.
@@ -156,29 +157,18 @@ public class PartitionWanEventContainer {
     }
 
     /**
-     * Drains all the queues maintained for the given partition. It is
-     * different from {@code clear} in the way that this method removes
-     * elements from all the queues equal to the size of the queue known
-     * upfront. This means this method doesn't guarantee that the
-     * queues will be empty on return.
-     *
-     * @return the number of drained elements
-     */
-    int drain() {
-        return drainMap() + drainCache();
-    }
-
-    /**
      * Drains all the queues holding map WAN events maintained for the
      * given partition. It is different from {@code clear} in the way
      * that this method removes elements from all the queues equal to
      * the size of the queue known upfront. This means this method
      * doesn't guarantee that the queues will be empty on return.
      *
+     * @param predicate a predicate which returns {@code true} for queues to be
+     *                  removed
      * @return the number of drained elements
      */
-    int drainMap() {
-        return drain(mapWanEventQueueMap);
+    int drainMap(Predicate<WanReplicationEventQueue> predicate) {
+        return drain(mapWanEventQueueMap, predicate);
     }
 
     /**
@@ -188,17 +178,20 @@ public class PartitionWanEventContainer {
      * the size of the queue known upfront. This means this method
      * doesn't guarantee that the queues will be empty on return.
      *
+     * @param predicate a predicate which returns {@code true} for queues to be
+     *                  removed
      * @return the number of drained elements
      */
-    int drainCache() {
-        return drain(cacheWanEventQueueMap);
+    int drainCache(Predicate<WanReplicationEventQueue> predicate) {
+        return drain(cacheWanEventQueueMap, predicate);
     }
 
-    private int drain(PartitionWanEventQueueMap queueMap) {
+    private int drain(PartitionWanEventQueueMap queueMap,
+                      Predicate<WanReplicationEventQueue> predicate) {
         int size = 0;
         for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : queueMap.entrySet()) {
             WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue();
-            if (eventQueue != null) {
+            if (eventQueue != null && predicate.test(eventQueue)) {
                 size += QueueUtil.drainQueue(eventQueue);
             }
         }

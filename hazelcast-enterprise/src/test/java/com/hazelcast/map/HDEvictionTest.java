@@ -184,7 +184,7 @@ public class HDEvictionTest extends EvictionTest {
         config.setProperty(PROP_TASK_PERIOD_SECONDS, Integer.toString(MAX_VALUE));
 
         MapConfig mapConfig = config.getMapConfig(mapName);
-        mapConfig.addIndexConfig(new IndexConfig().addAttribute("age").setType(IndexType.SORTED));
+        mapConfig.addIndexConfig(new IndexConfig().addAttribute("age").setType(ordered ? IndexType.SORTED : IndexType.HASH));
 
         HazelcastInstance node = createHazelcastInstance(config);
         IMap<Integer, Person> map = node.getMap(mapName);

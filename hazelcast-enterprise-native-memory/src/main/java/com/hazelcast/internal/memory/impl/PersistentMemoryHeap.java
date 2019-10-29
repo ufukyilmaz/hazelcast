@@ -70,24 +70,27 @@ public final class PersistentMemoryHeap {
         if (PERSISTENT_MEMORY_CHECK_ENABLED && !isPmem0(heapHandle)) {
             LOGGER.severe(pmemFilePath.toAbsolutePath()
                     + " is not a persistent memory. Check persistent-memory-directory configuration and restart member again.");
-            deleteFile(pmemFilePath);
+            closeHandleAndDeleteFile(heapHandle, pmemFilePath);
             throw new HazelcastException(pmemFilePath.toAbsolutePath() + " is not a persistent memory");
         }
 
         return new PersistentMemoryHeap(pmemFilePath, heapHandle);
     }
 
+    private static void closeHandleAndDeleteFile(long heapHandle, Path path) {
+        try {
+            closeHeap0(heapHandle);
+        } catch (IOException e) {
+            LOGGER.fine("Unable to close pool handle");
+        } finally {
+            deleteFile(path);
+        }
+    }
+
     void close() {
         synchronized (closeHeapLock) {
             if (isPoolOpen) {
-                try {
-                    closeHeap0(poolHandle);
-                } catch (IOException e) {
-                    LOGGER.fine("Unable to close pool handle");
-                } finally {
-                    deleteFile(path);
-                }
-
+                closeHandleAndDeleteFile(poolHandle, path);
                 isPoolOpen = false;
             }
         }

@@ -2,14 +2,7 @@ package com.hazelcast.cp.persistence.datastructures;
 
 import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.IAtomicReference;
-import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
-import com.hazelcast.test.annotation.ParallelJVMTest;
-import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,10 +11,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
-@RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelJVMTest.class})
-public class RaftAtomicReferencePersistenceTest extends RaftDataStructurePersistenceTestSupport {
+public class RaftAtomicReferencePersistenceTest extends RaftDataStructurePersistenceTest {
 
     @Test
     public void when_wholeClusterRestarted_then_dataIsRestored() {

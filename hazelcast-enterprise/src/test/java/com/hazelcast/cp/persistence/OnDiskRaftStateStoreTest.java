@@ -73,7 +73,7 @@ public class OnDiskRaftStateStoreTest {
         store.persistInitialMembers(endpoint1, members);
     }
 
-    @Ignore
+    @Ignore("This is for benchmarking OnDiskRaftStateStore")
     @Test
     public void benchmark() throws Exception {
         int entryCount = maxUncommittedEntries * 1000;

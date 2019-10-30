@@ -3,7 +3,6 @@ package com.hazelcast.cp.persistence.datastructures;
 import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.ISemaphore;
 import com.hazelcast.internal.util.RandomPicker;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.Future;
@@ -11,7 +10,7 @@ import java.util.concurrent.Future;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public abstract class AbstractRaftSemaphorePersistenceTest extends RaftDataStructurePersistenceTestSupport {
+public abstract class AbstractRaftSemaphorePersistenceTest extends RaftDataStructurePersistenceTest {
 
     @Test
     public void when_wholeClusterRestarted_then_dataIsRestored() {
@@ -85,7 +84,6 @@ public abstract class AbstractRaftSemaphorePersistenceTest extends RaftDataStruc
     }
 
     @Test
-    @Ignore
     public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
         ISemaphore semaphore = proxyInstance.getCPSubsystem().getSemaphore("test");
         int acquires = 5000;

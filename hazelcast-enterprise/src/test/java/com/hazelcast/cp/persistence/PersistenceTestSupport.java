@@ -56,7 +56,7 @@ public abstract class PersistenceTestSupport extends HazelcastRaftTestSupport {
     protected final ILogger logger = Logger.getLogger(getClass());
 
     @Parameter
-    public AddressPolicy restartAddressPolicy;
+    public AddressPolicy restartAddressPolicy = REUSE_EXACT;
 
     @Rule
     public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();

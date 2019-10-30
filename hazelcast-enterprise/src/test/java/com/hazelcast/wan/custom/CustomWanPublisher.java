@@ -7,7 +7,7 @@ import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.impl.replication.WanPublisherSyncSupport;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
-import com.hazelcast.spi.partition.IPartition;
+import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.wan.ConsistencyCheckResult;
 import com.hazelcast.wan.WanAntiEntropyEvent;
 import com.hazelcast.wan.WanReplicationEvent;

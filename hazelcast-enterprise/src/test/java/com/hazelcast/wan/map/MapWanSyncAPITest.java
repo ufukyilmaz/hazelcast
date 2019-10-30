@@ -9,7 +9,7 @@ import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.partition.IPartition;
+import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

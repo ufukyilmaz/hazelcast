@@ -12,7 +12,7 @@ import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.Storage;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngine;
-import com.hazelcast.spi.partition.IPartitionService;
+import com.hazelcast.internal.partition.IPartitionService;
 
 import java.util.Iterator;
 import java.util.LinkedList;

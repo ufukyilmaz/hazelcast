@@ -24,7 +24,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
-import static com.hazelcast.spi.partition.IPartition.MAX_BACKUP_COUNT;
+import static com.hazelcast.internal.partition.IPartition.MAX_BACKUP_COUNT;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static java.lang.Math.min;
 import static java.lang.String.format;

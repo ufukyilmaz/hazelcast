@@ -6,8 +6,8 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.internal.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.partition.PartitionMigrationEvent;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -100,14 +100,14 @@ public class WanCounterClearQueuesTest {
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
-                .withReplication(wanReplication)
-                .withMergePolicy(PassThroughMergePolicy.class)
-                .setup();
+                     .withReplication(wanReplication)
+                     .withMergePolicy(PassThroughMergePolicy.class)
+                     .setup();
 
         sourceCluster.replicateCache(CACHE_NAME)
-                .withReplication(wanReplication)
-                .withMergePolicy(PassThroughMergePolicy.class)
-                .setup();
+                     .withReplication(wanReplication)
+                     .withMergePolicy(PassThroughMergePolicy.class)
+                     .setup();
 
         executorService = Executors.newSingleThreadScheduledExecutor();
         // uncomment to dump the counters when debugging locally
@@ -120,7 +120,7 @@ public class WanCounterClearQueuesTest {
 
         CacheSimpleConfig cacheConfig = cluster.getConfig().getCacheConfig(CACHE_NAME);
         cacheConfig.setEvictionConfig(evictionConfig).getMergePolicyConfig()
-                .setPolicy(PassThroughMergePolicy.class.getName());
+                   .setPolicy(PassThroughMergePolicy.class.getName());
     }
 
     @Test

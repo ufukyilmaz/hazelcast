@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.config.AbstractWanPublisherConfig;
-import com.hazelcast.config.AliasedDiscoveryConfigUtils;
+import com.hazelcast.internal.config.AliasedDiscoveryConfigUtils;
 import com.hazelcast.config.DiscoveryConfig;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;

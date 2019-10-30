@@ -12,7 +12,7 @@ import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
-import com.hazelcast.spi.partition.IPartition;
+import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.NightlyTest;

@@ -20,7 +20,7 @@ import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.spi.partition.IPartition;
+import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.internal.util.SetUtil;
 import com.hazelcast.internal.util.ThreadUtil;
 import com.hazelcast.wan.ConsistencyCheckResult;

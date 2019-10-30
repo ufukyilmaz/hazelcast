@@ -14,7 +14,7 @@ import com.hazelcast.monitor.impl.WanSyncStateImpl;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.spi.partition.IPartitionService;
+import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.wan.impl.WanSyncStatus;
 
 import java.util.ArrayList;

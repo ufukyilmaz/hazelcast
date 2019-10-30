@@ -28,7 +28,7 @@ import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.spi.partition.IPartition;
+import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.internal.util.ThreadUtil;
 import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;

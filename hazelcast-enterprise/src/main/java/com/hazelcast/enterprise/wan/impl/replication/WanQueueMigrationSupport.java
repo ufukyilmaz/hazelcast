@@ -1,8 +1,8 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.enterprise.wan.impl.WanReplicationEventQueue;
-import com.hazelcast.spi.partition.MigrationEndpoint;
-import com.hazelcast.spi.partition.PartitionMigrationEvent;
+import com.hazelcast.internal.partition.MigrationEndpoint;
+import com.hazelcast.internal.partition.PartitionMigrationEvent;
 import com.hazelcast.wan.WanReplicationPublisherMigrationListener;
 
 import java.util.function.Predicate;

@@ -19,6 +19,8 @@ import com.hazelcast.enterprise.wan.impl.operation.RemoveWanEventBackupsOperatio
 import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.partition.InternalPartition;
+import com.hazelcast.internal.partition.PartitionMigrationEvent;
+import com.hazelcast.internal.partition.PartitionReplicationEvent;
 import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.logging.ILogger;
@@ -31,8 +33,6 @@ import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.spi.partition.PartitionMigrationEvent;
-import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.WanReplicationEvent;

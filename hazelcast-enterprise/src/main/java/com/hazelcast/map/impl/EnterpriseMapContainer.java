@@ -20,7 +20,7 @@ import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.spi.impl.NodeEngine;
-import com.hazelcast.spi.partition.IPartitionService;
+import com.hazelcast.internal.partition.IPartitionService;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.eviction.Evictor.NULL_EVICTOR;

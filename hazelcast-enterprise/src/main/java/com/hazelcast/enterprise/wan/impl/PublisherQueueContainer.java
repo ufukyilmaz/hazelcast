@@ -2,11 +2,11 @@ package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.partition.PartitionReplicationEvent;
 import com.hazelcast.internal.services.ObjectNamespace;
 import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.spi.partition.PartitionReplicationEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 

@@ -4,9 +4,16 @@ import com.hazelcast.cluster.Address;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.persistence.PersistenceTestSupport;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.test.annotation.ParallelJVMTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
-public abstract class RaftDataStructurePersistenceTestSupport extends PersistenceTestSupport {
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelJVMTest.class})
+public abstract class RaftDataStructurePersistenceTest extends PersistenceTestSupport {
 
     protected Config config;
     protected HazelcastInstance[] instances;

@@ -2,29 +2,19 @@ package com.hazelcast.cp.persistence.datastructures;
 
 import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.IAtomicLong;
-import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.internal.util.RandomPicker;
-import com.hazelcast.test.annotation.ParallelJVMTest;
-import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+import static com.hazelcast.cp.internal.raft.impl.RaftUtil.majority;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-@RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelJVMTest.class})
-public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceTestSupport {
+public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceTest {
 
     @Test
     public void when_wholeClusterRestarted_then_dataIsRestored() {
@@ -122,11 +112,10 @@ public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceT
 
         long value = f.get();
         long expected = increments.get();
-        assertBetween("atomiclong value", value, expected, expected + 1);
+        assertBetween("atomiclong value", value, expected, expected + majority(instances.length));
     }
 
     @Test
-    @Ignore
     public void whenClusterRestart_whileOperationsOngoing_then_recoversData() throws Exception {
         IAtomicLong atomicLong = proxyInstance.getCPSubsystem().getAtomicLong("test");
         AtomicLong increments = new AtomicLong();
@@ -149,7 +138,7 @@ public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceT
 
         long value = f.get();
         long expected = increments.get();
-        assertBetween("atomiclong value", value, expected, expected + 1);
+        assertBetween("atomiclong value", value, expected, expected + majority(instances.length));
     }
 
     @Test

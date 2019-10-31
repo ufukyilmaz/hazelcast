@@ -3,15 +3,8 @@ package com.hazelcast.cp.persistence.datastructures;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.CPSubsystem;
 import com.hazelcast.cp.ICountDownLatch;
-import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.internal.util.RandomPicker;
-import com.hazelcast.test.annotation.ParallelJVMTest;
-import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -19,10 +12,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-@RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelJVMTest.class})
-public class RaftCountdownLatchPersistenceTest extends RaftDataStructurePersistenceTestSupport {
+public class RaftCountdownLatchPersistenceTest extends RaftDataStructurePersistenceTest {
 
     @Test
     public void when_wholeClusterRestarted_then_dataIsRestored() {

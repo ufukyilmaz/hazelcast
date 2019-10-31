@@ -5,6 +5,10 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.CPMember;
 import com.hazelcast.cp.internal.RaftGroupId;
+import com.hazelcast.cp.internal.RaftInvocationManager;
+import com.hazelcast.cp.internal.RaftTestApplyOp;
+import com.hazelcast.cp.internal.RaftTestQueryOp;
+import com.hazelcast.cp.internal.raft.QueryPolicy;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.internal.util.DirectoryLock;
 import com.hazelcast.logging.ILogger;
@@ -22,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.Future;
 
 import static com.hazelcast.cp.persistence.CPMetadataStoreImpl.ACTIVE_CP_MEMBERS_FILE_NAME_PREFIX;
 import static com.hazelcast.cp.persistence.CPMetadataStoreImpl.CP_MEMBER_FILE_NAME;
@@ -50,6 +55,44 @@ import static org.junit.Assume.assumeThat;
 @UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
+
+    @Test
+    public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
+        Config config = createConfig(3, 3);
+        HazelcastInstance[] instances = factory.newInstances(config, 3);
+        Address[] addresses = getAddresses(instances);
+
+        RaftInvocationManager invocationManager = getRaftInvocationManager(instances[2]);
+        RaftGroupId group = invocationManager.createRaftGroup("group").join();
+
+        int increments = 5000;
+        Future<Integer> f = spawn(() -> {
+            for (int i = 0; i < increments; i++) {
+                invocationManager.invoke(group, new RaftTestApplyOp(i + 1)).join();
+                sleepMillis(1);
+            }
+            return invocationManager.<Integer>query(group, new RaftTestQueryOp(), QueryPolicy.LINEARIZABLE).join();
+        });
+
+        sleepMillis(500);
+        // crash majority
+        instances[0].getLifecycleService().terminate();
+
+        sleepMillis(500);
+        instances[1].getLifecycleService().terminate();
+
+        // restart majority back
+        instances[1] = restartInstance(addresses[1], config);
+        sleepMillis(500);
+        instances[0] = restartInstance(addresses[0], config);
+
+        int value = f.get();
+        assertEquals(value, increments);
+
+        assertNotNull(instances[0].getCPSubsystem().getLocalCPMember());
+        assertNotNull(instances[1].getCPSubsystem().getLocalCPMember());
+        assertCommitIndexesSame(instances, group);
+    }
 
     @Test
     public void when_cpMemberRestartsWithoutCPMemberFile_then_restartFails() throws Exception {
@@ -244,7 +287,7 @@ public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
         // All instances should be able to restore
         HazelcastInstance[] restartedInstances2 = restartInstances(addresses, config);
         assertEquals(addresses.length, restartedInstances2.length);
-        assertClusterSize(addresses.length, restartedInstances2);
+        assertClusterSizeEventually(addresses.length, restartedInstances2);
         waitUntilCPDiscoveryCompleted(restartedInstances2);
 
         int latestTerm = awaitLeaderElectionAndGetTerm(restartedInstances2, getMetadataGroupId(restartedInstances2[0]));
@@ -305,7 +348,7 @@ public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
         // All instances should be able to restore
         HazelcastInstance[] restartedInstances2 = restartInstances(addresses, config);
         assertEquals(addresses.length, restartedInstances2.length);
-        assertClusterSize(addresses.length, restartedInstances2);
+        assertClusterSizeEventually(addresses.length, restartedInstances2);
         waitUntilCPDiscoveryCompleted(restartedInstances2);
 
         int latestTerm = awaitLeaderElectionAndGetTerm(restartedInstances2, getMetadataGroupId(restartedInstances2[0]));

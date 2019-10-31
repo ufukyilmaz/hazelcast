@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+import static com.hazelcast.cp.internal.raft.impl.RaftUtil.majority;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -111,7 +112,7 @@ public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceT
 
         long value = f.get();
         long expected = increments.get();
-        assertBetween("atomiclong value", value, expected, expected + 1);
+        assertBetween("atomiclong value", value, expected, expected + majority(instances.length));
     }
 
     @Test
@@ -137,7 +138,7 @@ public class RaftAtomicLongPersistenceTest extends RaftDataStructurePersistenceT
 
         long value = f.get();
         long expected = increments.get();
-        assertBetween("atomiclong value", value, expected, expected + 1);
+        assertBetween("atomiclong value", value, expected, expected + majority(instances.length));
     }
 
     @Test

@@ -720,6 +720,11 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         }
 
         @Override
+        public void set(long value) {
+            this.value = value;
+        }
+
+        @Override
         public long inc() {
             return ++value;
         }

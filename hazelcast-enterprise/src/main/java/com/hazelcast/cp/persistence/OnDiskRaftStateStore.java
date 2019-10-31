@@ -61,6 +61,9 @@ public class OnDiskRaftStateStore implements RaftStateStore {
 
     @Override
     public void open() throws IOException {
+        if (!baseDir.exists() && !baseDir.mkdir() && !baseDir.exists()) {
+            throw new IOException("Cannot create directory " + baseDir.getAbsolutePath());
+        }
         if (currentFile == null) {
             currentFile = fileWithIndex(nextEntryIndex);
         }

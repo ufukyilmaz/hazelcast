@@ -198,11 +198,8 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
     @Nonnull
     public RaftStateStore createRaftStateStore(@Nonnull RaftGroupId groupId, @Nullable LogFileStructure logFileStructure) {
         File groupDir = getGroupDir(groupId);
-        if (!groupDir.exists() && !groupDir.mkdir() && !groupDir.exists()) {
-            throw new IllegalStateException("Cannot create directory " + groupDir.getAbsolutePath() + " for " + groupId);
-        }
-        int uncommittedEntryCount = cpSubsystemConfig.getRaftAlgorithmConfig().getUncommittedEntryCountToRejectNewAppends();
-        return new OnDiskRaftStateStore(groupDir, node.getSerializationService(), uncommittedEntryCount + 1, logFileStructure);
+        int maxUncommittedEntries = cpSubsystemConfig.getRaftAlgorithmConfig().getUncommittedEntryCountToRejectNewAppends() + 1;
+        return new OnDiskRaftStateStore(groupDir, node.getSerializationService(), maxUncommittedEntries, logFileStructure);
     }
 
     @Override

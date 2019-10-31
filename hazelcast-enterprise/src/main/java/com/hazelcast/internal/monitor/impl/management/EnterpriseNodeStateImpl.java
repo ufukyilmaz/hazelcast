@@ -6,7 +6,7 @@ import com.hazelcast.internal.monitor.impl.rest.LicenseInfoImpl;
 import com.hazelcast.instance.impl.NodeState;
 import com.hazelcast.internal.json.JsonObject;
 import com.hazelcast.internal.json.JsonValue;
-import com.hazelcast.monitor.impl.NodeStateImpl;
+import com.hazelcast.internal.monitor.impl.NodeStateImpl;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
 

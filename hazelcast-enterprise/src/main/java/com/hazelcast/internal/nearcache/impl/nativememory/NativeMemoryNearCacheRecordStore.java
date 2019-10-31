@@ -22,7 +22,7 @@ import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
-import com.hazelcast.monitor.impl.NearCacheStatsImpl;
+import com.hazelcast.internal.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;

@@ -8,7 +8,7 @@ import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.map.IMap;
-import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.internal.monitor.LocalWanPublisherStats;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

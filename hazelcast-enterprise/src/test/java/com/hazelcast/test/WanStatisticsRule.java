@@ -6,7 +6,7 @@ import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.internal.monitor.LocalWanPublisherStats;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.WanReplicationPublisher;

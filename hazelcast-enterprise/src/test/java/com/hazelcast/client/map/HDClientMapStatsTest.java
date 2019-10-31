@@ -3,7 +3,7 @@ package com.hazelcast.client.map;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
-import com.hazelcast.monitor.LocalMapStats;
+import com.hazelcast.map.LocalMapStats;
 import org.junit.After;
 import org.junit.Before;
 

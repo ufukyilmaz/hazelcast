@@ -6,7 +6,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.MerkleTreeWanSyncStats;
 import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
-import com.hazelcast.monitor.WanSyncState;
+import com.hazelcast.internal.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.internal.partition.IPartition;

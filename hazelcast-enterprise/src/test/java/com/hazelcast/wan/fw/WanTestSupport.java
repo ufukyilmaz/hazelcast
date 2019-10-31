@@ -4,7 +4,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.instance.impl.TestUtil;
-import com.hazelcast.monitor.LocalWanStats;
+import com.hazelcast.internal.monitor.LocalWanStats;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.wan.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
 import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;

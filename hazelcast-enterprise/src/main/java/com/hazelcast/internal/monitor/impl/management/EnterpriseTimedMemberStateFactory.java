@@ -8,8 +8,8 @@ import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.management.TimedMemberState;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
-import com.hazelcast.monitor.NodeState;
-import com.hazelcast.monitor.impl.MemberStateImpl;
+import com.hazelcast.internal.monitor.NodeState;
+import com.hazelcast.internal.monitor.impl.MemberStateImpl;
 import com.hazelcast.security.impl.WeakSecretError;
 import com.hazelcast.security.impl.WeakSecretsConfigChecker;
 

@@ -84,7 +84,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             this.hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
         }
         ((NodeEngineImpl) nodeEngine).getMetricsRegistry()
-                                     .registerDynamicMetricsProvider(new MetricsProvider(getMapContainers()));
+                .registerDynamicMetricsProvider(new MetricsProvider(getMapContainers()));
     }
 
     private QueryRunner createHDMapQueryRunner(HDPartitionScanRunner runner,

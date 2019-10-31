@@ -19,11 +19,6 @@ public class HDJsonMetadataMutationObserver
     }
 
     @Override
-    public void onClear() {
-        getMetadataStore().clear();
-    }
-
-    @Override
     public void onRemoveRecord(Data key, Record record) {
         getMetadataStore().remove(key);
     }
@@ -34,12 +29,17 @@ public class HDJsonMetadataMutationObserver
     }
 
     @Override
-    public void onDestroy(boolean internal) {
+    public void onReset() {
         getMetadataStore().clear();
     }
 
     @Override
-    public void onReset() {
+    public void onClear() {
+        getMetadataStore().clear();
+    }
+
+    @Override
+    public void onDestroy(boolean isDuringShutdown, boolean internal) {
         getMetadataStore().clear();
     }
 

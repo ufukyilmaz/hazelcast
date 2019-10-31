@@ -35,7 +35,7 @@ public class MerkleTreeUpdaterMutationObserverTest {
     @Before
     public void setUp() {
         initMocks(this);
-        observer = new MerkleTreeUpdaterMutationObserver<Record>(merkleTreeMock, serializationServiceMock);
+        observer = new MerkleTreeUpdaterMutationObserver<>(merkleTreeMock, serializationServiceMock);
     }
 
     @Test
@@ -52,13 +52,13 @@ public class MerkleTreeUpdaterMutationObserverTest {
 
     @Test
     public void onDestroy() {
-        observer.onDestroy(false);
+        observer.onDestroy(false, false);
         verify(merkleTreeMock).clear();
     }
 
     @Test
     public void onDestroyInternal() {
-        observer.onDestroy(true);
+        observer.onDestroy(false, true);
         verify(merkleTreeMock).clear();
     }
 
@@ -71,7 +71,7 @@ public class MerkleTreeUpdaterMutationObserverTest {
         Record record = mock(Record.class);
         when(record.getValue()).thenReturn(value);
 
-        observer.onPutRecord(key, record);
+        observer.onPutRecord(key, record, null, false);
 
         verify(merkleTreeMock).updateAdd(eq(key), eq(valueAsData));
     }
@@ -85,7 +85,7 @@ public class MerkleTreeUpdaterMutationObserverTest {
         Record record = mock(Record.class);
         when(record.getValue()).thenReturn(value);
 
-        observer.onReplicationPutRecord(key, record);
+        observer.onReplicationPutRecord(key, record, false);
 
         verify(merkleTreeMock).updateAdd(eq(key), eq(valueAsData));
     }
@@ -102,7 +102,7 @@ public class MerkleTreeUpdaterMutationObserverTest {
         Record record = mock(Record.class);
         when(record.getValue()).thenReturn(value);
 
-        observer.onUpdateRecord(key, record, newValue);
+        observer.onUpdateRecord(key, record, newValue, record.getValue(), false);
 
         verify(merkleTreeMock).updateReplace(eq(key), eq(valueAsData), eq(newValueAsData));
     }

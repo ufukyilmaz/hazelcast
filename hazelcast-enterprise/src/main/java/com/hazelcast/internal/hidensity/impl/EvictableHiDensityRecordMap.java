@@ -115,21 +115,23 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
             }
 
             Entry<Data, R> entry = expirationIterator.next();
+
+            Data key = entry.getKey();
             R record = entry.getValue();
-            if (record != null && expirationChecker == null
-                    ? record.isExpiredAt(now)
-                    : expirationChecker.isExpired(record)) {
+
+            if (key != null && record != null
+                    && hasRecordExpired(record, expirationChecker, now)) {
                 expiredEntries.offer(entry);
             }
 
-            scannedSoFar++;
         }
+
+        scannedSoFar++;
 
         // 2. Delete collected entries
         Entry<Data, R> entry;
         while ((entry = expiredEntries.poll()) != null) {
             Data keyData = entry.getKey();
-
             if (containsKey(keyData)) {
                 R record = entry.getValue();
                 onEvict(keyData, record, true);
@@ -140,6 +142,16 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
                 recordProcessor.disposeData(keyData);
             }
         }
+    }
+
+    private boolean hasRecordExpired(R record,
+                                     ExpirationChecker<R> expirationChecker, long now) {
+
+        if (expirationChecker != null) {
+            return expirationChecker.isExpired(record);
+        }
+
+        return record.isExpiredAt(now);
     }
 
     /**

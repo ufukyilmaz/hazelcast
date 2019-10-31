@@ -4,18 +4,18 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.config.NearCachePreloaderConfig;
 import com.hazelcast.internal.adapter.DataStructureAdapter;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.internal.nearcache.NearCacheRecord;
 import com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector;
 import com.hazelcast.internal.nearcache.impl.preloader.NearCachePreloader;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.nearcache.NearCacheStats;
-import com.hazelcast.internal.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Iterator;
@@ -25,6 +25,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.internal.nio.IOUtil.closeResource;
+import static java.lang.Integer.getInteger;
+import static java.lang.Math.ceil;
 import static java.lang.Thread.currentThread;
 
 /**
@@ -37,9 +39,20 @@ import static java.lang.Thread.currentThread;
 public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         implements HiDensityNearCacheRecordStore<K, V, NativeMemoryNearCacheRecord> {
 
+    /**
+     * Background expiration task can only scan at most this number of
+     * entries in a round. This scanning is done under lock and has
+     * potential to affect other operations if it takes too long time.
+     */
+    // package private for testing
+    static final int DEFAULT_SCAN_LIMIT_FOR_EXPIRY = 1000;
+    private static final String PROP_SCAN_LIMIT_FOR_EXPIRY
+            = "hazelcast.internal.hd.near.cache.max.scannable.entry.count.per.loop";
+
     private final int hashSeed;
     private final int segmentMask;
     private final int segmentShift;
+    private final int scanLimitForExpiry;
     private final boolean evictionDisabled;
 
     private final ClassLoader classLoader;
@@ -72,8 +85,10 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         this.segmentShift = 32 - segmentShift;
 
         HiDensityStorageInfo storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
-        this.segments = createSegments(nearCacheConfig, nearCacheStats, storageInfo, segmentSize);
-
+        this.scanLimitForExpiry = getInteger(PROP_SCAN_LIMIT_FOR_EXPIRY, DEFAULT_SCAN_LIMIT_FOR_EXPIRY);
+        int perSegmentScanLimitForExpiry = (int) ceil(1D * scanLimitForExpiry / segmentSize);
+        this.segments = createSegments(nearCacheConfig, nearCacheStats,
+                storageInfo, segmentSize, perSegmentScanLimitForExpiry);
         this.nearCachePreloader = createPreloader(name, nearCacheConfig, serializationService);
     }
 
@@ -93,11 +108,11 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     private NativeMemoryNearCacheRecordStore<K, V>[] createSegments(NearCacheConfig nearCacheConfig,
                                                                     NearCacheStatsImpl nearCacheStats,
                                                                     HiDensityStorageInfo storageInfo,
-                                                                    int segmentSize) {
+                                                                    int segmentSize, int scanLimitForExpiry) {
         NativeMemoryNearCacheRecordStore<K, V>[] segments = new NativeMemoryNearCacheRecordStore[segmentSize];
         for (int i = 0; i < segmentSize; i++) {
             segments[i] = new HiDensityNativeMemoryNearCacheRecordStoreSegment(nearCacheConfig, nearCacheStats,
-                    storageInfo, serializationService, classLoader);
+                    storageInfo, serializationService, classLoader, scanLimitForExpiry);
             segments[i].initialize();
         }
         return segments;
@@ -291,8 +306,8 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
                                                          NearCacheStatsImpl nearCacheStats,
                                                          HiDensityStorageInfo storageInfo,
                                                          EnterpriseSerializationService ss,
-                                                         ClassLoader classLoader) {
-            super(nearCacheConfig, nearCacheStats, storageInfo, ss, classLoader);
+                                                         ClassLoader classLoader, int scanLimitForExpiry) {
+            super(nearCacheConfig, nearCacheStats, storageInfo, ss, classLoader, scanLimitForExpiry);
         }
 
         @Override

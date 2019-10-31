@@ -7,14 +7,14 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.internal.nearcache.impl.nativememory.NativeMemoryNearCacheRecordStore;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.memory.MemoryStats;
-import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.nearcache.impl.nativememory.NativeMemoryNearCacheRecordStore;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.After;
 import org.junit.Before;
@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.internal.hidensity.HiDensityRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static org.junit.Assert.assertTrue;
 
@@ -76,7 +77,8 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
         if (inMemoryFormat != NATIVE) {
             return super.createNearCacheRecordStore(nearCacheConfig, inMemoryFormat);
         }
-        NearCacheRecordStore<K, V> recordStore = new NativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess, null);
+        NearCacheRecordStore<K, V> recordStore = new NativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess,
+                null, DEFAULT_FORCED_EVICTION_PERCENTAGE);
         recordStore.initialize();
         return recordStore;
     }

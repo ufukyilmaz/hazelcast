@@ -15,6 +15,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.hazelcast.internal.nearcache.impl.nativememory.SegmentedNativeMemoryNearCacheRecordStore.DEFAULT_SCAN_LIMIT_FOR_EXPIRY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -287,7 +288,7 @@ public class LockableNearCacheRecordStoreSegmentIteratorTest {
         }
 
         private LockableTestSegment(Iterator<Data> iterator, boolean throwExceptionOnUnlock) {
-            super(new NearCacheConfig(), null, null);
+            super(new NearCacheConfig(), null, null, DEFAULT_SCAN_LIMIT_FOR_EXPIRY);
 
             this.iterator = iterator;
             this.throwExceptionOnUnlock = throwExceptionOnUnlock;

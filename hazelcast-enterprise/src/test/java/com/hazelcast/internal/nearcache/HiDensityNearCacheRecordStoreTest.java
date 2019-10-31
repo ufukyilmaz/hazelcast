@@ -5,13 +5,13 @@ import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.nearcache.impl.nativememory.NativeMemoryNearCacheRecordStore;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.nearcache.NearCacheStats;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -22,6 +22,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.internal.hidensity.HiDensityRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -67,7 +68,8 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
         NearCacheRecordStore<K, V> recordStore;
         switch (inMemoryFormat) {
             case NATIVE:
-                recordStore = new NativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess, null);
+                recordStore = new NativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess,
+                        null, DEFAULT_FORCED_EVICTION_PERCENTAGE);
                 break;
             default:
                 recordStore = super.createNearCacheRecordStore(nearCacheConfig, inMemoryFormat);

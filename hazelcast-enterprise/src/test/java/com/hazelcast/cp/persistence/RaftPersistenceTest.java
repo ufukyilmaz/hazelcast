@@ -17,10 +17,10 @@ import com.hazelcast.cp.internal.raft.impl.testing.LocalRaftGroup;
 import com.hazelcast.cp.internal.raft.impl.testing.LocalRaftGroup.LocalRaftGroupBuilder;
 import com.hazelcast.cp.internal.raft.impl.testing.TestRaftEndpoint;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.function.BiFunctionEx;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
-import com.hazelcast.function.BiFunctionEx;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -52,10 +52,12 @@ import static com.hazelcast.cp.internal.raft.impl.RaftUtil.getTerm;
 import static com.hazelcast.internal.util.Preconditions.checkState;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.arrayWithSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -343,8 +345,10 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
             assertEquals(getCommitIndex(newLeader), getCommitIndex(restartedNode));
             assertEquals(getLastApplied(newLeader), getLastApplied(restartedNode));
             RaftDataService service = group.getService(restartedNode);
+            Object[] values = service.valuesArray();
+            assertThat(values, arrayWithSize(count));
             for (int i = 0; i < count; i++) {
-                assertEquals("val" + i, service.get(i + 2));
+                assertEquals("val" + i, values[i]);
             }
         });
     }
@@ -386,8 +390,10 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
             assertTrue(getTerm(restartedNode) > term);
             assertEquals(commitIndex + 1, getCommitIndex(restartedNode));
             RaftDataService service = group.getService(restartedNode);
+            Object[] values = service.valuesArray();
+            assertThat(values, arrayWithSize(count));
             for (int i = 0; i < count; i++) {
-                assertEquals("val" + i, service.get(i + 2));
+                assertEquals("val" + i, values[i]);
             }
         });
     }
@@ -428,8 +434,10 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
             assertEquals(getCommitIndex(leader), getCommitIndex(restartedNode));
             assertEquals(getLastApplied(leader), getLastApplied(restartedNode));
             RaftDataService service = group.getService(restartedNode);
+            Object[] values = service.valuesArray();
+            assertThat(values, arrayWithSize(count + 1));
             for (int i = 0; i <= count; i++) {
-                assertEquals("val" + i, service.get(i + 1));
+                assertEquals("val" + i, values[i]);
             }
         });
     }
@@ -475,8 +483,10 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
             assertEquals(getCommitIndex(newLeader), getCommitIndex(restartedNode));
             assertEquals(getLastApplied(newLeader), getLastApplied(restartedNode));
             RaftDataService service = group.getService(restartedNode);
+            Object[] values = service.valuesArray();
+            assertThat(values, arrayWithSize(committedEntryCountToSnapshot + 1));
             for (int i = 0; i <= committedEntryCountToSnapshot; i++) {
-                assertEquals("val" + i, service.get(i + 2));
+                assertEquals("val" + i, values[i]);
             }
         });
     }
@@ -526,8 +536,10 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
             assertEquals(getCommitIndex(leader), getCommitIndex(restartedNode));
             assertEquals(getLastApplied(leader), getLastApplied(restartedNode));
             RaftDataService service = group.getService(restartedNode);
+            Object[] values = service.valuesArray();
+            assertThat(values, arrayWithSize(committedEntryCountToSnapshot + 2));
             for (int i = 0; i <= committedEntryCountToSnapshot + 1; i++) {
-                assertEquals("val" + i, service.get(i + 2));
+                assertEquals("val" + i, values[i]);
             }
         });
     }
@@ -573,8 +585,10 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
             assertTrue(getTerm(newLeader) > term);
             assertEquals(commitIndex + 1, getCommitIndex(newLeader));
             RaftDataService service = group.getService(restartedNode);
+            Object[] values = service.valuesArray();
+            assertThat(values, arrayWithSize(committedEntryCountToSnapshot + 1));
             for (int i = 0; i <= committedEntryCountToSnapshot; i++) {
-                assertEquals("val" + i, service.get(i + 2));
+                assertEquals("val" + i, values[i]);
             }
         });
     }

@@ -287,7 +287,7 @@ public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
         // All instances should be able to restore
         HazelcastInstance[] restartedInstances2 = restartInstances(addresses, config);
         assertEquals(addresses.length, restartedInstances2.length);
-        assertClusterSize(addresses.length, restartedInstances2);
+        assertClusterSizeEventually(addresses.length, restartedInstances2);
         waitUntilCPDiscoveryCompleted(restartedInstances2);
 
         int latestTerm = awaitLeaderElectionAndGetTerm(restartedInstances2, getMetadataGroupId(restartedInstances2[0]));
@@ -348,7 +348,7 @@ public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
         // All instances should be able to restore
         HazelcastInstance[] restartedInstances2 = restartInstances(addresses, config);
         assertEquals(addresses.length, restartedInstances2.length);
-        assertClusterSize(addresses.length, restartedInstances2);
+        assertClusterSizeEventually(addresses.length, restartedInstances2);
         waitUntilCPDiscoveryCompleted(restartedInstances2);
 
         int latestTerm = awaitLeaderElectionAndGetTerm(restartedInstances2, getMetadataGroupId(restartedInstances2[0]));

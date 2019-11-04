@@ -11,7 +11,7 @@ import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.config.security.StaticCredentialsFactory;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.security.impl.DefaultLoginModule;
+import com.hazelcast.security.loginimpl.DefaultLoginModule;
 import com.hazelcast.security.loginmodules.TestLoginModule;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;

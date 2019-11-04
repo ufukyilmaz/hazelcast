@@ -1,4 +1,4 @@
-package com.hazelcast.security.impl;
+package com.hazelcast.security.loginimpl;
 
 import java.io.IOException;
 

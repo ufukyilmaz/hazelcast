@@ -1,10 +1,10 @@
-package com.hazelcast.security.impl;
+package com.hazelcast.security.loginimpl;
 
 import static com.hazelcast.TestEnvironmentUtil.readResource;
 import static com.hazelcast.security.ClusterLoginModule.OPTION_SKIP_ENDPOINT;
 import static com.hazelcast.security.ClusterLoginModule.OPTION_SKIP_IDENTITY;
 import static com.hazelcast.security.ClusterLoginModule.OPTION_SKIP_ROLE;
-import static com.hazelcast.security.impl.X509CertificateLoginModule.OPTION_ROLE_ATTRIBUTE;
+import static com.hazelcast.security.loginimpl.X509CertificateLoginModule.OPTION_ROLE_ATTRIBUTE;
 import static com.hazelcast.internal.util.StringUtil.stringToBytes;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toSet;

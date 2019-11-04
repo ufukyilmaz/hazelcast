@@ -1,4 +1,4 @@
-package com.hazelcast.security.impl;
+package com.hazelcast.security.loginimpl;
 
 import static com.hazelcast.security.impl.LdapUtils.getAttributeValue;
 import static com.hazelcast.security.impl.LdapUtils.getAttributeValues;

@@ -2,7 +2,7 @@ package com.hazelcast.security.impl;
 
 public final class SecurityConstants {
 
-    public static final String DEFAULT_LOGIN_MODULE = "com.hazelcast.security.impl.DefaultLoginModule";
+    public static final String DEFAULT_LOGIN_MODULE = "com.hazelcast.security.loginimpl.DefaultLoginModule";
     public static final String DEFAULT_POLICY_CLASS = "com.hazelcast.security.impl.DefaultPermissionPolicy";
     public static final String DEFAULT_CREDENTIALS_FACTORY_CLASS = "com.hazelcast.security.impl.DefaultCredentialsFactory";
 

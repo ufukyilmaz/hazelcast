@@ -1,4 +1,4 @@
-package com.hazelcast.security.impl;
+package com.hazelcast.security.loginimpl;
 
 import java.io.IOException;
 
@@ -19,9 +19,9 @@ import com.hazelcast.security.ICredentialsFactory;
 import com.hazelcast.security.UsernamePasswordCredentials;
 
 /**
- * The default {@link LoginModule}.
+ * The default Hazelcast Enterprise {@link LoginModule}.
  *
- * This class is not unused, it's set via {@link SecurityConstants#DEFAULT_LOGIN_MODULE}.
+ * This class is not unused, it's set via {@link com.hazelcast.security.impl.SecurityConstants#DEFAULT_LOGIN_MODULE}.
  */
 public class DefaultLoginModule extends ClusterLoginModule implements LoginModule {
 

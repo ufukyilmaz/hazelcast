@@ -1,4 +1,4 @@
-package com.hazelcast.security.impl;
+package com.hazelcast.security.loginimpl;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;

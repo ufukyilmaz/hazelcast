@@ -1,4 +1,4 @@
-package com.hazelcast.security.impl;
+package com.hazelcast.security.loginimpl;
 
 import static com.hazelcast.security.ClusterLoginModule.OPTION_SKIP_ENDPOINT;
 import static com.hazelcast.security.ClusterLoginModule.OPTION_SKIP_IDENTITY;

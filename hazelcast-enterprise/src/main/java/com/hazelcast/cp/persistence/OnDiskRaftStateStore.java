@@ -7,6 +7,7 @@ import com.hazelcast.cp.internal.raft.impl.persistence.LogFileStructure;
 import com.hazelcast.cp.internal.raft.impl.persistence.RaftStateStore;
 import com.hazelcast.cp.persistence.BufferedRaf.BufRafObjectDataOut;
 import com.hazelcast.cp.persistence.FileIOSupport.Writable;
+import com.hazelcast.internal.serialization.impl.FixedBufferObjectDataOutput;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 
 import javax.annotation.Nonnull;
@@ -33,6 +34,7 @@ public class OnDiskRaftStateStore implements RaftStateStore {
     private final File baseDir;
     private final InternalSerializationService serializationService;
     private final LogEntryRingBuffer logEntryRingBuffer;
+    private final FixedBufferObjectDataOutput entryDataOut;
     private BufferedRaf logRaf;
     private BufRafObjectDataOut logDataOut;
     private boolean flushCalledOnCurrFile;
@@ -57,6 +59,8 @@ public class OnDiskRaftStateStore implements RaftStateStore {
             this.nextEntryIndex = 1;
             this.logEntryRingBuffer = new LogEntryRingBuffer(maxUncommittedEntries);
         }
+        this.entryDataOut = new FixedBufferObjectDataOutput(BufferedRaf.BUFFER_SIZE,
+                serializationService, serializationService.getByteOrder());
     }
 
     @Override
@@ -78,8 +82,7 @@ public class OnDiskRaftStateStore implements RaftStateStore {
                     "Expected entry index %,d, but got %,d (%s)", nextEntryIndex, entry.index(), entry.toString()));
         }
         logEntryRingBuffer.addEntryOffset(logRaf.filePointer());
-        logDataOut.writeObject(entry);
-        logDataOut.writeCrc32();
+        writeEntry(logRaf, logDataOut, entry);
         nextEntryIndex++;
     }
 
@@ -88,8 +91,8 @@ public class OnDiskRaftStateStore implements RaftStateStore {
         File newFile = fileWithIndex(snapshot.index());
         BufferedRaf newRaf = openForAppend(newFile);
         BufRafObjectDataOut newDataOut = newObjectDataOutput(newRaf);
-        newDataOut.writeObject(snapshot);
-        newDataOut.writeCrc32();
+        writeEntry(newRaf, newDataOut, snapshot);
+
         long newStartOffset = newRaf.filePointer();
         if (logEntryRingBuffer.topIndex() > snapshot.index()) {
             long copyFromOffset = logEntryRingBuffer.getEntryOffset(snapshot.index() + 1);
@@ -108,6 +111,26 @@ public class OnDiskRaftStateStore implements RaftStateStore {
             delete(currentFile);
         }
         currentFile = newFile;
+    }
+
+    private void writeEntry(BufferedRaf raf, BufRafObjectDataOut dataOut, LogEntry entry) throws IOException {
+        entryDataOut.clear();
+        entryDataOut.writeObject(entry);
+
+        int length = entryDataOut.position();
+        // Write directly to the BufferedRaf,
+        // without adding length to crc32 calculation
+        raf.writeInt(length);
+
+        if (length > entryDataOut.capacity()) {
+            // Buffer overflow
+            // Serialize directly to the stream
+            dataOut.writeObject(entry);
+        } else {
+            dataOut.write(entryDataOut.getBuffer(), 0, length);
+        }
+
+        dataOut.writeCrc32();
     }
 
     @Override

@@ -50,6 +50,7 @@ import static com.hazelcast.cp.internal.raft.impl.RaftUtil.getLeaderMember;
 import static com.hazelcast.cp.internal.raft.impl.RaftUtil.getSnapshotEntry;
 import static com.hazelcast.cp.internal.raft.impl.RaftUtil.getTerm;
 import static com.hazelcast.internal.util.Preconditions.checkState;
+import static com.hazelcast.logging.Logger.getLogger;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.arrayWithSize;
@@ -832,7 +833,7 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
     }
 
     private OnDiskRaftStateLoader getStateLoader(RaftEndpoint endpoint, int maxUncommittedEntryCount) {
-        return new OnDiskRaftStateLoader(getDirectory(endpoint), maxUncommittedEntryCount, serializationService);
+        return new OnDiskRaftStateLoader(getDirectory(endpoint), maxUncommittedEntryCount, serializationService, getLogger(getClass()));
     }
 
     private File getDirectory(RaftEndpoint endpoint) {

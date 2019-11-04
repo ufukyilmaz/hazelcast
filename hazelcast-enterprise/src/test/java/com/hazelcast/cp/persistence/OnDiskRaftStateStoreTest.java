@@ -1,5 +1,6 @@
 package com.hazelcast.cp.persistence;
 
+import com.hazelcast.cp.internal.raft.exception.LogValidationException;
 import com.hazelcast.cp.internal.raft.impl.RaftEndpoint;
 import com.hazelcast.cp.internal.raft.impl.dataservice.ApplyRaftRunnable;
 import com.hazelcast.cp.internal.raft.impl.dataservice.RestoreSnapshotRaftRunnable;
@@ -11,13 +12,15 @@ import com.hazelcast.cp.internal.raft.impl.testing.TestRaftEndpoint;
 import com.hazelcast.cp.internal.raft.impl.testing.TestRaftGroupId;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
+import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
+import com.hazelcast.logging.Logger;
+import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.HdrHistogram.Histogram;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -29,17 +32,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import static com.hazelcast.cp.internal.raft.impl.RaftUtil.newRaftMember;
 import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.RAFT_LOG_PREFIX;
 import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.getRaftLogFileName;
 import static com.hazelcast.internal.nio.IOUtil.copy;
 import static com.hazelcast.internal.nio.IOUtil.rename;
+import static com.hazelcast.test.HazelcastTestSupport.assertInstanceOf;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.hamcrest.Matchers.arrayWithSize;
+import static org.hamcrest.Matchers.emptyArray;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
@@ -69,11 +79,11 @@ public class OnDiskRaftStateStoreTest {
 
         store.persistTerm(1, null);
         TestRaftEndpoint endpoint1 = newRaftMember(5000);
-        members = Arrays.<RaftEndpoint>asList(endpoint1, newRaftMember(5001), newRaftMember(5002));
+        members = Arrays.asList(endpoint1, newRaftMember(5001), newRaftMember(5002));
         store.persistInitialMembers(endpoint1, members);
     }
 
-    @Ignore("This is for benchmarking OnDiskRaftStateStore")
+    @org.junit.Ignore("This is for benchmarking OnDiskRaftStateStore")
     @Test
     public void benchmark() throws Exception {
         int entryCount = maxUncommittedEntries * 1000;
@@ -822,6 +832,245 @@ public class OnDiskRaftStateStoreTest {
         assertSingleRaftLogFile(3);
     }
 
+    @Test
+    public void when_crcCheckFails_thenRestoreFails() throws IOException {
+        // Given
+        store.persistEntry(newLogEntry(1));
+        store.persistEntry(newLogEntry(2));
+        store.close();
+
+        // When
+        BufferedRaf raf = new BufferedRaf(getRaftLogFile());
+        // seek to the CRC32 field offset
+        long offset = raf.length() - Bits.INT_SIZE_IN_BYTES;
+        raf.seek(offset);
+        int crc = raf.readInt();
+
+        raf.seek(offset);
+        int corruptedCrc = crc + 1;
+        raf.writeInt(corruptedCrc);
+        raf.close();
+
+        // Then
+        try {
+            restoreState();
+            fail("Restore should have been failed with CRC failure!");
+        } catch (LogValidationException ignored) {
+            // expected
+        }
+    }
+
+    @Test
+    public void when_entryCorrupted_andCouldNotDeserialized_thenRestoreFails() throws IOException {
+        // Given
+        store.persistEntry(newLogEntry(1));
+        store.persistEntry(newLogEntry(2));
+        store.close();
+
+        // When
+        BufferedRaf raf = new BufferedRaf(getRaftLogFile());
+        // offset of the first byte of the entry; first 4 bytes is length
+        long offset = Bits.INT_SIZE_IN_BYTES + 1;
+        raf.seek(offset);
+        int b = raf.readByte();
+
+        raf.seek(offset);
+        int corruptedByte = b + 1;
+        raf.writeInt(corruptedByte);
+        raf.close();
+
+        // Then
+        try {
+            restoreState();
+            fail("Restore should have been failed with serialization failure!");
+        } catch (HazelcastSerializationException ignored) {
+            // expected
+        }
+    }
+
+    @Test
+    public void when_entryCorrupted_butDeserializedSuccessfully_thenRestoreFails() throws IOException {
+        // Given
+        store.persistEntry(newLogEntry(1));
+        store.persistEntry(newLogEntry(2));
+        store.close();
+
+        // When
+        BufferedRaf raf = new BufferedRaf(getRaftLogFile());
+        // offset of last byte of the entry; last 4 bytes is crc32
+        long offset = raf.length() - Bits.INT_SIZE_IN_BYTES - 1;
+        raf.seek(offset);
+        int b = raf.readByte();
+
+        raf.seek(offset);
+        int corruptedByte = b + 1;
+        raf.writeInt(corruptedByte);
+        raf.close();
+
+        // Then
+        try {
+            restoreState();
+            fail("Restore should have been failed with CRC failure!");
+        } catch (LogValidationException ignored) {
+            // expected
+        }
+    }
+
+    @Test
+    public void when_crcFieldNotAvailable_thenLogIsTruncated() throws IOException {
+        // Given
+        LogEntry firstEntry = newLogEntry(1);
+        store.persistEntry(firstEntry);
+        store.persistEntry(newLogEntry(2));
+        store.close();
+
+        // When
+        BufferedRaf raf = new BufferedRaf(getRaftLogFile());
+        // offset of the crc; last 4 bytes
+        long offset = raf.length() - Bits.INT_SIZE_IN_BYTES;
+        raf.setLength(offset);
+        raf.close();
+
+        // Then
+        RestoredRaftState state = restoreState();
+        LogEntry[] entries = state.entries();
+        assertThat(entries, arrayWithSize(1));
+
+        LogEntry entry = entries[0];
+        assertEquals(firstEntry.index(), entry.index());
+        assertEquals(firstEntry.term(), entry.term());
+    }
+
+    @Test
+    public void when_crcFieldNotAvailable_withSnapshot_thenLogIsTruncated() throws IOException {
+        // Given
+        store.persistEntry(newLogEntry(1));
+        SnapshotEntry snapshot = newSnapshotEntry(2);
+        store.persistSnapshot(snapshot);
+        store.persistEntry(newLogEntry(3));
+        store.close();
+
+        // When
+        BufferedRaf raf = new BufferedRaf(getRaftLogFile());
+        // offset of the crc; last 4 bytes
+        long offset = raf.length() - Bits.INT_SIZE_IN_BYTES;
+        raf.setLength(offset);
+        raf.close();
+
+        // Then
+        RestoredRaftState state = restoreState();
+        LogEntry[] entries = state.entries();
+        assertThat(entries, emptyArray());
+
+        SnapshotEntry entry = state.snapshot();
+        assertEquals(snapshot.index(), entry.index());
+        assertEquals(snapshot.term(), entry.term());
+        assertEquals(snapshot.groupMembersLogIndex(), entry.groupMembersLogIndex());
+    }
+
+    @Test
+    public void when_lastEntryPartiallyWritten_thenLogIsTruncated() throws IOException {
+        // Given
+        LogEntry firstEntry = newLogEntry(1);
+        store.persistEntry(firstEntry);
+        store.persistEntry(newLogEntry(2));
+        store.close();
+
+        // When
+        BufferedRaf raf = new BufferedRaf(getRaftLogFile());
+        long offset = raf.length() - 50;
+        raf.setLength(offset);
+        raf.close();
+
+        // Then
+        RestoredRaftState state = restoreState();
+        LogEntry[] entries = state.entries();
+        assertThat(entries, arrayWithSize(1));
+
+        LogEntry entry = entries[0];
+        assertEquals(firstEntry.index(), entry.index());
+        assertEquals(firstEntry.term(), entry.term());
+    }
+
+    @Test
+    public void when_lastEntryPartiallyWritten_withSnapshot_thenLogIsTruncated() throws IOException {
+        // Given
+        store.persistEntry(newLogEntry(1));
+        SnapshotEntry snapshot = newSnapshotEntry(2);
+        store.persistSnapshot(snapshot);
+        store.persistEntry(newLogEntry(3));
+        store.close();
+
+        // When
+        BufferedRaf raf = new BufferedRaf(getRaftLogFile());
+        long offset = raf.length() - 50;
+        raf.setLength(offset);
+        raf.close();
+
+        // Then
+        RestoredRaftState state = restoreState();
+        LogEntry[] entries = state.entries();
+        assertThat(entries, emptyArray());
+
+        SnapshotEntry entry = state.snapshot();
+        assertEquals(snapshot.index(), entry.index());
+        assertEquals(snapshot.term(), entry.term());
+        assertEquals(snapshot.groupMembersLogIndex(), entry.groupMembersLogIndex());
+    }
+
+    @Test
+    public void when_largeEntryPersisted_thenItIsRestored() throws IOException {
+        // When
+        byte[] value = new byte[BufferedRaf.BUFFER_SIZE + 1024];
+        new Random().nextBytes(value);
+
+        store.persistEntry(newLogEntry(1));
+        LogEntry largeEntry = new LogEntry(1, 2, new ApplyRaftRunnable(value));
+        store.persistEntry(largeEntry);
+        store.persistEntry(newLogEntry(3));
+        store.close();
+
+        // Then
+        RestoredRaftState state = restoreState();
+        LogEntry[] entries = state.entries();
+        assertThat(entries, arrayWithSize(3));
+
+        LogEntry entry = entries[1];
+        assertEquals(largeEntry.index(), entry.index());
+        assertEquals(largeEntry.term(), entry.term());
+
+        ApplyRaftRunnable op = (ApplyRaftRunnable) entry.operation();
+        assertInstanceOf(byte[].class, op.getVal());
+        byte[] actualValue = (byte[]) op.getVal();
+        assertArrayEquals(value, actualValue);
+    }
+
+    @Test
+    public void when_largeSnapshotPersisted_thenItIsRestored() throws IOException {
+        // When
+        store.persistEntry(newLogEntry(1));
+        byte[] value = new byte[BufferedRaf.BUFFER_SIZE + 1024];
+        new Random().nextBytes(value);
+        SnapshotEntry largeEntry =
+                new SnapshotEntry(1, 2, new RestoreSnapshotRaftRunnable(new TestRaftGroupId("default"), 2, value), 0, members);
+        store.persistSnapshot(largeEntry);
+        store.close();
+
+        // Then
+        RestoredRaftState state = restoreState();
+        LogEntry[] entries = state.entries();
+        assertThat(entries, emptyArray());
+
+        SnapshotEntry entry = state.snapshot();
+        assertEquals(largeEntry.index(), entry.index());
+        assertEquals(largeEntry.term(), entry.term());
+
+        RestoreSnapshotRaftRunnable op = (RestoreSnapshotRaftRunnable) entry.operation();
+        assertInstanceOf(byte[].class, op.getSnapshot());
+        byte[] actualValue = (byte[]) op.getSnapshot();
+        assertArrayEquals(value, actualValue);
+    }
+
     private void assertSingleRaftLogFile(long logIndex) {
         String[] logFileNames = baseDir.list((dir, name) -> name.startsWith(RAFT_LOG_PREFIX));
 
@@ -853,7 +1102,7 @@ public class OnDiskRaftStateStoreTest {
     }
 
     private OnDiskRaftStateLoader getLoader() {
-        return new OnDiskRaftStateLoader(baseDir, maxUncommittedEntries, serializationService);
+        return new OnDiskRaftStateLoader(baseDir, maxUncommittedEntries, serializationService, Logger.getLogger(getClass()));
     }
 
     private OnDiskRaftStateStore openNewStore(LogFileStructure logFileStructure) throws IOException {

@@ -9,8 +9,10 @@ import com.hazelcast.cp.internal.RaftInvocationManager;
 import com.hazelcast.cp.internal.RaftService;
 import com.hazelcast.cp.internal.raftop.metadata.TriggerDestroyRaftGroupOp;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
+import com.hazelcast.test.ChangeLoggingRule;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -18,6 +20,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -34,6 +37,9 @@ import static org.junit.Assume.assumeThat;
 @UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class ClusterPersistenceGroupDestroyTest extends PersistenceTestSupport {
+
+    @ClassRule
+    public static ChangeLoggingRule changeLoggingRule = new ChangeLoggingRule("log4j2-cp-debug.xml");
 
     @Test
     public void when_groupDestroyed_then_itsDirShouldBeDeleted() throws Exception {
@@ -83,7 +89,8 @@ public class ClusterPersistenceGroupDestroyTest extends PersistenceTestSupport {
 
                     CPPersistenceServiceImpl cpPersistenceService = getCpPersistenceService(instance);
                     File groupDir = cpPersistenceService.getGroupDir(group);
-                    assertFalse(group + " directory '" + groupDir + "' should not exist!", groupDir.exists());
+                    assertFalse(group + " directory '" + groupDir + "' should not exist! Contents: "
+                                    + Arrays.toString(groupDir.list()), groupDir.exists());
                 }
 
                 RaftService raftService = getRaftService(instances[0]);
@@ -133,7 +140,8 @@ public class ClusterPersistenceGroupDestroyTest extends PersistenceTestSupport {
 
                     CPPersistenceServiceImpl cpPersistenceService = getCpPersistenceService(instance);
                     File groupDir = cpPersistenceService.getGroupDir(group2);
-                    assertFalse(group2 + " directory '" + groupDir + "' should not exist!", groupDir.exists());
+                    assertFalse(group2 + " directory '" + groupDir + "' should not exist! Contents: "
+                            + Arrays.toString(groupDir.list()), groupDir.exists());
                 }
 
                 RaftService raftService = getRaftService(finalInstances[0]);

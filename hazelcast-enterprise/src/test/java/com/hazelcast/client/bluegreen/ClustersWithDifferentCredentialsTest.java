@@ -24,7 +24,7 @@ import com.hazelcast.cluster.Address;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.CredentialsCallback;
 import com.hazelcast.security.ICredentialsFactory;
-import com.hazelcast.security.SerializationServiceCallback;
+import com.hazelcast.security.TokenDeserializerCallback;
 import com.hazelcast.security.TokenCredentials;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -88,13 +88,13 @@ public class ClustersWithDifferentCredentialsTest extends ClientTestSupport {
 
         public final boolean login() throws LoginException {
             CredentialsCallback callback = new CredentialsCallback();
-            SerializationServiceCallback sscallback = new SerializationServiceCallback();
+            TokenDeserializerCallback tdcallback = new TokenDeserializerCallback();
             try {
-                callbackHandler.handle(new Callback[]{sscallback, callback});
+                callbackHandler.handle(new Callback[]{tdcallback, callback});
                 Credentials credentials = callback.getCredentials();
                 if (credentials instanceof TokenCredentials) {
                     TokenCredentials tokenCreds = (TokenCredentials) credentials;
-                    credentials = sscallback.getSerializationService().toObject(tokenCreds.asData());
+                    credentials = (Credentials) tdcallback.getTokenDeserializer().deserialize(tokenCreds);
                 }
                 if (credentials.getName().equals(options.get("secret"))) {
                     return true;

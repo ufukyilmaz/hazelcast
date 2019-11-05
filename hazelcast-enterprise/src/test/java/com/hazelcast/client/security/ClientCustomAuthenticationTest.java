@@ -12,13 +12,15 @@ import com.hazelcast.security.ClusterLoginModule;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.CredentialsCallback;
 import com.hazelcast.security.ICredentialsFactory;
-import com.hazelcast.security.SerializationServiceCallback;
+import com.hazelcast.security.TokenDeserializerCallback;
 import com.hazelcast.security.TokenCredentials;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import javax.security.auth.callback.Callback;
@@ -33,6 +35,9 @@ import java.util.Properties;
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
+
+    @Rule
+    public ExpectedException expected = ExpectedException.none();
 
     private static final String USER_NAME = "user";
     private static final String KEY1 = "abc";
@@ -50,26 +55,27 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         Config config = getConfig(USER_NAME, KEY1, KEY2);
         hazelcastFactory.newHazelcastInstance(config);
 
-        ClientConfig clientConfig = new ClientConfig();
+        ClientConfig clientConfig = failFastClientConfig();
         clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(USER_NAME, KEY1, KEY2));
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testMissingCredentials() {
         Config config = getConfig(USER_NAME, KEY1, KEY2);
         hazelcastFactory.newHazelcastInstance(config);
-
-        hazelcastFactory.newHazelcastClient();
+        expected.expect(IllegalStateException.class);
+        hazelcastFactory.newHazelcastClient(failFastClientConfig());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testWrongCredentials() {
         Config config = getConfig(USER_NAME, KEY1, KEY2);
         hazelcastFactory.newHazelcastInstance(config);
 
-        ClientConfig clientConfig = new ClientConfig();
+        ClientConfig clientConfig = failFastClientConfig();
         clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(USER_NAME, "zzz", "zzz"));
+        expected.expect(IllegalStateException.class);
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
@@ -78,7 +84,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         Config config = getConfig(USER_NAME, KEY1, KEY2);
         hazelcastFactory.newHazelcastInstance(config);
 
-        ClientConfig clientConfig = new ClientConfig();
+        ClientConfig clientConfig = failFastClientConfig();
         clientConfig.getSecurityConfig().setCredentials(new CustomCredentials(USER_NAME, KEY1, KEY2));
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
@@ -92,7 +98,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         prop.setProperty("username", USER_NAME);
         prop.setProperty("key1", KEY1);
         prop.setProperty("key2", KEY2);
-        ClientConfig clientConfig = new ClientConfig();
+        ClientConfig clientConfig = failFastClientConfig();
         clientConfig.getSecurityConfig().setCredentialsFactoryConfig(
                 new CredentialsFactoryConfig(CustomCredentialsFactory.class.getName()).setProperties(prop));
         hazelcastFactory.newHazelcastClient(clientConfig);
@@ -108,7 +114,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         prop.setProperty("key1", KEY1);
         prop.setProperty("key2", KEY2);
 
-        ClientConfig clientConfig = new ClientConfig();
+        ClientConfig clientConfig = failFastClientConfig();
         CustomCredentialsFactory credsFactory = new CustomCredentialsFactory();
         credsFactory.init(prop);
         clientConfig.getSecurityConfig().setCredentialsFactoryConfig(
@@ -116,6 +122,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
+    @Test
     public void testCustomCredentialsViaBoth_FactoryImplementation_and_Credentials() {
         Config config = getConfig(USER_NAME, KEY1, KEY2);
         hazelcastFactory.newHazelcastInstance(config);
@@ -125,7 +132,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         prop.setProperty("key1", KEY1);
         prop.setProperty("key2", KEY2);
 
-        ClientConfig clientConfig = new ClientConfig();
+        ClientConfig clientConfig = failFastClientConfig();
         clientConfig.getSecurityConfig().setCredentialsFactoryConfig(
                 new CredentialsFactoryConfig(CustomCredentialsFactory.class.getName()).setProperties(prop));
 
@@ -145,7 +152,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         prop.setProperty("key1", KEY1);
         prop.setProperty("key2", KEY2);
 
-        ClientConfig clientConfig = new ClientConfig();
+        ClientConfig clientConfig = failFastClientConfig();
         CustomCredentialsFactory credsFactory = new CustomCredentialsFactory();
         credsFactory.init(prop);
         CredentialsFactoryConfig credFactoryConfig = new CredentialsFactoryConfig(CustomCredentialsFactory.class.getName())
@@ -157,7 +164,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testCustomCredentialsViaFactoryImplementation_invalidCredentials() {
         Config config = getConfig(USER_NAME, KEY1, KEY2);
         hazelcastFactory.newHazelcastInstance(config);
@@ -167,11 +174,12 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         prop.setProperty("key1", KEY1);
         prop.setProperty("key2", "invalid");
 
-        ClientConfig clientConfig = new ClientConfig();
+        ClientConfig clientConfig = failFastClientConfig();
         CustomCredentialsFactory credsFactory = new CustomCredentialsFactory();
         credsFactory.init(prop);
         clientConfig.getSecurityConfig().setCredentialsFactoryConfig(
                 new CredentialsFactoryConfig().setImplementation(credsFactory));
+        expected.expect(IllegalStateException.class);
         hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
@@ -183,6 +191,12 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
                         new RealmConfig().setJaasAuthenticationConfig(
                                 new JaasAuthenticationConfig().addLoginModuleConfig(getLoginModuleConfig(username, key1, key2))));
         return config;
+    }
+
+    private ClientConfig failFastClientConfig() {
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setMaxBackoffMillis(0);
+        return clientConfig;
     }
 
     private LoginModuleConfig getLoginModuleConfig(String username, String key1, String key2) {
@@ -262,16 +276,16 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         @Override
         protected boolean onLogin() throws LoginException {
             CredentialsCallback cb = new CredentialsCallback();
-            SerializationServiceCallback sscb = new SerializationServiceCallback();
+            TokenDeserializerCallback tdcb = new TokenDeserializerCallback();
             try {
-                callbackHandler.handle(new Callback[] { cb, sscb });
+                callbackHandler.handle(new Callback[] { cb, tdcb });
             } catch (IOException | UnsupportedCallbackException e) {
                 throw new LoginException("Problem getting credentials");
             }
             Credentials credentials = cb.getCredentials();
             if (credentials instanceof TokenCredentials) {
                 TokenCredentials tokenCreds = (TokenCredentials) credentials;
-                credentials = sscb.getSerializationService().toObject(tokenCreds.asData());
+                credentials = (Credentials) tdcb.getTokenDeserializer().deserialize(tokenCreds);
             }
             if (!(credentials instanceof CustomCredentials)) {
                 throw new FailedLoginException();

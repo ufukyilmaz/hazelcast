@@ -6,7 +6,7 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.security.ConfigCallback;
-import com.hazelcast.security.SerializationServiceCallback;
+import com.hazelcast.security.TokenDeserializerCallback;
 
 /**
  * NodeCallbackHandler holds a reference to {@link Node} and is able to handle callbacks accessing the Node data (e.g.
@@ -30,8 +30,8 @@ public class NodeCallbackHandler implements CallbackHandler {
     protected void handleCallback(Callback cb) throws UnsupportedCallbackException {
         if (cb instanceof ConfigCallback) {
             ((ConfigCallback) cb).setConfig(node != null ? node.getConfig() : null);
-        } else if (cb instanceof SerializationServiceCallback) {
-            ((SerializationServiceCallback) cb).setSerializationService(node != null ? node.getSerializationService() : null);
+        } else if (cb instanceof TokenDeserializerCallback) {
+            ((TokenDeserializerCallback) cb).setTokenDeserializer(new TokenDeserializerImpl(node.getSerializationService()));
         } else {
             throw new UnsupportedCallbackException(cb);
         }

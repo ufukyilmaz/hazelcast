@@ -1,17 +1,17 @@
 package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.util.Clock;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.test.annotation.SlowTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,7 +56,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
     @Override
     protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(99);
 
         return super.createNearCacheConfig(name, inMemoryFormat)

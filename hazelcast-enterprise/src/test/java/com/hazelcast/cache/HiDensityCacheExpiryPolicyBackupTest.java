@@ -4,6 +4,7 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
@@ -30,7 +31,7 @@ public class HiDensityCacheExpiryPolicyBackupTest extends CacheExpiryPolicyBacku
     protected CacheSimpleConfig getCacheConfig() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(99)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         CacheSimpleConfig cacheConfig = super.getCacheConfig();
         cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         cacheConfig.setEvictionConfig(evictionConfig);

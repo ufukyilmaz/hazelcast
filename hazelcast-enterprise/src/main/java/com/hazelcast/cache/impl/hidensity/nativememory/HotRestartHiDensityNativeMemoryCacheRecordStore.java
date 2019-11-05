@@ -1,17 +1,12 @@
 package com.hazelcast.cache.impl.hidensity.nativememory;
 
-import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
+import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.internal.eviction.CompositeEvictionChecker;
 import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.HeapData;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.KeyHandle;
 import com.hazelcast.internal.hotrestart.KeyHandleOffHeap;
@@ -21,8 +16,13 @@ import com.hazelcast.internal.hotrestart.RecordDataSink;
 import com.hazelcast.internal.hotrestart.impl.KeyOffHeap;
 import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.internal.hotrestart.impl.SimpleHandleOffHeap;
-import com.hazelcast.spi.impl.NodeEngine;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.HeapData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.Clock;
+import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.impl.NodeEngine;
 
 import java.util.Iterator;
 import java.util.UUID;
@@ -79,7 +79,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    protected EvictionChecker createCacheEvictionChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
+    protected EvictionChecker createCacheEvictionChecker(int size, MaxSizePolicy maxSizePolicy) {
         // max-size checker is created before internal map,
         // so in case of failure because of invalid max-size policy,
         // since there is no allocated native memory yet,
@@ -89,7 +89,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
                 .getMemoryManager().getMemoryStats().getMaxNative();
         final int hotRestartMinFreeNativeMemoryPercentage
                 = nodeEngine.getProperties().getInteger(HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE);
-        if (EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy) {
+        if (MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy) {
             if (size < hotRestartMinFreeNativeMemoryPercentage) {
                 throw new IllegalArgumentException(String.format(
                         "There is a global limit on the minimum free native memory, settable by the system property"

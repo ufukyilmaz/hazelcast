@@ -1,7 +1,6 @@
 package com.hazelcast.map.impl.nearcache.invalidation;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -11,6 +10,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -24,9 +24,10 @@ public class HDMapInvalidationMetaDataMigrationTest extends MemberMapInvalidatio
 
     @Override
     protected MapConfig getMapConfig(String mapName) {
-        return super.getMapConfig(mapName)
-                    .setInMemoryFormat(NATIVE)
-                    .setEvictionPolicy(EvictionPolicy.LRU);
+        MapConfig mapConfig = super.getMapConfig(mapName)
+                .setInMemoryFormat(NATIVE);
+        mapConfig.getEvictionConfig().setEvictionPolicy(LRU);
+        return mapConfig;
     }
 
     @Override

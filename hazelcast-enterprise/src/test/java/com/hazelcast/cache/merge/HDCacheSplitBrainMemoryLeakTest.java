@@ -6,8 +6,8 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.memory.MemoryStats;
+import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
@@ -27,8 +27,8 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static com.hazelcast.memory.MemorySize.toPrettyString;
 import static java.util.Arrays.asList;
@@ -73,7 +73,7 @@ public class HDCacheSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
     protected Config config() {
         EvictionConfig evictionConfig = new EvictionConfig();
         if (inMemoryFormat == NATIVE) {
-            evictionConfig.setMaximumSizePolicy(USED_NATIVE_MEMORY_SIZE);
+            evictionConfig.setMaxSizePolicy(USED_NATIVE_MEMORY_SIZE);
         }
 
         Config config = getHDConfig(super.config(), POOLED, MEMORY_SIZE);

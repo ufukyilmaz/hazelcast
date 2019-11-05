@@ -1,40 +1,39 @@
 package com.hazelcast.cache.impl.hidensity.nativememory;
 
+import com.hazelcast.cache.impl.AbstractCacheRecordStore;
+import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
+import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageEvictionChecker;
 import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityFreeNativeMemorySizeEvictionChecker;
 import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageEvictionChecker;
 import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityUsedNativeMemorySizeEvictionChecker;
-import com.hazelcast.cache.impl.AbstractCacheRecordStore;
-import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
-import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.serialization.DataType;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.util.Clock;
+import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.internal.util.comparators.NativeValueComparator;
 import com.hazelcast.internal.util.comparators.ValueComparator;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.serialization.DataType;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
-import com.hazelcast.internal.util.Clock;
-import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.wan.impl.CallerProvenance;
 
 import javax.cache.expiry.Duration;
@@ -102,7 +101,7 @@ public class HiDensityNativeMemoryCacheRecordStore
      *                                  property is false
      */
     @Override
-    protected EvictionChecker createCacheEvictionChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
+    protected EvictionChecker createCacheEvictionChecker(int size, MaxSizePolicy maxSizePolicy) {
         if (maxSizePolicy == null) {
             if (isInvalidMaxSizePolicyExceptionDisabled()) {
                 // don't throw exception, just ignore max-size policy
@@ -130,10 +129,10 @@ public class HiDensityNativeMemoryCacheRecordStore
                 } else {
                     throw new IllegalArgumentException("Invalid max-size policy "
                             + '(' + maxSizePolicy + ") for " + getClass().getName() + "! Only "
-                            + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
-                            + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
-                            + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
-                            + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
+                            + MaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
+                            + MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
+                            + MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
+                            + MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
                             + " are supported.");
                 }
         }

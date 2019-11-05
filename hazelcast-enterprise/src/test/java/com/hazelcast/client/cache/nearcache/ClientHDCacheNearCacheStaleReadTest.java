@@ -15,7 +15,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -25,7 +25,7 @@ public class ClientHDCacheNearCacheStaleReadTest extends ClientCacheNearCacheSta
     @Override
     protected CacheConfig<String, String> createCacheConfig(String cacheName) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(90);
 
         return super.createCacheConfig(cacheName)
@@ -43,7 +43,7 @@ public class ClientHDCacheNearCacheStaleReadTest extends ClientCacheNearCacheSta
         NativeMemoryConfig nativeMemoryConfig = createNativeMemoryConfig();
 
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(90);
 
         NearCacheConfig nearCacheConfig = getNearCacheConfig(cacheName)

@@ -10,12 +10,11 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.config.NearCachePreloaderConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.adapter.IMapDataStructureAdapter;
 import com.hazelcast.internal.nearcache.AbstractHiDensityNearCacheLeakTest;
@@ -24,6 +23,7 @@ import com.hazelcast.internal.nearcache.NearCacheManager;
 import com.hazelcast.internal.nearcache.NearCacheTestContext;
 import com.hazelcast.internal.nearcache.NearCacheTestContextBuilder;
 import com.hazelcast.internal.nearcache.impl.invalidation.RepairingTask;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -128,17 +128,16 @@ public class ClientHDMapNativeNearCacheLeakTest extends AbstractHiDensityNearCac
 
     @Override
     protected Config getConfig() {
-        MaxSizeConfig maxSizeConfig = new MaxSizeConfig()
-                .setSize(99)
-                .setMaxSizePolicy(MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-
         MapConfig mapConfig = new MapConfig(DEFAULT_NEAR_CACHE_NAME)
                 .setBackupCount(1)
                 .setInMemoryFormat(NATIVE)
                 .setStatisticsEnabled(true)
+                .setCacheDeserializedValues(CacheDeserializedValues.ALWAYS);
+
+        mapConfig.getEvictionConfig()
                 .setEvictionPolicy(EvictionPolicy.LRU)
-                .setCacheDeserializedValues(CacheDeserializedValues.ALWAYS)
-                .setMaxSizeConfig(maxSizeConfig);
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(99);
 
         NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)

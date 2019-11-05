@@ -40,7 +40,8 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
         super.setUp();
 
         otherMapConfig = new MapConfig()
-                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setInMemoryFormat(InMemoryFormat.NATIVE);
+        otherMapConfig.getEvictionConfig()
                 .setEvictionPolicy(EvictionPolicy.RANDOM);
 
         otherRecordStore = mockRecordStore(evictor, otherMapConfig);
@@ -168,7 +169,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
     @Test
     public void testRun_evictAllOnOthers_whenOtherRecordStoreHasNoEviction() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 2);
-        otherMapConfig.setEvictionPolicy(EvictionPolicy.NONE);
+        otherMapConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.NONE);
 
         try {
             executeOperation(op, PARTITION_ID);
@@ -205,7 +206,7 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
     @Test(expected = NativeOutOfMemoryError.class)
     public void testRun_failedForcedEviction_whenOtherRecordStoreHasNoEviction() throws Exception {
         Operation op = new NativeOutOfMemoryOperation(Integer.MAX_VALUE);
-        otherMapConfig.setEvictionPolicy(EvictionPolicy.NONE);
+        otherMapConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.NONE);
 
         try {
             executeOperation(op, PARTITION_ID);

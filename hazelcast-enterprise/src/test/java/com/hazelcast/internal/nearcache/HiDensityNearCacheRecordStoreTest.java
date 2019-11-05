@@ -1,8 +1,8 @@
 package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
@@ -21,7 +21,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
 import static org.junit.Assert.assertEquals;
 
@@ -55,7 +55,7 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
     @Override
     protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(99);
 
         return super.createNearCacheConfig(name, inMemoryFormat)

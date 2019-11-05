@@ -4,6 +4,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -55,7 +56,7 @@ public class EnterpriseCacheDestroyTest extends CacheDestroyTest {
         if (inMemoryFormat == NATIVE) {
             EvictionConfig evictionConfig = new EvictionConfig()
                     .setSize(99)
-                    .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                    .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
             cacheConfig.setEvictionConfig(evictionConfig);
         }
         return cacheConfig;

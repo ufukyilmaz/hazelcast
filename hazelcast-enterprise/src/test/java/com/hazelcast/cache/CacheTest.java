@@ -1,5 +1,9 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.impl.CacheEventListener;
+import com.hazelcast.cache.impl.CacheKeyIterationResult;
+import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
+import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.hidensity.operation.CacheContainsKeyOperation;
 import com.hazelcast.cache.impl.hidensity.operation.CacheEntryProcessorOperation;
 import com.hazelcast.cache.impl.hidensity.operation.CacheGetAndRemoveOperation;
@@ -10,10 +14,6 @@ import com.hazelcast.cache.impl.hidensity.operation.CacheReplaceOperation;
 import com.hazelcast.cache.impl.hidensity.operation.CacheSizeOperation;
 import com.hazelcast.cache.impl.hidensity.operation.CacheSizeOperationFactory;
 import com.hazelcast.cache.impl.hidensity.operation.HiDensityCacheDataSerializerHook;
-import com.hazelcast.cache.impl.CacheEventListener;
-import com.hazelcast.cache.impl.CacheKeyIterationResult;
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
-import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheConfiguration;
 import com.hazelcast.config.Config;
@@ -25,8 +25,8 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.instance.impl.HazelcastInstanceProxy;
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.internal.nearcache.impl.invalidation.Invalidation;
 import com.hazelcast.internal.memory.MemoryStats;
+import com.hazelcast.internal.nearcache.impl.invalidation.Invalidation;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
@@ -65,7 +65,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import static com.hazelcast.HDTestSupport.getICache;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -111,7 +111,7 @@ public class CacheTest extends AbstractCacheTest {
             CacheConfig<String, String> cacheConfig = new CacheConfig<String, String>()
                     .setInMemoryFormat(InMemoryFormat.NATIVE).setEvictionConfig(new EvictionConfig()
                             .setSize(99)
-                            .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                            .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                             .setEvictionPolicy(EvictionPolicy.LRU));
 
             // create cache should fail here with an informative exception
@@ -596,7 +596,7 @@ public class CacheTest extends AbstractCacheTest {
 
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setEvictionPolicy(EvictionPolicy.LRU)
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(100);
 
         CacheConfiguration<String, Integer> configuration = new CacheConfig<String, Integer>()

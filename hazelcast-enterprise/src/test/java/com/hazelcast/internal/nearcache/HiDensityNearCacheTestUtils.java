@@ -21,7 +21,9 @@ public final class HiDensityNearCacheTestUtils {
 
     public static Config getNearCacheHDConfig() {
         MapConfig mapConfig = new MapConfig("default")
-                .setInMemoryFormat(NATIVE)
+                .setInMemoryFormat(NATIVE);
+
+        mapConfig.getEvictionConfig()
                 .setEvictionPolicy(EvictionPolicy.LRU);
 
         return smallInstanceConfig()

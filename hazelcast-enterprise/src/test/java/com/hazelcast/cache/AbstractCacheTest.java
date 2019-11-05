@@ -5,6 +5,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -73,7 +74,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     protected <K, V> CacheConfig<K, V> createCacheConfig(String cacheName, InMemoryFormat inMemoryFormat) {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(90)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
 
         CacheConfig<K, V> cacheConfig = new CacheConfig<K, V>()
                 .setInMemoryFormat(InMemoryFormat.NATIVE)

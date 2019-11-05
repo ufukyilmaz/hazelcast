@@ -12,7 +12,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
@@ -32,7 +32,7 @@ public class HDMapNearCacheInvalidationTest extends MapNearCacheInvalidationTest
     @Override
     protected NearCacheConfig getNearCacheConfig(String mapName) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(90);
 
         return super.getNearCacheConfig(mapName)

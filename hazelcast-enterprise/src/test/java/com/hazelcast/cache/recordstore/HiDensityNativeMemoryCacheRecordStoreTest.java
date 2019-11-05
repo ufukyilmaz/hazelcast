@@ -1,9 +1,9 @@
 package com.hazelcast.cache.recordstore;
 
-import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.ICacheService;
+import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
@@ -17,6 +17,8 @@ import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -37,7 +39,7 @@ public class HiDensityNativeMemoryCacheRecordStoreTest extends CacheRecordStoreT
     @Override
     protected CacheConfig createCacheConfig(String cacheName, InMemoryFormat inMemoryFormat) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(99);
 
         return super.createCacheConfig(cacheName, inMemoryFormat)

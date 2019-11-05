@@ -11,7 +11,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -20,7 +20,7 @@ public class HDMapNearCacheLocalImmediateInvalidationTest extends AbstractMapNea
     @Override
     protected Config createConfig() {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(90);
 
         NearCacheConfig nearCacheConfig = new NearCacheConfig()

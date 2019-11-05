@@ -2,9 +2,8 @@ package com.hazelcast.internal.config;
 
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.spi.merge.PutIfAbsentMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -47,7 +46,7 @@ public class HDConfigValidatorTest extends HazelcastTestSupport {
         cacheSimpleConfig.setName(DATA_STRUCTURE_NAME);
         cacheSimpleConfig.setInMemoryFormat(NATIVE);
         cacheSimpleConfig.getEvictionConfig()
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE);
+                .setMaxSizePolicy(MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE);
         return cacheSimpleConfig;
     }
 
@@ -75,12 +74,11 @@ public class HDConfigValidatorTest extends HazelcastTestSupport {
     }
 
     private static MapConfig getNativeMapConfig() {
-        MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
-        maxSizeConfig.setMaxSizePolicy(MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE);
-
         MapConfig mapConfig = new MapConfig().setInMemoryFormat(NATIVE);
-        mapConfig.setMaxSizeConfig(maxSizeConfig);
         mapConfig.setName(DATA_STRUCTURE_NAME);
+
+        mapConfig.getEvictionConfig()
+                .setMaxSizePolicy(MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE);
 
         return mapConfig;
     }

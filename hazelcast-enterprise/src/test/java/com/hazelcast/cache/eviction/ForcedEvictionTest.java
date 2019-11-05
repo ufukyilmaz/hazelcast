@@ -6,6 +6,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.impl.HazelcastInstanceProxy;
@@ -100,7 +101,7 @@ public class ForcedEvictionTest extends CacheTestSupport {
 
         //rely on forced eviction
         evictionConfig.setSize(100);
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         cacheConfig.setEvictionConfig(evictionConfig);
         return cacheConfig;
     }

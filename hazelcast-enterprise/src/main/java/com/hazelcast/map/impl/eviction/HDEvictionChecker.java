@@ -1,19 +1,19 @@
 package com.hazelcast.map.impl.eviction;
 
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
-import com.hazelcast.config.MaxSizeConfig.MaxSizePolicy;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
-import com.hazelcast.internal.serialization.SerializationService;
-import com.hazelcast.map.impl.EnterpriseMapContainer;
-import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.properties.HazelcastProperties;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.util.MemoryInfoAccessor;
+import com.hazelcast.map.impl.EnterpriseMapContainer;
+import com.hazelcast.map.impl.MapServiceContext;
+import com.hazelcast.map.impl.recordstore.RecordStore;
+import com.hazelcast.spi.properties.HazelcastProperties;
 
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
@@ -44,9 +44,9 @@ public class HDEvictionChecker extends EvictionChecker {
         EnterpriseMapContainer mapContainer = ((EnterpriseMapContainer) recordStore.getMapContainer());
         HiDensityStorageInfo storageInfo = mapContainer.getStorageInfo();
         MapConfig mapConfig = mapContainer.getMapConfig();
-        MaxSizeConfig maxSizeConfig = mapConfig.getMaxSizeConfig();
-        MaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
-        int maxConfiguredSize = maxSizeConfig.getSize();
+        EvictionConfig evictionConfig = mapConfig.getEvictionConfig();
+        MaxSizePolicy maxSizePolicy = evictionConfig.getMaxSizePolicy();
+        int maxConfiguredSize = evictionConfig.getSize();
 
         boolean evictable;
 

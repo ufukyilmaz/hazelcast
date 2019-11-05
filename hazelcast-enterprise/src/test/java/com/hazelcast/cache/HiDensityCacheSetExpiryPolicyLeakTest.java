@@ -5,6 +5,7 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -54,7 +55,7 @@ public class HiDensityCacheSetExpiryPolicyLeakTest extends HazelcastTestSupport 
                 .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(99)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         CacheSimpleConfig cacheConfig = new CacheSimpleConfig();
         cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         cacheConfig.setEvictionConfig(evictionConfig);
@@ -72,15 +73,15 @@ public class HiDensityCacheSetExpiryPolicyLeakTest extends HazelcastTestSupport 
         for (int i = 0; i < KEY_COUNT; i++) {
             keys.add("key" + i);
         }
-        for (String key: keys) {
+        for (String key : keys) {
             cache.put(key, "value");
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             cache.setExpiryPolicy(key, new EternalExpiryPolicy());
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             cache.remove(key);
         }
 
@@ -96,11 +97,11 @@ public class HiDensityCacheSetExpiryPolicyLeakTest extends HazelcastTestSupport 
         for (int i = 0; i < KEY_COUNT; i++) {
             keys.add("key" + i);
         }
-        for (String key: keys) {
+        for (String key : keys) {
             cache.put(key, "value");
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             cache.setExpiryPolicy(key, new EternalExpiryPolicy());
             //intentional duplicate call to see if the old expiry policy is successfully removed from hd memory
             cache.setExpiryPolicy(key, new EternalExpiryPolicy());
@@ -118,15 +119,15 @@ public class HiDensityCacheSetExpiryPolicyLeakTest extends HazelcastTestSupport 
         for (int i = 0; i < KEY_COUNT; i++) {
             keys.add("key" + i);
         }
-        for (String key: keys) {
+        for (String key : keys) {
             cache.put(key, "value");
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             cache.setExpiryPolicy(key, new HazelcastExpiryPolicy(1, 1, 1));
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             cache.put(key, "value");
         }
 

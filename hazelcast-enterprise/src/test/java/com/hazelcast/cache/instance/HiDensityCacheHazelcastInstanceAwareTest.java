@@ -4,6 +4,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
@@ -33,7 +34,7 @@ public class HiDensityCacheHazelcastInstanceAwareTest extends CacheHazelcastInst
     protected CacheConfig<Integer, Integer> createCacheConfig(String cacheName) {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(99)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
 
         return super.createCacheConfig(cacheName)
                 .setInMemoryFormat(InMemoryFormat.NATIVE)

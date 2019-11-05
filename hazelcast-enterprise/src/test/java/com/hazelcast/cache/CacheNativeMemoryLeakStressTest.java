@@ -1,10 +1,10 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecordStore;
-import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.cache.impl.eviction.CacheClearExpiredRecordsTask;
+import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecordStore;
+import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheConfiguration;
@@ -12,17 +12,19 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.memory.MemoryStats;
+import com.hazelcast.internal.nio.Bits;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.util.EmptyStatement;
+import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
@@ -35,7 +37,6 @@ import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.SlowTest;
-import com.hazelcast.internal.util.EmptyStatement;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -266,7 +267,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         return new EvictionConfig()
                 .setSize(95)
                 .setEvictionPolicy(EvictionPolicy.LRU)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
     }
 
     private static class WorkerThread extends Thread {

@@ -3,12 +3,13 @@ package com.hazelcast.wan;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.WanQueueFullBehavior;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
+import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.map.IMap;
 import com.hazelcast.internal.monitor.LocalWanPublisherStats;
+import com.hazelcast.map.IMap;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -149,7 +150,7 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
                                                         String targetClusterName) {
         DelegatingWanReplicationScheme replicationPublisher =
                 getNodeEngineImpl(hz).getWanReplicationService()
-                                     .getWanReplicationPublishers(replicationConfigName);
+                        .getWanReplicationPublishers(replicationConfigName);
         return replicationPublisher.getStats().get(targetClusterName);
     }
 
@@ -158,22 +159,25 @@ public class MultiNodeWanReplicationTest extends MapWanReplicationTestSupport {
     protected WanBatchReplicationPublisherConfig targetCluster(Config config, int count) {
         final WanBatchReplicationPublisherConfig wanConfig =
                 super.targetCluster(config, count)
-                     .setQueueCapacity(100)
-                     .setQueueFullBehavior(WanQueueFullBehavior.THROW_EXCEPTION)
-                     .setBatchSize(10)
-                     .setBatchMaxDelayMillis(100);
+                        .setQueueCapacity(100)
+                        .setQueueFullBehavior(WanQueueFullBehavior.THROW_EXCEPTION)
+                        .setBatchSize(10)
+                        .setBatchMaxDelayMillis(100);
         return wanConfig;
     }
 
     @Override
     protected Config getConfig() {
-        final Config config = super.getConfig();
-        config.getMapConfig("default")
-              .setInMemoryFormat(getMemoryFormat())
-              .setBackupCount(1)
-              .setTimeToLiveSeconds(900)
-              .setMaxIdleSeconds(900)
-              .setEvictionPolicy(EvictionPolicy.LRU);
+        Config config = super.getConfig();
+        MapConfig mapConfig = config.getMapConfig("default");
+        mapConfig
+                .setInMemoryFormat(getMemoryFormat())
+                .setBackupCount(1)
+                .setTimeToLiveSeconds(900)
+                .setMaxIdleSeconds(900);
+
+        mapConfig.getEvictionConfig()
+                .setEvictionPolicy(EvictionPolicy.LRU);
         return config;
     }
 

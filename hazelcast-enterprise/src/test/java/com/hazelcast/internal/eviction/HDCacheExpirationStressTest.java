@@ -18,8 +18,8 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.NativeMemoryTestUtil.assertFreeNativeMemory;
 import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.EvictionPolicy.LRU;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.spi.properties.GroupProperty.PARTITION_COUNT;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -52,7 +52,7 @@ public class HDCacheExpirationStressTest extends CacheExpirationStressTest {
     protected CacheConfig getCacheConfig() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setEvictionPolicy(LRU)
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(90);
         return super.getCacheConfig()
                 .setInMemoryFormat(InMemoryFormat.NATIVE)

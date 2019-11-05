@@ -1,23 +1,23 @@
 package com.hazelcast.map.hotrestart;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
+import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
 import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.properties.GroupProperty;
 import org.junit.runners.Parameterized.Parameter;
 
 import java.util.function.Supplier;
 
-import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
-import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;
+import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.MaxSizePolicy.PER_PARTITION;
 import static com.hazelcast.internal.hotrestart.encryption.TestHotRestartEncryptionUtils.withBasicEncryptionAtRestConfig;
 import static org.junit.Assert.assertNotNull;
 
@@ -144,11 +144,12 @@ public abstract class AbstractMapHotRestartTest extends HotRestartTestSupport {
         if (!evictionEnabled) {
             return;
         }
-        mapConfig.setEvictionPolicy(EvictionPolicy.LFU);
+        EvictionConfig evictionConfig = mapConfig.getEvictionConfig();
+        evictionConfig.setEvictionPolicy(EvictionPolicy.LFU);
         if (memoryFormat == InMemoryFormat.NATIVE) {
-            mapConfig.setMaxSizeConfig(new MaxSizeConfig().setMaxSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE).setSize(80));
+            evictionConfig.setMaxSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE).setSize(80);
         } else {
-            mapConfig.setMaxSizeConfig(new MaxSizeConfig().setMaxSizePolicy(PER_PARTITION).setSize(50));
+            evictionConfig.setMaxSizePolicy(PER_PARTITION).setSize(50);
         }
     }
 }

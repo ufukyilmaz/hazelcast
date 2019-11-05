@@ -14,7 +14,7 @@ import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({SlowTest.class, ParallelJVMTest.class})
@@ -28,7 +28,7 @@ public class ClientHDMapNearCacheStaleReadTest extends ClientMapNearCacheStaleRe
                 .setAllocatorType(MemoryAllocatorType.STANDARD);
 
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(90);
 
         NearCacheConfig nearCacheConfig = getNearCacheConfig(mapName)

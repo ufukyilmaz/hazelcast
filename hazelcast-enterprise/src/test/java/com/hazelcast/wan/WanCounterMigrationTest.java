@@ -30,7 +30,7 @@ import javax.cache.Caching;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
@@ -112,18 +112,18 @@ public class WanCounterMigrationTest {
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceCluster.replicateCache(CACHE_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceCluster.getConfig().getMapConfig(MAP_NAME)
-                     .setBackupCount(backupCount)
-                     .setAsyncBackupCount(0);
+                .setBackupCount(backupCount)
+                .setAsyncBackupCount(0);
 
         // uncomment to dump the counters when debugging locally
         // dumpWanCounters(wanReplication, Executors.newSingleThreadScheduledExecutor());
@@ -131,11 +131,11 @@ public class WanCounterMigrationTest {
 
     private void configureCache(Cluster cluster) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(ENTRY_COUNT);
+                .setMaxSizePolicy(ENTRY_COUNT);
 
         CacheSimpleConfig cacheConfig = cluster.getConfig().getCacheConfig(CACHE_NAME);
         cacheConfig.setEvictionConfig(evictionConfig).getMergePolicyConfig()
-                   .setPolicy(PassThroughMergePolicy.class.getName());
+                .setPolicy(PassThroughMergePolicy.class.getName());
     }
 
     @Test

@@ -4,8 +4,8 @@ import com.hazelcast.cache.impl.journal.AdvancedCacheJournalTest;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EventJournalConfig;
-import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -23,7 +23,7 @@ public class AdvancedHDCacheJournalTest extends AdvancedCacheJournalTest {
         CacheSimpleConfig cacheConfig = new CacheSimpleConfig()
                 .setName("*").setInMemoryFormat(InMemoryFormat.NATIVE);
         cacheConfig.getEvictionConfig()
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
                 .setSize(Integer.MAX_VALUE);
         cacheConfig.setEventJournalConfig(new EventJournalConfig().setEnabled(true));
 

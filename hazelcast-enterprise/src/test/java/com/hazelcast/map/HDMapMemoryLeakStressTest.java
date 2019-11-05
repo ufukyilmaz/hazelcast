@@ -2,19 +2,18 @@ package com.hazelcast.map;
 
 import com.hazelcast.config.CacheDeserializedValues;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.memory.MemoryStats;
-import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.nio.Bits;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.query.PredicateBuilder.EntryObject;
 import com.hazelcast.query.Predicates;
@@ -43,6 +42,7 @@ import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsNotZero;
 import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsZero;
 import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
+import static com.hazelcast.config.EvictionPolicy.LRU;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -133,17 +133,16 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     }
 
     protected Config createConfig() {
-        MaxSizeConfig maxSizeConfig = new MaxSizeConfig()
-                .setSize(99)
-                .setMaxSizePolicy(MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-
         MapConfig mapConfig = new MapConfig(MAP_NAME)
                 .setBackupCount(1)
                 .setInMemoryFormat(InMemoryFormat.NATIVE)
                 .setStatisticsEnabled(true)
-                .setEvictionPolicy(EvictionPolicy.LRU)
-                .setCacheDeserializedValues(CacheDeserializedValues.ALWAYS)
-                .setMaxSizeConfig(maxSizeConfig);
+                .setCacheDeserializedValues(CacheDeserializedValues.ALWAYS);
+
+        mapConfig.getEvictionConfig()
+                .setEvictionPolicy(LRU)
+                .setSize(99)
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
 
         NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)

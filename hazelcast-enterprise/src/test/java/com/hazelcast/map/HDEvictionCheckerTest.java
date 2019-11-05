@@ -1,9 +1,11 @@
 package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.HotRestartPersistenceConfig;
-import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -18,14 +20,13 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.Random;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
-import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE;
-import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_NODE;
-import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE;
+import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE;
+import static com.hazelcast.config.MaxSizePolicy.PER_NODE;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
@@ -133,15 +134,15 @@ public class HDEvictionCheckerTest extends HazelcastTestSupport {
         assertTrue("Expecting FREE_NATIVE_MEMORY_PERCENTAGE eviction to kick in", map.size() < 100);
     }
 
-    private Config newConfig(MaxSizeConfig.MaxSizePolicy maxSizePolicy, int maxSize) throws IOException {
+    private Config newConfig(MaxSizePolicy maxSizePolicy, int maxSize) {
         Config config = getHDConfig();
 
-        MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
-        maxSizeConfig.setMaxSizePolicy(maxSizePolicy).setSize(maxSize);
-
-        config.getMapConfig("default")
+        MapConfig mapConfig = config.getMapConfig("default");
+        EvictionConfig evictionConfig = mapConfig.getEvictionConfig();
+        evictionConfig
                 .setEvictionPolicy(EvictionPolicy.LRU)
-                .setMaxSizeConfig(maxSizeConfig);
+                .setMaxSizePolicy(maxSizePolicy)
+                .setSize(maxSize);
 
         return config;
     }

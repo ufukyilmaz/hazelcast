@@ -7,6 +7,7 @@ import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityUsedNativeMemoryPerce
 import com.hazelcast.cache.impl.hidensity.maxsize.HiDensityUsedNativeMemorySizeEvictionChecker;
 import com.hazelcast.cache.impl.hidensity.nativememory.CacheHiDensityRecordProcessor;
 import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.adapter.DataStructureAdapter;
 import com.hazelcast.internal.eviction.EvictionChecker;
@@ -107,7 +108,7 @@ public class NativeMemoryNearCacheRecordStore<K, V>
     protected EvictionChecker createNearCacheEvictionChecker(EvictionConfig evictionConfig, NearCacheConfig nearCacheConfig) {
         ensureInitialized(nearCacheConfig);
 
-        EvictionConfig.MaxSizePolicy maxSizePolicy = evictionConfig.getMaximumSizePolicy();
+        MaxSizePolicy maxSizePolicy = evictionConfig.getMaxSizePolicy();
         if (maxSizePolicy == null) {
             throw new IllegalArgumentException("Max-size policy cannot be null");
         }
@@ -129,11 +130,11 @@ public class NativeMemoryNearCacheRecordStore<K, V>
             default:
                 throw new IllegalArgumentException("Invalid max-size policy "
                         + '(' + maxSizePolicy + ") for " + getClass().getName() + "! Only "
-                        + EvictionConfig.MaxSizePolicy.ENTRY_COUNT + ", "
-                        + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
-                        + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
-                        + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
-                        + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
+                        + MaxSizePolicy.ENTRY_COUNT + ", "
+                        + MaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
+                        + MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
+                        + MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
+                        + MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
                         + " are supported.");
         }
     }

@@ -1,18 +1,17 @@
 package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.IndexConfig;
 import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
+import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.map.impl.operation.WithForcedEviction;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -31,15 +30,16 @@ import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionPolicy.LFU;
+import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -84,8 +84,9 @@ public class HDEvictionTest extends EvictionTest {
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "101");
 
         MapConfig mapConfig = config.getMapConfig(mapName);
-        mapConfig.setEvictionPolicy(LFU);
-        mapConfig.getMaxSizeConfig().setSize(mapMaxSize);
+        mapConfig.getEvictionConfig()
+                .setEvictionPolicy(LFU)
+                .setSize(mapMaxSize);
 
         // 640K ought to be enough for anybody
         config.getNativeMemoryConfig().setSize(new MemorySize(640, KILOBYTES));
@@ -109,9 +110,12 @@ public class HDEvictionTest extends EvictionTest {
         int maxSizeMB = 10;
         String mapName = randomMapName();
 
-        MaxSizeConfig maxSizeConfig = new MaxSizeConfig(maxSizeMB, MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE);
-        MapConfig mapConfig = new MapConfig(mapName + "*").setInMemoryFormat(InMemoryFormat.NATIVE)
-                .setMaxSizeConfig(maxSizeConfig).setEvictionPolicy(EvictionPolicy.LRU);
+        MapConfig mapConfig = new MapConfig(mapName + "*").setInMemoryFormat(InMemoryFormat.NATIVE);
+        mapConfig.getEvictionConfig()
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
+                .setSize(maxSizeMB)
+                .setEvictionPolicy(LRU);
+
         Config config = getConfig().addMapConfig(mapConfig);
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
         config.setProperty(GroupProperty.MAP_EVICTION_BATCH_SIZE.getName(), "2");
@@ -146,8 +150,7 @@ public class HDEvictionTest extends EvictionTest {
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "101");
 
         MapConfig mapConfig = config.getMapConfig(mapName);
-        mapConfig.setEvictionPolicy(LFU);
-        mapConfig.getMaxSizeConfig().setSize(mapMaxSize);
+        mapConfig.getEvictionConfig().setEvictionPolicy(LFU).setSize(mapMaxSize);
         mapConfig.addIndexConfig(new IndexConfig().addAttribute("age").setType(IndexType.SORTED));
 
         // 640K ought to be enough for anybody

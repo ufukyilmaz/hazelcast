@@ -2,7 +2,7 @@ package com.hazelcast.internal.management.request;
 
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.management.GetCacheEntryRequestTest;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -34,7 +34,7 @@ public class HDGetCacheEntryRequestTest extends GetCacheEntryRequestTest {
     @Override
     protected CacheSimpleConfig getCacheConfig() {
         CacheSimpleConfig cacheConfig = super.getCacheConfig();
-        cacheConfig.getEvictionConfig().setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE);
+        cacheConfig.getEvictionConfig().setMaxSizePolicy(MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE);
         return cacheConfig;
     }
 }

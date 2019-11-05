@@ -6,13 +6,13 @@ import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -34,8 +34,8 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.EvictionPolicy.LRU;
+import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.synchronizedList;
@@ -127,7 +127,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
         int freeNativeMemoryPercentage = properties.getInteger(HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE);
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(freeNativeMemoryPercentage / 2)
-                .setMaximumSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE)
                 .setEvictionPolicy(LRU);
         ICache<Integer, byte[]> cache = createCache(hz, evictionConfig);
         try {

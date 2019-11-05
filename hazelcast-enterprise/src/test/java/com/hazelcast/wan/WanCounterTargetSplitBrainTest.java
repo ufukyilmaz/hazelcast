@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.test.SplitBrainTestSupport.blockCommunicationBetween;
 import static com.hazelcast.test.SplitBrainTestSupport.unblockCommunicationBetween;
@@ -128,7 +128,7 @@ public class WanCounterTargetSplitBrainTest {
 
     private void configureCache(Cluster cluster) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(ENTRY_COUNT);
+                .setMaxSizePolicy(ENTRY_COUNT);
 
         CacheSimpleConfig cacheConfig = cluster.getConfig().getCacheConfig(CACHE_NAME);
         cacheConfig.setEvictionConfig(evictionConfig)

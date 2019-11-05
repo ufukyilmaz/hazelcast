@@ -41,7 +41,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertContains;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
@@ -135,7 +135,7 @@ public class WanAddConfigTest {
 
     private void configureCache(Cluster cluster) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(ENTRY_COUNT);
+                .setMaxSizePolicy(ENTRY_COUNT);
 
         CacheSimpleConfig cacheConfig = cluster.getConfig().getCacheConfig(CACHE_NAME);
         cacheConfig.setEvictionConfig(evictionConfig)
@@ -210,7 +210,7 @@ public class WanAddConfigTest {
                         + ", membership list: " + clusterService.getMembers()
                         + ", partitionTable: " + nodeEngine.getPartitionService().createPartitionTableView());
                 nodeEngine.getWanReplicationService()
-                          .addWanReplicationConfig(toBReplication.getConfig());
+                        .addWanReplicationConfig(toBReplication.getConfig());
                 logger.info("WAN replication config added");
                 break;
             } catch (HazelcastInstanceNotActiveException e) {
@@ -373,7 +373,7 @@ public class WanAddConfigTest {
                     break;
                 }
                 WanReplicationConfig wanConfig = node.getConfig()
-                                                     .getWanReplicationConfig(wanReplicationName);
+                        .getWanReplicationConfig(wanReplicationName);
                 int configSize = wanConfig.getBatchPublisherConfigs().size();
                 instanceConfigCount.put(instance.getName(), configSize);
             }

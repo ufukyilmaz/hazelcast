@@ -5,6 +5,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
@@ -96,7 +97,7 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
 
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(90)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
 
         CacheConfig cacheConfig = new CacheConfig()
                 .setInMemoryFormat(InMemoryFormat.NATIVE)

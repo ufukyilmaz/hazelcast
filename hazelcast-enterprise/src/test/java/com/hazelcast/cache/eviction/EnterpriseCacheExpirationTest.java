@@ -23,11 +23,11 @@ import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.cache.impl.eviction.CacheClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Arrays.asList;
 
@@ -79,7 +79,7 @@ public class EnterpriseCacheExpirationTest extends CacheExpirationTest {
     private EvictionConfig createEvictionConfig() {
         return new EvictionConfig()
                 .setSize(95)
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setEvictionPolicy(LRU);
     }
 

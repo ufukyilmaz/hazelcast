@@ -5,11 +5,12 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
+import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -47,7 +48,7 @@ public class HotRestartClientCacheClearTest extends ClientCacheClearTest {
     @Override
     protected <K, V> CacheConfig<K, V> createCacheConfig() {
         EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setMaxSizePolicy(MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE);
         evictionConfig.setSize(15);
 
         HotRestartConfig hrConfig = new HotRestartConfig().setEnabled(true);

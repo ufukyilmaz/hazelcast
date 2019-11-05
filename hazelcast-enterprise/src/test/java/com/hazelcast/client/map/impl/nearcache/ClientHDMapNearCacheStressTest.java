@@ -7,10 +7,10 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.internal.serialization.SerializationService;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.nearcache.NearCache;
+import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -21,13 +21,13 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static com.hazelcast.internal.nearcache.NearCacheRecord.NOT_RESERVED;
-import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
+import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -87,7 +87,7 @@ public class ClientHDMapNearCacheStressTest extends HazelcastTestSupport {
     private static NearCacheConfig newNearCacheConfig() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setEvictionPolicy(LRU)
-                .setMaximumSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(90);
 
         return new NearCacheConfig(MAP_NAME)

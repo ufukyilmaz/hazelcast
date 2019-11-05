@@ -5,8 +5,8 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
@@ -82,7 +82,7 @@ public class ClientHDCacheNearCacheInvalidationTest extends ClientCacheNearCache
     @Override
     protected <K, V> CacheConfig<K, V> getCacheConfig(InMemoryFormat inMemoryFormat) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(99);
 
         return super.<K, V>getCacheConfig(InMemoryFormat.NATIVE)

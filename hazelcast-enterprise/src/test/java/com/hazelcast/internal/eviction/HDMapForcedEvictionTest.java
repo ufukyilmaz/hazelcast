@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.impl.HazelcastInstanceProxy;
@@ -77,12 +77,11 @@ public class HDMapForcedEvictionTest extends HazelcastTestSupport {
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         mapConfig.setName(MAP_NAME);
 
-        MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
-        maxSizeConfig.setSize(100);
-        maxSizeConfig.setMaxSizePolicy(MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        mapConfig.getEvictionConfig()
+                .setEvictionPolicy(EvictionPolicy.RANDOM)
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(100);
 
-        mapConfig.setMaxSizeConfig(maxSizeConfig);
-        mapConfig.setEvictionPolicy(EvictionPolicy.RANDOM);
         return mapConfig;
     }
 

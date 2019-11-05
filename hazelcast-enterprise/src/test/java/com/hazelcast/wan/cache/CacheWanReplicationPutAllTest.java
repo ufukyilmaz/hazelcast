@@ -5,6 +5,7 @@ import com.hazelcast.cache.jsr.JsrTestUtil;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
@@ -108,7 +109,7 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
                 "default", null);
         // disable WAN replication for the default cache config (it's auto-enabled by the setupReplicateFrom())
         configA.getCacheConfig("default")
-               .setWanReplicationRef(null);
+                .setWanReplicationRef(null);
 
         startClusterA();
         startClusterB();
@@ -129,9 +130,9 @@ public class CacheWanReplicationPutAllTest extends CacheWanReplicationTestSuppor
         EvictionConfig evictionConfig = new EvictionConfig();
         if (isNativeMemoryEnabled()) {
             evictionConfig.setSize(90)
-                          .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                    .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
-            evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
+            evictionConfig.setMaxSizePolicy(MaxSizePolicy.ENTRY_COUNT);
         }
         cacheConfig.setEvictionConfig(evictionConfig);
 

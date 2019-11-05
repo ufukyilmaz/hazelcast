@@ -17,9 +17,9 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.EvictionPolicy.LRU;
+import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 
 @RunWith(Parameterized.class)
@@ -31,8 +31,9 @@ public class HDNearCacheTest extends NearCacheTest {
     protected Config getConfig() {
         MapConfig mapConfig = new MapConfig()
                 .setName("default")
-                .setEvictionPolicy(EvictionPolicy.LRU)
                 .setInMemoryFormat(InMemoryFormat.NATIVE);
+
+        mapConfig.getEvictionConfig().setEvictionPolicy(LRU);
 
         NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
@@ -55,7 +56,7 @@ public class HDNearCacheTest extends NearCacheTest {
 
         nearCacheConfig.getEvictionConfig()
                 .setEvictionPolicy(LRU)
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(90);
 
         return nearCacheConfig;
@@ -68,7 +69,7 @@ public class HDNearCacheTest extends NearCacheTest {
 
         nearCacheConfig.getEvictionConfig()
                 .setEvictionPolicy(evictionPolicy)
-                .setMaximumSizePolicy(ENTRY_COUNT)
+                .setMaxSizePolicy(ENTRY_COUNT)
                 .setSize(size);
 
         return nearCacheConfig;

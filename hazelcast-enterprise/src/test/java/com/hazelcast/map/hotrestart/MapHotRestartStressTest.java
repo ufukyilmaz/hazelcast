@@ -1,15 +1,15 @@
 package com.hazelcast.map.hotrestart;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.enterprise.SampleLicense;
+import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
 import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.NightlyTest;
@@ -32,9 +32,9 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;
-import static com.hazelcast.internal.util.FutureUtil.waitWithDeadline;
+import static com.hazelcast.config.MaxSizePolicy.PER_PARTITION;
 import static com.hazelcast.internal.hotrestart.encryption.TestHotRestartEncryptionUtils.withBasicEncryptionAtRestConfig;
+import static com.hazelcast.internal.util.FutureUtil.waitWithDeadline;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -142,17 +142,15 @@ public class MapHotRestartStressTest extends HotRestartTestSupport {
                 .setEnabled(true)
                 .setBaseDir(baseDir);
 
-        MaxSizeConfig maxSizeConfig = new MaxSizeConfig()
-                .setMaxSizePolicy(PER_PARTITION)
-                .setSize(50);
-
         config.getMapConfig("default").getHotRestartConfig()
                 .setEnabled(true);
 
-        MapConfig mapConfig = config.getMapConfig("native*")
-                .setInMemoryFormat(NATIVE)
-                .setEvictionPolicy(LFU)
-                .setMaxSizeConfig(maxSizeConfig);
+        MapConfig mapConfig = config.getMapConfig("native*");
+        mapConfig.setInMemoryFormat(NATIVE);
+
+        EvictionConfig evictionConfig = mapConfig.getEvictionConfig();
+        evictionConfig.setEvictionPolicy(LFU).setMaxSizePolicy(PER_PARTITION).setSize(50);
+
         mapConfig.getHotRestartConfig()
                 .setEnabled(true)
                 .setFsync(fsyncEnabled);

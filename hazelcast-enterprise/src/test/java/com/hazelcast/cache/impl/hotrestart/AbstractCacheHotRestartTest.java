@@ -5,15 +5,15 @@ import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
+import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.GroupProperty;
 import org.junit.runners.Parameterized.Parameter;
@@ -24,9 +24,9 @@ import java.util.function.Supplier;
 
 import static com.hazelcast.HDTestSupport.getICache;
 import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.internal.hotrestart.encryption.TestHotRestartEncryptionUtils.withBasicEncryptionAtRestConfig;
 import static org.junit.Assert.assertNotNull;
 
@@ -157,7 +157,7 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
 
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(maxSize)
-                .setMaximumSizePolicy(maxSizePolicy)
+                .setMaxSizePolicy(maxSizePolicy)
                 .setEvictionPolicy(EvictionPolicy.LRU);
 
         return createCache(hz, backupCount, evictionConfig);

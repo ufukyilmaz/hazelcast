@@ -6,10 +6,10 @@ import com.hazelcast.collection.IQueue;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
@@ -410,7 +410,7 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
         config.addCacheConfig(new CacheSimpleConfig().setName("cache"));
 
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(100);
 
         CacheSimpleConfig hdCacheConfig = new CacheSimpleConfig().setName(HD_PREFIX + "*")

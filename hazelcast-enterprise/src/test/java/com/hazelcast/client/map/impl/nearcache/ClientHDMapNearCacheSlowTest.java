@@ -19,8 +19,8 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 
 @RunWith(Parameterized.class)
@@ -58,7 +58,7 @@ public class ClientHDMapNearCacheSlowTest extends ClientMapNearCacheSlowTest {
     protected NearCacheConfig newNearCacheConfigWithEntryCountEviction(EvictionPolicy evictionPolicy, int size) {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setEvictionPolicy(evictionPolicy)
-                .setMaximumSizePolicy(ENTRY_COUNT)
+                .setMaxSizePolicy(ENTRY_COUNT)
                 .setSize(size);
 
         return newNearCacheConfig()

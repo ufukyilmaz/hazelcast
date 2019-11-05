@@ -11,7 +11,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -32,7 +32,7 @@ public class ClientHDMapNearCacheInvalidationMemberAddRemoveTest extends ClientM
     @Override
     protected NearCacheConfig createNearCacheConfig(String mapName) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(ENTRY_COUNT)
+                .setMaxSizePolicy(ENTRY_COUNT)
                 .setSize(90);
 
         return super.createNearCacheConfig(mapName)

@@ -26,8 +26,8 @@ import org.junit.runner.RunWith;
 
 import java.util.Collections;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE;
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_RECENT;
+import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE;
 
 /**
  * Test transfer of CacheConfig's with typed Caches along with EE features (HotRestart, WAN replication)
@@ -45,7 +45,7 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
         cacheConfig.setTypes(String.class, Person.class);
         cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         cacheConfig.setEvictionConfig(new EvictionConfig().setSize(30)
-                .setMaximumSizePolicy(FREE_NATIVE_MEMORY_SIZE)
+                .setMaxSizePolicy(FREE_NATIVE_MEMORY_SIZE)
                 .setEvictionPolicy(EvictionPolicy.LFU));
         cacheConfig.setWanReplicationRef(new WanReplicationRef("wan-replication",
                 PassThroughMergePolicy.class.getName(),

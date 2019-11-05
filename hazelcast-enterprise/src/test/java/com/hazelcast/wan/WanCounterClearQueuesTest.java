@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.test.HazelcastTestSupport.ASSERT_TRUE_EVENTUALLY_TIMEOUT;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
@@ -100,14 +100,14 @@ public class WanCounterClearQueuesTest {
                 .setup();
 
         sourceCluster.replicateMap(MAP_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         sourceCluster.replicateCache(CACHE_NAME)
-                     .withReplication(wanReplication)
-                     .withMergePolicy(PassThroughMergePolicy.class)
-                     .setup();
+                .withReplication(wanReplication)
+                .withMergePolicy(PassThroughMergePolicy.class)
+                .setup();
 
         executorService = Executors.newSingleThreadScheduledExecutor();
         // uncomment to dump the counters when debugging locally
@@ -116,11 +116,11 @@ public class WanCounterClearQueuesTest {
 
     private void configureCache(Cluster cluster) {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(ENTRY_COUNT);
+                .setMaxSizePolicy(ENTRY_COUNT);
 
         CacheSimpleConfig cacheConfig = cluster.getConfig().getCacheConfig(CACHE_NAME);
         cacheConfig.setEvictionConfig(evictionConfig).getMergePolicyConfig()
-                   .setPolicy(PassThroughMergePolicy.class.getName());
+                .setPolicy(PassThroughMergePolicy.class.getName());
     }
 
     @Test

@@ -23,10 +23,10 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static java.util.Arrays.asList;
 
@@ -56,7 +56,7 @@ public class HDCacheSplitBrainTest extends CacheSplitBrainTest {
     protected Config config() {
         EvictionConfig evictionConfig = new EvictionConfig();
         if (inMemoryFormat == NATIVE) {
-            evictionConfig.setMaximumSizePolicy(USED_NATIVE_MEMORY_SIZE);
+            evictionConfig.setMaxSizePolicy(USED_NATIVE_MEMORY_SIZE);
         }
 
         Config config = getHDConfig(super.config(), POOLED, MEMORY_SIZE);

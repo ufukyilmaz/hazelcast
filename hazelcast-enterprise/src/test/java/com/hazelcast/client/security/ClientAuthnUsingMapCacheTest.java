@@ -1,11 +1,48 @@
 package com.hazelcast.client.security;
 
-import static com.hazelcast.config.MapStoreConfig.InitialLoadMode.LAZY;
-import static com.hazelcast.config.PermissionConfig.PermissionType.ALL;
-import static com.hazelcast.core.Hazelcast.getHazelcastInstanceByName;
-import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.config.ClientNetworkConfig;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.LoginModuleConfig;
+import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.MaxSizePolicy;
+import com.hazelcast.config.PermissionConfig;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
+import com.hazelcast.config.security.RealmConfig;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.instance.EndpointQualifier;
+import com.hazelcast.internal.jmx.ManagementService;
+import com.hazelcast.internal.util.RuntimeAvailableProcessors;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
+import com.hazelcast.map.IMap;
+import com.hazelcast.map.MapLoader;
+import com.hazelcast.security.ClusterEndpointPrincipal;
+import com.hazelcast.security.ClusterIdentityPrincipal;
+import com.hazelcast.security.ClusterRolePrincipal;
+import com.hazelcast.security.CredentialsCallback;
+import com.hazelcast.security.EndpointCallback;
+import com.hazelcast.security.UsernamePasswordCredentials;
+import com.hazelcast.test.TestAwareInstanceFactory;
+import com.hazelcast.test.annotation.NightlyTest;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginException;
+import javax.security.auth.spi.LoginModule;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,52 +54,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import javax.security.auth.Subject;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.login.FailedLoginException;
-import javax.security.auth.login.LoginException;
-import javax.security.auth.spi.LoginModule;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.client.config.ClientNetworkConfig;
-import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionPolicy;
-import com.hazelcast.config.LoginModuleConfig;
-import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
-import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MapStoreConfig;
-import com.hazelcast.config.MaxSizeConfig;
-import com.hazelcast.config.MaxSizeConfig.MaxSizePolicy;
-import com.hazelcast.config.security.JaasAuthenticationConfig;
-import com.hazelcast.config.security.RealmConfig;
-import com.hazelcast.config.PermissionConfig;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
-import com.hazelcast.map.MapLoader;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.instance.EndpointQualifier;
-import com.hazelcast.internal.jmx.ManagementService;
-import com.hazelcast.internal.util.RuntimeAvailableProcessors;
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.logging.Logger;
-import com.hazelcast.security.ClusterEndpointPrincipal;
-import com.hazelcast.security.ClusterIdentityPrincipal;
-import com.hazelcast.security.ClusterRolePrincipal;
-import com.hazelcast.security.CredentialsCallback;
-import com.hazelcast.security.EndpointCallback;
-import com.hazelcast.security.UsernamePasswordCredentials;
-import com.hazelcast.test.TestAwareInstanceFactory;
-import com.hazelcast.test.annotation.NightlyTest;
+import static com.hazelcast.config.EvictionPolicy.LFU;
+import static com.hazelcast.config.MapStoreConfig.InitialLoadMode.LAZY;
+import static com.hazelcast.config.PermissionConfig.PermissionType.ALL;
+import static com.hazelcast.core.Hazelcast.getHazelcastInstanceByName;
+import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 
 /**
  * Regression tests for blocking client authentications. It should not lead to a cluster split-brain.
@@ -77,7 +74,7 @@ import com.hazelcast.test.annotation.NightlyTest;
  * <pre>
  */
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({ NightlyTest.class })
+@Category({NightlyTest.class})
 public class ClientAuthnUsingMapCacheTest {
 
     private final TestAwareClientFactory factory = new TestAwareClientFactory();
@@ -141,8 +138,12 @@ public class ClientAuthnUsingMapCacheTest {
         MapConfig mapConfig = new MapConfig().setName(USER_MAP)
                 .setMapStoreConfig(new MapStoreConfig().setEnabled(true).setInitialLoadMode(LAZY)
                         .setClassName(UserCredentialsMapLoader.class.getName()))
-                .setBackupCount(2).setReadBackupData(true).setEvictionPolicy(EvictionPolicy.LFU)
-                .setMaxSizeConfig(new MaxSizeConfig(100, MaxSizePolicy.PER_NODE));
+                .setBackupCount(2).setReadBackupData(true);
+
+        mapConfig.getEvictionConfig()
+                .setEvictionPolicy(LFU)
+                .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
+                .setSize(100);
         config.addMapConfig(mapConfig);
         LoginModuleConfig loginModuleConfig = new LoginModuleConfig().setClassName(ClientLoginModule.class.getName())
                 .setUsage(LoginModuleUsage.REQUIRED);
@@ -212,7 +213,7 @@ public class ClientAuthnUsingMapCacheTest {
 
         @Override
         public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState,
-                Map<String, ?> options) {
+                               Map<String, ?> options) {
             this.subject = subject;
             this.callbackHandler = callbackHandler;
             instanceName = (String) options.get(OPT_INSTANCE_NAME);
@@ -223,7 +224,7 @@ public class ClientAuthnUsingMapCacheTest {
             final CredentialsCallback cb = new CredentialsCallback();
             final EndpointCallback ecb = new EndpointCallback();
             try {
-                callbackHandler.handle(new Callback[] { cb, ecb });
+                callbackHandler.handle(new Callback[]{cb, ecb});
                 usernamePasswordCredentials = (UsernamePasswordCredentials) cb.getCredentials();
             } catch (Exception e) {
                 throw new LoginException(e.getClass().getName() + ":" + e.getMessage());

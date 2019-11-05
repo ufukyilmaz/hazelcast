@@ -100,7 +100,8 @@ public abstract class AbstractHDMapOperationTest {
         when(nodeEngine.getProperties()).thenReturn(new HazelcastProperties(new Properties()));
 
         MapConfig mapConfig = new MapConfig(getMapName())
-                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setInMemoryFormat(InMemoryFormat.NATIVE);
+        mapConfig.getEvictionConfig()
                 .setEvictionPolicy(EvictionPolicy.LRU);
 
         evictor = mock(HDEvictorImpl.class);

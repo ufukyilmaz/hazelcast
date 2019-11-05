@@ -6,6 +6,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.CustomWanPublisherConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
@@ -192,16 +193,16 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
                 .setInstanceName(instanceName);
         config.setClusterName(clusterName);
         config.getNetworkConfig()
-              .setPortAutoIncrement(false)
-              .setPort(port);
+                .setPortAutoIncrement(false)
+                .setPort(port);
         final CacheSimpleConfig cacheConfig = config.getCacheConfig(DEFAULT_CACHE_NAME);
         final EvictionConfig evictionConfig = new EvictionConfig();
         if (nativeMemoryEnabled) {
             cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
             evictionConfig.setSize(90)
-                          .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+                    .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
-            evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
+            evictionConfig.setMaxSizePolicy(MaxSizePolicy.ENTRY_COUNT);
         }
         cacheConfig.setEvictionConfig(evictionConfig);
         return config;

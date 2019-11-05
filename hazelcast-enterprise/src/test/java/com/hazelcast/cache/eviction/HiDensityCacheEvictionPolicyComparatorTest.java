@@ -1,21 +1,22 @@
 package com.hazelcast.cache.eviction;
 
-import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
+import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.util.QuickMath;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.internal.util.QuickMath;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -72,7 +73,7 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvi
     public void test_evictionPolicyComparator_with_comparatorClassName_when_maxSizePolicy_is_usedNativeMemoryPercentage() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(50)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
                 .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
 
         testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
@@ -82,7 +83,7 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvi
     public void test_evictionPolicyComparator_with_comparatorInstance_when_maxSizePolicy_is_usedNativeMemoryPercentage() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(50)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
                 .setComparator(new MyEvictionPolicyComparator());
 
         testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
@@ -92,7 +93,7 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvi
     public void test_evictionPolicyComparator_with_comparatorClassName_when_maxSizePolicy_is_freeNativeMemoryPercentage() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(50)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
                 .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
 
         testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
@@ -102,7 +103,7 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvi
     public void test_evictionPolicyComparator_with_comparatorInstance_when_maxSizePolicy_is_freeNativeMemoryPercentage() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(50)
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
                 .setComparator(new MyEvictionPolicyComparator());
 
         testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
@@ -112,7 +113,7 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvi
     public void test_evictionPolicyComparator_with_comparatorClassName_when_maxSizePolicy_is_usedNativeMemorySize() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
                 .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
 
         testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
@@ -122,7 +123,7 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvi
     public void test_evictionPolicyComparator_with_comparatorInstance_when_maxSizePolicy_is_usedNativeMemorySize() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
+                .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
                 .setComparator(new MyEvictionPolicyComparator());
 
         testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
@@ -132,7 +133,7 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvi
     public void test_evictionPolicyComparator_with_comparatorClassName_when_maxSizePolicy_is_freeNativeMemorySize() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE)
+                .setMaxSizePolicy(MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE)
                 .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
 
         testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);
@@ -142,7 +143,7 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvi
     public void test_evictionPolicyComparator_with_comparatorInstance_when_maxSizePolicy_is_freeNativeMemorySize() {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE)
+                .setMaxSizePolicy(MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE)
                 .setComparator(new MyEvictionPolicyComparator());
 
         testEvictionPolicyComparator(evictionConfig, ITERATION_COUNT);

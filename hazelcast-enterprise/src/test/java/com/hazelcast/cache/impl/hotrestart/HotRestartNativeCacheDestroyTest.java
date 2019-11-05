@@ -6,10 +6,11 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.enterprise.SampleLicense;
+import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.QuickTest;
@@ -30,7 +31,7 @@ public class HotRestartNativeCacheDestroyTest extends CacheDestroyTest {
 
     @Parameters(name = "encrypted:{0}")
     public static Object[] data() {
-        return new Object[] { false, true };
+        return new Object[]{false, true};
     }
 
     @Parameter
@@ -66,7 +67,7 @@ public class HotRestartNativeCacheDestroyTest extends CacheDestroyTest {
     @Override
     protected <K, V> CacheConfig<K, V> createCacheConfig() {
         EvictionConfig evictionConfig = new EvictionConfig()
-                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
+                .setMaxSizePolicy(MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
                 .setSize(20);
 
         HotRestartConfig hrConfig = new HotRestartConfig().setEnabled(true);

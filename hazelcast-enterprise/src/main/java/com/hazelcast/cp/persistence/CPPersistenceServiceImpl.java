@@ -204,7 +204,11 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
 
     @Override
     public void removeRaftStateStore(@Nonnull RaftGroupId groupId) {
-         delete(getGroupDir(groupId));
+        File groupDir = getGroupDir(groupId);
+        if (logger.isFineEnabled()) {
+            logger.fine("Deleting directory " + groupDir + " and its contents " + Arrays.toString(groupDir.list()));
+        }
+        delete(groupDir);
     }
 
     @Override

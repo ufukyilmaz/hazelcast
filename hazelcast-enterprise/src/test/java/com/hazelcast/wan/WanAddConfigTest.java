@@ -14,6 +14,7 @@ import com.hazelcast.logging.Logger;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.ChangeLoggingRule;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -68,7 +69,7 @@ import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class WanAddConfigTest {
+public class WanAddConfigTest extends HazelcastTestSupport {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 

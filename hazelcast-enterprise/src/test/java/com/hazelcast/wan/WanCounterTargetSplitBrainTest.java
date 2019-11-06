@@ -8,6 +8,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -30,7 +31,6 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.test.SplitBrainTestSupport.blockCommunicationBetween;
 import static com.hazelcast.test.SplitBrainTestSupport.unblockCommunicationBetween;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
@@ -46,7 +46,7 @@ import static java.util.Arrays.asList;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(QuickTest.class)
-public class WanCounterTargetSplitBrainTest {
+public class WanCounterTargetSplitBrainTest extends HazelcastTestSupport {
     private static final String MAP_NAME = "map";
     private static final String CACHE_NAME = "cache";
     private static final String REPLICATION_NAME = "wanReplication";

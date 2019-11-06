@@ -2,6 +2,7 @@ package com.hazelcast.wan;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -23,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class WanClearQueuesSideEffectTest {
+public class WanClearQueuesSideEffectTest extends HazelcastTestSupport {
     private static final String MAP_NAME = "map";
     private static final String REPLICATION_NAME = "wanReplication";
 

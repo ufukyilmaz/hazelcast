@@ -8,6 +8,7 @@ import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
@@ -48,7 +49,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(QuickTest.class)
-public class WanCounterClearQueuesTest {
+public class WanCounterClearQueuesTest extends HazelcastTestSupport {
     private static final String MAP_NAME = "map";
     private static final String CACHE_NAME = "cache";
     private static final String REPLICATION_NAME = "wanReplication";

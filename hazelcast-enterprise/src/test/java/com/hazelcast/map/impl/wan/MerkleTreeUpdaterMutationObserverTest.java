@@ -102,7 +102,7 @@ public class MerkleTreeUpdaterMutationObserverTest {
         Record record = mock(Record.class);
         when(record.getValue()).thenReturn(value);
 
-        observer.onUpdateRecord(key, record, newValue, record.getValue(), false);
+        observer.onUpdateRecord(key, record, record.getValue(), newValue , false);
 
         verify(merkleTreeMock).updateReplace(eq(key), eq(valueAsData), eq(newValueAsData));
     }

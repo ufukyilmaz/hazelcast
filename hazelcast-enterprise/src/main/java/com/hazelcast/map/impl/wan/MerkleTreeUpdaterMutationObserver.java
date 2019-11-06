@@ -60,7 +60,7 @@ public class MerkleTreeUpdaterMutationObserver<R extends Record>
 
     @Override
     public void onUpdateRecord(@Nonnull Data key, @Nonnull R record,
-                               Object newValue, Object oldValue, boolean backup) {
+                               Object oldValue, Object newValue, boolean backup) {
         updateReplace(key, oldValue, newValue);
     }
 

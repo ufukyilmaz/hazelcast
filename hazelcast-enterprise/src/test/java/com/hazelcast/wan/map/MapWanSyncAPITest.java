@@ -10,6 +10,7 @@ import com.hazelcast.internal.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.internal.partition.IPartition;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -59,7 +60,7 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class MapWanSyncAPITest {
+public class MapWanSyncAPITest extends HazelcastTestSupport {
 
     @Rule
     public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
@@ -159,11 +160,17 @@ public class MapWanSyncAPITest {
         waitForSyncToComplete(clusterA);
         if (!isAllMembersConnected(clusterA.getMembers(), REPLICATION_NAME, "B")) {
             // we give another try to the sync if it failed because of unsuccessful connection attempt
+            // In this case, this following sync might not actually sync any records, causing the
+            // verifySyncStats to fail.
+            // This is an edge case and in most cases this branch will not be taken. Even so,
+            // the more important assertion is actually verifying the map is replicated.
             clusterA.syncMap(toBReplication, MAP_NAME);
+        } else {
+            // in case we did only one sync, there should be some non-zero sync stats
+            verifySyncStats(clusterA, toBReplication, MAP_NAME);
         }
 
         verifyMapReplicated(clusterA, clusterB, MAP_NAME);
-        verifySyncStats(clusterA, toBReplication, MAP_NAME);
     }
 
     @Test

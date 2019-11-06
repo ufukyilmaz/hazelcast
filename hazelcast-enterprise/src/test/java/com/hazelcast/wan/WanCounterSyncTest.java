@@ -7,6 +7,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.IMap;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -41,7 +42,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class WanCounterSyncTest {
+public class WanCounterSyncTest extends HazelcastTestSupport {
     private static final String MAP_NAME = "map";
     private static final String CACHE_NAME = "cache";
     private static final String REPLICATION_NAME = "wanReplication";

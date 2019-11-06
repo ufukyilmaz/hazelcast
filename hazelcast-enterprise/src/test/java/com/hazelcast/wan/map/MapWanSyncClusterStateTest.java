@@ -4,6 +4,7 @@ import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -41,7 +42,7 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class MapWanSyncClusterStateTest {
+public class MapWanSyncClusterStateTest extends HazelcastTestSupport {
 
     @Parameters(name = "consistencyCheckStrategy:{0}")
     public static Collection<Object[]> parameters() {

@@ -3,7 +3,6 @@ package com.hazelcast.wan.fw;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.impl.PartitionWanEventContainer;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
-import com.hazelcast.instance.impl.HazelcastInstanceProxy;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.logging.ILogger;
@@ -16,6 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertCompletesEventually;
+import static com.hazelcast.test.HazelcastTestSupport.getPartitionService;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationPublisher;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -104,20 +104,25 @@ public class WanCounterTestSupport {
         dumpFuture.cancel(false);
     }
 
-    private static int getQueueSizes(HazelcastInstance instance,
-                                     WanBatchReplication publisher,
-                                     boolean onlyPrimaries) {
-        int queueSizes = 0;
+    /**
+     * Returns an array of total [primary, backup] WAN event queue sizes on the
+     * provided {@code instance} and {@code publisher}.
+     *
+     * @param instance  the hazelcast instance containing the WAN queues
+     * @param publisher the publisher containing the WAN queues
+     * @return a sum of primary and backup WAN event queue sizes
+     */
+    private static int[] getQueueSizes(HazelcastInstance instance,
+                                       WanBatchReplication publisher) {
+        int[] queueSizes = {0, 0};
 
-        InternalPartitionService partitionService = ((HazelcastInstanceProxy) instance).getOriginal().node.getPartitionService();
+        InternalPartitionService partitionService = getPartitionService(instance);
         PartitionWanEventContainer[] containers = publisher.getEventQueueContainer()
-                                                          .getContainers();
+                                                           .getContainers();
         for (int partitionId = 0; partitionId < containers.length; partitionId++) {
             PartitionWanEventContainer container = containers[partitionId];
             InternalPartition partition = partitionService.getPartition(partitionId);
-            if (!onlyPrimaries || partition.isLocal()) {
-                queueSizes += container.size();
-            }
+            queueSizes[partition.isLocal() ? 0 : 1] += container.size();
         }
 
         return queueSizes;
@@ -232,17 +237,14 @@ public class WanCounterTestSupport {
                         String instanceName = instance.getName();
                         WanBatchReplication publisher = wanReplicationPublisher(instance, wanReplication);
 
-                        int outboundQueueSize = getPrimaryOutboundQueueSize(instance, wanReplication);
-                        logger.info("PRIMARY counter on " + instanceName + ": " + outboundQueueSize);
+                        int primaryCounterQueueSize = getPrimaryOutboundQueueSize(instance, wanReplication);
+                        int backupCounterQueueSize = getBackupOutboundQueueSize(instance, wanReplication);
+                        int[] actualQueueSizes = getQueueSizes(instance, publisher);
 
-                        logger.info("BACKUP counter on " + instanceName + ": " + publisher.getCurrentBackupElementCount());
-
-                        int outboundQueueSizes = getQueueSizes(instance, publisher, true);
-                        logger.info("PRIMARY Q size on " + instanceName + ": " + outboundQueueSizes);
-
-                        int outboundAllQueueSizes = getQueueSizes(instance, publisher, false);
-                        logger.info("ALL Q size on " + instanceName + ": " + outboundAllQueueSizes);
-
+                        logger.info(String.format("PRIMARY/BACKUP queue sizes on %s: %s(%s)/%s(%s)",
+                                instanceName,
+                                primaryCounterQueueSize, actualQueueSizes[0],
+                                backupCounterQueueSize, actualQueueSizes[1]));
                         long totalPublishedEventCount = getTotalPublishedEventCount(instance, setupName, targetClusterName);
                         logger.info("Total events published on " + instanceName + ": " + totalPublishedEventCount);
 

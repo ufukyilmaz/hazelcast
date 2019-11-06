@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 
 import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.core.LifecycleEvent.LifecycleState.MERGED;
@@ -40,6 +41,7 @@ import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanCacheTestSupport.fillCache;
 import static com.hazelcast.wan.fw.WanCacheTestSupport.verifyCacheReplicated;
+import static com.hazelcast.wan.fw.WanCounterTestSupport.dumpWanCounters;
 import static com.hazelcast.wan.fw.WanCounterTestSupport.verifyEventCountersAreEventuallyZero;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
@@ -138,8 +140,7 @@ public class WanCounterSourceSplitBrainTest {
         config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "2");
         config.setProperty(GroupProperty.MAX_JOIN_MERGE_TARGET_SECONDS.getName(), "2");
 
-        // uncomment to dump the counters when debugging locally
-        // dumpWanCounters(wanReplication, Executors.newSingleThreadScheduledExecutor());
+        dumpWanCounters(wanReplication, Executors.newSingleThreadScheduledExecutor());
     }
 
     private void configureCache(Cluster cluster) {

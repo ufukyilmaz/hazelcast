@@ -1,16 +1,23 @@
 package com.hazelcast.security.loginimpl;
 
+import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.naming.Context;
+import javax.naming.NamingEnumeration;
+import javax.naming.directory.SearchControls;
+import javax.naming.ldap.InitialLdapContext;
+import javax.naming.ldap.LdapContext;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -29,6 +36,7 @@ import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.integ.CreateLdapServerRule;
 import org.apache.directory.server.ldap.LdapServer;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -80,6 +88,11 @@ public class BasicLdapLoginModuleTest {
     @Parameters(name = "TLS:{0}")
     public static Object[] data() {
         return new Object[] { false, true };
+    }
+
+    @BeforeClass
+    public static void beforeClass() {
+        assertTrueEventually(() -> verifyLdapSearch(serverRule.getLdapServer()));
     }
 
     @Test
@@ -276,6 +289,21 @@ public class BasicLdapLoginModuleTest {
 
     protected LoginModule createLoginModule() {
         return new BasicLdapLoginModule();
+    }
+
+    protected static void verifyLdapSearch(LdapServer ldapServer) throws Exception {
+        String ldapUrl = "ldap://127.0.0.1:" + ldapServer.getPort();
+        Properties env = new Properties();
+        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+        env.put(Context.PROVIDER_URL, ldapUrl);
+        env.put(Context.SECURITY_AUTHENTICATION, "simple");
+        env.put(Context.SECURITY_PRINCIPAL, "uid=admin,ou=system");
+        env.put(Context.SECURITY_CREDENTIALS, "secret");
+        LdapContext ctx = new InitialLdapContext(env, null);
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        NamingEnumeration<?> namingEnum = ctx.search("dc=hazelcast,dc=com", "(uid=jduke)", searchControls);
+        assertTrue(namingEnum.hasMore());
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.hazelcast.security.loginimpl;
 
+import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Map;
@@ -16,6 +17,7 @@ import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.integ.CreateLdapServerRule;
 import org.apache.directory.server.ldap.LdapServer;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -50,6 +52,11 @@ public class LdapLoginModuleTest extends BasicLdapLoginModuleTest {
 
     @ClassRule
     public static CreateLdapServerRule serverRule = new CreateLdapServerRule();
+
+    @BeforeClass
+    public static void beforeClass() {
+        assertTrueEventually(() -> verifyLdapSearch(serverRule.getLdapServer()));
+    }
 
     @Test
     public void testAuthenticateByNewBind() throws Exception {
@@ -123,5 +130,4 @@ public class LdapLoginModuleTest extends BasicLdapLoginModuleTest {
         options.put(Context.SECURITY_CREDENTIALS, "secret");
         return options;
     }
-
 }

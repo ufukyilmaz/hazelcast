@@ -124,9 +124,8 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
                 expiredEntries.offer(entry);
             }
 
+            scannedSoFar++;
         }
-
-        scannedSoFar++;
 
         // 2. Delete collected entries
         Entry<Data, R> entry;

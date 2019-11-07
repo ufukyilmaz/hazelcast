@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 
 import java.util.Set;
 
+import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
@@ -102,6 +103,10 @@ public abstract class EnterpriseTestUtils {
     private static int getClusterSize(HazelcastInstance instance) {
         Set<Member> members = instance.getCluster().getMembers();
         return members == null ? 0 : members.size();
+    }
+
+    public static HazelcastServerCachingProvider createServerCachingProvider(HazelcastInstance instance) {
+        return new HazelcastServerCachingProvider(instance);
     }
 
     public interface AssertTask {

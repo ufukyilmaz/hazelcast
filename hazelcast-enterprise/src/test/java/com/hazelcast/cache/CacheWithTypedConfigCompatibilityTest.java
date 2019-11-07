@@ -6,7 +6,6 @@ import classloading.domain.PersonCacheLoaderFactory;
 import classloading.domain.PersonCacheWriterFactory;
 import classloading.domain.PersonEntryProcessor;
 import classloading.domain.PersonExpiryPolicyFactory;
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -25,6 +24,7 @@ import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.spi.CachingProvider;
 
+import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.cache.CacheUtil.getPrefixedCacheName;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getCurrentVersion;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getOldestKnownVersion;
@@ -103,7 +103,7 @@ public class CacheWithTypedConfigCompatibilityTest extends HazelcastTestSupport 
 
     private Cache<String, Person> createCache() {
         // create a CachingProvider off currentVersionInstance, then create a new Cache with a typed CacheConfig
-        CachingProvider cachingProvider = HazelcastServerCachingProvider.createCachingProvider(currentVersionInstance);
+        CachingProvider cachingProvider = createServerCachingProvider(currentVersionInstance);
         CacheManager cacheManager = cachingProvider.getCacheManager(null, null,
                 HazelcastCachingProvider.propertiesByInstanceItself(currentVersionInstance));
         return cacheManager.createCache(cacheName, createCacheConfig());

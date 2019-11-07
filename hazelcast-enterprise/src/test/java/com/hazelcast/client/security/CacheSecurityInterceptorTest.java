@@ -21,6 +21,8 @@ import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import static com.hazelcast.cache.CacheTestSupport.createClientCachingProvider;
+
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class CacheSecurityInterceptorTest extends InterceptorTestSupport {
@@ -31,7 +33,7 @@ public class CacheSecurityInterceptorTest extends InterceptorTestSupport {
     @Before
     public void setup() {
 
-        HazelcastClientCachingProvider cachingProvider = HazelcastClientCachingProvider.createCachingProvider(client);
+        HazelcastClientCachingProvider cachingProvider = createClientCachingProvider(client);
 
         objectName = randomString();
         CacheConfig cacheConfig = new CacheConfig();

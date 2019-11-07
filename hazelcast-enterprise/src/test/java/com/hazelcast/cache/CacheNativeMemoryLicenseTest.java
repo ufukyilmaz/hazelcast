@@ -22,6 +22,7 @@ import org.junit.runner.RunWith;
 
 import javax.cache.CacheManager;
 
+import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.TWO_GB_V2_HD_LICENSE;
@@ -92,7 +93,7 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
 
     private void configureCacheWithNativeMemory(TestHazelcastInstanceFactory factory) {
         HazelcastInstance instance = factory.newHazelcastInstance(config);
-        provider = HazelcastServerCachingProvider.createCachingProvider(instance);
+        provider = createServerCachingProvider(instance);
         CacheManager cacheManager = provider.getCacheManager();
 
         EvictionConfig evictionConfig = new EvictionConfig()

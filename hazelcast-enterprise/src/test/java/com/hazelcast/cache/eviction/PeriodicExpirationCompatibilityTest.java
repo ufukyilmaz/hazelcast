@@ -2,7 +2,6 @@ package com.hazelcast.cache.eviction;
 
 import com.hazelcast.cache.HazelcastCacheManager;
 import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
@@ -35,6 +34,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.cache.impl.eviction.CacheClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION;
 import static com.hazelcast.test.OverridePropertyRule.set;
@@ -72,7 +72,7 @@ public class PeriodicExpirationCompatibilityTest extends HazelcastTestSupport {
 
         waitClusterForSafeState(instances[currentVersionIndex]);
 
-        CachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(instances[currentVersionIndex]);
+        CachingProvider provider = createServerCachingProvider(instances[currentVersionIndex]);
         HazelcastCacheManager cacheManager = (HazelcastCacheManager) provider.getCacheManager();
         Cache<Integer, Integer> cache = cacheManager.createCache(cacheName, createCacheConfig());
         String cacheNameWithPrefix = cacheManager.getCacheNameWithPrefix(cacheName);

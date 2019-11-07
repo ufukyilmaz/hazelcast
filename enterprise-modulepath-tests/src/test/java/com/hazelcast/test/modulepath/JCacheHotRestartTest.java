@@ -2,6 +2,7 @@ package com.hazelcast.test.modulepath;
 
 import static com.hazelcast.test.modulepath.EnterpriseTestUtils.assertClusterSize;
 import static com.hazelcast.test.modulepath.EnterpriseTestUtils.createConfigWithTcpJoin;
+import static com.hazelcast.test.modulepath.EnterpriseTestUtils.createServerCachingProvider;
 import static com.hazelcast.test.modulepath.EnterpriseTestUtils.waitClusterForSafeState;
 import static org.junit.Assert.assertEquals;
 
@@ -16,7 +17,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
@@ -127,7 +127,7 @@ public class JCacheHotRestartTest {
     }
 
     private static Cache<Integer, String> createCache(HazelcastInstance instance) {
-        CachingProvider cachingProvider = HazelcastServerCachingProvider.createCachingProvider(instance);
+        CachingProvider cachingProvider = createServerCachingProvider(instance);
 
         CacheConfig<Integer, String> cacheConfig = new CacheConfig<Integer, String>("cache");
         cacheConfig.setBackupCount(0).getHotRestartConfig().setEnabled(true);

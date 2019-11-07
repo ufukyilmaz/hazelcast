@@ -1,7 +1,6 @@
 package com.hazelcast.cache;
 
 import com.hazelcast.cache.impl.EnterpriseCacheService;
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.cache.impl.eviction.CacheClearExpiredRecordsTask;
 import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecord;
@@ -79,6 +78,7 @@ import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsZero;
 import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
 import static com.hazelcast.NativeMemoryTestUtil.dumpNativeMemory;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
+import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.instance.impl.TestUtil.terminateInstance;
 import static com.hazelcast.spi.properties.GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS;
 import static org.junit.Assert.assertEquals;
@@ -125,7 +125,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);
 
-        CacheManager cacheManager = HazelcastServerCachingProvider.createCachingProvider(hz).getCacheManager();
+        CacheManager cacheManager = createServerCachingProvider(hz).getCacheManager();
         final String cacheName = randomName();
         CacheConfiguration<Integer, Integer> cacheConfig = new CacheConfig<Integer, Integer>()
                 .setInMemoryFormat(InMemoryFormat.NATIVE)
@@ -178,7 +178,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
         warmUpPartitions(hz, hz2);
 
-        CacheManager cacheManager = HazelcastServerCachingProvider.createCachingProvider(hz).getCacheManager();
+        CacheManager cacheManager = createServerCachingProvider(hz).getCacheManager();
         final String cacheName = randomName();
         final CacheConfiguration<Integer, byte[]> cacheConfig = createCacheConfiguration(expiryPolicyFactory);
         final ICache<Integer, byte[]> cache = getICache(cacheManager, cacheConfig, cacheName);

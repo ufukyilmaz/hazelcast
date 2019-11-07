@@ -1,6 +1,5 @@
 package com.hazelcast.cache.eviction;
 
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
@@ -24,6 +23,8 @@ import org.junit.runner.RunWith;
 import javax.cache.spi.CachingProvider;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
+
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvictionPolicyComparatorTest {
@@ -34,7 +35,7 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvi
 
     @Override
     protected CachingProvider createCachingProvider(HazelcastInstance instance) {
-        return HazelcastServerCachingProvider.createCachingProvider(instance);
+        return createServerCachingProvider(instance);
     }
 
     @Override

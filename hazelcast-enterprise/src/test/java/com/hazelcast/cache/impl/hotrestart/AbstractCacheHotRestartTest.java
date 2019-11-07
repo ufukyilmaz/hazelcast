@@ -23,7 +23,7 @@ import javax.cache.configuration.Configuration;
 import java.util.function.Supplier;
 
 import static com.hazelcast.HDTestSupport.getICache;
-import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
+import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
@@ -179,7 +179,7 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
             cacheConfig.setInMemoryFormat(NATIVE);
         }
 
-        CacheManager cacheManager = createCachingProvider(hz).getCacheManager();
+        CacheManager cacheManager = createServerCachingProvider(hz).getCacheManager();
         return getICache(cacheManager, cacheConfig, cacheName);
     }
 

@@ -1,6 +1,5 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -21,6 +20,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.spi.CachingProvider;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION;
 import static org.junit.Assert.assertNull;
 
@@ -72,7 +72,7 @@ public class CacheSetExpiryPolicyCompatibilityTest extends HazelcastTestSupport 
 
     private ICache<String, String> createCache(HazelcastInstance instance) {
         // create a CachingProvider off currentVersionInstance, then create a new Cache with a typed CacheConfig
-        CachingProvider cachingProvider = HazelcastServerCachingProvider.createCachingProvider(instance);
+        CachingProvider cachingProvider = createServerCachingProvider(instance);
         CacheManager cacheManager = cachingProvider.getCacheManager(null, null,
                 HazelcastCachingProvider.propertiesByInstanceItself(instance));
         //noinspection unchecked

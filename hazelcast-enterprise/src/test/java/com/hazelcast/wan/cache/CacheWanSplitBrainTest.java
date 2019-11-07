@@ -1,6 +1,5 @@
 package com.hazelcast.wan.cache;
 
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CustomWanPublisherConfig;
@@ -35,6 +34,7 @@ import javax.cache.spi.CachingProvider;
 import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
@@ -140,7 +140,7 @@ public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
     }
 
     private static <K, V> Cache<K, V> createCache(HazelcastInstance hazelcastInstance, CacheConfig<K, V> cacheConfig) {
-        CachingProvider cachingProvider = HazelcastServerCachingProvider.createCachingProvider(hazelcastInstance);
+        CachingProvider cachingProvider = createServerCachingProvider(hazelcastInstance);
         CacheManager cacheManager = cachingProvider.getCacheManager();
         return cacheManager.createCache(cacheConfig.getName(), cacheConfig);
     }

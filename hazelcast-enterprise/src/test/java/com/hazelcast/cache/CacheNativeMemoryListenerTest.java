@@ -29,6 +29,7 @@ import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.HDTestSupport.getICache;
+import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -48,7 +49,7 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
 
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         factory.newHazelcastInstance(config);
-        provider = HazelcastServerCachingProvider.createCachingProvider(instance);
+        provider = createServerCachingProvider(instance);
         CacheManager cacheManager = provider.getCacheManager();
 
         EvictionConfig evictionConfig = new EvictionConfig()

@@ -1,6 +1,5 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
@@ -21,6 +20,7 @@ import javax.cache.CacheManager;
 import javax.cache.spi.CachingProvider;
 
 import static com.hazelcast.HDTestSupport.getICache;
+import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
 
 public abstract class AbstractCacheTest extends HazelcastTestSupport {
@@ -121,7 +121,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     @Before
     public void setup() {
         onSetup();
-        cachingProvider = HazelcastServerCachingProvider.createCachingProvider(getHazelcastInstance());
+        cachingProvider = createServerCachingProvider(getHazelcastInstance());
         cacheManager = cachingProvider.getCacheManager();
     }
 

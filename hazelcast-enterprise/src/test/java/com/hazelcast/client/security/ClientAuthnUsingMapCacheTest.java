@@ -16,6 +16,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.EndpointQualifier;
+import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 import com.hazelcast.internal.jmx.ManagementService;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.logging.ILogger;
@@ -60,6 +61,7 @@ import static com.hazelcast.config.PermissionConfig.PermissionType.ALL;
 import static com.hazelcast.core.Hazelcast.getHazelcastInstanceByName;
 import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 
 /**
  * Regression tests for blocking client authentications. It should not lead to a cluster split-brain.
@@ -91,6 +93,7 @@ public class ClientAuthnUsingMapCacheTest {
     @AfterClass
     public static void afterClass() {
         RuntimeAvailableProcessors.resetOverride();
+        HazelcastInstanceFactory.terminateAll();
     }
 
     @After
@@ -121,6 +124,7 @@ public class ClientAuthnUsingMapCacheTest {
         for (int i = 0; i < memberThreads.length; i++) {
             memberThreads[i].join();
         }
+        assertClusterSizeEventually(3, hz, getHazelcastInstanceByName("test1"), getHazelcastInstanceByName("test2"));
 
         Thread[] clientThreads = new Thread[20];
         for (int i = 0; i < clientThreads.length; i++) {
@@ -159,7 +163,7 @@ public class ClientAuthnUsingMapCacheTest {
 
     public static ClientConfig createClientConfig(String id) {
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClusterName(id);
+        clientConfig.setClusterName(id).getSecurityConfig().setUsernamePasswordIdentityConfig(id, id);
         return clientConfig;
     }
 

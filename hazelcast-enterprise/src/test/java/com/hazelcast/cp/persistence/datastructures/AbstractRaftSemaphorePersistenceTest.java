@@ -84,33 +84,7 @@ public abstract class AbstractRaftSemaphorePersistenceTest extends RaftDataStruc
     }
 
     @Test
-    public void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception {
-        ISemaphore semaphore = proxyInstance.getCPSubsystem().getSemaphore("test");
-        int acquires = 5000;
-        semaphore.init(acquires + 1); // +1 permit for indeterminate retry
-        Future<Integer> f = spawn(() -> {
-            for (int i = 0; i < acquires; i++) {
-                semaphore.acquire();
-                sleepMillis(1);
-            }
-            return semaphore.availablePermits();
-        });
-
-        sleepSeconds(1);
-        // crash majority
-        instances[0].getLifecycleService().terminate();
-
-        sleepSeconds(1);
-        instances[1].getLifecycleService().terminate();
-
-        // restart majority back
-        instances[1] = restartInstance(addresses[1], config);
-        sleepSeconds(1);
-        instances[0] = restartInstance(addresses[0], config);
-
-        int value = f.get();
-        assertBetween("Remaining permits", value, 0, 1);
-    }
+    public abstract void when_membersCrashWhileOperationsOngoing_then_recoversData() throws Exception;
 
     @Test
     public void when_cpSubsystemReset_then_dataIsRemoved() throws Exception {

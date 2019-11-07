@@ -276,7 +276,6 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
 
         List<Future<Void>> futures = new ArrayList<>();
         CompletableFuture<Void> verificationFuture = new InternalCompletableFuture<>();
-        futures.add(verificationFuture);
         if (addressChangeDetected) {
             runAsync("cp-local-member-address-publish-thread", () -> publishLocalAddressChange(verificationFuture));
         }
@@ -294,6 +293,10 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
             }
         }
 
+        // Adding verificationFuture last because waitWithDeadline(..) waits for futures in order.
+        // And we want to fail early when a CP group restore fails,
+        // instead of waiting for verification failure with operation timeout.
+        futures.add(verificationFuture);
         waitWithDeadline(futures, cpSubsystemConfig.getDataLoadTimeoutSeconds(), SECONDS, RETHROW_EVERYTHING);
 
         this.startCompleted = true;
@@ -405,7 +408,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
             logger.info("Restoring " + groupId + " from " + groupDir);
             int uncommittedEntryCount = cpSubsystemConfig.getRaftAlgorithmConfig().getUncommittedEntryCountToRejectNewAppends();
             OnDiskRaftStateLoader stateLoader =
-                    new OnDiskRaftStateLoader(groupDir, uncommittedEntryCount + 1, node.getSerializationService());
+                    new OnDiskRaftStateLoader(groupDir, uncommittedEntryCount + 1, node.getSerializationService(), logger);
             final RestoredRaftState restoredState = stateLoader.load();
 
             if (!localCPMember.getUuid().equals(restoredState.localEndpoint().getUuid())) {

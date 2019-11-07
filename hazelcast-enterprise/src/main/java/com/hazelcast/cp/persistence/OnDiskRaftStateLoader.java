@@ -13,6 +13,7 @@ import com.hazelcast.cp.persistence.RestoredLogFile.LoadMode;
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.util.BiTuple;
+import com.hazelcast.logging.ILogger;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -28,6 +29,7 @@ import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.MEMBERS_FILENAME
 import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.RAFT_LOG_PREFIX;
 import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.TERM_FILENAME;
 import static com.hazelcast.cp.persistence.RestoredLogFile.LoadMode.FULL;
+import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.readCollection;
 import static com.hazelcast.internal.util.Preconditions.checkNotNull;
 
@@ -43,16 +45,19 @@ public class OnDiskRaftStateLoader implements RaftStateLoader {
     private final File baseDir;
     private final int maxUncommittedEntries;
     private final InternalSerializationService serializationService;
+    private final ILogger logger;
     private LogFileStructure logFileStructure;
 
     public OnDiskRaftStateLoader(
             @Nonnull File baseDir,
             int maxUncommittedEntries,
-            @Nonnull InternalSerializationService serializationService
+            @Nonnull InternalSerializationService serializationService,
+            ILogger logger
     ) {
         this.baseDir = baseDir;
         this.maxUncommittedEntries = maxUncommittedEntries;
         this.serializationService = serializationService;
+        this.logger = logger;
     }
 
     @Nonnull @Override
@@ -117,7 +122,8 @@ public class OnDiskRaftStateLoader implements RaftStateLoader {
 
     @SuppressWarnings("checkstyle:npathcomplexity")
     private RestoredLogFile loadFile(String fname, LoadMode loadMode) throws IOException {
-        BufferedRaf raf = new BufferedRaf(new RandomAccessFile(new File(baseDir, fname), "rw"));
+        File file = new File(baseDir, fname);
+        BufferedRaf raf = new BufferedRaf(new RandomAccessFile(file, "rw"));
         BufRafObjectDataIn in = raf.asObjectDataInputStream(serializationService);
         try {
             final List<LogEntry> entries = new ArrayList<>();
@@ -129,15 +135,26 @@ public class OnDiskRaftStateLoader implements RaftStateLoader {
                 if (entryOffset == raf.length()) {
                     break;
                 }
-                final LogEntry entry;
-                try {
-                    entry = in.readObject();
-                    in.checkCrc32();
-                } catch (Exception e) {
+                int len = raf.readInt();
+                int required = len + INT_SIZE_IN_BYTES;
+                if (raf.available() < required) {
+                    // Not enough data.
+                    // Most probably this was a partially written entry
+                    // and not ACKed to the leader by this node.
+                    // It's also possible that "length" field
+                    // is corrupted and we are reading a wrong value here.
+                    // In that case, We will be truncating the log file incorrectly.
+                    // But unfortunately we cannot detect this... ¯\_(ツ)_/¯
+                    logger.info("Truncating " + file + " after position " + entryOffset + " (file length was " + raf.length()
+                            + "). Because " + required + " bytes is required, but only " + (raf.available() + INT_SIZE_IN_BYTES)
+                            + " bytes is available. Most probably last entry was written partially and not ACKed to the leader.");
                     raf.seek(entryOffset);
                     raf.setLength(entryOffset);
                     break;
                 }
+                LogEntry entry = in.readObject();
+                in.checkCrc32();
+
                 checkIndexGreaterThanPrevious(entry, topIndex, fname);
                 if (entry instanceof SnapshotEntry) {
                     checkSnapshotEntryIsFirst(topIndex, fname);

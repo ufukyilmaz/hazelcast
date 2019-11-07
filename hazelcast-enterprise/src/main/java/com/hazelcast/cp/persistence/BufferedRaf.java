@@ -8,6 +8,7 @@ import com.hazelcast.internal.util.Preconditions;
 
 import javax.annotation.Nonnull;
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,7 +27,7 @@ import static java.lang.Math.min;
 public class BufferedRaf implements Closeable {
 
     @SuppressWarnings("checkstyle:magicnumber")
-    private static final int BUFFER_SIZE = 1 << 14;
+    static final int BUFFER_SIZE = 1 << 14;
 
     private enum Mode { READING, WRITING }
 
@@ -42,6 +43,10 @@ public class BufferedRaf implements Closeable {
     BufferedRaf(RandomAccessFile raf) throws IOException {
         this.raf = raf;
         this.fileLength = raf.length();
+    }
+
+    public BufferedRaf(File file) throws IOException {
+        this(new RandomAccessFile(file, "rw"));
     }
 
     public BufRafObjectDataOut asObjectDataOutputStream(InternalSerializationService serializationService) {
@@ -188,6 +193,10 @@ public class BufferedRaf implements Closeable {
         write(auxBuf.array(), 0, LONG_SIZE_IN_BYTES);
     }
 
+    public long available() {
+        return fileLength - filePointer;
+    }
+
     private void ensure(Mode requestedMode) throws IOException {
         if (mode == requestedMode) {
             return;
@@ -242,6 +251,11 @@ public class BufferedRaf implements Closeable {
             BufferedRaf.this.read(b, off, len);
             crc32.update(b, off, len);
             return readCount;
+        }
+
+        @Override
+        public int available() {
+            return (int) BufferedRaf.this.available();
         }
 
         @Override

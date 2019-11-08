@@ -196,7 +196,7 @@
             <fileMode>0755</fileMode>
             <includes>
                 <include>start.**</include>
-                <include>stop.**</include>
+                <include>stop-all.**</include>
                 <include>cluster.**</include>
             </includes>
         </fileSet>

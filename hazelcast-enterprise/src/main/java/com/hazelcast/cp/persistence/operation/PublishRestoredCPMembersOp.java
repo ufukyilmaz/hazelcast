@@ -20,7 +20,7 @@ import java.util.Collection;
  * If a Hazelcast member restores the initial CP member list from persistent
  * storage, it broadcasts this list to other cluster members using this
  * operation until the Metadata CP group elects its leader.
- * <p/>
+ * <p>
  * Please note that this operation is not a {@link com.hazelcast.cp.internal.RaftOp},
  * so it is not handled via the Raft layer.
  */

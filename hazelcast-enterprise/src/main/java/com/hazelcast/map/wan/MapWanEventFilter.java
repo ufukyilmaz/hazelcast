@@ -18,6 +18,9 @@ public interface MapWanEventFilter<K, V> {
      * This method decides whether this entry view is suitable to replicate
      * over WAN.
      *
+     * @param mapName the map name
+     * @param entryView the entry view
+     * @param eventType the WAN event type
      * @return {@code true} if WAN event is not eligible for replication
      */
     boolean filter(String mapName, EntryView<K, V> entryView, WanFilterEventType eventType);

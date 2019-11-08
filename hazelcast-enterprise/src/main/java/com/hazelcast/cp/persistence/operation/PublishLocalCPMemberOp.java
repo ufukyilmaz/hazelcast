@@ -17,7 +17,7 @@ import java.io.IOException;
  * and it detects that local IP address is different than before shutdown,
  * then it broadcasts its new CP member information to other cluster members using this
  * operation until it commits the change to the metadata CP group.
- * <p/>
+ * <p>
  * Please note that this operation is not a {@link com.hazelcast.cp.internal.RaftOp},
  * so it is not handled via the Raft layer.
  */

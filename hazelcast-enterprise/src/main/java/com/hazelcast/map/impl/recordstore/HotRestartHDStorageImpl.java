@@ -37,7 +37,6 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> imp
     public Storage createStorage(RecordFactory recordFactory, InMemoryFormat inMemoryFormat) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
         HiDensityRecordProcessor<HDRecord> recordProcessor = ((HDRecordFactory) recordFactory).getRecordProcessor();
-
         return new HDStorageImpl(recordProcessor, serializationService);
     }
 

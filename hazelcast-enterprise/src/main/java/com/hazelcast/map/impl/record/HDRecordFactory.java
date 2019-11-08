@@ -1,10 +1,7 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.serialization.DataType;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
@@ -19,14 +16,9 @@ import static com.hazelcast.map.impl.record.Record.UNSET;
 public class HDRecordFactory implements RecordFactory<Data> {
 
     private final HiDensityRecordProcessor<HDRecord> recordProcessor;
-    private final EnterpriseSerializationService serializationService;
-    private final HazelcastMemoryManager memoryManager;
 
-    public HDRecordFactory(HiDensityRecordProcessor<HDRecord> recordProcessor,
-                           SerializationService serializationService) {
+    public HDRecordFactory(HiDensityRecordProcessor<HDRecord> recordProcessor) {
         this.recordProcessor = recordProcessor;
-        this.serializationService = ((EnterpriseSerializationService) serializationService);
-        this.memoryManager = this.serializationService.getMemoryManager();
     }
 
     @Override
@@ -54,16 +46,11 @@ public class HDRecordFactory implements RecordFactory<Data> {
         }
     }
 
-    @Override
-    public void setValue(Record<Data> record, Object value) {
-        Data data = serializationService.toNativeData(value, memoryManager);
-        record.setValue(data);
-    }
-
     public HiDensityRecordProcessor<HDRecord> getRecordProcessor() {
         return recordProcessor;
     }
 
+    // only used in tests
     static boolean isNull(Object object) {
         if (object == null) {
             return false;

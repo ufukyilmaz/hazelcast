@@ -2,6 +2,9 @@ package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.EntryView;
+import com.hazelcast.internal.hotrestart.HotRestartKey;
+import com.hazelcast.internal.hotrestart.HotRestartStore;
+import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EntryCostEstimator;
@@ -10,9 +13,6 @@ import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.hotrestart.HotRestartKey;
-import com.hazelcast.internal.hotrestart.HotRestartStore;
-import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -46,7 +46,7 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
 
     public Storage createStorage(RecordFactory recordFactory, InMemoryFormat inMemoryFormat) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        return new StorageImpl<R>(recordFactory, inMemoryFormat, serializationService);
+        return new StorageImpl<R>(inMemoryFormat, serializationService);
     }
 
     @Override

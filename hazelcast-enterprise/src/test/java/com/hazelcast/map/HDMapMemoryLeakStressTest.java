@@ -5,18 +5,30 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.nio.Bits;
+import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.map.impl.operation.MergeOperation;
+import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.query.PredicateBuilder.EntryObject;
 import com.hazelcast.query.Predicates;
+import com.hazelcast.spi.impl.NodeEngineImpl;
+import com.hazelcast.spi.impl.operationservice.Operation;
+import com.hazelcast.spi.impl.operationservice.impl.InvocationFuture;
+import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
+import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.merge.SplitBrainMergeTypes;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -27,6 +39,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,10 +56,14 @@ import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsZero;
 import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
 import static com.hazelcast.config.EvictionPolicy.LRU;
+import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
+import static com.hazelcast.spi.impl.merge.MergingValueFactory.createMergingEntry;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
 /**
- * This test is an adapted version of {@link com.hazelcast.cache.CacheNativeMemoryLeakStressTest}.
+ * This test is an adapted version of {@link
+ * com.hazelcast.cache.CacheNativeMemoryLeakStressTest}.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
@@ -55,7 +72,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(60);
     private static final MemoryAllocatorType ALLOCATOR_TYPE = MemoryAllocatorType.STANDARD;
     private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
-    private static final int[] OP_SET = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
+    private static final int[] OP_SET = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
     private static final int KEY_RANGE = 10000000;
     private static final int PARTITION_COUNT = 271;
     private static final int REPS = 1000;
@@ -118,7 +135,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         final AtomicBoolean running = new AtomicBoolean(true);
         CountDownLatch workerDoneLatch = new CountDownLatch(threads);
         for (int i = 0; i < threads; i++) {
-            new WorkerThread(map, workerDoneLatch, running).start();
+            new WorkerThread(map, workerDoneLatch, running, hz1).start();
         }
 
         assertOpenEventually("WorkerThreads didn't finish in time", workerDoneLatch, TIMEOUT * 2);
@@ -133,11 +150,17 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     }
 
     protected Config createConfig() {
+        MapStoreConfig mapStoreConfig
+                = new MapStoreConfig()
+                .setEnabled(true)
+                .setImplementation(new PostProcessingMapStoreAdapter());
+
         MapConfig mapConfig = new MapConfig(MAP_NAME)
                 .setBackupCount(1)
                 .setInMemoryFormat(InMemoryFormat.NATIVE)
                 .setStatisticsEnabled(true)
-                .setCacheDeserializedValues(CacheDeserializedValues.ALWAYS);
+                .setCacheDeserializedValues(CacheDeserializedValues.ALWAYS)
+                .setMapStoreConfig(mapStoreConfig);
 
         mapConfig.getEvictionConfig()
                 .setEvictionPolicy(LRU)
@@ -156,17 +179,24 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                 .setNativeMemoryConfig(memoryConfig);
     }
 
+    private static class PostProcessingMapStoreAdapter
+            extends MapStoreAdapter implements PostProcessingMapStore {
+    }
+
     private static class WorkerThread extends Thread {
 
         private final IMap<Integer, byte[]> map;
         private final CountDownLatch latch;
         private final Random rand = new Random();
         private final AtomicBoolean running;
+        private final HazelcastInstance instance;
 
-        WorkerThread(IMap<Integer, byte[]> map, CountDownLatch latch, AtomicBoolean running) {
+        WorkerThread(IMap<Integer, byte[]> map, CountDownLatch latch,
+                     AtomicBoolean running, HazelcastInstance instance) {
             this.map = map;
             this.latch = latch;
             this.running = running;
+            this.instance = instance;
         }
 
         @Override
@@ -313,6 +343,11 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                     map.values(predicate);
                     break;
 
+                case 19:
+                    for (int k = key, i = 0; i < 32 && k < KEY_RANGE; k++, i++) {
+                        executeMergeOperation(instance, MAP_NAME, key, newValue(key));
+                    }
+                    break;
                 default:
                     byte[] bytes = newValue(key);
                     map.put(key, bytes);
@@ -336,6 +371,28 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
 
             return value;
         }
+    }
+
+    /**
+     * No direct api call exists to execute merge operations,
+     * so we call it by using internal api as in this method.
+     */
+    private static void executeMergeOperation(HazelcastInstance member,
+                                              String mapName, int key, Object mergedValue) {
+        Node node = getNode(member);
+        NodeEngineImpl nodeEngine = node.nodeEngine;
+        OperationServiceImpl operationService = nodeEngine.getOperationService();
+        SerializationService serializationService = getSerializationService(member);
+
+        Data keyData = serializationService.toData(key);
+        Data valueData = serializationService.toData(mergedValue);
+        SplitBrainMergeTypes.MapMergeTypes mergingEntry
+                = createMergingEntry(serializationService, keyData, valueData, Mockito.mock(Record.class));
+        Operation mergeOperation = new MergeOperation(mapName, singletonList(mergingEntry),
+                new PassThroughMergePolicy<>(), false);
+        int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
+        InvocationFuture<Object> future = operationService.invokeOnPartition(SERVICE_NAME, mergeOperation, partitionId);
+        future.join();
     }
 
     private static class AdderEntryProcessor implements EntryProcessor<Integer, byte[], Integer> {

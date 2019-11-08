@@ -6,15 +6,15 @@ import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -32,13 +32,17 @@ import static org.junit.Assert.assertTrue;
 public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
 
     private HazelcastMemoryManager memoryManager;
-    private HiDensityRecordProcessor<HDRecord> recordProcessor;
 
     @After
     public void tearDown() {
         if (memoryManager != null) {
             memoryManager.dispose();
         }
+    }
+
+    @Override
+    void newRecordFactory(boolean isStatisticsEnabled, CacheDeserializedValues cacheDeserializedValues) {
+        factory = new HDRecordFactory(createHiDensityRecordProcessor());
     }
 
     @Test
@@ -49,17 +53,10 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
     }
 
     @Test
-    @Override
-    public void testSetValue_withNull() {
-        // this test expects an exception in OS, so we have to override it in EE
-        super.testSetValue_withNull();
-    }
-
-    @Test
     public void testGetRecordProcessor() {
-        newRecordFactory(false, CacheDeserializedValues.ALWAYS);
+        HiDensityRecordProcessor<HDRecord> recordProcessor = createHiDensityRecordProcessor();
 
-        assertEquals(recordProcessor, ((HDRecordFactory) factory).getRecordProcessor());
+        assertEquals(recordProcessor, new HDRecordFactory(recordProcessor).getRecordProcessor());
     }
 
     @Test
@@ -77,18 +74,6 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
         NativeMemoryData data = ess.toNativeData(object, memoryManager);
 
         assertFalse(HDRecordFactory.isNull(data));
-    }
-
-    @Test
-    @SuppressWarnings("ConstantConditions")
-    public void testIsNull_withNull() {
-        assertFalse(HDRecordFactory.isNull(null));
-    }
-
-    @Override
-    void newRecordFactory(boolean isStatisticsEnabled, CacheDeserializedValues cacheDeserializedValues) {
-        recordProcessor = createHiDensityRecordProcessor();
-        factory = new HDRecordFactory(recordProcessor, serializationService);
     }
 
     @Override
@@ -112,11 +97,6 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
     }
 
     @Override
-    Object getValue(Data dataValue, Object objectValue) {
-        return dataValue;
-    }
-
-    @Override
     InternalSerializationService createSerializationService() {
         MemorySize memorySize = new MemorySize(4, MemoryUnit.MEGABYTES);
         memoryManager = new PoolingMemoryManager(memorySize);
@@ -136,6 +116,6 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
         HiDensityRecordAccessor<HDRecord> recordAccessor = new HDRecordAccessor(ess);
         HazelcastMemoryManager memoryManager = ess.getMemoryManager();
         HiDensityStorageInfo storageInfo = new HiDensityStorageInfo("myStorage");
-        return new DefaultHiDensityRecordProcessor<HDRecord>(ess, recordAccessor, memoryManager, storageInfo);
+        return new DefaultHiDensityRecordProcessor<>(ess, recordAccessor, memoryManager, storageInfo);
     }
 }

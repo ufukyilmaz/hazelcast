@@ -7,6 +7,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.util.ConstructorFunction;
@@ -20,7 +21,6 @@ import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.spi.impl.NodeEngine;
-import com.hazelcast.internal.partition.IPartitionService;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.eviction.Evictor.NULL_EVICTOR;
@@ -63,10 +63,7 @@ public class EnterpriseMapContainer extends MapContainer {
     @Override
     ConstructorFunction<Void, RecordFactory> createRecordFactoryConstructor(final SerializationService serializationService) {
         if (NATIVE == mapConfig.getInMemoryFormat()) {
-            return notUsedArg -> {
-                HiDensityRecordProcessor<HDRecord> recordProcessor = createHiDensityRecordProcessor();
-                return new HDRecordFactory(recordProcessor, serializationService);
-            };
+            return anyArg -> new HDRecordFactory(createHiDensityRecordProcessor());
         } else {
             return super.createRecordFactoryConstructor(serializationService);
         }
@@ -76,7 +73,7 @@ public class EnterpriseMapContainer extends MapContainer {
         MerkleTreeConfig mapMerkleTreeConfig = mapConfig.getMerkleTreeConfig();
         if (mapMerkleTreeConfig.isEnabled()) {
             ILogger logger = mapServiceContext.getNodeEngine()
-                                              .getLogger(EnterpriseMapContainer.class);
+                    .getLogger(EnterpriseMapContainer.class);
             logger.fine("Using Merkle trees with depth " + mapMerkleTreeConfig.getDepth() + " for map " + name);
         }
     }

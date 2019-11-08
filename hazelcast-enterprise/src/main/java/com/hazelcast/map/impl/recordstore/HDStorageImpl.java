@@ -101,23 +101,23 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     }
 
     @Override
-    public void updateRecordValue(Data key, HDRecord record, Object value) {
-        NativeMemoryData oldValue = null;
-        NativeMemoryData newValue = null;
+    public void updateRecordValue(Data key, HDRecord record, Object newValue) {
+        NativeMemoryData oldValue;
+        NativeMemoryData newNativeValue = null;
         boolean disposeNewValue = true;
         long oldCostEstimate = 0L;
 
         try {
             oldValue = (NativeMemoryData) record.getValue();
             oldCostEstimate = entryCostEstimator.calculateValueCost(record);
-            newValue = (NativeMemoryData) toNative(value);
+            newNativeValue = (NativeMemoryData) toNative(newValue);
 
-            if (oldValue != null && newValue != null && oldValue.address() == newValue.address()) {
+            if (oldValue != null && newNativeValue != null && oldValue.address() == newNativeValue.address()) {
                 disposeNewValue = false;
                 return;
             }
 
-            long address = value == null ? NULL_ADDRESS : newValue.address();
+            long address = newValue == null ? NULL_ADDRESS : newNativeValue.address();
             record.setValueAddress(address);
             disposeNewValue = false;
             addDeferredDispose(oldValue);
@@ -125,8 +125,8 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
             entryCostEstimator.adjustEstimateBy(entryCostEstimator.calculateValueCost(record));
         } finally {
             if (disposeNewValue) {
-                addDeferredDispose(newValue);
-                entryCostEstimator.adjustEstimateBy(-entryCostEstimator.calculateValueCost(newValue));
+                addDeferredDispose(newNativeValue);
+                entryCostEstimator.adjustEstimateBy(-entryCostEstimator.calculateValueCost(newNativeValue));
             }
         }
     }
@@ -216,7 +216,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         recordProcessor.disposeDeferredBlocks();
     }
 
-    protected void addDeferredDispose(Object memoryBlock) {
+    private void addDeferredDispose(Object memoryBlock) {
         if (memoryBlock == null
                 || ((MemoryBlock) memoryBlock).address() == NULL_ADDRESS
                 || memoryBlock instanceof HeapData

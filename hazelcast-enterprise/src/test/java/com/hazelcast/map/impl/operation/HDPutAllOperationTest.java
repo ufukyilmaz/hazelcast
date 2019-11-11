@@ -5,7 +5,6 @@ import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -36,7 +35,7 @@ public class HDPutAllOperationTest extends AbstractHDMapOperationTest {
         testRunInternal();
     }
 
-    @Test @Ignore
+    @Test
     public void testRun_shouldWriteAllBackups() throws Exception {
         syncBackupCount = 1;
         throwNativeOOME = false;
@@ -52,7 +51,7 @@ public class HDPutAllOperationTest extends AbstractHDMapOperationTest {
         testRunInternal();
     }
 
-    @Test @Ignore
+    @Test
     public void testRun_whenNativeOutOfMemoryError_thenShouldNotInsertEntriesTwice_shouldWriteAllBackups() throws Exception {
         syncBackupCount = 1;
         throwNativeOOME = true;

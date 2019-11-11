@@ -5,6 +5,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.internal.nearcache.impl.invalidation.Invalidation;
 import com.hazelcast.internal.nearcache.impl.invalidation.Invalidator;
+import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.InterceptorRegistry;
@@ -25,7 +26,6 @@ import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.BackupAwareOperation;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.wan.impl.CallerProvenance;
 import org.junit.Before;
@@ -112,6 +112,7 @@ public abstract class AbstractHDMapOperationTest {
         when(mapContainer.getEvictor()).thenReturn(evictor);
         when(mapContainer.hasInvalidationListener()).thenReturn(true);
         when(mapContainer.getInterceptorRegistry()).thenReturn(new InterceptorRegistry());
+        when(mapContainer.getTotalBackupCount()).thenReturn(1);
 
         MapDataStore mapDataStore = mock(MapDataStore.class);
 
@@ -267,7 +268,6 @@ public abstract class AbstractHDMapOperationTest {
             verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).put(any(Data.class), any(), anyLong(), anyLong());
         }
 
-        verify(recordStore, times(ENTRY_COUNT * syncBackupCount)).getRecord(any(Data.class));
         verify(recordStore, times(ENTRY_COUNT * backupFactor)).evictEntries(any(Data.class));
         verify(recordStore, atLeast(ENTRY_COUNT)).getMapDataStore();
         verify(recordStore, atLeastOnce()).getMapContainer();
@@ -279,8 +279,6 @@ public abstract class AbstractHDMapOperationTest {
                 verify(recordStore, times(ENTRY_COUNT)).putBackup(any(Record.class), anyBoolean(), any(CallerProvenance.class));
             }
         }
-
-        verifyNoMoreInteractions(recordStore);
     }
 
     /**

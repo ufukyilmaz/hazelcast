@@ -6,6 +6,7 @@ import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.EnterprisePhoneHome;
 import com.hazelcast.internal.util.LicenseExpirationReminderTask;
+import com.hazelcast.internal.util.PhoneHome;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.nlc.BuiltInLicenseProviderFactory;
@@ -15,7 +16,6 @@ import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.internal.util.PhoneHome;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -175,6 +175,7 @@ public class NLCModeLicenseTest extends HazelcastTestSupport {
         allFeaturesEnableList.add(Feature.HOT_RESTART);
         allFeaturesEnableList.add(Feature.ROLLING_UPGRADE);
         allFeaturesEnableList.add(Feature.CLIENT_FILTERING);
+        allFeaturesEnableList.add(Feature.CP_PERSISTENCE);
         return allFeaturesEnableList;
     }
 }

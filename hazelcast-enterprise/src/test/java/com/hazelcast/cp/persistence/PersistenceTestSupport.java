@@ -9,6 +9,7 @@ import com.hazelcast.cp.internal.raft.impl.RaftNodeImpl;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
+import com.hazelcast.spi.properties.GroupProperty;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runners.Parameterized.Parameter;
@@ -26,6 +27,7 @@ import static com.hazelcast.cp.persistence.CPPersistenceServiceImpl.FAVOR_OWN_PE
 import static com.hazelcast.cp.persistence.PersistenceTestSupport.AddressPolicy.PICK_NEW;
 import static com.hazelcast.cp.persistence.PersistenceTestSupport.AddressPolicy.REUSE_EXACT;
 import static com.hazelcast.cp.persistence.PersistenceTestSupport.AddressPolicy.REUSE_RANDOM;
+import static com.hazelcast.enterprise.SampleLicense.V5_UNLIMITED_LICENSE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.synchronizedList;
 import static org.junit.Assert.assertEquals;
@@ -66,6 +68,7 @@ public abstract class PersistenceTestSupport extends HazelcastRaftTestSupport {
     @Before
     public void before() {
         baseDir = hotRestartFolderRule.getBaseDir();
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_UNLIMITED_LICENSE);
     }
 
     @Override

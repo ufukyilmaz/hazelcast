@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
@@ -35,6 +36,7 @@ import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_SMALLER_VERSIO
 import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.TWO_NODES_ENTERPRISE_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.V4_LICENSE_WITH_SECURITY_DISABLED;
+import static com.hazelcast.enterprise.SampleLicense.V5_LICENSE_WITH_CP_PERSISTENCE_DISABLED;
 import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.nio.IOUtil.toFileName;
 import static junit.framework.TestCase.fail;
@@ -49,6 +51,9 @@ public class LicenseTest extends HazelcastTestSupport {
 
     @Rule
     public TestName testName = new TestName();
+
+    @Rule
+    public TemporaryFolder cpPersistenceFolder = new TemporaryFolder();
 
     @Before
     public final void setup() {
@@ -210,6 +215,18 @@ public class LicenseTest extends HazelcastTestSupport {
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SECURITY_ONLY_LICENSE);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         factory.newHazelcastInstance(config); // Node should not start
+    }
+
+    @Test(expected = InvalidLicenseException.class)
+    public void testCPPersistenceStartupWithCPPersistenceDisabledLicense() throws Exception {
+        final Config config = new Config();
+        config.getCPSubsystemConfig()
+              .setCPMemberCount(3)
+              .setPersistenceEnabled(true)
+              .setBaseDir(cpPersistenceFolder.newFolder());
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), V5_LICENSE_WITH_CP_PERSISTENCE_DISABLED);
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        factory.newHazelcastInstance(config); // Node should not start.
     }
 
     private Config makeHotRestartConfigWithHotRestartDisabledLicense() {

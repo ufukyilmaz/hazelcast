@@ -365,8 +365,7 @@ public class EnterpriseNodeExtension
         // Creating CpPersistenceService after node is fully initialized.
         cpPersistenceService = createCPPersistenceService(node);
         if (cpPersistenceService != null) {
-            // TODO: We'll have a separate license feature in 4.0
-            LicenseHelper.checkLicensePerFeature(license, Feature.HOT_RESTART);
+            LicenseHelper.checkLicensePerFeature(license, Feature.CP_PERSISTENCE);
         }
         if (node.getConfig().getNativeMemoryConfig().isEnabled()) {
             LicenseHelper.checkLicensePerFeature(license, Feature.HD_MEMORY);

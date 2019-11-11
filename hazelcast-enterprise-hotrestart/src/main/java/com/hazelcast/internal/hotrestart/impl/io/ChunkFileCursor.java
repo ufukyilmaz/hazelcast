@@ -51,8 +51,7 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
     private static InputStream openChunkFile(File chunkFile, EncryptionManager encryptionMgr) {
         try {
             InputStream is = new FileInputStream(chunkFile);
-            is = encryptionMgr.wrap(is);
-            return new BufferingInputStream(is, BUFFER_SIZE);
+            return encryptionMgr.wrap(new BufferingInputStream(is, BUFFER_SIZE));
         } catch (FileNotFoundException e) {
             throw new HotRestartException("Failed to open chunk file " + chunkFile);
         }

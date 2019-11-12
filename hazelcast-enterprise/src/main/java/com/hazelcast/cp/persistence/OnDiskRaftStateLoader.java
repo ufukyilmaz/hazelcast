@@ -62,7 +62,6 @@ public class OnDiskRaftStateLoader implements RaftStateLoader {
 
     @Nonnull @Override
     public RestoredRaftState load() throws IOException {
-        checkFileExists(TERM_FILENAME);
         checkFileExists(MEMBERS_FILENAME);
 
         BiTuple<Integer, RaftEndpoint> termAndVote = readVoteAndTerm();
@@ -196,11 +195,12 @@ public class OnDiskRaftStateLoader implements RaftStateLoader {
     }
 
     private BiTuple<Integer, RaftEndpoint> readVoteAndTerm() throws IOException {
-        return runRead(TERM_FILENAME, in -> {
+        BiTuple<Integer, RaftEndpoint> result = runRead(TERM_FILENAME, in -> {
             int term = in.readInt();
             RaftEndpoint votedFor = in.readObject();
             return BiTuple.of(term, votedFor);
         });
+        return result != null ? result : BiTuple.of(0, null);
     }
 
     private BiTuple<RaftEndpoint, Collection<RaftEndpoint>> readMembers() throws IOException {

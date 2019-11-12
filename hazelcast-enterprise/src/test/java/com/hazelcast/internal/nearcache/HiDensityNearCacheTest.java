@@ -8,6 +8,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
@@ -161,7 +162,10 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
             byte[] value = new byte[(int) (2 * memorySize.bytes())];
             // when - then (just don't fail)
             logger.info("Serializing value with size " + valueSize + " free memory before: " + getFreeMemoryStr());
-            Data valueData = ess.toData(value);
+            // bypassing serialization service for creating HeapData to prevent
+            // allocating another byte[] by SS that in edge cases led to OOME
+            // if there were not big enough consecutive heap space for the array
+            Data valueData = new HeapData(value);
             logger.info("Serialized size: " + formatMegaBytes(valueData.totalSize())
                     + " free memory after: " + getFreeMemoryStr());
             nearCache.put(1, ess.toData(1), value, valueData);

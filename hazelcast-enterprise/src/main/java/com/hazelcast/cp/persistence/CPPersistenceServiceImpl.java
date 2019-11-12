@@ -51,7 +51,6 @@ import static com.hazelcast.cluster.memberselector.MemberSelectors.NON_LOCAL_MEM
 import static com.hazelcast.cp.CPGroup.METADATA_CP_GROUP_NAME;
 import static com.hazelcast.cp.persistence.CPMetadataStoreImpl.isCPDirectory;
 import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.MEMBERS_FILENAME;
-import static com.hazelcast.cp.persistence.OnDiskRaftStateStore.TERM_FILENAME;
 import static com.hazelcast.internal.nio.IOUtil.delete;
 import static com.hazelcast.internal.util.DirectoryLock.lockForDirectory;
 import static com.hazelcast.internal.util.FutureUtil.RETHROW_EVERYTHING;
@@ -384,8 +383,7 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
     }
 
     private File[] getGroupDirs(File dir) {
-        return dir.listFiles(path ->
-                path.isDirectory() && new File(path, MEMBERS_FILENAME).exists() && new File(path, TERM_FILENAME).exists());
+        return dir.listFiles(path -> path.isDirectory() && new File(path, MEMBERS_FILENAME).exists());
     }
 
     private void runAsync(String taskName, Runnable runnable) {

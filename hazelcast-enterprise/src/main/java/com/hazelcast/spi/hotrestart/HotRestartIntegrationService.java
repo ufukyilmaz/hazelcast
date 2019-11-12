@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart;
 
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.concurrent.idgen.IdGeneratorService;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.ExecutionCallback;
@@ -39,7 +40,11 @@ import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationThread;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
+import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
+import com.hazelcast.spi.impl.proxyservice.impl.operations.DistributedObjectDestroyOperation;
 import com.hazelcast.util.UuidUtil;
+import com.hazelcast.util.concurrent.BackoffIdleStrategy;
+import com.hazelcast.util.concurrent.IdleStrategy;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -48,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +61,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -98,6 +105,9 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
     private static final char ONHEAP_SUFFIX = '0';
     private static final char OFFHEAP_SUFFIX = '1';
     private static final String STORE_NAME_PATTERN = STORE_PREFIX + "\\d+" + ONHEAP_SUFFIX;
+    private static final long MEMBERS_STATE_WAIT_IN_NANOS = TimeUnit.MINUTES.toNanos(1);
+    private static final long MEMBERS_STATE_BACKOFF_MIN_PARK = MILLISECONDS.toNanos(500);
+    private static final long MEMBERS_STATE_BACKOFF_MAX_PARK = MILLISECONDS.toNanos(1000);
 
     private final Map<String, RamStoreRegistry> ramStoreRegistryServiceMap = new ConcurrentHashMap<String, RamStoreRegistry>();
     private final Map<Long, RamStoreRegistry> ramStoreRegistryPrefixMap = new ConcurrentHashMap<Long, RamStoreRegistry>();
@@ -319,6 +329,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
      * <li>Restores the cache descriptors from disk</li>
      * <li>Loads the hot restart data from disk</li>
      * <li>Force starts if not all members joined and force start was requested</li>
+     * <li>If the target cluster state is not PASSIVE, waits for all members to transition from PASSIVE state</li>
      * </ul>
      *
      * @throws HotRestartException if there was any exception while starting the service
@@ -342,6 +353,10 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             }
             rebuildMerkleTrees();
             clusterMetadataManager.loadCompletedLocal(failure);
+            // at this point, the final cluster state should be set on this node
+            if (node.getClusterService().getClusterState() != ClusterState.PASSIVE) {
+                waitUntilAllMembersLeavePassiveState();
+            }
             logger.info(String.format("Hot Restart procedure completed in %,d seconds",
                     MILLISECONDS.toSeconds(currentTimeMillis() - start)));
         } catch (ForceStartException e) {
@@ -1055,6 +1070,69 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
         if (success < members.size()) {
             throw new IllegalStateException(new TimeoutException("Time out while syncing partition replicas"));
+        }
+    }
+
+    /**
+     * Because we can't introduce an Operation to retrieve the cluster state of a member
+     * in a patch release, we work around this by picking an existing Operation that:
+     * a) does not implement AllowedDuringPassiveState and b), is a no-op when executed.
+     * The first property ensures that the operation fails with
+     * a "java.lang.IllegalStateException: Cluster is in PASSIVE state!" exception if
+     * the member is in PASSIVE state. If the operation succeeds (with no side-effects,
+     * thanks to the second property), it means that the member has transitioned from
+     * PASSIVE state.
+     * <p>
+     * When possible, introduce a proper Operation to retrieve the cluster state of a member!
+     * (Mis)using the IllegalStateException also has the unpleasant side-effect of spoiling
+     * the log with (potentially a lot of) stack traces.
+     */
+    private void waitUntilAllMembersLeavePassiveState() {
+        ClusterServiceImpl clusterService = node.getClusterService();
+        long startTimeNanos = System.nanoTime();
+        Collection<Member> members = clusterService.getMembers(DATA_MEMBER_SELECTOR);
+        Set<Address> addresses = new HashSet<Address>(members.size());
+        for (Member member : members) {
+            addresses.add(member.getAddress());
+        }
+        InternalOperationService operationService = node.nodeEngine.getOperationService();
+        /*
+         * We use such large park periods only because of the 'IllegalStateException'
+         * approach. Longer sleeps should result in less pollution of the log with
+         * IllegalStateException stack traces (at the expense of longer run). This is
+         * also the motivation for the initial wait before even checking the members:
+         * all members are already being set to ACTIVE so we delay the first check
+         * a little to increase the chances of success of the initial attempt.
+         * Note: all this should be eliminated/simplified once the work-around based
+         * on IllegalStateException is replaced with a proper implementation.
+         */
+        IdleStrategy idleStrategy = new BackoffIdleStrategy(0, 0, MEMBERS_STATE_BACKOFF_MIN_PARK, MEMBERS_STATE_BACKOFF_MAX_PARK);
+        idleStrategy.idle(0);
+        for (Member member : members) {
+            Address address = member.getAddress();
+            for (int idleCount = 0; (System.nanoTime() - startTimeNanos) < MEMBERS_STATE_WAIT_IN_NANOS; idleCount++) {
+                Operation operation = new DistributedObjectDestroyOperation(IdGeneratorService.SERVICE_NAME, "not-there");
+                Future<Boolean> future = operationService.invokeOnTarget(ProxyServiceImpl.SERVICE_NAME, operation, address);
+                try {
+                    if (future.get()) {
+                        addresses.remove(address);
+                        break;
+                    }
+                } catch (Exception e) {
+                    if (e instanceof ExecutionException && e.getCause() instanceof IllegalStateException) {
+                        idleStrategy.idle(idleCount);
+                        continue;
+                    }
+                    logger.warning("Error while checking member state: " + address, e);
+                    break;
+                }
+            }
+        }
+
+        if (addresses.isEmpty()) {
+            logger.info("All cluster members have transitioned from PASSIVE state");
+        } else {
+            logger.warning("Unable to determine the state of some members within a timeout: " + addresses);
         }
     }
 

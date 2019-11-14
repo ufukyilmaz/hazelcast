@@ -29,6 +29,8 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
 import static com.hazelcast.test.HazelcastTestSupport.assertEqualsEventually;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static org.junit.Assert.assertEquals;

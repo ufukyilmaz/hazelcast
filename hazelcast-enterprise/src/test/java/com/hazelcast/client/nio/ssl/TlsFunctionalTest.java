@@ -277,13 +277,13 @@ public class TlsFunctionalTest {
         assumeFalse("Test skipped for OpenSSL configuration", openSsl);
         String cipherSuites =
                 // OpenJDK
-                "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
-                        + "TLS_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,"
-                        + "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA,"
-                        // IBM Java
-                        + "SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,"
-                        + "SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA256,"
-                        + "SSL_RSA_WITH_AES_128_CBC_SHA,SSL_RSA_WITH_AES_128_CBC_SHA256";
+                  "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,"
+                + "TLS_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,"
+                + "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA,"
+                // IBM Java
+                + "SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,"
+                + "SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA,SSL_ECDHE_RSA_WITH_AES_128_CBC_SHA256,"
+                + "SSL_RSA_WITH_AES_128_CBC_SHA,SSL_RSA_WITH_AES_128_CBC_SHA256";
         Config config = createMemberConfig();
         SSLConfig sslConfig = getSSLConfig(config);
         sslConfig.setProperty("ciphersuites", cipherSuites);
@@ -603,7 +603,7 @@ public class TlsFunctionalTest {
             .setProperty("keyCertChainFile", copyResource(CERT_FILE_SERVER).getAbsolutePath())
             .setProperty("trustCertCollectionFile", copyResource(TRUST_ALL).getAbsolutePath());
         } else {
-            sslConfig
+            sslConfig.setFactoryClassName(BasicSSLContextFactory.class.getName())
             .setProperty("keyStore", copyResource(KEYSTORE_SERVER).getAbsolutePath())
             .setProperty("keyStorePassword", "123456")
             .setProperty("trustStore", copyResource(TRUSTSTORE_SERVER).getAbsolutePath())
@@ -654,7 +654,7 @@ public class TlsFunctionalTest {
                 .setProperty("keyCertChainFile", copyResource(CERT_FILE_CLIENT).getAbsolutePath());
             }
         } else {
-            sslConfig
+            sslConfig.setFactoryClassName(BasicSSLContextFactory.class.getName())
             .setProperty("trustStore", copyResource(TRUSTSTORE_CLIENT).getAbsolutePath())
             .setProperty("trustStorePassword", "123456");
             if (mutualAuthentication) {
@@ -664,6 +664,8 @@ public class TlsFunctionalTest {
         }
 
         ClientConfig config = new ClientConfig();
+        config.getConnectionStrategyConfig().getConnectionRetryConfig().setMaxBackoffMillis(0);
+
         ClientNetworkConfig networkConfig = config.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);
         networkConfig.setConnectionTimeout(15000);

@@ -6,6 +6,14 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport;
 import com.hazelcast.nio.ssl.TestKeyStoreUtil;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,13 +21,6 @@ import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Properties;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
@@ -137,7 +138,7 @@ public class AbstractSecuredEndpointsTest {
     protected void testTextEndpoint(int port, File trustStore, String trustStorePassword, boolean expectPass) throws Exception {
         SSLContext sslContext;
         try {
-            sslContext = SSLContext.getInstance("TLSv1.1");
+            sslContext = SSLContext.getInstance("TLSv1.2");
         } catch (NoSuchAlgorithmException e) {
             throw new IOException(e);
         }

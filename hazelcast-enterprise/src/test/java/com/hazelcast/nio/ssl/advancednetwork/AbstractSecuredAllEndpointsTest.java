@@ -5,9 +5,12 @@ import com.hazelcast.config.RestServerEndpointConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
 import com.hazelcast.core.Hazelcast;
-import java.util.Properties;
 import org.junit.Before;
 
+import java.util.Properties;
+
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 
 public abstract class AbstractSecuredAllEndpointsTest extends AbstractSecuredEndpointsTest {

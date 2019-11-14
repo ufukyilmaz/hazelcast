@@ -12,8 +12,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.*;
 import static com.hazelcast.test.HazelcastTestSupport.assertEqualsEventually;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -24,6 +23,8 @@ public class SecureOnlyWanEndpointTest extends AbstractSecureOneEndpointTest {
     @Override
     public void testWanConnectionToEndpoints() {
         Properties props = new Properties();
+        props.setProperty(JAVAX_NET_SSL_KEY_STORE, memberBKeystore.getAbsolutePath());
+        props.setProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD, MEMBER_PASSWORD);
         props.setProperty(JAVAX_NET_SSL_TRUST_STORE, wanTruststore.getAbsolutePath());
         props.setProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD, WAN_PASSWORD);
         Config config2 = prepareWanAdvancedNetworkConfig(WAN_PORT, props);

@@ -3,9 +3,9 @@ package com.hazelcast.nio.ssl.advancednetwork;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
+import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.Hazelcast;
@@ -24,8 +24,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.util.Properties;
 
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.*;
 import static com.hazelcast.test.HazelcastTestSupport.assertEqualsEventually;
 import static com.hazelcast.test.HazelcastTestSupport.sleepSeconds;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
@@ -176,6 +175,8 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
 
     private Config prepareWanAdvancedNetworkConfig(File truststore, String truststorePassword) {
         Properties props = new Properties();
+        props.setProperty(JAVAX_NET_SSL_KEY_STORE, memberBKeystore.getAbsolutePath());
+        props.setProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD, MEMBER_PASSWORD);
         props.setProperty(JAVAX_NET_SSL_TRUST_STORE, truststore.getAbsolutePath());
         props.setProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD, truststorePassword);
         Config config = smallInstanceConfig();

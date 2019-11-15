@@ -11,52 +11,48 @@ import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.util.ConstructorFunction;
-import com.hazelcast.internal.util.MemoryInfoAccessor;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.map.eviction.MapEvictionPolicy;
+import com.hazelcast.map.impl.eviction.Evictor;
 import com.hazelcast.map.impl.eviction.HDEvictionChecker;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
+import com.hazelcast.spi.eviction.EvictionPolicyComparator;
 import com.hazelcast.spi.impl.NodeEngine;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.map.impl.eviction.Evictor.NULL_EVICTOR;
-import static com.hazelcast.spi.properties.GroupProperty.MAP_EVICTION_BATCH_SIZE;
 
 /**
  * Includes enterprise specific {@link MapContainer} extensions.
  */
 public class EnterpriseMapContainer extends MapContainer {
 
-    private HiDensityStorageInfo storageInfo;
+    private HiDensityStorageInfo hdStorageInfo;
 
     EnterpriseMapContainer(final String name, final Config config, MapServiceContext mapServiceContext) {
         super(name, config, mapServiceContext);
-
         logMerkleTreeInfoIfEnabled();
     }
 
     @Override
-    public void initEvictor() {
-        storageInfo = new HiDensityStorageInfo(name);
+    public void init() {
+        hdStorageInfo = new HiDensityStorageInfo(name);
+        super.init();
+    }
+
+    @Override
+    protected Evictor newEvictor(EvictionPolicyComparator evictionPolicyComparator,
+                                 int evictionBatchSize, IPartitionService partitionService) {
+
         if (NATIVE == mapConfig.getInMemoryFormat()) {
-            MapEvictionPolicy mapEvictionPolicy = getMapEvictionPolicy();
-            if (mapEvictionPolicy != null) {
-                MemoryInfoAccessor memoryInfoAccessor = getMemoryInfoAccessor();
-                NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
-                HDEvictionChecker evictionChecker = new HDEvictionChecker(memoryInfoAccessor, mapServiceContext);
-                IPartitionService partitionService = nodeEngine.getPartitionService();
-                int batchSize = nodeEngine.getProperties().getInteger(MAP_EVICTION_BATCH_SIZE);
-                evictor = new HDEvictorImpl(mapEvictionPolicy, evictionChecker, partitionService, storageInfo,
-                        nodeEngine, batchSize);
-            } else {
-                evictor = NULL_EVICTOR;
-            }
+            return new HDEvictorImpl(evictionPolicyComparator,
+                    new HDEvictionChecker(getMemoryInfoAccessor(), mapServiceContext),
+                    evictionBatchSize, partitionService,
+                    hdStorageInfo, mapServiceContext.getNodeEngine().getLogger(HDEvictorImpl.class));
         } else {
-            super.initEvictor();
+            return super.newEvictor(evictionPolicyComparator, evictionBatchSize, partitionService);
         }
     }
 
@@ -86,11 +82,11 @@ public class EnterpriseMapContainer extends MapContainer {
                 = new HDRecordAccessor(serializationService);
         HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
         return new DefaultHiDensityRecordProcessor<>(serializationService, recordAccessor,
-                memoryManager, storageInfo);
+                memoryManager, hdStorageInfo);
     }
 
-    public HiDensityStorageInfo getStorageInfo() {
-        return storageInfo;
+    public HiDensityStorageInfo getHdStorageInfo() {
+        return hdStorageInfo;
     }
 
     @Override

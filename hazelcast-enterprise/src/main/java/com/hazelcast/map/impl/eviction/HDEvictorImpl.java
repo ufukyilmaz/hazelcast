@@ -2,8 +2,8 @@ package com.hazelcast.map.impl.eviction;
 
 import com.hazelcast.core.EntryView;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.map.eviction.MapEvictionPolicy;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.ForcedEvictable;
 import com.hazelcast.map.impl.recordstore.HDStorageSCHM;
@@ -11,8 +11,7 @@ import com.hazelcast.map.impl.recordstore.HotRestartHDStorageImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.Storage;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.impl.NodeEngine;
-import com.hazelcast.internal.partition.IPartitionService;
+import com.hazelcast.spi.eviction.EvictionPolicyComparator;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -34,17 +33,19 @@ public class HDEvictorImpl extends EvictorImpl {
     private final HiDensityStorageInfo storageInfo;
     private final ILogger logger;
 
-    public HDEvictorImpl(MapEvictionPolicy mapEvictionPolicy, EvictionChecker evictionChecker,
-                         IPartitionService partitionService, HiDensityStorageInfo storageInfo, NodeEngine nodeEngine,
-                         int batchSize) {
-        super(mapEvictionPolicy, evictionChecker, partitionService, batchSize);
+    public HDEvictorImpl(EvictionPolicyComparator evictionPolicyComparator,
+                         EvictionChecker evictionChecker, int batchSize,
+                         IPartitionService partitionService,
+                         HiDensityStorageInfo storageInfo,
+                         ILogger logger) {
+        super(evictionPolicyComparator, evictionChecker, batchSize, partitionService);
         this.storageInfo = storageInfo;
-        this.logger = nodeEngine.getLogger(getClass());
+        this.logger = logger;
     }
 
     @Override
-    protected Record getRecordFromEntryView(EntryView selectedEntry) {
-        return ((HDStorageSCHM.LazyEntryViewFromRecord) selectedEntry).getRecord();
+    protected Record getRecordFromEntryView(EntryView evictableEntryView) {
+        return ((HDStorageSCHM.LazyEntryViewFromRecord) evictableEntryView).getRecord();
     }
 
     @Override
@@ -97,7 +98,7 @@ public class HDEvictorImpl extends EvictorImpl {
     }
 
     @Override
-    protected Iterable<EntryView> getSamples(RecordStore recordStore) {
+    protected Iterable<EntryView> getRandomSamples(RecordStore recordStore) {
         Storage storage = recordStore.getStorage();
 
         if (storage instanceof HotRestartHDStorageImpl) {

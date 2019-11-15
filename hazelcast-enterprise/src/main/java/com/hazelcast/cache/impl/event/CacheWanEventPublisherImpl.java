@@ -25,7 +25,7 @@ public class CacheWanEventPublisherImpl implements CacheWanEventPublisher {
         CacheEventContext cacheUpdatedEvent = createCacheUpdatedEvent(entryView.getKey(),
                 entryView.getValue(), null,
                 entryView.getCreationTime(), entryView.getExpirationTime(),
-                entryView.getLastAccessTime(), entryView.getAccessHit(), (Data) entryView.getExpiryPolicy())
+                entryView.getLastAccessTime(), entryView.getHits(), (Data) entryView.getExpiryPolicy())
                 .setCacheName(cacheNameWithPrefix);
 
         cacheService.publishWanEvent(cacheUpdatedEvent);

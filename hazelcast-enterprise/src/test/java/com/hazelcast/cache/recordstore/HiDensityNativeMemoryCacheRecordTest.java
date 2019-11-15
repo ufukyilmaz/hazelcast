@@ -43,10 +43,10 @@ public class HiDensityNativeMemoryCacheRecordTest {
         record.setCreationTime(creationTime);
 
         long accessTime = creationTime + TimeUnit.HOURS.toMillis(10);
-        record.setAccessTime(accessTime);
+        record.setLastAccessTime(accessTime);
 
         int hit = (int) (Math.random() * 1000);
-        record.setAccessHit(hit);
+        record.setHits(hit);
 
         int seq = (int) (Math.random() * 99999);
         record.setSequence(seq);
@@ -59,7 +59,7 @@ public class HiDensityNativeMemoryCacheRecordTest {
 
         assertEquals(creationTime, record.getCreationTime());
         assertEquals(accessTime, record.getLastAccessTime());
-        assertEquals(hit, record.getAccessHit());
+        assertEquals(hit, record.getHits());
         assertEquals(seq, record.getSequence());
         assertEquals(ttl, record.getTtlMillis());
         assertEquals(address, record.getValueAddress());
@@ -97,16 +97,16 @@ public class HiDensityNativeMemoryCacheRecordTest {
     @Test
     public void testAccessHit() {
         for (int i = 0; i < 111; i++) {
-            record.incrementAccessHit();
+            record.incrementHits();
         }
-        assertEquals(111, record.getAccessHit());
+        assertEquals(111, record.getHits());
     }
 
     @Test
     public void testClear() {
         record.setCreationTime(System.currentTimeMillis());
-        record.setAccessTime(System.currentTimeMillis());
-        record.setAccessHit(1234);
+        record.setLastAccessTime(System.currentTimeMillis());
+        record.setHits(1234);
         record.setSequence(123456789L);
         record.setTtlMillis(System.currentTimeMillis());
 

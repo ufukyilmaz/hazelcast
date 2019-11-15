@@ -298,8 +298,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         CacheRecord cacheRecord = new CacheDataRecord();
         cacheRecord.setCreationTime(record.getCreationTime());
-        cacheRecord.setAccessTime(record.getLastAccessTime());
-        cacheRecord.setAccessHit(record.getAccessHit());
+        cacheRecord.setLastAccessTime(record.getLastAccessTime());
+        cacheRecord.setHits(record.getHits());
         cacheRecord.setExpirationTime(record.getExpirationTime());
         cacheRecord.setValue(toHeapData(record.getValue()));
         cacheRecord.setExpiryPolicy(toHeapData(record.getExpiryPolicy()));
@@ -317,8 +317,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         HiDensityNativeMemoryCacheRecord nativeMemoryRecord =
                 createRecord(record.getValue(), record.getCreationTime(), record.getExpirationTime());
-        nativeMemoryRecord.setAccessTime(record.getLastAccessTime());
-        nativeMemoryRecord.setAccessHit(record.getAccessHit());
+        nativeMemoryRecord.setLastAccessTime(record.getLastAccessTime());
+        nativeMemoryRecord.setHits(record.getHits());
         return nativeMemoryRecord;
     }
 
@@ -374,7 +374,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             recordAddress = cacheRecordProcessor.allocate(HiDensityNativeMemoryCacheRecord.SIZE);
             record = cacheRecordProcessor.newRecord();
             record.reset(recordAddress);
-            record.setAccessTime(HiDensityNativeMemoryCacheRecord.TIME_NOT_AVAILABLE);
+            record.setLastAccessTime(HiDensityNativeMemoryCacheRecord.TIME_NOT_AVAILABLE);
             record.setSequence(sequence);
 
             if (creationTime >= 0) {
@@ -589,8 +589,8 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     private void onAccess(long now, HiDensityNativeMemoryCacheRecord record) {
         if (isEvictionEnabled()) {
-            record.setAccessTime(now);
-            record.incrementAccessHit();
+            record.setLastAccessTime(now);
+            record.incrementHits();
         }
     }
 

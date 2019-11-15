@@ -4,6 +4,9 @@ import com.hazelcast.core.EntryView;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -14,10 +17,7 @@ import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.serialization.DataType;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -252,7 +252,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     }
 
     @Override
-    public Record extractRecordFromLazy(EntryView entryView) {
+    public Record extractRecordFrom(EntryView entryView) {
         return ((HDStorageSCHM.LazyEntryViewFromRecord) entryView).getRecord();
     }
 

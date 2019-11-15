@@ -62,8 +62,8 @@ public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & E
         }
 
         @Override
-        public long getAccessHit() {
-            return ((R) getEntryValue()).getAccessHit();
+        public long getHits() {
+            return ((R) getEntryValue()).getHits();
         }
     }
 

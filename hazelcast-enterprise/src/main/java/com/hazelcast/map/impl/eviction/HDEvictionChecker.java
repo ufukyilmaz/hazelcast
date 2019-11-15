@@ -42,7 +42,7 @@ public class HDEvictionChecker extends EvictionChecker {
     @Override
     public boolean checkEvictable(RecordStore recordStore) {
         EnterpriseMapContainer mapContainer = ((EnterpriseMapContainer) recordStore.getMapContainer());
-        HiDensityStorageInfo storageInfo = mapContainer.getStorageInfo();
+        HiDensityStorageInfo storageInfo = mapContainer.getHdStorageInfo();
         MapConfig mapConfig = mapContainer.getMapConfig();
         EvictionConfig evictionConfig = mapConfig.getEvictionConfig();
         MaxSizePolicy maxSizePolicy = evictionConfig.getMaxSizePolicy();

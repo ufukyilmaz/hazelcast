@@ -91,29 +91,26 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     }
 
     @Override
-    public void setAccessTime(long time) {
+    public void setLastAccessTime(long time) {
         writeLong(ACCESS_TIME_OFFSET, time);
     }
 
     @Override
-    public int getAccessHit() {
+    public long getHits() {
         return readInt(ACCESS_HIT_OFFSET);
     }
 
     @Override
-    public void setAccessHit(int hit) {
-        writeInt(ACCESS_HIT_OFFSET, hit);
+    public void setHits(long hit) {
+        writeInt(ACCESS_HIT_OFFSET, hit > Integer.MAX_VALUE
+                ? Integer.MAX_VALUE : (int) hit);
     }
 
     @Override
-    public void incrementAccessHit() {
-        int hit = getAccessHit();
-        writeInt(ACCESS_HIT_OFFSET, hit + 1);
-    }
-
-    @Override
-    public void resetAccessHit() {
-        setAccessHit(0);
+    public void incrementHits() {
+        long accessHit = getHits() + 1;
+        writeInt(ACCESS_HIT_OFFSET, accessHit > Integer.MAX_VALUE
+                ? Integer.MAX_VALUE : (int) accessHit);
     }
 
     @Override
@@ -272,7 +269,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
         if (address() != NULL_PTR) {
             return "HiDensityNativeMemoryCacheRecord{creationTime: " + getCreationTime()
                     + ", lastAccessTime: " + getLastAccessTime()
-                    + ", hits: " + getAccessHit()
+                    + ", hits: " + getHits()
                     + ", ttl: " + getTtlMillis()
                     + ", sequence: " + getSequence()
                     + ", valueAddress: " + getValueAddress()

@@ -12,11 +12,10 @@ import com.hazelcast.internal.hotrestart.PersistentConfigDescriptors;
 import com.hazelcast.internal.hotrestart.RamStore;
 import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.internal.metrics.DynamicMetricsProvider;
-import com.hazelcast.internal.metrics.MetricsCollectionContext;
 import com.hazelcast.internal.metrics.MetricDescriptor;
+import com.hazelcast.internal.metrics.MetricsCollectionContext;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.util.ConstructorFunction;
 import com.hazelcast.internal.util.comparators.NativeValueComparator;
 import com.hazelcast.internal.util.comparators.ValueComparator;
 import com.hazelcast.logging.ILogger;
@@ -104,8 +103,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     @Override
-    ConstructorFunction<String, MapContainer> createMapConstructor() {
-        return mapName -> new EnterpriseMapContainer(mapName, getNodeEngine().getConfig(), this);
+    MapContainer createMapContainer(String mapName) {
+        return new EnterpriseMapContainer(mapName, getNodeEngine().getConfig(), this);
     }
 
     @Override
@@ -269,8 +268,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             for (MapContainer mapContainer : mapContainers.values()) {
                 if (mapContainer instanceof EnterpriseMapContainer) {
                     context.collect(descriptor.copy()
-                                              .withDiscriminator("name", mapContainer.name),
-                            ((EnterpriseMapContainer) mapContainer).getStorageInfo());
+                                    .withDiscriminator("name", mapContainer.name),
+                            ((EnterpriseMapContainer) mapContainer).getHdStorageInfo());
                 }
             }
         }

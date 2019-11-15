@@ -45,15 +45,9 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
     private HDStorageSCHM.LazyEntryViewFromRecord entryViewSameAttributes;
 
     private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordValue;
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordVersion;
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordCost;
     private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordCreationTime;
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordExpirationTime;
     private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordHits;
     private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordLastAccessTime;
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordLastStoreTime;
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordLastUpdateTime;
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordTtl;
 
     @Before
     public void setUp() {
@@ -107,20 +101,11 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
         entryViewSameAttributes = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, record);
 
         entryViewOtherRecordValue = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, recordOtherValue);
-        entryViewOtherRecordVersion = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, recordOtherVersion);
-        entryViewOtherRecordCost = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, recordOtherCost);
         entryViewOtherRecordCreationTime = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService,
                 recordOtherCreationTime);
-        entryViewOtherRecordExpirationTime = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService,
-                recordOtherExpirationTime);
         entryViewOtherRecordHits = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, recordOtherHits);
         entryViewOtherRecordLastAccessTime = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService,
                 recordOtherLastAccessTime);
-        entryViewOtherRecordLastStoreTime = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService,
-                recordOtherLastStoreTime);
-        entryViewOtherRecordLastUpdateTime = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService,
-                recordOtherLastUpdateTime);
-        entryViewOtherRecordTtl = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, recordOtherTtl);
 
         thread.start();
     }
@@ -132,13 +117,13 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
     }
 
     @RequireAssertEnabled
-    @Test(expected = AssertionError.class)
+    @Test(expected = IllegalThreadStateException.class)
     public void testGetKey_onWrongThreadType() {
         entryView.getKey();
     }
 
     @RequireAssertEnabled
-    @Test(expected = AssertionError.class)
+    @Test(expected = IllegalThreadStateException.class)
     public void testGetValue_onWrongThreadType() {
         entryView.getValue();
     }
@@ -160,15 +145,9 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
                 assertNotEquals(entryView, new Object());
 
                 assertNotEquals(entryView, entryViewOtherRecordValue);
-                assertNotEquals(entryView, entryViewOtherRecordVersion);
-                assertNotEquals(entryView, entryViewOtherRecordCost);
                 assertNotEquals(entryView, entryViewOtherRecordCreationTime);
-                assertNotEquals(entryView, entryViewOtherRecordExpirationTime);
                 assertNotEquals(entryView, entryViewOtherRecordHits);
                 assertNotEquals(entryView, entryViewOtherRecordLastAccessTime);
-                assertNotEquals(entryView, entryViewOtherRecordLastStoreTime);
-                assertNotEquals(entryView, entryViewOtherRecordLastUpdateTime);
-                assertNotEquals(entryView, entryViewOtherRecordTtl);
             }
         }.execute();
     }
@@ -183,15 +162,9 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
                 assertNotEquals(entryView.hashCode(), entryViewSameAttributes.hashCode());
 
                 assertNotEquals(entryView.hashCode(), entryViewOtherRecordValue.hashCode());
-                assertNotEquals(entryView.hashCode(), entryViewOtherRecordVersion.hashCode());
-                assertNotEquals(entryView.hashCode(), entryViewOtherRecordCost.hashCode());
                 assertNotEquals(entryView.hashCode(), entryViewOtherRecordCreationTime.hashCode());
-                assertNotEquals(entryView.hashCode(), entryViewOtherRecordExpirationTime.hashCode());
                 assertNotEquals(entryView.hashCode(), entryViewOtherRecordHits.hashCode());
                 assertNotEquals(entryView.hashCode(), entryViewOtherRecordLastAccessTime.hashCode());
-                assertNotEquals(entryView.hashCode(), entryViewOtherRecordLastStoreTime.hashCode());
-                assertNotEquals(entryView.hashCode(), entryViewOtherRecordLastUpdateTime.hashCode());
-                assertNotEquals(entryView.hashCode(), entryViewOtherRecordTtl.hashCode());
             }
         }.execute();
     }

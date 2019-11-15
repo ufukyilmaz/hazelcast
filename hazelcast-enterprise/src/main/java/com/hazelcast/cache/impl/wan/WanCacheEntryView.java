@@ -19,7 +19,7 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
     private long creationTime;
     private long expirationTime;
     private long lastAccessTime;
-    private long accessHit;
+    private long hits;
 
     public WanCacheEntryView() {
     }
@@ -30,17 +30,17 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
         this.creationTime = entryView.getCreationTime();
         this.expirationTime = entryView.getExpirationTime();
         this.lastAccessTime = entryView.getLastAccessTime();
-        this.accessHit = entryView.getAccessHit();
+        this.hits = entryView.getHits();
     }
 
     public WanCacheEntryView(Data key, Data value, long creationTime,
-                             long expirationTime, long lastAccessTime, long accessHit) {
+                             long expirationTime, long lastAccessTime, long hits) {
         this.key = key;
         this.value = value;
         this.creationTime = creationTime;
         this.expirationTime = expirationTime;
         this.lastAccessTime = lastAccessTime;
-        this.accessHit = accessHit;
+        this.hits = hits;
     }
 
     @Override
@@ -69,8 +69,8 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
     }
 
     @Override
-    public long getAccessHit() {
-        return accessHit;
+    public long getHits() {
+        return hits;
     }
 
     @Override
@@ -83,7 +83,7 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
         out.writeLong(creationTime);
         out.writeLong(expirationTime);
         out.writeLong(lastAccessTime);
-        out.writeLong(accessHit);
+        out.writeLong(hits);
         out.writeData(key);
         out.writeData(value);
     }
@@ -93,7 +93,7 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
         creationTime = in.readLong();
         expirationTime = in.readLong();
         lastAccessTime = in.readLong();
-        accessHit = in.readLong();
+        hits = in.readLong();
         key = in.readData();
         value = in.readData();
     }

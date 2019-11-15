@@ -116,23 +116,24 @@ public class NativeMemoryNearCacheRecord extends HiDensityNearCacheRecord {
     }
 
     @Override
-    public int getAccessHit() {
+    public long getHits() {
         return readInt(ACCESS_HIT_OFFSET);
     }
 
     @Override
-    public void setAccessHit(int hit) {
+    public void setHits(int hit) {
         writeInt(ACCESS_HIT_OFFSET, hit);
     }
 
     @Override
-    public void incrementAccessHit() {
-        int hit = getAccessHit();
-        writeInt(ACCESS_HIT_OFFSET, hit + 1);
+    public void incrementHits() {
+        long accessHit = getHits() + 1;
+        writeInt(ACCESS_HIT_OFFSET, accessHit > Integer.MAX_VALUE
+                ? Integer.MAX_VALUE : (int) accessHit);
     }
 
     @Override
-    public void resetAccessHit() {
+    public void resetHits() {
         writeInt(ACCESS_HIT_OFFSET, 0);
     }
 

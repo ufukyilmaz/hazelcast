@@ -4,6 +4,7 @@ import com.hazelcast.core.EntryView;
 import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.IMap;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
@@ -11,7 +12,6 @@ import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 
 import java.util.AbstractMap;
@@ -75,7 +75,8 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
     }
 
     /**
-     * Internally used {@link EntryView} implementation for sampling based eviction specific purposes.
+     * Internally used {@link EntryView} implementation
+     * for sampling based eviction specific purposes.
      * <p>
      * Mainly:
      * <ul>
@@ -107,9 +108,15 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
             this.serializationService = serializationService;
         }
 
+        private void ensureCallingFromPartitionOperationThread() {
+            if (Thread.currentThread().getClass() != PartitionOperationThread.class) {
+                throw new IllegalThreadStateException(Thread.currentThread() + " cannot access data!");
+            }
+        }
+
         @Override
         public K getKey() {
-            assert Thread.currentThread() instanceof PartitionOperationThread;
+            ensureCallingFromPartitionOperationThread();
 
             if (key == null) {
                 key = serializationService.toObject(record.getKey());
@@ -119,7 +126,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         @Override
         public V getValue() {
-            assert Thread.currentThread() instanceof PartitionOperationThread;
+            ensureCallingFromPartitionOperationThread();
 
             if (value == null) {
                 this.value = serializationService.toObject(record.getValue());
@@ -129,51 +136,71 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         @Override
         public long getCost() {
+            ensureCallingFromPartitionOperationThread();
+
             return record.getCost();
         }
 
         @Override
         public long getCreationTime() {
+            ensureCallingFromPartitionOperationThread();
+
             return record.getCreationTime();
         }
 
         @Override
         public long getExpirationTime() {
+            ensureCallingFromPartitionOperationThread();
+
             return record.getExpirationTime();
         }
 
         @Override
         public long getHits() {
+            ensureCallingFromPartitionOperationThread();
+
             return record.getHits();
         }
 
         @Override
         public long getLastAccessTime() {
+            ensureCallingFromPartitionOperationThread();
+
             return record.getLastAccessTime();
         }
 
         @Override
         public long getLastStoredTime() {
+            ensureCallingFromPartitionOperationThread();
+
             return record.getLastStoredTime();
         }
 
         @Override
         public long getLastUpdateTime() {
+            ensureCallingFromPartitionOperationThread();
+
             return record.getLastUpdateTime();
         }
 
         @Override
         public long getVersion() {
+            ensureCallingFromPartitionOperationThread();
+
             return record.getVersion();
         }
 
         @Override
         public long getTtl() {
+            ensureCallingFromPartitionOperationThread();
+
             return record.getTtl();
         }
 
         @Override
         public long getMaxIdle() {
+            ensureCallingFromPartitionOperationThread();
+
             return record.getMaxIdle();
         }
 
@@ -184,6 +211,8 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
         @Override
         @SuppressWarnings("checkstyle:cyclomaticcomplexity")
         public boolean equals(Object o) {
+            ensureCallingFromPartitionOperationThread();
+
             if (this == o) {
                 return true;
             }
@@ -208,6 +237,8 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         @Override
         public int hashCode() {
+            ensureCallingFromPartitionOperationThread();
+
             int result = super.hashCode();
             result = 31 * result + getKey().hashCode();
             result = 31 * result + getValue().hashCode();
@@ -236,6 +267,8 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         @Override
         public String toString() {
+            ensureCallingFromPartitionOperationThread();
+
             return "EntryView{key=" + getKey()
                     + ", value=" + getValue()
                     + ", cost=" + getCost()

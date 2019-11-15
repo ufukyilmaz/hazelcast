@@ -167,8 +167,8 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     }
 
     @Override
-    public Record extractRecordFromLazy(EntryView entryView) {
-        return storage.extractRecordFromLazy(entryView);
+    public Record extractRecordFrom(EntryView evictableEntryView) {
+        return storage.extractRecordFrom(evictableEntryView);
     }
 
     public HotRestartKey createHotRestartKey(R record) {

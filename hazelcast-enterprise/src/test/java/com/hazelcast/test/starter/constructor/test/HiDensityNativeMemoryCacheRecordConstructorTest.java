@@ -51,6 +51,6 @@ public class HiDensityNativeMemoryCacheRecordConstructorTest {
         assertEquals(record.getExpirationTime(), clonedRecord.getExpirationTime());
         assertEquals(record.getLastAccessTime(), clonedRecord.getLastAccessTime());
         assertEquals(record.getTtlMillis(), clonedRecord.getTtlMillis());
-        assertEquals(record.getAccessHit(), clonedRecord.getAccessHit());
+        assertEquals(record.getHits(), clonedRecord.getHits());
     }
 }

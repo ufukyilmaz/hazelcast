@@ -91,6 +91,12 @@ public class RaftPersistenceTest extends HazelcastTestSupport {
     @After
     public void destroy() {
         if (group != null) {
+            for (RaftNodeImpl raftNode : group.getNodes()) {
+                if (group.isRunning(raftNode.getLocalMember())) {
+                    raftNode.forceSetTerminatedStatus().joinInternal();
+                }
+            }
+
             group.destroy();
         }
     }

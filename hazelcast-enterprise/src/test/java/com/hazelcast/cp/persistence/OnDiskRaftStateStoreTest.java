@@ -20,6 +20,7 @@ import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.HdrHistogram.Histogram;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -81,6 +82,13 @@ public class OnDiskRaftStateStoreTest {
         TestRaftEndpoint endpoint1 = newRaftMember(5000);
         members = Arrays.asList(endpoint1, newRaftMember(5001), newRaftMember(5002));
         store.persistInitialMembers(endpoint1, members);
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        if (store != null) {
+            store.close();
+        }
     }
 
     @org.junit.Ignore("This is for benchmarking OnDiskRaftStateStore")
@@ -507,6 +515,7 @@ public class OnDiskRaftStateStoreTest {
 
         // When
         store.close();
+        store = null;
 
         // Then
         RestoredRaftState restoredState = restoreState();
@@ -534,6 +543,7 @@ public class OnDiskRaftStateStoreTest {
 
         // When
         store.close();
+        store = null;
 
         // Then
         RestoredRaftState restoredState = restoreState();
@@ -564,6 +574,7 @@ public class OnDiskRaftStateStoreTest {
 
         // When
         store.close();
+        store = null;
 
         // Then
         RestoredRaftState restoredState = restoreState();
@@ -597,6 +608,7 @@ public class OnDiskRaftStateStoreTest {
         long snapshotIndex = entryCount - 5;
         store.persistSnapshot(newSnapshotEntry(snapshotIndex));
         store.close();
+        store = null;
 
         rename(tempFile, logFile);
 
@@ -838,6 +850,7 @@ public class OnDiskRaftStateStoreTest {
         store.persistEntry(newLogEntry(1));
         store.persistEntry(newLogEntry(2));
         store.close();
+        store = null;
 
         // When
         BufferedRaf raf = new BufferedRaf(getRaftLogFile());
@@ -866,6 +879,7 @@ public class OnDiskRaftStateStoreTest {
         store.persistEntry(newLogEntry(1));
         store.persistEntry(newLogEntry(2));
         store.close();
+        store = null;
 
         // When
         BufferedRaf raf = new BufferedRaf(getRaftLogFile());
@@ -894,6 +908,7 @@ public class OnDiskRaftStateStoreTest {
         store.persistEntry(newLogEntry(1));
         store.persistEntry(newLogEntry(2));
         store.close();
+        store = null;
 
         // When
         BufferedRaf raf = new BufferedRaf(getRaftLogFile());
@@ -923,6 +938,7 @@ public class OnDiskRaftStateStoreTest {
         store.persistEntry(firstEntry);
         store.persistEntry(newLogEntry(2));
         store.close();
+        store = null;
 
         // When
         BufferedRaf raf = new BufferedRaf(getRaftLogFile());
@@ -949,6 +965,7 @@ public class OnDiskRaftStateStoreTest {
         store.persistSnapshot(snapshot);
         store.persistEntry(newLogEntry(3));
         store.close();
+        store = null;
 
         // When
         BufferedRaf raf = new BufferedRaf(getRaftLogFile());
@@ -975,6 +992,7 @@ public class OnDiskRaftStateStoreTest {
         store.persistEntry(firstEntry);
         store.persistEntry(newLogEntry(2));
         store.close();
+        store = null;
 
         // When
         BufferedRaf raf = new BufferedRaf(getRaftLogFile());
@@ -1000,6 +1018,7 @@ public class OnDiskRaftStateStoreTest {
         store.persistSnapshot(snapshot);
         store.persistEntry(newLogEntry(3));
         store.close();
+        store = null;
 
         // When
         BufferedRaf raf = new BufferedRaf(getRaftLogFile());
@@ -1029,6 +1048,7 @@ public class OnDiskRaftStateStoreTest {
         store.persistEntry(largeEntry);
         store.persistEntry(newLogEntry(3));
         store.close();
+        store = null;
 
         // Then
         RestoredRaftState state = restoreState();
@@ -1055,6 +1075,7 @@ public class OnDiskRaftStateStoreTest {
                 new SnapshotEntry(1, 2, new RestoreSnapshotRaftRunnable(new TestRaftGroupId("default"), 2, value), 0, members);
         store.persistSnapshot(largeEntry);
         store.close();
+        store = null;
 
         // Then
         RestoredRaftState state = restoreState();

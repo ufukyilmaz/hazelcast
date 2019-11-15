@@ -12,7 +12,6 @@ import com.hazelcast.spi.impl.operationexecutor.impl.OperationQueue;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationQueueImpl;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -116,13 +115,11 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
         thread.join();
     }
 
-    @RequireAssertEnabled
     @Test(expected = IllegalThreadStateException.class)
     public void testGetKey_onWrongThreadType() {
         entryView.getKey();
     }
 
-    @RequireAssertEnabled
     @Test(expected = IllegalThreadStateException.class)
     public void testGetValue_onWrongThreadType() {
         entryView.getValue();

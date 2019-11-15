@@ -24,7 +24,10 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.util.Properties;
 
-import static com.hazelcast.nio.ssl.TestKeyStoreUtil.*;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE;
+import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
 import static com.hazelcast.test.HazelcastTestSupport.assertEqualsEventually;
 import static com.hazelcast.test.HazelcastTestSupport.sleepSeconds;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;

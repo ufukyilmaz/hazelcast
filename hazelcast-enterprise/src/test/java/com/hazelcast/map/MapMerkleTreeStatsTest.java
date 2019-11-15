@@ -137,7 +137,7 @@ public class MapMerkleTreeStatsTest extends HazelcastTestSupport {
         private long merkleTreesCost;
 
         ProbeCatcher(String mapName) {
-            this.pattern = "[name=" + mapName + ",unit=count,metric=map.%s]";
+            this.pattern = "[name=" + mapName + ",unit=count,metric=map.%s,excludedTargets={}]";
         }
 
         @Override

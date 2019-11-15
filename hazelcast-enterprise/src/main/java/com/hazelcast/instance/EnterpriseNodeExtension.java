@@ -96,8 +96,8 @@ import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -124,14 +124,18 @@ public class EnterpriseNodeExtension
         implements NodeExtension, MetricsProvider {
 
     /**
-     * A map of compatible license feature replacements introduced per license version. Used when updating
-     * from an older version license to a newer version license.
+     * A map of license features removed per license version.
      */
-    private static final Map<LicenseVersion, Map<Feature, Feature>> LICENSE_FEATURE_REPLACEMENTS
-            = new HashMap<LicenseVersion, Map<Feature, Feature>>();
+    private static final Map<LicenseVersion, Set<Feature>> LICENSE_FEATURE_REMOVALS
+            = new HashMap<LicenseVersion, Set<Feature>>();
+    /**
+     * A map of new license features introduced per license version.
+     */
+    private static final Map<LicenseVersion, Set<Feature>> LICENSE_FEATURE_ADDITIONS
+            = new HashMap<LicenseVersion, Set<Feature>>();
     static {
-        LICENSE_FEATURE_REPLACEMENTS.put(LicenseVersion.V5,
-                Collections.singletonMap(Feature.WEB_SESSION, Feature.CLIENT_FILTERING));
+        LICENSE_FEATURE_REMOVALS.put(LicenseVersion.V5, EnumSet.of(Feature.WEB_SESSION));
+        LICENSE_FEATURE_ADDITIONS.put(LicenseVersion.V5, EnumSet.of(Feature.CLIENT_FILTERING));
     }
 
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
@@ -245,39 +249,45 @@ public class EnterpriseNodeExtension
     }
 
     private static void checkFeaturesCompatible(License current, License newLicense) {
-        Set<Feature> newFeatures = newLicense.getFeatures() == null ? Collections.<Feature>emptySet()
-                : new HashSet<Feature>(newLicense.getFeatures());
+        LicenseVersion fromVersion = current.getVersion();
+        LicenseVersion toVersion = newLicense.getVersion();
+
+        Set<Feature> removals = collectFeaturesFromFeatureMap(fromVersion, toVersion, LICENSE_FEATURE_REMOVALS);
+        Set<Feature> additions = collectFeaturesFromFeatureMap(fromVersion, toVersion, LICENSE_FEATURE_ADDITIONS);
+
         Set<Feature> currentFeatures
-                = current.getFeatures() == null ? Collections.<Feature>emptySet() : new HashSet<Feature>(current.getFeatures());
-        Set<Feature> currentFeaturesReplaced
-                = processLicenseFeatureReplacements(currentFeatures, current.getVersion(), newLicense.getVersion());
-        if (!newFeatures.equals(currentFeaturesReplaced)) {
+                = current.getFeatures() == null ? EnumSet.<Feature>noneOf(Feature.class) : EnumSet.copyOf(current.getFeatures());
+        // remove legacy features no longer present in versions > current
+        // (nothing to compare against in the new license version)
+        currentFeatures.removeAll(removals);
+
+        Set<Feature> newFeatures = newLicense.getFeatures() == null ? EnumSet.<Feature>noneOf(Feature.class)
+                : EnumSet.copyOf(newLicense.getFeatures());
+        // remove features introduced in versions > current
+        // (nothing to compare against in the current license version)
+        newFeatures.removeAll(additions);
+
+        if (!newFeatures.equals(currentFeatures)) {
             throw new InvalidLicenseException("License has incompatible features "
                     + newLicense.getFeatures() + " with the current license " + current.getFeatures());
         }
     }
 
-    private static Set<Feature> processLicenseFeatureReplacements(Set<Feature> features, LicenseVersion fromVersion,
-                                                                  LicenseVersion toVersion) {
+    private static Set<Feature> collectFeaturesFromFeatureMap(LicenseVersion fromVersion, LicenseVersion toVersion,
+                                                              Map<LicenseVersion, Set<Feature>> featureMap) {
         if (fromVersion.getCode() >= toVersion.getCode()) {
-            return features;
+            return Collections.<Feature>emptySet();
         }
-        Set<Feature> replaced = new HashSet<Feature>(features);
-        for (int step = fromVersion.getCode() + 1; step <= toVersion.getCode(); step++) {
-            LicenseVersion stepVersion = LicenseVersion.getLicenseVersion(step);
-            Map<Feature, Feature> replacements = LICENSE_FEATURE_REPLACEMENTS.get(stepVersion);
-            if (replacements != null) {
-                for (Map.Entry<Feature, Feature> entry : replacements.entrySet()) {
-                    if (entry.getKey() != null) {
-                        replaced.remove(entry.getKey());
-                    }
-                    if (entry.getValue() != null) {
-                        replaced.add(entry.getValue());
-                    }
+        Set<Feature> features = EnumSet.<Feature>noneOf(Feature.class);
+        for (LicenseVersion version : LicenseVersion.values()) {
+            if (version.getCode() > fromVersion.getCode() && version.getCode() <= toVersion.getCode()) {
+                Set<Feature> featureSet = featureMap.get(version);
+                if (featureSet != null) {
+                    features.addAll(featureSet);
                 }
             }
         }
-        return replaced;
+        return features;
     }
 
     private boolean isRollingUpgradeLicensed() {

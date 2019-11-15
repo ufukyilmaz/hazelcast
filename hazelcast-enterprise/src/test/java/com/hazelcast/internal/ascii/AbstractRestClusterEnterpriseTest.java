@@ -155,7 +155,10 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
     }
 
     @Test
-    public void testUpdateLicenseKey_fromV4ToV5_WebSessionsMappedToClientForwarding() throws Exception {
+    public void testUpdateLicenseKey_fromV4ToV5_licenseFormatFeatureAdditionsAndRemovals() throws Exception {
+        /* License format V5 introduces CLIENT_FILTERING while dropping WEB_SESSIONS.
+         * Check that the presence of these features in the current/new licenses does
+         * not render the (otherwise compatible) licenses as incompatible. */
         GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V4_ENTERPRISE_HD_SEC_WS_RU_40NODES_2099EXP);
         Config config = createConfigWithRestEnabled();
         HazelcastInstance instance = factory.newHazelcastInstance(config);
@@ -166,9 +169,8 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
         HTTPCommunicator.ConnectionResponse response = communicator
                 .setLicense(config.getGroupConfig().getName(), getPassword(), V5_ENTERPRISE_HD_SEC_CF_RU_40NODES_2099EXP);
         assertSuccessfulResponse(response);
-        License after = getInstanceLicense(instance);
-        assertContains(after.getFeatures(), Feature.CLIENT_FILTERING);
-        assertNotContains(after.getFeatures(), Feature.WEB_SESSION);
+        checkResponseLicenseInfo(response, V5_ENTERPRISE_HD_SEC_CF_RU_40NODES_2099EXP, instance);
+        assertInstanceLicenseKeyEquals(V5_ENTERPRISE_HD_SEC_CF_RU_40NODES_2099EXP, instance);
     }
 
     @Test

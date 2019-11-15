@@ -45,14 +45,13 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
      * potential to affect other operations if it takes too long time.
      */
     // package private for testing
-    static final int DEFAULT_SCAN_LIMIT_FOR_EXPIRY = 1000;
-    private static final String PROP_SCAN_LIMIT_FOR_EXPIRY
-            = "hazelcast.internal.hd.near.cache.max.scannable.entry.count.per.loop";
+    static final int DEFAULT_EXPIRY_SAMPLE_COUNT = 1000;
+    private static final String PROP_EXPIRY_SAMPLE_COUNT = "hazelcast.internal.hd.near.cache.expiry.sample.count";
 
     private final int hashSeed;
     private final int segmentMask;
     private final int segmentShift;
-    private final int scanLimitForExpiry;
+    private final int expirySampleCount;
     private final boolean evictionDisabled;
 
     private final ClassLoader classLoader;
@@ -85,10 +84,10 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         this.segmentShift = 32 - segmentShift;
 
         HiDensityStorageInfo storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
-        this.scanLimitForExpiry = getInteger(PROP_SCAN_LIMIT_FOR_EXPIRY, DEFAULT_SCAN_LIMIT_FOR_EXPIRY);
-        int perSegmentScanLimitForExpiry = (int) ceil(1D * scanLimitForExpiry / segmentSize);
+        this.expirySampleCount = getInteger(PROP_EXPIRY_SAMPLE_COUNT, DEFAULT_EXPIRY_SAMPLE_COUNT);
+        int perSegmentExpirySampleCount = (int) ceil(1D * expirySampleCount / segmentSize);
         this.segments = createSegments(nearCacheConfig, nearCacheStats,
-                storageInfo, segmentSize, perSegmentScanLimitForExpiry);
+                storageInfo, segmentSize, perSegmentExpirySampleCount);
         this.nearCachePreloader = createPreloader(name, nearCacheConfig, serializationService);
     }
 
@@ -108,11 +107,11 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     private NativeMemoryNearCacheRecordStore<K, V>[] createSegments(NearCacheConfig nearCacheConfig,
                                                                     NearCacheStatsImpl nearCacheStats,
                                                                     HiDensityStorageInfo storageInfo,
-                                                                    int segmentSize, int scanLimitForExpiry) {
+                                                                    int segmentSize, int expirySampleCount) {
         NativeMemoryNearCacheRecordStore<K, V>[] segments = new NativeMemoryNearCacheRecordStore[segmentSize];
         for (int i = 0; i < segmentSize; i++) {
             segments[i] = new HiDensityNativeMemoryNearCacheRecordStoreSegment(nearCacheConfig, nearCacheStats,
-                    storageInfo, serializationService, classLoader, scanLimitForExpiry);
+                    storageInfo, serializationService, classLoader, expirySampleCount);
             segments[i].initialize();
         }
         return segments;
@@ -306,8 +305,8 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
                                                          NearCacheStatsImpl nearCacheStats,
                                                          HiDensityStorageInfo storageInfo,
                                                          EnterpriseSerializationService ss,
-                                                         ClassLoader classLoader, int scanLimitForExpiry) {
-            super(nearCacheConfig, nearCacheStats, storageInfo, ss, classLoader, scanLimitForExpiry);
+                                                         ClassLoader classLoader, int expirySampleCount) {
+            super(nearCacheConfig, nearCacheStats, storageInfo, ss, classLoader, expirySampleCount);
         }
 
         @Override

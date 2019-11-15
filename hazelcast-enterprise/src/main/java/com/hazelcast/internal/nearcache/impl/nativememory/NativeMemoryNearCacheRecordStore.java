@@ -11,7 +11,6 @@ import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.adapter.DataStructureAdapter;
 import com.hazelcast.internal.eviction.EvictionChecker;
-import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.ExpirationChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
@@ -59,22 +58,21 @@ public class NativeMemoryNearCacheRecordStore<K, V>
     private NativeMemoryNearCacheRecordAccessor recordAccessor;
     private HiDensityRecordProcessor<NativeMemoryNearCacheRecord> recordProcessor;
 
-    private final int scanLimitForExpiry;
-    private final RecordEvictionListener recordEvictionListener = new RecordEvictionListener();
+    private final int sampleCount;
     private final RecordExpirationChecker recordExpirationChecker = new RecordExpirationChecker();
 
     public NativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig, EnterpriseSerializationService ss,
-                                            ClassLoader classLoader, int scanLimitForExpiry) {
+                                            ClassLoader classLoader, int sampleCount) {
         this(nearCacheConfig, new NearCacheStatsImpl(), new HiDensityStorageInfo(nearCacheConfig.getName()),
-                ss, classLoader, scanLimitForExpiry);
+                ss, classLoader, sampleCount);
     }
 
     public NativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig, NearCacheStatsImpl nearCacheStats,
                                             HiDensityStorageInfo storageInfo, EnterpriseSerializationService ss,
-                                            ClassLoader classLoader, int scanLimitForExpiry) {
+                                            ClassLoader classLoader, int sampleCount) {
         super(nearCacheConfig, nearCacheStats, ss, classLoader);
         this.storageInfo = storageInfo;
-        this.scanLimitForExpiry = scanLimitForExpiry;
+        this.sampleCount = sampleCount;
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
@@ -209,17 +207,22 @@ public class NativeMemoryNearCacheRecordStore<K, V>
         checkAvailable();
 
         NativeMemoryNearCacheRecord record = null;
-        boolean removed = false;
         try {
-            record = removeRecord(key);
+            Data keyData = toData(key);
+            NativeMemoryData nativeKeyData
+                    = new NativeMemoryData().reset(records.getNativeKeyAddress(keyData));
+
+            record = records.remove(keyData);
+
             if (canUpdateStats(record)) {
-                removed = true;
                 nearCacheStats.decrementOwnedEntryCount();
                 nearCacheStats.incrementInvalidations();
+                nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) nativeKeyData, record));
             }
-            onRemove(key, record, removed);
+
+            onRemove(key, record, record != null);
         } catch (Throwable error) {
-            onRemoveError(key, record, removed, error);
+            onRemoveError(key, record, record != null, error);
             throw rethrow(error);
         } finally {
             nearCacheStats.incrementInvalidationRequests();
@@ -335,18 +338,6 @@ public class NativeMemoryNearCacheRecordStore<K, V>
         return oldRecord;
     }
 
-    private NativeMemoryNearCacheRecord removeRecord(K key) {
-        Data keyData = toData(key);
-        NativeMemoryData nativeKeyData = new NativeMemoryData();
-        nativeKeyData.reset(records.getNativeKeyAddress(keyData));
-
-        NativeMemoryNearCacheRecord removedRecord = records.remove(keyData);
-        if (removedRecord != null) {
-            nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) nativeKeyData, removedRecord));
-        }
-        return removedRecord;
-    }
-
     @Override
     protected boolean containsRecordKey(K key) {
         Data keyData = toData(key);
@@ -389,14 +380,14 @@ public class NativeMemoryNearCacheRecordStore<K, V>
     @Override
     public int forceEvict() {
         checkAvailable();
-        return records.forceEvict(DEFAULT_FORCED_EVICTION_PERCENTAGE, recordEvictionListener);
+        return records.forceEvict(DEFAULT_FORCED_EVICTION_PERCENTAGE, this);
     }
 
     @Override
     public void doExpiration() {
         checkAvailable();
-        records.scanAndDeleteExpired(recordEvictionListener,
-                recordExpirationChecker, scanLimitForExpiry);
+        records.sampleAndDeleteExpired(this,
+                recordExpirationChecker, sampleCount);
     }
 
     @Override
@@ -430,24 +421,6 @@ public class NativeMemoryNearCacheRecordStore<K, V>
         } finally {
             records.dispose();
             records = null;
-        }
-    }
-
-    /**
-     * {@link EvictionListener} implementation for listening record eviction.
-     */
-    private class RecordEvictionListener implements EvictionListener<Data, NativeMemoryNearCacheRecord> {
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public void onEvict(Data key, NativeMemoryNearCacheRecord record, boolean wasExpired) {
-            if (wasExpired) {
-                nearCacheStats.incrementExpirations();
-            } else {
-                nearCacheStats.incrementEvictions();
-            }
-            nearCacheStats.decrementOwnedEntryCount();
-            nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) key, record));
         }
     }
 

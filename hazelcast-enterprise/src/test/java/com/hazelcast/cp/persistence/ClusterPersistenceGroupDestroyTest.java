@@ -90,7 +90,7 @@ public class ClusterPersistenceGroupDestroyTest extends PersistenceTestSupport {
                     CPPersistenceServiceImpl cpPersistenceService = getCpPersistenceService(instance);
                     File groupDir = cpPersistenceService.getGroupDir(group);
                     assertFalse(group + " directory '" + groupDir + "' should not exist! Contents: "
-                                    + Arrays.toString(groupDir.list()), groupDir.exists());
+                            + Arrays.toString(groupDir.list()), groupDir.exists());
                 }
 
                 RaftService raftService = getRaftService(instances[0]);

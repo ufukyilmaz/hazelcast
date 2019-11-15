@@ -40,11 +40,10 @@ public class HDNearCacheTest extends NearCacheTest {
                 .setSize(new MemorySize(32, MemoryUnit.MEGABYTES))
                 .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
 
-        Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE);
-        config.addMapConfig(mapConfig);
-        config.setNativeMemoryConfig(memoryConfig);
-        return config;
+        return new Config()
+                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
+                .addMapConfig(mapConfig)
+                .setNativeMemoryConfig(memoryConfig);
     }
 
     @Override

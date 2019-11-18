@@ -372,11 +372,19 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                               .invokeOnPartition(MapService.SERVICE_NAME, op, partitionId);
             Collection<MerkleTreeNodeEntries> partitionEntries = future.joinInternal();
 
+            // since the WAN replication thread will start dequeueing and replicating
+            // as soon as the entries are enqueued, we must ensure the stats are ready
+            // or otherwise the replication thread might conclude that it has completed
+            // sync while in fact it is still ongoing
+            for (MerkleTreeNodeEntries nodeEntries : partitionEntries) {
+                syncContext.getSyncCounter(mapName, partitionId)
+                           .addAndGet(nodeEntries.getNodeEntries().size());
+            }
+
             for (MerkleTreeNodeEntries nodeEntries : partitionEntries) {
                 if (!nodeEntries.getNodeEntries().isEmpty()) {
                     EnterpriseMapReplicationMerkleTreeNode node =
                             new EnterpriseMapReplicationMerkleTreeNode(syncContext.getUuid(), mapName, nodeEntries, partitionId);
-                    syncContext.getSyncCounter(mapName, partitionId).addAndGet(node.getEntryCount());
                     publisher.putToSyncEventQueue(node);
                 }
             }

@@ -1,6 +1,6 @@
 package com.hazelcast.internal.monitor;
 
-import com.hazelcast.json.JsonSerializable;
+import com.hazelcast.json.internal.JsonSerializable;
 import com.hazelcast.license.domain.LicenseType;
 
 /**

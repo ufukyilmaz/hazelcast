@@ -30,7 +30,6 @@ import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionPolicy.LFU;
-import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
 import static java.lang.Integer.MAX_VALUE;
@@ -112,9 +111,9 @@ public class HDEvictionTest extends EvictionTest {
 
         MapConfig mapConfig = new MapConfig(mapName + "*").setInMemoryFormat(InMemoryFormat.NATIVE);
         mapConfig.getEvictionConfig()
+                .setComparator((o1, o2) -> 0)
                 .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
-                .setSize(maxSizeMB)
-                .setEvictionPolicy(LRU);
+                .setSize(maxSizeMB);
 
         Config config = getConfig().addMapConfig(mapConfig);
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");

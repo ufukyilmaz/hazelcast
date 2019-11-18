@@ -8,7 +8,6 @@ import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.impl.NodeExtension;
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.internal.partition.InternalPartition;
@@ -44,7 +43,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.internal.nio.IOUtil.toFileName;
 import static java.util.Collections.synchronizedList;
@@ -216,35 +214,6 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
             assertThat(instances, arrayWithSize(addresses.length));
             for (HazelcastInstance instance : instances) {
                 assertNotEquals(excludedAddress, getAddress(instance));
-            }
-        }
-    }
-
-    // RU_COMPAT_3_11
-    @Test
-    public void hotRestart_twoMembers_withSwappingAddresses_version_3_11() throws Exception {
-        hotRestart_withSwappingAddresses_version_3_11(2);
-    }
-
-    // RU_COMPAT_3_11
-    @Test
-    public void hotRestart_threeMembers_withSwappingAddresses_version_3_11() throws Exception {
-        hotRestart_withSwappingAddresses_version_3_11(3);
-    }
-
-    private void hotRestart_withSwappingAddresses_version_3_11(int nodeCount) throws Exception {
-        String existingHazelcastVersionValue = System.getProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
-        try {
-            System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, Versions.V3_11.toString());
-            hotRestart_withSwappingAddresses(nodeCount);
-            fail("Hot restart should have been failed!");
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            if (existingHazelcastVersionValue == null) {
-                System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
-            } else {
-                System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, existingHazelcastVersionValue);
             }
         }
     }

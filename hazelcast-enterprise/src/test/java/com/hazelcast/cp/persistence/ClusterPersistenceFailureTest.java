@@ -234,7 +234,7 @@ public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
     }
 
     @Test
-    public void when_activeCPMembersFileMissing_thenMembersCannotDiscover() throws Exception {
+    public void when_activeCPMembersFileMissing_thenMembersCannotDiscover() {
         assumeThat("When address change is detected members publish their new addresses and that allows to discover each other.",
                 restartAddressPolicy, equalTo(AddressPolicy.REUSE_EXACT));
 
@@ -295,7 +295,7 @@ public class ClusterPersistenceFailureTest extends PersistenceTestSupport {
     }
 
     @Test
-    public void when_activeCPMembersFileCorrupted_thenMembersCannotDiscover() throws Exception {
+    public void when_activeCPMembersFileCorrupted_thenMembersCannotDiscover() {
         Config config = createConfig(3, 3);
         HazelcastInstance[] instances = factory.newInstances(config, 3);
         waitUntilCPDiscoveryCompleted(instances);

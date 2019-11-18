@@ -21,6 +21,7 @@ import com.hazelcast.cp.persistence.raftop.VerifyRestartedCPMemberOp;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.util.BiTuple;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.internal.util.DirectoryLock;
 import com.hazelcast.internal.util.UuidUtil;
@@ -345,8 +346,10 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
         try {
             // METADATA group id is already restored...
             invocationManager.invoke(raftService.getMetadataGroupId(), new VerifyRestartedCPMemberOp(localCPMember)).join();
-            logger.info("CP member is verified on the METADATA group.");
-            // setting local cp member after my ip change is committed to the metadata group
+            logger.info(localCPMember + " is verified on the METADATA group.");
+            // setting local cp member after my ip change
+            //
+            // is committed to the metadata group
             // because we initialize local cp member also when the initial cp discovery is completed
             // so we use the same ordering logic here.
             raftService.getMetadataGroupManager().restoreLocalCPMember(localCPMember);
@@ -414,27 +417,39 @@ public class CPPersistenceServiceImpl implements CPPersistenceService {
                          + restoredState.localEndpoint() + ", group: " + groupId);
             }
 
+            BiTuple<List<CPMember>, Long> restoredCPMemberList = restoreCPMemberList(groupId);
+
             RaftNodeImpl raftNode = raftService.restoreRaftNode(groupId, restoredState, stateLoader.logFileStructure());
 
-            if (groupId.getName().equals(METADATA_CP_GROUP_NAME)) {
-                ArrayList<CPMember> members = new ArrayList<>();
-                try {
-                    long commitIndex = metadataStore.readActiveCPMembers(members);
-                    if (members.isEmpty()) {
-                        logger.warning("Restored active CP members list is empty with commitIndex: " + commitIndex);
-                    }
-                    replaceCPMemberIfIPChanged(members);
-
-                    runAsync("cp-metadata-restore-thread",
-                            () -> publishCPMembersUntilMetadataGroupLeaderElected(groupId, raftNode, members, commitIndex));
-                } catch (Exception e) {
-                    logger.severe(e);
-                    throw e;
-                }
+            if (restoredCPMemberList != null) {
+                runAsync("cp-metadata-restore-thread",
+                        () -> publishCPMembersUntilMetadataGroupLeaderElected(groupId, raftNode, restoredCPMemberList.element1,
+                                restoredCPMemberList.element2));
             }
+
 
             logger.info("Completed restore of " + groupId);
             return null;
+        }
+
+        private BiTuple<List<CPMember>, Long> restoreCPMemberList(RaftGroupId groupId) throws IOException {
+            if (!groupId.getName().equals(METADATA_CP_GROUP_NAME)) {
+                return null;
+            }
+
+            try {
+                ArrayList<CPMember> members = new ArrayList<>();
+                long commitIndex = metadataStore.readActiveCPMembers(members);
+                if (members.isEmpty()) {
+                    logger.warning("Restored empty active CP members list with commitIndex: " + commitIndex);
+                }
+
+                replaceCPMemberIfIPChanged(members);
+                return BiTuple.of(members, commitIndex);
+            } catch (Exception e) {
+                logger.severe(e);
+                throw e;
+            }
         }
 
         private void replaceCPMemberIfIPChanged(ArrayList<CPMember> members) {

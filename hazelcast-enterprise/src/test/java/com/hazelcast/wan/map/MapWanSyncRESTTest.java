@@ -6,6 +6,7 @@ import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
@@ -13,7 +14,6 @@ import com.hazelcast.internal.json.Json;
 import com.hazelcast.internal.json.JsonObject;
 import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -45,7 +45,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class MapWanSyncRESTTest extends HazelcastTestSupport {
 
@@ -61,7 +61,11 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
         wanServiceMock = mock(WanReplicationService.class);
         factory = new CustomNodeExtensionTestInstanceFactory(
                 node -> new WanServiceMockingEnterpriseNodeExtension(node, wanServiceMock));
-        HazelcastInstance instance = factory.newHazelcastInstance(getConfig());
+        Config config = getConfig();
+        // disable metrics collection to prevent calling wanServiceMock
+        // from multiple threads
+        config.getMetricsConfig().setEnabled(false);
+        HazelcastInstance instance = factory.newHazelcastInstance(config);
         communicator = new HTTPCommunicator(instance);
     }
 

@@ -27,9 +27,8 @@ public class EnterpriseProbeTest extends AbstractDiagnosticsPluginTest {
     @Before
     public void setup() {
         Config config = getHDConfig();
-                config.getMetricsConfig()
-                .setMetricsForDataStructuresEnabled(true)
-                .setCollectionIntervalSeconds(1);
+        config.getMetricsConfig()
+              .setCollectionFrequencySeconds(1);
         hz = createHazelcastInstance(config);
 
         NodeEngineImpl nodeEngineImpl = getNodeEngineImpl(hz);

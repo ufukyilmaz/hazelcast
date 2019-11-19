@@ -2,6 +2,7 @@ package com.hazelcast.cache.impl.hidensity.operation;
 
 import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecord;
 import com.hazelcast.cache.impl.CacheClearResponse;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -93,7 +94,7 @@ public class CacheLoadAllOperation
         } else {
             out.writeInt(keys.size());
             for (Data key : keys) {
-                out.writeData(key);
+                IOUtil.writeData(out, key);
             }
         }
     }

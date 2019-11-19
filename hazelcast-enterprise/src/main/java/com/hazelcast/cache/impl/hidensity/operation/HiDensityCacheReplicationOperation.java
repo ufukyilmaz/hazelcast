@@ -6,6 +6,7 @@ import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -151,8 +152,8 @@ public final class HiDensityCacheReplicationOperation
             for (Map.Entry<Data, HiDensityCacheRecord> e : value.entrySet()) {
                 HiDensityCacheRecord record = e.getValue();
                 valueData.reset(record.getValueAddress());
-                out.writeData(e.getKey());
-                out.writeData(valueData);
+                IOUtil.writeData(out, e.getKey());
+                IOUtil.writeData(out, valueData);
 
                 long remainingTtl = getRemainingTtl(record, now);
                 out.writeLong(remainingTtl);

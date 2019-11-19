@@ -2,6 +2,7 @@ package com.hazelcast.cache.impl.hidensity.operation;
 
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -130,8 +131,8 @@ public class CachePutAllOperation
         out.writeObject(expiryPolicy);
         out.writeInt(entries.size());
         for (Map.Entry<Data, Data> entry : entries) {
-            out.writeData(entry.getKey());
-            out.writeData(entry.getValue());
+            IOUtil.writeData(out, entry.getKey());
+            IOUtil.writeData(out, entry.getValue());
         }
     }
 

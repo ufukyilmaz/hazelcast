@@ -2,6 +2,7 @@ package com.hazelcast.cache.impl.wan;
 
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -84,8 +85,8 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
         out.writeLong(expirationTime);
         out.writeLong(lastAccessTime);
         out.writeLong(hits);
-        out.writeData(key);
-        out.writeData(value);
+        IOUtil.writeData(out, key);
+        IOUtil.writeData(out, value);
     }
 
     @Override
@@ -94,8 +95,8 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
         expirationTime = in.readLong();
         lastAccessTime = in.readLong();
         hits = in.readLong();
-        key = in.readData();
-        value = in.readData();
+        key = IOUtil.readData(in);
+        value = IOUtil.readData(in);
     }
 
     @Override

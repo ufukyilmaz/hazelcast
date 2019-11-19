@@ -1,6 +1,7 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.internal.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.internal.nio.EnterpriseObjectDataInput;
@@ -26,7 +27,7 @@ public final class EnterpriseSerializationUtil {
     public static Data readDataInternal(EnterpriseObjectDataInput in, DataType type,
                                         MemoryAllocator malloc, boolean readToHeapOnOOME) throws IOException {
         if (type == DataType.HEAP) {
-            return in.readData();
+            return IOUtil.readData(in);
         }
 
         if (malloc == null) {

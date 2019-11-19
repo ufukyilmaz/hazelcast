@@ -1,6 +1,7 @@
 package com.hazelcast.cache.impl.hidensity.operation;
 
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -48,7 +49,7 @@ abstract class KeyBasedHiDensityCacheOperation extends HiDensityCacheOperation {
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeData(key);
+        IOUtil.writeData(out, key);
     }
 
     @Override

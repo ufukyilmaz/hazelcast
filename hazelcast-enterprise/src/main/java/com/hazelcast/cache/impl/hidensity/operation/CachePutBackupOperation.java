@@ -3,6 +3,7 @@ package com.hazelcast.cache.impl.hidensity.operation;
 import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -81,7 +82,7 @@ public class CachePutBackupOperation
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeObject(expiryPolicy);
-        out.writeData(value);
+        IOUtil.writeData(out, value);
         out.writeBoolean(wanOriginated);
         out.writeLong(creationTime);
     }

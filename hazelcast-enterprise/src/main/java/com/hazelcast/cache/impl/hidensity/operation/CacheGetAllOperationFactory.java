@@ -1,5 +1,6 @@
 package com.hazelcast.cache.impl.hidensity.operation;
 
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -45,7 +46,7 @@ public class CacheGetAllOperationFactory
         out.writeObject(expiryPolicy);
         out.writeInt(keys.size());
         for (Data key : keys) {
-            out.writeData(key);
+            IOUtil.writeData(out, key);
         }
     }
 
@@ -55,7 +56,7 @@ public class CacheGetAllOperationFactory
         expiryPolicy = in.readObject();
         int size = in.readInt();
         for (int i = 0; i < size; i++) {
-            Data data = in.readData();
+            Data data = IOUtil.readData(in);
             keys.add(data);
         }
     }

@@ -3,6 +3,7 @@ package com.hazelcast.cache.impl.hidensity.operation;
 import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -76,8 +77,8 @@ public class CachePutAllBackupOperation extends HiDensityCacheOperation
         out.writeInt(cacheBackupRecords != null ? cacheBackupRecords.size() : 0);
         if (cacheBackupRecords != null) {
             for (CacheBackupRecordStore.CacheBackupRecord cacheBackupRecord : cacheBackupRecords) {
-                out.writeData(cacheBackupRecord.key);
-                out.writeData(cacheBackupRecord.value);
+                IOUtil.writeData(out, cacheBackupRecord.key);
+                IOUtil.writeData(out, cacheBackupRecord.value);
                 out.writeLong(cacheBackupRecord.creationTime);
             }
         }

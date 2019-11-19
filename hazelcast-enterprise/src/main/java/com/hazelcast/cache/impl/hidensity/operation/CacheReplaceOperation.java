@@ -3,6 +3,7 @@ package com.hazelcast.cache.impl.hidensity.operation;
 import com.hazelcast.cache.impl.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -80,8 +81,8 @@ public class CacheReplaceOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeData(value);
-        out.writeData(currentValue);
+        IOUtil.writeData(out, value);
+        IOUtil.writeData(out, currentValue);
         out.writeObject(expiryPolicy);
     }
 

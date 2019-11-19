@@ -2,6 +2,7 @@ package com.hazelcast.cache.impl.hidensity.operation;
 
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -52,7 +53,7 @@ public class CacheMergeBackupOperation extends HiDensityCacheOperation
             for (Map.Entry<Data, CacheRecord> entry : cacheRecords.entrySet()) {
                 Data key = entry.getKey();
                 CacheRecord record = entry.getValue();
-                out.writeData(key);
+                IOUtil.writeData(out, key);
                 out.writeObject(record);
             }
         }
@@ -66,7 +67,7 @@ public class CacheMergeBackupOperation extends HiDensityCacheOperation
             int size = in.readInt();
             cacheRecords = createHashMap(size);
             for (int i = 0; i < size; i++) {
-                Data key = in.readData();
+                Data key = IOUtil.readData(in);
                 CacheRecord record = in.readObject();
                 cacheRecords.put(key, record);
             }

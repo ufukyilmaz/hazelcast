@@ -1,6 +1,7 @@
 package com.hazelcast.cache.impl.hidensity.operation;
 
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -66,7 +67,7 @@ public class CacheRemoveOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeData(currentValue);
+        IOUtil.writeData(out, currentValue);
     }
 
     @Override

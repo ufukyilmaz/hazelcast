@@ -1,5 +1,6 @@
 package com.hazelcast.cache.impl.hidensity.operation;
 
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -46,7 +47,7 @@ public class CacheLoadAllOperationFactory
         if (keys != null) {
             out.writeInt(keys.size());
             for (Data key : keys) {
-                out.writeData(key);
+                IOUtil.writeData(out, key);
             }
         }
     }
@@ -60,7 +61,7 @@ public class CacheLoadAllOperationFactory
             int size = in.readInt();
             keys = new HashSet<Data>(size);
             for (int i = 0; i < size; i++) {
-                Data key = in.readData();
+                Data key = IOUtil.readData(in);
                 keys.add(key);
             }
         }

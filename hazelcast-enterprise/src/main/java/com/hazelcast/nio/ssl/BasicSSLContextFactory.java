@@ -1,6 +1,7 @@
 package com.hazelcast.nio.ssl;
 
 import com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport;
+import com.hazelcast.logging.Logger;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -14,6 +15,12 @@ public class BasicSSLContextFactory extends SSLEngineFactorySupport implements S
     @Override
     public void init(Properties properties) throws Exception {
         load(properties);
+        if (tmf == null) {
+            Logger.getLogger(getClass())
+                    .warning("The trustStore is not configured in Hazelcast TLS/SSL configuration! "
+                            + "Java platform default will be used. This can reduce the security level provided.");
+        }
+
         KeyManager[] keyManagers = kmf == null ? null : kmf.getKeyManagers();
         TrustManager[] trustManagers = tmf == null ? null : tmf.getTrustManagers();
 

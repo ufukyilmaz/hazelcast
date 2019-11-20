@@ -33,8 +33,8 @@ public class LicenseInfoRestTest {
     @Before
     public void setup() {
         config.getNetworkConfig().getRestApiConfig()
-              .setEnabled(true)
-              .enableAllGroups();
+                .setEnabled(true)
+                .enableAllGroups();
     }
 
     @After

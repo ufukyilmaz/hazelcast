@@ -54,8 +54,8 @@ public class HttpsRestTest extends HazelcastTestSupport {
                 .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         NetworkConfig networkConfig = config.getNetworkConfig();
         networkConfig.getRestApiConfig()
-                     .setEnabled(true)
-                     .enableAllGroups();
+                .setEnabled(true)
+                .enableAllGroups();
         networkConfig.setSSLConfig(new SSLConfig()
                 .setEnabled(true)
                 .setProperties(serverProps));

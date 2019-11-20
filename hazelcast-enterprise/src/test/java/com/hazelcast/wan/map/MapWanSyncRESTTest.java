@@ -13,7 +13,6 @@ import com.hazelcast.internal.ascii.HTTPCommunicator;
 import com.hazelcast.internal.json.Json;
 import com.hazelcast.internal.json.JsonObject;
 import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -189,14 +188,14 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
     protected Config getConfig() {
         Config config = smallInstanceConfig();
         config.getNetworkConfig().getRestApiConfig()
-              .setEnabled(true)
-              .enableAllGroups();
+                .setEnabled(true)
+                .enableAllGroups();
         JoinConfig joinConfig = config.getNetworkConfig().getJoin();
         joinConfig.getMulticastConfig()
-                  .setEnabled(false);
+                .setEnabled(false);
         joinConfig.getTcpIpConfig()
-                  .setEnabled(true)
-                  .addMember("127.0.0.1");
+                .setEnabled(true)
+                .addMember("127.0.0.1");
         return config;
     }
 

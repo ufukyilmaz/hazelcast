@@ -19,13 +19,11 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
 import javax.net.ssl.TrustManagerFactory;
-
 import java.io.IOException;
 import java.util.Properties;
 
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport.loadTrustManagerFactory;
-import static com.hazelcast.spi.properties.GroupProperty.REST_ENABLED;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -53,9 +51,11 @@ public class HttpsRestTest extends HazelcastTestSupport {
         serverProps.setProperty("javax.net.ssl.protocol", "TLS");
 
         Config config = new Config()
-                .setProperty(REST_ENABLED.getName(), "true")
                 .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         NetworkConfig networkConfig = config.getNetworkConfig();
+        networkConfig.getRestApiConfig()
+                     .setEnabled(true)
+                     .enableAllGroups();
         networkConfig.setSSLConfig(new SSLConfig()
                 .setEnabled(true)
                 .setProperties(serverProps));

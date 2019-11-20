@@ -13,7 +13,6 @@ import com.hazelcast.internal.json.JsonObject;
 import com.hazelcast.internal.json.JsonValue;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.util.LicenseHelper;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -33,7 +32,9 @@ public class LicenseInfoRestTest {
 
     @Before
     public void setup() {
-        config.setProperty(GroupProperty.REST_ENABLED.getName(), "true");
+        config.getNetworkConfig().getRestApiConfig()
+              .setEnabled(true)
+              .enableAllGroups();
     }
 
     @After

@@ -187,8 +187,10 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
 
     @Override
     protected Config getConfig() {
-        Config config = smallInstanceConfig()
-                .setProperty(GroupProperty.REST_ENABLED.getName(), "true");
+        Config config = smallInstanceConfig();
+        config.getNetworkConfig().getRestApiConfig()
+              .setEnabled(true)
+              .enableAllGroups();
         JoinConfig joinConfig = config.getNetworkConfig().getJoin();
         joinConfig.getMulticastConfig()
                   .setEnabled(false);

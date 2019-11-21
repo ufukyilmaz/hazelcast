@@ -15,7 +15,7 @@ import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.cp.internal.persistence.CPPersistenceService;
-import com.hazelcast.cp.persistence.CPPersistenceServiceImpl;
+import com.hazelcast.cp.internal.persistence.CPPersistenceServiceImpl;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.hotrestart.HotRestartService;

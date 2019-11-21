@@ -4,7 +4,7 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.cp.persistence.datastructures.RaftAtomicReferencePersistenceTest;
+import com.hazelcast.cp.internal.persistence.datastructures.RaftAtomicReferencePersistenceTest;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 
 public class RaftAtomicReferencePersistenceClientTest extends RaftAtomicReferencePersistenceTest {

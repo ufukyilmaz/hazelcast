@@ -4,8 +4,3 @@
 # enterprise hooks
 
 # oss hooks
-com.hazelcast.spi.impl.SpiPortableHook
-com.hazelcast.internal.partition.impl.PartitionPortableHook
-com.hazelcast.replicatedmap.impl.client.ReplicatedMapPortableHook
-com.hazelcast.ringbuffer.impl.client.RingbufferPortableHook
-com.hazelcast.map.impl.client.MapPortableHook

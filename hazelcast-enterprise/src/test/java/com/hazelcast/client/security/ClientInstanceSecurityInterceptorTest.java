@@ -1,6 +1,7 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.core.DistributedObjectListener;
+import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.partition.PartitionService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.partition.PartitionLostListener;
@@ -13,6 +14,7 @@ import org.junit.runner.RunWith;
 
 import java.util.UUID;
 
+import static com.hazelcast.internal.partition.InternalPartitionService.PARTITION_LOST_EVENT_TOPIC;
 import static org.mockito.Mockito.mock;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -22,7 +24,7 @@ public class ClientInstanceSecurityInterceptorTest extends InterceptorTestSuppor
     @Test
     public void addPartitionLostListener() {
         PartitionService partitionService = client.getPartitionService();
-        interceptor.setExpectation(IPartitionService.SERVICE_NAME, null, "addPartitionLostListener");
+        interceptor.setExpectation(IPartitionService.SERVICE_NAME, PARTITION_LOST_EVENT_TOPIC, "addPartitionLostListener");
         partitionService.addPartitionLostListener(mock(PartitionLostListener.class));
     }
 

@@ -56,22 +56,17 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
     public final OverridePropertyRule overridePropertyRule = set(HAZELCAST_TEST_USE_NETWORK, "true");
 
     @Before
-    public void initInstance() {
+    public void setupFactoryAndMock() {
         wanServiceMock = mock(WanReplicationService.class);
         factory = new CustomNodeExtensionTestInstanceFactory(
                 node -> new WanServiceMockingEnterpriseNodeExtension(node, wanServiceMock));
-        Config config = getConfig();
-        // disable metrics collection to prevent calling wanServiceMock
-        // from multiple threads
-        config.getMetricsConfig().setEnabled(false);
-        HazelcastInstance instance = factory.newHazelcastInstance(config);
-        communicator = new HTTPCommunicator(instance);
     }
 
     @Test
     public void syncSuccess() throws Exception {
         UUID expectedUuid = randomUUID();
         when(wanServiceMock.syncMap(any(), any(), any())).thenReturn(expectedUuid);
+        startInstance();
 
         JsonObject responseObject = assertSuccess(communicator.syncMapOverWAN("atob", "B", "map"));
         assertNotNull(responseObject.getString("message", null));
@@ -85,6 +80,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
         doThrow(new RuntimeException(msg))
                 .when(wanServiceMock)
                 .syncMap("atob", "B", "map");
+        startInstance();
+
         JsonObject responseObject = assertFail(communicator.syncMapOverWAN("atob", "B", "map"));
         assertEquals(msg, responseObject.getString("message", null));
         verify(wanServiceMock, times(1)).syncMap("atob", "B", "map");
@@ -94,6 +91,7 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
     public void syncAllSuccess() throws IOException {
         UUID expectedUuid = randomUUID();
         when(wanServiceMock.syncAllMaps(any(), any())).thenReturn(expectedUuid);
+        startInstance();
 
         JsonObject responseObject = assertSuccess(communicator.syncMapsOverWAN("atob", "B"));
         assertNotNull(responseObject.getString("message", null));
@@ -107,6 +105,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
         doThrow(new RuntimeException(msg))
                 .when(wanServiceMock)
                 .syncAllMaps("atob", "B");
+        startInstance();
+
         JsonObject responseObject = assertFail(communicator.syncMapsOverWAN("atob", "B"));
         assertEquals(msg, responseObject.getString("message", null));
         verify(wanServiceMock, times(1)).syncAllMaps("atob", "B");
@@ -116,6 +116,7 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
     public void consistencyCheckSuccess() throws Exception {
         UUID expectedUuid = randomUUID();
         when(wanServiceMock.consistencyCheck(any(), any(), any())).thenReturn(expectedUuid);
+        startInstance();
 
         JsonObject responseObject = assertSuccess(communicator.wanMapConsistencyCheck("atob", "B", "map"));
         assertNotNull(responseObject.getString("message", null));
@@ -129,6 +130,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
         doThrow(new RuntimeException(msg))
                 .when(wanServiceMock)
                 .consistencyCheck("atob", "B", "map");
+        startInstance();
+
         JsonObject responseObject = assertFail(communicator.wanMapConsistencyCheck("atob", "B", "map"));
         assertEquals(msg, responseObject.getString("message", null));
         verify(wanServiceMock, times(1)).consistencyCheck("atob", "B", "map");
@@ -138,12 +141,11 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
     public void addWanConfigSuccess() throws IOException {
         WanReplicationConfig wanConfig = getExampleWanConfig();
         WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanConfig);
-
         when(wanServiceMock.addWanReplicationConfig(wanConfig))
                 .thenReturn(new AddWanConfigResult(Collections.singleton("A"), Collections.singleton("B")));
+        startInstance();
 
         JsonObject responseObject = assertSuccess(communicator.addWanConfig(dto.toJson().toString()));
-
         assertEquals(1, responseObject.get("addedPublisherIds").asArray().size());
         assertEquals(1, responseObject.get("ignoredPublisherIds").asArray().size());
         verify(wanServiceMock, times(1)).addWanReplicationConfig(wanConfig);
@@ -153,11 +155,11 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
     public void addWanConfigFail() throws IOException {
         WanReplicationConfig wanConfig = getExampleWanConfig();
         WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanConfig);
-
         String msg = "Error occurred";
         doThrow(new RuntimeException(msg))
                 .when(wanServiceMock)
                 .addWanReplicationConfig(wanConfig);
+        startInstance();
 
         JsonObject responseObject = assertFail(communicator.addWanConfig(dto.toJson().toString()));
         assertEquals(msg, responseObject.getString("message", null));
@@ -169,6 +171,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
         doThrow(new SyncFailedException("message"))
                 .when(wanServiceMock)
                 .syncAllMaps("atob", "B");
+        startInstance();
+
         assertFail(communicator.syncMapsOverWAN("atob", "B"));
         verify(wanServiceMock, times(1)).syncAllMaps("atob", "B");
     }
@@ -201,7 +205,12 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
 
     @After
     public void cleanup() {
-        HazelcastInstanceFactory.shutdownAll();
+        factory.shutdownAll();
+    }
+
+    private void startInstance() {
+        HazelcastInstance instance = factory.newHazelcastInstance(getConfig());
+        communicator = new HTTPCommunicator(instance);
     }
 
     private JsonObject assertFail(String jsonResult) {

@@ -1,241 +1,224 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.HDTestSupport;
+import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.util.ExceptionUtil;
+import com.hazelcast.map.IMap;
+import com.hazelcast.map.impl.EnterpriseMapContainer;
 import com.hazelcast.map.impl.MapContainer;
-import com.hazelcast.map.impl.eviction.Evictor;
-import com.hazelcast.map.impl.recordstore.RecordStore;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.spi.impl.operationservice.Operation;
+import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletionException;
+
+import static com.hazelcast.config.EvictionPolicy.LFU;
+import static com.hazelcast.config.EvictionPolicy.NONE;
+import static com.hazelcast.config.InMemoryFormat.BINARY;
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.operation.WithForcedEviction.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
-import static java.util.Collections.singletonMap;
-import static org.mockito.AdditionalMatchers.geq;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest {
+public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
 
-    private static final String MAP_NAME = "HDMapOperationForcedEvictionTest";
+    private static final String MAIN_MAP_NAME = "MAIN_MAP";
+    private static final String OTHER_MAP_NAME = "OTHER_MAP";
 
-    private MapConfig otherMapConfig;
-    private RecordStore otherRecordStore;
+    private IMap<String, String> mainMap;
+    private IMap<String, String> otherMap;
 
-    @Before
-    @Override
-    public void setUp() {
-        super.setUp();
+    /**
+     * Triggers a single forced eviction on the RecordStore of the operation.
+     */
+    @Test
+    public void testRun_noForcedEvictions_on_main_map_when_no_noome_is_thrown() {
+        int noomeCountToBeThrown = 0;
+        int numOfEntriesToPutIntoMap = 100;
 
-        otherMapConfig = new MapConfig()
-                .setInMemoryFormat(InMemoryFormat.NATIVE);
-        otherMapConfig.getEvictionConfig()
-                .setEvictionPolicy(EvictionPolicy.RANDOM);
+        Map<String, HiDensityStorageInfo> storageInfoByMapName = runTestWith(noomeCountToBeThrown,
+                numOfEntriesToPutIntoMap, 0, LFU, LFU, NATIVE, NATIVE);
 
-        otherRecordStore = mockRecordStore(evictor, otherMapConfig);
+        HiDensityStorageInfo hdStorageInfo = storageInfoByMapName.get(MAIN_MAP_NAME);
 
-        when(mapService.getMapServiceContext().getExistingRecordStore(geq(1), eq(MAP_NAME))).thenReturn(recordStore);
-        partitionMaps.putAll(singletonMap("otherMap", otherRecordStore));
+        assertEquals(0, hdStorageInfo.getForceEvictionCount());
+        assertEquals(0, hdStorageInfo.getForceEvictedEntryCount());
+        assertEquals(numOfEntriesToPutIntoMap, mainMap.size());
     }
 
-    @Override
-    String getMapName() {
-        return MAP_NAME;
+    private static HiDensityStorageInfo getHiDensityStorageInfoOfMap(String mapName, HazelcastInstance node) {
+        MapService mapService = getNodeEngineImpl(node).getService(MapService.SERVICE_NAME);
+        MapContainer mapContainer = mapService.getMapServiceContext().getMapContainer(mapName);
+        return ((EnterpriseMapContainer) mapContainer).getHdStorageInfo();
     }
 
     /**
      * Triggers a single forced eviction on the RecordStore of the operation.
      */
     @Test
-    public void testRun_noForcedEvictions() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(0);
+    public void testRun_singleForcedEviction_on_main_map_when_one_noome_is_thrown() {
+        int noomeCountToBeThrown = 1;
+        int numOfEntriesToPutIntoMap = 1;
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, 0);
-            verifyForcedEviction(otherRecordStore, 0);
-            verifyForcedEvictAll(recordStore, 0);
-            verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEviction(0, 0);
-        }
-    }
+        Map<String, HiDensityStorageInfo> storageInfoByMapName = runTestWith(noomeCountToBeThrown,
+                numOfEntriesToPutIntoMap, 0, LFU, LFU, NATIVE, NATIVE);
 
-    /**
-     * Triggers a single forced eviction on the RecordStore of the operation.
-     */
-    @Test
-    public void testRun_singleForcedEviction() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(1);
+        HiDensityStorageInfo hdStorageInfo = storageInfoByMapName.get(MAIN_MAP_NAME);
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, 1);
-            verifyForcedEviction(otherRecordStore, 0);
-            verifyForcedEvictAll(recordStore, 0);
-            verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEviction(0, 0);
-        }
+
+        assertEquals(1, hdStorageInfo.getForceEvictionCount());
+        assertEquals(1, hdStorageInfo.getForceEvictedEntryCount());
+        assertEquals(0, mainMap.size());
     }
 
     /**
      * Triggers multiple forced evictions on the RecordStore of the operation.
      */
     @Test
-    public void testRun_multipleForcedEvictions() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(2);
+    public void testRun_multipleForcedEvictions_on_main_map() {
+        int noomeCountToBeThrown = 2;
+        int numOfEntriesToPutIntoMap = 100;
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, 2);
-            verifyForcedEviction(otherRecordStore, 0);
-            verifyForcedEvictAll(recordStore, 0);
-            verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEviction(0, 0);
-        }
+        Map<String, HiDensityStorageInfo> storageInfoByMapName = runTestWith(noomeCountToBeThrown,
+                numOfEntriesToPutIntoMap, 0, LFU, LFU, NATIVE, NATIVE);
+
+        HiDensityStorageInfo hdStorageInfo = storageInfoByMapName.get(MAIN_MAP_NAME);
+
+        assertEquals(2, hdStorageInfo.getForceEvictionCount());
     }
 
     /**
-     * Triggers a single forced eviction on the other RecordStore.
+     * Triggers a single forced eviction on the other
+     * maps RecordStore in the same partition.
      */
     @Test
-    public void testRun_forcedEvictionOnOthers() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(DEFAULT_FORCED_EVICTION_RETRY_COUNT + 1);
+    public void testRun_forcedEviction_on_other_maps() {
+        int noomeCountToBeThrown = DEFAULT_FORCED_EVICTION_RETRY_COUNT + 1;
+        int numOfEntriesToPutIntoMap = 0;
+        int otherMapEntryCount = 100;
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, 1);
-            verifyForcedEvictAll(recordStore, 0);
-            verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEviction(0, 0);
-        }
+        Map<String, HiDensityStorageInfo> storageInfoByMapName = runTestWith(noomeCountToBeThrown,
+                numOfEntriesToPutIntoMap, otherMapEntryCount, LFU, LFU, NATIVE, NATIVE);
+
+        HiDensityStorageInfo hdStorageInfo = storageInfoByMapName.get(OTHER_MAP_NAME);
+
+        assertEquals(1, hdStorageInfo.getForceEvictionCount());
     }
 
     /**
      * Triggers a single evictAll() call on the RecordStore of the operation.
      */
     @Test
-    public void testRun_singleEvictAll() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 1);
+    public void testRun_singleEvictAll_on_main_map() {
+        int noomeCountToBeThrown = 2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 1;
+        int mainMapEntryCount = 2000;
+        int otherMapEntryCount = 0;
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEvictAll(recordStore, 1);
-            verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEviction(1, 0);
-        }
+        Map<String, HiDensityStorageInfo> storageInfoByMapName = runTestWith(noomeCountToBeThrown,
+                mainMapEntryCount, otherMapEntryCount, LFU, LFU, NATIVE, NATIVE);
+
+        HiDensityStorageInfo hdStorageInfo = storageInfoByMapName.get(MAIN_MAP_NAME);
+
+        assertEquals(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT, hdStorageInfo.getForceEvictionCount());
+        assertEquals(0, mainMap.size());
     }
 
     /**
      * Triggers a single evictAll() call on both RecordStores.
      */
     @Test
-    public void testRun_evictAllOnOthers() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 2);
+    public void testRun_evictAll_on_other_maps() {
+        int noomeCountToBeThrown = 2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 2;
+        int mainMapEntryCount = 1000;
+        int otherMapEntryCount = 1000;
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEvictAll(recordStore, 1);
-            verifyForcedEvictAll(otherRecordStore, 1);
-            verifyForcedEviction(1, 1);
-        }
+        Map<String, HiDensityStorageInfo> storageInfoByMapName = runTestWith(noomeCountToBeThrown,
+                mainMapEntryCount, otherMapEntryCount, LFU, LFU, NATIVE, NATIVE);
+
+        HiDensityStorageInfo mainMapHdStorageInfo = storageInfoByMapName.get(MAIN_MAP_NAME);
+        HiDensityStorageInfo otherMapHdStorageInfo = storageInfoByMapName.get(OTHER_MAP_NAME);
+
+        assertEquals(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT, mainMapHdStorageInfo.getForceEvictionCount());
+        assertEquals(DEFAULT_FORCED_EVICTION_RETRY_COUNT, otherMapHdStorageInfo.getForceEvictionCount());
+        assertEquals(0, mainMap.size());
+        assertEquals(0, otherMap.size());
     }
 
     /**
      * Triggers a single evictAll() call on the RecordStore of the operation.
      */
     @Test
-    public void testRun_evictAllOnOthers_whenOtherRecordStoreHasNoEviction() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 2);
-        otherMapConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.NONE);
+    public void testRun_evictAllOnOthers_whenOtherRecordStoreHasNoEviction() {
+        int noomeCountToBeThrown = 2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 2;
+        int mainMapEntryCount = 1000;
+        int otherMapEntryCount = 1000;
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, 0);
-            verifyForcedEvictAll(recordStore, 1);
-            verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEviction(1, 0);
-        }
+        Map<String, HiDensityStorageInfo> storageInfoByMapName = runTestWith(noomeCountToBeThrown,
+                mainMapEntryCount, otherMapEntryCount, LFU, NONE, NATIVE, NATIVE);
+
+        HiDensityStorageInfo mainMapHdStorageInfo = storageInfoByMapName.get(MAIN_MAP_NAME);
+        HiDensityStorageInfo otherMapHdStorageInfo = storageInfoByMapName.get(OTHER_MAP_NAME);
+
+        assertEquals(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT, mainMapHdStorageInfo.getForceEvictionCount());
+        assertEquals(0, otherMapHdStorageInfo.getForceEvictionCount());
+        assertEquals(0, mainMap.size());
+        assertEquals(otherMapEntryCount, otherMap.size());
     }
 
     /**
      * Triggers a single evictAll() call on both RecordStores, but still fails.
      */
     @Test(expected = NativeOutOfMemoryError.class)
-    public void testRun_failedForcedEviction() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 3);
+    public void testRun_failedForcedEviction() {
+        int noomeCountToBeThrown = 2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 3;
+        int mainMapEntryCount = 1000;
+        int otherMapEntryCount = 1000;
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEvictAll(recordStore, 1);
-            verifyForcedEvictAll(otherRecordStore, 1);
-            verifyForcedEviction(1, 1);
-        }
+        runTestWith(noomeCountToBeThrown, mainMapEntryCount, otherMapEntryCount,
+                LFU, LFU, NATIVE, NATIVE);
     }
 
     /**
      * Triggers a single evictAll() call on the RecordStore of the operation.
      */
     @Test(expected = NativeOutOfMemoryError.class)
-    public void testRun_failedForcedEviction_whenOtherRecordStoreHasNoEviction() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(Integer.MAX_VALUE);
-        otherMapConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.NONE);
+    public void testRun_failedForcedEviction_whenOtherRecordStoreHasNoEviction() {
+        int noomeCountToBeThrown = Integer.MAX_VALUE;
+        int mainMapEntryCount = 1000;
+        int otherMapEntryCount = 1000;
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, 0);
-            verifyForcedEvictAll(recordStore, 1);
-            verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEviction(1, 0);
-        }
+        runTestWith(noomeCountToBeThrown, mainMapEntryCount, otherMapEntryCount,
+                LFU, NONE, NATIVE, NATIVE);
+
     }
 
     /**
      * Triggers no forced eviction on the other RecordStore, only on the local (which is always NATIVE).
      */
     @Test(expected = NativeOutOfMemoryError.class)
-    public void testRun_failedForcedEviction_whenOtherRecordStoreIsNotNativeInMemoryFormat() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(Integer.MAX_VALUE);
-        otherMapConfig.setInMemoryFormat(InMemoryFormat.BINARY);
+    public void testRun_failedForcedEviction_whenOtherRecordStoreIsNotNativeInMemoryFormat() {
+        int noomeCountToBeThrown = Integer.MAX_VALUE;
+        int mainMapEntryCount = 1000;
+        int otherMapEntryCount = 1000;
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEviction(otherRecordStore, 0);
-            verifyForcedEvictAll(recordStore, 1);
-            verifyForcedEvictAll(otherRecordStore, 0);
-            verifyForcedEviction(1, 0);
-        }
+        runTestWith(noomeCountToBeThrown, mainMapEntryCount, otherMapEntryCount,
+                LFU, NONE, NATIVE, BINARY);
     }
 
     /**
@@ -243,58 +226,106 @@ public class HDMapOperationForcedEvictionTest extends AbstractHDMapOperationTest
      * and {@link MapOperation#createRecordStoreOnDemand} is {@code false}.
      */
     @Test(expected = NativeOutOfMemoryError.class)
-    public void testRun_failedForcedEviction_whenRecordStoreIsNull() throws Exception {
-        Operation op = new NativeOutOfMemoryOperation(Integer.MAX_VALUE, false);
+    public void testRun_failedForcedEviction_whenRecordStoreIsNull() {
+        int noomeCountToBeThrown = Integer.MAX_VALUE;
+        int mainMapEntryCount = 1000;
+        int otherMapEntryCount = 1000;
 
-        try {
-            executeOperation(op, PARTITION_ID);
-        } finally {
-            verifyForcedEviction(recordStore, 0);
-            verifyForcedEviction(otherRecordStore, DEFAULT_FORCED_EVICTION_RETRY_COUNT);
-            verifyForcedEvictAll(recordStore, 0);
-            verifyForcedEvictAll(otherRecordStore, 1);
-            verifyForcedEviction(0, 1);
+        runTestWith(noomeCountToBeThrown, mainMapEntryCount, otherMapEntryCount,
+                LFU, NONE, NATIVE, NATIVE, false);
+    }
+
+    private Map<String, HiDensityStorageInfo> runTestWith(int noomeCountToBeThrown,
+                                                          int mainMapEntryCount,
+                                                          int otherMapEntryCount,
+                                                          EvictionPolicy mainMapEvictionPolicy,
+                                                          EvictionPolicy otherMapEvictionPolicy,
+                                                          InMemoryFormat mainMapFormat,
+                                                          InMemoryFormat otherMapFormat) {
+        return runTestWith(noomeCountToBeThrown, mainMapEntryCount, otherMapEntryCount,
+                mainMapEvictionPolicy, otherMapEvictionPolicy, mainMapFormat, otherMapFormat, true);
+    }
+
+    /**
+     * Run tests according to given params.
+     *
+     * @param noomeCountToBeThrown      number of {@link NativeOutOfMemoryError}
+     *                                  to be thrown by {@link NativeOutOfMemoryOperation}
+     * @param mainMapEntryCount         populate map with this number of entries
+     * @param otherMapEntryCount
+     * @param mainMapEvictionPolicy     preferred eviction policy
+     * @param otherMapEvictionPolicy
+     * @param createRecordStoreOnDemand
+     * @return {@link HiDensityStorageInfo} which wil
+     * be used to check forced eviction statistics
+     */
+    private Map<String, HiDensityStorageInfo> runTestWith(int noomeCountToBeThrown,
+                                                          int mainMapEntryCount,
+                                                          int otherMapEntryCount,
+                                                          EvictionPolicy mainMapEvictionPolicy,
+                                                          EvictionPolicy otherMapEvictionPolicy,
+                                                          InMemoryFormat mainMapFormat,
+                                                          InMemoryFormat otherMapFormat,
+                                                          boolean createRecordStoreOnDemand) {
+        // main map's config
+        MapConfig mainMapConfig = new MapConfig(MAIN_MAP_NAME);
+        mainMapConfig.setInMemoryFormat(mainMapFormat)
+                .getEvictionConfig()
+                .setEvictionPolicy(mainMapEvictionPolicy);
+        // other map's config
+        MapConfig otherMapConfig = new MapConfig(OTHER_MAP_NAME);
+        otherMapConfig.setInMemoryFormat(otherMapFormat)
+                .getEvictionConfig()
+                .setEvictionPolicy(otherMapEvictionPolicy);
+
+        Config hdConfig = HDTestSupport.getHDConfig();
+        hdConfig.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
+        hdConfig.addMapConfig(mainMapConfig);
+        hdConfig.addMapConfig(otherMapConfig);
+
+        HazelcastInstance node = createHazelcastInstance(hdConfig);
+        this.mainMap = node.getMap(MAIN_MAP_NAME);
+
+        // populate maps
+        for (int i = 0; i < mainMapEntryCount; i++) {
+            this.mainMap.set("key::" + i, "value::" + i);
         }
+
+        if (otherMapEntryCount > 0) {
+            otherMap = node.getMap(OTHER_MAP_NAME);
+            for (int i = 0; i < otherMapEntryCount; i++) {
+                otherMap.set("key::" + i, "value::" + i);
+            }
+        }
+
+        // run operation
+        try {
+            Operation operation = new NativeOutOfMemoryOperation(MAIN_MAP_NAME,
+                    noomeCountToBeThrown, createRecordStoreOnDemand);
+
+            getOperationService(node)
+                    .createInvocationBuilder(MapService.SERVICE_NAME, operation, 0)
+                    .invoke().join();
+        } catch (CompletionException e) {
+            throw ExceptionUtil.rethrow(e.getCause());
+        }
+
+        // prepare and return storage info by map name
+        Map<String, HiDensityStorageInfo> storageInfoByMapName = new HashMap<>();
+        storageInfoByMapName.put(MAIN_MAP_NAME, getHiDensityStorageInfoOfMap(MAIN_MAP_NAME, node));
+        storageInfoByMapName.put(OTHER_MAP_NAME, getHiDensityStorageInfoOfMap(OTHER_MAP_NAME, node));
+        return storageInfoByMapName;
     }
 
-    private void verifyForcedEviction(RecordStore recordStore, int expectedTimes) {
-        verify(evictor, times(expectedTimes)).forceEvict(recordStore);
-    }
+    private static class NativeOutOfMemoryOperation extends MapOperation {
 
-    private void verifyForcedEvictAll(RecordStore recordStore, int expectedTimes) {
-        verify(recordStore, times(expectedTimes)).evictAll(false);
-    }
-
-    private void verifyForcedEviction(int onMain, int onOthers) {
-        verifyDisposeDeferredBlocks(recordStore, onMain);
-        verifyDisposeDeferredBlocks(otherRecordStore, onOthers);
-    }
-
-    private void verifyDisposeDeferredBlocks(RecordStore recordStore, int expectedTimes) {
-        verify(recordStore, times(expectedTimes)).disposeDeferredBlocks();
-    }
-
-    private static RecordStore mockRecordStore(Evictor evictor, MapConfig mapConfig) {
-        MapContainer mapContainer = mock(MapContainer.class);
-        when(mapContainer.getEvictor()).thenReturn(evictor);
-        when(mapContainer.getMapConfig()).thenReturn(mapConfig);
-
-        RecordStore recordStore = mock(RecordStore.class);
-        when(recordStore.getMapContainer()).thenReturn(mapContainer);
-
-        return recordStore;
-    }
-
-    private class NativeOutOfMemoryOperation extends MapOperation {
 
         private int throwExceptionCounter;
 
-        NativeOutOfMemoryOperation(int throwExceptionCounter) {
-            this(throwExceptionCounter, true);
-        }
-
-        NativeOutOfMemoryOperation(int throwExceptionCounter, boolean createRecordStoreOnDemand) {
-            super(MAP_NAME);
+        NativeOutOfMemoryOperation(String mapName,
+                                   int throwExceptionCounter,
+                                   boolean createRecordStoreOnDemand) {
+            super(mapName);
             this.throwExceptionCounter = throwExceptionCounter;
             this.createRecordStoreOnDemand = createRecordStoreOnDemand;
             // we skip the normal afterRun() method, since it always triggers disposeDeferredBlocks(),

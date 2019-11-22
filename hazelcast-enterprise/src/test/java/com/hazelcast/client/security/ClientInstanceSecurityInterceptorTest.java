@@ -1,12 +1,11 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.core.DistributedObjectListener;
-import com.hazelcast.internal.partition.InternalPartitionService;
-import com.hazelcast.partition.PartitionService;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.partition.PartitionLostListener;
-import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
 import com.hazelcast.internal.partition.IPartitionService;
+import com.hazelcast.partition.PartitionLostListener;
+import com.hazelcast.partition.PartitionService;
+import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

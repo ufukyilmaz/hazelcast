@@ -2,6 +2,7 @@ package com.hazelcast.spi.impl.securestore.impl;
 
 import com.hazelcast.config.JavaKeyStoreSecureStoreConfig;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.spi.impl.securestore.SecureStoreException;
 
 import javax.annotation.Nonnull;
@@ -36,12 +37,16 @@ public class JavaKeyStoreSecureStore extends AbstractSecureStore {
     }
 
     private static KeyStore loadKeyStore(JavaKeyStoreSecureStoreConfig config) {
-        try (FileInputStream in = new FileInputStream(config.getPath())) {
+        FileInputStream in = null;
+        try {
+            in = new FileInputStream(config.getPath());
             KeyStore ks = KeyStore.getInstance(config.getType());
             ks.load(in, toCharArray(config.getPassword()));
             return ks;
         } catch (IOException | GeneralSecurityException e) {
             throw new SecureStoreException("Failed to load Java KeyStore", e);
+        } finally {
+            IOUtil.closeResource(in);
         }
     }
 

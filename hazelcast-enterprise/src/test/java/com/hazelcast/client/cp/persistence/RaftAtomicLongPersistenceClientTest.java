@@ -15,7 +15,7 @@ public class RaftAtomicLongPersistenceClientTest extends RaftAtomicLongPersisten
     protected HazelcastInstance createProxyInstance(Config config) {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getNetworkConfig().setRedoOperation(true);
-        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setFailOnMaxBackoff(false);
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setClusterConnectTimeoutMillis(Long.MAX_VALUE);
         return factory.newHazelcastClient(clientConfig);
     }
 

@@ -10,7 +10,7 @@ import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.SplitBrainTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -71,7 +71,7 @@ public class HDMapSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
     @Override
     protected Config config() {
         Config config = getHDConfig(super.config(), POOLED, MEMORY_SIZE);
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+        config.setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
         config.getMapConfig(mapNameA)
                 .setInMemoryFormat(inMemoryFormat)
                 .setBackupCount(1)

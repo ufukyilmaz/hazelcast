@@ -5,7 +5,7 @@ import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.internal.monitor.LocalWanStats;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -144,8 +144,8 @@ public class WanMerkleSyncCountTest {
                 .setEnabled(true)
                 .setDepth(sourceDepth);
 
-        sourceCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
-        targetCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
+        sourceCluster.getConfig().setProperty(ClusterProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
+        targetCluster.getConfig().setProperty(ClusterProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
     }
 
     @Test

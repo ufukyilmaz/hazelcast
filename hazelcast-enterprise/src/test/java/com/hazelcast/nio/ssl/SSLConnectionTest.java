@@ -13,7 +13,7 @@ import com.hazelcast.instance.impl.TestUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.IMap;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestAwareInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
@@ -341,8 +341,8 @@ public class SSLConnectionTest {
 
     private Config getConfig(Properties sslProperties) {
         Config config = smallInstanceConfig()
-                .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1")
-                .setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
+                .setProperty(ClusterProperty.IO_THREAD_COUNT.getName(), "1")
+                .setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), "5");
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
 
@@ -382,8 +382,8 @@ public class SSLConnectionTest {
                 .setProperties(props);
 
         Config config = smallInstanceConfig()
-            .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1")
-            .setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
+            .setProperty(ClusterProperty.IO_THREAD_COUNT.getName(), "1")
+            .setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), "5");
         if (advancedNetworking) {
             config.getAdvancedNetworkConfig().setEnabled(true);
             ServerSocketEndpointConfig memberEndpoint =

@@ -17,7 +17,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.query.Predicates;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Ignore;
@@ -80,7 +80,7 @@ public class HDEvictionTest extends EvictionTest {
         Config config = getConfig();
         config.setProperty(WithForcedEviction.PROP_FORCED_EVICTION_RETRY_COUNT,
                 valueOf(forcedEvictionRetryCount));
-        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "101");
+        config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "101");
 
         MapConfig mapConfig = config.getMapConfig(mapName);
         mapConfig.getEvictionConfig()
@@ -116,8 +116,8 @@ public class HDEvictionTest extends EvictionTest {
                 .setSize(maxSizeMB);
 
         Config config = getConfig().addMapConfig(mapConfig);
-        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
-        config.setProperty(GroupProperty.MAP_EVICTION_BATCH_SIZE.getName(), "2");
+        config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "1");
+        config.setProperty(ClusterProperty.MAP_EVICTION_BATCH_SIZE.getName(), "2");
 
         HazelcastInstance instance = createHazelcastInstance(config);
         IMap<Integer, byte[]> map = instance.getMap(mapName);
@@ -146,7 +146,7 @@ public class HDEvictionTest extends EvictionTest {
         String mapName = randomMapName();
 
         Config config = getConfig();
-        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "101");
+        config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "101");
 
         MapConfig mapConfig = config.getMapConfig(mapName);
         mapConfig.getEvictionConfig().setEvictionPolicy(LFU).setSize(mapMaxSize);

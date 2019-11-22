@@ -30,7 +30,7 @@ import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE;
 import static com.hazelcast.config.MaxSizePolicy.USED_HEAP_PERCENTAGE;
 import static com.hazelcast.internal.util.RandomPicker.getInt;
-import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.spi.properties.ClusterProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static java.lang.String.format;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)

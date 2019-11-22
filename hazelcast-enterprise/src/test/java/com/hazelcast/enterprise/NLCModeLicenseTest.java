@@ -13,7 +13,7 @@ import com.hazelcast.license.nlc.BuiltInLicenseProviderFactory;
 import com.hazelcast.license.nlc.impl.NLCLicenseProvider;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -54,7 +54,7 @@ public class NLCModeLicenseTest extends HazelcastTestSupport {
         turnOnNLCMode();
 
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), "");
+        config.setProperty(ClusterProperty.ENTERPRISE_LICENSE_KEY.getName(), "");
         createHazelcastInstance(config);
     }
 
@@ -63,7 +63,7 @@ public class NLCModeLicenseTest extends HazelcastTestSupport {
         turnOnNLCMode();
 
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), EXPIRED_ENTERPRISE_LICENSE);
+        config.setProperty(ClusterProperty.ENTERPRISE_LICENSE_KEY.getName(), EXPIRED_ENTERPRISE_LICENSE);
         createHazelcastInstance(config);
     }
 
@@ -83,7 +83,7 @@ public class NLCModeLicenseTest extends HazelcastTestSupport {
         spy(LicenseHelper.class);
 
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), "");
+        config.setProperty(ClusterProperty.ENTERPRISE_LICENSE_KEY.getName(), "");
         createHazelcastInstance(config);
 
         verifyStatic(LicenseHelper.class);
@@ -116,7 +116,7 @@ public class NLCModeLicenseTest extends HazelcastTestSupport {
         spy(LicenseExpirationReminderTask.class);
 
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), "");
+        config.setProperty(ClusterProperty.ENTERPRISE_LICENSE_KEY.getName(), "");
         createHazelcastInstance(config);
 
         verifyStatic(LicenseExpirationReminderTask.class, new NoMoreInteractions());

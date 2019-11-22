@@ -32,7 +32,7 @@ import com.hazelcast.map.listener.EntryAddedListener;
 import com.hazelcast.cluster.Address;
 import com.hazelcast.query.Predicates;
 import com.hazelcast.spi.exception.TargetDisconnectedException;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.topic.ITopic;
@@ -201,7 +201,7 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.setProperty(GroupProperty.PARTITION_COUNT.getName(), "2");
+        config2.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "2");
         config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);

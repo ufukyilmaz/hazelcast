@@ -10,7 +10,7 @@ import com.hazelcast.internal.json.JsonObject;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.util.LicenseHelper;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,7 +37,7 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
 
     @Before
     public void before() {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
     }
 
     @Test
@@ -123,7 +123,7 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
 
     @Test
     public void testUpdateLicenseKey_licenseKeyWithOlderExpiryDate() throws Exception {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2099EXP);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2099EXP);
         Config config = createConfigWithRestEnabled();
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         String instanceLicenseKey = getInstanceLicenseKey(instance);
@@ -157,7 +157,7 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
         /* License format V5 introduces CLIENT_FILTERING while dropping WEB_SESSIONS.
          * Check that the presence of these features in the current/new licenses does
          * not render the (otherwise compatible) licenses as incompatible. */
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V4_ENTERPRISE_HD_SEC_WS_RU_40NODES_2099EXP);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V4_ENTERPRISE_HD_SEC_WS_RU_40NODES_2099EXP);
         Config config = createConfigWithRestEnabled();
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         License before = getInstanceLicense(instance);
@@ -173,7 +173,7 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
 
     @Test
     public void testUpdateLicenseKey_licenseFormatVersionOlder() throws Exception {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_CF_RU_40NODES_2099EXP);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_CF_RU_40NODES_2099EXP);
         Config config = createConfigWithRestEnabled();
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         String instanceLicenseKey = getInstanceLicenseKey(instance);

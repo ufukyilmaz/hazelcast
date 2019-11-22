@@ -17,7 +17,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.internal.nio.Packet;
 import com.hazelcast.nio.serialization.DataSerializable;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -183,14 +183,14 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
     }
 
     private void testSerializationServiceIsVersioned(boolean ruLicensed) {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(
                 ruLicensed ? UNLIMITED_LICENSE : V5_SECURITY_ONLY_LICENSE);
         try {
             HazelcastInstance instance = createHazelcastInstance();
             InternalSerializationService serializationService = getNode(instance).getSerializationService();
             serializationService.toData(new NotVersionedDataSerializable(ruLicensed));
         } finally {
-            System.clearProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName());
+            System.clearProperty(ClusterProperty.ENTERPRISE_LICENSE_KEY.getName());
         }
     }
 

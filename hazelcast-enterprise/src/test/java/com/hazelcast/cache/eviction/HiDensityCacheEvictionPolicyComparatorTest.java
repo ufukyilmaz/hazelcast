@@ -12,7 +12,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.util.QuickMath;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -59,8 +59,8 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends AbstractCacheEvi
                 .setSize(MEMORY_SIZE);
 
         return super.createConfig()
-                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "2")
-                .setProperty(GroupProperty.PARTITION_COUNT.getName(), "4")
+                .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "2")
+                .setProperty(ClusterProperty.PARTITION_COUNT.getName(), "4")
                 .setNativeMemoryConfig(nativeMemoryConfig);
     }
 

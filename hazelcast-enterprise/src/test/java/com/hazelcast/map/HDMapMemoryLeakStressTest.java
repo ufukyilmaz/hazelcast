@@ -29,7 +29,7 @@ import com.hazelcast.spi.impl.operationservice.impl.InvocationFuture;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
@@ -173,8 +173,8 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                 .setSize(MEMORY_SIZE);
 
         return new Config()
-                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
-                .setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
+                .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+                .setProperty(ClusterProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
                 .addMapConfig(mapConfig)
                 .setNativeMemoryConfig(memoryConfig);
     }

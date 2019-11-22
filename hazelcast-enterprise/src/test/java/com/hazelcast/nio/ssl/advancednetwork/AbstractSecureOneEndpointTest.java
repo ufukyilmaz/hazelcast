@@ -16,7 +16,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
 import com.hazelcast.map.IMap;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import net.spy.memcached.ConnectionFactory;
 import net.spy.memcached.ConnectionFactoryBuilder;
 import net.spy.memcached.FailureMode;
@@ -51,7 +51,7 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
         JoinConfig join = config.getAdvancedNetworkConfig().getJoin();
         join.getTcpIpConfig().addMember("127.0.0.1:" + MEMBER_PORT).setEnabled(true);
         join.getMulticastConfig().setEnabled(false);
-        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "3");
+        config.setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), "3");
         HazelcastInstance newHzInstance = null;
         try {
             newHzInstance = Hazelcast.newHazelcastInstance(config);

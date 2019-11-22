@@ -8,7 +8,7 @@ import com.hazelcast.internal.jmx.MBeanDataHolder;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
@@ -39,7 +39,7 @@ public class LicenseInfoMBeanTest extends HazelcastTestSupport {
 
     @Before
     public void setUp() {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
         holder = new MBeanDataHolder(hazelcastInstanceFactory);
         objectName = "node" + holder.getHz().getCluster().getLocalMember().getAddress();
         holder.assertMBeanExistEventually(TYPE_NAME, objectName);

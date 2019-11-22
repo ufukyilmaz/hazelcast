@@ -97,7 +97,7 @@ import com.hazelcast.security.impl.WeakSecretsConfigChecker;
 import com.hazelcast.security.jsm.HazelcastRuntimePermission;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.impl.WanReplicationService;
@@ -193,7 +193,7 @@ public class EnterpriseNodeExtension
     }
 
     private AuditlogService createAuditlogService(Node node) {
-        if (node.getProperties().getBoolean(GroupProperty.AUDIT_LOG_ENABLED)) {
+        if (node.getProperties().getBoolean(ClusterProperty.AUDIT_LOG_ENABLED)) {
             return new ILoggerAuditlogService(node.getLoggingService());
         }
         return NoOpAuditlogService.INSTANCE;
@@ -211,7 +211,7 @@ public class EnterpriseNodeExtension
         if (license == null) {
             logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
 
-            String licenseKey = node.getProperties().getString(GroupProperty.ENTERPRISE_LICENSE_KEY);
+            String licenseKey = node.getProperties().getString(ClusterProperty.ENTERPRISE_LICENSE_KEY);
             if (licenseKey == null || licenseKey.isEmpty()) {
                 licenseKey = node.getConfig().getLicenseKey();
             }

@@ -21,7 +21,7 @@ import com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoad
 import com.hazelcast.spi.impl.executionservice.ExecutionService;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.version.Version;
 
@@ -851,7 +851,7 @@ public class ClusterMetadataManager {
     }
 
     private PartitionTableView restorePartitionTable() throws IOException {
-        int partitionCount = node.getProperties().getInteger(GroupProperty.PARTITION_COUNT);
+        int partitionCount = node.getProperties().getInteger(ClusterProperty.PARTITION_COUNT);
         PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
         partitionTableReader.read();
         PartitionTableView table = partitionTableReader.getPartitionTable();

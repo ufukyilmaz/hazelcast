@@ -10,7 +10,7 @@ import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
 import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.Before;
@@ -131,7 +131,7 @@ public class MapHotRestartStressTest extends HotRestartTestSupport {
     private Config makeConfig() {
         Config config = new XmlConfigBuilder().build()
                 .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
-                .setProperty(GroupProperty.PARTITION_COUNT.getName(), "20");
+                .setProperty(ClusterProperty.PARTITION_COUNT.getName(), "20");
 
         config.getNativeMemoryConfig()
                 .setEnabled(true)

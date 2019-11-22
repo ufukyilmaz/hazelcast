@@ -8,7 +8,7 @@ import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
@@ -238,7 +238,7 @@ public class WanCounterMigrationTest extends HazelcastTestSupport {
 
     @Test
     public void testCountersReachZeroAfterBouncingSourceCluster() {
-        sourceCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(4));
+        sourceCluster.getConfig().setProperty(ClusterProperty.PARTITION_COUNT.getName(), Integer.toString(4));
 
         sourceCluster.startCluster();
         targetCluster.startCluster();

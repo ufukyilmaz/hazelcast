@@ -18,7 +18,7 @@ import com.hazelcast.core.LifecycleListener;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.cluster.Address;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Test;
@@ -170,7 +170,7 @@ public class FailoverTest extends ClientTestSupport {
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
         Config config2 = new Config();
-        config2.setProperty(GroupProperty.PARTITION_COUNT.getName(), "2");
+        config2.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "2");
         config2.setClusterName("dev2");
         config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);

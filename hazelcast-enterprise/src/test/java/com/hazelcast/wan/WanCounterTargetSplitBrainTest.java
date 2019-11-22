@@ -7,7 +7,7 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
@@ -116,11 +116,11 @@ public class WanCounterTargetSplitBrainTest extends HazelcastTestSupport {
                 .setup();
 
         Config config = targetCluster.getConfig();
-        config.setProperty(GroupProperty.MERGE_FIRST_RUN_DELAY_SECONDS.getName(), "2");
-        config.setProperty(GroupProperty.MERGE_NEXT_RUN_DELAY_SECONDS.getName(), "2");
-        config.setProperty(GroupProperty.MAX_NO_HEARTBEAT_SECONDS.getName(), "5");
-        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "2");
-        config.setProperty(GroupProperty.MAX_JOIN_MERGE_TARGET_SECONDS.getName(), "2");
+        config.setProperty(ClusterProperty.MERGE_FIRST_RUN_DELAY_SECONDS.getName(), "2");
+        config.setProperty(ClusterProperty.MERGE_NEXT_RUN_DELAY_SECONDS.getName(), "2");
+        config.setProperty(ClusterProperty.MAX_NO_HEARTBEAT_SECONDS.getName(), "5");
+        config.setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), "2");
+        config.setProperty(ClusterProperty.MAX_JOIN_MERGE_TARGET_SECONDS.getName(), "2");
 
         // uncomment to dump the counters when debugging locally
         // dumpWanCounters(wanReplication, Executors.newSingleThreadScheduledExecutor());

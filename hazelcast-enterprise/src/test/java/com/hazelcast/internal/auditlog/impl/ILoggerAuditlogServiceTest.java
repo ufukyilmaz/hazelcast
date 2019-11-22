@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
+import com.hazelcast.spi.properties.ClusterProperty;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -19,7 +20,6 @@ import org.junit.runner.RunWith;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestAwareInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 
@@ -47,12 +47,12 @@ public class ILoggerAuditlogServiceTest {
 
     @Test
     public void testAuditLogEnabled() throws IOException {
-        testAuditLogInternal(smallInstanceConfig().setProperty(GroupProperty.AUDIT_LOG_ENABLED.getName(), "true"), true);
+        testAuditLogInternal(smallInstanceConfig().setProperty(ClusterProperty.AUDIT_LOG_ENABLED.getName(), "true"), true);
     }
 
     @Test
     public void testAuditLogDisabled() throws IOException {
-        testAuditLogInternal(smallInstanceConfig().setProperty(GroupProperty.AUDIT_LOG_ENABLED.getName(), "false"), false);
+        testAuditLogInternal(smallInstanceConfig().setProperty(ClusterProperty.AUDIT_LOG_ENABLED.getName(), "false"), false);
     }
 
     @Test

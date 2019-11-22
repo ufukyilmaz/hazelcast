@@ -7,7 +7,7 @@ import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
@@ -27,7 +27,7 @@ public class HiDensityCacheClusterWideIteratorTest extends CacheClusterWideItera
     @Override
     protected Config getConfig() {
         Config config = new Config();
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+        config.setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
         config.getNativeMemoryConfig()
                 .setEnabled(true)
                 .setSize(new MemorySize(128, MemoryUnit.MEGABYTES));

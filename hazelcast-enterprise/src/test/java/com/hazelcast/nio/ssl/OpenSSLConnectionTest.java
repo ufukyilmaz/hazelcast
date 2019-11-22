@@ -6,7 +6,7 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.TestAwareInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 
@@ -98,7 +98,7 @@ public class OpenSSLConnectionTest {
         SSLConfig sslConfig = new SSLConfig().setEnabled(true).setFactoryImplementation(new OpenSSLEngineFactory())
                 .setProperties(sslProperties);
 
-        Config config = smallInstanceConfig().setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        Config config = smallInstanceConfig().setProperty(ClusterProperty.IO_THREAD_COUNT.getName(), "1");
         config.getNetworkConfig().setSSLConfig(sslConfig);
         return config;
     }

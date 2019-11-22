@@ -11,7 +11,7 @@ import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
 import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import org.junit.runners.Parameterized.Parameter;
 
 import java.util.function.Supplier;
@@ -94,9 +94,9 @@ public abstract class AbstractMapHotRestartTest extends HotRestartTestSupport {
     Config makeConfig(int backupCount) {
         Config config = new Config()
                 .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
-                .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
+                .setProperty(ClusterProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
                 // to reduce used native memory size
-                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+                .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)

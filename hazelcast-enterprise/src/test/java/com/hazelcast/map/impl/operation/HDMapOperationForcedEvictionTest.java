@@ -15,7 +15,7 @@ import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -279,7 +279,7 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
                 .setEvictionPolicy(otherMapEvictionPolicy);
 
         Config hdConfig = HDTestSupport.getHDConfig();
-        hdConfig.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
+        hdConfig.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "1");
         hdConfig.addMapConfig(mainMapConfig);
         hdConfig.addMapConfig(otherMapConfig);
 

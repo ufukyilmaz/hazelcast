@@ -6,7 +6,7 @@ import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -64,7 +64,7 @@ public class LicenseExpirationReminderTaskTest extends HazelcastTestSupport {
 
     @Before
     public void before() {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
     }
 
     @Test
@@ -381,7 +381,7 @@ public class LicenseExpirationReminderTaskTest extends HazelcastTestSupport {
 
     @Test
     public void testReminderTaskNotRescheduled_whenLicenseOlderExpiryDate() {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2099EXP);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2099EXP);
         doTestReminderTaskInvalidLicense(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
     }
 

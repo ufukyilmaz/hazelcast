@@ -15,12 +15,12 @@ import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
 import static com.hazelcast.internal.networking.ChannelOption.SO_SNDBUF;
 import static com.hazelcast.internal.networking.ChannelOption.TCP_NODELAY;
 import static com.hazelcast.internal.nio.IOService.KILO_BYTE;
-import static com.hazelcast.spi.properties.GroupProperty.SOCKET_BUFFER_DIRECT;
-import static com.hazelcast.spi.properties.GroupProperty.SOCKET_KEEP_ALIVE;
-import static com.hazelcast.spi.properties.GroupProperty.SOCKET_LINGER_SECONDS;
-import static com.hazelcast.spi.properties.GroupProperty.SOCKET_NO_DELAY;
-import static com.hazelcast.spi.properties.GroupProperty.SOCKET_RECEIVE_BUFFER_SIZE;
-import static com.hazelcast.spi.properties.GroupProperty.SOCKET_SEND_BUFFER_SIZE;
+import static com.hazelcast.spi.properties.ClusterProperty.SOCKET_BUFFER_DIRECT;
+import static com.hazelcast.spi.properties.ClusterProperty.SOCKET_KEEP_ALIVE;
+import static com.hazelcast.spi.properties.ClusterProperty.SOCKET_LINGER_SECONDS;
+import static com.hazelcast.spi.properties.ClusterProperty.SOCKET_NO_DELAY;
+import static com.hazelcast.spi.properties.ClusterProperty.SOCKET_RECEIVE_BUFFER_SIZE;
+import static com.hazelcast.spi.properties.ClusterProperty.SOCKET_SEND_BUFFER_SIZE;
 
 /**
  * The {@link ChannelInitializer} for TLS an running on the member side.

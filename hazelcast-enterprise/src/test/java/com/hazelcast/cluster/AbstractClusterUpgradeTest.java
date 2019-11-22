@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.Versions.CURRENT_CLUSTER_VERSION;
 import static com.hazelcast.license.domain.Feature.ROLLING_UPGRADE;
-import static com.hazelcast.spi.properties.GroupProperty.ENTERPRISE_LICENSE_KEY;
+import static com.hazelcast.spi.properties.ClusterProperty.ENTERPRISE_LICENSE_KEY;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeNotNull;

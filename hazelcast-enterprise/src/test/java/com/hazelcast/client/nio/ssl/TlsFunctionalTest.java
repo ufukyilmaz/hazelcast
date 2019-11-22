@@ -25,7 +25,7 @@ import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.nio.ssl.SSLConnectionTest;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.SlowTest;
 
 import org.junit.After;
@@ -614,7 +614,7 @@ public class TlsFunctionalTest {
         }
 
         Config config = new Config();
-        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), CLUSTER_JOIN_MAX_SECONDS);
+        config.setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), CLUSTER_JOIN_MAX_SECONDS);
         if (advanced) {
             AdvancedNetworkConfig advancedNetworkConfig = config.getAdvancedNetworkConfig();
             advancedNetworkConfig.setEnabled(true);

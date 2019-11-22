@@ -60,7 +60,7 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
     @Test
     public void recoverFromConnectionFailure() {
         initConfigA();
-        //configA.setProperty(GroupProperty.ENTERPRISE_WAN_REP_QUEUE_CAPACITY, "100");
+        //configA.setProperty(ClusterProperty.ENTERPRISE_WAN_REP_QUEUE_CAPACITY, "100");
         initConfigB();
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName(), "default");
         initCluster(singleNodeA, configA);

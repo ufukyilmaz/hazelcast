@@ -9,7 +9,7 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import org.junit.Rule;
@@ -26,7 +26,7 @@ public class HiDensityCacheStatsTest extends CacheStatsTest {
     @Override
     protected Config createConfig() {
         Config config = super.createConfig();
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+        config.setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         memoryConfig
                 .setEnabled(true)

@@ -3,7 +3,7 @@ package com.hazelcast.enterprise.wan.merkletree;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -147,8 +147,8 @@ public class WanMerkleConsistencyCheckTest {
                 .setEnabled(true)
                 .setDepth(targetTreeDepth);
 
-        sourceCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
-        targetCluster.getConfig().setProperty(GroupProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
+        sourceCluster.getConfig().setProperty(ClusterProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
+        targetCluster.getConfig().setProperty(ClusterProperty.PARTITION_COUNT.getName(), Integer.toString(partitions));
 
         sourceCluster.getConfig().getMapConfig(MAP_NAME)
                 .setInMemoryFormat(inMemoryFormat);

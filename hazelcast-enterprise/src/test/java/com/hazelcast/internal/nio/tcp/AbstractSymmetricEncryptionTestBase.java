@@ -2,7 +2,7 @@ package com.hazelcast.internal.nio.tcp;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SymmetricEncryptionConfig;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.TestAwareInstanceFactory;
 import org.junit.After;
 import org.junit.AssumptionViolatedException;
@@ -50,7 +50,7 @@ public abstract class AbstractSymmetricEncryptionTestBase {
                 .setIterationCount(iterationCount);
 
         Config config = new Config();
-        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
+        config.setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), "5");
         if (advanced) {
             config.getAdvancedNetworkConfig().setEnabled(true);
             config.getAdvancedNetworkConfig().getEndpointConfigs().get(MEMBER).setSymmetricEncryptionConfig(encryptionConfig);
@@ -70,7 +70,7 @@ public abstract class AbstractSymmetricEncryptionTestBase {
                 .setKey(key);
 
         Config config = new Config();
-        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
+        config.setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), "5");
         if (advanced) {
             config.getAdvancedNetworkConfig().setEnabled(true);
             config.getAdvancedNetworkConfig().getEndpointConfigs().get(MEMBER).setSymmetricEncryptionConfig(encryptionConfig);

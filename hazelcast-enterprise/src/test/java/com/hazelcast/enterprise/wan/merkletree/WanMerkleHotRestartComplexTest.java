@@ -2,11 +2,11 @@ package com.hazelcast.enterprise.wan.merkletree;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -235,9 +235,9 @@ public class WanMerkleHotRestartComplexTest extends HazelcastTestSupport {
     @Test
     public void testConsistencyCheckWithFullyFilledTargetCluster_whenTwoSourceMembersTerminate() {
         Supplier<Config> configSupplier = () -> new Config()
-                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "2")
-                .setProperty(GroupProperty.GENERIC_OPERATION_THREAD_COUNT.getName(), "2")
-                .setProperty(GroupProperty.EVENT_THREAD_COUNT.getName(), "1");
+                .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "2")
+                .setProperty(ClusterProperty.GENERIC_OPERATION_THREAD_COUNT.getName(), "2")
+                .setProperty(ClusterProperty.EVENT_THREAD_COUNT.getName(), "1");
 
         givenClusters(SOURCE_MEMBERS_FOUR, configSupplier);
 

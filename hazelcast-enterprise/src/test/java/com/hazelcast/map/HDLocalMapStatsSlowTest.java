@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -29,7 +29,7 @@ public class HDLocalMapStatsSlowTest
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(4);
         HazelcastInstance[] instances = factory.newInstances(
                 getHDConfig(new Config(), POOLED, new MemorySize(128, MEGABYTES))
-                        .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+                        .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
         );
         waitAllForSafeState(instances);
 
@@ -55,7 +55,7 @@ public class HDLocalMapStatsSlowTest
             instances[i].getLifecycleService().shutdown();
             instances[i] = factory.newHazelcastInstance(
                     getHDConfig(new Config(), POOLED, new MemorySize(128, MEGABYTES))
-                            .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+                            .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
             );
             waitAllForSafeState(instances);
         }

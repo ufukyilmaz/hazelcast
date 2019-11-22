@@ -18,7 +18,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.monitor.LocalWanPublisherStats;
 import com.hazelcast.internal.monitor.LocalWanStats;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -93,7 +93,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
                   .setEnabled(true)
                   .addMember("127.0.0.1");
         if (isNativeMemoryEnabled()) {
-            config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+            config.setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
                   .setNativeMemoryConfig(getMemoryConfig());
         }
         return config;

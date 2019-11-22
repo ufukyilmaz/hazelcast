@@ -6,7 +6,7 @@ import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.EnterprisePhoneHome;
 import com.hazelcast.internal.util.MD5Util;
 import com.hazelcast.internal.util.PhoneHome;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -27,7 +27,7 @@ public class EnterprisePhoneHomeTest extends HazelcastTestSupport {
 
     @Before
     public void before() {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
     }
 
     @Test

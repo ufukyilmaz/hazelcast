@@ -8,7 +8,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Log4j2Factory;
 import com.hazelcast.logging.LogEvent;
 import com.hazelcast.logging.LoggerFactory;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.SlowTest;
@@ -40,7 +40,7 @@ public class HDMapExpirationIteratorTest extends HazelcastTestSupport {
 
         Config config = getHDConfig();
         config.setProperty(PROP_TASK_PERIOD_SECONDS, "1");
-        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
+        config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "1");
 
         HazelcastInstance node = createHazelcastInstance(config);
         map = node.getMap("default");

@@ -10,7 +10,7 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -115,7 +115,7 @@ public class HDEvictionCheckerTest extends HazelcastTestSupport {
     public void testHotRestartEnabledMapEvicted_according_to_FREE_NATIVE_MEMORY_PERCENTAGE_whenConfiguredMaxSizePolicyIsDifferent() throws Exception {
         // PER_NODE max-size-policy is configured .
         Config config = newConfig(PER_NODE, Integer.MAX_VALUE);
-        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
+        config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "1");
         // hot-restart specific config.
         HotRestartPersistenceConfig hrConfig = config.getHotRestartPersistenceConfig();
         hrConfig.setBaseDir(hotRestartFolder.newFolder()).setEnabled(true);

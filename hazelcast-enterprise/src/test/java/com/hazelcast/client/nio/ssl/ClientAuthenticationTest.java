@@ -9,7 +9,7 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Rule;
@@ -169,7 +169,7 @@ public class ClientAuthenticationTest {
             serverProps.setProperty("javax.net.ssl.mutualAuthentication", settings.mutualAuthentication);
         }
 
-        Config config = smallInstanceConfig().setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        Config config = smallInstanceConfig().setProperty(ClusterProperty.IO_THREAD_COUNT.getName(), "1");
         NetworkConfig networkConfig = config.getNetworkConfig();
         networkConfig.setSSLConfig(new SSLConfig()
                 .setEnabled(true)

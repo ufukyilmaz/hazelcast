@@ -8,7 +8,7 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -41,7 +41,7 @@ public class HDNearCacheTest extends NearCacheTest {
                 .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
 
         return new Config()
-                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
+                .setProperty(ClusterProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE)
                 .addMapConfig(mapConfig)
                 .setNativeMemoryConfig(memoryConfig);
     }

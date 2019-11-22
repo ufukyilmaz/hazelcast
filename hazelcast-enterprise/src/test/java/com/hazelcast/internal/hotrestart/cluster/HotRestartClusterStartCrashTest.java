@@ -14,7 +14,7 @@ import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.cluster.Address;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -152,7 +152,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         Config config = super.newConfig(listener, clusterStartPolicy);
 
         if (memberListPublishPeriod > 0) {
-            config.setProperty(GroupProperty.MEMBER_LIST_PUBLISH_INTERVAL_SECONDS.getName(),
+            config.setProperty(ClusterProperty.MEMBER_LIST_PUBLISH_INTERVAL_SECONDS.getName(),
                     String.valueOf(memberListPublishPeriod));
         }
 

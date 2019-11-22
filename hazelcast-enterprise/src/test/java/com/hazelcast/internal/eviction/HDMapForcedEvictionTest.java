@@ -13,7 +13,7 @@ import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.After;
@@ -36,7 +36,7 @@ public class HDMapForcedEvictionTest extends HazelcastTestSupport {
     @Before
     public void onSetup() {
         Config config = new Config();
-        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "2");
+        config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "2");
 
         config.getNativeMemoryConfig()
                 .setEnabled(true)

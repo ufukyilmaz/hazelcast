@@ -9,7 +9,7 @@ import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.internal.hotrestart.HotRestartTestSupport;
 import com.hazelcast.internal.hotrestart.InternalHotRestartService;
 import com.hazelcast.map.IMap;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -46,8 +46,8 @@ public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport
         mapConfig.getHotRestartConfig().setEnabled(true);
 
         Config config = new Config()
-                .setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE)
-                .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
+                .setProperty(ClusterProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE)
+                .setProperty(ClusterProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
                 .addMapConfig(mapConfig);
         final HotRestartPersistenceConfig persistenceConfig = config.getHotRestartPersistenceConfig();
         persistenceConfig.setEnabled(true);

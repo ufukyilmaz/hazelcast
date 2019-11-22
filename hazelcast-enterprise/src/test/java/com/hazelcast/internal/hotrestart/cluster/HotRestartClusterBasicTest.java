@@ -8,7 +8,7 @@ import com.hazelcast.instance.impl.NodeState;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.cluster.Address;
 import com.hazelcast.hotrestart.HotRestartException;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -116,8 +116,8 @@ public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTe
     @Override
     protected Config newConfig(ClusterHotRestartEventListener listener, HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         final Config config = super.newConfig(listener, clusterStartPolicy);
-        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(partitionCount));
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), String.valueOf(partitionThreadCount));
+        config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), String.valueOf(partitionCount));
+        config.setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), String.valueOf(partitionThreadCount));
         return config;
     }
 }

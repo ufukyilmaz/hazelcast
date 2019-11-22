@@ -8,7 +8,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -51,7 +51,7 @@ public class HttpsRestTest extends HazelcastTestSupport {
         serverProps.setProperty("javax.net.ssl.protocol", "TLS");
 
         Config config = new Config()
-                .setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+                .setProperty(ClusterProperty.IO_THREAD_COUNT.getName(), "1");
         NetworkConfig networkConfig = config.getNetworkConfig();
         networkConfig.getRestApiConfig()
                 .setEnabled(true)

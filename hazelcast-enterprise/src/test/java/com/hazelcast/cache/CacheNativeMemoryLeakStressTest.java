@@ -28,7 +28,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -80,7 +80,7 @@ import static com.hazelcast.NativeMemoryTestUtil.dumpNativeMemory;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
 import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.instance.impl.TestUtil.terminateInstance;
-import static com.hazelcast.spi.properties.GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS;
+import static com.hazelcast.spi.properties.ClusterProperty.PARTITION_MAX_PARALLEL_REPLICATIONS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -120,7 +120,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
         final Config config = new Config()
                 .setNativeMemoryConfig(memoryConfig)
-                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+                .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);

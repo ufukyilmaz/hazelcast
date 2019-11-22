@@ -11,7 +11,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.internal.diagnostics.HealthMonitorLevel;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import org.junit.After;
 import org.junit.Before;
@@ -101,12 +101,12 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     }
 
     protected void setProperties(Config config) {
-        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "111");
-        config.setProperty(GroupProperty.SOCKET_BIND_ANY.getName(), "false");
-        config.setProperty(GroupProperty.MAX_WAIT_SECONDS_BEFORE_JOIN.getName(), "0");
-        config.setProperty(GroupProperty.GENERIC_OPERATION_THREAD_COUNT.getName(), "2");
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
-        config.setProperty(GroupProperty.HEALTH_MONITORING_LEVEL.getName(), HealthMonitorLevel.OFF.name());
+        config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "111");
+        config.setProperty(ClusterProperty.SOCKET_BIND_ANY.getName(), "false");
+        config.setProperty(ClusterProperty.MAX_WAIT_SECONDS_BEFORE_JOIN.getName(), "0");
+        config.setProperty(ClusterProperty.GENERIC_OPERATION_THREAD_COUNT.getName(), "2");
+        config.setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+        config.setProperty(ClusterProperty.HEALTH_MONITORING_LEVEL.getName(), HealthMonitorLevel.OFF.name());
     }
 
     protected <K, V> ICache<K, V> createCache() {

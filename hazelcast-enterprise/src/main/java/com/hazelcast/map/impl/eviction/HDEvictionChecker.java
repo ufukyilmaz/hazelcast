@@ -16,7 +16,7 @@ import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.spi.properties.HazelcastProperties;
 
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
-import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.spi.properties.ClusterProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 
 /**
  * Checks whether a specific threshold is exceeded or not according

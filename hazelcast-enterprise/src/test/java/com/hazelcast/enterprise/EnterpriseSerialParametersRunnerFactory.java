@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise;
 
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import org.junit.runner.Runner;
@@ -20,7 +20,7 @@ public class EnterpriseSerialParametersRunnerFactory extends HazelcastParameters
     @Override
     protected Runner getClassRunner(Class<?> testClass, Object[] parameters, String testName)
             throws InitializationError {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(UNLIMITED_LICENSE);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(UNLIMITED_LICENSE);
         return new EnterpriseSerialJUnitClassRunner(testClass, parameters, testName);
     }
 }

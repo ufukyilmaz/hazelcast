@@ -13,7 +13,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.IMap;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.Rule;
@@ -172,7 +172,7 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
         JoinConfig join = config.getAdvancedNetworkConfig().getJoin();
         join.getTcpIpConfig().addMember("127.0.0.1:" + MEMBER_PORT).setEnabled(true);
         join.getMulticastConfig().setEnabled(false);
-        config.setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "3");
+        config.setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), "3");
         return config;
     }
 

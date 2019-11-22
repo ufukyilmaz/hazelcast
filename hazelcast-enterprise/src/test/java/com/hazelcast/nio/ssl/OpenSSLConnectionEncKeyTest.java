@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -53,7 +53,7 @@ public class OpenSSLConnectionEncKeyTest extends OpenSSLConnectionTest {
         SSLConfig sslConfig = new SSLConfig().setEnabled(true).setFactoryImplementation(new OpenSSLEngineFactory())
                 .setProperties(sslProperties);
 
-        Config config = smallInstanceConfig().setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        Config config = smallInstanceConfig().setProperty(ClusterProperty.IO_THREAD_COUNT.getName(), "1");
         config.getNetworkConfig().setSSLConfig(sslConfig);
         return config;
     }

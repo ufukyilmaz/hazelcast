@@ -6,7 +6,7 @@ import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +39,7 @@ public final class HotRestartEncryptionSimpleMapBenchmark {
     private final boolean encrypted;
 
     static {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(UNLIMITED_LICENSE);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(UNLIMITED_LICENSE);
     }
 
     private HotRestartEncryptionSimpleMapBenchmark(File baseDir, int threadCount, int entryCount, int valueSize, int putPercentage,

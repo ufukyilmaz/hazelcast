@@ -3,7 +3,7 @@ package com.hazelcast.nio.ssl;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
@@ -34,7 +34,7 @@ public class OpenSSLConnectionKeyManagerFactoryTest extends OpenSSLConnectionTes
                 .setProperty("trustStore", letsEncryptKeystore.getAbsolutePath())
                 .setProperty("trustStorePassword", "123456");
 
-        Config config = smallInstanceConfig().setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
+        Config config = smallInstanceConfig().setProperty(ClusterProperty.IO_THREAD_COUNT.getName(), "1");
         config.getNetworkConfig().setSSLConfig(sslConfig);
         return config;
     }

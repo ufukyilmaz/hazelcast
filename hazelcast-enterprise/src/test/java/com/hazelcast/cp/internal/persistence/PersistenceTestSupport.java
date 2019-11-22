@@ -9,7 +9,7 @@ import com.hazelcast.cp.internal.raft.impl.RaftNodeImpl;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runners.Parameterized.Parameter;
@@ -68,7 +68,7 @@ public abstract class PersistenceTestSupport extends HazelcastRaftTestSupport {
     @Before
     public void before() {
         baseDir = hotRestartFolderRule.getBaseDir();
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_UNLIMITED_LICENSE);
+        ClusterProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V5_UNLIMITED_LICENSE);
     }
 
     @Override

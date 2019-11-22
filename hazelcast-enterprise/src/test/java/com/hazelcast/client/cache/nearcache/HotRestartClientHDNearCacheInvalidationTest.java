@@ -14,7 +14,7 @@ import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import org.junit.Rule;
@@ -71,7 +71,7 @@ public class HotRestartClientHDNearCacheInvalidationTest extends ClientCacheNear
                 .setBaseDir(hotRestartFolderRule.getBaseDir());
 
         return super.getConfig()
-                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+                .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
                 .setNativeMemoryConfig(nativeMemoryConfig)
                 .setHotRestartPersistenceConfig(hotRestartPersistenceConfig);
     }

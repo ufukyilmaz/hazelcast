@@ -11,7 +11,7 @@ import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Rule;
@@ -44,9 +44,9 @@ public class HotRestartNativeCacheDestroyTest extends CacheDestroyTest {
     protected Config createConfig() {
         Config config = new Config()
                 .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
-                .setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
+                .setProperty(ClusterProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100")
                 // to reduce used native memory size
-                .setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+                .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)

@@ -28,7 +28,7 @@ import java.util.Iterator;
 import java.util.UUID;
 
 import static com.hazelcast.internal.serialization.DataType.NATIVE;
-import static com.hazelcast.spi.properties.GroupProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.spi.properties.ClusterProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 
 /**
  * NativeMemory cache record store with Hot Restart support.

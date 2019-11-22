@@ -313,12 +313,14 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             return getProxy(new DurableExecutorServiceInvocationHandler(instance.getDurableExecutorService(name)));
         }
 
+        @Nonnull
         @Override
         public FlakeIdGenerator getFlakeIdGenerator(@Nonnull String name) {
             checkPermission(new FlakeIdGeneratorPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new FlakeIdGeneratorInvocationHandler(instance.getFlakeIdGenerator(name)));
         }
 
+        @Nonnull
         @Override
         public CardinalityEstimator getCardinalityEstimator(@Nonnull String name) {
             checkPermission(new CardinalityEstimatorPermission(name, ActionConstants.ACTION_CREATE));
@@ -899,32 +901,37 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
             this.cpSubsystem = cpSubsystem;
         }
 
+        @Nonnull
         @Override
-        public IAtomicLong getAtomicLong(String name) {
+        public IAtomicLong getAtomicLong(@Nonnull String name) {
             checkPermission(new AtomicLongPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IAtomicLongInvocationHandler(cpSubsystem.getAtomicLong(name)));
         }
 
+        @Nonnull
         @Override
-        public <E> IAtomicReference<E> getAtomicReference(String name) {
+        public <E> IAtomicReference<E> getAtomicReference(@Nonnull String name) {
             checkPermission(new AtomicReferencePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IAtomicReferenceInvocationHandler(cpSubsystem.getAtomicReference(name)));
         }
 
+        @Nonnull
         @Override
-        public ICountDownLatch getCountDownLatch(String name) {
+        public ICountDownLatch getCountDownLatch(@Nonnull String name) {
             checkPermission(new CountDownLatchPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ICountDownLatchInvocationHandler(cpSubsystem.getCountDownLatch(name)));
         }
 
+        @Nonnull
         @Override
-        public FencedLock getLock(String name) {
+        public FencedLock getLock(@Nonnull String name) {
             checkPermission(new LockPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new LockInvocationHandler(cpSubsystem.getLock(name)));
         }
 
+        @Nonnull
         @Override
-        public ISemaphore getSemaphore(String name) {
+        public ISemaphore getSemaphore(@Nonnull String name) {
             checkPermission(new SemaphorePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ISemaphoreInvocationHandler(cpSubsystem.getSemaphore(name)));
         }

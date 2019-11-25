@@ -1,5 +1,6 @@
 package com.hazelcast.nio.ssl;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.internal.nio.ssl.SSLEngineFactorySupport;
 import com.hazelcast.logging.ILogger;
@@ -95,7 +96,6 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
         }
     }
 
-
     private String loadProtocol(Properties properties) {
         // TLSv1.2 is the default in Java 8.
         // If a client would meet a server with a higher/lower protocol version, they normally downgrade to the lowest
@@ -117,8 +117,8 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
     }
 
     /**
-     * Checks if the configuration is correct to create an SSLEngine. We want to do this as early as possible (so when the
-     * HZ instance is made) and not wait till the connections are made.
+     * Checks if the configuration is correct to create an SSLEngine. We want to do this as early as possible (so when the HZ
+     * instance is made) and not wait till the connections are made.
      */
     private void sanityCheck(boolean forClient) throws SSLException {
         if (forClient) {
@@ -130,7 +130,7 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
     }
 
     private void sanityCheck0(boolean clientMode) throws SSLException {
-        SSLEngine serverEngine = create(clientMode);
+        SSLEngine serverEngine = create(clientMode, null);
         serverEngine.closeInbound();
         serverEngine.closeOutbound();
     }
@@ -156,18 +156,18 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
         } else if ("OPTIONAL".equals(mutualAuthentication)) {
             return ClientAuth.OPTIONAL;
         } else {
-            throw new IllegalArgumentException(
-                    format("Unrecognized value [%s] for [%s]",
-                            mutualAuthentication, JAVA_NET_SSL_PREFIX + "mutualAuthentication"));
+            throw new IllegalArgumentException(format("Unrecognized value [%s] for [%s]", mutualAuthentication,
+                    JAVA_NET_SSL_PREFIX + "mutualAuthentication"));
         }
     }
 
     @Override
-    public SSLEngine create(boolean clientMode) {
+    public SSLEngine create(boolean clientMode, Address peerAddress) {
         try {
             SslContext context = createSslContext(clientMode);
-            SSLEngine engine = context.newEngine(UnpooledByteBufAllocator.DEFAULT);
-            engine.setEnabledProtocols(new String[]{protocol});
+            SSLEngine engine = peerAddress == null ? context.newEngine(UnpooledByteBufAllocator.DEFAULT)
+                    : context.newEngine(UnpooledByteBufAllocator.DEFAULT, peerAddress.getHost(), peerAddress.getPort());
+            engine.setEnabledProtocols(new String[] { protocol });
             return engine;
         } catch (SSLException e) {
             // When OpenSSL is in-use SslContext creation throws
@@ -201,7 +201,6 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
 
     protected SslContext createSslContext(boolean clientMode) throws SSLException {
         SslContextBuilder builder = createSslContextBuilder(clientMode);
-
         if (trustCertCollectionFile != null) {
             builder.trustManager(new File(trustCertCollectionFile));
         } else {
@@ -228,9 +227,7 @@ public class OpenSSLEngineFactory extends SSLEngineFactorySupport implements SSL
                 builder.keyManager(kmf);
             }
         } else {
-            builder = key != null
-                    ? SslContextBuilder.forServer(certChain, key, keyPassword)
-                    : SslContextBuilder.forServer(kmf);
+            builder = key != null ? SslContextBuilder.forServer(certChain, key, keyPassword) : SslContextBuilder.forServer(kmf);
             // client authentication is a server-side setting. Doesn't need to be set on the client-side.
             builder.clientAuth(clientAuth);
         }

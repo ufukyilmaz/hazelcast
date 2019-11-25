@@ -195,7 +195,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
 
     private ClientConfig failFastClientConfig() {
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setMaxBackoffMillis(0);
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setClusterConnectTimeoutMillis(0);
         return clientConfig;
     }
 

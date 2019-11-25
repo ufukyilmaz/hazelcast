@@ -7,9 +7,10 @@ import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.AdvancedNetworkConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EndpointConfig;
+import com.hazelcast.config.InvalidConfigurationException;
+import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.PermissionConfig;
-import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
@@ -26,12 +27,14 @@ import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.nio.ssl.SSLConnectionTest;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.SlowTest;
+
 import org.junit.After;
 import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -43,14 +46,13 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.cert.CertificateFactory;
+import java.util.Collection;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Collection;
 
 import static com.hazelcast.TestEnvironmentUtil.assumeJavaVersionAtLeast;
-import static com.hazelcast.TestEnvironmentUtil.assumeJdk8OrNewer;
 import static com.hazelcast.TestEnvironmentUtil.assumeNoIbmJvm;
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
@@ -86,6 +88,9 @@ public class TlsFunctionalTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    @Rule
+    public ExpectedException expected = ExpectedException.none();
 
     private final TestAwareClientFactory factory = new TestAwareClientFactory();
 
@@ -303,11 +308,12 @@ public class TlsFunctionalTest {
      * Then: Member fails to start
      * </pre>
      */
-    @Test(expected = HazelcastException.class)
+    @Test
     public void testUnsupportedCipherSuiteNames() throws IOException {
         Config config = createMemberConfig();
         SSLConfig sslConfig = getSSLConfig(config);
         sslConfig.setProperty("ciphersuites", "foo,bar");
+        expected.expect(InvalidConfigurationException.class);
         factory.newHazelcastInstance(config);
     }
 
@@ -320,12 +326,13 @@ public class TlsFunctionalTest {
      * Then: Client fails to start
      * </pre>
      */
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testUnsupportedClientCipherSuiteNames() throws IOException {
         factory.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();
         SSLConfig sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("ciphersuites", "foo,bar");
+        expected.expect(IllegalStateException.class);
         factory.newHazelcastClient(clientConfig);
     }
 
@@ -363,8 +370,6 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testTLSv13onJava11() throws IOException {
-        // once the https://github.com/netty/netty-tcnative/issues/256 is fixed, we can remove following assumption:
-        assumeFalse(openSsl);
         assumeJavaVersionAtLeast(11);
         Config config = createMemberConfig();
         SSLConfig sslConfig = getSSLConfig(config);
@@ -440,7 +445,6 @@ public class TlsFunctionalTest {
     @Test
     public void testDefaultTruststore() throws IOException {
         assumeNoIbmJvm();
-        assumeJdk8OrNewer();
         assumeLetsEncryptCertValid();
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
         setSignedKeyFiles(sslConfig);
@@ -475,7 +479,6 @@ public class TlsFunctionalTest {
     @Test
     public void testDefaultTruststore_client() throws IOException {
         assumeNoIbmJvm();
-        assumeJdk8OrNewer();
         assumeLetsEncryptCertValid();
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
         SSLConfig clientSSLConfig = new SSLConfig().setEnabled(true);
@@ -513,8 +516,6 @@ public class TlsFunctionalTest {
      */
     @Test
     public void testDefaultTruststore_configuredExplicitly() {
-        // older Java versions don't have the Let's Encrypt CA certificate in their truststores
-        assumeJavaVersionAtLeast(8);
         assumeFalse(openSsl && TestEnvironmentUtil.isIbmJvm());
         assumeLetsEncryptCertValid();
         File letsEncryptKeystore = copyTestResource(SSLConnectionTest.class, tempFolder.getRoot(), "letsencrypt.jks");
@@ -584,12 +585,13 @@ public class TlsFunctionalTest {
      * Then: Client fails to start
      * </pre>
      */
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testUnsupportedClientProtocolName() throws IOException {
         factory.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();
         SSLConfig sslConfig = clientConfig.getNetworkConfig().getSSLConfig();
         sslConfig.setProperty("protocol", "hazelcast");
+        expected.expect(IllegalStateException.class);
         factory.newHazelcastClient(clientConfig);
     }
 
@@ -662,7 +664,7 @@ public class TlsFunctionalTest {
         }
 
         ClientConfig config = new ClientConfig();
-        config.getConnectionStrategyConfig().getConnectionRetryConfig().setMaxBackoffMillis(0);
+        config.getConnectionStrategyConfig().getConnectionRetryConfig().setClusterConnectTimeoutMillis(0);
 
         ClientNetworkConfig networkConfig = config.getNetworkConfig();
         networkConfig.setSSLConfig(sslConfig);

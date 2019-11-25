@@ -42,14 +42,6 @@ public class TestEnvironmentUtil {
         assumeTrue("OpenSSL unsupported on this platform", isOpenSslSupported());
     }
 
-    public static void assumeThatNoJDK6() {
-        assumeJavaVersionAtLeast(7);
-    }
-
-    public static void assumeJdk8OrNewer() {
-        assumeJavaVersionAtLeast(8);
-    }
-
     public static void assumeJavaVersionAtLeast(int minimalVersion) {
         assumeTrue("Test skipped for Java versions lower than " + minimalVersion, JAVA_VERSION_MAJOR >= minimalVersion);
     }

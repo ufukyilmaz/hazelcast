@@ -1,5 +1,6 @@
 package com.hazelcast.internal.nio.ssl;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastException;
@@ -15,6 +16,8 @@ import com.hazelcast.nio.ssl.SSLEngineFactory;
 import io.netty.handler.ssl.OpenSsl;
 
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Executor;
@@ -28,12 +31,15 @@ public abstract class AbstractTLSChannelInitializer implements ChannelInitialize
     private final SSLEngineFactory sslEngineFactory;
     private final String mutualAuthentication;
     private final TLSExecutor tlsExecutor;
+    private final boolean validateIdentity;
+
 
     public AbstractTLSChannelInitializer(SSLConfig sslConfig, Executor tlsExecutor) {
         this.sslConfig = sslConfig;
         this.sslEngineFactory = loadSSLEngineFactory();
         this.tlsExecutor = new TLSExecutor(tlsExecutor);
         this.mutualAuthentication = getProperty(sslConfig.getProperties(), "mutualAuthentication");
+        this.validateIdentity = Boolean.parseBoolean(getProperty(sslConfig.getProperties(), "validateIdentity"));
     }
 
     private SSLEngineFactory loadSSLEngineFactory() {
@@ -105,7 +111,16 @@ public abstract class AbstractTLSChannelInitializer implements ChannelInitialize
     public final void initChannel(Channel channel) throws Exception {
         configChannel(channel);
 
-        SSLEngine sslEngine = sslEngineFactory.create(channel.isClientMode());
+        Address peerAddress = (Address) channel.attributeMap().get(Address.class);
+        SSLEngine sslEngine = sslEngineFactory.create(channel.isClientMode(), peerAddress);
+
+        if (validateIdentity && peerAddress != null) {
+            SSLParameters sslParams = new SSLParameters();
+            // https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames
+            // If there is a RFC-6125 implementation ready in a future, we should probably switch to it.
+            sslParams.setEndpointIdentificationAlgorithm("HTTPS");
+            sslEngine.setSSLParameters(sslParams);
+        }
 
         // In case of the OpenSSL based SSLEngine implementation, the below calls are ignored.
         // For configuration see the OpenSSLEngineFactory

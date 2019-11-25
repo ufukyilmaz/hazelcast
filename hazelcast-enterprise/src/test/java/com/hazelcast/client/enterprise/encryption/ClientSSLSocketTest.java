@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Properties;
 
 import static com.hazelcast.TestEnvironmentUtil.assumeJavaVersionLessThan;
-import static com.hazelcast.TestEnvironmentUtil.assumeJdk8OrNewer;
 import static com.hazelcast.TestEnvironmentUtil.assumeThatOpenSslIsSupported;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_FILE;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.JAVAX_NET_SSL_KEY_STORE;
@@ -76,7 +75,6 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         assumeThatOpenSslIsSupported();
         // for older java versions there can be incompatibilities between JSSE and OpenSSL: TLS protocol versions;
         // insufficient DH key length
-        assumeJdk8OrNewer();
         test(true, false);
     }
 
@@ -85,7 +83,6 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         assumeThatOpenSslIsSupported();
         // for older java versions there can be incompatibilities between JSSE and OpenSSL: TLS protocol versions;
         // insufficient DH key length
-        assumeJdk8OrNewer();
         test(false, true);
     }
 

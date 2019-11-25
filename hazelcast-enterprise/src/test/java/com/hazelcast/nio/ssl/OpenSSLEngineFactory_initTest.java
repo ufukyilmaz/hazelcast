@@ -47,7 +47,7 @@ public class OpenSSLEngineFactory_initTest {
         OpenSSLEngineFactory factory = new OpenSSLEngineFactory();
         factory.init(sslProperties, false);
 
-        SSLEngine sslEngine = factory.create(true);
+        SSLEngine sslEngine = factory.create(true, null);
         assertTrue(sslEngine instanceof ReferenceCountedOpenSslEngine);
     }
 

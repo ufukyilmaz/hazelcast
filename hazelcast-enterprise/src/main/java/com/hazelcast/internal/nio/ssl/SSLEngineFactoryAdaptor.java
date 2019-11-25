@@ -1,5 +1,6 @@
 package com.hazelcast.internal.nio.ssl;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
@@ -8,6 +9,7 @@ import com.hazelcast.nio.ssl.SSLEngineFactory;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,11 +35,14 @@ public class SSLEngineFactoryAdaptor implements SSLEngineFactory {
     }
 
     @Override
-    public SSLEngine create(boolean clientMode) {
+    public SSLEngine create(boolean clientMode, Address peerAddress) {
         SSLContext sslContext = sslContextFactory.getSSLContext();
-        SSLEngine sslEngine = sslContext.createSSLEngine();
+        SSLEngine sslEngine = peerAddress == null
+                ? sslContext.createSSLEngine()
+                : sslContext.createSSLEngine(peerAddress.getHost(), peerAddress.getPort());
         sslEngine.setUseClientMode(clientMode);
         sslEngine.setEnableSessionCreation(true);
+
         if (cipherSuites != null) {
             sslEngine.setEnabledCipherSuites(cipherSuites);
         }

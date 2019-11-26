@@ -13,8 +13,6 @@ import java.util.Iterator;
  * Iterator returned by {@link #newForcedEvictionValuesIterator()}
  * is optimized for mass removals and it should do its best
  * to prevent data clustering.
- *
- * @param <T>
  */
 public interface ForcedEvictable<T> {
 
@@ -32,5 +30,5 @@ public interface ForcedEvictable<T> {
      *
      * @return
      */
-    Iterator<T> newForcedEvictionValuesIterator();
+    Iterator<T> newRandomEvictionKeyIterator();
 }

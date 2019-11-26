@@ -7,6 +7,12 @@ import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.impl.ClientSelectors;
 import com.hazelcast.client.test.ClientTestSupport;
 import com.hazelcast.client.test.IdentifiedDataSerializableFactory;
+import com.hazelcast.cluster.Address;
+import com.hazelcast.cluster.InitialMembershipEvent;
+import com.hazelcast.cluster.InitialMembershipListener;
+import com.hazelcast.cluster.Member;
+import com.hazelcast.cluster.MemberAttributeEvent;
+import com.hazelcast.cluster.MembershipEvent;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.ListenerConfig;
@@ -15,21 +21,15 @@ import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.cp.ICountDownLatch;
 import com.hazelcast.core.IExecutorService;
-import com.hazelcast.map.IMap;
 import com.hazelcast.core.LifecycleEvent;
 import com.hazelcast.core.LifecycleListener;
-import com.hazelcast.cluster.InitialMembershipEvent;
-import com.hazelcast.cluster.InitialMembershipListener;
-import com.hazelcast.cluster.Member;
-import com.hazelcast.cluster.MemberAttributeEvent;
-import com.hazelcast.cluster.MembershipEvent;
+import com.hazelcast.cp.ICountDownLatch;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.nearcache.NearCache;
+import com.hazelcast.map.IMap;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.listener.EntryAddedListener;
-import com.hazelcast.cluster.Address;
 import com.hazelcast.query.Predicates;
 import com.hazelcast.spi.exception.TargetDisconnectedException;
 import com.hazelcast.spi.properties.ClusterProperty;
@@ -38,8 +38,8 @@ import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.topic.ITopic;
 import com.hazelcast.topic.Message;
 import com.hazelcast.topic.MessageListener;
-
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -56,6 +56,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
+@Ignore
 public class DisconnectViaCommandTest extends ClientTestSupport {
 
     @After

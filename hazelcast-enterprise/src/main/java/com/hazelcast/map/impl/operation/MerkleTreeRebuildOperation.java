@@ -1,17 +1,16 @@
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import static com.hazelcast.internal.util.ThreadUtil.assertRunningOnPartitionThread;
 
@@ -34,16 +33,15 @@ public class MerkleTreeRebuildOperation extends MapOperation implements AllowedD
     protected void runInternal() {
         assertRunningOnPartitionThread();
 
-        final int partitionId = getPartitionId();
-        final String mapName = getName();
-        final SerializationService serializationService = getNodeEngine().getSerializationService();
-        final RecordStore recordStore = mapServiceContext.getRecordStore(partitionId, mapName);
-        final MerkleTree merkleTree = getMerkleTree(partitionId, mapName);
-        final Iterator<Record> iterator = recordStore.iterator();
-
+        int partitionId = getPartitionId();
+        String mapName = getName();
+        MerkleTree merkleTree = getMerkleTree(partitionId, mapName);
         merkleTree.clear();
-        iterator.forEachRemaining(
-                record -> merkleTree.updateAdd(record.getKey(), serializationService.toData(record.getValue())));
+
+        SerializationService serializationService = getNodeEngine().getSerializationService();
+        RecordStore<Record> recordStore = mapServiceContext.getRecordStore(partitionId, mapName);
+        recordStore.forEach((dataKey, record)
+                -> merkleTree.updateAdd(dataKey, serializationService.toData(record.getValue())), getReplicaIndex() != 0);
     }
 
     @Override

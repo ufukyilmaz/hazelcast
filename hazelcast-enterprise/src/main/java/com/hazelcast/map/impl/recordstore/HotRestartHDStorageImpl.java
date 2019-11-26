@@ -2,22 +2,23 @@ package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hotrestart.HotRestartKey;
+import com.hazelcast.internal.hotrestart.HotRestartStore;
+import com.hazelcast.internal.hotrestart.impl.KeyOffHeap;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
+import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.hotrestart.HotRestartKey;
-import com.hazelcast.internal.hotrestart.HotRestartStore;
-import com.hazelcast.internal.hotrestart.impl.KeyOffHeap;
 
 import java.util.Iterator;
 
 /**
- * Hot Restart storage implementation for maps configured with in-memory-format
- * {@link com.hazelcast.config.InMemoryFormat#NATIVE}
+ * Hot Restart storage implementation for maps configured with
+ * in-memory-format {@link com.hazelcast.config.InMemoryFormat#NATIVE}
  */
 public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> implements ForcedEvictable<HDRecord> {
 
@@ -45,7 +46,7 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> imp
         synchronized (mutex) {
             storage.put(key, record);
         }
-        putToHotRestart(record);
+        putToHotRestart(key, record);
     }
 
     @Override
@@ -53,18 +54,16 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> imp
         synchronized (mutex) {
             storage.updateRecordValue(key, record, val);
         }
-        putToHotRestart(record);
+        putToHotRestart(key, record);
     }
 
     @Override
-    public void removeRecord(HDRecord record) {
-        if (record == null) {
-            return;
-        }
+    public void removeRecord(Data key, HDRecord record) {
+        hotRestartStore.remove(createHotRestartKey(key, record), fsync);
+
         synchronized (mutex) {
-            storage.removeRecord(record);
+            storage.removeRecord(key, record);
         }
-        hotRestartStore.remove(createHotRestartKey(record), fsync);
     }
 
     @Override
@@ -95,9 +94,14 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> imp
     }
 
     @Override
-    public HotRestartKey createHotRestartKey(HDRecord record) {
-        NativeMemoryData key = (NativeMemoryData) record.getKey();
-        return new KeyOffHeap(prefix, key.toByteArray(), key.address(), record.getSequence());
+    public Iterator<HDRecord> newRandomEvictionKeyIterator() {
+        return ((ForcedEvictable<HDRecord>) storage).newRandomEvictionKeyIterator();
+    }
+
+    @Override
+    public HotRestartKey createHotRestartKey(Data onHeapKey, Record record) {
+        long keyAddress = getStorageImpl().getNativeKeyAddress(onHeapKey);
+        return new KeyOffHeap(prefix, onHeapKey.toByteArray(), keyAddress, record.getSequence());
     }
 
     public long getNativeKeyAddress(Data key) {
@@ -114,10 +118,5 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> imp
 
     public Object getMutex() {
         return mutex;
-    }
-
-    @Override
-    public Iterator<HDRecord> newForcedEvictionValuesIterator() {
-        return ((ForcedEvictable<HDRecord>) storage).newForcedEvictionValuesIterator();
     }
 }

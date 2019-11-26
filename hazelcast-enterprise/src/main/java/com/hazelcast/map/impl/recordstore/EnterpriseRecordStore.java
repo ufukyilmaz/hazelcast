@@ -26,17 +26,11 @@ import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.record.Record.UNSET;
-import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -75,8 +69,8 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
         if (prefix != -1) {
             this.ramStore = inMemoryFormat == NATIVE
-                    ? new RamStoreHDImpl(this, memoryManager)
-                    : new RamStoreImpl(this);
+                    ? new HDMapRamStoreImpl(this, memoryManager)
+                    : new OnHeapMapRamStoreImpl(this);
         }
     }
 
@@ -181,26 +175,9 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         disposeDeferredBlocks();
     }
 
-    @Override
-    protected Collection<Record> getNotLockedRecords() {
-        Set<Data> lockedKeySet = lockStore == null ? Collections.emptySet() : lockStore.getLockedKeys();
-        int notLockedKeyCount = storage.size() - lockedKeySet.size();
-        if (notLockedKeyCount <= 0) {
-            return emptyList();
-        }
-
-        List<Record> notLockedRecords = new ArrayList<>(notLockedKeyCount);
-        Collection<Record> records = storage.values();
-        for (Record record : records) {
-            if (!lockedKeySet.contains(record.getKey())) {
-                notLockedRecords.add(record);
-            }
-        }
-        return notLockedRecords;
-    }
-
     /**
-     * If in-memory-format is native, method is executed on partition thread.
+     * If in-memory-format is native, method
+     * is executed on partition thread.
      */
     @Override
     public Data readBackupData(Data key) {
@@ -243,7 +220,6 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         public int getPartitionId() {
             return partitionId;
         }
-
     }
 
     private class InnerCallable implements Callable {

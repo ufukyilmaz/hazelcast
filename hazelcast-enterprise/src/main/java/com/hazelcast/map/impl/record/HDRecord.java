@@ -12,10 +12,11 @@ import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.map.impl.record.RecordReaderWriter.DATA_RECORD_WITH_STATS_READER_WRITER;
 
 /**
+ * Represents simple HD memory backed {@link Record}
+ * implementation for {@link com.hazelcast.map.IMap IMap}.
+ *
  * Structure:
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * | Key Address              |   8 bytes (long)   |
- * +--------------------------+--------------------+
  * | Value Address            |   8 bytes (long)   |
  * +--------------------------+--------------------+
  * | Version                  |   8 bytes (long)   |
@@ -39,12 +40,12 @@ import static com.hazelcast.map.impl.record.RecordReaderWriter.DATA_RECORD_WITH_
  * | Sequence                 |   4 bytes (int)    |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
- * Total size = 60 bytes
+ * Total size = 52 bytes
  *
  * All fields are aligned.
  *
- * Represents simple Hi-Density backed {@link
- * Record} implementation for {@link com.hazelcast.map.IMap IMap}.
+ * Note: In current buddy memory allocator design,
+ * this record is going to use a 64 bytes memory block.
  */
 @SuppressWarnings("checkstyle:methodcount")
 public class HDRecord extends HiDensityRecord implements Record<Data> {
@@ -53,8 +54,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
      */
     public static final int SIZE;
 
-    static final int KEY_OFFSET = 0;
-    static final int VALUE_OFFSET = KEY_OFFSET + LONG_SIZE_IN_BYTES;
+    static final int VALUE_OFFSET = 0;
     static final int VERSION_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
     static final int CREATION_TIME_OFFSET = VERSION_OFFSET + LONG_SIZE_IN_BYTES;
     static final int TTL_OFFSET = CREATION_TIME_OFFSET + INT_SIZE_IN_BYTES;
@@ -106,26 +106,9 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     }
 
     @Override
-    public void setKey(Data key) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Data getKey() {
-        if (address == NULL_PTR) {
-            return null;
-        } else {
-            long keyAddress = getKeyAddress();
-            if (keyAddress == NULL_PTR) {
-                return null;
-            }
-            return new NativeMemoryData().reset(keyAddress);
-        }
-    }
-
-    @Override
     public long getCost() {
-        // this is heap cost. For NATIVE we are not calculating this cost
+        // This is heap cost. For NATIVE
+        // we are not calculating this cost
         return 0L;
     }
 
@@ -167,14 +150,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
         zero();
     }
 
-    public long getKeyAddress() {
-        return readLong(KEY_OFFSET);
-    }
-
-    public void setKeyAddress(long address) {
-        writeLong(KEY_OFFSET, address);
-    }
-
     @Override
     public long getValueAddress() {
         return readLong(VALUE_OFFSET);
@@ -213,7 +188,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     @Override
     public void setCreationTime(long creationTime) {
         writeInt(CREATION_TIME_OFFSET, stripBaseTime(creationTime));
-
     }
 
     @Override

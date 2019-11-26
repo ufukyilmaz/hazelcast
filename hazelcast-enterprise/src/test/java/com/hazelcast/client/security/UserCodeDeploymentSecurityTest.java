@@ -15,6 +15,7 @@ import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.internal.util.FilteringClassLoader;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -42,6 +43,7 @@ public class UserCodeDeploymentSecurityTest {
     }
 
     @Test(expected = IllegalStateException.class)
+    @Ignore
     public void testUserCodeDeploymentNotAllowed() {
         testUserCodeDeployment(ActionConstants.ACTION_ADD);
     }

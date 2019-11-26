@@ -44,18 +44,18 @@ public class HDJsonMetadataMutationObserver
     }
 
     @Override
-    protected Metadata getMetadata(Record record) {
-        return getMetadataStore().get(record.getKey());
+    protected Metadata getMetadata(Data dataKey, Record record) {
+        return getMetadataStore().get(dataKey);
     }
 
     @Override
-    protected void setMetadata(Record record, Metadata metadata) {
-        getMetadataStore().set(record.getKey(), metadata);
+    protected void setMetadata(Data dataKey, Record record, Metadata metadata) {
+        getMetadataStore().set(dataKey, metadata);
     }
 
     @Override
-    protected void removeMetadata(Record record) {
-        getMetadataStore().remove(record.getKey());
+    protected void removeMetadata(Data dataKey, Record record) {
+        getMetadataStore().remove(dataKey);
     }
 
     private MetadataStore getMetadataStore() {

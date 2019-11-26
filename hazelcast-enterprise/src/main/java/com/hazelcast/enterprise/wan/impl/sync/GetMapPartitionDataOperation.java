@@ -1,13 +1,13 @@
 package com.hazelcast.enterprise.wan.impl.sync;
 
 import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.internal.util.SetUtil;
 import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
-import com.hazelcast.internal.util.SetUtil;
 
-import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -27,16 +27,13 @@ public class GetMapPartitionDataOperation extends MapOperation implements Readon
     @Override
     protected void runInternal() {
         recordSet = SetUtil.createHashSet(recordStore.size());
-        final Iterator<Record> iterator = recordStore.iterator();
-        while (iterator.hasNext()) {
-            Record record = iterator.next();
-            recordSet.add(createSimpleEntryView(record));
-        }
+        recordStore.forEach((dataKey, record)
+                -> recordSet.add(createSimpleEntryView(dataKey, record)), getReplicaIndex() != 0);
     }
 
-    private SimpleEntryView<Object, Object> createSimpleEntryView(Record record) {
+    private SimpleEntryView<Object, Object> createSimpleEntryView(Data dataKey, Record record) {
         SimpleEntryView<Object, Object> simpleEntryView = new SimpleEntryView<Object, Object>(
-                mapServiceContext.toData(record.getKey()), mapServiceContext.toData(record.getValue()));
+                mapServiceContext.toData(dataKey), mapServiceContext.toData(record.getValue()));
         simpleEntryView.setVersion(record.getVersion());
         simpleEntryView.setHits(record.getHits());
         simpleEntryView.setLastAccessTime(record.getLastAccessTime());

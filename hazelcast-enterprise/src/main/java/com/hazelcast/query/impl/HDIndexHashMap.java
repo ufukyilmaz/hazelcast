@@ -4,12 +4,12 @@ import com.hazelcast.internal.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.internal.elastic.map.NativeMemoryDataAccessor;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.impl.record.HDRecordAccessor;
+import com.hazelcast.nio.serialization.Data;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -90,12 +90,13 @@ class HDIndexHashMap<T extends QueryableEntry> {
         // here we transform the entries using the MapEntryFactory.
         Set<T> result = new HashSet<T>();
         for (Map.Entry<Data, MemoryBlock> entry : records.entrySet()) {
+            Data key = entry.getKey();
             MemoryBlock memoryBlock = entry.getValue();
             NativeMemoryData valueData;
             if (memoryBlock instanceof NativeMemoryData || memoryBlock == null) {
                 valueData = (NativeMemoryData) memoryBlock;
             } else {
-                valueData = indexStore.getValueOrNullIfExpired(memoryBlock);
+                valueData = indexStore.getValueOrNullIfExpired(key, memoryBlock);
             }
             if (memoryBlock == null || valueData != null) {
                 result.add(entryFactory.create(entry.getKey(), valueData));

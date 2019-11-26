@@ -6,6 +6,7 @@ import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStore;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.impl.Metadata;
 
 /**
@@ -33,11 +34,11 @@ public class HDPartitionScanRunner extends PartitionScanRunner {
     }
 
     @Override
-    protected Metadata getMetadataFromRecord(RecordStore recordStore, Record record) {
+    protected Metadata getMetadataFromRecord(RecordStore recordStore, Data dataKey, Record record) {
         if (recordStore instanceof EnterpriseRecordStore) {
-            return ((EnterpriseRecordStore) recordStore).getMetadataStore().get(record.getKey());
+            return ((EnterpriseRecordStore) recordStore).getMetadataStore().get(dataKey);
         } else {
-            return super.getMetadataFromRecord(recordStore, record);
+            return super.getMetadataFromRecord(recordStore, dataKey, record);
         }
     }
 }

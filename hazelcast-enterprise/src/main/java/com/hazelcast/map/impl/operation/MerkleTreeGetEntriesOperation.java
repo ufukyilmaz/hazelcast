@@ -1,6 +1,8 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.core.EntryView;
+import com.hazelcast.internal.util.collection.InflatableSet;
+import com.hazelcast.internal.util.collection.InflatableSet.Builder;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.MerkleTreeNodeEntries;
 import com.hazelcast.map.impl.SimpleEntryView;
@@ -8,8 +10,6 @@ import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.util.collection.InflatableSet;
-import com.hazelcast.internal.util.collection.InflatableSet.Builder;
 import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -59,7 +59,7 @@ public class MerkleTreeGetEntriesOperation extends MapOperation implements Reado
 
             localMerkleTree.forEachKeyOfNode(order, key -> {
                 Record record = recordStore.getRecord((Data) key);
-                entriesBuilder.add(createSimpleEntryView(record));
+                entriesBuilder.add(createSimpleEntryView(((Data) key), record));
             });
             result.add(new MerkleTreeNodeEntries(order, entriesBuilder.build()));
         }
@@ -71,9 +71,9 @@ public class MerkleTreeGetEntriesOperation extends MapOperation implements Reado
      * @param record a map entry record
      * @return the map entry view
      */
-    private SimpleEntryView<Data, Data> createSimpleEntryView(Record record) {
+    private SimpleEntryView<Data, Data> createSimpleEntryView(Data dataKey, Record record) {
         return new SimpleEntryView<Data, Data>()
-                .withKey(mapServiceContext.toData(record.getKey()))
+                .withKey(mapServiceContext.toData(dataKey))
                 .withValue(mapServiceContext.toData(record.getValue()))
                 .withVersion(record.getVersion())
                 .withHits(record.getHits())

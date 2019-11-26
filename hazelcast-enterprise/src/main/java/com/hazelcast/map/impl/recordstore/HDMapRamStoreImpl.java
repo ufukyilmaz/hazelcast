@@ -1,11 +1,5 @@
 package com.hazelcast.map.impl.recordstore;
 
-import com.hazelcast.internal.serialization.impl.HeapData;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.record.HDRecord;
-import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.KeyHandle;
 import com.hazelcast.internal.hotrestart.KeyHandleOffHeap;
@@ -14,26 +8,31 @@ import com.hazelcast.internal.hotrestart.RamStoreHelper;
 import com.hazelcast.internal.hotrestart.RecordDataSink;
 import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.internal.hotrestart.impl.SimpleHandleOffHeap;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.serialization.impl.HeapData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.util.Clock;
+import com.hazelcast.map.impl.record.HDRecord;
+import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.nio.serialization.Data;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
- * RamStore implementation for maps configured with in-memory-format:
- * {@link com.hazelcast.config.InMemoryFormat#NATIVE}
+ * HD memory backed map's RamStore implementation.
+ *
+ * @see OnHeapMapRamStoreImpl
  */
-public class RamStoreHDImpl implements RamStore {
+public class HDMapRamStoreImpl implements RamStore {
 
     private static final int REMOVE_NULL_ENTRIES_BATCH_SIZE = 1024;
 
     private final EnterpriseRecordStore recordStore;
-
     private final HazelcastMemoryManager memoryManager;
-
     private final HotRestartHDStorageImpl storage;
-
     private final Object mutex;
 
-    public RamStoreHDImpl(EnterpriseRecordStore recordStore, HazelcastMemoryManager memoryManager) {
+    public HDMapRamStoreImpl(EnterpriseRecordStore recordStore, HazelcastMemoryManager memoryManager) {
         this.recordStore = recordStore;
         this.memoryManager = memoryManager;
         this.storage = (HotRestartHDStorageImpl) recordStore.getStorage();
@@ -54,13 +53,13 @@ public class RamStoreHDImpl implements RamStore {
     }
 
     @Override
-    public KeyHandle toKeyHandle(byte[] key) {
-        HeapData keyData = new HeapData(key);
+    public KeyHandle toKeyHandle(byte[] keyBytes) {
+        HeapData keyData = new HeapData(keyBytes);
         long nativeKeyAddress = storage.getNativeKeyAddress(keyData);
         if (nativeKeyAddress != NULL_ADDRESS) {
-            return readKeyHandle(nativeKeyAddress);
+            return readExistingKeyHandle(nativeKeyAddress);
         }
-        return newKeyHandle(key);
+        return newKeyHandle(keyBytes);
     }
 
     @Override
@@ -74,7 +73,7 @@ public class RamStoreHDImpl implements RamStore {
             HDRecord record = storage.get(key);
             assert record != null;
             assert record.getSequence() == keyHandleOffHeap.sequenceId();
-            storage.removeTransient(record);
+            storage.removeTransient(key, record);
             if (++removedCount % REMOVE_NULL_ENTRIES_BATCH_SIZE == 0) {
                 storage.disposeDeferredBlocks();
             }
@@ -82,18 +81,19 @@ public class RamStoreHDImpl implements RamStore {
         storage.disposeDeferredBlocks();
     }
 
-    private KeyHandleOffHeap readKeyHandle(long nativeKeyAddress) {
+    private KeyHandleOffHeap readExistingKeyHandle(long nativeKeyAddress) {
         NativeMemoryData keyData = new NativeMemoryData().reset(nativeKeyAddress);
         HDRecord record = storage.get(keyData);
         return new SimpleHandleOffHeap(keyData.address(), record.getSequence());
     }
 
-    private KeyHandleOffHeap newKeyHandle(byte[] key) {
-        NativeMemoryData keyData = storage.toNative(new HeapData(key));
+    private KeyHandleOffHeap newKeyHandle(byte[] keyBytes) {
+        NativeMemoryData keyData = storage.toNative(new HeapData(keyBytes));
         long sequenceId = recordStore.incrementSequence();
         SimpleHandleOffHeap handleOffHeap = new SimpleHandleOffHeap(keyData.address(), sequenceId);
-        HDRecord record = recordStore.createRecord(keyData, null, handleOffHeap.sequenceId());
-        storage.putTransient(keyData, record);
+        Record record = recordStore.createRecord(keyData, null, Clock.currentTimeMillis());
+        record.setSequence(handleOffHeap.sequenceId());
+        storage.putTransient(keyData, (HDRecord) record);
         return handleOffHeap;
     }
 

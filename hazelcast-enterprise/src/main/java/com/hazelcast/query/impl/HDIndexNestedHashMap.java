@@ -6,12 +6,12 @@ import com.hazelcast.internal.elastic.map.NativeBehmSlotAccessorFactory;
 import com.hazelcast.internal.elastic.map.NativeMemoryDataAccessor;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.impl.record.HDRecordAccessor;
+import com.hazelcast.nio.serialization.Data;
 
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
@@ -126,12 +126,13 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         BinaryElasticHashMap<MemoryBlock> map = loadFromOffHeapHeader(ess, malloc, mapHeader.address(), behmSlotAccessorFactory,
                 behmMemoryBlockAccessor);
         for (Map.Entry<Data, MemoryBlock> entry : map.entrySet()) {
+            Data key = entry.getKey();
             MemoryBlock memoryBlock = entry.getValue();
             NativeMemoryData valueData;
             if (memoryBlock instanceof NativeMemoryData || memoryBlock == null) {
                 valueData = (NativeMemoryData) memoryBlock;
             } else {
-                valueData = indexStore.getValueOrNullIfExpired(memoryBlock);
+                valueData = indexStore.getValueOrNullIfExpired(key, memoryBlock);
             }
 
             if (memoryBlock == null || valueData != null) {

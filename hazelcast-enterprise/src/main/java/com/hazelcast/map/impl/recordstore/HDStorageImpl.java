@@ -21,6 +21,7 @@ import com.hazelcast.nio.serialization.Data;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
@@ -28,8 +29,7 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
  * Hi-Density backed {@code Storage} implementation for {@link IMap}.
  * This implementation can be used under multi-thread access.
  */
-public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<HDRecord> {
-
+public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<Data> {
     private final HDStorageSCHM map;
     private final HiDensityStorageInfo storageInfo;
     private final HiDensityRecordProcessor recordProcessor;
@@ -48,19 +48,19 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         return recordProcessor;
     }
 
+    //TODO check dispose?
     @Override
-    public void removeRecord(HDRecord record) {
+    public void removeRecord(Data dataKey, HDRecord record) {
         if (record == null) {
             return;
         }
 
-        Data key = record.getKey();
-        HDRecord oldRecord = map.remove(key);
+        HDRecord oldRecord = map.remove(dataKey);
 
-        addDeferredDispose(key);
         addDeferredDispose(oldRecord);
 
-        entryCostEstimator.adjustEstimateBy(-entryCostEstimator.calculateEntryCost((NativeMemoryData) key, record));
+        // TODO key cost?
+        entryCostEstimator.adjustEstimateBy(-entryCostEstimator.calculateValueCost(record));
         storageInfo.decreaseEntryCount();
         setEntryCount(map.size());
     }
@@ -77,7 +77,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         boolean succeed = false;
         try {
             nativeKey = toNative(key);
-            record.setKeyAddress(nativeKey.address());
             oldRecord = map.put(nativeKey, record);
             succeed = true;
         } finally {
@@ -143,7 +142,8 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
 
     @Override
     public void clear(boolean isDuringShutdown) {
-        HazelcastMemoryManager memoryManager = ((DefaultHiDensityRecordProcessor) recordProcessor).getMemoryManager();
+        HazelcastMemoryManager memoryManager
+                = ((DefaultHiDensityRecordProcessor) recordProcessor).getMemoryManager();
         if (memoryManager == null || memoryManager.isDisposed()) {
             // otherwise will cause a SIGSEGV
             return;
@@ -166,13 +166,18 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     }
 
     @Override
-    public Iterator<HDRecord> mutationTolerantIterator() {
-        return map.valueIter(false);
+    public Iterator<Map.Entry<Data, HDRecord>> entryIterator() {
+        return map.entryIter(true);
     }
 
     @Override
-    public Iterator<HDRecord> newForcedEvictionValuesIterator() {
-        return map.newRandomEvictionValueIterator();
+    public Iterator<Map.Entry<Data, HDRecord>> mutationTolerantIterator() {
+        return map.entryIter(false);
+    }
+
+    @Override
+    public Iterator<Data> newRandomEvictionKeyIterator() {
+        return map.newRandomEvictionKeyIterator();
     }
 
     @Override
@@ -252,8 +257,19 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     }
 
     @Override
-    public Record extractRecordFrom(EntryView entryView) {
+    public Record extractRecordFromLazy(EntryView entryView) {
         return ((HDStorageSCHM.LazyEntryViewFromRecord) entryView).getRecord();
+    }
+
+    @Override
+    public Data extractDataKeyFromLazy(EntryView entryView) {
+        return ((HDStorageSCHM.LazyEntryViewFromRecord) entryView).getDataKey();
+    }
+
+    @Override
+    public Data toBackingDataKeyFormat(Data key) {
+        long address = getNativeKeyAddress(key);
+        return new NativeMemoryData().reset(address);
     }
 
     public long getNativeKeyAddress(Data key) {

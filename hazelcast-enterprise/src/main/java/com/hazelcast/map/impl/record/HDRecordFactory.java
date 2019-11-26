@@ -22,7 +22,7 @@ public class HDRecordFactory implements RecordFactory<Data> {
     }
 
     @Override
-    public Record<Data> newRecord(Data key, Object value) {
+    public Record<Data> newRecord(Object value) {
         long address = NULL_PTR;
         Data dataValue = null;
         try {

@@ -10,6 +10,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.internal.services.ReplicationSupportingService;
+import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.NodeEngine;
@@ -17,7 +18,6 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.proxyservice.ProxyService;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
-import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.impl.WanReplicationService;
 
@@ -35,7 +35,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
     /**
      * Event origin.
      */
-    public static final UUID ORIGIN =  NIL_UUID;
+    public static final UUID ORIGIN = NIL_UUID;
 
     private final EnterpriseCacheService cacheService;
     private final NodeEngine nodeEngine;
@@ -68,11 +68,11 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         if (cacheReplicationObject instanceof CacheReplicationUpdate) {
             handleUpdateEvent((CacheReplicationUpdate) cacheReplicationObject, cacheConfig, acknowledgeType);
             wanService.getReceivedEventCounters(ICacheService.SERVICE_NAME)
-                      .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
+                    .incrementUpdate(cacheReplicationObject.getNameWithPrefix());
         } else if (cacheReplicationObject instanceof CacheReplicationRemove) {
             handleRemoveEvent((CacheReplicationRemove) cacheReplicationObject, cacheConfig, acknowledgeType);
             wanService.getReceivedEventCounters(ICacheService.SERVICE_NAME)
-                      .incrementRemove(cacheReplicationObject.getNameWithPrefix());
+                    .incrementRemove(cacheReplicationObject.getNameWithPrefix());
         }
     }
 

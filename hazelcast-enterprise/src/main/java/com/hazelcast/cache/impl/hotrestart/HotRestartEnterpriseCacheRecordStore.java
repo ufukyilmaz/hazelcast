@@ -3,8 +3,6 @@ package com.hazelcast.cache.impl.hotrestart;
 import com.hazelcast.cache.impl.CacheRecordStore;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.internal.serialization.impl.HeapData;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.KeyHandle;
 import com.hazelcast.internal.hotrestart.RamStore;
@@ -12,8 +10,10 @@ import com.hazelcast.internal.hotrestart.RamStoreHelper;
 import com.hazelcast.internal.hotrestart.RecordDataSink;
 import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
-import com.hazelcast.spi.impl.NodeEngine;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.util.Clock;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.impl.NodeEngine;
 
 import java.util.UUID;
 

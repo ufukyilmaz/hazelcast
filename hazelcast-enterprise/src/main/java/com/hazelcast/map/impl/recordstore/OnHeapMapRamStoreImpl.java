@@ -1,8 +1,5 @@
 package com.hazelcast.map.impl.recordstore;
 
-import com.hazelcast.internal.serialization.impl.HeapData;
-import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.KeyHandle;
 import com.hazelcast.internal.hotrestart.RamStore;
@@ -10,21 +7,25 @@ import com.hazelcast.internal.hotrestart.RamStoreHelper;
 import com.hazelcast.internal.hotrestart.RecordDataSink;
 import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.util.Clock;
+import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.nio.serialization.Data;
 
 /**
- * RamStore implementation for maps not configured with
- * in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
- * For {@link com.hazelcast.config.InMemoryFormat#NATIVE}
- * please see {@link RamStoreHDImpl}.
+ * On heap map's RamStore implementation. A map is on heap if it's
+ * in-memory format is {@link com.hazelcast.config.InMemoryFormat#BINARY}
+ * or {@link com.hazelcast.config.InMemoryFormat#OBJECT}
+ *
+ * @see HDMapRamStoreImpl
  */
-public class RamStoreImpl implements RamStore {
+public class OnHeapMapRamStoreImpl implements RamStore {
 
     private final EnterpriseRecordStore recordStore;
 
     private final HotRestartStorageImpl<Record> storage;
 
-    public RamStoreImpl(EnterpriseRecordStore recordStore) {
+    public OnHeapMapRamStoreImpl(EnterpriseRecordStore recordStore) {
         this.recordStore = recordStore;
         this.storage = (HotRestartStorageImpl<Record>) recordStore.getStorage();
     }

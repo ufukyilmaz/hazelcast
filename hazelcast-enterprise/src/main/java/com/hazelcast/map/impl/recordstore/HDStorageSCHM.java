@@ -87,25 +87,37 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
      * @param <K> type of key
      * @param <V> type of value
      */
-    public class LazyEntryViewFromRecord<K, V> extends SampleableElasticHashMap<HDRecord>.SamplingEntry
-            implements EntryView<K, V> {
+    public class LazyEntryViewFromRecord<K, V>
+            extends SampleableElasticHashMap<HDRecord>.SamplingEntry implements EntryView<K, V> {
 
         private K key;
         private V value;
         private HDRecord record;
+        private Data dataKey;
 
         private SerializationService serializationService;
 
         public LazyEntryViewFromRecord(int slot, SerializationService serializationService) {
             super(slot);
+            this.dataKey = super.getEntryKey();
             this.record = super.getEntryValue();
             this.serializationService = serializationService;
         }
 
-        LazyEntryViewFromRecord(int slot, SerializationService serializationService, HDRecord record) {
+        LazyEntryViewFromRecord(int slot, SerializationService serializationService,
+                                Data dataKey, HDRecord record) {
             super(slot);
+            this.dataKey = dataKey;
             this.record = record;
             this.serializationService = serializationService;
+        }
+
+        public Data getDataKey() {
+            return dataKey;
+        }
+
+        public Record getRecord() {
+            return record;
         }
 
         private void ensureCallingFromPartitionOperationThread() {
@@ -119,7 +131,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
             ensureCallingFromPartitionOperationThread();
 
             if (key == null) {
-                key = serializationService.toObject(record.getKey());
+                key = serializationService.toObject(dataKey);
             }
             return key;
         }
@@ -202,10 +214,6 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
             ensureCallingFromPartitionOperationThread();
 
             return record.getMaxIdle();
-        }
-
-        public Record getRecord() {
-            return record;
         }
 
         @Override

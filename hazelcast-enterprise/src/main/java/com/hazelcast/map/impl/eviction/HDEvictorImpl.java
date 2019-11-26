@@ -49,6 +49,11 @@ public class HDEvictorImpl extends EvictorImpl {
     }
 
     @Override
+    protected Data getDataKeyFromEntryView(EntryView selectedEntry) {
+        return ((HDStorageSCHM.LazyEntryViewFromRecord) selectedEntry).getDataKey();
+    }
+
+    @Override
     public void forceEvict(RecordStore recordStore) {
         if (recordStore.size() == 0) {
             return;
@@ -57,15 +62,14 @@ public class HDEvictorImpl extends EvictorImpl {
 
         int removalSize = calculateRemovalSize(recordStore);
         Storage<Data, Record> storage = recordStore.getStorage();
-        Iterator<Record> recordIterator = ((ForcedEvictable<Record>) storage).newForcedEvictionValuesIterator();
+        Iterator<Data> keys = ((ForcedEvictable<Data>) storage).newRandomEvictionKeyIterator();
 
         Queue<Data> keysToRemove = new LinkedList<>();
-        while (recordIterator.hasNext()) {
-            Record record = recordIterator.next();
-            Data key = record.getKey();
+        while (keys.hasNext()) {
+            Data key = keys.next();
             if (!recordStore.isLocked(key)) {
                 if (!backup) {
-                    recordStore.doPostEvictionOperations(record);
+                    recordStore.doPostEvictionOperations(key, recordStore.getRecord(key));
                 }
                 keysToRemove.add(key);
             }

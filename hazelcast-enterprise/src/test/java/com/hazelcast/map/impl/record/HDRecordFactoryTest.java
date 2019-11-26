@@ -46,13 +46,6 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
     }
 
     @Test
-    @Override
-    public void testNewRecord_withNullValue() {
-        // this test expects an exception in OS, so we have to override it in EE
-        super.testNewRecord_withNullValue();
-    }
-
-    @Test
     public void testGetRecordProcessor() {
         HiDensityRecordProcessor<HDRecord> recordProcessor = createHiDensityRecordProcessor();
 
@@ -107,8 +100,8 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
     }
 
     @Override
-    Record<Data> newRecord(RecordFactory<Data> factory, Data key, Object value) {
-        return factory.newRecord(key, value);
+    Record<Data> newRecord(RecordFactory<Data> factory, Object value) {
+        return factory.newRecord(value);
     }
 
     private HiDensityRecordProcessor<HDRecord> createHiDensityRecordProcessor() {

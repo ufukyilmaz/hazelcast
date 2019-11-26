@@ -16,6 +16,7 @@ import com.hazelcast.nio.serialization.Data;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Hot Restart storage implementation for maps not configured with
@@ -23,7 +24,8 @@ import java.util.Iterator;
  * For {@link com.hazelcast.config.InMemoryFormat#NATIVE}
  * please see {@link HotRestartHDStorageImpl}.
  */
-public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>, HotRestartStorage<R> {
+public class HotRestartStorageImpl<R extends Record>
+        implements Storage<Data, R>, HotRestartStorage<R> {
 
     protected final EnterpriseMapServiceContext mapServiceContext;
     protected final HotRestartStore hotRestartStore;
@@ -60,29 +62,26 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     }
 
     @Override
-    public final void removeTransient(R record) {
-        storage.removeRecord(record);
+    public final void removeTransient(Data key, R record) {
+        storage.removeRecord(key, record);
     }
 
     @Override
     public void put(Data key, R record) {
         storage.put(key, record);
-        putToHotRestart(record);
+        putToHotRestart(key, record);
     }
 
     @Override
     public void updateRecordValue(Data key, R record, Object value) {
         storage.updateRecordValue(key, record, value);
-        putToHotRestart(record);
+        putToHotRestart(key, record);
     }
 
     @Override
-    public void removeRecord(R record) {
-        if (record == null) {
-            return;
-        }
-        storage.removeRecord(record);
-        hotRestartStore.remove(createHotRestartKey(record), fsync);
+    public void removeRecord(Data key, R record) {
+        hotRestartStore.remove(createHotRestartKey(key, record), fsync);
+        storage.removeRecord(key, record);
     }
 
     @Override
@@ -122,7 +121,12 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     }
 
     @Override
-    public final Iterator<R> mutationTolerantIterator() {
+    public Iterator<Map.Entry<Data, R>> entryIterator() {
+        return storage.entryIterator();
+    }
+
+    @Override
+    public final Iterator<Map.Entry<Data, R>> mutationTolerantIterator() {
         return storage.mutationTolerantIterator();
     }
 
@@ -162,23 +166,33 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     }
 
     @Override
-    public MapEntriesWithCursor fetchEntries(int tableIndex, int size, SerializationService serializationService) {
+    public MapEntriesWithCursor fetchEntries(int tableIndex, int size,
+                                             SerializationService serializationService) {
         return storage.fetchEntries(tableIndex, size, serializationService);
     }
 
     @Override
-    public Record extractRecordFrom(EntryView evictableEntryView) {
-        return storage.extractRecordFrom(evictableEntryView);
+    public Record extractRecordFromLazy(EntryView evictableEntryView) {
+        return storage.extractRecordFromLazy(evictableEntryView);
     }
 
-    public HotRestartKey createHotRestartKey(R record) {
-        Data key = record.getKey();
-        return new KeyOnHeap(prefix, key.toByteArray());
+    @Override
+    public Data extractDataKeyFromLazy(EntryView entryView) {
+        return storage.extractDataKeyFromLazy(entryView);
     }
 
-    protected final void putToHotRestart(R record) {
-        HotRestartKey hotRestartKey = createHotRestartKey(record);
+    @Override
+    public Data toBackingDataKeyFormat(Data key) {
+        return storage.toBackingDataKeyFormat(key);
+    }
+
+    protected final void putToHotRestart(Data key, R record) {
+        HotRestartKey hotRestartKey = createHotRestartKey(key, record);
         Data value = mapServiceContext.toData(record.getValue());
         hotRestartStore.put(hotRestartKey, value.toByteArray(), fsync);
+    }
+
+    public HotRestartKey createHotRestartKey(Data key, Record record) {
+        return new KeyOnHeap(prefix, key.toByteArray());
     }
 }

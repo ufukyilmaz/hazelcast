@@ -1,13 +1,13 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.serialization.DataType;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.memory.PoolingMemoryManager;
-import com.hazelcast.internal.serialization.DataType;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -106,9 +106,6 @@ public class HDRecordAccessorTest {
 
         NativeMemoryData value = serializationService.toData(1, DataType.NATIVE);
         record.setValue(value);
-
-        assertAligned(address, HDRecord.KEY_OFFSET, 8);
-        AMEM.getLong(address + HDRecord.KEY_OFFSET);
 
         assertAligned(address, HDRecord.VALUE_OFFSET, 8);
         AMEM.getLong(address + HDRecord.VALUE_OFFSET);

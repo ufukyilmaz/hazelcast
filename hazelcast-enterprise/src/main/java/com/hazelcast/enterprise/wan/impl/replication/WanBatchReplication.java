@@ -21,7 +21,7 @@ import com.hazelcast.cluster.Address;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.wan.WanAntiEntropyEvent;
+import com.hazelcast.wan.impl.WanAntiEntropyEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.util.ArrayList;

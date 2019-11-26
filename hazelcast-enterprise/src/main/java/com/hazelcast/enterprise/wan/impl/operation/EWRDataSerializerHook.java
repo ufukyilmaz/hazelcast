@@ -3,14 +3,14 @@ package com.hazelcast.enterprise.wan.impl.operation;
 import com.hazelcast.cache.impl.wan.CacheReplicationRemove;
 import com.hazelcast.cache.impl.wan.CacheReplicationUpdate;
 import com.hazelcast.cache.impl.wan.WanCacheEntryView;
-import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
+import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanEventMigrationContainer;
+import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
+import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.impl.sync.GetMapPartitionDataOperation;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventPublishOperation;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventResult;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventStarterOperation;
-import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
-import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationMerkleTreeNode;
@@ -38,30 +38,29 @@ public class EWRDataSerializerHook implements DataSerializerHook {
     public static final int EWR_PUT_OPERATION = 1;
     public static final int EWR_PUT_BACKUP_OPERATION = 2;
     public static final int WAN_EVENT_MIGRATION_CONTAINER = 3;
-    public static final int WAN_EVENT_CONTAINER_REPLICATION_OPERATION = 4;
-    public static final int MAP_REPLICATION_UPDATE = 5;
-    public static final int MAP_REPLICATION_REMOVE = 6;
-    public static final int CACHE_REPLICATION_UPDATE = 7;
-    public static final int CACHE_REPLICATION_REMOVE = 8;
-    public static final int MAP_REPLICATION_SYNC = 9;
-    public static final int WAN_SYNC_OPERATION = 10;
-    public static final int GET_MAP_PARTITION_DATA_OPERATION = 11;
-    public static final int POST_JOIN_WAN_OPERATION = 12;
-    public static final int WAN_OPERATION = 13;
-    public static final int WAN_SYNC_EVENT = 14;
-    public static final int WAN_ANTI_ENTROPY_RESULT = 15;
-    public static final int WAN_ANTI_ENTROPY_EVENT_STARTER_OPERATION = 16;
-    public static final int WAN_CONSISTENCY_CHECK_EVENT = 17;
-    public static final int WAN_MERKLE_TREE_NODE_COMPARE_OPERATION = 18;
-    public static final int MERKLE_TREE_NODE_VALUE_COMPARISON = 19;
-    public static final int MAP_REPLICATION_MERKLE_TREE_NODE = 20;
-    public static final int ADD_WAN_CONFIG_OPERATION_FACTORY = 21;
-    public static final int ADD_WAN_CONFIG_OPERATION = 22;
-    public static final int ADD_WAN_CONFIG_BACKUP_OPERATION = 23;
-    public static final int REMOVE_WAN_EVENT_BACKUPS_OPERATION = 24;
-    public static final int WAN_CACHE_ENTRY_VIEW = 25;
-    public static final int WAN_PROTOCOL_NEGOTIATION_OPERATION = 26;
-    public static final int WAN_PROTOCOL_NEGOTIATION_RESPONSE = 27;
+    public static final int MAP_REPLICATION_UPDATE = 4;
+    public static final int MAP_REPLICATION_REMOVE = 5;
+    public static final int CACHE_REPLICATION_UPDATE = 6;
+    public static final int CACHE_REPLICATION_REMOVE = 7;
+    public static final int MAP_REPLICATION_SYNC = 8;
+    public static final int WAN_SYNC_OPERATION = 9;
+    public static final int GET_MAP_PARTITION_DATA_OPERATION = 10;
+    public static final int POST_JOIN_WAN_OPERATION = 11;
+    public static final int WAN_OPERATION = 12;
+    public static final int WAN_SYNC_EVENT = 13;
+    public static final int WAN_ANTI_ENTROPY_RESULT = 14;
+    public static final int WAN_ANTI_ENTROPY_EVENT_STARTER_OPERATION = 15;
+    public static final int WAN_CONSISTENCY_CHECK_EVENT = 16;
+    public static final int WAN_MERKLE_TREE_NODE_COMPARE_OPERATION = 17;
+    public static final int MERKLE_TREE_NODE_VALUE_COMPARISON = 18;
+    public static final int MAP_REPLICATION_MERKLE_TREE_NODE = 19;
+    public static final int ADD_WAN_CONFIG_OPERATION_FACTORY = 20;
+    public static final int ADD_WAN_CONFIG_OPERATION = 21;
+    public static final int ADD_WAN_CONFIG_BACKUP_OPERATION = 22;
+    public static final int REMOVE_WAN_EVENT_BACKUPS_OPERATION = 23;
+    public static final int WAN_CACHE_ENTRY_VIEW = 24;
+    public static final int WAN_PROTOCOL_NEGOTIATION_OPERATION = 25;
+    public static final int WAN_PROTOCOL_NEGOTIATION_RESPONSE = 26;
 
     @Override
     public int getFactoryId() {
@@ -80,8 +79,6 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                     return new EWRPutBackupOperation();
                 case WAN_EVENT_MIGRATION_CONTAINER:
                     return new WanEventMigrationContainer();
-                case WAN_EVENT_CONTAINER_REPLICATION_OPERATION:
-                    return new WanEventContainerReplicationOperation();
                 case MAP_REPLICATION_UPDATE:
                     return new EnterpriseMapReplicationUpdate();
                 case MAP_REPLICATION_REMOVE:

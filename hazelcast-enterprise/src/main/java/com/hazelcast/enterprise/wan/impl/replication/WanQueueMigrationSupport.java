@@ -3,7 +3,7 @@ package com.hazelcast.enterprise.wan.impl.replication;
 import com.hazelcast.enterprise.wan.impl.WanReplicationEventQueue;
 import com.hazelcast.internal.partition.MigrationEndpoint;
 import com.hazelcast.internal.partition.PartitionMigrationEvent;
-import com.hazelcast.wan.WanReplicationPublisherMigrationListener;
+import com.hazelcast.wan.MigrationAwareWanReplicationPublisher;
 
 import java.util.function.Predicate;
 
@@ -12,7 +12,7 @@ import java.util.function.Predicate;
  * correctness of the internal state of the replication implementation
  * objects
  */
-class WanQueueMigrationSupport implements WanReplicationPublisherMigrationListener {
+class WanQueueMigrationSupport implements MigrationAwareWanReplicationPublisher {
     private final PollSynchronizerPublisherQueueContainer eventQueueContainer;
     private final WanElementCounter wanCounter;
 

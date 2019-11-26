@@ -2,21 +2,28 @@ package com.hazelcast.wan.custom;
 
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanConsumerConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.wan.WanReplicationConsumer;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class CustomWanConsumer implements WanReplicationConsumer, Runnable {
+public class CustomWanConsumer implements WanReplicationConsumer, Runnable, HazelcastInstanceAware {
 
     private volatile boolean running = true;
     private Node node;
 
     @Override
-    public void init(Node node, String wanReplicationName, WanConsumerConfig config) {
-        this.node = node;
+    public void setHazelcastInstance(HazelcastInstance hazelcastInstance) {
+        this.node = ((HazelcastInstanceImpl) hazelcastInstance).node;
+    }
+
+    @Override
+    public void init(String wanReplicationName, WanConsumerConfig config) {
         node.getNodeEngine().getExecutionService().execute("hz:wan:custom:consumer", this);
     }
 

@@ -19,7 +19,7 @@ public class WanConsumerContainer {
     /**
      * Consumer implementations grouped by WAN replication config name.
      */
-    private final Map<String, WanReplicationConsumer> wanConsumers = new ConcurrentHashMap<String, WanReplicationConsumer>(2);
+    private final Map<String, WanReplicationConsumer> wanConsumers = new ConcurrentHashMap<>(2);
 
     public WanConsumerContainer(Node node) {
         this.node = node;
@@ -37,11 +37,12 @@ public class WanConsumerContainer {
                 final WanConsumerConfig consumerConfig = wanReplicationConfigEntry.getValue().getWanConsumerConfig();
                 if (consumerConfig != null) {
                     final WanReplicationConsumer consumer = getOrCreate(
-                            (WanReplicationConsumer) consumerConfig.getImplementation(),
+                            consumerConfig.getImplementation(),
                             node.getConfigClassLoader(),
                             consumerConfig.getClassName());
                     if (consumer != null) {
-                        consumer.init(node, wanReplicationConfigEntry.getKey(), consumerConfig);
+                        node.getSerializationService().getManagedContext().initialize(consumer);
+                        consumer.init(wanReplicationConfigEntry.getKey(), consumerConfig);
                         wanConsumers.put(wanReplicationConfigEntry.getKey(), consumer);
                     }
                 }

@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.wan.WanReplicationEvent;
-import com.hazelcast.wan.WanSyncStats;
+import com.hazelcast.wan.impl.WanSyncStats;
 
 import java.util.Collection;
 import java.util.Map;

@@ -11,7 +11,6 @@ import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -79,7 +78,7 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
 
     public static class NoopWanConsumer implements WanReplicationConsumer {
         @Override
-        public void init(Node node, String wanReplicationName, WanConsumerConfig config) {
+        public void init(String wanReplicationName, WanConsumerConfig config) {
 
         }
 

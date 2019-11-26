@@ -2,7 +2,6 @@ package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerReplicationOperation;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.partition.FragmentedMigrationAwareService;
 import com.hazelcast.internal.partition.PartitionMigrationEvent;
@@ -11,9 +10,10 @@ import com.hazelcast.internal.services.ObjectNamespace;
 import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.spi.impl.operationservice.Operation;
+import com.hazelcast.wan.MigrationAwareWanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationPublisher;
-import com.hazelcast.wan.WanReplicationPublisherMigrationListener;
 import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
+import com.hazelcast.wan.impl.WanEventContainerReplicationOperation;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import static com.hazelcast.internal.util.MapUtil.createHashMap;
 
@@ -92,40 +93,31 @@ class WanReplicationMigrationAwareService implements FragmentedMigrationAwareSer
 
     @Override
     public void beforeMigration(PartitionMigrationEvent event) {
-        for (DelegatingWanReplicationScheme wanReplication : getWanReplications().values()) {
-            for (WanReplicationPublisher publisher : wanReplication.getPublishers()) {
-                if (publisher instanceof WanReplicationPublisherMigrationListener) {
-                    ((WanReplicationPublisherMigrationListener) publisher).onMigrationStart(event);
-                }
-            }
-        }
+        notifyMigrationAwarePublishers(p -> p.onMigrationStart(event));
     }
 
     @Override
     public void commitMigration(PartitionMigrationEvent event) {
-        ConcurrentHashMap<String, DelegatingWanReplicationScheme> wanReplications = getWanReplications();
-        for (DelegatingWanReplicationScheme wanReplication : wanReplications.values()) {
-            for (WanReplicationPublisher publisher : wanReplication.getPublishers()) {
-                if (publisher instanceof WanReplicationPublisherMigrationListener) {
-                    ((WanReplicationPublisherMigrationListener) publisher).onMigrationCommit(event);
-                }
-            }
-        }
+        notifyMigrationAwarePublishers(p -> p.onMigrationCommit(event));
     }
 
     @Override
     public void rollbackMigration(PartitionMigrationEvent event) {
-        ConcurrentHashMap<String, DelegatingWanReplicationScheme> wanReplications = getWanReplications();
-        for (DelegatingWanReplicationScheme wanReplication : wanReplications.values()) {
-            for (WanReplicationPublisher publisher : wanReplication.getPublishers()) {
-                if (publisher instanceof WanReplicationPublisherMigrationListener) {
-                    ((WanReplicationPublisherMigrationListener) publisher).onMigrationRollback(event);
-                }
-            }
-        }
+        notifyMigrationAwarePublishers(p -> p.onMigrationRollback(event));
     }
 
     private ConcurrentHashMap<String, DelegatingWanReplicationScheme> getWanReplications() {
         return wanReplicationService.getWanReplications();
+    }
+
+    private void notifyMigrationAwarePublishers(Consumer<MigrationAwareWanReplicationPublisher> publisherConsumer) {
+        ConcurrentHashMap<String, DelegatingWanReplicationScheme> wanReplications = getWanReplications();
+        for (DelegatingWanReplicationScheme wanReplication : wanReplications.values()) {
+            for (WanReplicationPublisher publisher : wanReplication.getPublishers()) {
+                if (publisher instanceof MigrationAwareWanReplicationPublisher) {
+                    publisherConsumer.accept((MigrationAwareWanReplicationPublisher) publisher);
+                }
+            }
+        }
     }
 }

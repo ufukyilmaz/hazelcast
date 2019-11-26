@@ -3,8 +3,8 @@ package com.hazelcast.enterprise.wan.impl.replication;
 import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
-import com.hazelcast.wan.WanSyncStats;
-import com.hazelcast.wan.ConsistencyCheckResult;
+import com.hazelcast.wan.impl.WanSyncStats;
+import com.hazelcast.wan.impl.ConsistencyCheckResult;
 
 import java.util.Map;
 

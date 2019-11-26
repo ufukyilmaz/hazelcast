@@ -5,10 +5,10 @@ import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -29,7 +29,7 @@ public class WanConnectedTest extends MapWanReplicationTestSupport {
         startClusterA();
         startClusterB();
 
-        WanReplicationPublisher publisher = getWanReplicationDelegate(setupName).getPublisher("B");
+        WanBatchReplication publisher = (WanBatchReplication) getWanReplicationDelegate(setupName).getPublisher("B");
 
         createDataIn(clusterA, "map", 1, 10);
 
@@ -51,7 +51,7 @@ public class WanConnectedTest extends MapWanReplicationTestSupport {
         startClusterA();
         startClusterB();
 
-        WanReplicationPublisher endpoint = getWanReplicationDelegate(setupName).getPublisher("B");
+        WanBatchReplication endpoint = (WanBatchReplication) getWanReplicationDelegate(setupName).getPublisher("B");
 
         createDataIn(clusterA, "map", 1, 10);
 

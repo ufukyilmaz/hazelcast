@@ -36,7 +36,7 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.WanReplicationEvent;
-import com.hazelcast.wan.WanReplicationPublisherMigrationListener;
+import com.hazelcast.wan.MigrationAwareWanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationQueueFullException;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationPublisher;
@@ -62,8 +62,8 @@ import static java.util.Collections.unmodifiableMap;
  */
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
 public abstract class AbstractWanPublisher implements
-        InternalWanReplicationPublisher<WanEventMigrationContainer>,
-        WanReplicationPublisherMigrationListener, HazelcastInstanceAware {
+        InternalWanReplicationPublisher,
+        MigrationAwareWanReplicationPublisher<WanEventMigrationContainer>, HazelcastInstanceAware {
 
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
 

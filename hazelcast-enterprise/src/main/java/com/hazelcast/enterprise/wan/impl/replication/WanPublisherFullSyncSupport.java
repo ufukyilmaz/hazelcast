@@ -23,8 +23,8 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.internal.util.SetUtil;
 import com.hazelcast.internal.util.ThreadUtil;
-import com.hazelcast.wan.ConsistencyCheckResult;
-import com.hazelcast.wan.WanSyncStats;
+import com.hazelcast.wan.impl.ConsistencyCheckResult;
+import com.hazelcast.wan.impl.WanSyncStats;
 
 import java.util.Collection;
 import java.util.Map;

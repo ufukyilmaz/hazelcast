@@ -105,7 +105,7 @@ class WanReplicationSchemeContainer {
      */
     private WanReplicationPublisher createPublisher(AbstractWanPublisherConfig publisherConfig) {
         WanReplicationPublisher publisher = getOrCreate(
-                (WanReplicationPublisher) publisherConfig.getImplementation(),
+                publisherConfig.getImplementation(),
                 node.getConfigClassLoader(),
                 publisherConfig.getClassName());
         if (publisher == null) {

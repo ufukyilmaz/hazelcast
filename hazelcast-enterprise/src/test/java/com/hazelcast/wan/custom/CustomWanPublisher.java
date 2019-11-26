@@ -8,10 +8,10 @@ import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.impl.replication.WanPublisherSyncSupport;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.internal.partition.IPartition;
-import com.hazelcast.wan.ConsistencyCheckResult;
-import com.hazelcast.wan.WanAntiEntropyEvent;
+import com.hazelcast.wan.impl.ConsistencyCheckResult;
+import com.hazelcast.wan.impl.WanAntiEntropyEvent;
 import com.hazelcast.wan.WanReplicationEvent;
-import com.hazelcast.wan.WanSyncStats;
+import com.hazelcast.wan.impl.WanSyncStats;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.util.ArrayList;

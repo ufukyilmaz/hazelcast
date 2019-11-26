@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * WAN publisher implementation that only counts the number of published events (excluding republished).
  */
-public class CountingWanPublisher implements WanReplicationPublisher<Object>, HazelcastInstanceAware {
+public class CountingWanPublisher implements WanReplicationPublisher, HazelcastInstanceAware {
 
     private AtomicLong counter = new AtomicLong();
     private AtomicLong backupCounter = new AtomicLong();
@@ -64,10 +64,6 @@ public class CountingWanPublisher implements WanReplicationPublisher<Object>, Ha
         InternalPartitionServiceImpl partitionService = node.partitionService;
         int partitionId = partitionService.getPartitionId(dataKey);
         return partitionService.getPartition(partitionId, false).isLocal();
-    }
-
-    @Override
-    public void republishReplicationEvent(WanReplicationEvent event) {
     }
 
     @Override

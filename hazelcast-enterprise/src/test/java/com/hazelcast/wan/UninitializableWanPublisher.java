@@ -6,7 +6,7 @@ import com.hazelcast.config.WanReplicationConfig;
 /**
  * WAN publisher implementation that throws an exception on initialization.
  */
-public class UninitializableWanPublisher implements WanReplicationPublisher<Object> {
+public class UninitializableWanPublisher implements WanReplicationPublisher {
 
     public UninitializableWanPublisher() {
     }
@@ -26,10 +26,6 @@ public class UninitializableWanPublisher implements WanReplicationPublisher<Obje
 
     @Override
     public void publishReplicationEventBackup(WanReplicationEvent event) {
-    }
-
-    @Override
-    public void republishReplicationEvent(WanReplicationEvent event) {
     }
 
     @Override

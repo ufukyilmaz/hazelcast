@@ -2,21 +2,21 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanBatchReplicationPublisherConfig;
-import com.hazelcast.wan.WanPublisherState;
+import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
 import com.hazelcast.internal.management.operation.ChangeWanStateOperation;
 import com.hazelcast.internal.monitor.LocalWanPublisherStats;
 import com.hazelcast.internal.monitor.LocalWanStats;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.WanReplicationQueueFullException;
-import com.hazelcast.wan.WanReplicationPublisher;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -120,7 +120,8 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         pauseWanReplication(singleNodeA, "atob", configB.getClusterName());
         createDataIn(singleNodeA, "map", 0, 1000);
         EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(singleNodeA[0]);
-        WanReplicationPublisher publisher = wanReplicationService.getPublisherOrFail("atob", configB.getClusterName());
+        WanBatchReplication publisher =
+                (WanBatchReplication) wanReplicationService.getPublisherOrFail("atob", configB.getClusterName());
         assertTrueEventually(() -> {
             assert publisher.getStats().getOutboundQueueSize() == 1000;
         });

@@ -1114,7 +1114,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     private class CachedEntryIter extends EntryIter {
         private MapEntry entry = new MapEntry();
 
-        public CachedEntryIter(boolean failFast) {
+        CachedEntryIter(boolean failFast) {
             super(failFast);
         }
 
@@ -1212,10 +1212,11 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     @SuppressWarnings("checkstyle:magicnumber")
-    public static <V extends MemoryBlock> BinaryElasticHashMap<V> loadFromOffHeapHeader(EnterpriseSerializationService ss,
-                                                                                        MemoryAllocator malloc, long address,
-                                                                                        BehmSlotAccessorFactory behmSlotAccessorFactory,
-                                                                                        MemoryBlockAccessor memoryBlockAccessor) {
+    public static <V extends MemoryBlock> BinaryElasticHashMap<V> loadFromOffHeapHeader(
+            EnterpriseSerializationService ss,
+            MemoryAllocator malloc, long address,
+            BehmSlotAccessorFactory behmSlotAccessorFactory,
+            MemoryBlockAccessor memoryBlockAccessor) {
         GlobalMemoryAccessor unsafe = GlobalMemoryAccessorRegistry.MEM;
 
         long pointer = address + NATIVE_MEMORY_DATA_OVERHEAD;

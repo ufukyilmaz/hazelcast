@@ -9,7 +9,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.test.ProgressCheckerTask;
 import com.hazelcast.test.TaskProgress;
-import com.hazelcast.wan.WanSyncStats;
+import com.hazelcast.wan.impl.WanSyncStats;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;

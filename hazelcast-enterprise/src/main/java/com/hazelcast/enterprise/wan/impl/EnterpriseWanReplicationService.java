@@ -44,6 +44,7 @@ import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.impl.AddWanConfigResult;
 import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanReplicationPublisher;
 import com.hazelcast.wan.impl.WanEventCounters;
 import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
@@ -134,22 +135,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
                 : null;
     }
 
-    /**
-     * Returns a WAN replication configured under a WAN replication config with
-     * the name {@code wanReplicationName} and with a WAN publisher ID of
-     * {@code wanPublisherId} or throws a {@link InvalidConfigurationException}
-     * if there is no configuration for the given parameters.
-     *
-     * @param wanReplicationName the name of the {@link WanReplicationConfig}
-     * @param wanPublisherId     WAN replication publisher ID
-     * @return the WAN publisher
-     * @throws InvalidConfigurationException if there is no replication config
-     *                                       with the name {@code wanReplicationName}
-     *                                       and publisher ID {@code wanPublisherId}
-     * @see WanReplicationConfig#getName
-     * @see WanBatchReplicationPublisherConfig#getClusterName()
-     * @see AbstractWanPublisherConfig#getPublisherId()
-     */
+    @Override
     public WanReplicationPublisher getPublisherOrFail(String wanReplicationName,
                                                       String wanPublisherId) {
         WanReplicationPublisher publisher = getPublisherOrNull(wanReplicationName, wanPublisherId);
@@ -177,20 +163,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         }
     }
 
-    /**
-     * Appends the provided {@link WanReplicationConfig} to the configuration of
-     * this member. If there is no WAN replication config with the same name/scheme,
-     * the provided config will be used. If there is an existing WAN replication
-     * config with the same name, any publishers with publisher IDs that are
-     * present in the provided {@code newConfig} but not present in the existing
-     * config will be added (appended).
-     * If the existing config contains all of the publishers from the provided
-     * config, no change is done to the existing config.
-     * This method is thread-safe and may be called concurrently.
-     *
-     * @param newConfig the WAN configuration to add
-     * @see AbstractWanPublisherConfig#getPublisherId()
-     */
+    @Override
     public void appendWanReplicationConfig(WanReplicationConfig newConfig) {
         String scheme = newConfig.getName();
         ConcurrentMap<String, WanReplicationConfig> wanConfigs =
@@ -272,6 +245,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      * Publishes an anti-entropy event for the given {@code wanReplicationName}
      * and {@code wanPublisherId}.
      * This method does not wait for the event processing to complete.
+     * Silently skips publishers not supporting anti-entropy event publication.
      *
      * @param wanReplicationName the WAN replication config name
      * @param wanPublisherId     WAN replication publisher ID
@@ -283,7 +257,10 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     public void publishAntiEntropyEvent(String wanReplicationName,
                                         String wanPublisherId,
                                         AbstractWanAntiEntropyEvent event) {
-        getPublisherOrFail(wanReplicationName, wanPublisherId).publishAntiEntropyEvent(event);
+        WanReplicationPublisher publisher = getPublisherOrFail(wanReplicationName, wanPublisherId);
+        if (publisher instanceof InternalWanReplicationPublisher) {
+            ((InternalWanReplicationPublisher) publisher).publishAntiEntropyEvent(event);
+        }
     }
 
     /**
@@ -422,17 +399,26 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public void pause(String wanReplicationName, String wanPublisherId) {
-        getPublisherOrFail(wanReplicationName, wanPublisherId).pause();
+        WanReplicationPublisher publisher = getPublisherOrFail(wanReplicationName, wanPublisherId);
+        if (publisher instanceof InternalWanReplicationPublisher) {
+            ((InternalWanReplicationPublisher) publisher).pause();
+        }
     }
 
     @Override
     public void stop(String wanReplicationName, String wanPublisherId) {
-        getPublisherOrFail(wanReplicationName, wanPublisherId).stop();
+        WanReplicationPublisher publisher = getPublisherOrFail(wanReplicationName, wanPublisherId);
+        if (publisher instanceof InternalWanReplicationPublisher) {
+            ((InternalWanReplicationPublisher) publisher).stop();
+        }
     }
 
     @Override
     public void resume(String wanReplicationName, String wanPublisherId) {
-        getPublisherOrFail(wanReplicationName, wanPublisherId).resume();
+        WanReplicationPublisher publisher = getPublisherOrFail(wanReplicationName, wanPublisherId);
+        if (publisher instanceof InternalWanReplicationPublisher) {
+            ((InternalWanReplicationPublisher) publisher).resume();
+        }
     }
 
     /**
@@ -486,8 +472,10 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public void removeWanEvents(String wanReplicationName, String wanPublisherId) {
-        getPublisherOrFail(wanReplicationName, wanPublisherId)
-                .removeWanEvents();
+        WanReplicationPublisher publisher = getPublisherOrFail(wanReplicationName, wanPublisherId);
+        if (publisher instanceof InternalWanReplicationPublisher) {
+            ((InternalWanReplicationPublisher) publisher).removeWanEvents();
+        }
     }
 
     @Override

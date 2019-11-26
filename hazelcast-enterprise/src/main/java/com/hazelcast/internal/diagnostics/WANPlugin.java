@@ -9,10 +9,10 @@ import com.hazelcast.internal.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.properties.HazelcastProperty;
-import com.hazelcast.wan.ConsistencyCheckResult;
+import com.hazelcast.wan.impl.ConsistencyCheckResult;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
 import com.hazelcast.wan.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
-import com.hazelcast.wan.WanSyncStats;
+import com.hazelcast.wan.impl.WanSyncStats;
 import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import com.hazelcast.wan.impl.WanReplicationService;
 

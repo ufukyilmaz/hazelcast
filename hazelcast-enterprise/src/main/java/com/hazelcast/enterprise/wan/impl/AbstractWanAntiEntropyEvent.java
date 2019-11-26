@@ -7,7 +7,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.internal.util.SetUtil;
 import com.hazelcast.internal.util.UuidUtil;
-import com.hazelcast.wan.WanAntiEntropyEvent;
+import com.hazelcast.wan.impl.WanAntiEntropyEvent;
 
 import java.io.IOException;
 import java.util.Collections;

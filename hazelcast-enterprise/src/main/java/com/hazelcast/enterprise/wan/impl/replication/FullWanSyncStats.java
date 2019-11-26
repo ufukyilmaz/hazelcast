@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
+import com.hazelcast.internal.metrics.Probe;
 import com.hazelcast.wan.impl.WanSyncStats;
 
 import java.util.UUID;
@@ -11,11 +12,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class FullWanSyncStats implements WanSyncStats {
     private final UUID uuid;
+    @Probe
     private final long syncStartNanos = System.nanoTime();
+    @Probe
     private final int partitionsToSync;
 
+    @Probe
     private AtomicInteger partitionsSynced = new AtomicInteger();
+    @Probe
     private AtomicInteger recordsSynced = new AtomicInteger();
+    @Probe
     private volatile long syncDurationNanos;
 
     FullWanSyncStats(UUID uuid, int partitionsToSync) {

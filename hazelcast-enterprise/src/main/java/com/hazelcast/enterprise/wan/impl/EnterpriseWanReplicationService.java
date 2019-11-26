@@ -18,36 +18,41 @@ import com.hazelcast.internal.management.events.Event;
 import com.hazelcast.internal.management.events.WanConfigurationAddedEvent;
 import com.hazelcast.internal.management.events.WanConfigurationExtendedEvent;
 import com.hazelcast.internal.management.events.WanConsistencyCheckIgnoredEvent;
-import com.hazelcast.internal.services.ManagedService;
-import com.hazelcast.internal.services.PostJoinAwareService;
-import com.hazelcast.internal.services.ServiceNamespace;
-import com.hazelcast.logging.ILogger;
+import com.hazelcast.internal.metrics.MetricDescriptor;
+import com.hazelcast.internal.metrics.MetricsCollectionContext;
 import com.hazelcast.internal.monitor.LocalWanPublisherStats;
 import com.hazelcast.internal.monitor.LocalWanStats;
 import com.hazelcast.internal.monitor.WanSyncState;
 import com.hazelcast.internal.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.internal.monitor.impl.LocalWanStatsImpl;
+import com.hazelcast.internal.partition.FragmentedMigrationAwareService;
+import com.hazelcast.internal.partition.PartitionMigrationEvent;
+import com.hazelcast.internal.partition.PartitionReplicationEvent;
+import com.hazelcast.internal.services.ManagedService;
+import com.hazelcast.internal.services.PostJoinAwareService;
+import com.hazelcast.internal.services.ServiceNamespace;
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.internal.partition.FragmentedMigrationAwareService;
-import com.hazelcast.internal.partition.PartitionMigrationEvent;
-import com.hazelcast.internal.partition.PartitionReplicationEvent;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
 import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.impl.AddWanConfigResult;
+import com.hazelcast.wan.impl.ConsistencyCheckResult;
 import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 import com.hazelcast.wan.impl.InternalWanReplicationPublisher;
 import com.hazelcast.wan.impl.WanEventCounters;
 import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
+import com.hazelcast.wan.impl.WanSyncStats;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -583,5 +588,95 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     @Override
     public void shutdown(boolean terminate) {
         reset();
+    }
+
+    @Override
+    public void provideDynamicMetrics(MetricDescriptor descriptor, MetricsCollectionContext context) {
+        Map<String, LocalWanStats> stats = getStats();
+        if (stats == null) {
+            return;
+        }
+
+        for (Map.Entry<String, ? extends LocalWanStats> entry : stats.entrySet()) {
+            String replicationName = entry.getKey();
+            LocalWanStats localWanStats = entry.getValue();
+
+            MetricDescriptor rootDescriptor = descriptor
+                .copy()
+                .withPrefix("wan")
+                .withDiscriminator("replication", replicationName);
+
+            for (Entry<String, LocalWanPublisherStats> publisherEntry : localWanStats.getLocalWanPublisherStats().entrySet()) {
+                String publisherId = publisherEntry.getKey();
+                LocalWanPublisherStats wanPublisherStats = publisherEntry.getValue();
+
+                // replication
+                MetricDescriptor publisherDescriptor = rootDescriptor
+                    .copy()
+                    .withTag("publisherId", publisherId);
+                context.collect(publisherDescriptor, wanPublisherStats);
+
+                // map counter
+                provideCounterMetrics(context, publisherDescriptor, wanPublisherStats.getSentMapEventCounter(), "map");
+
+                // cache counter
+                provideCounterMetrics(context, publisherDescriptor, wanPublisherStats.getSentCacheEventCounter(), "cache");
+
+                // sync
+                provideSyncMetrics(context, wanPublisherStats, publisherDescriptor);
+
+                // consistency check
+                provideConsistencyCheckMetrics(context, wanPublisherStats, publisherDescriptor);
+            }
+        }
+    }
+
+    private void provideConsistencyCheckMetrics(MetricsCollectionContext context, LocalWanPublisherStats wanPublisherStats,
+                                                MetricDescriptor publisherDescriptor) {
+        Map<String, ConsistencyCheckResult> lastConsistencyCheckResults = wanPublisherStats
+            .getLastConsistencyCheckResults();
+        if (lastConsistencyCheckResults != null) {
+            for (Entry<String, ConsistencyCheckResult> syncStatsEntry : lastConsistencyCheckResults.entrySet()) {
+                String mapName = syncStatsEntry.getKey();
+                ConsistencyCheckResult consistencyCheckResult = syncStatsEntry.getValue();
+
+                MetricDescriptor counterDescriptor = publisherDescriptor
+                    .copy()
+                    .withPrefix("wan.consistencyCheck")
+                    .withTag("map", mapName);
+                context.collect(counterDescriptor, consistencyCheckResult);
+            }
+        }
+    }
+
+    private void provideSyncMetrics(MetricsCollectionContext context, LocalWanPublisherStats wanPublisherStats,
+                                    MetricDescriptor publisherDescriptor) {
+        Map<String, WanSyncStats> lastSyncStats = wanPublisherStats.getLastSyncStats();
+        if (lastSyncStats != null) {
+            for (Entry<String, WanSyncStats> syncStatsEntry : lastSyncStats.entrySet()) {
+                String mapName = syncStatsEntry.getKey();
+                WanSyncStats syncStats = syncStatsEntry.getValue();
+
+                MetricDescriptor counterDescriptor = publisherDescriptor
+                    .copy()
+                    .withPrefix("wan.sync")
+                    .withTag("map", mapName);
+                context.collect(counterDescriptor, syncStats);
+            }
+        }
+    }
+
+    private void provideCounterMetrics(MetricsCollectionContext context, MetricDescriptor publisherDescriptor,
+                                       Map<String, DistributedObjectWanEventCounters> sentDsEventCounter,
+                                       String dataStructure) {
+        for (Entry<String, DistributedObjectWanEventCounters> sentCounterStats : sentDsEventCounter.entrySet()) {
+            String dataStructureName = sentCounterStats.getKey();
+            DistributedObjectWanEventCounters counterStats = sentCounterStats.getValue();
+
+            MetricDescriptor counterDescriptor = publisherDescriptor
+                .copy()
+                .withTag(dataStructure, dataStructureName);
+            context.collect(counterDescriptor, counterStats);
+        }
     }
 }

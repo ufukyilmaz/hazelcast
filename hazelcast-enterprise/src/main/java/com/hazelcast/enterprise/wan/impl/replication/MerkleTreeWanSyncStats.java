@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
+import com.hazelcast.internal.metrics.Probe;
 import com.hazelcast.wan.impl.WanSyncStats;
 
 import java.util.UUID;
@@ -13,18 +14,28 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public class MerkleTreeWanSyncStats implements WanSyncStats {
     private final UUID uuid;
+    @Probe
     private final long syncStartNanos = System.nanoTime();
 
+    @Probe
     private final int partitionsToSync;
+    @Probe
     private final AtomicInteger partitionsSynced = new AtomicInteger();
+    @Probe
     private final AtomicInteger recordsSynced = new AtomicInteger();
+    @Probe
     private final AtomicInteger nodesSynced = new AtomicInteger();
     private final AtomicLong sumEntryCountSquares = new AtomicLong();
 
+    @Probe
     private volatile long syncDurationNanos;
+    @Probe
     private volatile int minLeafEntryCount = Integer.MAX_VALUE;
+    @Probe
     private volatile int maxLeafEntryCount = Integer.MIN_VALUE;
+    @Probe
     private volatile double avgEntriesPerLeaf;
+    @Probe
     private volatile double stdDevEntriesPerLeaf;
 
     MerkleTreeWanSyncStats(UUID uuid, int partitionsToSync) {

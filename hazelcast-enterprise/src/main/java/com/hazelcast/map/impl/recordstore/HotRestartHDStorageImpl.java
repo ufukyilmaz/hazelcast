@@ -15,12 +15,14 @@ import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.nio.serialization.Data;
 
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Hot Restart storage implementation for maps configured with
  * in-memory-format {@link com.hazelcast.config.InMemoryFormat#NATIVE}
  */
-public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> implements ForcedEvictable<HDRecord> {
+public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord>
+        implements ForcedEvictable<Data, HDRecord> {
 
     private final Object mutex = new Object();
 
@@ -94,8 +96,8 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> imp
     }
 
     @Override
-    public Iterator<HDRecord> newRandomEvictionKeyIterator() {
-        return ((ForcedEvictable<HDRecord>) storage).newRandomEvictionKeyIterator();
+    public Iterator<Map.Entry<Data, HDRecord>> newRandomEvictionEntryIterator() {
+        return ((ForcedEvictable<Data, HDRecord>) storage).newRandomEvictionEntryIterator();
     }
 
     @Override

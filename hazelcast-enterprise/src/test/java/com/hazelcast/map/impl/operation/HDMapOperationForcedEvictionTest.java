@@ -31,7 +31,7 @@ import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.map.impl.operation.WithForcedEviction.DEFAULT_FORCED_EVICTION_RETRY_COUNT;
+import static com.hazelcast.map.impl.operation.ForcedEviction.EVICTION_RETRY_COUNT;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -109,7 +109,7 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
      */
     @Test
     public void testRun_forcedEviction_on_other_maps() {
-        int noomeCountToBeThrown = DEFAULT_FORCED_EVICTION_RETRY_COUNT + 1;
+        int noomeCountToBeThrown = EVICTION_RETRY_COUNT + 1;
         int numOfEntriesToPutIntoMap = 0;
         int otherMapEntryCount = 100;
 
@@ -118,7 +118,7 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
 
         HiDensityStorageInfo hdStorageInfo = storageInfoByMapName.get(OTHER_MAP_NAME);
 
-        assertEquals(1, hdStorageInfo.getForceEvictionCount());
+        assertEquals(6, hdStorageInfo.getForceEvictionCount());
     }
 
     /**
@@ -126,7 +126,7 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
      */
     @Test
     public void testRun_singleEvictAll_on_main_map() {
-        int noomeCountToBeThrown = 2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 1;
+        int noomeCountToBeThrown = 2 * EVICTION_RETRY_COUNT + 1;
         int mainMapEntryCount = 2000;
         int otherMapEntryCount = 0;
 
@@ -135,7 +135,7 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
 
         HiDensityStorageInfo hdStorageInfo = storageInfoByMapName.get(MAIN_MAP_NAME);
 
-        assertEquals(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT, hdStorageInfo.getForceEvictionCount());
+        assertEquals(noomeCountToBeThrown, hdStorageInfo.getForceEvictionCount());
         assertEquals(0, mainMap.size());
     }
 
@@ -144,7 +144,7 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
      */
     @Test
     public void testRun_evictAll_on_other_maps() {
-        int noomeCountToBeThrown = 2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 2;
+        int noomeCountToBeThrown = 2 * EVICTION_RETRY_COUNT + 2;
         int mainMapEntryCount = 1000;
         int otherMapEntryCount = 1000;
 
@@ -154,8 +154,8 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
         HiDensityStorageInfo mainMapHdStorageInfo = storageInfoByMapName.get(MAIN_MAP_NAME);
         HiDensityStorageInfo otherMapHdStorageInfo = storageInfoByMapName.get(OTHER_MAP_NAME);
 
-        assertEquals(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT, mainMapHdStorageInfo.getForceEvictionCount());
-        assertEquals(DEFAULT_FORCED_EVICTION_RETRY_COUNT, otherMapHdStorageInfo.getForceEvictionCount());
+        assertEquals(2 * EVICTION_RETRY_COUNT + 1, mainMapHdStorageInfo.getForceEvictionCount());
+        assertEquals(EVICTION_RETRY_COUNT + 1, otherMapHdStorageInfo.getForceEvictionCount());
         assertEquals(0, mainMap.size());
         assertEquals(0, otherMap.size());
     }
@@ -165,7 +165,7 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
      */
     @Test
     public void testRun_evictAllOnOthers_whenOtherRecordStoreHasNoEviction() {
-        int noomeCountToBeThrown = 2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 2;
+        int noomeCountToBeThrown = 2 * EVICTION_RETRY_COUNT + 2;
         int mainMapEntryCount = 1000;
         int otherMapEntryCount = 1000;
 
@@ -175,7 +175,7 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
         HiDensityStorageInfo mainMapHdStorageInfo = storageInfoByMapName.get(MAIN_MAP_NAME);
         HiDensityStorageInfo otherMapHdStorageInfo = storageInfoByMapName.get(OTHER_MAP_NAME);
 
-        assertEquals(2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT, mainMapHdStorageInfo.getForceEvictionCount());
+        assertEquals(2 * EVICTION_RETRY_COUNT + 1, mainMapHdStorageInfo.getForceEvictionCount());
         assertEquals(0, otherMapHdStorageInfo.getForceEvictionCount());
         assertEquals(0, mainMap.size());
         assertEquals(otherMapEntryCount, otherMap.size());
@@ -186,7 +186,7 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
      */
     @Test(expected = NativeOutOfMemoryError.class)
     public void testRun_failedForcedEviction() {
-        int noomeCountToBeThrown = 2 * DEFAULT_FORCED_EVICTION_RETRY_COUNT + 3;
+        int noomeCountToBeThrown = 2 * EVICTION_RETRY_COUNT + 3;
         int mainMapEntryCount = 1000;
         int otherMapEntryCount = 1000;
 
@@ -205,6 +205,17 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
 
         runTestWith(noomeCountToBeThrown, mainMapEntryCount, otherMapEntryCount,
                 LFU, NONE, NATIVE, NATIVE);
+
+    }
+
+    @Test(expected = NativeOutOfMemoryError.class)
+    public void testRun_failedForcedEviction_whenMainAndOtherRecordStoreHasNoEviction() {
+        int noomeCountToBeThrown = Integer.MAX_VALUE;
+        int mainMapEntryCount = 1000;
+        int otherMapEntryCount = 1000;
+
+        runTestWith(noomeCountToBeThrown, mainMapEntryCount, otherMapEntryCount,
+                NONE, NONE, NATIVE, NATIVE);
 
     }
 

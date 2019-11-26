@@ -10,7 +10,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.internal.memory.MemoryStats;
-import com.hazelcast.map.impl.operation.WithForcedEviction;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.ObjectDataInput;
@@ -34,7 +33,6 @@ import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TA
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
-import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -56,51 +54,10 @@ public class HDEvictionTest extends EvictionTest {
                 .setInMemoryFormat(InMemoryFormat.NATIVE);
     }
 
-    @Test
-    public void testForceEviction() {
-        testForcedEvictionWithRetryCount(5);
-    }
-
-    @Test
-    public void testForceEviction_with_no_retry() {
-        testForcedEvictionWithRetryCount(0);
-    }
-
     @Override
     @Ignore
     public void testLastAddedKey_canBeEvicted_whenFreeHeapNeeded() {
         // Not applicable
-    }
-
-    private void testForcedEvictionWithRetryCount(int forcedEvictionRetryCount) {
-        // never run an explicit eviction -> rely on forced eviction instead
-        int mapMaxSize = MAX_VALUE;
-        String mapName = randomMapName();
-
-        Config config = getConfig();
-        config.setProperty(WithForcedEviction.PROP_FORCED_EVICTION_RETRY_COUNT,
-                valueOf(forcedEvictionRetryCount));
-        config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "101");
-
-        MapConfig mapConfig = config.getMapConfig(mapName);
-        mapConfig.getEvictionConfig()
-                .setEvictionPolicy(LFU)
-                .setSize(mapMaxSize);
-
-        // 640K ought to be enough for anybody
-        config.getNativeMemoryConfig().setSize(new MemorySize(640, KILOBYTES));
-
-        HazelcastInstance node = createHazelcastInstance(config);
-        IMap<Object, Object> map = node.getMap(mapName);
-
-        // now let's insert more than it can fit into a memory
-        for (int i = 0; i < 20000; i++) {
-            map.put(i, i);
-        }
-
-        // let's check not everything was evicted
-        // this is an extra step, the main goal is to not fail with NativeOutOfMemoryError
-        assertTrue(map.size() > 0);
     }
 
     @Test

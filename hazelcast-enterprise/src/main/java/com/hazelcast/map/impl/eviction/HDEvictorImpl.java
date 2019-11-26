@@ -14,8 +14,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.eviction.EvictionPolicyComparator;
 
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.Map;
 
 /**
  * An {@link Evictor} for maps which have the {@link
@@ -26,8 +25,7 @@ import java.util.Queue;
  */
 public class HDEvictorImpl extends EvictorImpl {
 
-    private static final int ONE_HUNDRED_PERCENT = 100;
-    private static final int FORCED_EVICTION_PERCENTAGE = 20;
+    private static final int MAX_PER_PASS_REMOVAL_COUNT = 1024;
     private static final int MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT = 20;
 
     private final HiDensityStorageInfo storageInfo;
@@ -45,36 +43,50 @@ public class HDEvictorImpl extends EvictorImpl {
 
     @Override
     protected Record getRecordFromEntryView(EntryView evictableEntryView) {
-        return ((HDStorageSCHM.LazyEntryViewFromRecord) evictableEntryView).getRecord();
+        return ((HDStorageSCHM.LazyEvictableEntryView) evictableEntryView).getRecord();
     }
 
     @Override
-    protected Data getDataKeyFromEntryView(EntryView selectedEntry) {
-        return ((HDStorageSCHM.LazyEntryViewFromRecord) selectedEntry).getDataKey();
+    protected Data getDataKeyFromEntryView(EntryView evictableEntryView) {
+        return ((HDStorageSCHM.LazyEvictableEntryView) evictableEntryView).getDataKey();
     }
 
     @Override
-    public void forceEvict(RecordStore recordStore) {
+    public void forceEvictByPercentage(RecordStore recordStore, double percentage) {
+        assert percentage > 0 && percentage <= 1
+                : "wrong percentage found " + percentage;
+
         if (recordStore.size() == 0) {
             return;
         }
         boolean backup = isBackup(recordStore);
 
-        int removalSize = calculateRemovalSize(recordStore);
-        Storage<Data, Record> storage = recordStore.getStorage();
-        Iterator<Data> keys = ((ForcedEvictable<Data>) storage).newRandomEvictionKeyIterator();
+        int removeThisNumOfEntries = (int) Math.max(recordStore.size() * percentage,
+                MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT);
+        int maxRemovePerPass = Math.min(removeThisNumOfEntries, MAX_PER_PASS_REMOVAL_COUNT);
+        Data[] keysToRemove = new Data[maxRemovePerPass];
+        do {
+            evictRecordStore(recordStore, maxRemovePerPass, backup, keysToRemove);
+            removeThisNumOfEntries -= maxRemovePerPass;
+        } while (recordStore.size() > 0 && removeThisNumOfEntries > 0);
+    }
 
-        Queue<Data> keysToRemove = new LinkedList<>();
-        while (keys.hasNext()) {
-            Data key = keys.next();
+    private void evictRecordStore(RecordStore recordStore, int maxRemovePerPass,
+                                  boolean backup, Data[] keysToRemove) {
+        int index = -1;
+        Iterator<Map.Entry<Data, Record>> recordIterator = getEntryIterator(recordStore, maxRemovePerPass);
+        while (recordIterator.hasNext()) {
+            Map.Entry<Data, Record> entry = recordIterator.next();
+            Data key = entry.getKey();
+
             if (!recordStore.isLocked(key)) {
                 if (!backup) {
-                    recordStore.doPostEvictionOperations(key, recordStore.getRecord(key));
+                    recordStore.doPostEvictionOperations(key, entry.getValue());
                 }
-                keysToRemove.add(key);
+                keysToRemove[++index] = key;
             }
 
-            if (keysToRemove.size() >= removalSize) {
+            if ((index + 1) == maxRemovePerPass) {
                 break;
             }
         }
@@ -84,17 +96,31 @@ public class HDEvictorImpl extends EvictorImpl {
         recordStore.disposeDeferredBlocks();
 
         if (storageInfo.increaseForceEvictionCount() == 1) {
-            logger.warning("Forced eviction invoked for the first time for IMap[name=" + recordStore.getName() + "]");
+            logger.warning("Forced eviction invoked for the first"
+                    + " time for IMap[name=" + recordStore.getName() + "]");
         }
         storageInfo.increaseForceEvictedEntryCount(removedKeyCount);
     }
 
-    private static int removeKeys(Queue<Data> keysToRemove, RecordStore recordStore, boolean backup) {
+    private Iterator<Map.Entry<Data, Record>> getEntryIterator(RecordStore recordStore, int maxRemovePerPass) {
+        Storage storage = recordStore.getStorage();
+        return maxRemovePerPass == recordStore.size()
+                ? storage.mutationTolerantIterator()
+                : ((ForcedEvictable<Data, Record>) storage).newRandomEvictionEntryIterator();
+    }
+
+    private static int removeKeys(Data[] keysToRemove,
+                                  RecordStore recordStore, boolean backup) {
         int removedEntryCount = 0;
 
-        while (!keysToRemove.isEmpty()) {
-            Data keyToEvict = keysToRemove.poll();
-            recordStore.evict(keyToEvict, backup);
+        for (int i = 0; i < keysToRemove.length; i++) {
+            Data key = keysToRemove[i];
+            keysToRemove[i] = null;
+            if (key == null) {
+                break;
+            }
+
+            recordStore.evict(key, backup);
             removedEntryCount++;
         }
 
@@ -109,11 +135,5 @@ public class HDEvictorImpl extends EvictorImpl {
             return ((HotRestartHDStorageImpl) storage).getStorageImpl().getRandomSamples(SAMPLE_COUNT);
         }
         return (Iterable<EntryView>) storage.getRandomSamples(SAMPLE_COUNT);
-    }
-
-    private static int calculateRemovalSize(RecordStore recordStore) {
-        int size = recordStore.size();
-        int removalSize = (int) (size * (long) FORCED_EVICTION_PERCENTAGE / ONE_HUNDRED_PERCENT);
-        return Math.max(removalSize, MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT);
     }
 }

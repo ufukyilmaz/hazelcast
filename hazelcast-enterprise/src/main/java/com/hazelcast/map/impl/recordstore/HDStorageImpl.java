@@ -29,7 +29,7 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
  * Hi-Density backed {@code Storage} implementation for {@link IMap}.
  * This implementation can be used under multi-thread access.
  */
-public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<Data> {
+public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<Data, HDRecord> {
     private final HDStorageSCHM map;
     private final HiDensityStorageInfo storageInfo;
     private final HiDensityRecordProcessor recordProcessor;
@@ -166,18 +166,13 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<D
     }
 
     @Override
-    public Iterator<Map.Entry<Data, HDRecord>> entryIterator() {
-        return map.entryIter(true);
-    }
-
-    @Override
     public Iterator<Map.Entry<Data, HDRecord>> mutationTolerantIterator() {
-        return map.entryIter(false);
+        return map.cachedEntryIter(false);
     }
 
     @Override
-    public Iterator<Data> newRandomEvictionKeyIterator() {
-        return map.newRandomEvictionKeyIterator();
+    public Iterator<Map.Entry<Data, HDRecord>> newRandomEvictionEntryIterator() {
+        return map.newRandomEvictionCachedEntryIterator();
     }
 
     @Override
@@ -258,12 +253,12 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<D
 
     @Override
     public Record extractRecordFromLazy(EntryView entryView) {
-        return ((HDStorageSCHM.LazyEntryViewFromRecord) entryView).getRecord();
+        return ((HDStorageSCHM.LazyEvictableEntryView) entryView).getRecord();
     }
 
     @Override
     public Data extractDataKeyFromLazy(EntryView entryView) {
-        return ((HDStorageSCHM.LazyEntryViewFromRecord) entryView).getDataKey();
+        return ((HDStorageSCHM.LazyEvictableEntryView) entryView).getDataKey();
     }
 
     @Override

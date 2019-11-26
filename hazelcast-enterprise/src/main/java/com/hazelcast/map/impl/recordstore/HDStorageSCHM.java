@@ -46,7 +46,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
     @Override
     @SuppressWarnings("unchecked")
     protected <E extends SamplingEntry> E createSamplingEntry(int slot) {
-        return (E) new LazyEntryViewFromRecord(slot, serializationService);
+        return (E) new LazyEvictableEntryView(slot, serializationService);
     }
 
     public MapKeysWithCursor fetchKeys(int tableIndex, int size) {
@@ -87,7 +87,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
      * @param <K> type of key
      * @param <V> type of value
      */
-    public class LazyEntryViewFromRecord<K, V>
+    public class LazyEvictableEntryView<K, V>
             extends SampleableElasticHashMap<HDRecord>.SamplingEntry implements EntryView<K, V> {
 
         private K key;
@@ -97,15 +97,15 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         private SerializationService serializationService;
 
-        public LazyEntryViewFromRecord(int slot, SerializationService serializationService) {
+        public LazyEvictableEntryView(int slot, SerializationService serializationService) {
             super(slot);
             this.dataKey = super.getEntryKey();
             this.record = super.getEntryValue();
             this.serializationService = serializationService;
         }
 
-        LazyEntryViewFromRecord(int slot, SerializationService serializationService,
-                                Data dataKey, HDRecord record) {
+        LazyEvictableEntryView(int slot, SerializationService serializationService,
+                               Data dataKey, HDRecord record) {
             super(slot);
             this.dataKey = dataKey;
             this.record = record;

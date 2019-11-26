@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.recordstore;
 
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Mark {@link Storage} as capable of running forced-evictions.
@@ -10,11 +11,11 @@ import java.util.Iterator;
  * Open Addressing Hash Map with linear probing are very prone
  * to clustering. This leads to a performance degradation.
  *
- * Iterator returned by {@link #newForcedEvictionValuesIterator()}
+ * Iterator returned by {@link #newRandomEvictionEntryIterator()}
  * is optimized for mass removals and it should do its best
  * to prevent data clustering.
  */
-public interface ForcedEvictable<T> {
+public interface ForcedEvictable<K, V> {
 
     /**
      * Return iterator to be used for forced evictions. This is
@@ -30,5 +31,5 @@ public interface ForcedEvictable<T> {
      *
      * @return
      */
-    Iterator<T> newRandomEvictionKeyIterator();
+    Iterator<Map.Entry<K, V>> newRandomEvictionEntryIterator();
 }

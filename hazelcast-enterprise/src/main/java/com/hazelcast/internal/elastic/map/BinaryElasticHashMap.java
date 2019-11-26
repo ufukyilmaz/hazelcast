@@ -4,18 +4,18 @@ import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.memory.GlobalMemoryAccessor;
 import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryBlockAccessor;
 import com.hazelcast.internal.memory.MemoryBlockProcessor;
+import com.hazelcast.internal.serialization.DataType;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
+import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
-import com.hazelcast.internal.memory.MemoryBlock;
-import com.hazelcast.internal.memory.MemoryBlockAccessor;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.serialization.DataType;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.util.ExceptionUtil;
 
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -30,11 +30,11 @@ import java.util.Set;
 import static com.hazelcast.internal.elastic.map.BehmSlotAccessor.rehash;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
+import static com.hazelcast.internal.util.HashUtil.computePerturbationValue;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.MIN_CAPACITY;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.nextCapacity;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.roundCapacity;
-import static com.hazelcast.internal.util.HashUtil.computePerturbationValue;
 
 /**
  * A hash map of {@code Data} to {@code MemoryBlock}, implemented using open
@@ -404,7 +404,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 long v = accessor.getValue(slot);
                 if (key instanceof HeapData
                         || (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != slotKey)
-                        ) {
+                ) {
                     memoryBlockProcessor.disposeData(accessor.keyData(slot));
                 }
                 shiftConflictingKeys(slot);
@@ -446,7 +446,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                     assignedSlotCount--;
                     if (key instanceof HeapData
                             || (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != keyAddress)
-                            ) {
+                    ) {
                         memoryBlockProcessor.disposeData(accessor.keyData(slot));
                     }
                     if (value.address() != current) {
@@ -627,6 +627,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         return new RandomValueIter();
     }
 
+    public SlottableIterator<Map.Entry<Data, V>> newRandomEvictionCachedEntryIterator() {
+        return new CachedRandomEntryIter();
+    }
+
     protected class RandomKeyIter extends RandomSlotIter<Data> {
         @Override
         public Data next() {
@@ -642,6 +646,16 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             long slotValue = accessor.getValue(currentSlot);
             V value = readV(slotValue);
             return value;
+        }
+    }
+
+    protected class CachedRandomEntryIter extends RandomSlotIter<Map.Entry<Data, V>> {
+        MapEntry cachedEntry = new MapEntry();
+
+        @Override
+        public Map.Entry<Data, V> next() {
+            nextSlot();
+            return cachedEntry.init(currentSlot);
         }
     }
 
@@ -1093,15 +1107,41 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
     }
 
+    public final Iterator<Map.Entry<Data, V>> cachedEntryIter(boolean failFast) {
+        return new CachedEntryIter(failFast);
+    }
+
+    private class CachedEntryIter extends EntryIter {
+        private MapEntry entry = new MapEntry();
+
+        public CachedEntryIter(boolean failFast) {
+            super(failFast);
+        }
+
+        @Override
+        public Map.Entry<Data, V> next() {
+            nextSlot();
+            return entry.init(currentSlot);
+        }
+    }
+
     /**
      * {@code Map.Entry} implementation for this map.
      */
     protected class MapEntry implements Map.Entry {
 
-        private final int slot;
+        private int slot;
 
-        protected MapEntry(final int slot) {
+        protected MapEntry() {
+        }
+
+        protected MapEntry(int slot) {
+            init(slot);
+        }
+
+        protected MapEntry init(int slot) {
             this.slot = slot;
+            return this;
         }
 
         @Override
@@ -1173,9 +1213,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
     @SuppressWarnings("checkstyle:magicnumber")
     public static <V extends MemoryBlock> BinaryElasticHashMap<V> loadFromOffHeapHeader(EnterpriseSerializationService ss,
-                                                                     MemoryAllocator malloc, long address,
-                                                                     BehmSlotAccessorFactory behmSlotAccessorFactory,
-                                                                     MemoryBlockAccessor memoryBlockAccessor) {
+                                                                                        MemoryAllocator malloc, long address,
+                                                                                        BehmSlotAccessorFactory behmSlotAccessorFactory,
+                                                                                        MemoryBlockAccessor memoryBlockAccessor) {
         GlobalMemoryAccessor unsafe = GlobalMemoryAccessorRegistry.MEM;
 
         long pointer = address + NATIVE_MEMORY_DATA_OVERHEAD;

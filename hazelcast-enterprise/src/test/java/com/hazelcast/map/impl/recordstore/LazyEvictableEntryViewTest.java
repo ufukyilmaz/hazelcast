@@ -31,22 +31,22 @@ import static org.mockito.Mockito.when;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
+public class LazyEvictableEntryViewTest extends HazelcastTestSupport {
 
-    private static final ILogger LOGGER = Logger.getLogger(LazyEntryViewFromRecordTest.class);
+    private static final ILogger LOGGER = Logger.getLogger(LazyEvictableEntryViewTest.class);
 
     private OperationQueue queue = new OperationQueueImpl();
     private PartitionOperationThread thread = getPartitionOperationThread(queue);
 
     private HDRecord record;
 
-    private HDStorageSCHM.LazyEntryViewFromRecord entryView;
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewSameAttributes;
+    private HDStorageSCHM.LazyEvictableEntryView entryView;
+    private HDStorageSCHM.LazyEvictableEntryView entryViewSameAttributes;
 
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordValue;
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordCreationTime;
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordHits;
-    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordLastAccessTime;
+    private HDStorageSCHM.LazyEvictableEntryView entryViewOtherRecordValue;
+    private HDStorageSCHM.LazyEvictableEntryView entryViewOtherRecordCreationTime;
+    private HDStorageSCHM.LazyEvictableEntryView entryViewOtherRecordHits;
+    private HDStorageSCHM.LazyEvictableEntryView entryViewOtherRecordLastAccessTime;
 
     @Before
     public void setUp() {
@@ -96,14 +96,14 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
 
         HDStorageSCHM hdStorageSCHM = mock(HDStorageSCHM.class);
 
-        entryView = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, dataKey, record);
-        entryViewSameAttributes = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, dataKey, record);
+        entryView = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, record);
+        entryViewSameAttributes = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, record);
 
-        entryViewOtherRecordValue = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, dataKey, recordOtherValue);
-        entryViewOtherRecordCreationTime = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService,
+        entryViewOtherRecordValue = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, recordOtherValue);
+        entryViewOtherRecordCreationTime = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService,
                 dataKey, recordOtherCreationTime);
-        entryViewOtherRecordHits = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, dataKey, recordOtherHits);
-        entryViewOtherRecordLastAccessTime = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService,
+        entryViewOtherRecordHits = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, recordOtherHits);
+        entryViewOtherRecordLastAccessTime = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService,
                 dataKey, recordOtherLastAccessTime);
 
         thread.start();

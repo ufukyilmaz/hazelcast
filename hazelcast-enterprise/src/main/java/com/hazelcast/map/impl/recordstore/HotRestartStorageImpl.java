@@ -121,11 +121,6 @@ public class HotRestartStorageImpl<R extends Record>
     }
 
     @Override
-    public Iterator<Map.Entry<Data, R>> entryIterator() {
-        return storage.entryIterator();
-    }
-
-    @Override
     public final Iterator<Map.Entry<Data, R>> mutationTolerantIterator() {
         return storage.mutationTolerantIterator();
     }

@@ -18,9 +18,6 @@ public abstract class EWRBaseOperation extends Operation implements PartitionAwa
 
     String wanReplicationName;
     String wanPublisherId;
-    // service name is always null but it can't be easily removed
-    // because of backwards compatibility (rolling upgrade)
-    String serviceName;
 
     protected EWRBaseOperation() {
     }
@@ -61,13 +58,11 @@ public abstract class EWRBaseOperation extends Operation implements PartitionAwa
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         out.writeUTF(wanReplicationName);
         out.writeUTF(wanPublisherId);
-        out.writeUTF(serviceName);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         wanReplicationName = in.readUTF();
         wanPublisherId = in.readUTF();
-        serviceName = in.readUTF();
     }
 }

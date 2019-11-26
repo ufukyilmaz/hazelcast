@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import static com.hazelcast.internal.hotrestart.impl.testsupport.HotRestartTestUtil.createHotRestartLogger;
 import static com.hazelcast.test.HazelcastTestSupport.assertInstanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -69,7 +70,7 @@ public class EncryptionManagerTest {
                                                                                       .setInitialKeysSupplier(initialKeysSupplier)
                                                                                       .setKeySize(encryptionAtRestConfig
                                                                                               .getKeySize());
-        return new EncryptionManager(tf.getRoot(), config);
+        return new EncryptionManager(createHotRestartLogger(), tf.getRoot(), config);
     }
 
     @Test

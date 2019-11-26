@@ -4,6 +4,7 @@ import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.internal.hotrestart.impl.di.Inject;
 import com.hazelcast.internal.hotrestart.impl.di.Name;
 import com.hazelcast.internal.nio.IOUtil;
+import com.hazelcast.logging.ILogger;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import javax.annotation.Nonnull;
@@ -47,13 +48,16 @@ public class EncryptionManager {
     private final File homeDir;
     private final int keySize;
     private final HotRestartCipherBuilder cipherBuilder;
+    private final ILogger logger;
     private byte[] storeKey;
     private volatile byte[] masterKey;
 
     @Inject
-    public EncryptionManager(@Nonnull @Name("homeDir") File homeDir, @Nonnull HotRestartStoreEncryptionConfig encryptionConfig) {
+    public EncryptionManager(ILogger logger, @Nonnull @Name("homeDir") File homeDir,
+                             @Nonnull HotRestartStoreEncryptionConfig encryptionConfig) {
         checkNotNull(homeDir, "homeDir cannot be null!");
         checkNotNull(encryptionConfig, "encryptionConfig cannot be null!");
+        this.logger = logger;
         HotRestartCipherBuilder configCipherBuilder = encryptionConfig.cipherBuilder();
         this.homeDir = homeDir;
         this.cipherBuilder = configCipherBuilder;
@@ -90,6 +94,7 @@ public class EncryptionManager {
                     throw new HotRestartException("Unable to generate encryption key", e);
                 }
                 writeKeyFile(storeKey);
+                logger.info("Written key file: " + getKeyFile());
             }
         }
     }
@@ -124,6 +129,7 @@ public class EncryptionManager {
         }
         if (reencrypt) {
             writeKeyFile(key);
+            logger.info("Re-encrypted key file: " + keyFile);
         }
         return key;
     }
@@ -170,7 +176,8 @@ public class EncryptionManager {
             } finally {
                 closeResource(out);
             }
-            IOUtil.rename(tmp, getKeyFile());
+            File keyFile = getKeyFile();
+            IOUtil.rename(tmp, keyFile);
         }
     }
 
@@ -194,6 +201,7 @@ public class EncryptionManager {
         if (isEncryptionEnabled()) {
             masterKey = Arrays.copyOf(key, key.length);
             writeKeyFile(storeKey);
+            logger.info("Re-encrypted key file: " + getKeyFile());
         }
     }
 

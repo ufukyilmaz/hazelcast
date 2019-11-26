@@ -395,7 +395,7 @@ public class HotRestartTestUtil {
 
     public static EncryptionManager createEncryptionMgr(File homeDir, boolean encrypted) {
         HotRestartStoreEncryptionConfig encryptionConfig = createHotRestartStoreEncryptionConfig(encrypted);
-        return new EncryptionManager(homeDir, encryptionConfig);
+        return new EncryptionManager(createHotRestartLogger(), homeDir, encryptionConfig);
     }
 
     public static HotRestartStoreEncryptionConfig createHotRestartStoreEncryptionConfig(boolean encrypted) {

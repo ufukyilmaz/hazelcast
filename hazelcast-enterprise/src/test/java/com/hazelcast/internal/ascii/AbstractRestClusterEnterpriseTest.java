@@ -25,6 +25,7 @@ import static com.hazelcast.enterprise.SampleLicense.V5_ENTERPRISE_HD_SEC_CF_RU_
 import static com.hazelcast.test.HazelcastTestSupport.assertContains;
 import static com.hazelcast.test.HazelcastTestSupport.assertNotContains;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 
@@ -75,8 +76,7 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
         HTTPCommunicator communicator = new HTTPCommunicator(instance);
         HTTPCommunicator.ConnectionResponse response = communicator
                 .setLicense(config.getClusterName() + "1", getPassword(), V5_ENTERPRISE_HD_SEC_40NODES_2099EXP);
-        assertEquals(HttpURLConnection.HTTP_OK, response.responseCode);
-        assertEquals("{\"status\":\"forbidden\"}", response.response);
+        assertEquals(HTTP_FORBIDDEN, response.responseCode);
         assertInstanceLicenseKeyEquals(instanceLicenseKey, instance);
     }
 

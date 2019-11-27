@@ -67,7 +67,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
         when(wanServiceMock.syncMap(any(), any(), any())).thenReturn(expectedUuid);
         startInstance();
 
-        JsonObject responseObject = assertSuccess(communicator.syncMapOverWAN("atob", "B", "map"));
+        String jsonResponse = communicator.syncMapOverWAN(getConfig().getClusterName(), "", "atob", "B", "map");
+        JsonObject responseObject = assertSuccess(jsonResponse);
         assertNotNull(responseObject.getString("message", null));
         assertEquals(expectedUuid.toString(), responseObject.getString("uuid", null));
         verify(wanServiceMock, times(1)).syncMap("atob", "B", "map");
@@ -81,7 +82,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
                 .syncMap("atob", "B", "map");
         startInstance();
 
-        JsonObject responseObject = assertFail(communicator.syncMapOverWAN("atob", "B", "map"));
+        String jsonResponse = communicator.syncMapOverWAN(getConfig().getClusterName(), "", "atob", "B", "map");
+        JsonObject responseObject = assertFail(jsonResponse);
         assertEquals(msg, responseObject.getString("message", null));
         verify(wanServiceMock, times(1)).syncMap("atob", "B", "map");
     }
@@ -92,7 +94,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
         when(wanServiceMock.syncAllMaps(any(), any())).thenReturn(expectedUuid);
         startInstance();
 
-        JsonObject responseObject = assertSuccess(communicator.syncMapsOverWAN("atob", "B"));
+        String jsonResponse = communicator.syncMapsOverWAN(getConfig().getClusterName(), "", "atob", "B");
+        JsonObject responseObject = assertSuccess(jsonResponse);
         assertNotNull(responseObject.getString("message", null));
         assertEquals(expectedUuid.toString(), responseObject.getString("uuid", null));
         verify(wanServiceMock, times(1)).syncAllMaps("atob", "B");
@@ -106,7 +109,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
                 .syncAllMaps("atob", "B");
         startInstance();
 
-        JsonObject responseObject = assertFail(communicator.syncMapsOverWAN("atob", "B"));
+        String jsonResponse = communicator.syncMapsOverWAN(getConfig().getClusterName(), "", "atob", "B");
+        JsonObject responseObject = assertFail(jsonResponse);
         assertEquals(msg, responseObject.getString("message", null));
         verify(wanServiceMock, times(1)).syncAllMaps("atob", "B");
     }
@@ -117,7 +121,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
         when(wanServiceMock.consistencyCheck(any(), any(), any())).thenReturn(expectedUuid);
         startInstance();
 
-        JsonObject responseObject = assertSuccess(communicator.wanMapConsistencyCheck("atob", "B", "map"));
+        String jsonResponse = communicator.wanMapConsistencyCheck(getConfig().getClusterName(), "", "atob", "B", "map");
+        JsonObject responseObject = assertSuccess(jsonResponse);
         assertNotNull(responseObject.getString("message", null));
         assertEquals(expectedUuid.toString(), responseObject.getString("uuid", null));
         verify(wanServiceMock, times(1)).consistencyCheck("atob", "B", "map");
@@ -131,7 +136,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
                 .consistencyCheck("atob", "B", "map");
         startInstance();
 
-        JsonObject responseObject = assertFail(communicator.wanMapConsistencyCheck("atob", "B", "map"));
+        String jsonResponse = communicator.wanMapConsistencyCheck(getConfig().getClusterName(), "", "atob", "B", "map");
+        JsonObject responseObject = assertFail(jsonResponse);
         assertEquals(msg, responseObject.getString("message", null));
         verify(wanServiceMock, times(1)).consistencyCheck("atob", "B", "map");
     }
@@ -144,7 +150,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
                 .thenReturn(new AddWanConfigResult(Collections.singleton("A"), Collections.singleton("B")));
         startInstance();
 
-        JsonObject responseObject = assertSuccess(communicator.addWanConfig(dto.toJson().toString()));
+        String jsonResponse = communicator.addWanConfig(getConfig().getClusterName(), "", dto.toJson().toString());
+        JsonObject responseObject = assertSuccess(jsonResponse);
         assertEquals(1, responseObject.get("addedPublisherIds").asArray().size());
         assertEquals(1, responseObject.get("ignoredPublisherIds").asArray().size());
         verify(wanServiceMock, times(1)).addWanReplicationConfig(wanConfig);
@@ -160,7 +167,8 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
                 .addWanReplicationConfig(wanConfig);
         startInstance();
 
-        JsonObject responseObject = assertFail(communicator.addWanConfig(dto.toJson().toString()));
+        String jsonResponse = communicator.addWanConfig(getConfig().getClusterName(), "", dto.toJson().toString());
+        JsonObject responseObject = assertFail(jsonResponse);
         assertEquals(msg, responseObject.getString("message", null));
         verify(wanServiceMock, times(1)).addWanReplicationConfig(wanConfig);
     }
@@ -172,7 +180,7 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
                 .syncAllMaps("atob", "B");
         startInstance();
 
-        assertFail(communicator.syncMapsOverWAN("atob", "B"));
+        assertFail(communicator.syncMapsOverWAN(getConfig().getClusterName(), "", "atob", "B"));
         verify(wanServiceMock, times(1)).syncAllMaps("atob", "B");
     }
 
@@ -191,14 +199,14 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
     protected Config getConfig() {
         Config config = smallInstanceConfig();
         config.getNetworkConfig().getRestApiConfig()
-                .setEnabled(true)
-                .enableAllGroups();
+              .setEnabled(true)
+              .enableAllGroups();
         JoinConfig joinConfig = config.getNetworkConfig().getJoin();
         joinConfig.getMulticastConfig()
-                .setEnabled(false);
+                  .setEnabled(false);
         joinConfig.getTcpIpConfig()
-                .setEnabled(true)
-                .addMember("127.0.0.1");
+                  .setEnabled(true)
+                  .addMember("127.0.0.1");
         return config;
     }
 

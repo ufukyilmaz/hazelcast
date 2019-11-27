@@ -1,28 +1,28 @@
 package com.hazelcast.internal.ascii;
 
+import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.LoginModuleConfig;
+import com.hazelcast.config.SecurityConfig;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
+import com.hazelcast.config.security.RealmConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.security.loginmodules.TestLoginModule;
+import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import java.net.HttpURLConnection;
+import java.util.Properties;
+
 import static com.hazelcast.config.LoginModuleConfig.LoginModuleUsage.REQUIRED;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_PRINCIPALS_SIMPLE;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESULT_COMMIT;
 import static com.hazelcast.security.loginmodules.TestLoginModule.VALUE_ACTION_FAIL;
 import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterStateEventually;
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static org.junit.Assert.assertEquals;
-
-import java.net.HttpURLConnection;
-import java.util.Properties;
-
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
-import com.hazelcast.cluster.ClusterState;
-import com.hazelcast.config.Config;
-import com.hazelcast.config.LoginModuleConfig;
-import com.hazelcast.config.security.JaasAuthenticationConfig;
-import com.hazelcast.config.security.RealmConfig;
-import com.hazelcast.config.SecurityConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.security.loginmodules.TestLoginModule;
-import com.hazelcast.test.annotation.QuickTest;
 
 /**
  * Tests REST API calls with security enabled on Hazelcast members.
@@ -51,19 +51,25 @@ public class RestClusterEnterpriseWithSecurityTest extends AbstractRestClusterEn
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         HTTPCommunicator communicator = new HTTPCommunicator(instance);
         String clusterName = config.getClusterName();
-        assertEquals(STATUS_FORBIDDEN, communicator.shutdownMember(clusterName, WRONG_PASSWORD));
-        assertEquals(STATUS_FORBIDDEN, communicator.changeClusterState(clusterName, WRONG_PASSWORD, "frozen").response);
-        assertEquals(STATUS_FORBIDDEN, communicator.changeClusterVersion(clusterName, WRONG_PASSWORD,
-                instance.getCluster().getClusterVersion().toString()).response);
-        assertEquals(STATUS_FORBIDDEN, communicator.hotBackup(clusterName, WRONG_PASSWORD).response);
-        assertEquals(STATUS_FORBIDDEN, communicator.hotBackupInterrupt(clusterName, WRONG_PASSWORD).response);
-        assertEquals(STATUS_FORBIDDEN, communicator.forceStart(clusterName, WRONG_PASSWORD).response);
-        assertEquals(STATUS_FORBIDDEN, communicator.partialStart(clusterName, WRONG_PASSWORD).response);
-        assertEquals(403,
+        assertEquals(HTTP_FORBIDDEN,
+                communicator.shutdownMember(clusterName, WRONG_PASSWORD).responseCode);
+        assertEquals(HTTP_FORBIDDEN,
+                communicator.changeClusterState(clusterName, WRONG_PASSWORD, "frozen").responseCode);
+        assertEquals(HTTP_FORBIDDEN,
+                communicator.changeClusterVersion(clusterName, WRONG_PASSWORD,
+                        instance.getCluster().getClusterVersion().toString()).responseCode);
+        assertEquals(HTTP_FORBIDDEN,
+                communicator.hotBackup(clusterName, WRONG_PASSWORD).responseCode);
+        assertEquals(HTTP_FORBIDDEN,
+                communicator.hotBackupInterrupt(clusterName, WRONG_PASSWORD).responseCode);
+        assertEquals(HTTP_FORBIDDEN,
+                communicator.forceStart(clusterName, WRONG_PASSWORD).responseCode);
+        assertEquals(HTTP_FORBIDDEN, communicator.partialStart(clusterName, WRONG_PASSWORD).responseCode);
+        assertEquals(HTTP_FORBIDDEN,
                 communicator.changeManagementCenterUrl(clusterName, WRONG_PASSWORD, "http://bla").responseCode);
-        assertEquals(STATUS_FORBIDDEN, communicator.listClusterNodes(clusterName, WRONG_PASSWORD));
-        assertEquals(STATUS_FORBIDDEN, communicator.shutdownCluster(clusterName, WRONG_PASSWORD).response);
-        assertEquals(STATUS_FORBIDDEN, communicator.getClusterState(clusterName, WRONG_PASSWORD));
+        assertEquals(HTTP_FORBIDDEN, communicator.listClusterNodes(clusterName, WRONG_PASSWORD).responseCode);
+        assertEquals(HTTP_FORBIDDEN, communicator.shutdownCluster(clusterName, WRONG_PASSWORD).responseCode);
+        assertEquals(HTTP_FORBIDDEN, communicator.getClusterState(clusterName, WRONG_PASSWORD).responseCode);
     }
 
     @Test
@@ -87,7 +93,7 @@ public class RestClusterEnterpriseWithSecurityTest extends AbstractRestClusterEn
         addCustomLoginModule(config.getSecurityConfig(), properties);
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         HTTPCommunicator communicator = new HTTPCommunicator(instance);
-        assertEquals(STATUS_FORBIDDEN, communicator.changeClusterState("foo", "", "frozen").response);
+        assertEquals(HTTP_FORBIDDEN, communicator.changeClusterState("foo", "", "frozen").responseCode);
     }
 
     private void addCustomLoginModule(SecurityConfig securityConfig, Properties properties) {

@@ -39,7 +39,7 @@ public class EnterpriseTextProtocolsConfigTest extends TextProtocolsConfigTest {
         config.getSecurityConfig().setEnabled(true).setMemberRealmConfig("realm",
                 new RealmConfig().setUsernamePasswordIdentityConfig(getTestMethodName(), ""));
         HazelcastInstance hz = factory.newHazelcastInstance(config);
-        assertClusterState(hz, getTestMethodName() + "&notmatching", "forbidden");
+        assertClusterState(hz, getTestMethodName() + "&notmatching", "HTTP/1.1 403 Forbidden");
         assertClusterState(hz, getTestMethodName() + "&", "active");
     }
 

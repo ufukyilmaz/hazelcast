@@ -51,7 +51,8 @@ public class LicenseInfoRestTest {
         License expected = LicenseHelper.getLicense(instance.getConfig().getLicenseKey(),
                 instanceImpl.node.getBuildInfo().getVersion());
 
-        JsonObject actual = Json.parse(communicator1.getLicenseInfo().replace("licenseInfo", "")).asObject();
+        JsonObject actual = Json.parse(communicator1.getLicenseInfo()).asObject()
+                                .get("licenseInfo").asObject();
 
         assertEquals(expected.getAllowedNumberOfNodes(), actual.getInt("maxNodeCount", 0));
         assertEquals(MILLISECONDS.toDays(expected.getExpiryDate().getTime()),

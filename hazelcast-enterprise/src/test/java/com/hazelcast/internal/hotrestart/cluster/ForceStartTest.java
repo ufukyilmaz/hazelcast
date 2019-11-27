@@ -3,6 +3,7 @@ package com.hazelcast.internal.hotrestart.cluster;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConfigAccessor;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.config.ServiceConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -281,7 +282,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
                 .setClassName(MockHotRestartService.class.getName());
 
         Config config = super.newConfig(listener, clusterStartPolicy);
-        config.getServicesConfig().addServiceConfig(serviceConfig);
+        ConfigAccessor.getServicesConfig(config).addServiceConfig(serviceConfig);
         if (encrypted) {
             config = withBasicEncryptionAtRestConfig(config);
         }

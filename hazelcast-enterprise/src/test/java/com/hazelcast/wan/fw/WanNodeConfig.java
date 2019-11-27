@@ -5,6 +5,7 @@ import com.hazelcast.config.CRDTReplicationConfig;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.CardinalityEstimatorConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConfigAccessor;
 import com.hazelcast.config.ConfigPatternMatcher;
 import com.hazelcast.config.DurableExecutorConfig;
 import com.hazelcast.config.ExecutorConfig;
@@ -27,7 +28,6 @@ import com.hazelcast.config.RingbufferConfig;
 import com.hazelcast.config.ScheduledExecutorConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SerializationConfig;
-import com.hazelcast.config.ServicesConfig;
 import com.hazelcast.config.SetConfig;
 import com.hazelcast.config.SplitBrainProtectionConfig;
 import com.hazelcast.config.TopicConfig;
@@ -35,6 +35,7 @@ import com.hazelcast.config.UserCodeDeploymentConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.cp.CPSubsystemConfig;
 import com.hazelcast.core.ManagedContext;
+import com.hazelcast.internal.config.ServicesConfig;
 
 import java.io.File;
 import java.net.URL;
@@ -585,12 +586,7 @@ class WanNodeConfig extends Config {
 
     @Override
     public ServicesConfig getServicesConfig() {
-        return wrappedConfig.getServicesConfig();
-    }
-
-    @Override
-    public Config setServicesConfig(ServicesConfig servicesConfig) {
-        return wrappedConfig.setServicesConfig(servicesConfig);
+        return ConfigAccessor.getServicesConfig(wrappedConfig);
     }
 
     @Override

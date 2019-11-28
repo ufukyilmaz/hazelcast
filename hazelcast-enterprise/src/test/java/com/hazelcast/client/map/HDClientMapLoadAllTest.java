@@ -7,7 +7,7 @@ import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getSmallInstanceHDConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
@@ -15,6 +15,6 @@ public class HDClientMapLoadAllTest extends ClientMapLoadAllTest {
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        return getSmallInstanceHDConfig();
     }
 }

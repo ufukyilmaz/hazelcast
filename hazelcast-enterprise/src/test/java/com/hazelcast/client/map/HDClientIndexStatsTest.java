@@ -3,8 +3,8 @@ package com.hazelcast.client.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.query.LocalIndexStats;
 import com.hazelcast.map.LocalMapStats;
+import com.hazelcast.query.LocalIndexStats;
 import com.hazelcast.query.Predicates;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -15,7 +15,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getSmallInstanceHDConfig;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertTrue;
 
@@ -31,7 +31,7 @@ public class HDClientIndexStatsTest extends ClientIndexStatsTest {
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        return getSmallInstanceHDConfig();
     }
 
     @SuppressWarnings("unchecked")

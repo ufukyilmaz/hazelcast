@@ -38,8 +38,8 @@ import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.RamStore;
 import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.internal.metrics.DynamicMetricsProvider;
-import com.hazelcast.internal.metrics.MetricsCollectionContext;
 import com.hazelcast.internal.metrics.MetricDescriptor;
+import com.hazelcast.internal.metrics.MetricsCollectionContext;
 import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.services.ReplicationSupportingService;
@@ -116,8 +116,8 @@ public class EnterpriseCacheService
     private ReplicationSupportingService replicationSupportingService;
 
     @Override
-    protected void postInit(NodeEngine nodeEngine, Properties properties) {
-        super.postInit(nodeEngine, properties);
+    protected void postInit(NodeEngine nodeEngine, Properties properties, boolean metricsEnabled) {
+        super.postInit(nodeEngine, properties, metricsEnabled);
         replicationSupportingService = new CacheReplicationSupportingService(this);
         cacheFilterProvider = new CacheFilterProvider(nodeEngine);
         cacheWanEventPublisher = new CacheWanEventPublisherImpl(this);
@@ -136,8 +136,11 @@ public class EnterpriseCacheService
                 }
             });
         }
-        ((NodeEngineImpl) nodeEngine).getMetricsRegistry()
-                                     .registerDynamicMetricsProvider(new HDStorageInfoMetricsProvider(hiDensityCacheInfoMap));
+
+        if (metricsEnabled) {
+            ((NodeEngineImpl) nodeEngine).getMetricsRegistry()
+                                         .registerDynamicMetricsProvider(new HDStorageInfoMetricsProvider(hiDensityCacheInfoMap));
+        }
     }
 
     @Override

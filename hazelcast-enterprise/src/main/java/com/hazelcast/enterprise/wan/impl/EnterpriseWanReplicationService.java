@@ -18,6 +18,7 @@ import com.hazelcast.internal.management.events.Event;
 import com.hazelcast.internal.management.events.WanConfigurationAddedEvent;
 import com.hazelcast.internal.management.events.WanConfigurationExtendedEvent;
 import com.hazelcast.internal.management.events.WanConsistencyCheckIgnoredEvent;
+import com.hazelcast.internal.metrics.DynamicMetricsProvider;
 import com.hazelcast.internal.metrics.MetricDescriptor;
 import com.hazelcast.internal.metrics.MetricsCollectionContext;
 import com.hazelcast.internal.monitor.LocalWanPublisherStats;
@@ -34,6 +35,7 @@ import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.NodeEngine;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
@@ -78,7 +80,8 @@ import static java.util.stream.Collectors.toMap;
  */
 @SuppressWarnings({"checkstyle:methodcount", "checkstyle:classfanoutcomplexity", "checkstyle:classdataabstractioncoupling"})
 public class EnterpriseWanReplicationService implements WanReplicationService, FragmentedMigrationAwareService,
-        PostJoinAwareService, LiveOperationsTracker, ManagedService {
+                                                        PostJoinAwareService, LiveOperationsTracker, ManagedService,
+                                                        DynamicMetricsProvider {
 
     /**
      * Collection of supported WAN protocol versions. In the future, this may
@@ -572,7 +575,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public void init(NodeEngine nodeEngine, Properties properties) {
-        // NOP
+        ((NodeEngineImpl) nodeEngine).getMetricsRegistry().registerDynamicMetricsProvider(this);
     }
 
     @Override
@@ -669,6 +672,10 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     private void provideCounterMetrics(MetricsCollectionContext context, MetricDescriptor publisherDescriptor,
                                        Map<String, DistributedObjectWanEventCounters> sentDsEventCounter,
                                        String dataStructure) {
+        if (sentDsEventCounter == null) {
+            return;
+        }
+
         for (Entry<String, DistributedObjectWanEventCounters> sentCounterStats : sentDsEventCounter.entrySet()) {
             String dataStructureName = sentCounterStats.getKey();
             DistributedObjectWanEventCounters counterStats = sentCounterStats.getValue();

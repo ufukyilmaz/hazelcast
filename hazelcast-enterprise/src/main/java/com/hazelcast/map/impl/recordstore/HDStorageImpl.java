@@ -48,7 +48,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<D
         return recordProcessor;
     }
 
-    //TODO check dispose?
     @Override
     public void removeRecord(Data dataKey, HDRecord record) {
         if (record == null) {
@@ -57,10 +56,16 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<D
 
         HDRecord oldRecord = map.remove(dataKey);
 
+        addDeferredDispose(dataKey);
         addDeferredDispose(oldRecord);
 
-        // TODO key cost?
-        entryCostEstimator.adjustEstimateBy(-entryCostEstimator.calculateValueCost(record));
+        if (dataKey instanceof NativeMemoryData) {
+            long entryCost = entryCostEstimator.calculateEntryCost(((NativeMemoryData) dataKey), record);
+            entryCostEstimator.adjustEstimateBy(-entryCost);
+        } else {
+            long valueCost = entryCostEstimator.calculateValueCost(record);
+            entryCostEstimator.adjustEstimateBy(-valueCost);
+        }
         storageInfo.decreaseEntryCount();
         setEntryCount(map.size());
     }
@@ -218,9 +223,9 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<D
 
     private void addDeferredDispose(Object memoryBlock) {
         if (memoryBlock == null
-                || ((MemoryBlock) memoryBlock).address() == NULL_ADDRESS
                 || memoryBlock instanceof HeapData
-                || !(memoryBlock instanceof MemoryBlock)) {
+                || !(memoryBlock instanceof MemoryBlock)
+                || ((MemoryBlock) memoryBlock).address() == NULL_ADDRESS) {
             return;
         }
 

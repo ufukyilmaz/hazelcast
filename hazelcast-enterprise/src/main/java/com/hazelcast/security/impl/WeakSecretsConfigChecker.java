@@ -68,7 +68,7 @@ public class WeakSecretsConfigChecker {
         }
 
         SymmetricEncryptionConfig sec = ConfigAccessor.getActiveMemberNetworkConfig(config).getSymmetricEncryptionConfig();
-        if (sec != null) {
+        if (sec != null && sec.isEnabled()) {
             EnumSet<WeakSecretError> symEncPwdWeaknesses = getWeaknesses(sec.getPassword());
             if (!symEncPwdWeaknesses.isEmpty()) {
                 result.put("Symmetric Encryption Password", symEncPwdWeaknesses);
@@ -80,11 +80,14 @@ public class WeakSecretsConfigChecker {
             }
         }
 
-        Map<String, String> hotRestartSecrets = getHotRestartSecrets(config.getHotRestartPersistenceConfig());
-        for (Map.Entry<String, String> entry : hotRestartSecrets.entrySet()) {
-            EnumSet<WeakSecretError> weaknesses = getWeaknesses(entry.getValue());
-            if (!weaknesses.isEmpty()) {
-                result.put(entry.getKey(), weaknesses);
+        HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
+        if (hotRestartPersistenceConfig != null && hotRestartPersistenceConfig.isEnabled()) {
+            Map<String, String> hotRestartSecrets = getHotRestartSecrets(hotRestartPersistenceConfig);
+            for (Map.Entry<String, String> entry : hotRestartSecrets.entrySet()) {
+                EnumSet<WeakSecretError> weaknesses = getWeaknesses(entry.getValue());
+                if (!weaknesses.isEmpty()) {
+                    result.put(entry.getKey(), weaknesses);
+                }
             }
         }
 

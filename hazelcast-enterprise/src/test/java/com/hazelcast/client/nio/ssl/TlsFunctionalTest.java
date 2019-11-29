@@ -7,10 +7,9 @@ import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.AdvancedNetworkConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EndpointConfig;
-import com.hazelcast.config.InvalidConfigurationException;
-import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.PermissionConfig;
+import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
@@ -27,7 +26,6 @@ import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.nio.ssl.SSLConnectionTest;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.SlowTest;
-
 import org.junit.After;
 import org.junit.AssumptionViolatedException;
 import org.junit.Before;
@@ -45,11 +43,11 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.cert.CertificateFactory;
-import java.util.Collection;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
 
 import static com.hazelcast.TestEnvironmentUtil.assumeJavaVersionAtLeast;
 import static com.hazelcast.TestEnvironmentUtil.assumeJdk8OrNewer;
@@ -322,7 +320,7 @@ public class TlsFunctionalTest {
      * Then: Client fails to start
      * </pre>
      */
-    @Test(expected = InvalidConfigurationException.class)
+    @Test(expected = IllegalStateException.class)
     public void testUnsupportedClientCipherSuiteNames() throws IOException {
         factory.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();
@@ -586,7 +584,7 @@ public class TlsFunctionalTest {
      * Then: Client fails to start
      * </pre>
      */
-    @Test(expected = HazelcastException.class)
+    @Test(expected = IllegalStateException.class)
     public void testUnsupportedClientProtocolName() throws IOException {
         factory.newHazelcastInstance(createMemberConfig());
         ClientConfig clientConfig = createClientConfig();

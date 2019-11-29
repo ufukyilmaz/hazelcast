@@ -356,6 +356,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             // at this point, the final cluster state should be set on this node
             if (node.getClusterService().getClusterState() != ClusterState.PASSIVE) {
                 waitUntilAllMembersLeavePassiveState();
+                initializeAndPublishProxies();
             }
             logger.info(String.format("Hot Restart procedure completed in %,d seconds",
                     MILLISECONDS.toSeconds(currentTimeMillis() - start)));
@@ -369,6 +370,11 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         } catch (Throwable t) {
             throw new HotRestartException("Hot Restart procedure failed", t);
         }
+    }
+
+    private void initializeAndPublishProxies() {
+        ProxyServiceImpl proxyService = (ProxyServiceImpl) node.getNodeEngine().getProxyService();
+        proxyService.initializeAndPublishProxies();
     }
 
     /**

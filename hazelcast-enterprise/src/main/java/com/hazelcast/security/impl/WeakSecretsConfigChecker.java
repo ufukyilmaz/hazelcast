@@ -56,14 +56,16 @@ public class WeakSecretsConfigChecker {
     public Map<String, EnumSet<WeakSecretError>> evaluate() {
         Map<String, EnumSet<WeakSecretError>> result = new HashMap<String, EnumSet<WeakSecretError>>();
 
-        GroupConfig gc = config.getGroupConfig();
-        EnumSet<WeakSecretError> groupPwdWeaknesses = getWeaknesses(gc.getPassword());
-        if (!groupPwdWeaknesses.isEmpty()) {
-            result.put("Group Password", groupPwdWeaknesses);
+        if (config.getSecurityConfig().isEnabled()) {
+            GroupConfig gc = config.getGroupConfig();
+            EnumSet<WeakSecretError> groupPwdWeaknesses = getWeaknesses(gc.getPassword());
+            if (!groupPwdWeaknesses.isEmpty()) {
+                result.put("Group Password", groupPwdWeaknesses);
+            }
         }
 
         SymmetricEncryptionConfig sec = ConfigAccessor.getActiveMemberNetworkConfig(config).getSymmetricEncryptionConfig();
-        if (sec != null) {
+        if (sec != null && sec.isEnabled()) {
             EnumSet<WeakSecretError> symEncPwdWeaknesses = getWeaknesses(sec.getPassword());
             if (!symEncPwdWeaknesses.isEmpty()) {
                 result.put("Symmetric Encryption Password", getWeaknesses(sec.getPassword()));

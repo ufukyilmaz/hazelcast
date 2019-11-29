@@ -235,8 +235,10 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             hotRestartService.ensureHasConfiguration(MapService.SERVICE_NAME, name, null);
             prefix = hotRestartService.registerRamStore(this, MapService.SERVICE_NAME, name, partitionId);
 
-            ProxyServiceImpl proxyService = (ProxyServiceImpl) nodeEngine.getProxyService();
-            proxyService.getOrCreateRegistry(MapService.SERVICE_NAME).getOrCreateProxyFuture(name, false, false);
+            if (!hotRestartService.isStartCompleted()) {
+                ProxyServiceImpl proxyService = (ProxyServiceImpl) nodeEngine.getProxyService();
+                proxyService.getOrCreateRegistry(MapService.SERVICE_NAME).getOrCreateProxyFuture(name, false, false);
+            }
         }
         return new EnterpriseRecordStore(mapContainer, partitionId, keyLoader, logger, hotRestartConfig, prefix);
     }

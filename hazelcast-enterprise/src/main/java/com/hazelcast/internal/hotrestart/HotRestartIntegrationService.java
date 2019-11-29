@@ -42,6 +42,7 @@ import com.hazelcast.spi.impl.operationexecutor.impl.OperationThread;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
+import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
 
 import java.io.File;
 import java.io.IOException;
@@ -345,6 +346,10 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
             }
             rebuildMerkleTrees();
             clusterMetadataManager.loadCompletedLocal(failure);
+            // at this point, the final cluster state should be set on this node
+            if (node.getClusterService().getClusterState() != ClusterState.PASSIVE) {
+                initializeAndPublishProxies();
+            }
             logger.info(String.format("Hot Restart procedure completed in %,d seconds",
                     MILLISECONDS.toSeconds(currentTimeMillis() - start)));
         } catch (ForceStartException e) {
@@ -357,6 +362,11 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         } catch (Throwable t) {
             throw new HotRestartException("Hot Restart procedure failed", t);
         }
+    }
+
+    private void initializeAndPublishProxies() {
+        ProxyServiceImpl proxyService = (ProxyServiceImpl) node.getNodeEngine().getProxyService();
+        proxyService.initializeAndPublishProxies();
     }
 
     /**

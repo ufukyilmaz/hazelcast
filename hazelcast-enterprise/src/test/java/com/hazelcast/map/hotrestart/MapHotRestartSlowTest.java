@@ -133,6 +133,11 @@ public class MapHotRestartSlowTest extends AbstractMapHotRestartTest {
         }
     }
 
+    /**
+     * This is a "weak" test in the sense that getDistributedObjectNames() does
+     * not exclude uninitialized proxies (as opposed to getDistributedObjects()).
+     * See HotRestartDistributedObjectsTest for a more thorough test.
+     */
     @Test
     public void mapProxy_shouldBeCreated_afterHotRestart() {
         newInstances(clusterSize);
@@ -150,6 +155,11 @@ public class MapHotRestartSlowTest extends AbstractMapHotRestartTest {
         assertEquals(KEY_COUNT, map.size());
     }
 
+    /**
+     * This is a "weak" test in the sense that getDistributedObjectNames() does
+     * not exclude uninitialized proxies (as opposed to getDistributedObjects()).
+     * See HotRestartDistributedObjectsTest for a more thorough test.
+     */
     @Test
     public void mapProxy_shouldBeCreated_afterHotRestart_withIndex() {
         addIndex = true;

@@ -1,5 +1,6 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
+import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.spi.annotation.PrivateApi;
@@ -82,6 +83,16 @@ public abstract class ClusterHotRestartEventListener implements EventListener {
      * @param result result of the cluster wide load operation
      */
     public void onHotRestartDataLoadComplete(HotRestartClusterStartStatus result, Set<UUID> excludedMemberUuids) {
+
+    }
+
+    /**
+     * Called on all nodes once the final custer start decision is made and
+     * all nodes transition to the same final cluster state.
+     *
+     * @param state the final custer state
+     */
+    public void onMembersInFinalState(ClusterState state) {
 
     }
 }

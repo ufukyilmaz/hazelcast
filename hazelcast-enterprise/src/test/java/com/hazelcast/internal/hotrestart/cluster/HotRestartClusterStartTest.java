@@ -1,16 +1,16 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.cluster.ClusterState;
-import com.hazelcast.config.Config;
-import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
-import com.hazelcast.core.IndeterminateOperationStateException;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.cluster.MembershipAdapter;
 import com.hazelcast.cluster.MembershipEvent;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IndeterminateOperationStateException;
 import com.hazelcast.instance.impl.NodeState;
-import com.hazelcast.cluster.Address;
+import com.hazelcast.map.IMap;
 import com.hazelcast.partition.IndeterminateOperationStateExceptionTest.PrimaryOperation;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.test.AssertTask;
@@ -27,18 +27,24 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.LongAdder;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
-import static com.hazelcast.internal.partition.AntiEntropyCorrectnessTest.setBackupPacketDropFilter;
 import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.ALWAYS;
 import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.NEVER;
 import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.SOMETIMES;
+import static com.hazelcast.internal.partition.AntiEntropyCorrectnessTest.setBackupPacketDropFilter;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -376,6 +382,53 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
                 assertTrue(isInstanceInSafeState(instances[0]));
             }
         });
+    }
+
+    @Test
+    public void test_clusterReady_whenFinalClusterState_ACTIVE() {
+        Address[] addresses = startAndTerminateInstances(4);
+        assertMembersWaitUntilClusterReady(addresses, ClusterState.ACTIVE);
+    }
+
+    @Test
+    public void test_clusterReady_whenFinalClusterState_FROZEN() {
+        HazelcastInstance[] instances = startNewInstances(4);
+        assertInstancesJoined(4, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
+        warmUpPartitions(instances);
+        changeClusterStateEventually(instances[0], ClusterState.FROZEN);
+        Address[] addresses = getAddresses(instances);
+        terminateInstances();
+        assertMembersWaitUntilClusterReady(addresses, ClusterState.FROZEN);
+    }
+
+    @Test
+    public void test_clusterReady_whenFinalClusterState_PASSIVE() {
+        HazelcastInstance[] instances = startNewInstances(4);
+        assertInstancesJoined(4, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
+        warmUpPartitions(instances);
+        changeClusterStateEventually(instances[0], ClusterState.PASSIVE);
+        Address[] addresses = getAddresses(instances);
+        terminateInstances();
+        assertMembersWaitUntilClusterReady(addresses, ClusterState.PASSIVE);
+    }
+
+    private void assertMembersWaitUntilClusterReady(Address[] addresses, ClusterState state) {
+        Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<>();
+        ConcurrentMap<ClusterState, LongAdder> states = new ConcurrentHashMap<>();
+        for (Address address : addresses) {
+            listeners.put(address, new ClusterHotRestartEventListener() {
+                @Override
+                public void onMembersInFinalState(ClusterState state) {
+                    states.computeIfAbsent(state, k -> new LongAdder()).increment();
+                }
+            });
+        }
+        HazelcastInstance[] instances = restartInstances(addresses, listeners);
+        assertEquals(1, states.size());
+        LongAdder count = states.get(state);
+        assertNotNull(count);
+        assertEquals(addresses.length, count.intValue());
+        assertInstancesJoined(addresses.length, instances, state == ClusterState.PASSIVE ? NodeState.PASSIVE : NodeState.ACTIVE, state);
     }
 
     @Override

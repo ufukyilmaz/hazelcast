@@ -320,7 +320,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
      * <ul>
      * <li>Starts the metadata manager which validates the cluster metadata loaded from disk</li>
      * <li>Restores the cache descriptors from disk</li>
-     * <li>Loads the hot restart data from disk</li>
+     * <li>Loads the hot restart data from disk and waits for all members to reach the final cluster state</li>
      * <li>Force starts if not all members joined and force start was requested</li>
      * </ul>
      *

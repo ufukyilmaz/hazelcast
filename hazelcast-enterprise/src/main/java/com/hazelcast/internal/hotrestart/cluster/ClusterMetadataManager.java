@@ -1,28 +1,32 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.cluster.ClusterState;
-import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
-import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.cluster.impl.MemberImpl;
+import com.hazelcast.cluster.memberselector.MemberSelectors;
+import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
+import com.hazelcast.config.HotRestartPersistenceConfig;
+import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
+import com.hazelcast.internal.hotrestart.ForceStartException;
+import com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus;
+import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
+import com.hazelcast.internal.util.Clock;
+import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;
+import com.hazelcast.internal.util.concurrent.IdleStrategy;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.cluster.Address;
-import com.hazelcast.internal.nio.IOUtil;
-import com.hazelcast.internal.hotrestart.ForceStartException;
-import com.hazelcast.hotrestart.HotRestartException;
-import com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus;
 import com.hazelcast.spi.impl.executionservice.ExecutionService;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
+import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 import com.hazelcast.spi.properties.ClusterProperty;
-import com.hazelcast.internal.util.Clock;
 import com.hazelcast.version.Version;
 
 import java.io.File;
@@ -41,17 +45,19 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.hazelcast.cluster.memberselector.MemberSelectors.DATA_MEMBER_SELECTOR;
+import static com.hazelcast.cluster.memberselector.MemberSelectors.NON_LOCAL_MEMBER_SELECTOR;
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY;
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE;
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_RECENT;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterVersion;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setMissingMembers;
-import static com.hazelcast.spi.impl.executionservice.ExecutionService.SYSTEM_EXECUTOR;
 import static com.hazelcast.internal.hotrestart.cluster.ClusterStateReader.readClusterState;
 import static com.hazelcast.internal.hotrestart.cluster.ClusterVersionReader.readClusterVersion;
 import static com.hazelcast.internal.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_FAILED;
@@ -61,6 +67,7 @@ import static com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.D
 import static com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_IN_PROGRESS;
 import static com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_SUCCESSFUL;
 import static com.hazelcast.internal.util.ThreadUtil.createThreadName;
+import static com.hazelcast.spi.impl.executionservice.ExecutionService.SYSTEM_EXECUTOR;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.sleep;
@@ -81,6 +88,9 @@ public class ClusterMetadataManager {
 
     private static final String DIR_NAME = "cluster";
     private static final long EXCLUDED_MEMBERS_LEAVE_WAIT_IN_MILLIS = TimeUnit.MINUTES.toMillis(2);
+    private static final long MEMBERS_STATE_WAIT_IN_NANOS = TimeUnit.MINUTES.toNanos(1);
+    private static final long MEMBERS_STATE_BACKOFF_MIN_PARK = MILLISECONDS.toNanos(100);
+    private static final long MEMBERS_STATE_BACKOFF_MAX_PARK = MILLISECONDS.toNanos(1000);
 
     private final Node node;
     private final File homeDir;
@@ -328,6 +338,7 @@ public class ClusterMetadataManager {
             processFinalClusterStartStatus(failure);
             persistMembers();
             persistPartitions();
+            waitUntilAllMembersReachFinalState();
             restoredMembersRef.set(null);
             expectedMembersRef.set(null);
             partitionTableRef.set(null);
@@ -1447,6 +1458,55 @@ public class ClusterMetadataManager {
                 && new File(clusterDir, ClusterStateWriter.FILE_NAME).exists()
                 && new File(clusterDir, PartitionThreadCountWriter.FILE_NAME).exists()
                 && new File(clusterDir, MemberListWriter.FILE_NAME).exists();
+    }
+
+    private void waitUntilAllMembersReachFinalState() {
+        ClusterServiceImpl clusterService = node.getClusterService();
+        long startTimeNanos = System.nanoTime();
+        Collection<Member> members = clusterService
+                .getMembers(MemberSelectors.and(DATA_MEMBER_SELECTOR, NON_LOCAL_MEMBER_SELECTOR));
+        Set<Address> addresses = new HashSet<>(members.size());
+        for (Member member : members) {
+            addresses.add(member.getAddress());
+        }
+        OperationServiceImpl operationService = node.nodeEngine.getOperationService();
+        IdleStrategy idleStrategy = new BackoffIdleStrategy(0, 0, MEMBERS_STATE_BACKOFF_MIN_PARK, MEMBERS_STATE_BACKOFF_MAX_PARK);
+        for (Member member : members) {
+            Address address = member.getAddress();
+            for (int idleCount = 0; (System.nanoTime() - startTimeNanos) < MEMBERS_STATE_WAIT_IN_NANOS; idleCount++) {
+                Future<ClusterState> future = operationService.invokeOnTarget(null, new GetClusterStateOperation(), address);
+                try {
+                    ClusterState memberState = future.get();
+                    if (memberState == clusterState) {
+                        addresses.remove(address);
+                        break;
+                    } else if (memberState != ClusterState.PASSIVE) {
+                        addresses.remove(address);
+                        logger.warning("Member " + address + " in inconsistent cluster state: " + memberState + ", expected: "
+                                + clusterState);
+                        break;
+                    } else {
+                        idleStrategy.idle(idleCount);
+                    }
+                } catch (Exception e) {
+                    logger.warning("Error while checking member state: " + address, e);
+                    break;
+                }
+            }
+        }
+
+        if (addresses.isEmpty()) {
+            logger.info("All cluster members have transitioned to the final cluster state");
+            invokeListenersOnMembersInFinalState();
+        } else {
+            logger.warning("Unable to determine the state of some members within a timeout: " + addresses);
+        }
+    }
+
+    private void invokeListenersOnMembersInFinalState() {
+        for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
+            listener.onMembersInFinalState(clusterState);
+        }
     }
 
     private class ClearMemberClusterStartInfoTask implements Runnable {

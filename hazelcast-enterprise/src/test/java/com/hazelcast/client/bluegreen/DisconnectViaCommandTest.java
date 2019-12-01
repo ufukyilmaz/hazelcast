@@ -370,7 +370,8 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         map.put(1, 1);
         map.get(1);
 
-        NearCache nearCache = getHazelcastClientInstanceImpl(client).getNearCacheManager().getNearCache("map");
+        NearCache nearCache = getHazelcastClientInstanceImpl(client)
+                .getNearCacheManager(map.getServiceName()).getNearCache("map");
         assertEquals(1, nearCache.size());
 
         Set<Member> members = client.getCluster().getMembers();

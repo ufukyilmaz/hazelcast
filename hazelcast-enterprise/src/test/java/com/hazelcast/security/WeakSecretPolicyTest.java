@@ -25,7 +25,7 @@ import static org.junit.Assume.assumeTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class WeakSecretePolicyTest {
+public class WeakSecretPolicyTest {
 
     @Test
     public void invalidLengthShort() {

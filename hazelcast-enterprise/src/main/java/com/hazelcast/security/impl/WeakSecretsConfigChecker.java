@@ -5,6 +5,7 @@ import com.hazelcast.config.ConfigAccessor;
 import com.hazelcast.config.EncryptionAtRestConfig;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.JavaKeyStoreSecureStoreConfig;
+import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SecureStoreConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
@@ -17,6 +18,7 @@ import com.hazelcast.security.WeakSecretException;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import static com.hazelcast.internal.nio.ClassLoaderUtil.newInstance;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
@@ -25,6 +27,7 @@ import static com.hazelcast.security.WeakSecretException.formatMessage;
 import static com.hazelcast.security.impl.SecurityConstants.DEFAULT_SECRET_STRENGTH_POLICY_CLASS;
 import static com.hazelcast.security.impl.SecurityConstants.SECRET_STRENGTH_POLICY_CLASS;
 import static java.lang.System.getProperty;
+import static java.util.Locale.US;
 
 public class WeakSecretsConfigChecker {
 
@@ -87,6 +90,18 @@ public class WeakSecretsConfigChecker {
                 EnumSet<WeakSecretError> weaknesses = getWeaknesses(entry.getValue());
                 if (!weaknesses.isEmpty()) {
                     result.put(entry.getKey(), weaknesses);
+                }
+            }
+        }
+
+        SSLConfig sslConfig = ConfigAccessor.getActiveMemberNetworkConfig(config).getSSLConfig();
+        if (sslConfig != null && sslConfig.isEnabled() && sslConfig.getProperties() != null
+                && !sslConfig.getProperties().isEmpty()) {
+
+            Properties props = sslConfig.getProperties();
+            for (Object key : props.keySet()) {
+                if (((String) key).toLowerCase(US).contains("password")) {
+                    result.put("SSLConfig property[" + key + "]", getWeaknesses(props.getProperty((String) key)));
                 }
             }
         }

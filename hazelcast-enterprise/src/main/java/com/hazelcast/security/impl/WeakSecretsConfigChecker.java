@@ -72,41 +72,54 @@ public class WeakSecretsConfigChecker {
 
         SymmetricEncryptionConfig sec = ConfigAccessor.getActiveMemberNetworkConfig(config).getSymmetricEncryptionConfig();
         if (sec != null && sec.isEnabled()) {
-            EnumSet<WeakSecretError> symEncPwdWeaknesses = getWeaknesses(sec.getPassword());
-            if (!symEncPwdWeaknesses.isEmpty()) {
-                result.put("Symmetric Encryption Password", symEncPwdWeaknesses);
-            }
-
-            EnumSet<WeakSecretError> symEncSaltWeaknesses = getWeaknesses(sec.getSalt());
-            if (!symEncSaltWeaknesses.isEmpty()) {
-                result.put("Symmetric Encryption Salt", symEncSaltWeaknesses);
-            }
+            checkSymmetricEncryptionPasswords(result, sec);
         }
 
         HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
         if (hotRestartPersistenceConfig != null && hotRestartPersistenceConfig.isEnabled()) {
-            Map<String, String> hotRestartSecrets = getHotRestartSecrets(hotRestartPersistenceConfig);
-            for (Map.Entry<String, String> entry : hotRestartSecrets.entrySet()) {
-                EnumSet<WeakSecretError> weaknesses = getWeaknesses(entry.getValue());
-                if (!weaknesses.isEmpty()) {
-                    result.put(entry.getKey(), weaknesses);
-                }
-            }
+            checkHotRestartPasswords(result, hotRestartPersistenceConfig);
         }
 
         SSLConfig sslConfig = ConfigAccessor.getActiveMemberNetworkConfig(config).getSSLConfig();
         if (sslConfig != null && sslConfig.isEnabled() && sslConfig.getProperties() != null
                 && !sslConfig.getProperties().isEmpty()) {
-
-            Properties props = sslConfig.getProperties();
-            for (Object key : props.keySet()) {
-                if (((String) key).toLowerCase(US).contains("password")) {
-                    result.put("SSLConfig property[" + key + "]", getWeaknesses(props.getProperty((String) key)));
-                }
-            }
+            checkSSLConfigPasswords(result, sslConfig);
         }
 
         return result;
+    }
+
+    private void checkSSLConfigPasswords(Map<String, EnumSet<WeakSecretError>> result, SSLConfig sslConfig) {
+        Properties props = sslConfig.getProperties();
+        for (Object key : props.keySet()) {
+            if (((String) key).toLowerCase(US).contains("password")) {
+                result.put("SSLConfig property[" + key + "]", getWeaknesses(props.getProperty((String) key)));
+            }
+        }
+    }
+
+    private void checkHotRestartPasswords(Map<String, EnumSet<WeakSecretError>> result,
+            HotRestartPersistenceConfig hotRestartPersistenceConfig) {
+        Map<String, String> hotRestartSecrets = getHotRestartSecrets(hotRestartPersistenceConfig);
+        for (Map.Entry<String, String> entry : hotRestartSecrets.entrySet()) {
+            EnumSet<WeakSecretError> weaknesses = getWeaknesses(entry.getValue());
+            if (!weaknesses.isEmpty()) {
+                result.put(entry.getKey(), weaknesses);
+            }
+        }
+    }
+
+    private void checkSymmetricEncryptionPasswords(Map<String, EnumSet<WeakSecretError>> result,
+            SymmetricEncryptionConfig sec) {
+        EnumSet<WeakSecretError> symEncPwdWeaknesses = getWeaknesses(sec.getPassword());
+        if (!symEncPwdWeaknesses.isEmpty()) {
+            result.put("Symmetric Encryption Password", symEncPwdWeaknesses);
+        }
+
+        EnumSet<WeakSecretError> symEncSaltWeaknesses = getWeaknesses(sec.getSalt());
+        if (!symEncSaltWeaknesses.isEmpty()) {
+            result.put("Symmetric Encryption Salt", symEncSaltWeaknesses);
+        }
     }
 
     @SuppressWarnings("checkstyle:nestedifdepth")

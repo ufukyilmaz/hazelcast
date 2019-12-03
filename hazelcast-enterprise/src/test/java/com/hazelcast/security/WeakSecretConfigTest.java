@@ -1,7 +1,6 @@
 package com.hazelcast.security;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.ConfigAccessor;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.security.impl.WeakSecretError;

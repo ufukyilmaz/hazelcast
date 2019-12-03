@@ -1,5 +1,6 @@
 package com.hazelcast.client.security;
 
+import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.LoginModuleConfig;
@@ -8,6 +9,7 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.security.JaasAuthenticationConfig;
 import com.hazelcast.config.security.RealmConfig;
+import com.hazelcast.config.security.TokenIdentityConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
@@ -67,6 +69,20 @@ public class ClientSecurityTest {
         client.getMap(testObjectName).size();
         client.getMap(testObjectName).put("a", "b");
         client.getQueue("Q").poll();
+    }
+
+    @Test
+    public void testShortToken() {
+        Properties properties = new Properties();
+        properties.setProperty(TestLoginModule.PROPERTY_PRINCIPALS_ROLE, "admin");
+        properties.setProperty(TestLoginModule.PROPERTY_PRINCIPALS_IDENTITY, "josef");
+        Config config = createTestLoginModuleConfig(properties);
+        addPermission(config, ALL, "", null);
+        factory.newHazelcastInstance(config);
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getSecurityConfig().setTokenIdentityConfig(new TokenIdentityConfig(new byte[1]));
+        HazelcastInstance client = factory.newHazelcastClient(clientConfig);
+        client.getMap(testObjectName).size();
     }
 
     @Test

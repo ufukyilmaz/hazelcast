@@ -2,6 +2,7 @@ package com.hazelcast.client.map.impl.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.impl.clientside.HazelcastClientProxy;
+import com.hazelcast.client.impl.proxy.ClientMapProxy;
 import com.hazelcast.client.impl.spi.ClientContext;
 import com.hazelcast.client.impl.spi.ClientProxy;
 import com.hazelcast.client.test.TestHazelcastFactory;
@@ -110,7 +111,8 @@ public class ClientHDMapNativeNearCacheLeakTest extends AbstractHiDensityNearCac
         HazelcastClientProxy client = (HazelcastClientProxy) factory.newHazelcastClient(clientConfig);
         IMap<K, V> clientMap = client.getMap(DEFAULT_NEAR_CACHE_NAME);
 
-        NearCacheManager nearCacheManager = client.client.getNearCacheManager(clientMap.getServiceName());
+        NearCacheManager nearCacheManager = ((ClientMapProxy) clientMap).getContext()
+                .getNearCacheManager(clientMap.getServiceName());
         NearCache<Data, String> nearCache = nearCacheManager.getNearCache(DEFAULT_NEAR_CACHE_NAME);
 
         ClientContext clientContext = ((ClientProxy) clientMap).getContext();

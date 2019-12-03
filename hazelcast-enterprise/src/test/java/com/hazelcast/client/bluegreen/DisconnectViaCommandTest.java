@@ -5,6 +5,7 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientFailoverConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.impl.ClientSelectors;
+import com.hazelcast.client.impl.proxy.ClientMapProxy;
 import com.hazelcast.client.test.ClientTestSupport;
 import com.hazelcast.client.test.IdentifiedDataSerializableFactory;
 import com.hazelcast.cluster.Address;
@@ -370,7 +371,7 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         map.put(1, 1);
         map.get(1);
 
-        NearCache nearCache = getHazelcastClientInstanceImpl(client)
+        NearCache nearCache = ((ClientMapProxy) map).getContext()
                 .getNearCacheManager(map.getServiceName()).getNearCache("map");
         assertEquals(1, nearCache.size());
 

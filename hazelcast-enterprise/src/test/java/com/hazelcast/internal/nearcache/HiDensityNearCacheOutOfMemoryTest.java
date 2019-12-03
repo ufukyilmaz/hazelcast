@@ -38,7 +38,7 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
         ess = new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
                 .build();
-        nearCacheManager = new HiDensityNearCacheManager(ess, createTaskScheduler(),
+        nearCacheManager = new EnterpriseNearCacheManager(ess, createTaskScheduler(),
                 null, new HazelcastProperties(new Properties()));
     }
 

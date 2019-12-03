@@ -16,7 +16,7 @@ import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.nearcache.HiDensityNearCacheManager;
+import com.hazelcast.internal.nearcache.EnterpriseNearCacheManager;
 import com.hazelcast.internal.nearcache.NearCacheManager;
 import com.hazelcast.internal.networking.ChannelInitializer;
 import com.hazelcast.internal.serialization.InternalSerializationService;
@@ -158,7 +158,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
         ClassLoader classLoader = client.getClientConfig().getClassLoader();
         HazelcastProperties properties = client.getProperties();
 
-        return new HiDensityNearCacheManager(((EnterpriseSerializationService) ss), es, classLoader, properties);
+        return new EnterpriseNearCacheManager(((EnterpriseSerializationService) ss), es, classLoader, properties);
     }
 
     @Override

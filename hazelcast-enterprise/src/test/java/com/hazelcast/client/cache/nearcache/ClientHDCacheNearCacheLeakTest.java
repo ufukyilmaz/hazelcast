@@ -3,6 +3,7 @@ package com.hazelcast.client.cache.nearcache;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.HazelcastServerCacheManager;
+import com.hazelcast.client.cache.impl.ClientCacheProxy;
 import com.hazelcast.client.cache.impl.HazelcastClientCacheManager;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.impl.clientside.HazelcastClientProxy;
@@ -118,7 +119,8 @@ public class ClientHDCacheNearCacheLeakTest extends AbstractHiDensityNearCacheLe
         HazelcastClientCacheManager cacheManager = (HazelcastClientCacheManager) provider.getCacheManager();
         ICache<K, V> clientCache = cacheManager.createCache(DEFAULT_NEAR_CACHE_NAME, cacheConfig);
 
-        NearCacheManager nearCacheManager = client.client.getNearCacheManager(clientCache.getServiceName());
+        NearCacheManager nearCacheManager = ((ClientCacheProxy) clientCache).getContext()
+                .getNearCacheManager(clientCache.getServiceName());
         String cacheNameWithPrefix = cacheManager.getCacheNameWithPrefix(DEFAULT_NEAR_CACHE_NAME);
         NearCache<Data, String> nearCache = nearCacheManager.getNearCache(cacheNameWithPrefix);
 

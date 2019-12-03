@@ -64,7 +64,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
     }
 
     private NearCacheManager newNearCacheManager() {
-        return new HiDensityNearCacheManager(ess, executionService.getGlobalTaskScheduler(), null, properties);
+        return new EnterpriseNearCacheManager(ess, executionService.getGlobalTaskScheduler(), null, properties);
     }
 
     @Override

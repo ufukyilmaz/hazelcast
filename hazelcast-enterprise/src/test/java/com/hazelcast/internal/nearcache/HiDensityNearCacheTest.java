@@ -54,7 +54,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     }
 
     private NearCacheManager newNearCacheManager() {
-        return new HiDensityNearCacheManager(ess,
+        return new EnterpriseNearCacheManager(ess,
                 executionService.getGlobalTaskScheduler(), null, properties);
     }
 
@@ -190,7 +190,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
                                                            HazelcastProperties properties) {
         NearCache<K, V> nearCache = new HiDensityNearCache<K, V>(DEFAULT_NEAR_CACHE_NAME,
                 nearCacheConfig,
-                new HiDensityNearCacheManager(ess, taskScheduler, null, properties),
+                new EnterpriseNearCacheManager(ess, taskScheduler, null, properties),
                 recordStore,
                 ess,
                 taskScheduler,

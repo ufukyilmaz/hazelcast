@@ -20,7 +20,6 @@ import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -38,7 +37,6 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-@Ignore
 public class ClustersWithDifferentSocketInterceptorsTest extends ClientTestSupport {
 
     @After

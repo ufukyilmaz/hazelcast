@@ -39,7 +39,6 @@ import com.hazelcast.topic.ITopic;
 import com.hazelcast.topic.Message;
 import com.hazelcast.topic.MessageListener;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -56,7 +55,6 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-@Ignore
 public class DisconnectViaCommandTest extends ClientTestSupport {
 
     @After

@@ -18,7 +18,6 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -33,7 +32,6 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-@Ignore
 public class ClustersWithDifferentSSLConfig extends ClientTestSupport {
 
     private final String keyStore1 = "com/hazelcast/nio/ssl/hazelcast.keystore";

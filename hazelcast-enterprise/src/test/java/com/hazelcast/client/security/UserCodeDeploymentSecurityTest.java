@@ -8,20 +8,21 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.util.FilteringClassLoader;
+import com.hazelcast.map.IMap;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.internal.util.FilteringClassLoader;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import usercodedeployment.IncrementingEntryProcessor;
+
+import java.security.AccessControlException;
 
 import static com.hazelcast.config.PermissionConfig.PermissionType.MAP;
 import static com.hazelcast.config.PermissionConfig.PermissionType.USER_CODE_DEPLOYMENT;
@@ -42,8 +43,7 @@ public class UserCodeDeploymentSecurityTest {
         factory.terminateAll();
     }
 
-    @Test(expected = IllegalStateException.class)
-    @Ignore
+    @Test(expected = AccessControlException.class)
     public void testUserCodeDeploymentNotAllowed() {
         testUserCodeDeployment(ActionConstants.ACTION_ADD);
     }

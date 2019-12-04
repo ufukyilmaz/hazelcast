@@ -7,17 +7,17 @@ import com.hazelcast.client.config.ClientConnectionStrategyConfig;
 import com.hazelcast.client.config.ClientFailoverConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.test.ClientTestSupport;
+import com.hazelcast.cluster.Address;
+import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.core.LifecycleEvent;
 import com.hazelcast.core.LifecycleListener;
-import com.hazelcast.cluster.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.cluster.Address;
+import com.hazelcast.map.IMap;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -45,62 +45,35 @@ public class FailoverTest extends ClientTestSupport {
 
     @Test
     public void testFailover_readOnlyOperationsRetried() {
-        Config config1 = new Config();
-        config1.setClusterName("dev1");
-        config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-        config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
-        HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
-
-        Config config2 = new Config();
-        config2.setClusterName("dev2");
-        config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-        config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
-
-        HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
-        ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClusterName("dev1");
-        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
-        Member member1 = (Member) instance1.getLocalEndpoint();
-        Address address1 = member1.getAddress();
-        networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
-
-        ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClusterName("dev2");
-        ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
-        Member member2 = (Member) instance2.getLocalEndpoint();
-        Address address2 = member2.getAddress();
-        networkConfig2.setAddresses(Collections.singletonList(address2.getHost() + ":" + address2.getPort()));
+        HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(createConfig("dev1"));
+        HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(createConfig("dev2"));
+        ClientConfig clientConfig = createClientConfig(instance1.getCluster().getLocalMember(), "dev1");
+        ClientConfig clientConfig2 = createClientConfig(instance2.getCluster().getLocalMember(), "dev2");
 
         ClientFailoverConfig clientFailoverConfig = new ClientFailoverConfig();
         clientFailoverConfig.addClientConfig(clientConfig).addClientConfig(clientConfig2);
         HazelcastInstance client = HazelcastClient.newHazelcastFailoverClient(clientFailoverConfig);
 
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        client.getLifecycleService().addLifecycleListener(new LifecycleListener() {
-            @Override
-            public void stateChanged(LifecycleEvent event) {
-                if (LifecycleEvent.LifecycleState.CLIENT_CHANGED_CLUSTER.equals(event.getState())) {
-                    countDownLatch.countDown();
-                }
+        client.getLifecycleService().addLifecycleListener(event -> {
+            if (LifecycleEvent.LifecycleState.CLIENT_CHANGED_CLUSTER.equals(event.getState())) {
+                countDownLatch.countDown();
             }
         });
         Set<Member> members = client.getCluster().getMembers();
         assertEquals(1, members.size());
-        assertContains(members, member1);
+        assertContains(members, instance1.getCluster().getLocalMember());
 
         final IMap<Object, Object> map = client.getMap("test");
 
-        final AtomicReference<Throwable> reference = new AtomicReference<Throwable>();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (countDownLatch.getCount() != 0) {
-                        map.get(1);
-                    }
-                } catch (Exception e) {
-                    reference.set(e);
+        final AtomicReference<Throwable> reference = new AtomicReference<>();
+        new Thread(() -> {
+            try {
+                while (countDownLatch.getCount() != 0) {
+                    map.get(1);
                 }
+            } catch (Exception e) {
+                reference.set(e);
             }
         }).start();
 
@@ -111,22 +84,33 @@ public class FailoverTest extends ClientTestSupport {
 
         members = client.getCluster().getMembers();
         assertEquals(1, members.size());
-        assertContains(members, member2);
+        assertContains(members, instance2.getCluster().getLocalMember());
+    }
+
+    private Config createConfig(String dev1) {
+        Config config1 = new Config();
+        config1.setClusterName(dev1);
+        config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
+        return config1;
+    }
+
+    private ClientConfig createClientConfig(Member member, String clusterName) {
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.setClusterName(clusterName);
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setClusterConnectTimeoutMillis(1000);
+        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
+        Address address = member.getAddress();
+        networkConfig.setAddresses(Collections.singletonList(address.getHost() + ":" + address.getPort()));
+        return clientConfig;
     }
 
     @Test
     public void testOperationsGetOfflineException_clientInReconnectAsyncMode_whenSearchingForNewCluster() {
-        Config config1 = new Config();
-        config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-        config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
-        HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
+        HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(createConfig("dev"));
 
-        ClientConfig clientConfig = new ClientConfig();
+        ClientConfig clientConfig = createClientConfig(instance1.getCluster().getLocalMember(), "dev");
         clientConfig.getConnectionStrategyConfig().setReconnectMode(ClientConnectionStrategyConfig.ReconnectMode.ASYNC);
-        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
-        Member member1 = (Member) instance1.getLocalEndpoint();
-        Address address1 = member1.getAddress();
-        networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
 
 
         ClientFailoverConfig clientFailoverConfig = new ClientFailoverConfig();
@@ -138,18 +122,15 @@ public class FailoverTest extends ClientTestSupport {
 
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final AtomicReference<Class> reference = new AtomicReference<Class>();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (true) {
-                        map.get(1);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    reference.set(e.getClass());
-                    countDownLatch.countDown();
+        new Thread(() -> {
+            try {
+                while (true) {
+                    map.get(1);
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+                reference.set(e.getClass());
+                countDownLatch.countDown();
             }
         }).start();
 
@@ -163,40 +144,20 @@ public class FailoverTest extends ClientTestSupport {
 
     @Test
     public void testFailover_differentPartitionCount_clientShouldClose() {
-        Config config1 = new Config();
-        config1.setClusterName("dev1");
-        config1.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-        config1.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
+        Config config1 = createConfig("dev1");
         HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config1);
 
-        Config config2 = new Config();
+        Config config2 = createConfig("dev2");
         config2.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "2");
-        config2.setClusterName("dev2");
-        config2.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-        config2.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
 
         HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config2);
-        ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setClusterName("dev1");
-        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
-        Member member1 = (Member) instance1.getLocalEndpoint();
-        Address address1 = member1.getAddress();
-        networkConfig.setAddresses(Collections.singletonList(address1.getHost() + ":" + address1.getPort()));
+        ClientConfig clientConfig = createClientConfig(instance1.getCluster().getLocalMember(), "dev1");
+        ClientConfig clientConfig2 = createClientConfig(instance2.getCluster().getLocalMember(), "dev2");
 
-        ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setClusterName("dev2");
-        ClientNetworkConfig networkConfig2 = clientConfig2.getNetworkConfig();
-        Member member2 = (Member) instance2.getLocalEndpoint();
-        Address address2 = member2.getAddress();
-        networkConfig2.setAddresses(Collections.singletonList(address2.getHost() + ":" + address2.getPort()));
-
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
-        ListenerConfig listenerConfig = new ListenerConfig(new LifecycleListener() {
-            @Override
-            public void stateChanged(LifecycleEvent event) {
-                if (LifecycleEvent.LifecycleState.SHUTDOWN.equals(event.getState())) {
-                    countDownLatch.countDown();
-                }
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        ListenerConfig listenerConfig = new ListenerConfig((LifecycleListener) event -> {
+            if (LifecycleEvent.LifecycleState.SHUTDOWN.equals(event.getState())) {
+                countDownLatch.countDown();
             }
         });
         clientConfig.addListenerConfig(listenerConfig);
@@ -209,7 +170,7 @@ public class FailoverTest extends ClientTestSupport {
 
         Set<Member> members = client.getCluster().getMembers();
         assertEquals(1, members.size());
-        assertContains(members, member1);
+        assertContains(members, instance1.getCluster().getLocalMember());
 
         instance1.shutdown();
 

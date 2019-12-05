@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan.impl.sync;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
-import com.hazelcast.enterprise.wan.impl.WanSyncType;
+import com.hazelcast.wan.impl.WanSyncType;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;

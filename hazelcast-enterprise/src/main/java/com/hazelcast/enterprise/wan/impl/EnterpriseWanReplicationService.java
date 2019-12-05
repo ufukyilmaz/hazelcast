@@ -55,6 +55,7 @@ import com.hazelcast.wan.impl.WanEventCounters;
 import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import com.hazelcast.wan.impl.WanSyncStats;
+import com.hazelcast.wan.impl.WanSyncType;
 
 import java.util.Collection;
 import java.util.Collections;

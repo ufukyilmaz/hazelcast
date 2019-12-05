@@ -699,9 +699,9 @@ public abstract class AbstractWanPublisher implements
 
     /**
      * Returns the WAN configuration context for the configuration used to
-     * instantiate this publisher.
+     * instantiate this publisher. Public for testing.
      */
-    WanConfigurationContext getConfigurationContext() {
+    public WanConfigurationContext getConfigurationContext() {
         return configurationContext;
     }
 

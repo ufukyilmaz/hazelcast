@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
-import com.hazelcast.enterprise.wan.impl.WanSyncType;
+import com.hazelcast.wan.impl.WanSyncType;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.sync.GetMapPartitionDataOperation;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventResult;

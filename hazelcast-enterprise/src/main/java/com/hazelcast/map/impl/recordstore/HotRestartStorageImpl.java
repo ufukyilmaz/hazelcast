@@ -14,7 +14,6 @@ import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.nio.serialization.Data;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -113,11 +112,6 @@ public class HotRestartStorageImpl<R extends Record>
     @Override
     public final boolean containsKey(Data key) {
         return storage.containsKey(key);
-    }
-
-    @Override
-    public Collection<R> values() {
-        return storage.values();
     }
 
     @Override

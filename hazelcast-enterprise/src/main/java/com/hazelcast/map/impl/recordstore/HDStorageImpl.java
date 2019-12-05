@@ -19,7 +19,6 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.serialization.Data;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -163,11 +162,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<D
 
     private void setEntryCount(int value) {
         entryCount = value;
-    }
-
-    @Override
-    public Collection<HDRecord> values() {
-        return map.values();
     }
 
     @Override

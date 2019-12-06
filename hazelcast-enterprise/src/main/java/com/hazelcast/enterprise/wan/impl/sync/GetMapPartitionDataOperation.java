@@ -5,7 +5,7 @@ import com.hazelcast.internal.util.SetUtil;
 import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
 
 import java.util.Set;

@@ -19,7 +19,7 @@ import com.hazelcast.map.impl.operation.MergeOperation;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.query.PredicateBuilder.EntryObject;
 import com.hazelcast.query.Predicates;

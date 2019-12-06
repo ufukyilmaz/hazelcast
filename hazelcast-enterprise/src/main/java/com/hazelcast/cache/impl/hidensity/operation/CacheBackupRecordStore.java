@@ -1,6 +1,6 @@
 package com.hazelcast.cache.impl.hidensity.operation;
 
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import java.util.ArrayList;
 import java.util.List;

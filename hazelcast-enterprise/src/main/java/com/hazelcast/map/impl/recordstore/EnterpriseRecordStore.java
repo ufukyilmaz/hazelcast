@@ -20,7 +20,7 @@ import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.map.impl.wan.MerkleTreeUpdaterMutationObserver;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.OperationService;

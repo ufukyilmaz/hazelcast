@@ -7,7 +7,7 @@ import com.hazelcast.internal.eviction.impl.strategy.sampling.SampleableEvictabl
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 /**
  * @param <R> type of the {@link HiDensityRecord} to be stored

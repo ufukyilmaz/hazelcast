@@ -5,7 +5,7 @@ import com.hazelcast.internal.elastic.map.NativeMemoryDataAccessor;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.memory.MemoryBlock;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
 import java.util.Map;

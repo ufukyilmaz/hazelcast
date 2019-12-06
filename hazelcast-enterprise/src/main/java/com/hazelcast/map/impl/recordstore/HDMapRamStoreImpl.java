@@ -14,7 +14,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 

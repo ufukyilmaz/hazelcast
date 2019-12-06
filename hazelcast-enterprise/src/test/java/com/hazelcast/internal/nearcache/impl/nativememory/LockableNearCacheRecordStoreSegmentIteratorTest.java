@@ -3,7 +3,7 @@ package com.hazelcast.internal.nearcache.impl.nativememory;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

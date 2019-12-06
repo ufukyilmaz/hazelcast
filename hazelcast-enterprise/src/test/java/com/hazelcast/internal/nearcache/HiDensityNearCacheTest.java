@@ -15,7 +15,7 @@ import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.nearcache.HDNearCacheTest;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.annotation.QuickTest;

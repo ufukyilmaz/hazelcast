@@ -30,7 +30,7 @@ import com.hazelcast.internal.util.comparators.NativeValueComparator;
 import com.hazelcast.internal.util.comparators.ValueComparator;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;

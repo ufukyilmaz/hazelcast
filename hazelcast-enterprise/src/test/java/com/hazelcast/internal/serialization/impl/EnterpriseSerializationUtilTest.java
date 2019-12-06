@@ -2,7 +2,7 @@ package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.internal.nio.EnterpriseObjectDataInput;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.test.HazelcastParallelClassRunner;

@@ -1,5 +1,6 @@
 package com.hazelcast.nio.serialization;
 
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.test.HazelcastSerialClassRunner;

@@ -15,7 +15,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import java.util.AbstractCollection;
 import java.util.AbstractSet;

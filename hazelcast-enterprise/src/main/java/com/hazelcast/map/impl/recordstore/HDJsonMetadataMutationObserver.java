@@ -3,7 +3,7 @@ package com.hazelcast.map.impl.recordstore;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.MetadataInitializer;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.query.impl.Metadata;
 
 public class HDJsonMetadataMutationObserver

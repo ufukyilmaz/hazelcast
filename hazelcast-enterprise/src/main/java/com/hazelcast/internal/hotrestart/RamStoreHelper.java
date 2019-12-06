@@ -3,7 +3,7 @@ package com.hazelcast.internal.hotrestart;
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
 
 import java.nio.ByteBuffer;

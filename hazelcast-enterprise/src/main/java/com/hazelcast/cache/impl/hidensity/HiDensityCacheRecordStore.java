@@ -5,7 +5,7 @@ import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordStore;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.Map;

@@ -12,7 +12,7 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import java.util.Iterator;
 import java.util.Map;

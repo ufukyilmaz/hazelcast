@@ -1,7 +1,7 @@
 package com.hazelcast.internal.nio;
 
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
@@ -15,23 +15,23 @@ import java.io.IOException;
 public interface EnterpriseObjectDataInput extends ObjectDataInput {
 
     /**
-     * Reads {@link com.hazelcast.nio.serialization.Data}
+     * Reads {@link Data}
      * as given {@link DataType}.
      *
-     * @param type the type of the {@link com.hazelcast.nio.serialization.Data} to be read
-     * @return the read {@link com.hazelcast.nio.serialization.Data}
+     * @param type the type of the {@link Data} to be read
+     * @return the read {@link Data}
      * @throws IOException
      */
     Data readData(DataType type) throws IOException;
 
     /**
-     * Tries to read {@link com.hazelcast.nio.serialization.Data}
+     * Tries to read {@link Data}
      * as given {@link DataType}.
      * If it fails for some reason (such as OOME for native memory data)
      * reads the data to heap.
      *
-     * @param type the type of the {@link com.hazelcast.nio.serialization.Data} to be read
-     * @return the read {@link com.hazelcast.nio.serialization.Data}
+     * @param type the type of the {@link Data} to be read
+     * @return the read {@link Data}
      * @throws IOException
      */
     Data tryReadData(DataType type) throws IOException;

@@ -6,7 +6,7 @@ import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.SerializationServiceBuilder;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;

@@ -15,7 +15,7 @@ import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
 import com.hazelcast.map.impl.wan.MapFilterProvider;
 import com.hazelcast.map.wan.MapWanEventFilter;
 import com.hazelcast.cluster.Address;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.NodeEngine;

@@ -11,7 +11,7 @@ import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.internal.services.ReplicationSupportingService;
 import com.hazelcast.internal.util.ExceptionUtil;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.Operation;

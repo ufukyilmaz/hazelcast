@@ -15,7 +15,7 @@ import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.nearcache.NearCacheStats;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Iterator;

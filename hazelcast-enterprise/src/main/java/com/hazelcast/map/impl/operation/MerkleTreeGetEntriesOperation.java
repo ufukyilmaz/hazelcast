@@ -9,7 +9,7 @@ import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;

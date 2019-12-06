@@ -2,7 +2,7 @@ package com.hazelcast.cache.impl.hidensity.operation;
 
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.impl.operations.PartitionAwareOperationFactory;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;

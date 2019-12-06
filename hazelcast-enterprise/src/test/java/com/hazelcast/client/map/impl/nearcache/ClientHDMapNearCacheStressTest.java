@@ -12,7 +12,7 @@ import com.hazelcast.internal.nearcache.NearCache;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.After;

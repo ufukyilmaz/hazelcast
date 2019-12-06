@@ -7,7 +7,7 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.wan.impl.InternalWanReplicationEvent;
 
 import java.util.concurrent.atomic.AtomicLong;

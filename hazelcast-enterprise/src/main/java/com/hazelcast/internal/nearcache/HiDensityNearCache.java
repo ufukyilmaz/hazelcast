@@ -8,7 +8,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.properties.HazelcastProperties;

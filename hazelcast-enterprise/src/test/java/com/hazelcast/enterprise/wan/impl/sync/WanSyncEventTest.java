@@ -4,7 +4,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.wan.impl.WanSyncType;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.ParallelJVMTest;

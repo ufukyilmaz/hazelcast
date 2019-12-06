@@ -13,7 +13,7 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.memory.StandardMemoryManager;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;

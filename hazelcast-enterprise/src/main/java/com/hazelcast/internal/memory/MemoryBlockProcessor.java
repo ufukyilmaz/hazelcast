@@ -1,6 +1,6 @@
 package com.hazelcast.internal.memory;
 
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 
 /**

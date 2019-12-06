@@ -3,7 +3,7 @@ package com.hazelcast.internal.elastic.map;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.memory.MemoryBlock;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;

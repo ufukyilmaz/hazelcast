@@ -3,7 +3,7 @@ package com.hazelcast.cache.impl.hidensity.nativememory;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import javax.cache.expiry.ExpiryPolicy;
 

@@ -5,7 +5,7 @@ import com.hazelcast.internal.nio.BufferObjectDataOutput;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.util.collection.ArrayUtils;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.nio.ByteOrder;

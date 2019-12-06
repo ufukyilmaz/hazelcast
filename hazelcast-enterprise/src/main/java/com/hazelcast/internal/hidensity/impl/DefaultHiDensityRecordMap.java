@@ -7,7 +7,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import java.util.Map;
 

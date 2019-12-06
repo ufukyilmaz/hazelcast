@@ -32,7 +32,7 @@ import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
 import com.hazelcast.internal.monitor.LocalWanPublisherStats;
 import com.hazelcast.internal.monitor.LocalWanStats;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.OperationFactory;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.merge.HigherHitsMergePolicy;

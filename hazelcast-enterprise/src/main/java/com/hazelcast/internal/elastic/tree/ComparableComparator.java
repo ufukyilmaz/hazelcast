@@ -3,7 +3,7 @@ package com.hazelcast.internal.elastic.tree;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.memory.MemoryBlock;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.Comparables;
 

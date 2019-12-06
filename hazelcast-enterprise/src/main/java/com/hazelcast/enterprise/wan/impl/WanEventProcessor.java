@@ -6,7 +6,7 @@ import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.services.ReplicationSupportingService;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;

@@ -11,7 +11,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
 import com.hazelcast.internal.nio.Disposable;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.Comparables;
 

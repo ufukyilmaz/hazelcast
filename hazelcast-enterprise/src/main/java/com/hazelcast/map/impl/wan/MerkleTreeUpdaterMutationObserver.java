@@ -6,7 +6,7 @@ import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.MutationObserver;
 import com.hazelcast.map.impl.recordstore.RecordStore;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
 import javax.annotation.Nonnull;

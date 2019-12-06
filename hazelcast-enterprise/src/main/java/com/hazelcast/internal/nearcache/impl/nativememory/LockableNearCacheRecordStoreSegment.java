@@ -1,6 +1,6 @@
 package com.hazelcast.internal.nearcache.impl.nativememory;
 
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import java.util.Iterator;
 

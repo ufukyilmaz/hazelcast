@@ -2,7 +2,7 @@ package com.hazelcast.cache.impl.hidensity.operation;
 
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;

@@ -2,7 +2,7 @@ package com.hazelcast.cache.impl.hidensity;
 
 import com.hazelcast.cache.impl.record.SampleableCacheRecordMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordMap;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 /**
  * @param <R> Type of the cache record stored in this cache record map.

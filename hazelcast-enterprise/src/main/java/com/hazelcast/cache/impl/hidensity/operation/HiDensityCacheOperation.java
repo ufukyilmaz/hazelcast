@@ -9,7 +9,7 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.internal.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.operationservice.BackupOperation;

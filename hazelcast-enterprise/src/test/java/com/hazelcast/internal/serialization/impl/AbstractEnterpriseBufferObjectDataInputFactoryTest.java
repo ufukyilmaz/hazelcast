@@ -4,7 +4,7 @@ import com.hazelcast.internal.serialization.InputOutputFactory;
 import com.hazelcast.internal.nio.BufferObjectDataInput;
 import com.hazelcast.internal.nio.BufferObjectDataOutput;
 import com.hazelcast.internal.nio.EnterpriseBufferObjectDataInput;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import org.junit.After;
 import org.junit.Before;

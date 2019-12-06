@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 /**
  * Provides transient versions of the modifying storage

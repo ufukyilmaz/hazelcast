@@ -17,7 +17,7 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.internal.partition.IPartition;

@@ -4,7 +4,7 @@ import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 

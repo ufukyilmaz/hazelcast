@@ -5,7 +5,7 @@ import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.impl.KeyOffHeap;
 

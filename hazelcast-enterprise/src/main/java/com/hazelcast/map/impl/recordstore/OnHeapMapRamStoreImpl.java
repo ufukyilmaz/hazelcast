@@ -10,7 +10,7 @@ import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 /**
  * On heap map's RamStore implementation. A map is on heap if it's

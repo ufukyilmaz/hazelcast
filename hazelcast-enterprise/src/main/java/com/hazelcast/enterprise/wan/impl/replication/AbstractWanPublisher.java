@@ -30,7 +30,7 @@ import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.internal.monitor.LocalWanPublisherStats;
 import com.hazelcast.internal.monitor.impl.LocalWanPublisherStatsImpl;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.wan.DistributedServiceWanEventCounters;

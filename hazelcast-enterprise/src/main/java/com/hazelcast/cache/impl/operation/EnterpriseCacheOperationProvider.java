@@ -1,7 +1,7 @@
 package com.hazelcast.cache.impl.operation;
 
 import com.hazelcast.cache.impl.DefaultOperationProvider;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;

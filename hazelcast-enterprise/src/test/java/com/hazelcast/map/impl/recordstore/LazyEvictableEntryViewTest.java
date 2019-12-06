@@ -6,7 +6,7 @@ import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.record.HDRecord;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationexecutor.OperationRunner;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationQueue;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationQueueImpl;

@@ -10,7 +10,7 @@ import com.hazelcast.map.impl.recordstore.HDStorageSCHM;
 import com.hazelcast.map.impl.recordstore.HotRestartHDStorageImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.Storage;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.eviction.EvictionPolicyComparator;
 
 import java.util.Iterator;

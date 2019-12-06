@@ -32,7 +32,7 @@ import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.wan.MapFilterProvider;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.query.impl.HDIndexProvider;
 import com.hazelcast.query.impl.IndexProvider;
 import com.hazelcast.query.impl.predicates.QueryOptimizer;

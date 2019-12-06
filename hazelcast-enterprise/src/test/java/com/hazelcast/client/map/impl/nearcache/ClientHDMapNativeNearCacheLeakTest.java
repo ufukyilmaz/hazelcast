@@ -26,7 +26,7 @@ import com.hazelcast.internal.nearcache.NearCacheTestContextBuilder;
 import com.hazelcast.internal.nearcache.impl.invalidation.RepairingTask;
 import com.hazelcast.map.IMap;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;

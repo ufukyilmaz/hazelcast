@@ -1,7 +1,7 @@
 package com.hazelcast.internal.nearcache.impl.nativememory;
 
 import com.hazelcast.core.HazelcastException;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import java.io.Closeable;
 import java.io.IOException;

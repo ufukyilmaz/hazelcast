@@ -1,6 +1,6 @@
 package com.hazelcast.cache.impl.hidensity.operation;
 
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.BackupAwareOperation;
 
 abstract class BackupAwareKeyBasedHiDensityCacheOperation

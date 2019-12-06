@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import static com.hazelcast.internal.util.Preconditions.checkNotNull;
 

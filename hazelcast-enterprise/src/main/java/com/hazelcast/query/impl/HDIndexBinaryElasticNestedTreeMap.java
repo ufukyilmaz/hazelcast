@@ -9,7 +9,7 @@ import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 
 import java.util.Map;
 import java.util.Set;

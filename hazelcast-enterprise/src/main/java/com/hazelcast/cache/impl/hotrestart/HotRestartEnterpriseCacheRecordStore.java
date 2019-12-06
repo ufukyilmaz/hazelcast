@@ -12,7 +12,7 @@ import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.util.Clock;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngine;
 
 import java.util.UUID;

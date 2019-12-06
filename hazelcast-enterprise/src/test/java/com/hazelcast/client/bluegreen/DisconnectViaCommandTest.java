@@ -12,7 +12,6 @@ import com.hazelcast.cluster.Address;
 import com.hazelcast.cluster.InitialMembershipEvent;
 import com.hazelcast.cluster.InitialMembershipListener;
 import com.hazelcast.cluster.Member;
-import com.hazelcast.cluster.MemberAttributeEvent;
 import com.hazelcast.cluster.MembershipEvent;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InvalidConfigurationException;
@@ -167,11 +166,6 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
 
             @Override
             public void memberRemoved(MembershipEvent membershipEvent) {
-                otherEvents.incrementAndGet();
-            }
-
-            @Override
-            public void memberAttributeChanged(MemberAttributeEvent memberAttributeEvent) {
                 otherEvents.incrementAndGet();
             }
         });
@@ -372,7 +366,7 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         map.get(1);
 
         NearCache nearCache = ((ClientMapProxy) map).getContext()
-                .getNearCacheManager(map.getServiceName()).getNearCache("map");
+                                                    .getNearCacheManager(map.getServiceName()).getNearCache("map");
         assertEquals(1, nearCache.size());
 
         Set<Member> members = client.getCluster().getMembers();

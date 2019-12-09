@@ -93,9 +93,9 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
 
     private Config createConfigWithWAN(String wanConfigName) {
         Config hzConfig = makeConfig();
-        WanReplicationConfig wanConfig = new WanReplicationConfig();
-        wanConfig.setName(wanConfigName);
-        hzConfig.addWanReplicationConfig(wanConfig);
+        WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
+        wanReplicationConfig.setName(wanConfigName);
+        hzConfig.addWanReplicationConfig(wanReplicationConfig);
         hzConfig.addCacheConfig(createCacheConfigWithWAN(wanConfigName));
         return hzConfig;
     }

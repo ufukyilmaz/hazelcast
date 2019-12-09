@@ -1,11 +1,11 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.config.AbstractWanPublisherConfig;
+import com.hazelcast.config.WanBatchPublisherConfig;
+import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.internal.config.AliasedDiscoveryConfigUtils;
 import com.hazelcast.config.DiscoveryConfig;
 import com.hazelcast.config.InvalidConfigurationException;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
-import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.discovery.StaticDiscoveryProperties;
 import com.hazelcast.enterprise.wan.impl.discovery.StaticDiscoveryStrategy;
@@ -31,7 +31,7 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
 
     @Override
     public void init(WanReplicationConfig wanReplicationConfig, AbstractWanPublisherConfig publisherConfig) {
-        WanBatchReplicationPublisherConfig batchReplicationConfig = (WanBatchReplicationPublisherConfig) publisherConfig;
+        WanBatchPublisherConfig batchReplicationConfig = (WanBatchPublisherConfig) publisherConfig;
         super.init(wanReplicationConfig, publisherConfig);
 
         this.discoveryService = checkNotNull(createDiscoveryService(batchReplicationConfig));
@@ -41,7 +41,7 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
         this.connectionManager.init(configurationContext);
     }
 
-    private DiscoveryService createDiscoveryService(WanBatchReplicationPublisherConfig config) {
+    private DiscoveryService createDiscoveryService(WanBatchPublisherConfig config) {
         final String endpoints = configurationContext.getEndpoints();
         final DiscoveryConfig discoveryConfig = config.getDiscoveryConfig();
         final boolean endpointsConfigured = !isNullOrEmpty(endpoints);

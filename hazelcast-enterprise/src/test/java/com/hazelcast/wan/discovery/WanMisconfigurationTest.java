@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.DiscoveryConfig;
 import com.hazelcast.config.DiscoveryStrategyConfig;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
+import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.config.properties.PropertyDefinition;
@@ -46,12 +46,12 @@ public class WanMisconfigurationTest extends HazelcastTestSupport {
     protected Config getConfig() {
         DiscoveryConfig discoveryConfig = new DiscoveryConfig();
         discoveryConfig.addDiscoveryStrategyConfig(new DiscoveryStrategyConfig(discoveryStrategyFactory));
-        WanBatchReplicationPublisherConfig pc = new WanBatchReplicationPublisherConfig()
+        WanBatchPublisherConfig pc = new WanBatchPublisherConfig()
                 .setDiscoveryConfig(discoveryConfig)
                 .setTargetEndpoints("lala");
-        final WanReplicationConfig wanConfig = new WanReplicationConfig()
+        final WanReplicationConfig wanReplicationConfig = new WanReplicationConfig()
                 .setName(wanReplicationName)
-                .addWanBatchReplicationPublisherConfig(pc);
+                .addBatchReplicationPublisherConfig(pc);
         final WanReplicationRef wanReplicationRef = new WanReplicationRef()
                 .setName(wanReplicationName)
                 .setMergePolicy(PassThroughMergePolicy.class.getName());
@@ -60,7 +60,7 @@ public class WanMisconfigurationTest extends HazelcastTestSupport {
                 .setWanReplicationRef(wanReplicationRef);
         return super.getConfig()
                 .addMapConfig(mapConfig)
-                .addWanReplicationConfig(wanConfig);
+                .addWanReplicationConfig(wanReplicationConfig);
     }
 
     @Before

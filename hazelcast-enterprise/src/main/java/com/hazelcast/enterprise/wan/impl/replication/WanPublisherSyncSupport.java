@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
-import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapEvent;
 import com.hazelcast.wan.impl.WanSyncStats;
 import com.hazelcast.wan.impl.ConsistencyCheckResult;
 
@@ -51,5 +51,5 @@ public interface WanPublisherSyncSupport {
      *
      * @param sync WAN sync event
      */
-    void removeReplicationEvent(EnterpriseMapReplicationObject sync);
+    void removeReplicationEvent(WanEnterpriseMapEvent sync);
 }

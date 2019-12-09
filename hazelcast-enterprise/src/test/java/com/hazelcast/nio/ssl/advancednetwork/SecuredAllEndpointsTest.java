@@ -4,9 +4,9 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
-import com.hazelcast.config.WanQueueFullBehavior;
+import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -214,12 +214,12 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
     private static void addCommonWanReplication(Config config, int port) {
         WanReplicationConfig wrConfig = new WanReplicationConfig();
         wrConfig.setName("my-wan-cluster");
-        WanBatchReplicationPublisherConfig pc = createWanPublisherConfig(
+        WanBatchPublisherConfig pc = createWanPublisherConfig(
                 "dev",
                 "127.0.0.1:" + port,
                 ConsistencyCheckStrategy.NONE
         );
-        wrConfig.addWanBatchReplicationPublisherConfig(pc);
+        wrConfig.addBatchReplicationPublisherConfig(pc);
 
         config.addWanReplicationConfig(wrConfig);
 
@@ -231,10 +231,10 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
         config.getMapConfig(REPLICATED_MAP).setWanReplicationRef(wanRef);
     }
 
-    private static WanBatchReplicationPublisherConfig createWanPublisherConfig(String clusterName,
-                                                                               String endpoints,
-                                                                               ConsistencyCheckStrategy consistencyStrategy) {
-        WanBatchReplicationPublisherConfig pc = new WanBatchReplicationPublisherConfig()
+    private static WanBatchPublisherConfig createWanPublisherConfig(String clusterName,
+                                                                    String endpoints,
+                                                                    ConsistencyCheckStrategy consistencyStrategy) {
+        WanBatchPublisherConfig pc = new WanBatchPublisherConfig()
                 .setEndpoint("WAN")
                 .setClusterName(clusterName)
                 .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
@@ -246,7 +246,7 @@ public class SecuredAllEndpointsTest extends AbstractSecuredAllEndpointsTest {
                 .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
                 .setTargetEndpoints(endpoints)
                 .setDiscoveryPeriodSeconds(20);
-        pc.getWanSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);
+        pc.getSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);
         return pc;
     }
 

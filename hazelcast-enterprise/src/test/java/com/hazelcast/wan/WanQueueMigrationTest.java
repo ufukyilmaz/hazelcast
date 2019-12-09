@@ -14,7 +14,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.wan.WanReplicationTestSupport.assertWanQueueSizesEventually;
+import static com.hazelcast.wan.WanTestSupport.assertWanQueueSizesEventually;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;

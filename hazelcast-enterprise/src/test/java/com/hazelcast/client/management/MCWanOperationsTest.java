@@ -10,22 +10,22 @@ import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
+import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.config.WanSyncConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WanPublisherState;
-import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.wan.WanPublisher;
 import com.hazelcast.wan.impl.AddWanConfigResult;
-import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
+import com.hazelcast.wan.impl.DelegatingWanScheme;
 
 import org.junit.After;
 import org.junit.Before;
@@ -158,13 +158,13 @@ public class MCWanOperationsTest extends HazelcastTestSupport {
         assertEquals(publisherId, result.getAddedPublisherIds().iterator().next());
         assertTrue(result.getIgnoredPublisherIds().isEmpty());
 
-        DelegatingWanReplicationScheme wanReplicationScheme = getNodeEngineImpl(hazelcastInstances[0])
+        DelegatingWanScheme wanReplicationScheme = getNodeEngineImpl(hazelcastInstances[0])
                 .getWanReplicationService().getWanReplicationPublishers(wanReplicationName);
         assertEquals(1, wanReplicationScheme.getPublishers().size());
-        WanReplicationPublisher publisher = wanReplicationScheme.getPublisher(publisherId);
+        WanPublisher publisher = wanReplicationScheme.getPublisher(publisherId);
         assertNotNull(publisher);
-        assertTrue(publisher instanceof WanBatchReplication);
-        WanBatchReplication batchReplication = (WanBatchReplication) publisher;
+        assertTrue(publisher instanceof WanBatchPublisher);
+        WanBatchPublisher batchReplication = (WanBatchPublisher) publisher;
         assertEquals(1, batchReplication.getTargetEndpoints().size());
         assertEquals(address, batchReplication.getTargetEndpoints().get(0).getInetSocketAddress());
         assertEquals(batchSize, batchReplication.getConfigurationContext().getBatchSize());
@@ -172,7 +172,7 @@ public class MCWanOperationsTest extends HazelcastTestSupport {
         assertEquals(responseTimeoutMillis, batchReplication.getConfigurationContext().getResponseTimeoutMillis());
         assertEquals(ackType, batchReplication.getConfigurationContext().getAcknowledgeType());
 
-        WanBatchReplicationPublisherConfig publisherConfig =
+        WanBatchPublisherConfig publisherConfig =
                 batchReplication.getConfigurationContext().getPublisherConfig();
         assertEquals(queueFullBehaviour, publisherConfig.getQueueFullBehavior());
         assertEquals(queueCapacity, publisherConfig.getQueueCapacity());
@@ -231,7 +231,7 @@ public class MCWanOperationsTest extends HazelcastTestSupport {
                 .pause(WAN_REPLICATION_NAME, WAN_PUBLISHER_ID);
 
         assertTrueEventually(() -> {
-            WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(instance)
+            WanBatchPublisher endpoint = (WanBatchPublisher) wanReplicationService(instance)
                     .getPublisherOrFail(WAN_REPLICATION_NAME, WAN_PUBLISHER_ID);
             assertFalse(endpoint.getReplicationStrategy().hasOngoingReplication());
         });
@@ -254,13 +254,13 @@ public class MCWanOperationsTest extends HazelcastTestSupport {
 
         WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
         wanReplicationConfig.setName(WAN_REPLICATION_NAME);
-        WanBatchReplicationPublisherConfig publisherConfig = new WanBatchReplicationPublisherConfig();
+        WanBatchPublisherConfig publisherConfig = new WanBatchPublisherConfig();
         publisherConfig.setPublisherId(WAN_PUBLISHER_ID);
         publisherConfig.setClusterName(targetClusterConfig.getClusterName());
         publisherConfig.setTargetEndpoints(addressAsString(socketAddress));
-        publisherConfig.setWanSyncConfig(
+        publisherConfig.setSyncConfig(
                 new WanSyncConfig().setConsistencyCheckStrategy(ConsistencyCheckStrategy.MERKLE_TREES));
-        wanReplicationConfig.addWanBatchReplicationPublisherConfig(publisherConfig);
+        wanReplicationConfig.addBatchReplicationPublisherConfig(publisherConfig);
 
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(WAN_REPLICATION_NAME);

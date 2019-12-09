@@ -1,26 +1,26 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
-import com.hazelcast.internal.services.ReplicationSupportingService;
+import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerOperation;
+import com.hazelcast.internal.services.WanSupportingService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanEvent;
 
 import java.util.Set;
 
 /**
- * Class responsible for processing received {@link WanReplicationEvent}s
- * and notifying the {@link WanOperation} of its completion.
+ * Class responsible for processing received {@link WanEvent}s
+ * and notifying the {@link WanEventContainerOperation} of its completion.
  */
 class WanEventRunnable extends AbstractWanEventRunnable {
-    private final WanReplicationEvent event;
+    private final WanEvent event;
     private final NodeEngine nodeEngine;
     private final Set<Operation> liveOperations;
     private final ILogger logger;
 
-    WanEventRunnable(WanReplicationEvent event,
-                     WanOperation operation,
+    WanEventRunnable(WanEvent event,
+                     WanEventContainerOperation operation,
                      int partitionId,
                      NodeEngine nodeEngine,
                      Set<Operation> liveOperations,
@@ -36,7 +36,7 @@ class WanEventRunnable extends AbstractWanEventRunnable {
     public void run() {
         try {
             final String serviceName = event.getServiceName();
-            final ReplicationSupportingService service = nodeEngine.getService(serviceName);
+            final WanSupportingService service = nodeEngine.getService(serviceName);
             service.onReplicationEvent(event, operation.getAcknowledgeType());
             operation.sendResponse(true);
         } catch (Exception e) {

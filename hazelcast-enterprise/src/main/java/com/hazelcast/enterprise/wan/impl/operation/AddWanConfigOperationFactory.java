@@ -21,8 +21,8 @@ public class AddWanConfigOperationFactory implements OperationFactory {
     public AddWanConfigOperationFactory() {
     }
 
-    public AddWanConfigOperationFactory(WanReplicationConfig wanConfig) {
-        this.wanReplicationConfig = wanConfig;
+    public AddWanConfigOperationFactory(WanReplicationConfig wanReplicationConfig) {
+        this.wanReplicationConfig = wanReplicationConfig;
     }
 
 
@@ -33,12 +33,12 @@ public class AddWanConfigOperationFactory implements OperationFactory {
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.ADD_WAN_CONFIG_OPERATION_FACTORY;
+        return WanDataSerializerHook.ADD_WAN_CONFIG_OPERATION_FACTORY;
     }
 
     @Override

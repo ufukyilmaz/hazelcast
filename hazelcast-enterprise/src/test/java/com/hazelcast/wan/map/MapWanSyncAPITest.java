@@ -4,7 +4,7 @@ import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.impl.replication.MerkleTreeWanSyncStats;
+import com.hazelcast.enterprise.wan.impl.replication.WanMerkleTreeSyncStats;
 import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
 import com.hazelcast.internal.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
@@ -48,8 +48,8 @@ import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
-import static com.hazelcast.wan.map.MapWanBatchReplicationTest.isAllMembersConnected;
-import static com.hazelcast.wan.map.MapWanReplicationTestSupport.assertKeysNotInEventually;
+import static com.hazelcast.wan.map.WanBatchPublisherMapTest.isAllMembersConnected;
+import static com.hazelcast.wan.map.WanMapTestSupport.assertKeysNotInEventually;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -383,7 +383,7 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
 
     private static void verifyMerkleSyncStats(
             Map<String, WanSyncStats> lastSyncResult, int localPartitions, String mapName) {
-        MerkleTreeWanSyncStats wanSyncStats = (MerkleTreeWanSyncStats) lastSyncResult.get(mapName);
+        WanMerkleTreeSyncStats wanSyncStats = (WanMerkleTreeSyncStats) lastSyncResult.get(mapName);
 
         // we don't assert on actual values here just verify if the values are filled as expected
         assertTrue(wanSyncStats.getDurationSecs() >= 0);

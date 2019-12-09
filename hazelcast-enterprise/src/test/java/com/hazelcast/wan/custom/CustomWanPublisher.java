@@ -6,13 +6,13 @@ import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.impl.replication.WanPublisherSyncSupport;
-import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapEvent;
 import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.wan.impl.ConsistencyCheckResult;
 import com.hazelcast.wan.impl.WanAntiEntropyEvent;
-import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanEvent;
 import com.hazelcast.wan.impl.WanSyncStats;
-import com.hazelcast.wan.impl.InternalWanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 public class CustomWanPublisher extends AbstractWanPublisher implements Runnable {
 
-    static final BlockingQueue<WanReplicationEvent> EVENT_QUEUE = new ArrayBlockingQueue<>(100);
+    static final BlockingQueue<WanEvent> EVENT_QUEUE = new ArrayBlockingQueue<>(100);
 
     private volatile boolean running = true;
 
@@ -53,13 +53,13 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
         while (running) {
             try {
                 int batchSize = configurationContext.getBatchSize();
-                ArrayList<InternalWanReplicationEvent> batchList = new ArrayList<>(batchSize);
+                ArrayList<InternalWanEvent> batchList = new ArrayList<>(batchSize);
 
                 for (IPartition partition : node.getPartitionService().getPartitions()) {
                     if (partition.isLocal()) {
                         batchList.clear();
                         eventQueueContainer.drainRandomWanQueue(partition.getPartitionId(), batchList, batchSize);
-                        for (WanReplicationEvent event : batchList) {
+                        for (WanEvent event : batchList) {
                             if (event != null) {
                                 EVENT_QUEUE.put(event);
                             }
@@ -101,7 +101,7 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
         }
 
         @Override
-        public void removeReplicationEvent(EnterpriseMapReplicationObject sync) {
+        public void removeReplicationEvent(WanEnterpriseMapEvent sync) {
 
         }
     }

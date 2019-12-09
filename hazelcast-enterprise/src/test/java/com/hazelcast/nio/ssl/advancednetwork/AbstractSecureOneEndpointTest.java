@@ -6,10 +6,10 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.RestServerEndpointConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
+import com.hazelcast.config.WanBatchPublisherConfig;
+import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
-import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -183,12 +183,12 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
     private static void addCommonWanReplication(Config config, int port) {
         WanReplicationConfig wrConfig = new WanReplicationConfig();
         wrConfig.setName("my-wan-cluster");
-        WanBatchReplicationPublisherConfig londonPublisherConfig = createWanPublisherConfig(
+        WanBatchPublisherConfig londonPublisherConfig = createWanPublisherConfig(
                 "dev",
                 "127.0.0.1:" + port,
                 ConsistencyCheckStrategy.NONE
         );
-        wrConfig.addWanBatchReplicationPublisherConfig(londonPublisherConfig);
+        wrConfig.addBatchReplicationPublisherConfig(londonPublisherConfig);
 
         config.addWanReplicationConfig(wrConfig);
 
@@ -200,10 +200,10 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
         config.getMapConfig(REPLICATED_MAP).setWanReplicationRef(wanRef);
     }
 
-    private static WanBatchReplicationPublisherConfig createWanPublisherConfig(String clusterName,
-                                                                               String endpoints,
-                                                                               ConsistencyCheckStrategy consistencyStrategy) {
-        WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
+    private static WanBatchPublisherConfig createWanPublisherConfig(String clusterName,
+                                                                    String endpoints,
+                                                                    ConsistencyCheckStrategy consistencyStrategy) {
+        WanBatchPublisherConfig c = new WanBatchPublisherConfig();
         c.setEndpoint("WAN")
                 .setClusterName(clusterName)
                 .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
@@ -215,7 +215,7 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
                 .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
                 .setTargetEndpoints(endpoints)
                 .setDiscoveryPeriodSeconds(20)
-                .getWanSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);
+                .getSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);
         return c;
     }
 

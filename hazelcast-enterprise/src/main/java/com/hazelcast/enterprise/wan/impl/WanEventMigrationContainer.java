@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -33,12 +33,12 @@ public class WanEventMigrationContainer implements IdentifiedDataSerializable {
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.WAN_EVENT_MIGRATION_CONTAINER;
+        return WanDataSerializerHook.WAN_EVENT_MIGRATION_CONTAINER;
     }
 
     @Override

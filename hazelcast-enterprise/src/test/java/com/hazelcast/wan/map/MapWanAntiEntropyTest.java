@@ -33,7 +33,7 @@ import static com.hazelcast.wan.fw.WanCounterTestSupport.getClusterWideSumPartit
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
-import static com.hazelcast.wan.map.MapWanBatchReplicationTest.waitForSyncToComplete;
+import static com.hazelcast.wan.map.WanBatchPublisherMapTest.waitForSyncToComplete;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

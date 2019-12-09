@@ -6,9 +6,9 @@ import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.ServerSocketEndpointConfig;
+import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
@@ -200,12 +200,12 @@ public abstract class AbstractSecureWanTest {
                                                   String endpointName) {
         WanReplicationConfig wrConfig = new WanReplicationConfig();
         wrConfig.setName("wan-cluster-for-" + mapName);
-        WanBatchReplicationPublisherConfig londonPublisherConfig = createWanPublisherConfig(
+        WanBatchPublisherConfig londonPublisherConfig = createWanPublisherConfig(
                 clusterName,
                 "127.0.0.1:" + port,
                 endpointName
         );
-        wrConfig.addWanBatchReplicationPublisherConfig(londonPublisherConfig);
+        wrConfig.addBatchReplicationPublisherConfig(londonPublisherConfig);
 
         config.addWanReplicationConfig(wrConfig);
 
@@ -217,8 +217,8 @@ public abstract class AbstractSecureWanTest {
         config.getMapConfig(mapName).setWanReplicationRef(wanRef);
     }
 
-    private static WanBatchReplicationPublisherConfig createWanPublisherConfig(String clusterName, String endpoints, String endpointName) {
-        WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
+    private static WanBatchPublisherConfig createWanPublisherConfig(String clusterName, String endpoints, String endpointName) {
+        WanBatchPublisherConfig c = new WanBatchPublisherConfig();
         c.setEndpoint(endpointName)
                 .setClusterName(clusterName)
                 .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
@@ -230,7 +230,7 @@ public abstract class AbstractSecureWanTest {
                 .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
                 .setTargetEndpoints(endpoints)
                 .setDiscoveryPeriodSeconds(20)
-                .getWanSyncConfig().setConsistencyCheckStrategy(ConsistencyCheckStrategy.NONE);
+                .getSyncConfig().setConsistencyCheckStrategy(ConsistencyCheckStrategy.NONE);
         return c;
     }
 }

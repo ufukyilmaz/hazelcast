@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.sync;
 
-import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -30,12 +30,12 @@ public class WanAntiEntropyEventResult implements IdentifiedDataSerializable {
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.WAN_ANTI_ENTROPY_RESULT;
+        return WanDataSerializerHook.WAN_ANTI_ENTROPY_RESULT;
     }
 
     @Override

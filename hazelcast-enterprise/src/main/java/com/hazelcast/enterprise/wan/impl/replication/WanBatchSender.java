@@ -16,7 +16,7 @@ public interface WanBatchSender {
      * @param node      the node on which this sender is running
      * @param publisher the WAN publisher for which this sender is used to send batches for
      */
-    void init(Node node, WanBatchReplication publisher);
+    void init(Node node, WanBatchPublisher publisher);
 
     /**
      * Sends the WAN batch to the target address and returns a future
@@ -26,5 +26,5 @@ public interface WanBatchSender {
      * @param target                the target address
      * @return {@code true} if the batch was sent successfully
      */
-    InternalCompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent, Address target);
+    InternalCompletableFuture<Boolean> send(WanEventBatch batchReplicationEvent, Address target);
 }

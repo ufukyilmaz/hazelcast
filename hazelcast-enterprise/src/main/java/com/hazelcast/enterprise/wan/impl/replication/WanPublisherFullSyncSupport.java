@@ -15,8 +15,8 @@ import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.SimpleEntryView;
-import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
-import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapEvent;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapSyncEvent;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
@@ -47,12 +47,12 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
     private final NodeEngineImpl nodeEngine;
     private final MapService mapService;
     private final WanSyncManager syncManager;
-    private final WanBatchReplication publisher;
+    private final WanBatchPublisher publisher;
     private final Map<String, FullWanSyncStats> lastSyncStats = new ConcurrentHashMap<>();
     private final Map<UUID, WanSyncContext<FullWanSyncStats>> syncContextMap = new ConcurrentHashMap<>();
     private final ExecutorService updateSerializingExecutor;
 
-    WanPublisherFullSyncSupport(Node node, WanBatchReplication publisher) {
+    WanPublisherFullSyncSupport(Node node, WanBatchPublisher publisher) {
         this.nodeEngine = node.getNodeEngine();
         this.updateSerializingExecutor = newSingleThreadExecutor(
                 r -> new Thread(r, ThreadUtil.createThreadName(node.hazelcastInstance.getName(), "wan-sync-stats-updater")));
@@ -186,8 +186,8 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
     }
 
     @Override
-    public void removeReplicationEvent(EnterpriseMapReplicationObject replicationObject) {
-        EnterpriseMapReplicationSync sync = (EnterpriseMapReplicationSync) replicationObject;
+    public void removeReplicationEvent(WanEnterpriseMapEvent replicationObject) {
+        WanEnterpriseMapSyncEvent sync = (WanEnterpriseMapSyncEvent) replicationObject;
         WanSyncContext<FullWanSyncStats> syncContext = syncContextMap.get(sync.getUuid());
         String mapName = sync.getMapName();
         int partitionId = sync.getPartitionId();
@@ -299,7 +299,7 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         syncContext.getSyncCounter(mapName, partitionId).addAndGet(syncedEntries);
 
         for (SimpleEntryView<Data, Data> simpleEntryView : set) {
-            EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(syncContext.getUuid(), mapName, simpleEntryView,
+            WanEnterpriseMapSyncEvent sync = new WanEnterpriseMapSyncEvent(syncContext.getUuid(), mapName, simpleEntryView,
                     partitionId);
             publisher.putToSyncEventQueue(sync);
         }

@@ -100,6 +100,7 @@ import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.version.MemberVersion;
 import com.hazelcast.version.Version;
+import com.hazelcast.wan.WanConsumer;
 import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -513,7 +514,7 @@ public class EnterpriseNodeExtension
      * Constructs and initializes all WAN consumers defined in the WAN
      * configuration
      *
-     * @see com.hazelcast.wan.WanReplicationConsumer
+     * @see WanConsumer
      */
     private void initWanConsumers() {
         WanReplicationService wanReplicationService = node.nodeEngine.getWanReplicationService();

@@ -53,12 +53,12 @@ public class WanProtocolNegotiationResponse implements IdentifiedDataSerializabl
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.WAN_PROTOCOL_NEGOTIATION_RESPONSE;
+        return WanDataSerializerHook.WAN_PROTOCOL_NEGOTIATION_RESPONSE;
     }
 
     @Override

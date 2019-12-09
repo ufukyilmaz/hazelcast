@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan.impl.sync;
 
 import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -64,12 +64,12 @@ public class WanAntiEntropyEventPublishOperation extends Operation
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.WAN_SYNC_OPERATION;
+        return WanDataSerializerHook.WAN_SYNC_OPERATION;
     }
 
     @Override

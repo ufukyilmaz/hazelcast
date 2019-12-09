@@ -5,7 +5,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.LifecycleEvent;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -252,7 +252,7 @@ public class Cluster {
         assertTrueEventually(() -> {
             for (HazelcastInstance member : clusterMembers) {
                 if (member != null) {
-                    WanBatchReplication endpoint = (WanBatchReplication) wanReplicationService(member)
+                    WanBatchPublisher endpoint = (WanBatchPublisher) wanReplicationService(member)
                             .getPublisherOrFail(setupName, targetClusterName);
                     assertFalse(endpoint.getReplicationStrategy().hasOngoingReplication());
                 }

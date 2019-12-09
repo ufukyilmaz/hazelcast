@@ -34,8 +34,8 @@ import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
-import static com.hazelcast.wan.map.MapWanBatchReplicationTest.isAllMembersConnected;
-import static com.hazelcast.wan.map.MapWanReplicationTestSupport.assertKeysNotInEventually;
+import static com.hazelcast.wan.map.WanBatchPublisherMapTest.isAllMembersConnected;
+import static com.hazelcast.wan.map.WanMapTestSupport.assertKeysNotInEventually;
 import static java.util.Arrays.asList;
 import static org.junit.Assume.assumeTrue;
 

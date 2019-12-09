@@ -42,13 +42,13 @@ public class LatencyTrackingWanBatchSender implements WanBatchSender {
     }
 
     @Override
-    public void init(Node node, WanBatchReplication publisher) {
+    public void init(Node node, WanBatchPublisher publisher) {
         throw new UnsupportedOperationException(
                 "Not supported as a standalone sender, use constructor for initialisation");
     }
 
     @Override
-    public InternalCompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent,
+    public InternalCompletableFuture<Boolean> send(WanEventBatch batchReplicationEvent,
                                                    final Address target) {
         final long startNanos = System.nanoTime();
         InternalCompletableFuture<Boolean> result = delegate.send(batchReplicationEvent, target);

@@ -1,9 +1,9 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
-import com.hazelcast.enterprise.wan.impl.WanReplicationEventQueue;
+import com.hazelcast.enterprise.wan.impl.WanEventQueue;
 import com.hazelcast.internal.partition.MigrationEndpoint;
 import com.hazelcast.internal.partition.PartitionMigrationEvent;
-import com.hazelcast.wan.MigrationAwareWanReplicationPublisher;
+import com.hazelcast.wan.WanMigrationAwarePublisher;
 
 import java.util.function.Predicate;
 
@@ -12,7 +12,7 @@ import java.util.function.Predicate;
  * correctness of the internal state of the replication implementation
  * objects
  */
-class WanQueueMigrationSupport implements MigrationAwareWanReplicationPublisher {
+class WanQueueMigrationSupport implements WanMigrationAwarePublisher {
     private final PollSynchronizerPublisherQueueContainer eventQueueContainer;
     private final WanElementCounter wanCounter;
 
@@ -64,7 +64,7 @@ class WanQueueMigrationSupport implements MigrationAwareWanReplicationPublisher 
         // 1) we are on a partition operation thread -> no operations can emit WAN events
         // 2) polling the queue is disabled for the time of the migration
         int sizeBeforeClear = 0;
-        Predicate<WanReplicationEventQueue> predicate =
+        Predicate<WanEventQueue> predicate =
                 q -> thresholdReplicaIndex < 0 || q.getBackupCount() < thresholdReplicaIndex;
 
         sizeBeforeClear += eventQueueContainer.drainMapQueuesMatchingPredicate(partitionId, predicate);

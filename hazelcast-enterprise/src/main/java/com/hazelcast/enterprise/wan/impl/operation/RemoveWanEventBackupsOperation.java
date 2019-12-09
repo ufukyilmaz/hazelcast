@@ -18,7 +18,7 @@ import java.util.Map.Entry;
  *
  * @since 3.12
  */
-public class RemoveWanEventBackupsOperation extends EWRBaseOperation
+public class RemoveWanEventBackupsOperation extends WanBaseOperation
         implements BackupOperation, IdentifiedDataSerializable, AllowedDuringPassiveState {
     private Map<DistributedObjectIdentifier, Integer> eventCounts;
 
@@ -60,7 +60,7 @@ public class RemoveWanEventBackupsOperation extends EWRBaseOperation
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.REMOVE_WAN_EVENT_BACKUPS_OPERATION;
+        return WanDataSerializerHook.REMOVE_WAN_EVENT_BACKUPS_OPERATION;
     }
 
     @Override

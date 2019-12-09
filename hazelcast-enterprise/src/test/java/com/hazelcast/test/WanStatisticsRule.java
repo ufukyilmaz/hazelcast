@@ -3,14 +3,14 @@ package com.hazelcast.test;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.internal.monitor.LocalWanPublisherStats;
 import com.hazelcast.spi.impl.NodeEngine;
-import com.hazelcast.wan.DistributedServiceWanEventCounters;
-import com.hazelcast.wan.WanReplicationPublisher;
-import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
+import com.hazelcast.wan.WanEventCounters;
+import com.hazelcast.wan.WanPublisher;
+import com.hazelcast.wan.impl.DelegatingWanScheme;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -107,11 +107,11 @@ public final class WanStatisticsRule implements TestRule {
             Set<String> replicationNames = s.getStats().keySet();
             for (String replicationName : replicationNames) {
                 sb.append("Replication: ").append(replicationName).append(LINE_SEPARATOR);
-                DelegatingWanReplicationScheme publisherDelegate = s.getWanReplicationPublishers(replicationName);
-                Collection<WanReplicationPublisher> publishers = publisherDelegate.getPublishers();
-                for (WanReplicationPublisher publisher : publishers) {
-                    if (publisher instanceof WanBatchReplication) {
-                        WanBatchReplication batchReplicationPublisher = (WanBatchReplication) publisher;
+                DelegatingWanScheme publisherDelegate = s.getWanReplicationPublishers(replicationName);
+                Collection<WanPublisher> publishers = publisherDelegate.getPublishers();
+                for (WanPublisher publisher : publishers) {
+                    if (publisher instanceof WanBatchPublisher) {
+                        WanBatchPublisher batchReplicationPublisher = (WanBatchPublisher) publisher;
                         LocalWanPublisherStats stats = batchReplicationPublisher.getStats();
                         long failedTransmissionCount = batchReplicationPublisher.getFailedTransmissionCount();
                         sb.append("Target publishers: ").append(batchReplicationPublisher.getTargetEndpoints())
@@ -136,7 +136,7 @@ public final class WanStatisticsRule implements TestRule {
     }
 
     private void renderCounters(StringBuilder sb, EnterpriseWanReplicationService s) {
-        DistributedServiceWanEventCounters counters = s.getReceivedEventCounters(MapService.SERVICE_NAME);
+        WanEventCounters counters = s.getReceivedEventCounters(MapService.SERVICE_NAME);
         renderCounterMap(sb, counters.getEventCounterMap(), "Map");
 
         counters = s.getReceivedEventCounters(CacheService.SERVICE_NAME);
@@ -144,10 +144,10 @@ public final class WanStatisticsRule implements TestRule {
     }
 
     private void renderCounterMap(StringBuilder sb, Map<String,
-            DistributedServiceWanEventCounters.DistributedObjectWanEventCounters> eventCounterMap,
+            WanEventCounters.DistributedObjectWanEventCounters> eventCounterMap,
                                   String structureType) {
-        for (Map.Entry<String, DistributedServiceWanEventCounters.DistributedObjectWanEventCounters> entry : eventCounterMap.entrySet()) {
-            DistributedServiceWanEventCounters.DistributedObjectWanEventCounters value = entry.getValue();
+        for (Map.Entry<String, WanEventCounters.DistributedObjectWanEventCounters> entry : eventCounterMap.entrySet()) {
+            WanEventCounters.DistributedObjectWanEventCounters value = entry.getValue();
             long removeCount = value.getRemoveCount();
             long syncCount = value.getSyncCount();
             long updateCount = value.getUpdateCount();

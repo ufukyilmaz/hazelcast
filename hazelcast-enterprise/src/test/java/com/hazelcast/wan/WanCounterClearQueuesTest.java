@@ -5,7 +5,7 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.internal.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
-import static com.hazelcast.test.HazelcastTestSupport.ASSERT_TRUE_EVENTUALLY_TIMEOUT;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanCounterTestSupport.verifyEventCountersAreEventuallyZero;
@@ -180,7 +179,7 @@ public class WanCounterClearQueuesTest extends HazelcastTestSupport {
         }
     }
 
-    private static class QueueClearerWanPublisher extends WanBatchReplication {
+    private static class QueueClearerWanPublisher extends WanBatchPublisher {
         private final AtomicBoolean clearQueuesFlag = new AtomicBoolean();
         private final AtomicInteger hitCount = new AtomicInteger();
         private final AtomicReference<String> nodeName = new AtomicReference<>();

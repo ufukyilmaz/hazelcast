@@ -7,12 +7,12 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.wan.WanReplicationConsumer;
-import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanConsumer;
+import com.hazelcast.wan.WanEvent;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class CustomWanConsumer implements WanReplicationConsumer, Runnable, HazelcastInstanceAware {
+public class CustomWanConsumer implements WanConsumer, Runnable, HazelcastInstanceAware {
 
     private volatile boolean running = true;
     private Node node;
@@ -36,7 +36,7 @@ public class CustomWanConsumer implements WanReplicationConsumer, Runnable, Haze
     public void run() {
         while (running) {
             try {
-                WanReplicationEvent event = CustomWanPublisher.EVENT_QUEUE.poll(100, MILLISECONDS);
+                WanEvent event = CustomWanPublisher.EVENT_QUEUE.poll(100, MILLISECONDS);
                 if (event != null) {
                     EnterpriseWanReplicationService wanRepService
                             = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();

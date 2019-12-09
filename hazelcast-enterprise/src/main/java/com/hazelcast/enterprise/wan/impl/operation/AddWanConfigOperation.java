@@ -69,12 +69,12 @@ public class AddWanConfigOperation extends Operation implements IdentifiedDataSe
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.ADD_WAN_CONFIG_OPERATION;
+        return WanDataSerializerHook.ADD_WAN_CONFIG_OPERATION;
     }
 
     @Override

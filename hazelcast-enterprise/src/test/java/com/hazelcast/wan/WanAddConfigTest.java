@@ -46,9 +46,6 @@ import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertContains;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.getNodeEngineImpl;
-import static com.hazelcast.test.HazelcastTestSupport.sleepMillis;
 import static com.hazelcast.test.HazelcastTestSupport.spawn;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
@@ -61,8 +58,8 @@ import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
-import static com.hazelcast.wan.map.MapWanBatchReplicationTest.isAllMembersConnected;
-import static com.hazelcast.wan.map.MapWanReplicationTestSupport.assertKeysNotInEventually;
+import static com.hazelcast.wan.map.WanBatchPublisherMapTest.isAllMembersConnected;
+import static com.hazelcast.wan.map.WanMapTestSupport.assertKeysNotInEventually;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -373,9 +370,9 @@ public class WanAddConfigTest extends HazelcastTestSupport {
                     encounteredException = true;
                     break;
                 }
-                WanReplicationConfig wanConfig = node.getConfig()
-                        .getWanReplicationConfig(wanReplicationName);
-                int configSize = wanConfig.getBatchPublisherConfigs().size();
+                WanReplicationConfig wanReplicationConfig = node.getConfig()
+                                                                .getWanReplicationConfig(wanReplicationName);
+                int configSize = wanReplicationConfig.getBatchPublisherConfigs().size();
                 instanceConfigCount.put(instance.getName(), configSize);
             }
             if (!encounteredException) {

@@ -1,7 +1,8 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
+import com.hazelcast.config.WanBatchPublisherConfig;
+import com.hazelcast.wan.WanEvent;
 
 import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
 
@@ -20,12 +21,12 @@ public class WanConfigurationContext {
     private final int maxEndpoints;
     private final int discoveryPeriodSeconds;
     private final String endpoints;
-    private final WanBatchReplicationPublisherConfig publisherConfig;
+    private final WanBatchPublisherConfig publisherConfig;
     private final int maxConcurrentInvocations;
     private final long idleMinParkNs;
     private final long idleMaxParkNs;
 
-    WanConfigurationContext(WanBatchReplicationPublisherConfig publisherConfig) {
+    WanConfigurationContext(WanBatchPublisherConfig publisherConfig) {
         this.publisherConfig = publisherConfig;
         this.snapshotEnabled = publisherConfig.isSnapshotEnabled();
         this.batchSize = publisherConfig.getBatchSize();
@@ -47,10 +48,10 @@ public class WanConfigurationContext {
     /**
      * Retuns {@code true} if key-based coalescing is configured for this WAN
      * publisher.
-     * When enabled, only the latest {@link com.hazelcast.wan.WanReplicationEvent}
+     * When enabled, only the latest {@link WanEvent}
      * of a key is sent to target.
      *
-     * @see WanBatchReplicationPublisherConfig#isSnapshotEnabled()
+     * @see WanBatchPublisherConfig#isSnapshotEnabled()
      */
     public boolean isSnapshotEnabled() {
         return snapshotEnabled;
@@ -59,7 +60,7 @@ public class WanConfigurationContext {
     /**
      * Returns the maximum batch size that can be sent to target cluster.
      *
-     * @see WanBatchReplicationPublisherConfig#getBatchSize()
+     * @see WanBatchPublisherConfig#getBatchSize()
      */
     public int getBatchSize() {
         return batchSize;
@@ -70,7 +71,7 @@ public class WanConfigurationContext {
      * events to target cluster, if {@link #getBatchSize()} of events have not
      * arrived within this duration.
      *
-     * @see WanBatchReplicationPublisherConfig#getBatchMaxDelayMillis()
+     * @see WanBatchPublisherConfig#getBatchMaxDelayMillis()
      */
     public long getBatchMaxDelayMillis() {
         return batchMaxDelayMillis;
@@ -81,7 +82,7 @@ public class WanConfigurationContext {
      * retrying to send the events to target cluster again in case of
      * acknowledgement is not arrived.
      *
-     * @see WanBatchReplicationPublisherConfig#getResponseTimeoutMillis()
+     * @see WanBatchPublisherConfig#getResponseTimeoutMillis()
      */
     public long getResponseTimeoutMillis() {
         return responseTimeoutMillis;
@@ -91,7 +92,7 @@ public class WanConfigurationContext {
      * Returns the acknowledgement waiting type of WAN replication operation
      * invocation.
      *
-     * @see WanBatchReplicationPublisherConfig#getAcknowledgeType()
+     * @see WanBatchPublisherConfig#getAcknowledgeType()
      */
     public WanAcknowledgeType getAcknowledgeType() {
         return acknowledgeType;
@@ -101,7 +102,7 @@ public class WanConfigurationContext {
      * Returns {@code true} if the WAN connection manager should connect to the
      * endpoint on the private address returned by the discovery SPI.
      *
-     * @see WanBatchReplicationPublisherConfig#isUseEndpointPrivateAddress()
+     * @see WanBatchPublisherConfig#isUseEndpointPrivateAddress()
      */
     public boolean isUseEndpointPrivateAddress() {
         return useEndpointPrivateAddress;
@@ -110,7 +111,7 @@ public class WanConfigurationContext {
     /**
      * Returns the cluster name of target cluster.
      *
-     * @see WanBatchReplicationPublisherConfig#getClusterName()
+     * @see WanBatchPublisherConfig#getClusterName()
      */
     public String getClusterName() {
         return clusterName;
@@ -120,7 +121,7 @@ public class WanConfigurationContext {
      * Returns the maximum number of endpoints that WAN will connect to when
      * using a discovery mechanism to define endpoints.
      *
-     * @see WanBatchReplicationPublisherConfig#getMaxTargetEndpoints()
+     * @see WanBatchPublisherConfig#getMaxTargetEndpoints()
      */
     public int getMaxEndpoints() {
         return maxEndpoints;
@@ -130,7 +131,7 @@ public class WanConfigurationContext {
      * Returns the period in seconds in which WAN tries to discover new endpoints
      * and reestablish connections to failed endpoints.
      *
-     * @see WanBatchReplicationPublisherConfig#getDiscoveryConfig()
+     * @see WanBatchPublisherConfig#getDiscoveryConfig()
      */
     public int getDiscoveryPeriodSeconds() {
         return discoveryPeriodSeconds;
@@ -140,7 +141,7 @@ public class WanConfigurationContext {
      * Returns the comma separated list of target cluster members,
      * e.g. {@code 127.0.0.1:5701, 127.0.0.1:5702}.
      *
-     * @see WanBatchReplicationPublisherConfig#getTargetEndpoints()
+     * @see WanBatchPublisherConfig#getTargetEndpoints()
      */
     public String getEndpoints() {
         return endpoints;
@@ -152,7 +153,7 @@ public class WanConfigurationContext {
      *
      * @return WAN publisher configuration
      */
-    public WanBatchReplicationPublisherConfig getPublisherConfig() {
+    public WanBatchPublisherConfig getPublisherConfig() {
         return publisherConfig;
     }
 
@@ -163,7 +164,7 @@ public class WanConfigurationContext {
      * will be sent per target endpoint at any point in time.
      *
      * @return the maximum number of concurrent WAN batches
-     * @see WanBatchReplicationPublisherConfig#getMaxConcurrentInvocations()
+     * @see WanBatchPublisherConfig#getMaxConcurrentInvocations()
      */
     public int getMaxConcurrentInvocations() {
         return maxConcurrentInvocations;
@@ -174,7 +175,7 @@ public class WanConfigurationContext {
      * replication thread will idle if there are no events to be replicated.
      *
      * @return the minimum idle time
-     * @see WanBatchReplicationPublisherConfig#getIdleMinParkNs()
+     * @see WanBatchPublisherConfig#getIdleMinParkNs()
      */
     public long getIdleMinParkNs() {
         return idleMinParkNs;
@@ -185,7 +186,7 @@ public class WanConfigurationContext {
      * replication thread will idle if there are no events to be replicated.
      *
      * @return the maximum idle time
-     * @see WanBatchReplicationPublisherConfig#getIdleMaxParkNs()
+     * @see WanBatchPublisherConfig#getIdleMaxParkNs()
      */
     public long getIdleMaxParkNs() {
         return idleMaxParkNs;

@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl;
 
-import com.hazelcast.internal.services.ReplicationSupportingService;
-import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSupportingService;
+import com.hazelcast.internal.services.WanSupportingService;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapSupportingService;
 import com.hazelcast.spi.impl.NodeEngine;
 
 /**
@@ -17,7 +17,7 @@ class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
     }
 
     @Override
-    ReplicationSupportingService createReplicationSupportingService() {
-        return new EnterpriseMapReplicationSupportingService(getMapServiceContext());
+    WanSupportingService createReplicationSupportingService() {
+        return new WanEnterpriseMapSupportingService(getMapServiceContext());
     }
 }

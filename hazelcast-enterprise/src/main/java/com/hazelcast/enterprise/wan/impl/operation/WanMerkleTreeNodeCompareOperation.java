@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.impl.operation;
 
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
-import com.hazelcast.internal.cluster.impl.operations.WanReplicationOperation;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
+import com.hazelcast.internal.cluster.impl.operations.WanOperation;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.operation.MerkleTreeNodeCompareOperationFactory;
 import com.hazelcast.nio.ObjectDataInput;
@@ -18,17 +18,17 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 
-import static com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication.WAN_EXECUTOR;
+import static com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher.WAN_EXECUTOR;
 
 /**
  * Operation sent from the source WAN endpoint to the target endpoint.
  * This operation triggers comparison of merkle tree nodes. The result of
  * the comparison is an instance of {@link MerkleTreeNodeValueComparison}.
  * <p>
- * The comparison is offloaded to the {@link WanBatchReplication#WAN_EXECUTOR} wanExecutor.
+ * The comparison is offloaded to the {@link WanBatchPublisher#WAN_EXECUTOR} wanExecutor.
  */
 public class WanMerkleTreeNodeCompareOperation extends Operation
-        implements WanReplicationOperation, IdentifiedDataSerializable, AllowedDuringPassiveState {
+        implements WanOperation, IdentifiedDataSerializable, AllowedDuringPassiveState {
     private String mapName;
     private MerkleTreeNodeValueComparison remoteLevels;
 
@@ -50,7 +50,7 @@ public class WanMerkleTreeNodeCompareOperation extends Operation
      * A task for fetching local map merkle tree node values and comparing
      * them with the remote values.
      * The invocations for fetching local merkle tree values is offloaded
-     * to the {@link WanBatchReplication#WAN_EXECUTOR} wanExecutor.
+     * to the {@link WanBatchPublisher#WAN_EXECUTOR} wanExecutor.
      */
     private final class OffloadedMerkleTreeComparison extends Offload implements BiConsumer<Map<Integer, int[]>, Throwable> {
 
@@ -84,12 +84,12 @@ public class WanMerkleTreeNodeCompareOperation extends Operation
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.WAN_MERKLE_TREE_NODE_COMPARE_OPERATION;
+        return WanDataSerializerHook.WAN_MERKLE_TREE_NODE_COMPARE_OPERATION;
     }
 
     @Override

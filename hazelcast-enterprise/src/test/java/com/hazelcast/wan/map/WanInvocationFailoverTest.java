@@ -21,7 +21,7 @@ import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
-import static com.hazelcast.wan.map.MapWanBatchReplicationTest.isAllMembersConnected;
+import static com.hazelcast.wan.map.WanBatchPublisherMapTest.isAllMembersConnected;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})

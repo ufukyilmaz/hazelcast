@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.impl.connection;
 
 import com.hazelcast.config.InvalidConfigurationException;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
+import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationOperation;
 import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationResponse;
 import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationStatus;
@@ -20,7 +20,7 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.internal.util.EmptyStatement;
 import com.hazelcast.version.Version;
-import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.wan.WanPublisher;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,7 +42,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Maintains connections for WAN replication for a single
- * {@link WanReplicationPublisher}.
+ * {@link WanPublisher}.
  */
 public class WanConnectionManager implements ConnectionListener {
     /**
@@ -163,7 +163,7 @@ public class WanConnectionManager implements ConnectionListener {
      * to which the connection manager can connect to.
      *
      * @return the endpoint addresses
-     * @see WanBatchReplicationPublisherConfig#isUseEndpointPrivateAddress()
+     * @see WanBatchPublisherConfig#isUseEndpointPrivateAddress()
      */
     private List<Address> discoverEndpointAddresses() {
         final Iterable<DiscoveryNode> nodes = discoveryService.discoverNodes();

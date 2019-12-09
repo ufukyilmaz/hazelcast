@@ -18,9 +18,9 @@ import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
 import com.hazelcast.cache.impl.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.impl.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.cache.impl.wan.CacheFilterProvider;
-import com.hazelcast.cache.impl.wan.CacheReplicationRemove;
-import com.hazelcast.cache.impl.wan.CacheReplicationSupportingService;
-import com.hazelcast.cache.impl.wan.CacheReplicationUpdate;
+import com.hazelcast.cache.impl.wan.WanCacheRemoveEvent;
+import com.hazelcast.cache.impl.wan.WanCacheSupportingService;
+import com.hazelcast.cache.impl.wan.WanCacheUpdateEvent;
 import com.hazelcast.cache.impl.wan.WanCacheEntryView;
 import com.hazelcast.cache.wan.CacheWanEventFilter;
 import com.hazelcast.config.CacheConfig;
@@ -42,7 +42,7 @@ import com.hazelcast.internal.metrics.MetricDescriptor;
 import com.hazelcast.internal.metrics.MetricsCollectionContext;
 import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.services.ReplicationSupportingService;
+import com.hazelcast.internal.services.WanSupportingService;
 import com.hazelcast.internal.util.CollectionUtil;
 import com.hazelcast.internal.util.ConcurrencyUtil;
 import com.hazelcast.internal.util.ConstructorFunction;
@@ -53,8 +53,8 @@ import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.wan.WanReplicationEvent;
-import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
+import com.hazelcast.wan.WanEvent;
+import com.hazelcast.wan.impl.DelegatingWanScheme;
 import com.hazelcast.wan.impl.WanReplicationService;
 
 import java.util.ArrayList;
@@ -91,11 +91,11 @@ import static java.lang.Thread.currentThread;
 })
 public class EnterpriseCacheService
         extends CacheService
-        implements ReplicationSupportingService, RamStoreRegistry {
+        implements WanSupportingService, RamStoreRegistry {
 
     private static final int CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS = 30;
 
-    private final ConcurrentMap<String, DelegatingWanReplicationScheme> wanReplicationDelegates = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, DelegatingWanScheme> wanReplicationDelegates = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, String> cacheMergePolicies = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, HiDensityStorageInfo> hiDensityCacheInfoMap = new ConcurrentHashMap<>();
     private final ConstructorFunction<String, HiDensityStorageInfo> hiDensityCacheInfoConstructorFunction =
@@ -113,12 +113,12 @@ public class EnterpriseCacheService
     private CacheFilterProvider cacheFilterProvider;
     private CacheWanEventPublisher cacheWanEventPublisher;
     private HotRestartIntegrationService hotRestartService;
-    private ReplicationSupportingService replicationSupportingService;
+    private WanSupportingService wanSupportingService;
 
     @Override
     protected void postInit(NodeEngine nodeEngine, Properties properties, boolean metricsEnabled) {
         super.postInit(nodeEngine, properties, metricsEnabled);
-        replicationSupportingService = new CacheReplicationSupportingService(this);
+        wanSupportingService = new WanCacheSupportingService(this);
         cacheFilterProvider = new CacheFilterProvider(nodeEngine);
         cacheWanEventPublisher = new CacheWanEventPublisherImpl(this);
         partitionService = nodeEngine.getPartitionService();
@@ -494,7 +494,7 @@ public class EnterpriseCacheService
         WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
         if (wanReplicationRef != null) {
             WanReplicationService wanReplicationService = nodeEngine.getWanReplicationService();
-            DelegatingWanReplicationScheme delegate = wanReplicationService.getWanReplicationPublishers(
+            DelegatingWanScheme delegate = wanReplicationService.getWanReplicationPublishers(
                     wanReplicationRef.getName());
             if (delegate == null) {
                 String msg = String.format("Missing WAN replication config with name '%s' for cache '%s'",
@@ -513,14 +513,14 @@ public class EnterpriseCacheService
     }
 
     @Override
-    public void onReplicationEvent(WanReplicationEvent event, WanAcknowledgeType acknowledgeType) {
-        replicationSupportingService.onReplicationEvent(event, acknowledgeType);
+    public void onReplicationEvent(WanEvent event, WanAcknowledgeType acknowledgeType) {
+        wanSupportingService.onReplicationEvent(event, acknowledgeType);
     }
 
     public void publishWanEvent(CacheEventContext cacheEventContext) {
         String cacheName = cacheEventContext.getCacheName();
         CacheEventType eventType = cacheEventContext.getEventType();
-        DelegatingWanReplicationScheme wanDelegate = getOrLookupWanDelegate(cacheEventContext.getCacheName());
+        DelegatingWanScheme wanDelegate = getOrLookupWanDelegate(cacheEventContext.getCacheName());
         if (wanDelegate != null && cacheEventContext.getOrigin() == null) {
             CacheConfig config = getCacheConfig(cacheName);
             WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
@@ -535,8 +535,8 @@ public class EnterpriseCacheService
             if (eventType == CacheEventType.UPDATED
                     || eventType == CacheEventType.CREATED
                     || eventType == CacheEventType.EXPIRATION_TIME_UPDATED) {
-                CacheReplicationUpdate update =
-                        new CacheReplicationUpdate(
+                WanCacheUpdateEvent update =
+                        new WanCacheUpdateEvent(
                                 config.getName(),
                                 cacheMergePolicies.get(cacheName),
                                 new WanCacheEntryView(
@@ -553,7 +553,7 @@ public class EnterpriseCacheService
                     wanDelegate.publishReplicationEvent(update);
                 }
             } else if (eventType == CacheEventType.REMOVED) {
-                CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
+                WanCacheRemoveEvent remove = new WanCacheRemoveEvent(config.getName(), cacheEventContext.getDataKey(),
                         config.getManagerPrefix(), config.getTotalBackupCount());
                 if (backup) {
                     wanDelegate.publishReplicationEventBackup(remove);
@@ -615,22 +615,22 @@ public class EnterpriseCacheService
      * at this point but may be published at a later point.
      *
      * @param cacheNameWithPrefix the full name of the cache, including the manager scope prefix
-     * @param wanReplicationEvent the WAN event to be published
+     * @param wanEvent the WAN event to be published
      */
-    public void publishWanEvent(String cacheNameWithPrefix, WanReplicationEvent wanReplicationEvent) {
-        DelegatingWanReplicationScheme wanReplicationPublisher = getOrLookupWanDelegate(cacheNameWithPrefix);
+    public void publishWanEvent(String cacheNameWithPrefix, WanEvent wanEvent) {
+        DelegatingWanScheme wanReplicationPublisher = getOrLookupWanDelegate(cacheNameWithPrefix);
         if (wanReplicationPublisher != null) {
-            wanReplicationPublisher.republishReplicationEvent(wanReplicationEvent);
+            wanReplicationPublisher.republishReplicationEvent(wanEvent);
         }
     }
 
-    private DelegatingWanReplicationScheme getOrLookupWanDelegate(String cacheNameWithPrefix) {
-        DelegatingWanReplicationScheme delegate = wanReplicationDelegates.get(cacheNameWithPrefix);
+    private DelegatingWanScheme getOrLookupWanDelegate(String cacheNameWithPrefix) {
+        DelegatingWanScheme delegate = wanReplicationDelegates.get(cacheNameWithPrefix);
         if (delegate == null) {
             CacheConfig cacheConfig = getCacheConfig(cacheNameWithPrefix);
             WanReplicationRef wanReplicationRef = cacheConfig.getWanReplicationRef();
             delegate = nodeEngine.getWanReplicationService().getWanReplicationPublishers(wanReplicationRef.getName());
-            DelegatingWanReplicationScheme replacedDelegate = wanReplicationDelegates.putIfAbsent(cacheNameWithPrefix, delegate);
+            DelegatingWanScheme replacedDelegate = wanReplicationDelegates.putIfAbsent(cacheNameWithPrefix, delegate);
             if (replacedDelegate != null) {
                 return replacedDelegate;
             }
@@ -641,7 +641,7 @@ public class EnterpriseCacheService
 
     @Override
     public void doPrepublicationChecks(String cacheNameWithPrefix) {
-        DelegatingWanReplicationScheme publisher = wanReplicationDelegates.get(cacheNameWithPrefix);
+        DelegatingWanScheme publisher = wanReplicationDelegates.get(cacheNameWithPrefix);
         if (publisher != null) {
             publisher.doPrepublicationChecks();
         }

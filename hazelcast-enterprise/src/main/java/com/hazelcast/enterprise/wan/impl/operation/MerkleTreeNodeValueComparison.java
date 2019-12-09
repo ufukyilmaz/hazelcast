@@ -49,12 +49,12 @@ public class MerkleTreeNodeValueComparison implements IdentifiedDataSerializable
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.MERKLE_TREE_NODE_VALUE_COMPARISON;
+        return WanDataSerializerHook.MERKLE_TREE_NODE_VALUE_COMPARISON;
     }
 
     @Override

@@ -3,7 +3,7 @@ package com.hazelcast.enterprise.wan.impl.replication;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionWrapper;
-import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
+import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerOperation;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.nio.EndpointManager;
@@ -17,7 +17,7 @@ import java.util.concurrent.Executor;
 
 /**
  * The default implementation of the {@link WanBatchSender}.
- * It will send the WAN batch as a {@link WanOperation} to the target
+ * It will send the WAN batch as a {@link WanEventContainerOperation} to the target
  * address and block for a configurable amount of time. It will also
  * remove a connection if there was an exception while sending the
  * operation.
@@ -29,7 +29,7 @@ public class DefaultWanBatchSender implements WanBatchSender {
     private Executor wanExecutor;
 
     @Override
-    public void init(Node node, WanBatchReplication publisher) {
+    public void init(Node node, WanBatchPublisher publisher) {
         this.connectionManager = publisher.getConnectionManager();
         this.operationService = node.getNodeEngine().getOperationService();
         this.configurationContext = publisher.getConfigurationContext();
@@ -37,7 +37,7 @@ public class DefaultWanBatchSender implements WanBatchSender {
     }
 
     @Override
-    public InternalCompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent,
+    public InternalCompletableFuture<Boolean> send(WanEventBatch batchReplicationEvent,
                                                    Address target) {
         WanConnectionWrapper connectionWrapper = connectionManager.getConnection(target);
         if (connectionWrapper != null) {
@@ -54,7 +54,8 @@ public class DefaultWanBatchSender implements WanBatchSender {
                                                                  Version wanProtocolVersion) {
         EndpointManager endpointManager = connectionWrapper.getConnection().getEndpointManager();
         Address target = connectionWrapper.getConnection().getEndPoint();
-        Operation wanOperation = new WanOperation(event, configurationContext.getAcknowledgeType(), wanProtocolVersion);
+        Operation wanOperation = new WanEventContainerOperation(
+                event, configurationContext.getAcknowledgeType(), wanProtocolVersion);
         String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
         return operationService.createInvocationBuilder(serviceName, wanOperation, target)
                 .setTryCount(1)

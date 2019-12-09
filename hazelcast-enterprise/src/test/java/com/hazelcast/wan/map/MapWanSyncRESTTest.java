@@ -3,7 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
+import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -144,9 +144,9 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
 
     @Test
     public void addWanConfigSuccess() throws IOException {
-        WanReplicationConfig wanConfig = getExampleWanConfig();
-        WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanConfig);
-        when(wanServiceMock.addWanReplicationConfig(wanConfig))
+        WanReplicationConfig wanReplicationConfig = getExampleWanConfig();
+        WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanReplicationConfig);
+        when(wanServiceMock.addWanReplicationConfig(wanReplicationConfig))
                 .thenReturn(new AddWanConfigResult(Collections.singleton("A"), Collections.singleton("B")));
         startInstance();
 
@@ -154,23 +154,23 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
         JsonObject responseObject = assertSuccess(jsonResponse);
         assertEquals(1, responseObject.get("addedPublisherIds").asArray().size());
         assertEquals(1, responseObject.get("ignoredPublisherIds").asArray().size());
-        verify(wanServiceMock, times(1)).addWanReplicationConfig(wanConfig);
+        verify(wanServiceMock, times(1)).addWanReplicationConfig(wanReplicationConfig);
     }
 
     @Test
     public void addWanConfigFail() throws IOException {
-        WanReplicationConfig wanConfig = getExampleWanConfig();
-        WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanConfig);
+        WanReplicationConfig wanReplicationConfig = getExampleWanConfig();
+        WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanReplicationConfig);
         String msg = "Error occurred";
         doThrow(new RuntimeException(msg))
                 .when(wanServiceMock)
-                .addWanReplicationConfig(wanConfig);
+                .addWanReplicationConfig(wanReplicationConfig);
         startInstance();
 
         String jsonResponse = communicator.addWanConfig(getConfig().getClusterName(), "", dto.toJson().toString());
         JsonObject responseObject = assertFail(jsonResponse);
         assertEquals(msg, responseObject.getString("message", null));
-        verify(wanServiceMock, times(1)).addWanReplicationConfig(wanConfig);
+        verify(wanServiceMock, times(1)).addWanReplicationConfig(wanReplicationConfig);
     }
 
     @Test
@@ -185,14 +185,14 @@ public class MapWanSyncRESTTest extends HazelcastTestSupport {
     }
 
     private WanReplicationConfig getExampleWanConfig() {
-        WanBatchReplicationPublisherConfig newPublisherConfig = new WanBatchReplicationPublisherConfig()
+        WanBatchPublisherConfig newPublisherConfig = new WanBatchPublisherConfig()
                 .setClusterName("B")
                 .setTargetEndpoints("1.1.1.1:5701")
                 .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
 
         return new WanReplicationConfig()
                 .setName("newWRConfig")
-                .addWanBatchReplicationPublisherConfig(newPublisherConfig);
+                .addBatchReplicationPublisherConfig(newPublisherConfig);
     }
 
     @Override

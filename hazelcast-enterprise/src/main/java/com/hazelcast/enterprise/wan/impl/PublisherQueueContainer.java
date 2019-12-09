@@ -7,7 +7,7 @@ import com.hazelcast.internal.services.ObjectNamespace;
 import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.wan.impl.InternalWanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collection;
@@ -40,7 +40,7 @@ public class PublisherQueueContainer {
      * @param partitionId    the partition of the wan event
      * @return the wan replication event
      */
-    public InternalWanReplicationEvent pollCacheWanEvent(String nameWithPrefix, int partitionId) {
+    public InternalWanEvent pollCacheWanEvent(String nameWithPrefix, int partitionId) {
         return getEventQueue(partitionId).pollCacheWanEvent(nameWithPrefix);
     }
 
@@ -55,7 +55,7 @@ public class PublisherQueueContainer {
      */
     public boolean publishCacheWanEvent(String nameWithPrefix,
                                         int partitionId,
-                                        InternalWanReplicationEvent replicationEvent) {
+                                        InternalWanEvent replicationEvent) {
         return getEventQueue(partitionId)
                 .publishCacheWanEvent(nameWithPrefix, replicationEvent);
     }
@@ -68,7 +68,7 @@ public class PublisherQueueContainer {
      * @param partitionId the partition of the wan event
      * @return the wan replication event
      */
-    public InternalWanReplicationEvent pollMapWanEvent(String mapName, int partitionId) {
+    public InternalWanEvent pollMapWanEvent(String mapName, int partitionId) {
         return getEventQueue(partitionId).pollMapWanEvent(mapName);
     }
 
@@ -85,7 +85,7 @@ public class PublisherQueueContainer {
      */
     public boolean publishMapWanEvent(String mapName,
                                       int partitionId,
-                                      InternalWanReplicationEvent replicationEvent) {
+                                      InternalWanEvent replicationEvent) {
         return getEventQueue(partitionId)
                 .publishMapWanEvent(mapName, replicationEvent);
     }
@@ -99,7 +99,7 @@ public class PublisherQueueContainer {
      * @param elementsToDrain the maximum number of events to drain
      */
     public void drainRandomWanQueue(int partitionId,
-                                    Collection<InternalWanReplicationEvent> drainTo,
+                                    Collection<InternalWanEvent> drainTo,
                                     int elementsToDrain) {
         getEventQueue(partitionId)
                 .drainRandomWanQueue(drainTo, elementsToDrain);
@@ -154,7 +154,7 @@ public class PublisherQueueContainer {
      * @return the number of drained elements
      */
     public int drainMapQueuesMatchingPredicate(int partitionId,
-                                               Predicate<WanReplicationEventQueue> predicate) {
+                                               Predicate<WanEventQueue> predicate) {
         return getEventQueue(partitionId).drainMap(predicate);
     }
 
@@ -166,7 +166,7 @@ public class PublisherQueueContainer {
      *                    removed
      * @return the number of drained elements
      */
-    public int drainCacheQueuesMatchingPredicate(int partitionId, Predicate<WanReplicationEventQueue> predicate) {
+    public int drainCacheQueuesMatchingPredicate(int partitionId, Predicate<WanEventQueue> predicate) {
         return getEventQueue(partitionId).drainCache(predicate);
     }
 
@@ -242,7 +242,7 @@ public class PublisherQueueContainer {
 
 
     /**
-     * Filter and collect {@link WanReplicationEventQueue}s that contain events matching the
+     * Filter and collect {@link WanEventQueue}s that contain events matching the
      * {@code serviceName} and one of the provided {@code namespaces}. The namespaces must be
      * of the type {@link ObjectNamespace}.
      *
@@ -264,7 +264,7 @@ public class PublisherQueueContainer {
             }
 
             final ObjectNamespace ns = (ObjectNamespace) namespace;
-            final WanReplicationEventQueue q = queues.get(ns.getObjectName());
+            final WanEventQueue q = queues.get(ns.getObjectName());
             if (q != null) {
                 filteredQueues.put(ns.getObjectName(), q);
             }

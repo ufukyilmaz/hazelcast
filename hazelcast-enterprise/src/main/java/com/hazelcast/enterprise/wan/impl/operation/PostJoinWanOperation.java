@@ -30,12 +30,12 @@ public class PostJoinWanOperation extends Operation implements IdentifiedDataSer
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.POST_JOIN_WAN_OPERATION;
+        return WanDataSerializerHook.POST_JOIN_WAN_OPERATION;
     }
 
     @Override

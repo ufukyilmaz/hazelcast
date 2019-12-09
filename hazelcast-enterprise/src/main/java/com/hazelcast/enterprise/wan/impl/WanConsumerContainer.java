@@ -1,9 +1,9 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.wan.WanReplicationConsumer;
+import com.hazelcast.wan.WanConsumer;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,14 +12,14 @@ import static com.hazelcast.internal.nio.ClassLoaderUtil.getOrCreate;
 
 /**
  * Container responsible for handling the lifecycle of the
- * {@link WanReplicationConsumer}s defined by the configuration.
+ * {@link WanConsumer}s defined by the configuration.
  */
 public class WanConsumerContainer {
     private final Node node;
     /**
      * Consumer implementations grouped by WAN replication config name.
      */
-    private final Map<String, WanReplicationConsumer> wanConsumers = new ConcurrentHashMap<>(2);
+    private final Map<String, WanConsumer> wanConsumers = new ConcurrentHashMap<>(2);
 
     public WanConsumerContainer(Node node) {
         this.node = node;
@@ -34,9 +34,9 @@ public class WanConsumerContainer {
         final Map<String, WanReplicationConfig> configs = node.getConfig().getWanReplicationConfigs();
         if (configs != null) {
             for (Map.Entry<String, WanReplicationConfig> wanReplicationConfigEntry : configs.entrySet()) {
-                final WanConsumerConfig consumerConfig = wanReplicationConfigEntry.getValue().getWanConsumerConfig();
+                final WanConsumerConfig consumerConfig = wanReplicationConfigEntry.getValue().getConsumerConfig();
                 if (consumerConfig != null) {
-                    final WanReplicationConsumer consumer = getOrCreate(
+                    final WanConsumer consumer = getOrCreate(
                             consumerConfig.getImplementation(),
                             node.getConfigClassLoader(),
                             consumerConfig.getClassName());
@@ -51,7 +51,7 @@ public class WanConsumerContainer {
     }
 
     public void shutdown() {
-        for (WanReplicationConsumer consumer : wanConsumers.values()) {
+        for (WanConsumer consumer : wanConsumers.values()) {
             consumer.shutdown();
         }
         wanConsumers.clear();

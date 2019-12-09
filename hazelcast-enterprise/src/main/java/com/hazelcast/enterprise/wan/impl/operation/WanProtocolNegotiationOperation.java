@@ -103,11 +103,11 @@ public class WanProtocolNegotiationOperation extends Operation implements JoinOp
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.WAN_PROTOCOL_NEGOTIATION_OPERATION;
+        return WanDataSerializerHook.WAN_PROTOCOL_NEGOTIATION_OPERATION;
     }
 }

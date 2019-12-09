@@ -2,7 +2,7 @@ package com.hazelcast.wan.fw;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.impl.PartitionWanEventContainer;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.logging.ILogger;
@@ -71,7 +71,7 @@ public class WanCounterTestSupport {
     public static void verifyEventCountersAreZero(Cluster sourceCluster, WanReplication wanReplication) {
         for (HazelcastInstance instance : sourceCluster.getMembers()) {
             if (instance != null && instance.getLifecycleService().isRunning()) {
-                WanBatchReplication publisher = wanReplicationPublisher(instance, wanReplication);
+                WanBatchPublisher publisher = wanReplicationPublisher(instance, wanReplication);
                 int primaryQueueSize = getPrimaryOutboundQueueSize(instance, wanReplication);
                 int backupQueueSize = publisher.getCurrentBackupElementCount();
 
@@ -113,7 +113,7 @@ public class WanCounterTestSupport {
      * @return a sum of primary and backup WAN event queue sizes
      */
     private static int[] getQueueSizes(HazelcastInstance instance,
-                                       WanBatchReplication publisher) {
+                                       WanBatchPublisher publisher) {
         int[] queueSizes = {0, 0};
 
         InternalPartitionService partitionService = getPartitionService(instance);
@@ -235,7 +235,7 @@ public class WanCounterTestSupport {
                 for (HazelcastInstance instance : wanReplication.getSourceCluster().getMembers()) {
                     if (instance != null && instance.getLifecycleService().isRunning()) {
                         String instanceName = instance.getName();
-                        WanBatchReplication publisher = wanReplicationPublisher(instance, wanReplication);
+                        WanBatchPublisher publisher = wanReplicationPublisher(instance, wanReplication);
 
                         int primaryCounterQueueSize = getPrimaryOutboundQueueSize(instance, wanReplication);
                         int backupCounterQueueSize = getBackupOutboundQueueSize(instance, wanReplication);

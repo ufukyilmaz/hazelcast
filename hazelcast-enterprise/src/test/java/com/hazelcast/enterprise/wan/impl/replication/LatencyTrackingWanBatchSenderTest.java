@@ -46,7 +46,7 @@ public class LatencyTrackingWanBatchSenderTest extends HazelcastTestSupport {
     public void send() throws UnknownHostException, ExecutionException, InterruptedException {
         final Address successfulHost = new Address("localhost", 1234);
         final Address failingHost = new Address("localhost", 1235);
-        final BatchWanReplicationEvent batchEvent = new BatchWanReplicationEvent(false);
+        final WanEventBatch batchEvent = new WanEventBatch(false);
         when(delegate.send(batchEvent, successfulHost))
                 .thenReturn(newCompletedFuture(true));
         when(delegate.send(batchEvent, failingHost))

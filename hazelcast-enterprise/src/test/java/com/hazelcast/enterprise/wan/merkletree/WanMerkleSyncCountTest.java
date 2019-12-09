@@ -10,7 +10,7 @@ import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
-import com.hazelcast.wan.DistributedServiceWanEventCounters;
+import com.hazelcast.wan.WanEventCounters;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import com.hazelcast.wan.impl.WanSyncStatus;
@@ -176,7 +176,7 @@ public class WanMerkleSyncCountTest {
                 assertEquals(WanSyncStatus.READY, replicationService.getWanSyncState().getStatus());
 
                 LocalWanStats localWanStats = replicationService.getStats().get(wanReplication.getSetupName());
-                DistributedServiceWanEventCounters.DistributedObjectWanEventCounters counters = localWanStats
+                WanEventCounters.DistributedObjectWanEventCounters counters = localWanStats
                         .getLocalWanPublisherStats().get(targetCluster.getName()).getSentMapEventCounter().get(MAP_NAME);
 
                 if (counters != null) {

@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.cache.CacheNotExistsException;
-import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
+import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.internal.util.executor.StripedRunnable;
 import com.hazelcast.internal.util.executor.TimeoutRunnable;
@@ -13,10 +13,10 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class AbstractWanEventRunnable implements StripedRunnable, TimeoutRunnable {
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
-    protected final WanOperation operation;
+    protected final WanEventContainerOperation operation;
     private final int partitionId;
 
-    AbstractWanEventRunnable(WanOperation operation, int partitionId) {
+    AbstractWanEventRunnable(WanEventContainerOperation operation, int partitionId) {
         this.operation = operation;
         this.partitionId = partitionId;
     }

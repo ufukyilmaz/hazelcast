@@ -20,7 +20,7 @@ import java.io.PrintWriter;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class WANPluginTest extends MapWanReplicationTestSupport {
+public class WANPluginTest extends WanMapTestSupport {
 
     private static final int EVENT_COUNTER = 1000;
     public static final String MAP_NAME_A = "mapA";

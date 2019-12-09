@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.internal.util.QueueUtil;
-import com.hazelcast.wan.impl.InternalWanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.util.Collection;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class PartitionWanEventContainer {
      * @return {@code true} if the element was added to this queue, else
      * {@code false}
      */
-    public boolean publishMapWanEvent(String mapName, InternalWanReplicationEvent event) {
+    public boolean publishMapWanEvent(String mapName, InternalWanEvent event) {
         return mapWanEventQueueMap.offerEvent(event, mapName, event.getBackupCount());
     }
 
@@ -39,7 +39,7 @@ public class PartitionWanEventContainer {
      * @param mapName the map for which an event is polled
      * @return the replication event
      */
-    public InternalWanReplicationEvent pollMapWanEvent(String mapName) {
+    public InternalWanEvent pollMapWanEvent(String mapName) {
         return mapWanEventQueueMap.pollEvent(mapName);
     }
 
@@ -49,7 +49,7 @@ public class PartitionWanEventContainer {
      * @param cacheName the cache for which an event is polled
      * @return the replication event
      */
-    public InternalWanReplicationEvent pollCacheWanEvent(String cacheName) {
+    public InternalWanEvent pollCacheWanEvent(String cacheName) {
         return cacheWanEventQueueMap.pollEvent(cacheName);
     }
 
@@ -60,7 +60,7 @@ public class PartitionWanEventContainer {
      * @param drainTo         the collection to which to drain events to
      * @param elementsToDrain the maximum number of events to drain
      */
-    public void drainRandomWanQueue(Collection<InternalWanReplicationEvent> drainTo,
+    public void drainRandomWanQueue(Collection<InternalWanEvent> drainTo,
                                     int elementsToDrain) {
         int drained = drainRandomWanQueue(current, drainTo, elementsToDrain);
 
@@ -75,15 +75,15 @@ public class PartitionWanEventContainer {
 
     public int size() {
         int size = 0;
-        for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : mapWanEventQueueMap.entrySet()) {
-            WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue();
+        for (Map.Entry<String, WanEventQueue> eventQueueMapEntry : mapWanEventQueueMap.entrySet()) {
+            WanEventQueue eventQueue = eventQueueMapEntry.getValue();
             if (eventQueue != null) {
                 size += eventQueue.size();
             }
         }
 
-        for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : cacheWanEventQueueMap.entrySet()) {
-            WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue();
+        for (Map.Entry<String, WanEventQueue> eventQueueMapEntry : cacheWanEventQueueMap.entrySet()) {
+            WanEventQueue eventQueue = eventQueueMapEntry.getValue();
             if (eventQueue != null) {
                 size += eventQueue.size();
             }
@@ -102,9 +102,9 @@ public class PartitionWanEventContainer {
      * @return the number of elements transferred
      */
     private int drainRandomWanQueue(PartitionWanEventQueueMap eventQueueMap,
-                                    Collection<InternalWanReplicationEvent> drainTo,
+                                    Collection<InternalWanEvent> drainTo,
                                     int elementsToDrain) {
-        for (WanReplicationEventQueue eventQueue : eventQueueMap.values()) {
+        for (WanEventQueue eventQueue : eventQueueMap.values()) {
             if (eventQueue != null) {
                 int drained = eventQueue.drainTo(drainTo, elementsToDrain);
                 if (drained > 0) {
@@ -126,9 +126,9 @@ public class PartitionWanEventContainer {
     private PartitionWanEventQueueMap getEventQueueMapByBackupCount(PartitionWanEventQueueMap wanEventQueueMap,
                                                                     int backupCount) {
         PartitionWanEventQueueMap filteredEventQueueMap = new PartitionWanEventQueueMap();
-        for (Map.Entry<String, WanReplicationEventQueue> entry : wanEventQueueMap.entrySet()) {
+        for (Map.Entry<String, WanEventQueue> entry : wanEventQueueMap.entrySet()) {
             String name = entry.getKey();
-            WanReplicationEventQueue queue = entry.getValue();
+            WanEventQueue queue = entry.getValue();
             if (queue.getBackupCount() >= backupCount) {
                 filteredEventQueueMap.put(name, queue);
             }
@@ -147,7 +147,7 @@ public class PartitionWanEventContainer {
      * {@code false}
      */
     public boolean publishCacheWanEvent(String cacheName,
-                                        InternalWanReplicationEvent event) {
+                                        InternalWanEvent event) {
         return cacheWanEventQueueMap.offerEvent(event, cacheName, event.getBackupCount());
     }
 
@@ -167,7 +167,7 @@ public class PartitionWanEventContainer {
      *                  removed
      * @return the number of drained elements
      */
-    int drainMap(Predicate<WanReplicationEventQueue> predicate) {
+    int drainMap(Predicate<WanEventQueue> predicate) {
         return drain(mapWanEventQueueMap, predicate);
     }
 
@@ -182,15 +182,15 @@ public class PartitionWanEventContainer {
      *                  removed
      * @return the number of drained elements
      */
-    int drainCache(Predicate<WanReplicationEventQueue> predicate) {
+    int drainCache(Predicate<WanEventQueue> predicate) {
         return drain(cacheWanEventQueueMap, predicate);
     }
 
     private int drain(PartitionWanEventQueueMap queueMap,
-                      Predicate<WanReplicationEventQueue> predicate) {
+                      Predicate<WanEventQueue> predicate) {
         int size = 0;
-        for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : queueMap.entrySet()) {
-            WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue();
+        for (Map.Entry<String, WanEventQueue> eventQueueMapEntry : queueMap.entrySet()) {
+            WanEventQueue eventQueue = eventQueueMapEntry.getValue();
             if (eventQueue != null && predicate.test(eventQueue)) {
                 size += QueueUtil.drainQueue(eventQueue);
             }

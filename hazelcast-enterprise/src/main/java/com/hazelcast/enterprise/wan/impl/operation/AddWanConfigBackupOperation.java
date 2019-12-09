@@ -54,11 +54,11 @@ public class AddWanConfigBackupOperation extends Operation implements Identified
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.ADD_WAN_CONFIG_BACKUP_OPERATION;
+        return WanDataSerializerHook.ADD_WAN_CONFIG_BACKUP_OPERATION;
     }
 }

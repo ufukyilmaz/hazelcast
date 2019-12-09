@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
 
 import java.util.UUID;
 
@@ -27,12 +27,12 @@ public class WanConsistencyCheckEvent extends AbstractWanAntiEntropyEvent {
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.WAN_CONSISTENCY_CHECK_EVENT;
+        return WanDataSerializerHook.WAN_CONSISTENCY_CHECK_EVENT;
     }
 
     @Override

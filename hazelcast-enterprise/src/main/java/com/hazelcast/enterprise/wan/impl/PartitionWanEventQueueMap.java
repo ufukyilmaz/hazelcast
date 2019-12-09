@@ -4,7 +4,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.internal.serialization.SerializableByConvention;
-import com.hazelcast.wan.impl.InternalWanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.io.IOException;
 import java.util.Map;
@@ -17,7 +17,7 @@ import static com.hazelcast.internal.serialization.SerializableByConvention.Reas
  * Contains all map/cache event queues of a partition.
  */
 @SerializableByConvention(PUBLIC_API)
-public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanReplicationEventQueue> implements DataSerializable {
+public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanEventQueue> implements DataSerializable {
     private static final long serialVersionUID = 1L;
 
     /** The mutex for concurrently creating new instances of WAN queues */
@@ -34,7 +34,7 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanRepl
      * @return {@code true} if the element was added to this queue, else
      * {@code false}
      */
-    public boolean offerEvent(InternalWanReplicationEvent wanReplicationEvent,
+    public boolean offerEvent(InternalWanEvent wanReplicationEvent,
                               String distributedObjectName,
                               int backupCount) {
         return getOrCreateEventQueue(distributedObjectName, backupCount).offer(wanReplicationEvent);
@@ -47,8 +47,8 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanRepl
      * @param distributedObjectName the name of the distributed object
      * @return the WAN event
      */
-    public InternalWanReplicationEvent pollEvent(String distributedObjectName) {
-        WanReplicationEventQueue eventQueue = get(distributedObjectName);
+    public InternalWanEvent pollEvent(String distributedObjectName) {
+        WanEventQueue eventQueue = get(distributedObjectName);
         if (eventQueue != null) {
             return eventQueue.poll();
         }
@@ -65,13 +65,13 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanRepl
      *                              events from this queue are stored
      * @return the WAN event queue
      */
-    private WanReplicationEventQueue getOrCreateEventQueue(String distributedObjectName, int backupCount) {
-        WanReplicationEventQueue eventQueue = get(distributedObjectName);
+    private WanEventQueue getOrCreateEventQueue(String distributedObjectName, int backupCount) {
+        WanEventQueue eventQueue = get(distributedObjectName);
         if (eventQueue == null) {
             synchronized (mutex) {
                 eventQueue = get(distributedObjectName);
                 if (eventQueue == null) {
-                    eventQueue = new WanReplicationEventQueue(backupCount);
+                    eventQueue = new WanEventQueue(backupCount);
                     put(distributedObjectName, eventQueue);
                 }
             }
@@ -82,7 +82,7 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanRepl
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeInt(size());
-        for (Map.Entry<String, WanReplicationEventQueue> entry : entrySet()) {
+        for (Map.Entry<String, WanEventQueue> entry : entrySet()) {
             out.writeUTF(entry.getKey());
             out.writeObject(entry.getValue());
         }
@@ -93,7 +93,7 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanRepl
         int size = in.readInt();
         for (int i = 0; i < size; i++) {
             String name = in.readUTF();
-            WanReplicationEventQueue queue = in.readObject();
+            WanEventQueue queue = in.readObject();
             put(name, queue);
         }
     }

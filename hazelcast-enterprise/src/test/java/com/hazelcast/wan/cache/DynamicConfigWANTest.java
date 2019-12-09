@@ -20,7 +20,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class})
-public class DynamicConfigWANTest extends CacheWanReplicationTestSupport {
+public class DynamicConfigWANTest extends WanCacheTestSupport {
 
     @BeforeClass
     public static void initJCache() {

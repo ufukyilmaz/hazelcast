@@ -2,9 +2,9 @@ package com.hazelcast.nio;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
+import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanQueueFullBehavior;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.Hazelcast;
@@ -94,12 +94,12 @@ public class AdvancedNetworkingWanCommunicationIntegrationTest extends AbstractA
     private static void addCommonWanReplication(Config config, int port) {
         WanReplicationConfig wrConfig = new WanReplicationConfig();
         wrConfig.setName("my-wan-cluster");
-        WanBatchReplicationPublisherConfig londonPublisherConfig = createWanPublisherConfig(
+        WanBatchPublisherConfig londonPublisherConfig = createWanPublisherConfig(
                 CLUSTER_A_NAME,
                 "127.0.0.1:" + port,
                 ConsistencyCheckStrategy.NONE
         );
-        wrConfig.addWanBatchReplicationPublisherConfig(londonPublisherConfig);
+        wrConfig.addBatchReplicationPublisherConfig(londonPublisherConfig);
 
         config.addWanReplicationConfig(wrConfig);
 
@@ -111,21 +111,21 @@ public class AdvancedNetworkingWanCommunicationIntegrationTest extends AbstractA
         config.getMapConfig(REPLICATED_MAP).setWanReplicationRef(wanRef);
     }
 
-    private static WanBatchReplicationPublisherConfig createWanPublisherConfig(String clusterName,
-                                                                               String endpoints,
-                                                                               ConsistencyCheckStrategy consistencyStrategy) {
-        WanBatchReplicationPublisherConfig c = new WanBatchReplicationPublisherConfig();
+    private static WanBatchPublisherConfig createWanPublisherConfig(String clusterName,
+                                                                    String endpoints,
+                                                                    ConsistencyCheckStrategy consistencyStrategy) {
+        WanBatchPublisherConfig c = new WanBatchPublisherConfig();
         c.setClusterName(clusterName)
-                .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
-                .setQueueCapacity(1000)
-                .setBatchSize(500)
-                .setBatchMaxDelayMillis(1000)
-                .setSnapshotEnabled(false)
-                .setResponseTimeoutMillis(60000)
-                .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
-                .setTargetEndpoints(endpoints)
-                .setDiscoveryPeriodSeconds(20)
-                .getWanSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);
+         .setQueueFullBehavior(WanQueueFullBehavior.DISCARD_AFTER_MUTATION)
+         .setQueueCapacity(1000)
+         .setBatchSize(500)
+         .setBatchMaxDelayMillis(1000)
+         .setSnapshotEnabled(false)
+         .setResponseTimeoutMillis(60000)
+         .setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE)
+         .setTargetEndpoints(endpoints)
+         .setDiscoveryPeriodSeconds(20)
+         .getSyncConfig().setConsistencyCheckStrategy(consistencyStrategy);
         return c;
     }
 

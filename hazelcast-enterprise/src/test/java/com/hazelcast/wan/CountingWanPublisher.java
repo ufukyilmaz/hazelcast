@@ -8,14 +8,14 @@ import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.internal.serialization.Data;
-import com.hazelcast.wan.impl.InternalWanReplicationEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * WAN publisher implementation that only counts the number of published events (excluding republished).
  */
-public class CountingWanPublisher implements WanReplicationPublisher, HazelcastInstanceAware {
+public class CountingWanPublisher implements WanPublisher, HazelcastInstanceAware {
 
     private AtomicLong counter = new AtomicLong();
     private AtomicLong backupCounter = new AtomicLong();
@@ -47,15 +47,15 @@ public class CountingWanPublisher implements WanReplicationPublisher, HazelcastI
     }
 
     @Override
-    public void publishReplicationEvent(WanReplicationEvent event) {
-        if (isOwnedPartition(((InternalWanReplicationEvent) event).getKey())) {
+    public void publishReplicationEvent(WanEvent event) {
+        if (isOwnedPartition(((InternalWanEvent) event).getKey())) {
             counter.incrementAndGet();
         }
     }
 
     @Override
-    public void publishReplicationEventBackup(WanReplicationEvent event) {
-        if (!isOwnedPartition(((InternalWanReplicationEvent) event).getKey())) {
+    public void publishReplicationEventBackup(WanEvent event) {
+        if (!isOwnedPartition(((InternalWanEvent) event).getKey())) {
             backupCounter.incrementAndGet();
         }
     }

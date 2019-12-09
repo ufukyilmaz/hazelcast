@@ -10,8 +10,8 @@ import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.SimpleEntryView;
-import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
-import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapRemoveEvent;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapUpdateEvent;
 import com.hazelcast.map.impl.wan.MapFilterProvider;
 import com.hazelcast.map.wan.MapWanEventFilter;
 import com.hazelcast.cluster.Address;
@@ -83,8 +83,8 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         Object wanMergePolicy = mapContainer.getWanMergePolicy();
         int totalBackupCount = mapContainer.getTotalBackupCount();
-        EnterpriseMapReplicationUpdate replicationEvent
-                = new EnterpriseMapReplicationUpdate(mapName, wanMergePolicy, entryView, totalBackupCount);
+        WanEnterpriseMapUpdateEvent replicationEvent
+                = new WanEnterpriseMapUpdateEvent(mapName, wanMergePolicy, entryView, totalBackupCount);
 
         if (!isEventFiltered(mapContainer, entryView, hasLoadProvenance ? LOADED : UPDATED)) {
             publishWanEvent(mapName, replicationEvent);
@@ -103,8 +103,8 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
     public void publishWanRemove(String mapName, Data key) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         int totalBackupCount = mapContainer.getTotalBackupCount();
-        EnterpriseMapReplicationRemove event
-                = new EnterpriseMapReplicationRemove(mapName, toHeapData(key), totalBackupCount);
+        WanEnterpriseMapRemoveEvent event
+                = new WanEnterpriseMapRemoveEvent(mapName, toHeapData(key), totalBackupCount);
 
         if (!isEventFiltered(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
             publishWanEvent(mapName, event);

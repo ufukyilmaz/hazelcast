@@ -1,7 +1,7 @@
 package com.hazelcast.cache.impl.wan;
 
 import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -101,11 +101,11 @@ public class WanCacheEntryView implements CacheEntryView<Data, Data>, Identified
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.WAN_CACHE_ENTRY_VIEW;
+        return WanDataSerializerHook.WAN_CACHE_ENTRY_VIEW;
     }
 }

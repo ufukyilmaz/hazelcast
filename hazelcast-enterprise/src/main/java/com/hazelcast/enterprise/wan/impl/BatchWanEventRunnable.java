@@ -1,27 +1,27 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
-import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
-import com.hazelcast.internal.services.ReplicationSupportingService;
+import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerOperation;
+import com.hazelcast.enterprise.wan.impl.replication.WanEventBatch;
+import com.hazelcast.internal.services.WanSupportingService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanEvent;
 
 import java.util.Set;
 
 /**
- * Class responsible for processing received {@link BatchWanReplicationEvent}s
- * and notifying the {@link WanOperation} of its completion.
+ * Class responsible for processing received {@link WanEventBatch}s
+ * and notifying the {@link WanEventContainerOperation} of its completion.
  */
 class BatchWanEventRunnable extends AbstractWanEventRunnable {
-    private final BatchWanReplicationEvent batchEvent;
+    private final WanEventBatch batchEvent;
     private final NodeEngine nodeEngine;
     private final Set<Operation> liveOperations;
     private final ILogger logger;
 
-    BatchWanEventRunnable(BatchWanReplicationEvent batchEvent,
-                          WanOperation operation,
+    BatchWanEventRunnable(WanEventBatch batchEvent,
+                          WanEventContainerOperation operation,
                           int partitionId,
                           NodeEngine nodeEngine,
                           Set<Operation> liveOperations,
@@ -36,10 +36,10 @@ class BatchWanEventRunnable extends AbstractWanEventRunnable {
     @Override
     public void run() {
         try {
-            for (WanReplicationEvent wanReplicationEvent : batchEvent.getEvents()) {
-                String serviceName = wanReplicationEvent.getServiceName();
-                ReplicationSupportingService service = nodeEngine.getService(serviceName);
-                service.onReplicationEvent(wanReplicationEvent, operation.getAcknowledgeType());
+            for (WanEvent wanEvent : batchEvent.getEvents()) {
+                String serviceName = wanEvent.getServiceName();
+                WanSupportingService service = nodeEngine.getService(serviceName);
+                service.onReplicationEvent(wanEvent, operation.getAcknowledgeType());
             }
             operation.sendResponse(true);
         } catch (Exception e) {

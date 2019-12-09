@@ -1,18 +1,18 @@
 package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.enterprise.wan.impl.operation.WanOperation;
-import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
+import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerOperation;
+import com.hazelcast.enterprise.wan.impl.replication.WanEventBatch;
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.internal.services.ReplicationSupportingService;
+import com.hazelcast.internal.services.WanSupportingService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.internal.util.executor.StripedExecutor;
-import com.hazelcast.wan.WanReplicationEvent;
-import com.hazelcast.wan.impl.InternalWanReplicationEvent;
+import com.hazelcast.wan.WanEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -55,8 +55,8 @@ class WanEventProcessor implements LiveOperationsTracker {
      * @param op               the operation which will be notified of the
      *                         processing result
      */
-    public void handleRepEvent(BatchWanReplicationEvent replicationEvent, WanOperation op) {
-        Collection<InternalWanReplicationEvent> eventList = replicationEvent.getEvents();
+    public void handleRepEvent(WanEventBatch replicationEvent, WanEventContainerOperation op) {
+        Collection<InternalWanEvent> eventList = replicationEvent.getEvents();
         int partitionId = eventList.isEmpty()
                 ? DEFAULT_KEY_FOR_STRIPED_EXECUTORS
                 : getPartitionId(eventList.iterator().next().getKey());
@@ -73,16 +73,16 @@ class WanEventProcessor implements LiveOperationsTracker {
      * @param op    the operation which will be notified of the
      *              processing result
      */
-    public void handleRepEvent(InternalWanReplicationEvent event, WanOperation op) {
+    public void handleRepEvent(InternalWanEvent event, WanEventContainerOperation op) {
         final int partitionId = getPartitionId(event.getKey());
         final WanEventRunnable processingRunnable
                 = new WanEventRunnable(event, op, partitionId, node.getNodeEngine(), liveOperations, logger);
         executeAndNotify(processingRunnable, op);
     }
 
-    public void handleEvent(WanReplicationEvent event, WanAcknowledgeType acknowledgeType) {
+    public void handleEvent(WanEvent event, WanAcknowledgeType acknowledgeType) {
         String serviceName = event.getServiceName();
-        ReplicationSupportingService service = node.getNodeEngine().getService(serviceName);
+        WanSupportingService service = node.getNodeEngine().getService(serviceName);
         service.onReplicationEvent(event, acknowledgeType);
     }
 
@@ -94,7 +94,7 @@ class WanEventProcessor implements LiveOperationsTracker {
      * @param op                    the operation which will be notified of the
      *                              processing result
      */
-    private void executeAndNotify(Runnable wanProcessingRunnable, WanOperation op) {
+    private void executeAndNotify(Runnable wanProcessingRunnable, WanEventContainerOperation op) {
         final StripedExecutor ex = getExecutor();
         try {
             liveOperations.add(op);

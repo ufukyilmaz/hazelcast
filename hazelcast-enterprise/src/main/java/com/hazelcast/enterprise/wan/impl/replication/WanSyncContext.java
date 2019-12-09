@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
-import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanEvent;
 import com.hazelcast.wan.impl.WanSyncStats;
 
 import java.util.Collection;
@@ -14,7 +14,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 /**
  * Context class holding objects specific to a WAN synchronization request.
  *
- * @param <T> The type of the WAN synchronizations statistics, can be {@link FullWanSyncStats} and {@link MerkleTreeWanSyncStats}
+ * @param <T> The type of the WAN synchronizations statistics, can be {@link FullWanSyncStats} and {@link WanMerkleTreeSyncStats}
  */
 class WanSyncContext<T extends WanSyncStats> {
     /**
@@ -35,7 +35,7 @@ class WanSyncContext<T extends WanSyncStats> {
      */
     private final Collection<String> mapNames;
     /**
-     * The count of {@link WanReplicationEvent} sync events
+     * The count of {@link WanEvent} sync events
      * pending replication per map, per partition.
      */
     private final Map<String, Map<Integer, AtomicInteger>> counterMaps;

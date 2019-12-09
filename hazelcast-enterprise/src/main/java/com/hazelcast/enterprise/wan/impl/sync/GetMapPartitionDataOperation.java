@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.sync;
 
-import com.hazelcast.enterprise.wan.impl.operation.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
 import com.hazelcast.internal.util.SetUtil;
 import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.operation.MapOperation;
@@ -57,11 +57,11 @@ public class GetMapPartitionDataOperation extends MapOperation implements Readon
 
     @Override
     public int getClassId() {
-        return EWRDataSerializerHook.GET_MAP_PARTITION_DATA_OPERATION;
+        return WanDataSerializerHook.GET_MAP_PARTITION_DATA_OPERATION;
     }
 
     @Override
     public int getFactoryId() {
-        return EWRDataSerializerHook.F_ID;
+        return WanDataSerializerHook.F_ID;
     }
 }

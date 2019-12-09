@@ -1,7 +1,7 @@
 package com.hazelcast.wan;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.WanBatchReplicationPublisherConfig;
+import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -9,12 +9,12 @@ import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionWrapper;
 import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationResponse;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.internal.nio.BufferObjectDataInput;
 import com.hazelcast.internal.nio.BufferObjectDataOutput;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.SimpleEntryView;
-import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapUpdateEvent;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.internal.serialization.Data;
@@ -29,7 +29,7 @@ import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
-import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
+import com.hazelcast.wan.impl.DelegatingWanScheme;
 import com.hazelcast.wan.impl.WanReplicationService;
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +40,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.hazelcast.wan.WanReplicationTestSupport.getWanReplicationService;
+import static com.hazelcast.wan.WanTestSupport.getWanReplicationService;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
@@ -135,7 +135,7 @@ public class WanProtocolVersionSelectionTest extends HazelcastTestSupport {
     @Test
     public void testClusterNameMismatch() {
         WanReplicationConfig wanRepConfig = clusterA.getConfig().getWanReplicationConfig(WAN_REPLICATION_SCHEME);
-        WanBatchReplicationPublisherConfig wanPublisherConfig
+        WanBatchPublisherConfig wanPublisherConfig
                 = wanRepConfig.getBatchPublisherConfigs().iterator().next();
         wanPublisherConfig.setClusterName(wanPublisherConfig.getClusterName() + "-wrong");
 
@@ -168,11 +168,11 @@ public class WanProtocolVersionSelectionTest extends HazelcastTestSupport {
                                        Version expectedSerializationVersion) {
         NodeEngineImpl nodeEngine = getNodeEngineImpl(clusterA.getAMember());
         WanReplicationService service = nodeEngine.getWanReplicationService();
-        DelegatingWanReplicationScheme publisher
+        DelegatingWanScheme publisher
                 = service.getWanReplicationPublishers(wanReplication.getSetupName());
         SerializationService ss = nodeEngine.getSerializationService();
 
-        CustomEnterpriseMapReplicationObject event = new CustomEnterpriseMapReplicationObject(
+        WanEnterpriseMapCustomEvent event = new WanEnterpriseMapCustomEvent(
                 MAP_NAME, ss.toData(key), ss.toData(value), expectedSerializationVersion);
         publisher.publishReplicationEvent(event);
     }
@@ -184,9 +184,9 @@ public class WanProtocolVersionSelectionTest extends HazelcastTestSupport {
         for (HazelcastInstance instance : sourceCluster.getMembers()) {
             if (instance != null) {
                 EnterpriseWanReplicationService service = wanReplicationService(instance);
-                WanReplicationPublisher publisher = service.getPublisherOrNull(setupName, targetClusterName);
+                WanPublisher publisher = service.getPublisherOrNull(setupName, targetClusterName);
                 if (publisher != null) {
-                    assertFalse(((WanBatchReplication) publisher).isConnected());
+                    assertFalse(((WanBatchPublisher) publisher).isConnected());
                 }
             }
         }
@@ -200,9 +200,9 @@ public class WanProtocolVersionSelectionTest extends HazelcastTestSupport {
         for (HazelcastInstance instance : sourceCluster.getMembers()) {
             if (instance != null) {
                 EnterpriseWanReplicationService service = wanReplicationService(instance);
-                WanReplicationPublisher publisher = service.getPublisherOrNull(setupName, targetClusterName);
+                WanPublisher publisher = service.getPublisherOrNull(setupName, targetClusterName);
                 if (publisher != null) {
-                    WanConnectionManager manager = ((WanBatchReplication) publisher).getConnectionManager();
+                    WanConnectionManager manager = ((WanBatchPublisher) publisher).getConnectionManager();
                     for (WanConnectionWrapper wrapper : manager.getConnectionPool().values()) {
                         WanProtocolNegotiationResponse response = wrapper.getNegotiationResponse();
                         Version chosenWanProtocolVersion = response.getChosenWanProtocolVersion();
@@ -224,23 +224,23 @@ public class WanProtocolVersionSelectionTest extends HazelcastTestSupport {
         @Override
         public IdentifiedDataSerializable create(int typeId) {
             if (typeId == CUSTOM_WAN_EVENT) {
-                return new CustomEnterpriseMapReplicationObject();
+                return new WanEnterpriseMapCustomEvent();
             }
             return null;
         }
     }
 
-    static class CustomEnterpriseMapReplicationObject extends EnterpriseMapReplicationUpdate {
+    static class WanEnterpriseMapCustomEvent extends WanEnterpriseMapUpdateEvent {
 
         private Version expectedSerializationVersion;
 
-        CustomEnterpriseMapReplicationObject() {
+        WanEnterpriseMapCustomEvent() {
         }
 
-        CustomEnterpriseMapReplicationObject(String mapName,
-                                             Data key,
-                                             Data value,
-                                             Version expectedSerializationVersion) {
+        WanEnterpriseMapCustomEvent(String mapName,
+                                    Data key,
+                                    Data value,
+                                    Version expectedSerializationVersion) {
             super(mapName, new PassThroughMergePolicy<>(), new SimpleEntryView<>(key, value), 0);
             this.expectedSerializationVersion = expectedSerializationVersion;
         }

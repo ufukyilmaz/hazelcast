@@ -5,7 +5,7 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.internal.partition.PartitionMigrationEvent;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.ClusterProperty;
@@ -274,7 +274,7 @@ public class WanCounterMigrationTest extends HazelcastTestSupport {
         }
     }
 
-    private static class MigrationBreakerWanPublisher extends WanBatchReplication {
+    private static class MigrationBreakerWanPublisher extends WanBatchPublisher {
         private final AtomicBoolean failMigration = new AtomicBoolean();
 
         @Override

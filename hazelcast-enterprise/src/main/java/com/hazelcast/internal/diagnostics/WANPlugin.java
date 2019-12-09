@@ -1,7 +1,7 @@
 package com.hazelcast.internal.diagnostics;
 
 import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.enterprise.wan.impl.replication.MerkleTreeWanSyncStats;
+import com.hazelcast.enterprise.wan.impl.replication.WanMerkleTreeSyncStats;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.internal.monitor.LocalWanPublisherStats;
 import com.hazelcast.internal.monitor.LocalWanStats;
@@ -9,11 +9,12 @@ import com.hazelcast.internal.monitor.WanSyncState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.properties.HazelcastProperty;
+import com.hazelcast.wan.WanEventCounters;
+import com.hazelcast.wan.WanPublisher;
 import com.hazelcast.wan.impl.ConsistencyCheckResult;
-import com.hazelcast.wan.DistributedServiceWanEventCounters;
-import com.hazelcast.wan.DistributedServiceWanEventCounters.DistributedObjectWanEventCounters;
+import com.hazelcast.wan.WanEventCounters.DistributedObjectWanEventCounters;
 import com.hazelcast.wan.impl.WanSyncStats;
-import com.hazelcast.wan.impl.DelegatingWanReplicationScheme;
+import com.hazelcast.wan.impl.DelegatingWanScheme;
 import com.hazelcast.wan.impl.WanReplicationService;
 
 import java.util.Map;
@@ -25,7 +26,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * The WANPlugin exposes WAN state to the diagnostics system. Currently it allows
  * inspecting the {@link WanSyncState} and {@link LocalWanPublisherStats} for each
- * {@link com.hazelcast.wan.WanReplicationPublisher}.
+ * {@link WanPublisher}.
  * This allows to get an overview of the WAN system, mainly how events are being published.
  * Detailed introspection of the WAN queues is not available.
  */
@@ -135,7 +136,7 @@ public class WANPlugin extends DiagnosticsPlugin {
      */
     private void renderReceivedEvents(String distributedObjectType,
                                       DiagnosticsLogWriter writer,
-                                      DistributedServiceWanEventCounters eventCounter,
+                                      WanEventCounters eventCounter,
                                       PublisherEventCounts publisherEventCounts) {
         if (eventCounter != null && !isNullOrEmpty(eventCounter.getEventCounterMap())) {
             for (Entry<String, DistributedObjectWanEventCounters> mapCounterEntry
@@ -159,12 +160,12 @@ public class WANPlugin extends DiagnosticsPlugin {
     /**
      * Renders the diagnostics for a single WAN replication config.
      * The config may consist of statistics for multiple
-     * {@link com.hazelcast.wan.WanReplicationPublisher}s.
+     * {@link WanPublisher}s.
      *
      * @param writer                   the diagnostics log writer
      * @param wanReplicationConfigName the WAN replication config name
      * @param stats                    the WAN replication statistics
-     * @see DelegatingWanReplicationScheme
+     * @see DelegatingWanScheme
      */
     private void renderWanReplication(DiagnosticsLogWriter writer, String wanReplicationConfigName, LocalWanStats stats) {
         final Map<String, LocalWanPublisherStats> publisherStats = stats.getLocalWanPublisherStats();
@@ -176,13 +177,13 @@ public class WANPlugin extends DiagnosticsPlugin {
     }
 
     /**
-     * Renders the diagnostics for a single {@link com.hazelcast.wan.WanReplicationPublisher}.
+     * Renders the diagnostics for a single {@link WanPublisher}.
      * This includes information on the current state of replication and the WAN queues
      * as well as information on events already published.
      *
      * @param writer         the diagnostics log writer
      * @param wanPublisherId the publisher ID
-     * @param stats          the statistics for the {@link com.hazelcast.wan.WanReplicationPublisher}
+     * @param stats          the statistics for the {@link WanPublisher}
      */
     private void renderWanPublisher(DiagnosticsLogWriter writer, String wanPublisherId, LocalWanPublisherStats stats) {
         writer.startSection(wanPublisherId);
@@ -249,8 +250,8 @@ public class WANPlugin extends DiagnosticsPlugin {
                 writer.writeKeyValueEntry(SYNC_STATS_PARTITIONS, stats.getPartitionsSynced());
                 writer.writeKeyValueEntry(SYNC_STATS_RECORDS, stats.getRecordsSynced());
 
-                if (stats instanceof MerkleTreeWanSyncStats) {
-                    MerkleTreeWanSyncStats merkleStats = (MerkleTreeWanSyncStats) stats;
+                if (stats instanceof WanMerkleTreeSyncStats) {
+                    WanMerkleTreeSyncStats merkleStats = (WanMerkleTreeSyncStats) stats;
                     writer.writeKeyValueEntry(MERKLE_SYNC_STATS_NODES, merkleStats.getNodesSynced());
                     writer.writeKeyValueEntry(MERKLE_SYNC_STATS_AVG_PER_LEAF, merkleStats.getAvgEntriesPerLeaf());
                     writer.writeKeyValueEntry(MERKLE_SYNC_STATS_STDDEV_PER_LEAF, merkleStats.getStdDevEntriesPerLeaf());

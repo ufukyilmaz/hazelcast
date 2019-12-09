@@ -3,9 +3,9 @@ package com.hazelcast.enterprise.wan.sync;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.impl.replication.BatchWanReplicationEvent;
+import com.hazelcast.enterprise.wan.impl.replication.WanEventBatch;
 import com.hazelcast.enterprise.wan.impl.replication.DefaultWanBatchSender;
-import com.hazelcast.enterprise.wan.impl.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.internal.management.ManagementCenterEventListener;
 import com.hazelcast.internal.management.events.Event;
 import com.hazelcast.internal.management.events.WanConsistencyCheckFinishedEvent;
@@ -117,7 +117,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
                 .withInitialPublisherState(STOPPED)
                 .withConsistencyCheckStrategy(consistencyCheckStrategy)
                 .withReplicationBatchSize(100)
-                .withWanPublisher(SyncingWanBatchReplication.class)
+                .withWanPublisher(WanBatchSyncingPublisher.class)
                 .withWanBatchSender(SyncingWanBatchSender.class)
                 .withMaxConcurrentInvocations(maxConcurrentInvocations)
                 .setup();
@@ -335,7 +335,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
     private TestContext setupTestContext(int suspendSyncAfterRecords, int nonEmptyPartitions, String... mapNames) {
         TestContext testContext = new TestContext(mapNames, nonEmptyPartitions);
         sourceCluster.forEachMember(member -> {
-            SyncingWanBatchReplication wanBatchReplication = (SyncingWanBatchReplication) wanReplicationPublisher(member,
+            WanBatchSyncingPublisher wanBatchReplication = (WanBatchSyncingPublisher) wanReplicationPublisher(member,
                     wanReplication);
             wanBatchReplication.setup(suspendSyncAfterRecords, testContext);
             testContext.mcEventListenerMap.putIfAbsent(member, mock(ManagementCenterEventListener.class));
@@ -668,7 +668,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
         }
     }
 
-    public static class SyncingWanBatchReplication extends WanBatchReplication {
+    public static class WanBatchSyncingPublisher extends WanBatchPublisher {
 
         private void setup(int suspendSyncAfterRecords, TestContext testContext) {
             ((SyncingWanBatchSender) wanBatchSender).setup(testContext, suspendSyncAfterRecords);
@@ -681,7 +681,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
         private volatile TestContext testContext;
 
         @Override
-        public InternalCompletableFuture<Boolean> send(BatchWanReplicationEvent batchReplicationEvent, Address target) {
+        public InternalCompletableFuture<Boolean> send(WanEventBatch batchReplicationEvent, Address target) {
             int syncEntryCount = batchReplicationEvent.getTotalEntryCount();
 
             if (eventCount.addAndGet(syncEntryCount) > suspendSyncAfterRecords) {

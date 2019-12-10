@@ -1,9 +1,9 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
+import com.hazelcast.cluster.Address;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
-import com.hazelcast.wan.impl.WanSyncType;
-import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionWrapper;
 import com.hazelcast.enterprise.wan.impl.operation.MerkleTreeNodeValueComparison;
 import com.hazelcast.enterprise.wan.impl.operation.WanMerkleTreeNodeCompareOperation;
@@ -14,28 +14,28 @@ import com.hazelcast.internal.management.events.WanConsistencyCheckStartedEvent;
 import com.hazelcast.internal.management.events.WanMerkleSyncFinishedEvent;
 import com.hazelcast.internal.management.events.WanSyncProgressUpdateEvent;
 import com.hazelcast.internal.management.events.WanSyncStartedEvent;
+import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
+import com.hazelcast.internal.util.MapUtil;
+import com.hazelcast.internal.util.ThreadUtil;
+import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;
+import com.hazelcast.internal.util.concurrent.IdleStrategy;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MerkleTreeNodeEntries;
 import com.hazelcast.map.impl.operation.MerkleTreeGetEntriesOperation;
 import com.hazelcast.map.impl.operation.MerkleTreeGetEntryCountOperation;
 import com.hazelcast.map.impl.operation.MerkleTreeNodeCompareOperationFactory;
-import com.hazelcast.map.impl.wan.WanEnterpriseMapMerkleTreeNode;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapEvent;
-import com.hazelcast.cluster.Address;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapMerkleTreeNode;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.internal.partition.IPartition;
-import com.hazelcast.internal.util.MapUtil;
-import com.hazelcast.internal.util.ThreadUtil;
-import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;
-import com.hazelcast.internal.util.concurrent.IdleStrategy;
 import com.hazelcast.wan.impl.ConsistencyCheckResult;
 import com.hazelcast.wan.impl.WanAntiEntropyEvent;
 import com.hazelcast.wan.impl.WanSyncStats;
+import com.hazelcast.wan.impl.WanSyncType;
 import com.hazelcast.wan.impl.merkletree.MerkleTreeUtil;
 
 import java.util.Collection;
@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.internal.util.CollectionUtil.isEmpty;
 import static com.hazelcast.internal.util.Preconditions.checkNotNull;
@@ -208,6 +209,11 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         int remainingEventCount = syncContext.getSyncCounter(mapName, partitionId).addAndGet(-nodeEntryCount);
         WanMerkleTreeSyncStats syncStats = syncContext.getSyncStats(mapName);
 
+        updateOnPartitionSync(syncContext, nodeEntryCount, mapName, remainingEventCount, syncStats);
+    }
+
+    private void updateOnPartitionSync(WanSyncContext<WanMerkleTreeSyncStats> syncContext, int nodeEntryCount, String mapName,
+                                       int remainingEventCount, WanMerkleTreeSyncStats syncStats) {
         updateSerializingExecutor.execute(() -> {
             syncStats.onSyncLeaf(nodeEntryCount);
 
@@ -376,17 +382,31 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             // as soon as the entries are enqueued, we must ensure the stats are ready
             // or otherwise the replication thread might conclude that it has completed
             // sync while in fact it is still ongoing
+            AtomicInteger syncCounter = syncContext.getSyncCounter(mapName, partitionId);
             for (MerkleTreeNodeEntries nodeEntries : partitionEntries) {
-                syncContext.getSyncCounter(mapName, partitionId)
-                           .addAndGet(nodeEntries.getNodeEntries().size());
+                syncCounter.addAndGet(nodeEntries.getNodeEntries().size());
             }
 
             for (MerkleTreeNodeEntries nodeEntries : partitionEntries) {
                 if (!nodeEntries.getNodeEntries().isEmpty()) {
                     WanEnterpriseMapMerkleTreeNode node =
-                            new WanEnterpriseMapMerkleTreeNode(syncContext.getUuid(), mapName, nodeEntries, partitionId);
+                            new WanEnterpriseMapMerkleTreeNode(syncContext.getUuid(), mapName, nodeEntries,
+                                    partitionId);
                     publisher.putToSyncEventQueue(node);
                 }
+            }
+
+            if (syncCounter.get() == 0) {
+                // this branch is taken only if the MT nodes that were found
+                // inconsistent on the given partition become empty between
+                // the consistency check and the synchronizing phase
+                //
+                // this means we have nothing to synchronize despite that
+                // the consistency check found it otherwise
+                //
+                // in this case we need to book the partition as processed
+                // and emit the MC update event for the partition
+                updateOnPartitionSync(syncContext, 0, mapName, 0, stats);
             }
             processedPartitions.add(partitionId);
         }

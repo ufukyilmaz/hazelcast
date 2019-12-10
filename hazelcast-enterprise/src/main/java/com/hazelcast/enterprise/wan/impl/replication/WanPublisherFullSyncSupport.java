@@ -1,9 +1,8 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
-import com.hazelcast.wan.impl.WanSyncType;
-import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.sync.GetMapPartitionDataOperation;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventResult;
 import com.hazelcast.enterprise.wan.impl.sync.WanSyncManager;
@@ -11,7 +10,10 @@ import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.management.events.WanFullSyncFinishedEvent;
 import com.hazelcast.internal.management.events.WanSyncProgressUpdateEvent;
 import com.hazelcast.internal.management.events.WanSyncStartedEvent;
+import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
+import com.hazelcast.internal.util.SetUtil;
+import com.hazelcast.internal.util.ThreadUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.SimpleEntryView;
@@ -20,11 +22,9 @@ import com.hazelcast.map.impl.wan.WanEnterpriseMapSyncEvent;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.internal.partition.IPartition;
-import com.hazelcast.internal.util.SetUtil;
-import com.hazelcast.internal.util.ThreadUtil;
 import com.hazelcast.wan.impl.ConsistencyCheckResult;
 import com.hazelcast.wan.impl.WanSyncStats;
+import com.hazelcast.wan.impl.WanSyncType;
 
 import java.util.Collection;
 import java.util.Map;
@@ -308,6 +308,10 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
             FullWanSyncStats syncStats = syncContext.getSyncStats(mapName);
             updateSerializingExecutor.execute(() -> {
                 int partitionsSynced = syncStats.onSyncPartition();
+                WanSyncProgressUpdateEvent updateEvent = new WanSyncProgressUpdateEvent(syncContext.getUuid(),
+                        publisher.wanReplicationName, publisher.wanPublisherId, mapName, syncStats.getPartitionsToSync(),
+                        partitionsSynced, syncStats.getRecordsSynced());
+                nodeEngine.getManagementCenterService().log(updateEvent);
                 completeSyncContext(syncContext, mapName, syncStats, partitionsSynced);
             });
         }

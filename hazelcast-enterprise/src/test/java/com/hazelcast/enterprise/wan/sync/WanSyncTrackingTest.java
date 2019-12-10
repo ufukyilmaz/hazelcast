@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.sync;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
@@ -14,16 +15,16 @@ import com.hazelcast.internal.management.events.WanFullSyncFinishedEvent;
 import com.hazelcast.internal.management.events.WanMerkleSyncFinishedEvent;
 import com.hazelcast.internal.management.events.WanSyncProgressUpdateEvent;
 import com.hazelcast.internal.management.events.WanSyncStartedEvent;
+import com.hazelcast.internal.util.MutableInteger;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
-import com.hazelcast.cluster.Address;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.impl.WanSyncStats;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
+import com.hazelcast.wan.impl.WanSyncStats;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -434,15 +435,6 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
             assertEquals(String.format("Total synced partitions for %s should be %d, but it is %d", uuid,
                     expectedPartitionsSynced, actualPartitionsSynced), expectedPartitionsSynced, actualPartitionsSynced);
         }
-
-        // verify synced partitions increases by one in every progress update event
-        testContext.allCapturedProgressUpdatesMap.values().forEach(updateEventList -> {
-            int lastPartitionsSynced = 0;
-            for (WanSyncProgressUpdateEvent updateEvent : updateEventList) {
-                assertEquals(lastPartitionsSynced + 1, updateEvent.getPartitionsSynced());
-                lastPartitionsSynced = updateEvent.getPartitionsSynced();
-            }
-        });
     }
 
     private void verifyAllPartitionsSyncedOverlapped(TestContext testContext) {
@@ -486,7 +478,8 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
             verify(mcEventListener, atLeastOnce()).onEventLogged(eventCaptor.capture());
 
-            processUpdateEvents(recordsSyncedMap, instance, eventCaptor, updateEventConsumer(testContext, totalUpdateEvents));
+            processUpdateEvents(recordsSyncedMap, instance, eventCaptor,
+                    (key, updateEvent) -> totalUpdateEvents.getAndIncrement());
 
             Event lastEvent = eventCaptor.getValue();
             if (consistencyCheckStrategy == NONE) {
@@ -523,6 +516,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
         AtomicInteger totalUpdateEvents = new AtomicInteger();
         int syncedMaps = testContext.mapNames.length;
         Map<SyncKey, Integer> recordsSyncedMap = new HashMap<>();
+        Map<SyncKey, List<WanSyncProgressUpdateEvent>> capturedProgressUpdatesMap = new HashMap<>();
 
         testContext.mcEventListenerMap.keySet().forEach(instance -> {
             ManagementCenterEventListener mcEventListener = testContext.mcEventListenerMap.get(instance);
@@ -530,7 +524,10 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
             verify(mcEventListener, atLeastOnce()).onEventLogged(eventCaptor.capture());
 
-            processUpdateEvents(recordsSyncedMap, instance, eventCaptor, updateEventConsumer(testContext, totalUpdateEvents));
+            processUpdateEvents(recordsSyncedMap, instance, eventCaptor, (key, updateEvent) -> {
+                capturedProgressUpdatesMap.computeIfAbsent(key, k -> new LinkedList<>()).add(updateEvent);
+                totalUpdateEvents.getAndIncrement();
+            });
 
             Event lastEvent = eventCaptor.getValue();
 
@@ -547,14 +544,35 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
             }
         });
 
+        // verify that the sent and reported record counts match
         recordsSyncedMap.values().forEach(totalRecordsReported::addAndGet);
-
         int sentCount = testContext.sentCount.get();
         int reportedCount = totalRecordsReported.get();
         assertEquals(sentCount, reportedCount);
 
-        int expectedUpdateEvents = syncedMaps * testContext.nonEmptyPartitions;
+        // verify the total number of update events
+        final int expectedUpdateEvents;
+        if (consistencyCheckStrategy == NONE) {
+            // with full sync we expect all partitions are synced
+            expectedUpdateEvents = syncedMaps * testContext.totalPartitions;
+        } else {
+            // with merkle sync we expect that only the inconsistent partitions
+            // are synced, which in this test are the non-empty ones
+            expectedUpdateEvents = syncedMaps * testContext.nonEmptyPartitions;
+        }
         assertEquals(expectedUpdateEvents, totalUpdateEvents.get());
+
+        // verify synced partitions increases by one in every progress update event
+        MutableInteger updateEventsVerified = new MutableInteger();
+        capturedProgressUpdatesMap.values().forEach(updateEvents -> {
+            int lastPartitionsSynced = 0;
+            for (WanSyncProgressUpdateEvent updateEvent : updateEvents) {
+                assertEquals(lastPartitionsSynced + 1, updateEvent.getPartitionsSynced());
+                lastPartitionsSynced = updateEvent.getPartitionsSynced();
+                updateEventsVerified.getAndInc();
+            }
+        });
+        assertEquals(expectedUpdateEvents, updateEventsVerified.value);
     }
 
     private void verifyManagementCenterInteractionOverlapped(TestContext testContext) {
@@ -570,7 +588,8 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
             verify(mcEventListener, atLeastOnce()).onEventLogged(eventCaptor.capture());
 
-            processUpdateEvents(recordsSyncedMap, instance, eventCaptor, updateEventConsumer(testContext, totalUpdateEvents));
+            processUpdateEvents(recordsSyncedMap, instance, eventCaptor,
+                    (key, updateEvent) -> totalUpdateEvents.getAndIncrement());
 
             Event lastEvent = eventCaptor.getValue();
             if (consistencyCheckStrategy == NONE) {
@@ -629,14 +648,6 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
         });
     }
 
-    private BiConsumer<SyncKey, WanSyncProgressUpdateEvent> updateEventConsumer(TestContext testContext,
-                                                                                AtomicInteger totalUpdateEvents) {
-        return (key, updateEvent) -> {
-            testContext.allCapturedProgressUpdatesMap.computeIfAbsent(key, k -> new LinkedList<>()).add(updateEvent);
-            totalUpdateEvents.getAndIncrement();
-        };
-    }
-
     private void registerMcEventListener(TestContext listener) {
         sourceCluster.forEachMember(member -> {
             ManagementCenterEventListener eventListener = listener.mcEventListenerMap.get(member);
@@ -660,7 +671,6 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
         private final int totalPartitions = getNode(sourceCluster.getAMember()).getPartitionService().getPartitionCount();
         private final int nonEmptyPartitions;
         private Map<SyncKey, WanSyncStats> syncStatsMap = new HashMap<>();
-        private Map<SyncKey, List<WanSyncProgressUpdateEvent>> allCapturedProgressUpdatesMap = new HashMap<>();
 
         private TestContext(String[] mapNames, int nonEmptyPartitions) {
             this.mapNames = mapNames;

@@ -40,7 +40,7 @@ public class EnterpriseMapIndexLifecycleTest extends MapIndexLifecycleTest {
     @Override
     protected Config getConfig() {
         if (inMemoryFormat == NATIVE) {
-            return getHDConfig();
+            return getHDConfig(super.getConfig());
         } else {
             return super.getConfig();
         }

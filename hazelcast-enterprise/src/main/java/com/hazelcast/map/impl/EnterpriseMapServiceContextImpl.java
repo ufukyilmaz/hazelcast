@@ -14,6 +14,7 @@ import com.hazelcast.internal.hotrestart.RamStoreRegistry;
 import com.hazelcast.internal.metrics.DynamicMetricsProvider;
 import com.hazelcast.internal.metrics.MetricDescriptor;
 import com.hazelcast.internal.metrics.MetricsCollectionContext;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.util.comparators.NativeValueComparator;
@@ -32,7 +33,6 @@ import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.wan.MapFilterProvider;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.query.impl.HDIndexProvider;
 import com.hazelcast.query.impl.IndexProvider;
 import com.hazelcast.query.impl.predicates.QueryOptimizer;
@@ -165,10 +165,11 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     public QueryRunner getMapQueryRunner(String mapName) {
-        if (getInMemoryFormat(mapName) != NATIVE) {
+        if (getInMemoryFormat(mapName) == NATIVE) {
+            return hdMapQueryRunner;
+        } else {
             return super.getMapQueryRunner(mapName);
         }
-        return hdMapQueryRunner;
     }
 
     private InMemoryFormat getInMemoryFormat(String mapName) {

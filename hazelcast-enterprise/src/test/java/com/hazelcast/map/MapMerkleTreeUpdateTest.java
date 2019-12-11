@@ -5,7 +5,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
-import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
@@ -36,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.BiConsumer;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -454,7 +454,8 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
                 entry -> {
                     entry.setValue("42x");
                     return null;
-                }, callback);
+                })
+           .whenCompleteAsync(callback);
 
         callback.await();
         assertNotEquals(0, rootHash());
@@ -483,7 +484,8 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
                 entry -> {
                     entry.setValue(null);
                     return null;
-                }, callback);
+                })
+           .whenCompleteAsync(callback);
 
         callback.await();
         assertEquals(0, rootHash());
@@ -652,18 +654,15 @@ public class MapMerkleTreeUpdateTest extends HazelcastTestSupport {
         return merkleTree;
     }
 
-    private static final class AwaitableExecutionCallback implements ExecutionCallback {
+    private static final class AwaitableExecutionCallback implements BiConsumer<Object, Throwable> {
         private final CountDownLatch latch = new CountDownLatch(1);
         private volatile Throwable throwable;
 
         @Override
-        public void onResponse(Object response) {
-            latch.countDown();
-        }
-
-        @Override
-        public void onFailure(Throwable t) {
-            throwable = t;
+        public void accept(Object o, Throwable t) {
+            if (t != null) {
+                throwable = t;
+            }
             latch.countDown();
         }
 

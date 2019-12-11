@@ -180,9 +180,9 @@ public class FailoverTest extends ClientTestSupport {
     @Test(expected = InvalidConfigurationException.class)
     public void testFailover_illegalConfigChangeOnFailoverClientConfigs() {
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setExecutorPoolSize(2);
+        clientConfig.setBackupAckToClientEnabled(true);
         ClientConfig clientConfig2 = new ClientConfig();
-        clientConfig2.setExecutorPoolSize(4);
+        clientConfig2.setBackupAckToClientEnabled(false);
 
         ClientFailoverConfig clientFailoverConfig = new ClientFailoverConfig();
         clientFailoverConfig.addClientConfig(clientConfig).addClientConfig(clientConfig2);

@@ -4,7 +4,6 @@ import com.hazelcast.client.HazelcastClientNotActiveException;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.config.SocketOptions;
-import com.hazelcast.client.impl.spi.ClientExecutionService;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
@@ -25,6 +24,7 @@ import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionAware;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.memory.FreeMemoryChecker;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.util.ConcurrencyUtil;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
@@ -32,6 +32,7 @@ import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.partition.PartitioningStrategy;
+import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.version.Version;
@@ -119,7 +120,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     public ChannelInitializer createChannelInitializer(SSLConfig sslConfig, SocketOptions socketOptions) {
         if (sslConfig != null && sslConfig.isEnabled()) {
             LOGGER.info("SSL is enabled");
-            Executor executor = client.getClientExecutionService().getUserExecutor();
+            Executor executor = ConcurrencyUtil.DEFAULT_ASYNC_EXECUTOR;
             return new ClientTLSChannelInitializer(sslConfig, executor, socketOptions);
         }
         return super.createChannelInitializer(sslConfig, socketOptions);
@@ -154,11 +155,11 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     @Override
     public NearCacheManager createNearCacheManager() {
         SerializationService ss = client.getSerializationService();
-        ClientExecutionService es = client.getClientExecutionService();
+        TaskScheduler taskScheduler = client.getTaskScheduler();
         ClassLoader classLoader = client.getClientConfig().getClassLoader();
         HazelcastProperties properties = client.getProperties();
 
-        return new EnterpriseNearCacheManager(((EnterpriseSerializationService) ss), es, classLoader, properties);
+        return new EnterpriseNearCacheManager(((EnterpriseSerializationService) ss), taskScheduler, classLoader, properties);
     }
 
     @Override

@@ -65,8 +65,6 @@ public class RestClusterEnterpriseWithSecurityTest extends AbstractRestClusterEn
         assertEquals(HTTP_FORBIDDEN,
                 communicator.forceStart(clusterName, WRONG_PASSWORD).responseCode);
         assertEquals(HTTP_FORBIDDEN, communicator.partialStart(clusterName, WRONG_PASSWORD).responseCode);
-        assertEquals(HTTP_FORBIDDEN,
-                communicator.changeManagementCenterUrl(clusterName, WRONG_PASSWORD, "http://bla").responseCode);
         assertEquals(HTTP_FORBIDDEN, communicator.listClusterNodes(clusterName, WRONG_PASSWORD).responseCode);
         assertEquals(HTTP_FORBIDDEN, communicator.shutdownCluster(clusterName, WRONG_PASSWORD).responseCode);
         assertEquals(HTTP_FORBIDDEN, communicator.getClusterState(clusterName, WRONG_PASSWORD).responseCode);

@@ -43,7 +43,6 @@ import com.hazelcast.internal.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.internal.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.internal.jmx.HazelcastMBean;
 import com.hazelcast.internal.jmx.ManagementService;
-import com.hazelcast.internal.management.ManagementCenterConnectionFactory;
 import com.hazelcast.internal.management.TimedMemberStateFactory;
 import com.hazelcast.internal.memory.FreeMemoryChecker;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
@@ -57,7 +56,6 @@ import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.monitor.impl.jmx.EnterpriseManagementService;
 import com.hazelcast.internal.monitor.impl.jmx.LicenseInfoMBean;
-import com.hazelcast.internal.monitor.impl.management.EnterpriseManagementCenterConnectionFactory;
 import com.hazelcast.internal.monitor.impl.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.internal.monitor.impl.rest.EnterpriseTextCommandServiceImpl;
 import com.hazelcast.internal.monitor.impl.rest.LicenseInfoImpl;
@@ -975,11 +973,6 @@ public class EnterpriseNodeExtension
     @Override
     public TimedMemberStateFactory createTimedMemberStateFactory(HazelcastInstanceImpl instance) {
         return new EnterpriseTimedMemberStateFactory(instance);
-    }
-
-    @Override
-    public ManagementCenterConnectionFactory getManagementCenterConnectionFactory() {
-        return new EnterpriseManagementCenterConnectionFactory();
     }
 
     @Override

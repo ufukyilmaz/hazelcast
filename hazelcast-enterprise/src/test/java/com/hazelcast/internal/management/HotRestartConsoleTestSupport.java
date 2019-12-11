@@ -1,4 +1,4 @@
-package com.hazelcast.internal.management.request;
+package com.hazelcast.internal.management;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
@@ -13,7 +13,7 @@ import org.junit.Rule;
 
 import static org.junit.Assert.assertFalse;
 
-public abstract class HotRestartConsoleRequestTestSupport extends HazelcastTestSupport {
+public abstract class HotRestartConsoleTestSupport extends HazelcastTestSupport {
 
     @Rule
     public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
@@ -22,12 +22,7 @@ public abstract class HotRestartConsoleRequestTestSupport extends HazelcastTestS
 
     void shutdown(final HazelcastInstance hz1, HazelcastInstance hz2) {
         hz2.getCluster().shutdown();
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertFalse(hz1.getLifecycleService().isRunning());
-            }
-        });
+        assertTrueEventually(() -> assertFalse(hz1.getLifecycleService().isRunning()));
     }
 
     Config newConfig() {

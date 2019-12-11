@@ -132,10 +132,6 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
                 .withReplication(wanReplication)
                 .withMergePolicy(PassThroughMergePolicy.class)
                 .setup();
-
-        sourceCluster.getConfig().getManagementCenterConfig()
-                .setUrl("https://someUrl")
-                .setEnabled(true);
     }
 
     private void configureMerkleTrees(Cluster cluster) {

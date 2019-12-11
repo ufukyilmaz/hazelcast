@@ -1,15 +1,15 @@
-package com.hazelcast.internal.management.request;
+package com.hazelcast.internal.management;
 
+import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
-import com.hazelcast.cluster.Member;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.ClusterHotRestartStatus;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.MemberHotRestartStatus;
-import com.hazelcast.internal.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -19,7 +19,6 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -37,10 +36,10 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestTestSupport {
+public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleTestSupport {
 
     @Test
-    public void testGetStatus_withoutHotRestart() throws Exception {
+    public void testGetStatus_withoutHotRestart() {
         HazelcastInstance hz = factory.newHazelcastInstance();
         ClusterHotRestartStatusDTO clusterHotRestartStatus = getClusterHotRestartStatus(hz);
 
@@ -87,13 +86,10 @@ public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestT
     }
 
     private Future<HazelcastInstance> startHazelcastInstanceAsync(final GetHotRestartStatusListener listener) {
-        return spawn(new Callable<HazelcastInstance>() {
-            @Override
-            public HazelcastInstance call() throws Exception {
-                Config config = newConfig();
-                config.addListenerConfig(new ListenerConfig(listener));
-                return factory.newHazelcastInstance(config);
-            }
+        return spawn(() -> {
+            Config config = newConfig();
+            config.addListenerConfig(new ListenerConfig(listener));
+            return factory.newHazelcastInstance(config);
         });
     }
 
@@ -111,7 +107,7 @@ public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestT
 
         private CountDownLatch loadStartLatch = new CountDownLatch(2);
         private CountDownLatch latch = new CountDownLatch(1);
-        private final Collection<HazelcastInstance> instances = synchronizedCollection(new ArrayList<HazelcastInstance>());
+        private final Collection<HazelcastInstance> instances = synchronizedCollection(new ArrayList<>());
 
         @Override
         public void onDataLoadStart(Member member) {
@@ -132,7 +128,7 @@ public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestT
             latch.countDown();
         }
 
-        ClusterHotRestartStatusDTO getCurrentClusterHotRestartStatus() throws Exception {
+        ClusterHotRestartStatusDTO getCurrentClusterHotRestartStatus() {
             assertOpenEventually(loadStartLatch);
             HazelcastInstance master = null;
             for (HazelcastInstance instance : instances) {

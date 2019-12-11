@@ -7,19 +7,19 @@ import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.WanMerkleTreeSyncStats;
 import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
 import com.hazelcast.internal.monitor.WanSyncState;
+import com.hazelcast.internal.partition.IPartition;
+import com.hazelcast.internal.util.RootCauseMatcher;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
-import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
-import com.hazelcast.internal.util.RootCauseMatcher;
-import com.hazelcast.wan.impl.WanSyncStats;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import com.hazelcast.wan.impl.AddWanConfigResult;
+import com.hazelcast.wan.impl.WanSyncStats;
 import com.hazelcast.wan.impl.WanSyncStatus;
 import org.junit.After;
 import org.junit.Before;
@@ -39,8 +39,6 @@ import java.util.Map;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
-import static com.hazelcast.test.HazelcastTestSupport.assertContains;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
@@ -82,7 +80,7 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
     private Cluster clusterA;
     private Cluster clusterB;
 
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @After
     public void cleanup() {

@@ -12,12 +12,12 @@ import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationRespons
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.internal.nio.BufferObjectDataInput;
 import com.hazelcast.internal.nio.BufferObjectDataOutput;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapUpdateEvent;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.NodeEngineImpl;
@@ -73,7 +73,8 @@ public class WanProtocolVersionSelectionTest extends HazelcastTestSupport {
     @Before
     public void initClusters() {
         factory = new CustomNodeExtensionTestInstanceFactory(
-                node -> new WanServiceMockingEnterpriseNodeExtension(node, spy(new EnterpriseWanReplicationService(node))));
+                node -> new WanServiceMockingEnterpriseNodeExtension(node, spy(new EnterpriseWanReplicationService(node))))
+                .withMetricsRule(metricsRule);
         clusterA = clusterA(factory, 1, this::getConfig).setup();
         clusterB = clusterB(factory, 1, this::getConfig).setup();
 

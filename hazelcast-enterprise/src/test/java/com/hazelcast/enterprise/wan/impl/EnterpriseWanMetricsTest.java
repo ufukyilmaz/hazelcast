@@ -64,7 +64,7 @@ public class EnterpriseWanMetricsTest extends HazelcastTestSupport {
     private Cluster sourceCluster;
     private Cluster targetCluster;
     private WanReplication wanReplication;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @Parameter
     public ConsistencyCheckStrategy consistencyCheckStrategy;

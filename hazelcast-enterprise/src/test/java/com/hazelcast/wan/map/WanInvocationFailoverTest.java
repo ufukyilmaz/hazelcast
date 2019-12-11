@@ -2,6 +2,7 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -25,7 +26,7 @@ import static com.hazelcast.wan.map.WanBatchPublisherMapTest.isAllMembersConnect
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class WanInvocationFailoverTest {
+public class WanInvocationFailoverTest extends HazelcastTestSupport {
 
     private static final String MAP_NAME = "map";
     private static final String REPLICATION_NAME = "wanReplication";
@@ -36,7 +37,7 @@ public class WanInvocationFailoverTest {
     private Cluster clusterA;
     private Cluster clusterB;
 
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @After
     public void cleanup() {

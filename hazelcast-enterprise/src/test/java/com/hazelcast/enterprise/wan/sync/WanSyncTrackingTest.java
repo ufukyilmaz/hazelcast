@@ -4,9 +4,9 @@ import com.hazelcast.cluster.Address;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
-import com.hazelcast.enterprise.wan.impl.replication.WanEventBatch;
 import com.hazelcast.enterprise.wan.impl.replication.DefaultWanBatchSender;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
+import com.hazelcast.enterprise.wan.impl.replication.WanEventBatch;
 import com.hazelcast.internal.management.ManagementCenterEventListener;
 import com.hazelcast.internal.management.events.Event;
 import com.hazelcast.internal.management.events.WanConsistencyCheckFinishedEvent;
@@ -79,7 +79,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     private Cluster sourceCluster;
     private Cluster targetCluster;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
     private WanReplication wanReplication;
 
     @Parameter(0)

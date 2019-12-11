@@ -4,6 +4,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.ClusterProperty;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -28,7 +29,6 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
 import static com.hazelcast.wan.WanPublisherState.STOPPED;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanAntiEntropyTestSupport.verifyAllPartitionsAreConsistent;
@@ -40,7 +40,7 @@ import static java.util.Arrays.asList;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class WanMerkleConsistencyCheckTest {
+public class WanMerkleConsistencyCheckTest extends HazelcastTestSupport {
     private static final String MAP_NAME = "MAP_WITH_MERKLETREES";
     private static final String REPLICATION_NAME = "wanReplication";
 
@@ -50,7 +50,7 @@ public class WanMerkleConsistencyCheckTest {
     private Cluster sourceCluster;
     private Cluster targetCluster;
     private WanReplication wanReplication;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @Parameters(name = "inMemoryFormat: {0} sourceDepth:{1} targetDepth:{2} partitions:{3} elements:{4}")
     public static Collection<Object[]> parameters() {

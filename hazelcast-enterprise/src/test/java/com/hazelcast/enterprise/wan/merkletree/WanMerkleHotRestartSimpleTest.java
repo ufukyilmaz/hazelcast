@@ -1,7 +1,6 @@
 package com.hazelcast.enterprise.wan.merkletree;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
@@ -9,6 +8,7 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import org.junit.After;
@@ -40,7 +40,7 @@ public class WanMerkleHotRestartSimpleTest extends HazelcastTestSupport {
 
     private Cluster sourceCluster;
     private Cluster targetCluster;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @Rule
     public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();

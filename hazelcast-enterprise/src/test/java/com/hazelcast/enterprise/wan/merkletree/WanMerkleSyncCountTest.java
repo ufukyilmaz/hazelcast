@@ -6,6 +6,7 @@ import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.internal.monitor.LocalWanStats;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.ClusterProperty;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -28,7 +29,6 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.Collection;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class WanMerkleSyncCountTest {
+public class WanMerkleSyncCountTest extends HazelcastTestSupport {
     private static final String MAP_NAME = "MAP_WITH_MERKLETREES";
     private static final String REPLICATION_NAME = "wanReplication";
 
@@ -53,7 +53,7 @@ public class WanMerkleSyncCountTest {
     private Cluster sourceCluster;
     private Cluster targetCluster;
     private WanReplication wanReplication;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @Parameters(name = "sourceDepth: {0} targetDepth: {1} partitions: {2} sourceCount: {3} targetCount:{4} syncCount:{5}")
     public static Collection<Object[]> parameters() {

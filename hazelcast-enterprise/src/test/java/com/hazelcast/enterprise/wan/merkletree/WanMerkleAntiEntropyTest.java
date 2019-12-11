@@ -2,15 +2,16 @@ package com.hazelcast.enterprise.wan.merkletree;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.spi.properties.ClusterProperty;
-import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.map.IMap;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.properties.ClusterProperty;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import org.junit.After;
@@ -50,7 +51,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class WanMerkleAntiEntropyTest {
+public class WanMerkleAntiEntropyTest extends HazelcastTestSupport {
     private static final String MAP_NAME = "MAP_WITH_MERKLETREES";
     private static final String REPLICATION_NAME = "wanReplication";
     private static final int MAP_ENTRIES = 100;
@@ -61,7 +62,7 @@ public class WanMerkleAntiEntropyTest {
     private Cluster sourceCluster;
     private Cluster targetCluster;
     private WanReplication wanReplication;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @Parameters(name = "inMemoryFormat: {0}")
     public static Collection<InMemoryFormat> parameters() {

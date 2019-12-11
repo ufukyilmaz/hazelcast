@@ -7,9 +7,9 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.impl.ConsistencyCheckResult;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
+import com.hazelcast.wan.impl.ConsistencyCheckResult;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,7 +59,7 @@ public class MapWanAntiEntropyTest extends HazelcastTestSupport {
     private Cluster clusterB;
     private WanReplication wanReplication;
 
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @Parameter
     public ConsistencyCheckStrategy consistencyCheckStrategy;

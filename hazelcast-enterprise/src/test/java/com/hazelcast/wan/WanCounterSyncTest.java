@@ -3,6 +3,7 @@ package com.hazelcast.wan;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.internal.util.EmptyStatement;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.IMap;
@@ -12,7 +13,6 @@ import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
-import com.hazelcast.internal.util.EmptyStatement;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
 import org.junit.After;
@@ -54,7 +54,7 @@ public class WanCounterSyncTest extends HazelcastTestSupport {
     private Cluster targetCluster;
     private ScheduledExecutorService executorService;
     private WanReplication wanReplication;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
     private ILogger logger = Logger.getLogger(WanCounterSyncTest.class);
 
     @Parameter

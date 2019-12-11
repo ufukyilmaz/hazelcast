@@ -62,7 +62,7 @@ public class MapWanSyncClusterStateTest extends HazelcastTestSupport {
     private Cluster targetCluster;
     private WanReplication wanReplication;
 
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @After
     public void cleanup() {

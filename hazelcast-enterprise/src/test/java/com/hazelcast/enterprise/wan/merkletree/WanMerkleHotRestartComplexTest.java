@@ -2,19 +2,19 @@ package com.hazelcast.enterprise.wan.merkletree;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.spi.properties.ClusterProperty;
-import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
-import com.hazelcast.wan.impl.ConsistencyCheckResult;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
+import com.hazelcast.wan.impl.ConsistencyCheckResult;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,7 +78,7 @@ public class WanMerkleHotRestartComplexTest extends HazelcastTestSupport {
     private Cluster targetCluster;
     private WanReplication wanReplicationMerkle1;
     private WanReplication wanReplicationMerkle2;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @Parameters(name = "inMemoryFormat: {0}")
     public static Collection<InMemoryFormat> parameters() {

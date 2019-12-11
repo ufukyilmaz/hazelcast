@@ -43,10 +43,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
-import static com.hazelcast.test.HazelcastTestSupport.assertContains;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static com.hazelcast.test.HazelcastTestSupport.spawn;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.Cluster.clusterC;
@@ -81,7 +77,7 @@ public class WanAddConfigTest extends HazelcastTestSupport {
     private Cluster clusterB;
     private Cluster clusterC;
 
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
     private final ILogger logger = Logger.getLogger(WanAddConfigTest.class);
 
     @BeforeClass

@@ -18,7 +18,6 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueAllTheTime;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanCounterTestSupport.verifyEventCountersAreEventuallyZero;
@@ -47,7 +46,7 @@ public class WanCounterSyncClearTest extends HazelcastTestSupport {
     private Cluster targetCluster;
     private ScheduledExecutorService executorService;
     private WanReplication wanReplication;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @After
     public void cleanup() {

@@ -34,8 +34,6 @@ import java.util.concurrent.Executors;
 
 import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.core.LifecycleEvent.LifecycleState.MERGED;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
-import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
 import static com.hazelcast.test.SplitBrainTestSupport.blockCommunicationBetween;
 import static com.hazelcast.test.SplitBrainTestSupport.unblockCommunicationBetween;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
@@ -83,7 +81,7 @@ public class WanCounterSourceSplitBrainTest extends HazelcastTestSupport {
     private Cluster sourceCluster;
     private Cluster targetCluster;
     private WanReplication wanReplication;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
     private List<HazelcastInstance> isolatedNodes;
 
     @BeforeClass

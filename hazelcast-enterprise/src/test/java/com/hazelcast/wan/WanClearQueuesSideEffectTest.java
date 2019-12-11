@@ -30,7 +30,7 @@ public class WanClearQueuesSideEffectTest extends HazelcastTestSupport {
 
     private Cluster sourceCluster;
     private WanReplication wanReplication;
-    private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
+    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
     @After
     public void cleanup() {

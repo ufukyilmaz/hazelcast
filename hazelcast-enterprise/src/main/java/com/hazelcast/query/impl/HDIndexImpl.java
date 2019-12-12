@@ -19,19 +19,23 @@ public class HDIndexImpl extends AbstractIndex {
 
     private int indexedPartition = UNINDEXED;
 
-    public HDIndexImpl(String name, String[] components, boolean ordered, EnterpriseSerializationService ss,
-                       Extractors extractors, PerIndexStats stats) {
+    public HDIndexImpl(IndexDefinition definition, EnterpriseSerializationService ss, Extractors extractors,
+                       PerIndexStats stats) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
-        super(name, components, ordered, ss, extractors, IndexCopyBehavior.NEVER, stats);
+        super(definition, ss, extractors, IndexCopyBehavior.NEVER, stats);
     }
 
     @Override
-    protected IndexStore createIndexStore(boolean ordered, PerIndexStats stats) {
+    protected IndexStore createIndexStore(IndexDefinition definition, PerIndexStats stats) {
+        if (definition.getUniqueKey() != null) {
+            throw new IllegalArgumentException("Bitmap indexes are not supported by NATIVE storage");
+        }
+
         EnterpriseSerializationService ess = (EnterpriseSerializationService) ss;
         MemoryAllocator malloc = stats.wrapMemoryAllocator(ess.getCurrentMemoryAllocator());
         MapEntryFactory<QueryableEntry> entryFactory = new OnHeapEntryFactory(ess, extractors);
-        return ordered ? new HDOrderedIndexStore(ess, malloc, entryFactory) : new HDUnorderedIndexStore(ess, malloc,
-                entryFactory);
+        return definition.isOrdered() ? new HDOrderedIndexStore(ess, malloc, entryFactory) : new HDUnorderedIndexStore(ess,
+                malloc, entryFactory);
     }
 
     @Override

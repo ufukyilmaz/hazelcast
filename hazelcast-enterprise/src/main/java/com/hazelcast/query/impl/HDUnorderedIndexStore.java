@@ -1,10 +1,12 @@
 package com.hazelcast.query.impl;
 
+import com.hazelcast.core.TypeConverter;
 import com.hazelcast.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.query.Predicate;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -22,7 +24,7 @@ import static com.hazelcast.util.ThreadUtil.assertRunningOnPartitionThread;
  * - Never returns any native memory - all returning objects are on-heap (QueryableEntry and its fields).
  * - There is no read & write locking since it's accessed from a single partition-thread only
  */
-class HDUnorderedIndexStore extends BaseIndexStore {
+class HDUnorderedIndexStore extends BaseSingleValueIndexStore {
 
     private final EnterpriseSerializationService ess;
     private final HDIndexHashMap<QueryableEntry> recordsWithNullValue;
@@ -111,6 +113,16 @@ class HDUnorderedIndexStore extends BaseIndexStore {
         assertRunningOnPartitionThread();
         recordsWithNullValue.clear();
         records.clear();
+    }
+
+    @Override
+    public boolean canEvaluate(Class<? extends Predicate> predicateClass) {
+        return false;
+    }
+
+    @Override
+    public Set<QueryableEntry> evaluate(Predicate predicate, TypeConverter converter) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

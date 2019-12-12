@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.nio.serialization.DataType.HEAP;
 import static com.hazelcast.nio.serialization.DataType.NATIVE;
-import static com.hazelcast.query.impl.BaseIndexStore.LOAD_FACTOR;
+import static com.hazelcast.query.impl.BaseSingleValueIndexStore.LOAD_FACTOR;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)

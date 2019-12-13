@@ -385,7 +385,13 @@ public class EnterpriseNodeExtension
     }
 
     @Override
-    public void printNodeInfo() {
+    protected void printBannersBeforeNodeInfo() {
+        WeakSecretsConfigChecker configChecker = new WeakSecretsConfigChecker(node.getConfig());
+        configChecker.evaluateAndReport(systemLogger);
+    }
+
+    @Override
+    protected String constructBuildString(BuildInfo buildInfo) {
         String build = buildInfo.getBuild();
         String revision = buildInfo.getRevision();
         if (!revision.isEmpty()) {
@@ -398,13 +404,12 @@ public class EnterpriseNodeExtension
                 }
             }
         }
+        return build;
+    }
 
-        WeakSecretsConfigChecker configChecker = new WeakSecretsConfigChecker(node.getConfig());
-        configChecker.evaluateAndReport(systemLogger);
-
-        systemLogger.info("Hazelcast Enterprise " + buildInfo.getVersion()
-                + " (" + build + ") starting at " + node.getThisAddress());
-        systemLogger.info("Copyright (c) 2008-2018, Hazelcast, Inc. All Rights Reserved.");
+    @Override
+    protected String getEditionString() {
+        return "Hazelcast Enterprise";
     }
 
     @Override

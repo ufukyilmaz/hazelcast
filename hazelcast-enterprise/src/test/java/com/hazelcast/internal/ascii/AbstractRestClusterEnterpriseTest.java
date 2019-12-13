@@ -87,9 +87,10 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
         String instanceLicenseKey = getInstanceLicenseKey(instance);
         HTTPCommunicator communicator = new HTTPCommunicator(instance);
         HTTPCommunicator.ConnectionResponse response = communicator.setLicense(config.getClusterName(), getPassword(), "invalid");
-        assertEquals(HttpURLConnection.HTTP_OK, response.responseCode);
-        assertContains(response.response, "\"status\":\"fail\"");
-        assertContains(response.response, "\"message\":\"Invalid License Key!\"");
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.responseCode);
+        assertJsonContains(response.response,
+                "status", "fail",
+                "message", "Invalid License Key!");
         assertInstanceLicenseKeyEquals(instanceLicenseKey, instance);
     }
 
@@ -101,9 +102,9 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
         HTTPCommunicator communicator = new HTTPCommunicator(instance);
         HTTPCommunicator.ConnectionResponse response = communicator
                 .setLicense(config.getClusterName(), getPassword(), V5_ENTERPRISE_HD_SEC_CF_RU_40NODES_2099EXP);
-        assertEquals(HttpURLConnection.HTTP_OK, response.responseCode);
-        assertContains(response.response, "\"status\":\"fail\"");
-        assertContains(response.response, "\"message\":\"License has incompatible features");
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.responseCode);
+        JsonObject jsonResponse = assertJsonContains(response.response, "status", "fail");
+        assertContains(jsonResponse.getString("message", null), "License has incompatible features");
         assertInstanceLicenseKeyEquals(instanceLicenseKey, instance);
     }
 
@@ -115,9 +116,10 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
         HTTPCommunicator communicator = new HTTPCommunicator(instance);
         HTTPCommunicator.ConnectionResponse response = communicator
                 .setLicense(config.getClusterName(), getPassword(), V5_ENTERPRISE_HD_SEC_10NODES_2099EXP);
-        assertEquals(HttpURLConnection.HTTP_OK, response.responseCode);
-        assertContains(response.response, "\"status\":\"fail\"");
-        assertContains(response.response, "\"message\":\"License allows a smaller number of nodes");
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.responseCode);
+        assertJsonContains(response.response,
+                "status", "fail",
+                "message", "License allows a smaller number of nodes 10 than the current license 40");
         assertInstanceLicenseKeyEquals(instanceLicenseKey, instance);
     }
 
@@ -130,9 +132,11 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
         HTTPCommunicator communicator = new HTTPCommunicator(instance);
         HTTPCommunicator.ConnectionResponse response = communicator
                 .setLicense(config.getClusterName(), getPassword(), V5_ENTERPRISE_HD_SEC_40NODES_2080EXP);
-        assertEquals(HttpURLConnection.HTTP_OK, response.responseCode);
-        assertContains(response.response, "\"status\":\"fail\"");
-        assertContains(response.response, "\"message\":\"License expires before the current license\"");
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.responseCode);
+        assertJsonContains(response.response,
+                "status", "fail",
+                "message", "License expires before the current license");
+
         assertInstanceLicenseKeyEquals(instanceLicenseKey, instance);
     }
 
@@ -180,17 +184,19 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
         HTTPCommunicator communicator = new HTTPCommunicator(instance);
         HTTPCommunicator.ConnectionResponse response = communicator
                 .setLicense(config.getClusterName(), getPassword(), V4_ENTERPRISE_HD_SEC_WS_RU_40NODES_2099EXP);
-        assertEquals(HttpURLConnection.HTTP_OK, response.responseCode);
-        assertContains(response.response, "\"status\":\"fail\"");
-        assertContains(response.response, "\"message\":\"Cannot update to an older version license\"");
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.responseCode);
+        assertJsonContains(response.response,
+                "status", "fail",
+                "message", "Cannot update to an older version license");
         assertInstanceLicenseKeyEquals(instanceLicenseKey, instance);
     }
 
     private static void assertSuccessfulResponse(HTTPCommunicator.ConnectionResponse response) {
         assertEquals(HttpURLConnection.HTTP_OK, response.responseCode);
-        assertContains(response.response, "\"status\":\"success\"");
-        assertContains(response.response, "\"message\":\"License updated at run time - please make sure to update the license"
-                + " in the persistent configuration to avoid losing the changes on restart.\"");
+        assertJsonContains(response.response,
+                "status", "success",
+                "message", "License updated at run time - please make sure to update the license"
+                        + " in the persistent configuration to avoid losing the changes on restart.");
     }
 
     private static void checkResponseLicenseInfo(HTTPCommunicator.ConnectionResponse response, String expectedLicenseKey,
@@ -211,6 +217,16 @@ abstract class AbstractRestClusterEnterpriseTest extends RestClusterTest {
         Node node = getNode(instance);
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
         return nodeExtension.getLicense();
+    }
+
+    private static JsonObject assertJsonContains(String json, String... attributesAndValues) {
+        JsonObject object = Json.parse(json).asObject();
+        for (int i = 0; i < attributesAndValues.length; ) {
+            String key = attributesAndValues[i++];
+            String expectedValue = attributesAndValues[i++];
+            assertEquals(expectedValue, object.getString(key, null));
+        }
+        return object;
     }
 
     private static String getInstanceLicenseKey(HazelcastInstance instance) {

@@ -48,7 +48,7 @@ public class ClientHDMapNearCacheInvalidationTest extends ClientMapNearCacheInva
     protected ClientConfig getClientConfig(String mapName) {
         NativeMemoryConfig nativeMemoryConfig = new NativeMemoryConfig()
                 .setEnabled(true)
-                .setSize(CLIENT_NATIVE_MEMORY_SIZE);
+                .setSize(CLIENT_NATIVE_MEMORY_SIZE).setMetadataSpacePercentage(25f);
 
         return super.getClientConfig(mapName)
                 .setNativeMemoryConfig(nativeMemoryConfig);

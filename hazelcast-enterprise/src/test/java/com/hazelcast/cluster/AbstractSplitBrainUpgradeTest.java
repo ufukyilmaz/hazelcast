@@ -4,7 +4,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.SplitBrainTestSupport;
 import com.hazelcast.version.MemberVersion;
-import org.junit.After;
 
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 
@@ -17,7 +16,6 @@ public abstract class AbstractSplitBrainUpgradeTest extends SplitBrainTestSuppor
 
     @Override
     protected void onBeforeSetup() {
-        System.setProperty("hazelcast.max.join.seconds", "10");
         clusterName = randomName();
     }
 
@@ -26,11 +24,6 @@ public abstract class AbstractSplitBrainUpgradeTest extends SplitBrainTestSuppor
         // sleep for a while to allow split-brain handler to execute
         sleepSeconds(30);
         return false;
-    }
-
-    @After
-    public void teardown() {
-        System.clearProperty("hazelcast.max.join.seconds");
     }
 
     @Override

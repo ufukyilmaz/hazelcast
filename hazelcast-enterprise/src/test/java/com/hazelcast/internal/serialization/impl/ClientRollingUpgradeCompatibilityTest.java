@@ -28,19 +28,18 @@ import static org.junit.Assert.assertEquals;
 public class ClientRollingUpgradeCompatibilityTest extends HazelcastTestSupport {
 
     private final TestHazelcastFactory factory = new TestHazelcastFactory();
-    private HazelcastInstance instance;
 
     @Before
     public void init() {
         Config config = new Config();
         config.setProperty(ClusterProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
-        instance = factory.newHazelcastInstance(config);
+        HazelcastInstance instance = factory.newHazelcastInstance(config);
         assertClusterSizeEventually(1, instance);
     }
 
     @After
     public void stop() {
-        instance.shutdown();
+        factory.terminateAll();
     }
 
     private SerializationService getClientSerializationService() {

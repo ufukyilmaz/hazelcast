@@ -108,6 +108,7 @@ public class MockStoreRegistry implements RamStoreRegistry {
         for (MockRecordStore s : recordStores.values()) {
             s.dispose();
         }
+        recordStores.clear();
     }
 
     MockRecordStore getOrCreateRecordStoreForPrefix(long prefix) {

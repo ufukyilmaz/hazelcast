@@ -60,6 +60,7 @@ public class Long2bytesMapOnHeap extends Long2bytesMapBase {
 
     @Override
     public void dispose() {
+        clear();
     }
 
     private class Cursor implements L2bCursor {

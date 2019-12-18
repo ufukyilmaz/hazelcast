@@ -54,6 +54,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.config.MapStoreConfig.InitialLoadMode.LAZY;
@@ -85,6 +86,9 @@ public class ClientAuthnUsingMapCacheTest {
     public static final String OPT_INSTANCE_NAME = "instanceName";
     private static final String USER_MAP = "userMap";
 
+    private final AtomicBoolean stopFlag = new AtomicBoolean();
+    private final Thread[] clientThreads = new Thread[20];
+
     @BeforeClass
     public static void beforeClass() {
         RuntimeAvailableProcessors.override(2);
@@ -97,7 +101,15 @@ public class ClientAuthnUsingMapCacheTest {
     }
 
     @After
-    public void after() {
+    public void after() throws Exception {
+        stopFlag.set(true);
+
+        for (Thread clientThread : clientThreads) {
+            if (clientThread != null) {
+                clientThread.join();
+            }
+        }
+
         factory.terminateAll();
     }
 
@@ -126,9 +138,8 @@ public class ClientAuthnUsingMapCacheTest {
         }
         assertClusterSizeEventually(3, hz, getHazelcastInstanceByName("test1"), getHazelcastInstanceByName("test2"));
 
-        Thread[] clientThreads = new Thread[20];
         for (int i = 0; i < clientThreads.length; i++) {
-            clientThreads[i] = new Thread(new ClientRunnable(i, factory));
+            clientThreads[i] = new Thread(new ClientRunnable(i, factory, stopFlag));
             clientThreads[i].start();
         }
         TimeUnit.SECONDS.sleep(40);
@@ -286,10 +297,12 @@ public class ClientAuthnUsingMapCacheTest {
     public static class ClientRunnable implements Runnable {
         private final int clientId;
         private final TestAwareClientFactory factory;
+        private final AtomicBoolean stopFlag;
 
-        public ClientRunnable(int clientId, TestAwareClientFactory factory) {
+        public ClientRunnable(int clientId, TestAwareClientFactory factory, AtomicBoolean stopFlag) {
             this.clientId = clientId;
             this.factory = factory;
+            this.stopFlag = stopFlag;
         }
 
         public void run() {
@@ -297,7 +310,7 @@ public class ClientAuthnUsingMapCacheTest {
             HazelcastInstance client = null;
             //the test timeout is 2min
             long endTime = System.currentTimeMillis() + 120000;
-            while (System.currentTimeMillis() < endTime) {
+            while (System.currentTimeMillis() < endTime && !stopFlag.get()) {
                 try {
                     if (client == null) {
                         client = factory.newHazelcastClient(createClientConfig(String.valueOf(random.nextInt(LOGIN_MAP_SIZE))));
@@ -316,6 +329,10 @@ public class ClientAuthnUsingMapCacheTest {
                         client = null;
                     }
                 }
+            }
+
+            if (client != null) {
+                factory.terminateClient(client);
             }
         }
     }

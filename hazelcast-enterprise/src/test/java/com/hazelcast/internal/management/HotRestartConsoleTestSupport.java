@@ -19,13 +19,13 @@ public abstract class HotRestartConsoleTestSupport extends HazelcastTestSupport 
 
     protected TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
-    void shutdown(final HazelcastInstance hz1, HazelcastInstance hz2) {
+    protected void shutdown(final HazelcastInstance hz1, HazelcastInstance hz2) {
         hz2.getCluster().shutdown();
         assertTrueEventually(() -> assertFalse(hz1.getLifecycleService().isRunning()));
     }
 
-    Config newConfig() {
-        Config config = new Config();
+    protected Config newConfig() {
+        Config config = smallInstanceConfig();
         config.getHotRestartPersistenceConfig().setEnabled(true).setBaseDir(hotRestartFolderRule.getBaseDir())
                 .setClusterDataRecoveryPolicy(HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE);
         return config;

@@ -58,7 +58,7 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
         String mapName = mapReplicationObject.getMapName();
 
         /*
-          Proxies should be created to initialize listeners, indexes, etc. and to show WAN replicated maps in mancenter.
+          Proxies should be created to initialize listeners, indexes, etc. and to show WAN replicated maps in MC.
           Otherwise, users are forced to manually call IMap#get()
           Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
          */

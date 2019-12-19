@@ -58,7 +58,7 @@ public class WanCacheSupportingService implements WanSupportingService {
         final WanCacheEvent wanCacheEvent = (WanCacheEvent) event;
         final CacheConfig cacheConfig = getCacheConfig(wanCacheEvent);
 
-        // Proxies should be created to initialize listeners, etc. and to show WAN replicated caches in mancenter.
+        // Proxies should be created to initialize listeners, etc. and to show WAN replicated caches in MC.
         // Otherwise, users are forced to manually call cacheManager#getCache
         // Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
         proxyService.getDistributedObject(CacheService.SERVICE_NAME, cacheConfig.getNameWithPrefix());

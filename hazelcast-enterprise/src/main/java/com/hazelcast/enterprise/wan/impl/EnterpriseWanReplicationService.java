@@ -496,7 +496,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
     @Override
     public AddWanConfigResult addWanReplicationConfig(WanReplicationConfig wanReplicationConfig) {
-        Event mancenterEvent;
+        Event mcEvent;
         WanReplicationConfig existingConfig = node.getConfig().getWanReplicationConfig(wanReplicationConfig.getName());
         AddWanConfigResult result;
 
@@ -516,17 +516,17 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
             newPublisherIds.removeAll(ignoredPublisherIds);
             result = new AddWanConfigResult(newPublisherIds, ignoredPublisherIds);
             if (newPublisherIds.isEmpty()) {
-                mancenterEvent = AddWanConfigIgnoredEvent.alreadyExists(wanReplicationConfig.getName());
+                mcEvent = AddWanConfigIgnoredEvent.alreadyExists(wanReplicationConfig.getName());
             } else {
-                mancenterEvent = new WanConfigurationExtendedEvent(wanReplicationConfig.getName(), newPublisherIds);
+                mcEvent = new WanConfigurationExtendedEvent(wanReplicationConfig.getName(), newPublisherIds);
             }
         } else {
-            mancenterEvent = new WanConfigurationAddedEvent(wanReplicationConfig.getName());
+            mcEvent = new WanConfigurationAddedEvent(wanReplicationConfig.getName());
             result = new AddWanConfigResult(newPublisherIds, Collections.emptySet());
         }
 
         invokeAddWanReplicationConfig(wanReplicationConfig);
-        emitManagementCenterEvent(mancenterEvent);
+        emitManagementCenterEvent(mcEvent);
         return result;
     }
 

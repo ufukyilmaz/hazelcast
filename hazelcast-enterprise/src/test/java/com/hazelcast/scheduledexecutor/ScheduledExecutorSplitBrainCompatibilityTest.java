@@ -1,6 +1,7 @@
 package com.hazelcast.scheduledexecutor;
 
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.scheduledexecutor.impl.ScheduledExecutorSplitBrainTest;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;

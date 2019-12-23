@@ -2,6 +2,7 @@ package com.hazelcast.enterprise.wan.merkletree;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
@@ -253,10 +254,16 @@ public class WanMerkleHotRestartComplexTest extends HazelcastTestSupport {
         verifyAllPartitionsAreConsistent(sourceCluster, wanReplicationMerkle1, MAP_MERKLE1_NAME);
 
         sourceCluster.bounceCluster();
+
         sourceCluster.getAMember().getLifecycleService().terminate();
         sourceCluster.getAMember().getLifecycleService().terminate();
 
-        assertEquals(1000, sourceCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
+        // Ensure that we are safe to continue.
+        HazelcastInstance sourceMember = sourceCluster.getAMember();
+        assertSizeEventually(sourceCluster.getMembers().length - 2, sourceMember.getCluster().getMembers());
+        HazelcastTestSupport.waitInstanceForSafeState(sourceMember);
+
+        assertEquals(1000, sourceMember.getMap(MAP_MERKLE2_NAME).size());
         assertEquals(1000, targetCluster.getAMember().getMap(MAP_MERKLE2_NAME).size());
 
         sourceCluster.consistencyCheck(wanReplicationMerkle1, MAP_MERKLE2_NAME);

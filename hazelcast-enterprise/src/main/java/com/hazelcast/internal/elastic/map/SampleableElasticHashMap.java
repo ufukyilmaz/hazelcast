@@ -119,7 +119,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             return Collections.emptyList();
         }
 
-        return new LazySamplingEntryIterableIterator<E>(sampleCount);
+        return new LazySamplingEntryIterableIterator<>(sampleCount);
     }
 
     /**

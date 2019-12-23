@@ -4,8 +4,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.nearcache.NearCacheRecordStore;
 import com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector;
-import com.hazelcast.internal.nearcache.impl.nativememory.NativeMemoryNearCacheRecordStore;
-import com.hazelcast.internal.nearcache.impl.nativememory.SegmentedNativeMemoryNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.impl.nativememory.HDNearCacheRecordStoreImpl;
+import com.hazelcast.internal.nearcache.impl.nativememory.SegmentedHDNearCacheRecordStore;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
@@ -52,8 +52,8 @@ public class HDMemberMapReconciliationTest extends MemberMapReconciliationTest {
     @Override
     protected StaleReadDetector getStaleReadDetector(NearCacheRecordStore nearCacheRecordStore) {
         if (nearCacheInMemoryFormat == NATIVE) {
-            NativeMemoryNearCacheRecordStore[] segments
-                    = ((SegmentedNativeMemoryNearCacheRecordStore) nearCacheRecordStore).getSegments();
+            HDNearCacheRecordStoreImpl[] segments
+                    = ((SegmentedHDNearCacheRecordStore) nearCacheRecordStore).getSegments();
             return segments[0].getStaleReadDetector();
         } else {
             return super.getStaleReadDetector(nearCacheRecordStore);

@@ -20,7 +20,7 @@ public class EnterpriseNearCacheManager extends DefaultNearCacheManager {
     @Override
     protected <K, V> NearCache<K, V> createNearCache(String name, NearCacheConfig nearCacheConfig) {
         if (nearCacheConfig.getInMemoryFormat() == InMemoryFormat.NATIVE) {
-            return new HiDensityNearCache<>(name, nearCacheConfig, this,
+            return new HDNearCache<>(name, nearCacheConfig, this,
                     ((EnterpriseSerializationService) serializationService), scheduler, classLoader, properties);
         } else {
             return super.createNearCache(name, nearCacheConfig);

@@ -15,7 +15,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
+import static com.hazelcast.internal.nearcache.HDNearCacheTestUtils.createNativeMemoryConfig;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)

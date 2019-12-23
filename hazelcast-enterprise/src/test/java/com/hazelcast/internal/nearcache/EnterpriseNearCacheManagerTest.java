@@ -62,6 +62,6 @@ public class EnterpriseNearCacheManagerTest extends NearCacheManagerTestSupport 
         NearCache nearCache = createNearCache(createNearCacheManager(),
                 DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
 
-        assertEquals(HiDensityNearCache.class, nearCache.getClass());
+        assertEquals(HDNearCache.class, nearCache.getClass());
     }
 }

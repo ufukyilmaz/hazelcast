@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.nearcache;
 
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.internal.nearcache.HiDensityNearCache;
+import com.hazelcast.internal.nearcache.HDNearCache;
 import com.hazelcast.internal.nearcache.NearCache;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
@@ -23,7 +23,7 @@ public class EnterpriseMapNearCacheManager extends MapNearCacheManager {
         if (nearCacheConfig.getInMemoryFormat() == NATIVE) {
             EnterpriseSerializationService ess = (EnterpriseSerializationService) serializationService;
             HazelcastProperties properties = nodeEngine.getProperties();
-            return new HiDensityNearCache<>(name, nearCacheConfig,
+            return new HDNearCache<>(name, nearCacheConfig,
                     this, ess, scheduler, classLoader, properties);
         }
         return super.createNearCache(name, nearCacheConfig);

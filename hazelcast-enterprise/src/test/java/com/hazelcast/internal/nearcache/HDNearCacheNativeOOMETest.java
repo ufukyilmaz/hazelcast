@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
+public class HDNearCacheNativeOOMETest extends HazelcastTestSupport {
 
     private static final String KEY = "key";
     private static final String VALUE = "value";
@@ -55,7 +55,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     private Data keyData;
     private Data valueData;
 
-    private HiDensityNearCache<String, String> nearCache;
+    private HDNearCache<String, String> nearCache;
 
     @Before
     public void setUp() {
@@ -207,9 +207,9 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
         nearCache = createNearCache("myNearCache", nearCacheManager, nearCacheRecordStore);
     }
 
-    private HiDensityNearCache<String, String> createNearCache(String name, NearCacheManager nearCacheManager,
-                                                               NearCacheRecordStore<String, String> recordStore) {
-        HiDensityNearCache<String, String> nearCache = new HiDensityNearCache<String, String>(name, nearCacheConfig,
+    private HDNearCache<String, String> createNearCache(String name, NearCacheManager nearCacheManager,
+                                                        NearCacheRecordStore<String, String> recordStore) {
+        HDNearCache<String, String> nearCache = new HDNearCache<String, String>(name, nearCacheConfig,
                 nearCacheManager, recordStore, serializationService,
                 executionService.getGlobalTaskScheduler(), null, properties);
         nearCache.setMemoryManager(memoryManager);

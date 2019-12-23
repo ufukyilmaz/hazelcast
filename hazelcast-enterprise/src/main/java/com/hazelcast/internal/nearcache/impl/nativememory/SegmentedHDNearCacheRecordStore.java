@@ -7,15 +7,15 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.monitor.impl.NearCacheStatsImpl;
-import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.HDNearCacheRecordStore;
 import com.hazelcast.internal.nearcache.NearCacheRecord;
 import com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector;
 import com.hazelcast.internal.nearcache.impl.preloader.NearCachePreloader;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.nearcache.NearCacheStats;
-import com.hazelcast.internal.serialization.Data;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Iterator;
@@ -29,15 +29,16 @@ import static java.lang.Integer.getInteger;
 import static java.lang.Math.ceil;
 import static java.lang.Thread.currentThread;
 
+
 /**
- * Segmented {@link HiDensityNearCacheRecordStore} which improves performance by using multiple
- * {@link NativeMemoryNearCacheRecordStore} instances in parallel.
+ * Segmented {@link HDNearCacheRecordStore} which improves performance by using multiple
+ * {@link HDNearCacheRecordStoreImpl} instances in parallel.
  *
  * @param <K> the type of the key stored in Near Cache
  * @param <V> the type of the value stored in Near Cache
  */
-public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
-        implements HiDensityNearCacheRecordStore<K, V, NativeMemoryNearCacheRecord> {
+public class SegmentedHDNearCacheRecordStore<K, V>
+        implements HDNearCacheRecordStore<K, V, HDNearCacheRecord> {
 
     /**
      * Background expiration task can only scan at most this number of
@@ -46,7 +47,8 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
      */
     // package private for testing
     static final int DEFAULT_EXPIRY_SAMPLE_COUNT = 1000;
-    private static final String PROP_EXPIRY_SAMPLE_COUNT = "hazelcast.internal.hd.near.cache.expiry.sample.count";
+    private static final String PROP_EXPIRY_SAMPLE_COUNT
+            = "hazelcast.internal.hd.near.cache.expiry.sample.count";
 
     private final int hashSeed;
     private final int segmentMask;
@@ -58,14 +60,14 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     private final NearCacheStatsImpl nearCacheStats;
     private final HazelcastMemoryManager memoryManager;
     private final NearCachePreloader<Data> nearCachePreloader;
-    private final NativeMemoryNearCacheRecordStore<K, V>[] segments;
+    private final HDNearCacheRecordStoreImpl<K, V>[] segments;
     private final EnterpriseSerializationService serializationService;
 
     @SuppressWarnings("checkstyle:magicnumber")
-    public SegmentedNativeMemoryNearCacheRecordStore(String name,
-                                                     NearCacheConfig nearCacheConfig,
-                                                     EnterpriseSerializationService serializationService,
-                                                     ClassLoader classLoader) {
+    public SegmentedHDNearCacheRecordStore(String name,
+                                           NearCacheConfig nearCacheConfig,
+                                           EnterpriseSerializationService serializationService,
+                                           ClassLoader classLoader) {
         this.serializationService = serializationService;
         this.classLoader = classLoader;
         this.nearCacheStats = new NearCacheStatsImpl();
@@ -104,14 +106,14 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @SuppressWarnings("unchecked")
-    private NativeMemoryNearCacheRecordStore<K, V>[] createSegments(NearCacheConfig nearCacheConfig,
-                                                                    NearCacheStatsImpl nearCacheStats,
-                                                                    HiDensityStorageInfo storageInfo,
-                                                                    int segmentSize, int expirySampleCount) {
-        NativeMemoryNearCacheRecordStore<K, V>[] segments = new NativeMemoryNearCacheRecordStore[segmentSize];
+    private HDNearCacheRecordStoreImpl<K, V>[] createSegments(NearCacheConfig nearCacheConfig,
+                                                              NearCacheStatsImpl nearCacheStats,
+                                                              HiDensityStorageInfo storageInfo,
+                                                              int segmentSize, int perSegmentExpirySampleCount) {
+        HDNearCacheRecordStoreImpl<K, V>[] segments = new HDNearCacheRecordStoreImpl[segmentSize];
         for (int i = 0; i < segmentSize; i++) {
-            segments[i] = new HiDensityNativeMemoryNearCacheRecordStoreSegment(nearCacheConfig, nearCacheStats,
-                    storageInfo, serializationService, classLoader, expirySampleCount);
+            segments[i] = new HDNearCacheRecordStoreSegment(nearCacheConfig, nearCacheStats,
+                    storageInfo, serializationService, classLoader, perSegmentExpirySampleCount);
             segments[i].initialize();
         }
         return segments;
@@ -144,42 +146,42 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     // used only for testing purposes
     @SuppressFBWarnings("EI_EXPOSE_REP")
-    public NativeMemoryNearCacheRecordStore<K, V>[] getSegments() {
+    public HDNearCacheRecordStoreImpl<K, V>[] getSegments() {
         return segments;
     }
 
     @Override
     public V get(K key) {
-        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        HDNearCacheRecordStoreImpl<K, V> segment = segmentFor(key);
         return segment.get(key);
     }
 
     @Override
     public NearCacheRecord getRecord(K key) {
-        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        HDNearCacheRecordStoreImpl<K, V> segment = segmentFor(key);
         return segment.getRecord(key);
     }
 
     @Override
     public void put(K key, Data keyData, V value, Data valueData) {
-        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        HDNearCacheRecordStoreImpl<K, V> segment = segmentFor(key);
         segment.put(key, keyData, value, valueData);
     }
 
     @Override
     public void invalidate(K key) {
-        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        HDNearCacheRecordStoreImpl<K, V> segment = segmentFor(key);
         segment.invalidate(key);
     }
 
-    private NativeMemoryNearCacheRecordStore<K, V> segmentFor(K key) {
+    private HDNearCacheRecordStoreImpl<K, V> segmentFor(K key) {
         int hash = hash(key);
         return segments[(hash >>> segmentShift) & segmentMask];
     }
 
     @Override
     public void clear() {
-        for (NativeMemoryNearCacheRecordStore segment : segments) {
+        for (HDNearCacheRecordStoreImpl segment : segments) {
             segment.clear();
         }
 
@@ -189,7 +191,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void destroy() {
-        for (NativeMemoryNearCacheRecordStore segment : segments) {
+        for (HDNearCacheRecordStoreImpl segment : segments) {
             segment.destroy();
         }
 
@@ -209,7 +211,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public int size() {
         int size = 0;
-        for (NativeMemoryNearCacheRecordStore segment : segments) {
+        for (HDNearCacheRecordStoreImpl segment : segments) {
             size += segment.size();
         }
         return size;
@@ -218,7 +220,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public int forceEvict() {
         int evictedCount = 0;
-        for (NativeMemoryNearCacheRecordStore segment : segments) {
+        for (HDNearCacheRecordStoreImpl segment : segments) {
             evictedCount += segment.forceEvict();
         }
         return evictedCount;
@@ -227,7 +229,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public void doExpiration() {
         Thread currentThread = Thread.currentThread();
-        for (NativeMemoryNearCacheRecordStore<K, V> segment : segments) {
+        for (HDNearCacheRecordStoreImpl<K, V> segment : segments) {
             if (currentThread.isInterrupted()) {
                 return;
             }
@@ -243,7 +245,7 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
 
         Thread currentThread = Thread.currentThread();
-        for (NativeMemoryNearCacheRecordStore<K, V> segment : segments) {
+        for (HDNearCacheRecordStoreImpl<K, V> segment : segments) {
             if (currentThread.isInterrupted()) {
                 return;
             }
@@ -268,20 +270,26 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void setStaleReadDetector(StaleReadDetector staleReadDetector) {
-        for (NativeMemoryNearCacheRecordStore<K, V> segment : segments) {
+        for (HDNearCacheRecordStoreImpl<K, V> segment : segments) {
             segment.setStaleReadDetector(staleReadDetector);
         }
     }
 
     @Override
     public long tryReserveForUpdate(K key, Data keyData) {
-        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        HDNearCacheRecordStoreImpl<K, V> segment = segmentFor(key);
         return segment.tryReserveForUpdate(key, keyData);
     }
 
     @Override
+    public long tryReserveForCacheOnUpdate(K key, Data keyData) {
+        HDNearCacheRecordStoreImpl<K, V> segment = segmentFor(key);
+        return segment.tryReserveForCacheOnUpdate(key, keyData);
+    }
+
+    @Override
     public V tryPublishReserved(K key, V value, long reservationId, boolean deserialize) {
-        NativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
+        HDNearCacheRecordStoreImpl<K, V> segment = segmentFor(key);
         return segment.tryPublishReserved(key, value, reservationId, deserialize);
     }
 
@@ -293,20 +301,20 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
     /**
      * Represents a segment block (lockable by a thread) in this Near Cache storage.
      */
-    class HiDensityNativeMemoryNearCacheRecordStoreSegment
-            extends NativeMemoryNearCacheRecordStore<K, V>
+    class HDNearCacheRecordStoreSegment
+            extends HDNearCacheRecordStoreImpl<K, V>
             implements LockableNearCacheRecordStoreSegment {
 
         private static final long READ_LOCK_TIMEOUT_IN_MILLISECONDS = 25;
 
         private final Lock lock = new ReentrantLock();
 
-        HiDensityNativeMemoryNearCacheRecordStoreSegment(NearCacheConfig nearCacheConfig,
-                                                         NearCacheStatsImpl nearCacheStats,
-                                                         HiDensityStorageInfo storageInfo,
-                                                         EnterpriseSerializationService ss,
-                                                         ClassLoader classLoader, int expirySampleCount) {
-            super(nearCacheConfig, nearCacheStats, storageInfo, ss, classLoader, expirySampleCount);
+        HDNearCacheRecordStoreSegment(NearCacheConfig nearCacheConfig,
+                                      NearCacheStatsImpl nearCacheStats,
+                                      HiDensityStorageInfo storageInfo,
+                                      EnterpriseSerializationService ss,
+                                      ClassLoader classLoader, int sampleCount) {
+            super(nearCacheConfig, nearCacheStats, storageInfo, ss, classLoader, sampleCount);
         }
 
         @Override
@@ -401,6 +409,16 @@ public class SegmentedNativeMemoryNearCacheRecordStore<K, V>
             lock.lock();
             try {
                 return super.tryReserveForUpdate(key, keyData);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
+        public long tryReserveForCacheOnUpdate(K key, Data keyData) {
+            lock.lock();
+            try {
+                return super.tryReserveForCacheOnUpdate(key, keyData);
             } finally {
                 lock.unlock();
             }

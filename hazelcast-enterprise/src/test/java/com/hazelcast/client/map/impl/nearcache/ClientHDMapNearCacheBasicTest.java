@@ -13,7 +13,7 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.NearCacheConfig.DEFAULT_SERIALIZE_KEYS;
-import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
+import static com.hazelcast.internal.nearcache.HDNearCacheTestUtils.createNativeMemoryConfig;
 import static com.hazelcast.internal.nearcache.NearCacheTestUtils.createNearCacheConfig;
 
 /**

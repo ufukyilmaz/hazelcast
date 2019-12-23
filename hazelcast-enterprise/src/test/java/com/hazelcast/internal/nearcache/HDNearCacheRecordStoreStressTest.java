@@ -10,7 +10,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
-import com.hazelcast.internal.nearcache.impl.nativememory.NativeMemoryNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.impl.nativememory.HDNearCacheRecordStoreImpl;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.MemorySize;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
-public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStoreTestSupport {
+public class HDNearCacheRecordStoreStressTest extends NearCacheRecordStoreTestSupport {
 
     private static final int DEFAULT_MEMORY_SIZE_IN_MEGABYTES = 128;
     private static final MemorySize DEFAULT_MEMORY_SIZE = new MemorySize(DEFAULT_MEMORY_SIZE_IN_MEGABYTES, MemoryUnit.MEGABYTES);
@@ -78,7 +78,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
         if (inMemoryFormat != NATIVE) {
             return super.createNearCacheRecordStore(nearCacheConfig, inMemoryFormat);
         }
-        NearCacheRecordStore<K, V> recordStore = new NativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess,
+        NearCacheRecordStore<K, V> recordStore = new HDNearCacheRecordStoreImpl<K, V>(nearCacheConfig, ess,
                 null, DEFAULT_FORCED_EVICTION_PERCENTAGE);
         recordStore.initialize();
         return recordStore;

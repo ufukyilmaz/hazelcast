@@ -12,7 +12,6 @@ import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.map.impl.nearcache.HDNearCacheTest;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.serialization.Data;
@@ -29,7 +28,7 @@ import static com.hazelcast.internal.util.QuickMath.nextPowerOfTwo;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class HiDensityNearCacheTest extends NearCacheTestSupport {
+public class HDNearCacheTest extends NearCacheTestSupport {
 
     private static final MemorySize DEFAULT_MEMORY_SIZE = new MemorySize(256, MemoryUnit.MEGABYTES);
 
@@ -71,7 +70,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     @Override
     protected NearCache<Integer, String> createNearCache(String name, NearCacheConfig nearCacheConfig,
                                                          ManagedNearCacheRecordStore nearCacheRecordStore) {
-        return new HiDensityNearCache<Integer, String>(name, nearCacheConfig, newNearCacheManager(),
+        return new HDNearCache<Integer, String>(name, nearCacheConfig, newNearCacheManager(),
                 nearCacheRecordStore, ss, executionService.getGlobalTaskScheduler(), null, properties);
     }
 
@@ -137,7 +136,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
 
     @Test
     public void createEntryBiggerThanNativeMemory() {
-        ILogger logger = Logger.getLogger(HDNearCacheTest.class);
+        ILogger logger = Logger.getLogger(com.hazelcast.map.impl.nearcache.HDNearCacheTest.class);
 
         // given
         int estimatedNearCacheConcurrencyLevel = nextPowerOfTwo(8 * RuntimeAvailableProcessors.get());
@@ -188,7 +187,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
                                                            NearCacheRecordStore recordStore,
                                                            NearCacheConfig nearCacheConfig,
                                                            HazelcastProperties properties) {
-        NearCache<K, V> nearCache = new HiDensityNearCache<K, V>(DEFAULT_NEAR_CACHE_NAME,
+        NearCache<K, V> nearCache = new HDNearCache<K, V>(DEFAULT_NEAR_CACHE_NAME,
                 nearCacheConfig,
                 new EnterpriseNearCacheManager(ess, taskScheduler, null, properties),
                 recordStore,

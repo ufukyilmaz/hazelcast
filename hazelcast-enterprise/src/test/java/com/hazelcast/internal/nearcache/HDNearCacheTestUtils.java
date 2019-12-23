@@ -14,9 +14,9 @@ import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 /**
  * Provides utility methods for unified HiDensity Near Cache tests.
  */
-public final class HiDensityNearCacheTestUtils {
+public final class HDNearCacheTestUtils {
 
-    private HiDensityNearCacheTestUtils() {
+    private HDNearCacheTestUtils() {
     }
 
     public static Config getNearCacheHDConfig() {

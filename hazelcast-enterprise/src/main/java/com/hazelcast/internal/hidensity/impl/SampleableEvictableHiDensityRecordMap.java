@@ -38,7 +38,7 @@ public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & E
 
         @Override
         public Evictable getEvictable() {
-            return (R) getEntryValue();
+            return getEntryValue();
         }
 
         @Override
@@ -48,22 +48,22 @@ public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & E
 
         @Override
         public Object getValue() {
-            return recordProcessor.toObject(((R) getEntryValue()).getValue());
+            return recordProcessor.toObject(getEntryValue().getValue());
         }
 
         @Override
         public long getCreationTime() {
-            return ((R) getEntryValue()).getCreationTime();
+            return getEntryValue().getCreationTime();
         }
 
         @Override
         public long getLastAccessTime() {
-            return ((R) getEntryValue()).getLastAccessTime();
+            return getEntryValue().getLastAccessTime();
         }
 
         @Override
         public long getHits() {
-            return ((R) getEntryValue()).getHits();
+            return getEntryValue().getHits();
         }
     }
 

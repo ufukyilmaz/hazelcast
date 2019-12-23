@@ -16,7 +16,7 @@ import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
-import static com.hazelcast.internal.nearcache.HiDensityNearCacheTestUtils.createNativeMemoryConfig;
+import static com.hazelcast.internal.nearcache.HDNearCacheTestUtils.createNativeMemoryConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({SlowTest.class, ParallelJVMTest.class})

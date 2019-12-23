@@ -2,16 +2,17 @@ package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.internal.hidensity.HiDensityRecordStore;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.nearcache.impl.nativememory.HDNearCacheRecord;
 
 /**
- * {@link HiDensityNearCacheRecordStore} is the contract point to store keys and values as
- * {@link HiDensityNearCacheRecord} internally and serve them.
+ * {@link HDNearCacheRecordStore} is the contract point to store keys and values as
+ * {@link HDNearCacheRecord} internally and serve them.
  *
  * @param <K> the type of the key.
  * @param <V> the type of the value.
  * @param <R> Type of the Hi-Density Near Cache record to be stored.
  */
-public interface HiDensityNearCacheRecordStore<K, V, R extends HiDensityNearCacheRecord>
+public interface HDNearCacheRecordStore<K, V, R extends HDNearCacheRecord>
         extends HiDensityRecordStore<R>, NearCacheRecordStore<K, V> {
 
     /**

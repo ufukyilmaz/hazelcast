@@ -23,7 +23,7 @@ import java.util.Properties;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSupport {
+public class HDNearCacheOutOfMemoryTest extends CommonNearCacheTestSupport {
 
     private static final MemorySize DEFAULT_MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
 

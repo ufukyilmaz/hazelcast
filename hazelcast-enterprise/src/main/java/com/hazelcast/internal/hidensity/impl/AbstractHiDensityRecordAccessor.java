@@ -2,10 +2,10 @@ package com.hazelcast.internal.hidensity.impl;
 
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**
  * @param <R> Type of the {@link HiDensityRecord} to be accessed.

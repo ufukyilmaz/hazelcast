@@ -10,13 +10,13 @@ import com.hazelcast.internal.serialization.Data;
 /**
  * {@link SampleableNearCacheRecordMap} implementation for off-heap Near Caches.
  */
-public class NativeMemoryNearCacheRecordMap
-        extends SampleableEvictableHiDensityRecordMap<NativeMemoryNearCacheRecord>
-        implements SampleableNearCacheRecordMap<Data, NativeMemoryNearCacheRecord> {
+public class HDNearCacheRecordMap
+        extends SampleableEvictableHiDensityRecordMap<HDNearCacheRecord>
+        implements SampleableNearCacheRecordMap<Data, HDNearCacheRecord> {
 
-    NativeMemoryNearCacheRecordMap(int initialCapacity,
-                                   HiDensityRecordProcessor<NativeMemoryNearCacheRecord> recordProcessor,
-                                   HiDensityStorageInfo storageInfo) {
+    HDNearCacheRecordMap(int initialCapacity,
+                         HiDensityRecordProcessor<HDNearCacheRecord> recordProcessor,
+                         HiDensityStorageInfo storageInfo) {
         super(initialCapacity, recordProcessor, storageInfo);
     }
 

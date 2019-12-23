@@ -19,7 +19,7 @@ import static com.hazelcast.internal.nearcache.NearCacheTestUtils.assertNearCach
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public abstract class AbstractHiDensityNearCacheLeakTest<NK, NV> extends AbstractNearCacheLeakTest<NK, NV> {
+public abstract class AbstractHDNearCacheLeakTest<NK, NV> extends AbstractNearCacheLeakTest<NK, NV> {
 
     protected static final MemorySize MEMORY_SIZE = new MemorySize(64, MemoryUnit.MEGABYTES);
 

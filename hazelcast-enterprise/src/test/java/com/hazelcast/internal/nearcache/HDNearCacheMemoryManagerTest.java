@@ -28,7 +28,7 @@ import static com.hazelcast.internal.nearcache.AbstractNearCacheBasicTest.DEFAUL
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class HiDensityNearCacheMemoryManagerTest extends HazelcastTestSupport {
+public class HDNearCacheMemoryManagerTest extends HazelcastTestSupport {
 
     private static final MemorySize DEFAULT_MEMORY_SIZE = new MemorySize(256, MemoryUnit.MEGABYTES);
 
@@ -67,7 +67,7 @@ public class HiDensityNearCacheMemoryManagerTest extends HazelcastTestSupport {
         DelegatingTaskScheduler taskScheduler = new DelegatingTaskScheduler(executorService, executorService);
 
         NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-        return HiDensityNearCacheTest.createHDNearCache(ess, taskScheduler, null, nearCacheConfig, properties);
+        return HDNearCacheTest.createHDNearCache(ess, taskScheduler, null, nearCacheConfig, properties);
     }
 
     protected static NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {

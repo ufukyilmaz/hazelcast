@@ -2,7 +2,7 @@ package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.nearcache.impl.DefaultNearCache;
-import com.hazelcast.internal.nearcache.impl.nativememory.SegmentedNativeMemoryNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.impl.nativememory.SegmentedHDNearCacheRecordStore;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
@@ -28,22 +28,22 @@ import static java.util.logging.Level.WARNING;
  * @param <K> the type of the key.
  * @param <V> the type of the value.
  */
-public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
+public class HDNearCache<K, V> extends DefaultNearCache<K, V> {
 
     private final ILogger logger = Logger.getLogger(getClass());
     private final NearCacheManager nearCacheManager;
     private HazelcastMemoryManager memoryManager;
 
-    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheManager nearCacheManager,
-                              EnterpriseSerializationService serializationService, TaskScheduler scheduler,
-                              ClassLoader classLoader, HazelcastProperties properties) {
+    public HDNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheManager nearCacheManager,
+                       EnterpriseSerializationService serializationService, TaskScheduler scheduler,
+                       ClassLoader classLoader, HazelcastProperties properties) {
         this(name, nearCacheConfig, nearCacheManager, null,
                 serializationService, scheduler, classLoader, properties);
     }
 
-    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheManager nearCacheManager,
-                              NearCacheRecordStore<K, V> nearCacheRecordStore, SerializationService serializationService,
-                              TaskScheduler scheduler, ClassLoader classLoader, HazelcastProperties properties) {
+    public HDNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheManager nearCacheManager,
+                       NearCacheRecordStore<K, V> nearCacheRecordStore, SerializationService serializationService,
+                       TaskScheduler scheduler, ClassLoader classLoader, HazelcastProperties properties) {
         super(name, nearCacheConfig, nearCacheRecordStore, serializationService, scheduler, classLoader, properties);
         this.nearCacheManager = checkNotNull(nearCacheManager, "nearCacheManager cannot be null");
     }
@@ -57,8 +57,8 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     }
 
     private HazelcastMemoryManager createMemoryManager() {
-        if (nearCacheRecordStore instanceof HiDensityNearCacheRecordStore) {
-            return ((HiDensityNearCacheRecordStore) nearCacheRecordStore).getMemoryManager();
+        if (nearCacheRecordStore instanceof HDNearCacheRecordStore) {
+            return ((HDNearCacheRecordStore) nearCacheRecordStore).getMemoryManager();
         }
         return null;
     }
@@ -67,7 +67,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     protected NearCacheRecordStore<K, V> createNearCacheRecordStore(String name, NearCacheConfig nearCacheConfig) {
         if (NATIVE == nearCacheConfig.getInMemoryFormat()) {
             EnterpriseSerializationService ss = (EnterpriseSerializationService) serializationService;
-            return new SegmentedNativeMemoryNearCacheRecordStore<>(name, nearCacheConfig, ss, classLoader);
+            return new SegmentedHDNearCacheRecordStore<>(name, nearCacheConfig, ss, classLoader);
         }
 
         return super.createNearCacheRecordStore(name, nearCacheConfig);
@@ -184,8 +184,8 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
         // Second: Try to evict any other record-stores.
         Collection<NearCache> nearCacheList = nearCacheManager.listAllNearCaches();
         for (NearCache nearCache : nearCacheList) {
-            if (nearCache != this && nearCache instanceof HiDensityNearCache) {
-                if (evict(((HiDensityNearCache) nearCache).nearCacheRecordStore)) {
+            if (nearCache != this && nearCache instanceof HDNearCache) {
+                if (evict(((HDNearCache) nearCache).nearCacheRecordStore)) {
                     return true;
                 }
             }

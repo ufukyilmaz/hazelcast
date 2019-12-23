@@ -1,8 +1,8 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.internal.hidensity.HiDensityRecord;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.query.impl.Metadata;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;

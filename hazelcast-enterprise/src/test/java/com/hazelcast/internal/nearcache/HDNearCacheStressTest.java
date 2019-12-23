@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
-public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
+public class HDNearCacheStressTest extends NearCacheTestSupport {
 
     private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(1);
 
@@ -70,7 +70,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
     @Override
     protected NearCache<Integer, String> createNearCache(String name, NearCacheConfig nearCacheConfig,
                                                          ManagedNearCacheRecordStore nearCacheRecordStore) {
-        return new HiDensityNearCache<Integer, String>(name, nearCacheConfig, newNearCacheManager(), nearCacheRecordStore, ess,
+        return new HDNearCache<Integer, String>(name, nearCacheConfig, newNearCacheManager(), nearCacheRecordStore, ess,
                 executionService.getGlobalTaskScheduler(), null, properties);
     }
 
@@ -84,7 +84,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
     @Test
     public void putAndGetOnSoManyRecordsWithoutOOME() {
         NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-        NearCache<Integer, String> nearCache = new HiDensityNearCache<Integer, String>(DEFAULT_NEAR_CACHE_NAME, nearCacheConfig,
+        NearCache<Integer, String> nearCache = new HDNearCache<Integer, String>(DEFAULT_NEAR_CACHE_NAME, nearCacheConfig,
                 newNearCacheManager(), ess, executionService.getGlobalTaskScheduler(), null, properties);
         nearCache.initialize();
 
@@ -106,7 +106,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
             mm.registerThread(Thread.currentThread());
 
             NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-            NearCache<Integer, byte[]> nearCache = new HiDensityNearCache<Integer, byte[]>(DEFAULT_NEAR_CACHE_NAME,
+            NearCache<Integer, byte[]> nearCache = new HDNearCache<Integer, byte[]>(DEFAULT_NEAR_CACHE_NAME,
                     nearCacheConfig, newNearCacheManager(), ess, executionService.getGlobalTaskScheduler(), null, properties);
             nearCache.initialize();
 
@@ -123,7 +123,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
     @Test
     public void putRemoveAndGetOnSoManyRecordsFromMultipleThreadsWithoutOOME() {
         NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-        final NearCache<Integer, String> nearCache = new HiDensityNearCache<Integer, String>(DEFAULT_NEAR_CACHE_NAME,
+        final NearCache<Integer, String> nearCache = new HDNearCache<Integer, String>(DEFAULT_NEAR_CACHE_NAME,
                 nearCacheConfig, newNearCacheManager(), ess, executionService.getGlobalTaskScheduler(), null, properties);
         nearCache.initialize();
 

@@ -10,7 +10,7 @@ import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.adapter.IMapDataStructureAdapter;
-import com.hazelcast.internal.nearcache.AbstractHiDensityNearCacheLeakTest;
+import com.hazelcast.internal.nearcache.AbstractHDNearCacheLeakTest;
 import com.hazelcast.internal.nearcache.NearCache;
 import com.hazelcast.internal.nearcache.NearCacheManager;
 import com.hazelcast.internal.nearcache.NearCacheTestContext;
@@ -42,7 +42,7 @@ import static java.util.Arrays.asList;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-public class HDMapNearCacheLeakTest extends AbstractHiDensityNearCacheLeakTest<Data, String> {
+public class HDMapNearCacheLeakTest extends AbstractHDNearCacheLeakTest<Data, String> {
 
     @Parameters(name = "MemoryAllocatorType:{0}")
     public static Collection<Object[]> parameters() {

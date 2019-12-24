@@ -10,6 +10,7 @@ import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.spi.properties.ClusterProperty;
+import com.hazelcast.test.JmxLeakHelper;
 import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.DistributedObject;
@@ -951,7 +952,14 @@ public class WanBatchPublisherMapTest extends WanMapTestSupport {
         configA.setProperty(ClusterProperty.ENABLE_JMX.getName(), "true");
         startClusterA();
         startClusterB();
+
         createDataIn(clusterA, "map", 0, 50);
+
+        // Wait for all members in the clusterA to register the map MBean asynchronously. Otherwise we may end up with
+        // a dangling MBean.
+        assertTrueEventually(() -> {
+            assertEquals(clusterA.length, JmxLeakHelper.getBeansByClass(MapProxyImpl.class).size());
+        });
 
         final MBeanDataHolder mBeanDataHolder = new MBeanDataHolder(clusterA[0]);
         assertEquals(WanPublisherState.REPLICATING.name(),

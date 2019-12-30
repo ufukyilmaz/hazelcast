@@ -16,10 +16,9 @@ import com.hazelcast.internal.util.SetUtil;
 import com.hazelcast.internal.util.ThreadUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapEvent;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapSyncEvent;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.map.impl.wan.WanMapEntryView;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.wan.impl.ConsistencyCheckResult;
@@ -294,12 +293,12 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         GetMapPartitionDataOperation op = new GetMapPartitionDataOperation(mapName);
         int partitionId = partition.getPartitionId();
         op.setPartitionId(partitionId);
-        Set<SimpleEntryView<Data, Data>> set = invokeOp(op);
+        Set<WanMapEntryView<Object, Object>> set = invokeOp(op);
         int syncedEntries = set.size();
         syncContext.getSyncCounter(mapName, partitionId).addAndGet(syncedEntries);
 
-        for (SimpleEntryView<Data, Data> simpleEntryView : set) {
-            WanEnterpriseMapSyncEvent sync = new WanEnterpriseMapSyncEvent(syncContext.getUuid(), mapName, simpleEntryView,
+        for (WanMapEntryView<Object, Object> entryView : set) {
+            WanEnterpriseMapSyncEvent sync = new WanEnterpriseMapSyncEvent(syncContext.getUuid(), mapName, entryView,
                     partitionId);
             publisher.putToSyncEventQueue(sync);
         }

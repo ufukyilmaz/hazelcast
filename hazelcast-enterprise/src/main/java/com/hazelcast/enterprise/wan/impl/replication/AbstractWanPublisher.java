@@ -2,7 +2,7 @@ package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheService;
-import com.hazelcast.cache.impl.wan.WanCacheEvent;
+import com.hazelcast.cache.impl.wan.WanEnterpriseCacheEvent;
 import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
@@ -202,8 +202,8 @@ public abstract class AbstractWanPublisher implements
             return eventQueueContainer.publishMapWanEvent(mapName, partitionId, eventObject);
         }
 
-        if (eventObject instanceof WanCacheEvent) {
-            String cacheName = ((WanCacheEvent) eventObject).getNameWithPrefix();
+        if (eventObject instanceof WanEnterpriseCacheEvent) {
+            String cacheName = ((WanEnterpriseCacheEvent) eventObject).getNameWithPrefix();
             int partitionId = getPartitionId(eventObject.getKey());
             return eventQueueContainer.publishCacheWanEvent(cacheName, partitionId, eventObject);
         }
@@ -356,8 +356,8 @@ public abstract class AbstractWanPublisher implements
             WanEnterpriseMapEvent mapEvent = (WanEnterpriseMapEvent) eventObject;
             id = new DistributedObjectIdentifier(
                     MapService.SERVICE_NAME, mapEvent.getMapName(), mapEvent.getBackupCount());
-        } else if (eventObject instanceof WanCacheEvent) {
-            WanCacheEvent cacheEvent = (WanCacheEvent) eventObject;
+        } else if (eventObject instanceof WanEnterpriseCacheEvent) {
+            WanEnterpriseCacheEvent cacheEvent = (WanEnterpriseCacheEvent) eventObject;
             id = new DistributedObjectIdentifier(
                     CacheService.SERVICE_NAME, cacheEvent.getNameWithPrefix(), cacheEvent.getBackupCount());
         } else {
@@ -447,14 +447,12 @@ public abstract class AbstractWanPublisher implements
      * @param wanEvent the WAN event to publish
      */
     @Override
-    public void republishReplicationEvent(WanEvent wanEvent) {
-        InternalWanEvent replicationEventObject
-                = (InternalWanEvent) wanEvent;
+    public void republishReplicationEvent(InternalWanEvent wanEvent) {
         WanPutOperation wanPutOperation =
                 new WanPutOperation(wanReplicationName, wanPublisherId,
                         wanEvent,
-                        replicationEventObject.getBackupCount());
-        invokeOnPartition(wanEvent.getServiceName(), replicationEventObject.getKey(), wanPutOperation);
+                        wanEvent.getBackupCount());
+        invokeOnPartition(wanEvent.getServiceName(), wanEvent.getKey(), wanPutOperation);
     }
 
     /**

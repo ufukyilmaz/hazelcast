@@ -143,7 +143,7 @@ public class MCHotRestartOperationsTest extends HotRestartConsoleTestSupport {
         private final Callable<Boolean> operationCallable;
         private volatile boolean result;
 
-        private TriggerHotRestartViaMCListener(Callable<Boolean> operationCallable) {
+        TriggerHotRestartViaMCListener(Callable<Boolean> operationCallable) {
             this.operationCallable = operationCallable;
         }
 

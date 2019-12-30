@@ -6,6 +6,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.wan.WanEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.util.Set;
 
@@ -14,12 +15,12 @@ import java.util.Set;
  * and notifying the {@link WanEventContainerOperation} of its completion.
  */
 class WanEventRunnable extends AbstractWanEventRunnable {
-    private final WanEvent event;
+    private final InternalWanEvent event;
     private final NodeEngine nodeEngine;
     private final Set<Operation> liveOperations;
     private final ILogger logger;
 
-    WanEventRunnable(WanEvent event,
+    WanEventRunnable(InternalWanEvent event,
                      WanEventContainerOperation operation,
                      int partitionId,
                      NodeEngine nodeEngine,

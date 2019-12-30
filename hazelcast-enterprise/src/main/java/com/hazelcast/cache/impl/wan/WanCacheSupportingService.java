@@ -9,16 +9,16 @@ import com.hazelcast.cache.impl.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanReplicationRef;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.services.WanSupportingService;
 import com.hazelcast.internal.util.ExceptionUtil;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.proxyservice.ProxyService;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
-import com.hazelcast.wan.WanEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 import com.hazelcast.wan.impl.WanReplicationService;
 
 import java.util.UUID;
@@ -50,12 +50,12 @@ public class WanCacheSupportingService implements WanSupportingService {
     }
 
     @Override
-    public void onReplicationEvent(WanEvent event, WanAcknowledgeType acknowledgeType) {
-        if (!(event instanceof WanCacheEvent)) {
+    public void onReplicationEvent(InternalWanEvent event, WanAcknowledgeType acknowledgeType) {
+        if (!(event instanceof WanEnterpriseCacheEvent)) {
             return;
         }
 
-        final WanCacheEvent wanCacheEvent = (WanCacheEvent) event;
+        final WanEnterpriseCacheEvent wanCacheEvent = (WanEnterpriseCacheEvent) event;
         final CacheConfig cacheConfig = getCacheConfig(wanCacheEvent);
 
         // Proxies should be created to initialize listeners, etc. and to show WAN replicated caches in MC.
@@ -66,12 +66,12 @@ public class WanCacheSupportingService implements WanSupportingService {
 
         republishIfNecessary(event, cacheConfig);
 
-        if (wanCacheEvent instanceof WanCacheUpdateEvent) {
-            handleUpdateEvent((WanCacheUpdateEvent) wanCacheEvent, cacheConfig, acknowledgeType);
+        if (wanCacheEvent instanceof WanEnterpriseCacheAddOrUpdateEvent) {
+            handleAddOrUpdateEvent((WanEnterpriseCacheAddOrUpdateEvent) wanCacheEvent, cacheConfig, acknowledgeType);
             wanService.getReceivedEventCounters(ICacheService.SERVICE_NAME)
                     .incrementUpdate(wanCacheEvent.getNameWithPrefix());
-        } else if (wanCacheEvent instanceof WanCacheRemoveEvent) {
-            handleRemoveEvent((WanCacheRemoveEvent) wanCacheEvent, cacheConfig, acknowledgeType);
+        } else if (wanCacheEvent instanceof WanEnterpriseCacheRemoveEvent) {
+            handleRemoveEvent((WanEnterpriseCacheRemoveEvent) wanCacheEvent, cacheConfig, acknowledgeType);
             wanService.getReceivedEventCounters(ICacheService.SERVICE_NAME)
                     .incrementRemove(wanCacheEvent.getNameWithPrefix());
         }
@@ -84,7 +84,7 @@ public class WanCacheSupportingService implements WanSupportingService {
      * @param cacheConfig the config for the cache on which this event
      *                    occurred
      */
-    private void republishIfNecessary(WanEvent event, CacheConfig cacheConfig) {
+    private void republishIfNecessary(InternalWanEvent event, CacheConfig cacheConfig) {
         WanReplicationRef wanReplicationRef = cacheConfig.getWanReplicationRef();
         if (wanReplicationRef != null && wanReplicationRef.isRepublishingEnabled()) {
             cacheService.publishWanEvent(cacheConfig.getNameWithPrefix(), event);
@@ -98,7 +98,7 @@ public class WanCacheSupportingService implements WanSupportingService {
      * @return the local cache config
      * @see com.hazelcast.cache.impl.operation.AddCacheConfigOperation
      */
-    private CacheConfig getCacheConfig(WanCacheEvent wanCacheEvent) {
+    private CacheConfig getCacheConfig(WanEnterpriseCacheEvent wanCacheEvent) {
         CacheConfig cacheConfig;
         try {
             cacheConfig = getLocalCacheConfig(wanCacheEvent.getNameWithPrefix(),
@@ -151,7 +151,7 @@ public class WanCacheSupportingService implements WanSupportingService {
      * @param acknowledgeType determines whether the method will wait for the
      *                        update to be processed on the partition owner
      */
-    private void handleRemoveEvent(WanCacheRemoveEvent event,
+    private void handleRemoveEvent(WanEnterpriseCacheRemoveEvent event,
                                    CacheConfig cacheConfig,
                                    WanAcknowledgeType acknowledgeType) {
         final EnterpriseCacheOperationProvider operationProvider = (EnterpriseCacheOperationProvider) cacheService
@@ -177,8 +177,8 @@ public class WanCacheSupportingService implements WanSupportingService {
      * @param acknowledgeType determines whether the method will wait for the
      *                        update to be processed on the partition owner
      */
-    private void handleUpdateEvent(WanCacheUpdateEvent event,
-                                   CacheConfig cacheConfig, WanAcknowledgeType acknowledgeType) {
+    private void handleAddOrUpdateEvent(WanEnterpriseCacheAddOrUpdateEvent event,
+                                        CacheConfig cacheConfig, WanAcknowledgeType acknowledgeType) {
 
         EnterpriseCacheOperationProvider operationProvider = (EnterpriseCacheOperationProvider) cacheService
                 .getCacheOperationProvider(event.getNameWithPrefix(), cacheConfig.getInMemoryFormat());

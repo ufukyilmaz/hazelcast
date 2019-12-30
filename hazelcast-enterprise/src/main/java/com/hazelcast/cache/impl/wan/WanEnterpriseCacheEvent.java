@@ -1,11 +1,11 @@
 package com.hazelcast.cache.impl.wan;
 
-import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
+import com.hazelcast.internal.util.Clock;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.internal.util.Clock;
 import com.hazelcast.wan.impl.InternalWanEvent;
 
 import javax.annotation.Nonnull;
@@ -15,27 +15,27 @@ import java.util.Set;
 
 /**
  * Base class for {@link com.hazelcast.cache.ICache} related WAN replication objects.
+ *
+ * @param <T> type of event data
  */
-public abstract class WanCacheEvent implements InternalWanEvent, IdentifiedDataSerializable {
-
+public abstract class WanEnterpriseCacheEvent<T>
+        implements InternalWanEvent<T>, IdentifiedDataSerializable {
     private String cacheName;
     private String managerPrefix;
     private Set<String> clusterNames = new HashSet<>();
     private int backupCount;
     private long creationTime;
 
-    public WanCacheEvent(String cacheName, String managerPrefix, int backupCount) {
+    public WanEnterpriseCacheEvent(@Nonnull String cacheName,
+                                   @Nonnull String managerPrefix,
+                                   int backupCount) {
         this.cacheName = cacheName;
         this.managerPrefix = managerPrefix;
         this.backupCount = backupCount;
         this.creationTime = Clock.currentTimeMillis();
     }
 
-    public WanCacheEvent() {
-    }
-
-    public String getManagerPrefix() {
-        return managerPrefix;
+    public WanEnterpriseCacheEvent() {
     }
 
     public String getCacheName() {
@@ -89,13 +89,15 @@ public abstract class WanCacheEvent implements InternalWanEvent, IdentifiedDataS
         return WanDataSerializerHook.F_ID;
     }
 
+    @Nonnull
     @Override
     public String getObjectName() {
         return cacheName;
     }
 
+    @Nonnull
     @Override
     public String getServiceName() {
-        return CacheService.SERVICE_NAME;
+        return ICacheService.SERVICE_NAME;
     }
 }

@@ -2,49 +2,47 @@ package com.hazelcast.cache.impl.wan;
 
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.wan.WanEventCounters;
+import com.hazelcast.wan.WanEventType;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 
 /**
  * WAN replication object for cache update operations.
  */
-public class WanCacheUpdateEvent extends WanCacheEvent {
+public class WanEnterpriseCacheAddOrUpdateEvent extends WanEnterpriseCacheEvent<CacheEntryView<Object, Object>> {
     private String mergePolicy;
-    private WanCacheEntryView entryView;
+    private WanCacheEntryView<Object, Object> entryView;
 
-    public WanCacheUpdateEvent(String cacheName, String mergePolicy,
-                               CacheEntryView<Data, Data> entryView,
-                               String managerPrefix, int backupCount) {
+    public WanEnterpriseCacheAddOrUpdateEvent(@Nonnull String cacheName,
+                                              @Nonnull String mergePolicy,
+                                              @Nonnull WanCacheEntryView<Object, Object> entryView,
+                                              String managerPrefix, int backupCount) {
         super(cacheName, managerPrefix, backupCount);
         this.mergePolicy = mergePolicy;
-
-        if (entryView instanceof WanCacheEntryView) {
-            this.entryView = (WanCacheEntryView) entryView;
-        } else {
-            this.entryView = new WanCacheEntryView(entryView);
-        }
+        this.entryView = entryView;
     }
 
-    public WanCacheUpdateEvent() {
+    public WanEnterpriseCacheAddOrUpdateEvent() {
     }
 
     public String getMergePolicy() {
         return mergePolicy;
     }
 
-    public WanCacheEntryView getEntryView() {
+    public WanCacheEntryView<Object, Object> getEntryView() {
         return entryView;
     }
 
     @Nonnull
     @Override
     public Data getKey() {
-        return entryView.getKey();
+        return entryView.getDataKey();
     }
 
     @Override
@@ -67,7 +65,19 @@ public class WanCacheUpdateEvent extends WanCacheEvent {
     }
 
     @Override
-    public void incrementEventCount(WanEventCounters counters) {
+    public void incrementEventCount(@Nonnull WanEventCounters counters) {
         counters.incrementUpdate(getCacheName());
+    }
+
+    @Nonnull
+    @Override
+    public WanEventType getEventType() {
+        return WanEventType.ADD_OR_UPDATE;
+    }
+
+    @Nullable
+    @Override
+    public CacheEntryView<Object, Object> getEventObject() {
+        return entryView;
     }
 }

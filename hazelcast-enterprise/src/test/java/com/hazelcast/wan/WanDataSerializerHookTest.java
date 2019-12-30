@@ -1,14 +1,14 @@
 package com.hazelcast.wan;
 
-import com.hazelcast.cache.impl.wan.WanCacheRemoveEvent;
-import com.hazelcast.cache.impl.wan.WanCacheUpdateEvent;
+import com.hazelcast.cache.impl.wan.WanEnterpriseCacheAddOrUpdateEvent;
+import com.hazelcast.cache.impl.wan.WanEnterpriseCacheRemoveEvent;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
 import com.hazelcast.enterprise.wan.impl.replication.WanEventBatch;
 import com.hazelcast.enterprise.wan.impl.operation.PostJoinWanOperation;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventPublishOperation;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapAddOrUpdateEvent;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapRemoveEvent;
-import com.hazelcast.map.impl.wan.WanEnterpriseMapUpdateEvent;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -39,13 +39,13 @@ public class WanDataSerializerHookTest {
         assertTrue(batchWanRep instanceof WanEventBatch);
 
         IdentifiedDataSerializable cacheUpdate = hook.createFactory().create(CACHE_REPLICATION_UPDATE);
-        assertTrue(cacheUpdate instanceof WanCacheUpdateEvent);
+        assertTrue(cacheUpdate instanceof WanEnterpriseCacheAddOrUpdateEvent);
 
         IdentifiedDataSerializable cacheRemove = hook.createFactory().create(CACHE_REPLICATION_REMOVE);
-        assertTrue(cacheRemove instanceof WanCacheRemoveEvent);
+        assertTrue(cacheRemove instanceof WanEnterpriseCacheRemoveEvent);
 
         IdentifiedDataSerializable mapUpdate = hook.createFactory().create(MAP_REPLICATION_UPDATE);
-        assertTrue(mapUpdate instanceof WanEnterpriseMapUpdateEvent);
+        assertTrue(mapUpdate instanceof WanEnterpriseMapAddOrUpdateEvent);
 
         IdentifiedDataSerializable mapRemove = hook.createFactory().create(MAP_REPLICATION_REMOVE);
         assertTrue(mapRemove instanceof WanEnterpriseMapRemoveEvent);

@@ -6,13 +6,12 @@ import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.impl.replication.WanPublisherSyncSupport;
-import com.hazelcast.map.impl.wan.WanEnterpriseMapEvent;
 import com.hazelcast.internal.partition.IPartition;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapEvent;
 import com.hazelcast.wan.impl.ConsistencyCheckResult;
-import com.hazelcast.wan.impl.WanAntiEntropyEvent;
-import com.hazelcast.wan.WanEvent;
-import com.hazelcast.wan.impl.WanSyncStats;
 import com.hazelcast.wan.impl.InternalWanEvent;
+import com.hazelcast.wan.impl.WanAntiEntropyEvent;
+import com.hazelcast.wan.impl.WanSyncStats;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 public class CustomWanPublisher extends AbstractWanPublisher implements Runnable {
 
-    static final BlockingQueue<WanEvent> EVENT_QUEUE = new ArrayBlockingQueue<>(100);
+    static final BlockingQueue<InternalWanEvent> EVENT_QUEUE = new ArrayBlockingQueue<>(100);
 
     private volatile boolean running = true;
 
@@ -59,7 +58,7 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
                     if (partition.isLocal()) {
                         batchList.clear();
                         eventQueueContainer.drainRandomWanQueue(partition.getPartitionId(), batchList, batchSize);
-                        for (WanEvent event : batchList) {
+                        for (InternalWanEvent event : batchList) {
                             if (event != null) {
                                 EVENT_QUEUE.put(event);
                             }

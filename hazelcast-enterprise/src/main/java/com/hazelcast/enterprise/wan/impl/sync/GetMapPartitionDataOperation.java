@@ -1,11 +1,12 @@
 package com.hazelcast.enterprise.wan.impl.sync;
 
 import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.util.SetUtil;
-import com.hazelcast.map.impl.SimpleEntryView;
+import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.map.impl.wan.WanMapEntryView;
 import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
 
 import java.util.Set;
@@ -15,7 +16,7 @@ import java.util.Set;
  */
 public class GetMapPartitionDataOperation extends MapOperation implements ReadonlyOperation {
 
-    private Set<SimpleEntryView> recordSet;
+    private Set<WanMapEntryView<Object, Object>> recordSet;
 
     public GetMapPartitionDataOperation() {
     }
@@ -28,21 +29,15 @@ public class GetMapPartitionDataOperation extends MapOperation implements Readon
     protected void runInternal() {
         recordSet = SetUtil.createHashSet(recordStore.size());
         recordStore.forEach((dataKey, record)
-                -> recordSet.add(createSimpleEntryView(dataKey, record)), getReplicaIndex() != 0);
+                -> recordSet.add(createWanEntryView(dataKey, record)), getReplicaIndex() != 0);
     }
 
-    private SimpleEntryView<Object, Object> createSimpleEntryView(Data dataKey, Record record) {
-        SimpleEntryView<Object, Object> simpleEntryView = new SimpleEntryView<Object, Object>(
-                mapServiceContext.toData(dataKey), mapServiceContext.toData(record.getValue()));
-        simpleEntryView.setVersion(record.getVersion());
-        simpleEntryView.setHits(record.getHits());
-        simpleEntryView.setLastAccessTime(record.getLastAccessTime());
-        simpleEntryView.setLastUpdateTime(record.getLastUpdateTime());
-        simpleEntryView.setTtl(record.getTtl());
-        simpleEntryView.setCreationTime(record.getCreationTime());
-        simpleEntryView.setExpirationTime(record.getExpirationTime());
-        simpleEntryView.setLastStoredTime(record.getLastStoredTime());
-        return simpleEntryView;
+    private WanMapEntryView<Object, Object> createWanEntryView(Data dataKey, Record<Object> record) {
+        return EntryViews.createWanEntryView(
+                mapServiceContext.toData(dataKey),
+                mapServiceContext.toData(record.getValue()),
+                record,
+                getNodeEngine().getSerializationService());
     }
 
     @Override

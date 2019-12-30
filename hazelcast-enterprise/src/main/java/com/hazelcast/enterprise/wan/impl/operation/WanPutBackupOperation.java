@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan.impl.operation;
 
 import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.impl.wan.WanCacheEvent;
+import com.hazelcast.cache.impl.wan.WanEnterpriseCacheEvent;
 import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.internal.services.ServiceNamespaceAware;
 import com.hazelcast.map.impl.MapService;
@@ -11,6 +11,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.operationservice.BackupOperation;
 import com.hazelcast.wan.WanEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.io.IOException;
 
@@ -21,14 +22,14 @@ import java.io.IOException;
 public class WanPutBackupOperation extends WanBaseOperation
         implements BackupOperation, IdentifiedDataSerializable, ServiceNamespaceAware {
     private ServiceNamespace objectNamespace;
-    private WanEvent event;
+    private InternalWanEvent event;
 
     public WanPutBackupOperation() {
     }
 
     public WanPutBackupOperation(String wanReplicationName,
                                  String targetName,
-                                 WanEvent event,
+                                 InternalWanEvent event,
                                  ServiceNamespace namespace) {
         super(wanReplicationName, targetName);
         this.event = event;
@@ -64,17 +65,17 @@ public class WanPutBackupOperation extends WanBaseOperation
         if (objectNamespace != null) {
             return objectNamespace;
         }
-        final String serviceName = event.getServiceName();
-        final Object service = getNodeEngine().getService(serviceName);
-
-        if (service instanceof MapService) {
-            final WanEnterpriseMapEvent mapEvent = (WanEnterpriseMapEvent) event;
-            objectNamespace = MapService.getObjectNamespace(mapEvent.getMapName());
-        } else if (service instanceof CacheService) {
-            final WanCacheEvent cacheEvent = (WanCacheEvent) event;
-            objectNamespace = CacheService.getObjectNamespace(cacheEvent.getCacheName());
-        } else {
-            getLogger().warning("Forwarding WAN event for unknown service: " + serviceName);
+        switch (event.getServiceName()) {
+            case MapService.SERVICE_NAME:
+                final WanEnterpriseMapEvent mapEvent = (WanEnterpriseMapEvent) event;
+                objectNamespace = MapService.getObjectNamespace(mapEvent.getMapName());
+                break;
+            case CacheService.SERVICE_NAME:
+                final WanEnterpriseCacheEvent cacheEvent = (WanEnterpriseCacheEvent) event;
+                objectNamespace = CacheService.getObjectNamespace(cacheEvent.getCacheName());
+                break;
+            default:
+                throw new IllegalStateException("Forwarding WAN event for unknown service: " + event.getServiceName());
         }
         return objectNamespace;
     }

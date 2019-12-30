@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
@@ -17,7 +18,6 @@ import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.internal.util.concurrent.IdleStrategy;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
-import com.hazelcast.cluster.Address;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;

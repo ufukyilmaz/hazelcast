@@ -2,31 +2,30 @@ package com.hazelcast.map.impl.wan;
 
 import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.wan.WanEventCounters;
+import com.hazelcast.wan.WanEventType;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.UUID;
 
 /**
  * WAN replication object for sync requests.
  */
-public class WanEnterpriseMapSyncEvent extends WanEnterpriseMapEvent {
+public class WanEnterpriseMapSyncEvent extends WanEnterpriseMapEvent<EntryView<Object, Object>> {
     private transient UUID uuid;
-    private WanMapEntryView<Data, Data> entryView;
+    private WanMapEntryView<Object, Object> entryView;
     private transient int partitionId;
 
-    public WanEnterpriseMapSyncEvent(UUID uuid, String mapName, EntryView<Data, Data> entryView, int partitionId) {
+    public WanEnterpriseMapSyncEvent(UUID uuid, String mapName, WanMapEntryView<Object, Object> entryView,
+                                     int partitionId) {
         super(mapName, 0);
         this.uuid = uuid;
-        if (entryView instanceof WanMapEntryView) {
-            this.entryView = (WanMapEntryView<Data, Data>) entryView;
-        } else {
-            this.entryView = new WanMapEntryView<>(entryView);
-        }
+        this.entryView = entryView;
         this.partitionId = partitionId;
     }
 
@@ -37,7 +36,7 @@ public class WanEnterpriseMapSyncEvent extends WanEnterpriseMapEvent {
         return uuid;
     }
 
-    public WanMapEntryView<Data, Data> getEntryView() {
+    public WanMapEntryView<Object, Object> getEntryView() {
         return entryView;
     }
 
@@ -60,7 +59,7 @@ public class WanEnterpriseMapSyncEvent extends WanEnterpriseMapEvent {
     @Nonnull
     @Override
     public Data getKey() {
-        return entryView.getKey();
+        return entryView.getDataKey();
     }
 
     @Override
@@ -69,7 +68,19 @@ public class WanEnterpriseMapSyncEvent extends WanEnterpriseMapEvent {
     }
 
     @Override
-    public void incrementEventCount(WanEventCounters counters) {
+    public void incrementEventCount(@Nonnull WanEventCounters counters) {
         counters.incrementSync(getMapName());
+    }
+
+    @Nonnull
+    @Override
+    public WanEventType getEventType() {
+        return WanEventType.SYNC;
+    }
+
+    @Nullable
+    @Override
+    public EntryView<Object, Object> getEventObject() {
+        return entryView;
     }
 }

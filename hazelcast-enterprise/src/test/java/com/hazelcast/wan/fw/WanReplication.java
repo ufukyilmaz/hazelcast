@@ -90,8 +90,10 @@ public class WanReplication {
 
         if (wanPublisher != null) {
             pc.setImplementation(wanPublisher);
+            pc.setPublisherId(wanPublisher.getClass().getName());
         } else {
             pc.setClassName(wanPublisherClass.getName());
+            pc.setPublisherId(wanPublisherClass.getName());
         }
         return pc;
     }

@@ -1,12 +1,12 @@
 package com.hazelcast.map.impl.wan;
 
 import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
+import com.hazelcast.internal.util.Clock;
 import com.hazelcast.map.IMap;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.internal.util.Clock;
 import com.hazelcast.wan.impl.InternalWanEvent;
 
 import javax.annotation.Nonnull;
@@ -17,14 +17,17 @@ import java.util.Set;
 /**
  * Base class for {@link IMap} related WAN replication
  * objects.
+ *
+ * @param <T> type of event data
  */
-public abstract class WanEnterpriseMapEvent
-        implements InternalWanEvent, IdentifiedDataSerializable {
+public abstract class WanEnterpriseMapEvent<T>
+        implements InternalWanEvent<T>, IdentifiedDataSerializable {
 
     private Set<String> clusterNames = new HashSet<>();
     private String mapName;
     private int backupCount;
     private long creationTime;
+
 
     public WanEnterpriseMapEvent(String mapName, int backupCount) {
         this.mapName = mapName;
@@ -80,11 +83,13 @@ public abstract class WanEnterpriseMapEvent
         return WanDataSerializerHook.F_ID;
     }
 
+    @Nonnull
     @Override
     public String getObjectName() {
         return mapName;
     }
 
+    @Nonnull
     @Override
     public String getServiceName() {
         return MapService.SERVICE_NAME;

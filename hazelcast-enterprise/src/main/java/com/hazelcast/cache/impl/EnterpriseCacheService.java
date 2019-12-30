@@ -18,10 +18,10 @@ import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
 import com.hazelcast.cache.impl.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.impl.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.cache.impl.wan.CacheFilterProvider;
-import com.hazelcast.cache.impl.wan.WanCacheRemoveEvent;
-import com.hazelcast.cache.impl.wan.WanCacheSupportingService;
-import com.hazelcast.cache.impl.wan.WanCacheUpdateEvent;
 import com.hazelcast.cache.impl.wan.WanCacheEntryView;
+import com.hazelcast.cache.impl.wan.WanCacheSupportingService;
+import com.hazelcast.cache.impl.wan.WanEnterpriseCacheAddOrUpdateEvent;
+import com.hazelcast.cache.impl.wan.WanEnterpriseCacheRemoveEvent;
 import com.hazelcast.cache.wan.CacheWanEventFilter;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.HotRestartConfig;
@@ -41,6 +41,7 @@ import com.hazelcast.internal.metrics.DynamicMetricsProvider;
 import com.hazelcast.internal.metrics.MetricDescriptor;
 import com.hazelcast.internal.metrics.MetricsCollectionContext;
 import com.hazelcast.internal.partition.IPartitionService;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.services.WanSupportingService;
 import com.hazelcast.internal.util.CollectionUtil;
@@ -49,12 +50,11 @@ import com.hazelcast.internal.util.ConstructorFunction;
 import com.hazelcast.internal.util.InvocationUtil;
 import com.hazelcast.internal.util.LocalRetryableExecution;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.wan.WanEvent;
 import com.hazelcast.wan.impl.DelegatingWanScheme;
+import com.hazelcast.wan.impl.InternalWanEvent;
 import com.hazelcast.wan.impl.WanReplicationService;
 
 import java.util.ArrayList;
@@ -515,7 +515,7 @@ public class EnterpriseCacheService
     }
 
     @Override
-    public void onReplicationEvent(WanEvent event, WanAcknowledgeType acknowledgeType) {
+    public void onReplicationEvent(InternalWanEvent event, WanAcknowledgeType acknowledgeType) {
         wanSupportingService.onReplicationEvent(event, acknowledgeType);
     }
 
@@ -537,11 +537,11 @@ public class EnterpriseCacheService
             if (eventType == CacheEventType.UPDATED
                     || eventType == CacheEventType.CREATED
                     || eventType == CacheEventType.EXPIRATION_TIME_UPDATED) {
-                WanCacheUpdateEvent update =
-                        new WanCacheUpdateEvent(
+                WanEnterpriseCacheAddOrUpdateEvent update =
+                        new WanEnterpriseCacheAddOrUpdateEvent(
                                 config.getName(),
                                 cacheMergePolicies.get(cacheName),
-                                new WanCacheEntryView(
+                                new WanCacheEntryView<>(
                                         cacheEventContext.getDataKey(),
                                         cacheEventContext.getDataValue(),
                                         cacheEventContext.getCreationTime(),
@@ -555,8 +555,9 @@ public class EnterpriseCacheService
                     wanDelegate.publishReplicationEvent(update);
                 }
             } else if (eventType == CacheEventType.REMOVED) {
-                WanCacheRemoveEvent remove = new WanCacheRemoveEvent(config.getName(), cacheEventContext.getDataKey(),
-                        config.getManagerPrefix(), config.getTotalBackupCount());
+                WanEnterpriseCacheRemoveEvent remove = new WanEnterpriseCacheRemoveEvent(
+                        config.getName(), cacheEventContext.getDataKey(),
+                        config.getManagerPrefix(), config.getTotalBackupCount(), getSerializationService());
                 if (backup) {
                     wanDelegate.publishReplicationEventBackup(remove);
                 } else {
@@ -619,7 +620,7 @@ public class EnterpriseCacheService
      * @param cacheNameWithPrefix the full name of the cache, including the manager scope prefix
      * @param wanEvent the WAN event to be published
      */
-    public void publishWanEvent(String cacheNameWithPrefix, WanEvent wanEvent) {
+    public void publishWanEvent(String cacheNameWithPrefix, InternalWanEvent wanEvent) {
         DelegatingWanScheme wanReplicationPublisher = getOrLookupWanDelegate(cacheNameWithPrefix);
         if (wanReplicationPublisher != null) {
             wanReplicationPublisher.republishReplicationEvent(wanEvent);

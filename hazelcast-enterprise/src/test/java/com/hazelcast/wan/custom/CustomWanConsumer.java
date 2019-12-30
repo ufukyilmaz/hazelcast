@@ -8,7 +8,7 @@ import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.wan.WanConsumer;
-import com.hazelcast.wan.WanEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -36,7 +36,7 @@ public class CustomWanConsumer implements WanConsumer, Runnable, HazelcastInstan
     public void run() {
         while (running) {
             try {
-                WanEvent event = CustomWanPublisher.EVENT_QUEUE.poll(100, MILLISECONDS);
+                InternalWanEvent event = CustomWanPublisher.EVENT_QUEUE.poll(100, MILLISECONDS);
                 if (event != null) {
                     EnterpriseWanReplicationService wanRepService
                             = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();

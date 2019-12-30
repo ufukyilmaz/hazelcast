@@ -7,7 +7,6 @@ import com.hazelcast.map.impl.wan.WanEnterpriseMapSyncEvent;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.wan.WanEvent;
 import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.io.IOException;
@@ -102,9 +101,8 @@ public class WanEventBatch implements IdentifiedDataSerializable {
         }
     }
 
-    private DistributedObjectEntryIdentifier getDistributedObjectEntryIdentifier(WanEvent event) {
-        InternalWanEvent eventObject = (InternalWanEvent) event;
-        return new DistributedObjectEntryIdentifier(event.getServiceName(), eventObject.getObjectName(), eventObject.getKey());
+    private DistributedObjectEntryIdentifier getDistributedObjectEntryIdentifier(InternalWanEvent event) {
+        return new DistributedObjectEntryIdentifier(event.getServiceName(), event.getObjectName(), event.getKey());
     }
 
     /**

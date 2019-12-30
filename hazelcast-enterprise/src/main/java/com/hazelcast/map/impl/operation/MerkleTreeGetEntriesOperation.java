@@ -1,15 +1,14 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.core.EntryView;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.util.collection.InflatableSet;
 import com.hazelcast.internal.util.collection.InflatableSet.Builder;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.MerkleTreeNodeEntries;
-import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.map.impl.wan.WanMapEntryView;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -18,6 +17,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+
+import static com.hazelcast.map.impl.EntryViews.createWanEntryView;
 
 /**
  * Operation for fetching map entries for any number of merkle tree nodes.
@@ -55,35 +56,18 @@ public class MerkleTreeGetEntriesOperation extends MapOperation implements Reado
         result = new ArrayList<>(merkleTreeOrderValuePairs.length / 2);
         for (int i = 0; i < merkleTreeOrderValuePairs.length; i += 2) {
             int order = merkleTreeOrderValuePairs[i];
-            final Builder<EntryView<Data, Data>> entriesBuilder = InflatableSet.newBuilder(1);
+            final Builder<WanMapEntryView<Object, Object>> entriesBuilder = InflatableSet.newBuilder(1);
 
             localMerkleTree.forEachKeyOfNode(order, key -> {
-                Record record = recordStore.getRecord((Data) key);
-                entriesBuilder.add(createSimpleEntryView(((Data) key), record));
+                Record<Object> record = recordStore.getRecord((Data) key);
+                entriesBuilder.add(createWanEntryView(
+                        mapServiceContext.toData(key),
+                        mapServiceContext.toData(record.getValue()),
+                        record,
+                        getNodeEngine().getSerializationService()));
             });
             result.add(new MerkleTreeNodeEntries(order, entriesBuilder.build()));
         }
-    }
-
-    /**
-     * Creates an entry view for the given record.
-     *
-     * @param record a map entry record
-     * @return the map entry view
-     */
-    private SimpleEntryView<Data, Data> createSimpleEntryView(Data dataKey, Record record) {
-        return new SimpleEntryView<Data, Data>()
-                .withKey(mapServiceContext.toData(dataKey))
-                .withValue(mapServiceContext.toData(record.getValue()))
-                .withVersion(record.getVersion())
-                .withHits(record.getHits())
-                .withLastAccessTime(record.getLastAccessTime())
-                .withLastUpdateTime(record.getLastUpdateTime())
-                .withTtl(record.getTtl())
-                .withMaxIdle(record.getMaxIdle())
-                .withCreationTime(record.getCreationTime())
-                .withExpirationTime(record.getExpirationTime())
-                .withLastStoredTime(record.getLastStoredTime());
     }
 
     @Override

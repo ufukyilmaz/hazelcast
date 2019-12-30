@@ -4,14 +4,13 @@ import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerOperation;
 import com.hazelcast.enterprise.wan.impl.replication.WanEventBatch;
 import com.hazelcast.instance.impl.Node;
-import com.hazelcast.internal.services.WanSupportingService;
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.internal.services.WanSupportingService;
+import com.hazelcast.internal.util.executor.StripedExecutor;
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.internal.util.executor.StripedExecutor;
-import com.hazelcast.wan.WanEvent;
 import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.util.Collection;
@@ -80,7 +79,7 @@ class WanEventProcessor implements LiveOperationsTracker {
         executeAndNotify(processingRunnable, op);
     }
 
-    public void handleEvent(WanEvent event, WanAcknowledgeType acknowledgeType) {
+    public void handleEvent(InternalWanEvent event, WanAcknowledgeType acknowledgeType) {
         String serviceName = event.getServiceName();
         WanSupportingService service = node.getNodeEngine().getService(serviceName);
         service.onReplicationEvent(event, acknowledgeType);

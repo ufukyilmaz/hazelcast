@@ -14,8 +14,8 @@ import com.hazelcast.internal.nio.BufferObjectDataInput;
 import com.hazelcast.internal.nio.BufferObjectDataOutput;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.SerializationService;
-import com.hazelcast.map.impl.SimpleEntryView;
-import com.hazelcast.map.impl.wan.WanEnterpriseMapUpdateEvent;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapAddOrUpdateEvent;
+import com.hazelcast.map.impl.wan.WanMapEntryView;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
@@ -174,7 +174,7 @@ public class WanProtocolVersionSelectionTest extends HazelcastTestSupport {
         SerializationService ss = nodeEngine.getSerializationService();
 
         WanEnterpriseMapCustomEvent event = new WanEnterpriseMapCustomEvent(
-                MAP_NAME, ss.toData(key), ss.toData(value), expectedSerializationVersion);
+                MAP_NAME, ss.toData(key), ss.toData(value), expectedSerializationVersion, ss);
         publisher.publishReplicationEvent(event);
     }
 
@@ -231,7 +231,7 @@ public class WanProtocolVersionSelectionTest extends HazelcastTestSupport {
         }
     }
 
-    static class WanEnterpriseMapCustomEvent extends WanEnterpriseMapUpdateEvent {
+    static class WanEnterpriseMapCustomEvent extends WanEnterpriseMapAddOrUpdateEvent {
 
         private Version expectedSerializationVersion;
 
@@ -241,8 +241,9 @@ public class WanProtocolVersionSelectionTest extends HazelcastTestSupport {
         WanEnterpriseMapCustomEvent(String mapName,
                                     Data key,
                                     Data value,
-                                    Version expectedSerializationVersion) {
-            super(mapName, new PassThroughMergePolicy<>(), new SimpleEntryView<>(key, value), 0);
+                                    Version expectedSerializationVersion,
+                                    SerializationService serializationService) {
+            super(mapName, new PassThroughMergePolicy<>(), new WanMapEntryView<>(key, value, serializationService), 0);
             this.expectedSerializationVersion = expectedSerializationVersion;
         }
 

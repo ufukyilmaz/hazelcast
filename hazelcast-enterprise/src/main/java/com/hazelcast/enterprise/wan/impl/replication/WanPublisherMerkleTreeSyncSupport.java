@@ -389,9 +389,8 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
 
             for (MerkleTreeNodeEntries nodeEntries : partitionEntries) {
                 if (!nodeEntries.getNodeEntries().isEmpty()) {
-                    WanEnterpriseMapMerkleTreeNode node =
-                            new WanEnterpriseMapMerkleTreeNode(syncContext.getUuid(), mapName, nodeEntries,
-                                    partitionId);
+                    WanEnterpriseMapMerkleTreeNode node = new WanEnterpriseMapMerkleTreeNode(
+                            syncContext.getUuid(), mapName, nodeEntries, partitionId);
                     publisher.putToSyncEventQueue(node);
                 }
             }

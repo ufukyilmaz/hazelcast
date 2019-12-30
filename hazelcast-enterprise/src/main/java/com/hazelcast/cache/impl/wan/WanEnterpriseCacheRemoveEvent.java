@@ -1,4 +1,4 @@
-package com.hazelcast.map.impl.wan;
+package com.hazelcast.cache.impl.wan;
 
 import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
 import com.hazelcast.internal.nio.IOUtil;
@@ -15,23 +15,24 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 
 /**
- * WAN replication object for map remove operations.
+ * WAN replication object for cache remove operations.
  */
-public class WanEnterpriseMapRemoveEvent extends WanEnterpriseMapEvent<Object> implements SerializationServiceAware {
+public class WanEnterpriseCacheRemoveEvent extends WanEnterpriseCacheEvent<Object> implements SerializationServiceAware {
+
     private SerializationService serializationService;
     private Data dataKey;
     private transient Object key;
 
-    public WanEnterpriseMapRemoveEvent(@Nonnull String mapName,
-                                       @Nonnull Data dataKey,
-                                       int backupCount,
-                                       @Nonnull SerializationService serializationService) {
-        super(mapName, backupCount);
+    public WanEnterpriseCacheRemoveEvent(@Nonnull String cacheName,
+                                         @Nonnull Data dataKey,
+                                         @Nonnull String managerPrefix, int backupCount,
+                                         @Nonnull SerializationService serializationService) {
+        super(cacheName, managerPrefix, backupCount);
         this.serializationService = serializationService;
         this.dataKey = dataKey;
     }
 
-    public WanEnterpriseMapRemoveEvent() {
+    public WanEnterpriseCacheRemoveEvent() {
     }
 
     @Nonnull
@@ -54,12 +55,12 @@ public class WanEnterpriseMapRemoveEvent extends WanEnterpriseMapEvent<Object> i
 
     @Override
     public int getClassId() {
-        return WanDataSerializerHook.MAP_REPLICATION_REMOVE;
+        return WanDataSerializerHook.CACHE_REPLICATION_REMOVE;
     }
 
     @Override
     public void incrementEventCount(@Nonnull WanEventCounters counters) {
-        counters.incrementRemove(getMapName());
+        counters.incrementRemove(getCacheName());
     }
 
     @Nonnull

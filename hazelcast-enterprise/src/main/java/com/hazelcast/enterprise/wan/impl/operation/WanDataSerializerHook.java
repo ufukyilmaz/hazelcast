@@ -1,8 +1,7 @@
 package com.hazelcast.enterprise.wan.impl.operation;
 
-import com.hazelcast.cache.impl.wan.WanCacheRemoveEvent;
-import com.hazelcast.cache.impl.wan.WanCacheUpdateEvent;
-import com.hazelcast.cache.impl.wan.WanCacheEntryView;
+import com.hazelcast.cache.impl.wan.WanEnterpriseCacheAddOrUpdateEvent;
+import com.hazelcast.cache.impl.wan.WanEnterpriseCacheRemoveEvent;
 import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanEventMigrationContainer;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
@@ -13,10 +12,10 @@ import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventResult;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventStarterOperation;
 import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapAddOrUpdateEvent;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapMerkleTreeNode;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapRemoveEvent;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapSyncEvent;
-import com.hazelcast.map.impl.wan.WanEnterpriseMapUpdateEvent;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 
 import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_WAN_REPLICATION_DS_FACTORY;
@@ -58,9 +57,8 @@ public class WanDataSerializerHook implements DataSerializerHook {
     public static final int ADD_WAN_CONFIG_OPERATION = 21;
     public static final int ADD_WAN_CONFIG_BACKUP_OPERATION = 22;
     public static final int REMOVE_WAN_EVENT_BACKUPS_OPERATION = 23;
-    public static final int WAN_CACHE_ENTRY_VIEW = 24;
-    public static final int WAN_PROTOCOL_NEGOTIATION_OPERATION = 25;
-    public static final int WAN_PROTOCOL_NEGOTIATION_RESPONSE = 26;
+    public static final int WAN_PROTOCOL_NEGOTIATION_OPERATION = 24;
+    public static final int WAN_PROTOCOL_NEGOTIATION_RESPONSE = 25;
 
     @Override
     public int getFactoryId() {
@@ -80,13 +78,13 @@ public class WanDataSerializerHook implements DataSerializerHook {
                 case WAN_EVENT_MIGRATION_CONTAINER:
                     return new WanEventMigrationContainer();
                 case MAP_REPLICATION_UPDATE:
-                    return new WanEnterpriseMapUpdateEvent();
+                    return new WanEnterpriseMapAddOrUpdateEvent();
                 case MAP_REPLICATION_REMOVE:
                     return new WanEnterpriseMapRemoveEvent();
                 case CACHE_REPLICATION_UPDATE:
-                    return new WanCacheUpdateEvent();
+                    return new WanEnterpriseCacheAddOrUpdateEvent();
                 case CACHE_REPLICATION_REMOVE:
-                    return new WanCacheRemoveEvent();
+                    return new WanEnterpriseCacheRemoveEvent();
                 case MAP_REPLICATION_SYNC:
                     return new WanEnterpriseMapSyncEvent();
                 case WAN_SYNC_OPERATION:
@@ -119,8 +117,6 @@ public class WanDataSerializerHook implements DataSerializerHook {
                     return new AddWanConfigBackupOperation();
                 case REMOVE_WAN_EVENT_BACKUPS_OPERATION:
                     return new RemoveWanEventBackupsOperation();
-                case WAN_CACHE_ENTRY_VIEW:
-                    return new WanCacheEntryView();
                 case WAN_PROTOCOL_NEGOTIATION_OPERATION:
                     return new WanProtocolNegotiationOperation();
                 case WAN_PROTOCOL_NEGOTIATION_RESPONSE:

@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.wan;
 
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.core.EntryView;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.services.WanSupportingService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapContainer;
@@ -9,7 +9,6 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.Operation;
@@ -19,7 +18,7 @@ import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergePolicyProvider;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
 import com.hazelcast.wan.WanEventCounters;
-import com.hazelcast.wan.WanEvent;
+import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.util.UUID;
 
@@ -52,7 +51,7 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
     }
 
     @Override
-    public void onReplicationEvent(WanEvent event, WanAcknowledgeType acknowledgeType) {
+    public void onReplicationEvent(InternalWanEvent event, WanAcknowledgeType acknowledgeType) {
         if (!(event instanceof WanEnterpriseMapEvent)) {
             return;
         }
@@ -83,8 +82,8 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
 
         republishIfNecessary(event, mapName);
 
-        if (event instanceof WanEnterpriseMapUpdateEvent) {
-            handleUpdateEvent((WanEnterpriseMapUpdateEvent) event, acknowledgeType);
+        if (event instanceof WanEnterpriseMapAddOrUpdateEvent) {
+            handleUpdateEvent((WanEnterpriseMapAddOrUpdateEvent) event, acknowledgeType);
             wanEventCounters.incrementUpdate(mapName);
         } else if (event instanceof WanEnterpriseMapRemoveEvent) {
             handleRemoveEvent((WanEnterpriseMapRemoveEvent) event, acknowledgeType);
@@ -103,7 +102,7 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
         String mapName = event.getMapName();
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
 
-        for (EntryView<Data, Data> entryView : event.getEntries().getNodeEntries()) {
+        for (WanMapEntryView<Object, Object> entryView : event.getEntries().getNodeEntries()) {
             MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), entryView);
             MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
             invokeOnPartition(mergingEntry.getKey(), operation);
@@ -116,7 +115,7 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
      * @param event   the WAN replication event
      * @param mapName the event map name
      */
-    private void republishIfNecessary(WanEvent event, String mapName) {
+    private void republishIfNecessary(InternalWanEvent event, String mapName) {
         final MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         if (mapContainer.isWanRepublishingEnabled()) {
             mapContainer.getWanReplicationDelegate().republishReplicationEvent(event);
@@ -133,7 +132,7 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
      * @param acknowledgeType determines whether the method will wait for the
      *                        update to be processed on the partition owner
      */
-    private void handleUpdateEvent(WanEnterpriseMapUpdateEvent event, WanAcknowledgeType acknowledgeType) {
+    private void handleUpdateEvent(WanEnterpriseMapAddOrUpdateEvent event, WanAcknowledgeType acknowledgeType) {
         final String mapName = event.getMapName();
         final MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
         final Object mergePolicy = event.getMergePolicy();

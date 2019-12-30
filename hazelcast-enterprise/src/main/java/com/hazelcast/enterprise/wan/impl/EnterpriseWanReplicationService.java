@@ -299,7 +299,7 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
     }
 
     // only for testing
-    public void handleEvent(WanEvent event, WanAcknowledgeType acknowledgeType) {
+    public void handleEvent(InternalWanEvent event, WanAcknowledgeType acknowledgeType) {
         eventProcessor.handleEvent(event, acknowledgeType);
     }
 

@@ -1,26 +1,26 @@
 package com.hazelcast.map.impl.event;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.EntryEventType;
-import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
-import com.hazelcast.internal.serialization.SerializationService;
-import com.hazelcast.map.impl.EnterpriseMapServiceContext;
-import com.hazelcast.map.impl.MapContainer;
-import com.hazelcast.map.impl.SimpleEntryView;
-import com.hazelcast.map.impl.wan.WanEnterpriseMapRemoveEvent;
-import com.hazelcast.map.impl.wan.WanEnterpriseMapUpdateEvent;
-import com.hazelcast.map.impl.wan.MapFilterProvider;
-import com.hazelcast.map.wan.MapWanEventFilter;
-import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.internal.util.CollectionUtil;
+import com.hazelcast.map.impl.EnterpriseMapServiceContext;
+import com.hazelcast.map.impl.MapContainer;
+import com.hazelcast.map.impl.wan.MapFilterProvider;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapAddOrUpdateEvent;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapRemoveEvent;
+import com.hazelcast.map.impl.wan.WanMapEntryView;
+import com.hazelcast.map.wan.MapWanEventFilter;
+import com.hazelcast.spi.impl.NodeEngine;
+import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 
+import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.List;
 
@@ -79,12 +79,14 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      * @param entryView the updated entry
      */
     @Override
-    public void publishWanUpdate(String mapName, EntryView<Data, Data> entryView, boolean hasLoadProvenance) {
+    public void publishWanUpdate(@Nonnull String mapName,
+                                 @Nonnull WanMapEntryView<Object, Object> entryView,
+                                 boolean hasLoadProvenance) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
-        Object wanMergePolicy = mapContainer.getWanMergePolicy();
+        SplitBrainMergePolicy wanMergePolicy = mapContainer.getWanMergePolicy();
         int totalBackupCount = mapContainer.getTotalBackupCount();
-        WanEnterpriseMapUpdateEvent replicationEvent
-                = new WanEnterpriseMapUpdateEvent(mapName, wanMergePolicy, entryView, totalBackupCount);
+        WanEnterpriseMapAddOrUpdateEvent replicationEvent = new WanEnterpriseMapAddOrUpdateEvent(
+                mapName, wanMergePolicy, entryView, totalBackupCount);
 
         if (!isEventFiltered(mapContainer, entryView, hasLoadProvenance ? LOADED : UPDATED)) {
             publishWanEvent(mapName, replicationEvent);
@@ -100,13 +102,14 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      * @param key     the key of the removed entry
      */
     @Override
-    public void publishWanRemove(String mapName, Data key) {
+    public void publishWanRemove(@Nonnull String mapName, @Nonnull Data key) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         int totalBackupCount = mapContainer.getTotalBackupCount();
         WanEnterpriseMapRemoveEvent event
-                = new WanEnterpriseMapRemoveEvent(mapName, toHeapData(key), totalBackupCount);
+                = new WanEnterpriseMapRemoveEvent(mapName, toHeapData(key), totalBackupCount, serializationService);
 
-        if (!isEventFiltered(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
+        WanMapEntryView<Object, Object> entryView = new WanMapEntryView<>(key, null, serializationService);
+        if (!isEventFiltered(mapContainer, entryView, WanFilterEventType.REMOVED)) {
             publishWanEvent(mapName, event);
         }
     }
@@ -121,7 +124,7 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
      * @return if the event matches the WAN replication filter
      */
     private boolean isEventFiltered(MapContainer mapContainer,
-                                    EntryView<Data, Data> entryView,
+                                    WanMapEntryView<Object, Object> entryView,
                                     WanFilterEventType eventType) {
 
         MapConfig mapConfig = mapContainer.getMapConfig();
@@ -134,31 +137,15 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
             return eventType == WanFilterEventType.LOADED;
         }
 
-        EntryView lazyEntryView = toLazyEntryView(entryView, serializationService);
         MapFilterProvider mapFilterProvider = getEnterpriseMapServiceContext().getMapFilterProvider();
 
         for (String filterName : filters) {
             MapWanEventFilter wanEventFilter = mapFilterProvider.getFilter(filterName);
-            if (wanEventFilter.filter(mapContainer.getName(), lazyEntryView, eventType)) {
+            if (wanEventFilter.filter(mapContainer.getName(), entryView, eventType)) {
                 return true;
             }
         }
         return false;
-    }
-
-    public static <K, V> EntryView<K, V> toLazyEntryView(EntryView<K, V> entryView,
-                                                         SerializationService serializationService) {
-        return new LazyEntryView<>(entryView.getKey(), entryView.getValue(), serializationService)
-                .setCost(entryView.getCost())
-                .setVersion(entryView.getVersion())
-                .setLastAccessTime(entryView.getLastAccessTime())
-                .setLastUpdateTime(entryView.getLastUpdateTime())
-                .setTtl(entryView.getTtl())
-                .setMaxIdle(entryView.getMaxIdle())
-                .setCreationTime(entryView.getCreationTime())
-                .setHits(entryView.getHits())
-                .setExpirationTime(entryView.getExpirationTime())
-                .setLastStoredTime(entryView.getLastStoredTime());
     }
 
     private static List<String> getFiltersFrom(WanReplicationRef wanReplicationRef) {

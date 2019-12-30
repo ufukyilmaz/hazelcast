@@ -1,14 +1,19 @@
 package com.hazelcast.map.impl.wan;
 
+import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.map.impl.MerkleTreeNodeEntries;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.wan.WanEventCounters;
+import com.hazelcast.wan.WanEventType;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -17,7 +22,7 @@ import java.util.UUID;
  *
  * @see com.hazelcast.wan.impl.merkletree.MerkleTree
  */
-public class WanEnterpriseMapMerkleTreeNode extends WanEnterpriseMapEvent {
+public class WanEnterpriseMapMerkleTreeNode extends WanEnterpriseMapEvent<Collection<EntryView<Object, Object>>> {
     private transient UUID uuid;
     private MerkleTreeNodeEntries entries;
     private transient int partitionId;
@@ -64,7 +69,7 @@ public class WanEnterpriseMapMerkleTreeNode extends WanEnterpriseMapEvent {
     @Override
     public Data getKey() {
         // for all purposes, the first key is sufficient
-        return entries.getNodeEntries().iterator().next().getKey();
+        return entries.getNodeEntries().iterator().next().getDataKey();
     }
 
     /**
@@ -80,7 +85,23 @@ public class WanEnterpriseMapMerkleTreeNode extends WanEnterpriseMapEvent {
     }
 
     @Override
-    public void incrementEventCount(WanEventCounters counters) {
+    public void incrementEventCount(@Nonnull WanEventCounters counters) {
         counters.incrementSync(getMapName(), getEntryCount());
     }
+
+    @Nonnull
+    @Override
+    public WanEventType getEventType() {
+        return WanEventType.SYNC;
+    }
+
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    public Collection<EntryView<Object, Object>> getEventObject() {
+        // upcast to allow Set<WanMapEntryView<Object, Object>> to be returned as
+        // Collection<EntryView<Object, Object>> and avoid copying
+        return (Set) getEntries().getNodeEntries();
+    }
+
 }

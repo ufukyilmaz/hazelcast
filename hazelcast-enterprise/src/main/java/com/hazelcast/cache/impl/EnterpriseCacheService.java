@@ -62,6 +62,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -212,7 +213,8 @@ public class EnterpriseCacheService
                     new PreJoinCacheConfig(cacheConfig, false));
             prefix = hotRestartService.registerRamStore(this, SERVICE_NAME, cacheNameWithPrefix, partitionId);
             if (!hotRestartService.isStartCompleted()) {
-                nodeEngine.getProxyService().initializeDistributedObject(SERVICE_NAME, cacheNameWithPrefix);
+                UUID source = nodeEngine.getLocalMember().getUuid();
+                nodeEngine.getProxyService().initializeDistributedObject(SERVICE_NAME, cacheNameWithPrefix, source);
             }
         }
         return isNative

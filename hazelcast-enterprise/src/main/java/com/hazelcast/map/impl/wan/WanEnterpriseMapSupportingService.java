@@ -21,6 +21,8 @@ import com.hazelcast.spi.merge.SplitBrainMergeTypes.MapMergeTypes;
 import com.hazelcast.wan.WanEventCounters;
 import com.hazelcast.wan.WanEvent;
 
+import java.util.UUID;
+
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static com.hazelcast.spi.impl.merge.MergingValueFactory.createMergingEntry;
 
@@ -62,7 +64,8 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
           Otherwise, users are forced to manually call IMap#get()
           Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
          */
-        proxyService.getDistributedObject(MapService.SERVICE_NAME, mapName);
+        UUID source = nodeEngine.getLocalMember().getUuid();
+        proxyService.getDistributedObject(MapService.SERVICE_NAME, mapName, source);
 
         if (event instanceof WanEnterpriseMapSyncEvent) {
             handleSyncEvent((WanEnterpriseMapSyncEvent) event);

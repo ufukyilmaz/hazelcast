@@ -7,6 +7,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.services.RemoteService;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.security.impl.SecureCallableImpl;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.servicemanager.impl.ServiceManagerImpl;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.hazelcast.internal.nio.IOUtil.closeResource;
 import static java.util.Arrays.asList;
@@ -177,8 +179,9 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         Map<String, Set<String>> permissionMappings = readPermissionMappings();
 
         HazelcastInstance instance = createHazelcastInstance();
+        NodeEngineImpl nodeEngine = getNodeEngineImpl(instance);
         ServiceManagerImpl serviceManager = (ServiceManagerImpl)
-                getNodeEngineImpl(instance).getServiceManager();
+                nodeEngine.getServiceManager();
 
         Map<Class, Set<String>> missingPerms = new HashMap<Class, Set<String>>();
 
@@ -197,7 +200,8 @@ public class PermissionMappingTest extends HazelcastTestSupport {
 
             DistributedObject dObj;
             if (service instanceof RemoteService) {
-                dObj = ((RemoteService) service).createDistributedObject("TestingPermissionMappings");
+                UUID source = nodeEngine.getLocalMember().getUuid();
+                dObj = ((RemoteService) service).createDistributedObject("TestingPermissionMappings", source);
             } else {
                 dObj = ((RaftRemoteService) service).createProxy("TestingPermissionMappings");
             }
@@ -249,8 +253,9 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         Map<String, Set<String>> permissionMappings = readPermissionMappings();
 
         HazelcastInstance instance = createHazelcastInstance();
+        NodeEngineImpl nodeEngine = getNodeEngineImpl(instance);
         ServiceManagerImpl serviceManager = (ServiceManagerImpl)
-                getNodeEngineImpl(instance).getServiceManager();
+                nodeEngine.getServiceManager();
 
         for (Map.Entry<String, Set<String>> permEntry : permissionMappings.entrySet()) {
             String serviceAlias = permEntry.getKey();
@@ -272,7 +277,8 @@ public class PermissionMappingTest extends HazelcastTestSupport {
             Object service = services.get(0);
             DistributedObject proxy;
             if (service instanceof RemoteService) {
-                proxy = ((RemoteService) service).createDistributedObject("Test");
+                UUID source = nodeEngine.getLocalMember().getUuid();
+                proxy = ((RemoteService) service).createDistributedObject("Test", source);
             } else {
                 proxy = ((RaftRemoteService) service).createProxy("Test");
             }

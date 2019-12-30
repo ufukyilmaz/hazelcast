@@ -15,6 +15,7 @@ import com.hazelcast.security.SecurityInterceptor;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -48,6 +49,7 @@ public class SecurityInterceptorTest {
         map.put("key", "value");
     }
 
+    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/3478")
     @Test(expected = AccessControlException.class)
     public void testException_beforeIntercept() {
         final Config config = createConfig();

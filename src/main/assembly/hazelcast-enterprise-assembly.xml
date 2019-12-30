@@ -19,13 +19,6 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>hazelcast-enterprise-client/target/</directory>
-            <outputDirectory>/lib/</outputDirectory>
-            <includes>
-                <include>hazelcast-enterprise-client-${project.version}.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>${hazelcast.root}/hazelcast-ra/hazelcast-jca/target</directory>
             <outputDirectory>/lib/</outputDirectory>
             <includes>
@@ -83,13 +76,6 @@
         </fileSet>
 
         <fileSet>
-            <directory>${hazelcast.root}/hazelcast-client/target</directory>
-            <outputDirectory>/lib/</outputDirectory>
-            <includes>
-                <include>hazelcast-client-${project.version}.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>${hazelcast.root}/javadoc</directory>
             <outputDirectory>docs/javadoc</outputDirectory>
             <excludes>
@@ -127,12 +113,6 @@
                 <include>hazelcast.xml</include>
                 <include>hazelcast-full-example.xml</include>
                 <include>hazelcast-full-example.yaml</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${hazelcast.root}/hazelcast-client/target/</directory>
-            <outputDirectory>/bin/</outputDirectory>
-            <includes>
                 <include>hazelcast-client-full-example.xml</include>
                 <include>hazelcast-client-full-example.yaml</include>
                 <include>hazelcast-client-failover-full-example.xml</include>

@@ -547,7 +547,8 @@ public class EnterpriseCacheService
                                         cacheEventContext.getCreationTime(),
                                         cacheEventContext.getExpirationTime(),
                                         cacheEventContext.getLastAccessTime(),
-                                        cacheEventContext.getAccessHit()),
+                                        cacheEventContext.getAccessHit(),
+                                        getSerializationService()),
                                 config.getManagerPrefix(), config.getTotalBackupCount());
                 if (backup) {
                     wanDelegate.publishReplicationEventBackup(update);

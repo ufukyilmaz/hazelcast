@@ -18,7 +18,6 @@ import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.config.SerializationConfig;
-import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IExecutorService;
@@ -364,7 +363,7 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         map.get(1);
 
         NearCache nearCache = ((ClientMapProxy) map).getContext()
-                                                    .getNearCacheManager(map.getServiceName()).getNearCache("map");
+                .getNearCacheManager(map.getServiceName()).getNearCache("map");
         assertEquals(1, nearCache.size());
 
         Set<Member> members = client.getCluster().getMembers();
@@ -416,12 +415,9 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         HazelcastInstance client = HazelcastClient.newHazelcastFailoverClient(clientFailoverConfig);
 
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        client.getLifecycleService().addLifecycleListener(new LifecycleListener() {
-            @Override
-            public void stateChanged(LifecycleEvent event) {
-                if (LifecycleEvent.LifecycleState.CLIENT_CHANGED_CLUSTER.equals(event.getState())) {
-                    countDownLatch.countDown();
-                }
+        client.getLifecycleService().addLifecycleListener(event -> {
+            if (LifecycleEvent.LifecycleState.CLIENT_CHANGED_CLUSTER.equals(event.getState())) {
+                countDownLatch.countDown();
             }
         });
 
@@ -432,12 +428,7 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         assertEquals(1, queryCache.size());
 
         final CountDownLatch entryAddedLatch = new CountDownLatch(1);
-        queryCache.addEntryListener(new EntryAddedListener<Object, Object>() {
-            @Override
-            public void entryAdded(EntryEvent<Object, Object> event) {
-                entryAddedLatch.countDown();
-            }
-        }, true);
+        queryCache.addEntryListener((EntryAddedListener<Object, Object>) event -> entryAddedLatch.countDown(), true);
 
         Set<Member> members = client.getCluster().getMembers();
         assertEquals(1, members.size());
@@ -446,7 +437,7 @@ public class DisconnectViaCommandTest extends ClientTestSupport {
         getClientEngineImpl(instance1).applySelector(ClientSelectors.none());
 
         assertOpenEventually(countDownLatch);
-        assertEquals(0, queryCache.size());
+        assertTrueEventually(() -> assertEquals(0, queryCache.size()));
 
         map.put(2, 2);
         assertOpenEventually(entryAddedLatch);

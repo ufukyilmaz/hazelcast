@@ -49,7 +49,6 @@ public class SecurityInterceptorTest {
         map.put("key", "value");
     }
 
-    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/3478")
     @Test(expected = AccessControlException.class)
     public void testException_beforeIntercept() {
         final Config config = createConfig();

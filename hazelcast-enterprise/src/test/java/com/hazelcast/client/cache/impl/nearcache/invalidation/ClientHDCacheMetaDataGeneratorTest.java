@@ -1,6 +1,5 @@
-package com.hazelcast.client.cache.nearcache.invalidation;
+package com.hazelcast.client.cache.impl.nearcache.invalidation;
 
-import com.hazelcast.client.cache.impl.nearcache.invalidation.ClientCacheMetaDataGeneratorTest;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;

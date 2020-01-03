@@ -1,6 +1,5 @@
-package com.hazelcast.client.cache.nearcache;
+package com.hazelcast.client.cache.impl.nearcache;
 
-import com.hazelcast.client.cache.impl.nearcache.ClientCacheNearCacheInvalidationTest;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;

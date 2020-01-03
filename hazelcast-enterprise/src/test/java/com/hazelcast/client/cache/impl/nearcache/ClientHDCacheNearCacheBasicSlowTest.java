@@ -1,8 +1,9 @@
-package com.hazelcast.client.cache.nearcache;
+package com.hazelcast.client.cache.impl.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.NearCacheConfig.LocalUpdatePolicy;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.SlowTest;
@@ -18,28 +19,26 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.internal.nearcache.HDNearCacheTestUtils.createNativeMemoryConfig;
 import static java.util.Arrays.asList;
 
+/**
+ * Basic HiDensity Near Cache tests for {@link com.hazelcast.cache.ICache} on Hazelcast clients.
+ */
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({SlowTest.class, ParallelJVMTest.class})
-public class ClientHDCacheNearCachePreloaderSlowTest extends ClientCacheNearCachePreloaderSlowTest {
+public class ClientHDCacheNearCacheBasicSlowTest extends ClientCacheNearCacheBasicSlowTest {
 
-    @Parameters(name = "format:{0} invalidationOnChange:{1} serializeKeys:{2}")
+    @Parameters(name = "format:{0} serializeKeys:{1} localUpdatePolicy:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.NATIVE, false, true},
-                {InMemoryFormat.NATIVE, false, false},
-                {InMemoryFormat.NATIVE, true, true},
-                {InMemoryFormat.NATIVE, true, false},
+                {InMemoryFormat.NATIVE, true, LocalUpdatePolicy.INVALIDATE},
+                {InMemoryFormat.NATIVE, true, LocalUpdatePolicy.CACHE_ON_UPDATE},
+                {InMemoryFormat.NATIVE, false, LocalUpdatePolicy.INVALIDATE},
+                {InMemoryFormat.NATIVE, false, LocalUpdatePolicy.CACHE_ON_UPDATE},
 
-                {InMemoryFormat.BINARY, false, true},
-                {InMemoryFormat.BINARY, false, false},
-                {InMemoryFormat.BINARY, true, true},
-                {InMemoryFormat.BINARY, true, false},
-
-                {InMemoryFormat.OBJECT, false, true},
-                {InMemoryFormat.OBJECT, false, false},
-                {InMemoryFormat.OBJECT, true, true},
-                {InMemoryFormat.OBJECT, true, false},
+                {InMemoryFormat.BINARY, false, LocalUpdatePolicy.INVALIDATE},
+                {InMemoryFormat.BINARY, false, LocalUpdatePolicy.CACHE_ON_UPDATE},
+                {InMemoryFormat.OBJECT, false, LocalUpdatePolicy.INVALIDATE},
+                {InMemoryFormat.OBJECT, false, LocalUpdatePolicy.CACHE_ON_UPDATE},
         });
     }
 

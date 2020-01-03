@@ -1,4 +1,4 @@
-package com.hazelcast.client.cache.nearcache;
+package com.hazelcast.client.cache.impl.nearcache;
 
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.CacheService;

@@ -8,7 +8,6 @@ import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -65,17 +64,15 @@ public class RedBlackTreeStore
         this(malloc, offHeapKeyComparator, false);
     }
 
-    @SuppressWarnings("checkstyle:simplifybooleanexpression")
-    @SuppressFBWarnings({"UCF_USELESS_CONTROL_FLOW_NEXT_LINE"})
     public RedBlackTreeStore(
             MemoryAllocator malloc,
-            OffHeapComparator offHeapKeyComparator, boolean disableConcistencyAssertions) {
+            OffHeapComparator offHeapKeyComparator, boolean disableConsistencyAssertions) {
         this.malloc = malloc;
         this.offHeapKeyComparator = offHeapKeyComparator;
         this.nodeCached = of(this, malloc, NULL_ADDRESS);
         this.leftCached = of(this, malloc, NULL_ADDRESS);
         this.rightCached = of(this, malloc, NULL_ADDRESS);
-        assert (assertOn = !disableConcistencyAssertions) || true;
+        assertOn = !disableConsistencyAssertions && getClass().desiredAssertionStatus();
     }
 
     public OffHeapTreeEntry put(MemoryBlock key, MemoryBlock value) {

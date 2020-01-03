@@ -2,16 +2,17 @@ package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.elastic.tree.impl.RedBlackTreeStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.DataSerializableFactory;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.impl.Index;
 import com.hazelcast.query.impl.QueryContext;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.query.impl.predicates.AbstractIndexAwarePredicate;
 import com.hazelcast.test.annotation.SlowTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
@@ -22,15 +23,26 @@ import java.util.Set;
 @Category(SlowTest.class)
 public class HDQueryBounceTerminateTest extends HDQueryBounceTest {
 
+    private static boolean rebBlackTreeStoreAssertionStatus;
+
+    @BeforeClass
+    public static void beforeClass() {
+        // disable expensive consistency checks in RedBlackTreeStore
+        rebBlackTreeStoreAssertionStatus = RedBlackTreeStore.class.desiredAssertionStatus();
+        RedBlackTreeStore.class.getClassLoader().setClassAssertionStatus(RedBlackTreeStore.class.getName(), false);
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        // re-enable consistency checks in RedBlackTreeStore
+        RedBlackTreeStore.class.getClassLoader().setClassAssertionStatus(RedBlackTreeStore.class.getName(),
+                rebBlackTreeStoreAssertionStatus);
+    }
+
     @Override
     protected Config getConfig() {
         Config config = super.getConfig();
-        config.getSerializationConfig().addDataSerializableFactory(42, new DataSerializableFactory() {
-            @Override
-            public IdentifiedDataSerializable create(int typeId) {
-                return new PredicateImpl();
-            }
-        });
+        config.getSerializationConfig().addDataSerializableFactory(42, typeId -> new PredicateImpl());
         return config;
     }
 

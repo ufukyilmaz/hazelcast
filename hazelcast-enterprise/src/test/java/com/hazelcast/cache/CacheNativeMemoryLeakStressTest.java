@@ -19,12 +19,12 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.nio.Bits;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.EmptyStatement;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.OperationService;
@@ -170,7 +170,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                 .setProperty(PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), String.valueOf(Integer.MAX_VALUE))
                 // the automatic cache expiration task may cleanup some entries during validation and fail assertions
                 // --> we don't want it to kick in during test execution
-                .setProperty(CacheClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS, String.valueOf(Integer.MAX_VALUE));
+                .setProperty(CacheClearExpiredRecordsTask.PROP_CLEANUP_ENABLED, "false");
 
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);

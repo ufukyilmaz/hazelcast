@@ -257,13 +257,20 @@ public class HDNearCacheRecordStoreImpl<K, V>
 
     @Override
     protected void updateRecordValue(HDNearCacheRecord record, V value) {
-        NativeMemoryData nativeValue = null;
+        NativeMemoryData newValue = null;
         try {
-            nativeValue = toNativeMemoryData(value);
-            record.setValue(nativeValue);
+            NativeMemoryData oldValue = record.getValue();
+
+            newValue = toNativeMemoryData(value);
+            record.setValue(newValue);
+
+            if (isMemoryBlockValid(oldValue)) {
+                recordProcessor.disposeData(oldValue);
+            }
+
         } catch (Throwable throwable) {
-            if (isMemoryBlockValid(nativeValue)) {
-                recordProcessor.disposeData(nativeValue);
+            if (isMemoryBlockValid(newValue)) {
+                recordProcessor.disposeData(newValue);
             }
             throw rethrow(throwable);
         }
@@ -275,10 +282,22 @@ public class HDNearCacheRecordStoreImpl<K, V>
         HDNearCacheRecord reservedRecord = reserveForCacheOnUpdate0(key, keyData,
                 existingRecord, reservationId);
 
-        if (reservedRecord == null) {
-            records.remove(keyData);
+        if (reservedRecord != null) {
+            Data nativeKey = null;
+            try {
+                // if we have an existingRecord, it means we previously
+                // created a key in HD memory and now we don't need
+                // to create once again. Otherwise, when there is no
+                // existingRecord, we have to create a new key in
+                // HD memory for the newly created reservedRecord.
+                nativeKey = existingRecord != null ? keyData : toNativeMemoryData(keyData);
+                records.put(nativeKey, reservedRecord);
+            } catch (Throwable throwable) {
+                freeHDMemory(nativeKey, reservedRecord);
+                throw rethrow(throwable);
+            }
         } else {
-            records.put(keyData, reservedRecord);
+            invalidate((K) keyData);
         }
         return reservedRecord;
     }
@@ -307,19 +326,29 @@ public class HDNearCacheRecordStoreImpl<K, V>
             return recordToReserve;
         }
 
-        HDNearCacheRecord record;
+        HDNearCacheRecord record = null;
         NativeMemoryData nativeKey = null;
         try {
             record = reserveForUpdate0(key, keyData, reservationId);
             nativeKey = toNativeMemoryData(key);
             records.put(nativeKey, record);
         } catch (Throwable throwable) {
-            if (isMemoryBlockValid(nativeKey)) {
-                recordProcessor.disposeData(nativeKey);
-            }
+            freeHDMemory(nativeKey, record);
+
             throw rethrow(throwable);
         }
         return record;
+    }
+
+    private void freeHDMemory(Data key, HDNearCacheRecord record) {
+        if (key instanceof NativeMemoryData
+                && isMemoryBlockValid(((NativeMemoryData) key))) {
+            recordProcessor.disposeData(key);
+        }
+
+        if (isMemoryBlockValid(record)) {
+            recordProcessor.dispose(record);
+        }
     }
 
     @Override

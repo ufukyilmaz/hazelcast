@@ -1,15 +1,15 @@
 package com.hazelcast.internal.nearcache;
 
 import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.nearcache.impl.DefaultNearCache;
 import com.hazelcast.internal.nearcache.impl.nativememory.SegmentedHDNearCacheRecordStore;
+import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.internal.serialization.Data;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.properties.HazelcastProperties;
 
@@ -30,8 +30,9 @@ import static java.util.logging.Level.WARNING;
  */
 public class HDNearCache<K, V> extends DefaultNearCache<K, V> {
 
-    private final ILogger logger = Logger.getLogger(getClass());
     private final NearCacheManager nearCacheManager;
+    private final ILogger logger = Logger.getLogger(getClass());
+
     private HazelcastMemoryManager memoryManager;
 
     public HDNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheManager nearCacheManager,
@@ -109,6 +110,35 @@ public class HDNearCache<K, V> extends DefaultNearCache<K, V> {
         do {
             try {
                 return super.tryReserveForUpdate(key, keyData);
+            } catch (NativeOutOfMemoryError error) {
+                ignore(error);
+            }
+
+            if (evictRecordStores()) {
+                continue;
+            }
+
+            if (memoryCompacted) {
+                handleNativeOOME(key);
+                break;
+            }
+
+            compactMemory();
+            memoryCompacted = true;
+
+        } while (true);
+
+        return NOT_RESERVED;
+    }
+
+    @Override
+    public long tryReserveForCacheOnUpdate(K key, Data keyData) {
+        assert key != null : "key cannot be null";
+
+        boolean memoryCompacted = false;
+        do {
+            try {
+                return super.tryReserveForCacheOnUpdate(key, keyData);
             } catch (NativeOutOfMemoryError error) {
                 ignore(error);
             }
@@ -212,5 +242,10 @@ public class HDNearCache<K, V> extends DefaultNearCache<K, V> {
     // just for testing
     void setMemoryManager(HazelcastMemoryManager memoryManager) {
         this.memoryManager = memoryManager;
+    }
+
+    @Override
+    public String toString() {
+        return "HDNearCache{" + super.toString() + "} ";
     }
 }

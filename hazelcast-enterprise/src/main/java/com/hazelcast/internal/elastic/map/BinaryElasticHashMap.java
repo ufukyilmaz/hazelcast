@@ -7,6 +7,7 @@ import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
 import com.hazelcast.internal.memory.MemoryBlockProcessor;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.HeapData;
@@ -15,7 +16,6 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.internal.serialization.Data;
 
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.IntConsumer;
 
 import static com.hazelcast.internal.elastic.map.BehmSlotAccessor.rehash;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
@@ -58,6 +59,15 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     protected final MemoryBlockProcessor<V> memoryBlockProcessor;
 
     protected BehmSlotAccessor accessor;
+
+    /**
+     * We perturb hashed values with the array size to avoid problems with
+     * nearly-sorted-by-hash values on iterations.
+     *
+     * @see "http://issues.carrot2.org/browse/HPPC-80"
+     */
+    protected int perturbation;
+
     private final BehmSlotAccessorFactory accessorFactory;
 
     /**
@@ -80,14 +90,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * Resize buffers when {@link #assignedSlotCount} hits this value.
      */
     private int resizeAt;
-
-    /**
-     * We perturb hashed values with the array size to avoid problems with
-     * nearly-sorted-by-hash values on iterations.
-     *
-     * @see "http://issues.carrot2.org/browse/HPPC-80"
-     */
-    private int perturbation;
 
     private final MemoryAllocator malloc;
 
@@ -1066,6 +1068,75 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     /**
+     * Fetches all entries which belong to the same base slot.
+     *
+     * @param baseSlot     the base slot
+     * @param slotConsumer consumer function for encountered slots
+     * @return the next base slot
+     */
+    @SuppressWarnings({"checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity"})
+    public int fetchAllWithBaseSlot(int baseSlot, IntConsumer slotConsumer) {
+        ensureMemory();
+        final int mask = allocatedSlotCount - 1;
+
+        baseSlot = (baseSlot >= 0 && baseSlot <= allocatedSlotCount) ? baseSlot : 0;
+        int currentSlot = baseSlot;
+        int nextBaseSlot = -1;
+
+        // collect entries
+        while (accessor.isAssigned(currentSlot)) {
+            long currentKey = accessor.getKey(currentSlot);
+            int currentKeyHashCode = NativeMemoryDataUtil.hashCode(currentKey);
+            int currentKeyBaseSlot = rehash(currentKeyHashCode, perturbation) & mask;
+
+            if (currentKeyBaseSlot == baseSlot) {
+                // found key which belongs to requested baseSlot
+                slotConsumer.accept(currentSlot);
+            } else if (currentKeyBaseSlot > baseSlot) {
+                if (nextBaseSlot == -1) {
+                    nextBaseSlot = currentKeyBaseSlot;
+                } else {
+                    nextBaseSlot = Math.min(nextBaseSlot, currentKeyBaseSlot);
+                }
+            }
+
+            currentSlot = (currentSlot + 1) & mask;
+            if (currentSlot == baseSlot) {
+                // wrapped around
+                return nextBaseSlot;
+            }
+        }
+        // collected all entries that belong to baseSlot
+
+        if (nextBaseSlot > 0) {
+            for (; ; currentSlot = currentSlot + 1 & mask) {
+                if (accessor.isAssigned(currentSlot)) {
+                    long currentKey = accessor.getKey(currentSlot);
+                    int currentKeyHashCode = NativeMemoryDataUtil.hashCode(currentKey);
+                    int currentKeyBaseSlot = rehash(currentKeyHashCode, perturbation) & mask;
+                    if (currentKeyBaseSlot > baseSlot) {
+                        return Math.min(nextBaseSlot, currentKeyBaseSlot);
+                    }
+                } else if (currentSlot == baseSlot) {
+                    return nextBaseSlot;
+                }
+            }
+        }
+        if (currentSlot < baseSlot) {
+            return nextBaseSlot;
+        }
+
+        // in the case we didn't wrap around, we search until end of table
+        for (; currentSlot < allocatedSlotCount; currentSlot++) {
+            if (accessor.isAssigned(currentSlot & mask)) {
+                nextBaseSlot = currentSlot & mask;
+                break;
+            }
+        }
+        return nextBaseSlot;
+    }
+
+    /**
      * @param failFast {@code true} to enable fail fast behaviour, otherwise set {@code false}
      * @return a new iterator instance
      * @see #modCount
@@ -1128,7 +1199,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     /**
      * {@code Map.Entry} implementation for this map.
      */
-    protected class MapEntry implements Map.Entry {
+    protected class MapEntry implements Entry<Data, V> {
 
         private int slot;
 
@@ -1145,19 +1216,19 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
 
         @Override
-        public Object getKey() {
+        public Data getKey() {
             return accessor.keyData(slot);
         }
 
         @Override
-        public Object getValue() {
+        public V getValue() {
             final long value = accessor.getValue(slot);
             return readV(value);
         }
 
         @Override
-        public Object setValue(Object value) {
-            Object current = getValue();
+        public V setValue(V value) {
+            V current = getValue();
             accessor.setValue(slot, (MemoryBlock) value);
             return current;
         }

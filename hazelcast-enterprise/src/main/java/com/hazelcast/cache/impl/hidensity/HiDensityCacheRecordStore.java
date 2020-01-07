@@ -2,13 +2,11 @@ package com.hazelcast.cache.impl.hidensity;
 
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordStore;
 import com.hazelcast.internal.serialization.Data;
 
 import javax.cache.expiry.ExpiryPolicy;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -108,14 +106,6 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * otherwise {@code false}
      */
     boolean replace(Data key, Object oldValue, Object newValue, UUID caller, int completionId);
-
-    /**
-     * Returns a slottable iterator for this {@link HiDensityCacheRecordStore} to iterate over records.
-     *
-     * @param slot the slot number (or index) to start the {@code iterator}
-     * @return the slottable iterator for specified {@code slot}
-     */
-    SlottableIterator<Map.Entry<Data, R>> iterator(int slot);
 
     /**
      * Converts the given object to data to be sent inside event.

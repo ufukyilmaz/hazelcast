@@ -1,15 +1,12 @@
 package com.hazelcast.internal.hidensity.impl;
 
-import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
-import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.internal.serialization.Data;
-
-import java.util.Map;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 
 /**
  * @param <R> type of the {@link HiDensityRecord} to be stored
@@ -107,15 +104,5 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     @Override
     protected NativeOutOfMemoryError onOome(NativeOutOfMemoryError e) {
         return new NativeOutOfMemoryError("Cannot expand internal cache map -> " + e.getMessage(), e);
-    }
-
-    /**
-     * Returns a slottable iterator for this {@link HiDensityRecordMap} to iterate over records.
-     *
-     * @param slot the slot number (or index) to start the {@code iterator}
-     * @return the slottable iterator for specified {@code slot}
-     */
-    public SlottableIterator<Map.Entry<Data, R>> iterator(int slot) {
-        return entryIter(slot);
     }
 }

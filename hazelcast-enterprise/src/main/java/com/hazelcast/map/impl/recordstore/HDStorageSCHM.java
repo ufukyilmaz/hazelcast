@@ -1,27 +1,34 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.core.EntryView;
-import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.iteration.IterationPointer;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.SerializationService;
-import com.hazelcast.map.IMap;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 
-import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+
+import static com.hazelcast.internal.elastic.map.BehmSlotAccessor.rehash;
+import static com.hazelcast.internal.util.HashUtil.computePerturbationValue;
+
 
 /**
  * An extended {@link SampleableElasticHashMap} for Hi-Density
- * backed {@link IMap}.
+ * backed {@link com.hazelcast.map.IMap}.
  */
 public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
@@ -49,29 +56,144 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
         return (E) new LazyEvictableEntryView(slot, serializationService);
     }
 
-    public MapKeysWithCursor fetchKeys(int tableIndex, int size) {
-        SlottableIterator<Entry<Data, HDRecord>> iter = entryIter(tableIndex);
+    /**
+     * Fetch minimally {@code size} keys from the {@code pointers} position.
+     * The key is fetched on-heap.
+     * <p>
+     * NOTE: The implementation is free to return more than {@code size} items.
+     * This can happen if we cannot easily resume from the last returned item
+     * by receiving the {@code tableIndex} of the last item. The index can
+     * represent a bucket with multiple items and in this case the returned
+     * object will contain all items in that bucket, regardless if we exceed
+     * the requested {@code size}.
+     *
+     * @param pointers the pointers defining the state of iteration
+     * @param size     the minimal count of returned items
+     * @return fetched keys and the new iteration state
+     */
+    public MapKeysWithCursor fetchKeys(IterationPointer[] pointers, int size) {
         List<Data> keys = new ArrayList<>(size);
-        for (int i = 0; i < size && iter.hasNext(); i++) {
-            Map.Entry<Data, HDRecord> entry = iter.next();
-            Data key = entry.getKey();
-            keys.add(memoryBlockProcessor.convertData(key, DataType.HEAP));
-        }
-        return new MapKeysWithCursor(keys, iter.getNextSlot());
+        IterationPointer[] newIterationPointers = fetchNext(pointers, size,
+                (k, v) -> keys.add(memoryBlockProcessor.convertData(k, DataType.HEAP)));
+        return new MapKeysWithCursor(keys, newIterationPointers);
     }
 
-    public MapEntriesWithCursor fetchEntries(int tableIndex, int size) {
-        SlottableIterator<Entry<Data, HDRecord>> iter = entryIter(tableIndex);
+
+    /**
+     * Fetch minimally {@code size} items from the {@code pointers} position.
+     * Both the key and value are fetched on-heap.
+     * <p>
+     * NOTE: The implementation is free to return more than {@code size} items.
+     * This can happen if we cannot easily resume from the last returned item
+     * by receiving the {@code tableIndex} of the last item. The index can
+     * represent a bucket with multiple items and in this case the returned
+     * object will contain all items in that bucket, regardless if we exceed
+     * the requested {@code size}.
+     *
+     * @param pointers the pointers defining the state of iteration
+     * @param size     the minimal count of returned items
+     * @return fetched entries and the new iteration state
+     */
+    public MapEntriesWithCursor fetchEntries(IterationPointer[] pointers, int size) {
         List<Map.Entry<Data, Data>> entries = new ArrayList<>(size);
-        for (int i = 0; i < size && iter.hasNext(); i++) {
-            Map.Entry<Data, HDRecord> entry = iter.next();
-            Data key = entry.getKey();
-            Data value = entry.getValue().getValue();
-            Data heapKeyData = memoryBlockProcessor.convertData(key, DataType.HEAP);
-            Data heapValueData = memoryBlockProcessor.convertData(value, DataType.HEAP);
-            entries.add(new AbstractMap.SimpleEntry<>(heapKeyData, heapValueData));
+        IterationPointer[] newIterationPointers = fetchNext(pointers, size, (k, v) -> {
+            Data heapKeyData = memoryBlockProcessor.convertData(k, DataType.HEAP);
+            Data heapValueData = memoryBlockProcessor.convertData(v, DataType.HEAP);
+            entries.add(new SimpleEntry<>(heapKeyData, heapValueData));
+        });
+        return new MapEntriesWithCursor(entries, newIterationPointers);
+    }
+
+    /**
+     * Fetches at least {@code size} keys from the given {@code pointers} and
+     * invokes the {@code entryConsumer} for each key-value pair.
+     *
+     * @param pointers         the pointers defining the state where to begin iteration
+     * @param size             Count of how many entries will be fetched
+     * @param keyValueConsumer the consumer to call with fetched key-value pairs
+     * @return the pointers defining the state where iteration has ended
+     */
+    private IterationPointer[] fetchNext(IterationPointer[] pointers,
+                                         int size,
+                                         BiConsumer<Data, Data> keyValueConsumer) {
+        IterationPointer[] updatedPointers = checkPointers(pointers, capacity());
+        IterationPointer lastPointer = updatedPointers[updatedPointers.length - 1];
+        int currentBaseSlot = lastPointer.getIndex();
+        int[] fetchedEntries = {0};
+
+        while (fetchedEntries[0] < size && currentBaseSlot >= 0) {
+            currentBaseSlot = fetchAllWithBaseSlot(currentBaseSlot, slot -> {
+                long currentKey = accessor.getKey(slot);
+                int currentKeyHashCode = NativeMemoryDataUtil.hashCode(currentKey);
+                if (hasNotBeenObserved(currentKeyHashCode, updatedPointers)) {
+                    long valueAddr = accessor.getValue(slot);
+                    HDRecord record = readV(valueAddr);
+                    NativeMemoryData keyData = accessor.keyData(slot);
+                    keyValueConsumer.accept(keyData, record.getValue());
+                    fetchedEntries[0]++;
+                }
+            });
+            lastPointer.setIndex(currentBaseSlot);
         }
-        return new MapEntriesWithCursor(entries, iter.getNextSlot());
+        // either fetched enough entries or there are no more entries to iterate over
+        return updatedPointers;
+    }
+
+    /**
+     * Returns {@code true} if the given {@code key} has not been already observed
+     * (or should have been observed) with the iteration state provided by the
+     * {@code pointers}.
+     *
+     * @param keyHash  the hashcode of the key to check
+     * @param pointers the iteration state
+     * @return if the key should have already been observed by the iteration user
+     */
+    private boolean hasNotBeenObserved(int keyHash, IterationPointer[] pointers) {
+        if (pointers.length < 2) {
+            // there was no resize yet so we most definitely haven't observed the entry
+            return true;
+        }
+
+        // check only the pointers up to the last, we haven't observed it with the last pointer
+        for (int i = 0; i < pointers.length - 1; i++) {
+            IterationPointer iterationPointer = pointers[i];
+            int tableCapacity = iterationPointer.getSize();
+            int mask = tableCapacity - 1;
+            int seenBaseSlot = iterationPointer.getIndex();
+
+            int keySlot = rehash(keyHash, computePerturbationValue(tableCapacity));
+            int keyBaseSlot = keySlot & mask;
+            if (keyBaseSlot < seenBaseSlot) {
+                // on a table with the given capacity, we have already consumed
+                // entries with the base slot that the keyHash belongs to
+                return false;
+            }
+        }
+        // on none of the previous iteration pointers have we observed
+        // the base slot of the provided keyHash
+        return true;
+    }
+
+    /**
+     * Checks the {@code pointers} to see if we need to restart iteration on the
+     * current table and returns the updated pointers if necessary.
+     *
+     * @param pointers         the pointers defining the state of iteration
+     * @param currentTableSize the current table size
+     * @return the updated pointers, if necessary
+     */
+    private IterationPointer[] checkPointers(IterationPointer[] pointers,
+                                             int currentTableSize) {
+        IterationPointer lastPointer = pointers[pointers.length - 1];
+        if (lastPointer.getSize() == -1) {
+            // special case, iteration hasn't started yet
+            pointers[pointers.length - 1] = new IterationPointer(Integer.MAX_VALUE, currentTableSize);
+        } else if (lastPointer.getSize() != currentTableSize) {
+            // resize happened during iteration, restarting
+            pointers = Arrays.copyOf(pointers, pointers.length + 1);
+            pointers[pointers.length - 1] = new IterationPointer(Integer.MAX_VALUE, currentTableSize);
+        }
+        return pointers;
     }
 
     /**

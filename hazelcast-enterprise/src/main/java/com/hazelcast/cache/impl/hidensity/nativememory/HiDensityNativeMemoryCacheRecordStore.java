@@ -14,7 +14,6 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
-import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
@@ -38,7 +37,6 @@ import com.hazelcast.wan.impl.CallerProvenance;
 
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -337,11 +335,6 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     public Object getRecordValue(HiDensityNativeMemoryCacheRecord record) {
         return serializationService.toObject(record.getValue());
-    }
-
-    @Override
-    public SlottableIterator<Map.Entry<Data, HiDensityNativeMemoryCacheRecord>> iterator(int slot) {
-        return records.iterator(slot);
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.hazelcast.core.EntryView;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
+import com.hazelcast.internal.iteration.IterationPointer;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.DataType;
@@ -240,14 +241,13 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<D
     }
 
     @Override
-    public MapKeysWithCursor fetchKeys(int tableIndex, int size) {
-        return map.fetchKeys(tableIndex, size);
+    public MapKeysWithCursor fetchKeys(IterationPointer[] pointers, int size) {
+        return map.fetchKeys(pointers, size);
     }
 
     @Override
-    public MapEntriesWithCursor fetchEntries(int tableIndex, int size,
-                                             SerializationService serializationService) {
-        return map.fetchEntries(tableIndex, size);
+    public MapEntriesWithCursor fetchEntries(IterationPointer[] pointers, int size) {
+        return map.fetchEntries(pointers, size);
     }
 
     @Override

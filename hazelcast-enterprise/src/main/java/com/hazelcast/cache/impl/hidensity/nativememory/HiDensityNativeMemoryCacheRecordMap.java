@@ -1,22 +1,29 @@
 package com.hazelcast.cache.impl.hidensity.nativememory;
 
 import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.impl.CacheEntriesWithCursor;
+import com.hazelcast.cache.impl.CacheKeysWithCursor;
 import com.hazelcast.cache.impl.hidensity.SampleableHiDensityCacheRecordMap;
-import com.hazelcast.cache.impl.CacheEntryIterationResult;
-import com.hazelcast.cache.impl.CacheKeyIterationResult;
-import com.hazelcast.internal.elastic.SlottableIterator;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.SampleableEvictableHiDensityRecordMap;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.iteration.IterationPointer;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.internal.util.Clock;
 
 import javax.cache.expiry.ExpiryPolicy;
-import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiConsumer;
+
+import static com.hazelcast.internal.elastic.map.BehmSlotAccessor.rehash;
+import static com.hazelcast.internal.util.HashUtil.computePerturbationValue;
+
 
 public class HiDensityNativeMemoryCacheRecordMap
         extends SampleableEvictableHiDensityRecordMap<HiDensityNativeMemoryCacheRecord>
@@ -72,40 +79,117 @@ public class HiDensityNativeMemoryCacheRecordMap
     }
 
     @Override
-    public CacheKeyIterationResult fetchKeys(int nextTableIndex, int size) {
-        long now = Clock.currentTimeMillis();
-        SlottableIterator<Entry<Data, HiDensityNativeMemoryCacheRecord>> iter = iterator(nextTableIndex);
-        List<Data> keys = new ArrayList<Data>(size);
-        for (int i = 0; i < size && iter.hasNext(); i++) {
-            Entry<Data, HiDensityNativeMemoryCacheRecord> entry = iter.next();
-            Data key = entry.getKey();
-            HiDensityNativeMemoryCacheRecord record = entry.getValue();
-            if (record.isExpiredAt(now)) {
-                continue;
-            }
-            keys.add(recordProcessor.convertData(key, DataType.HEAP));
-        }
-        return new CacheKeyIterationResult(keys, iter.getNextSlot());
+    public CacheKeysWithCursor fetchKeys(IterationPointer[] pointers, int size) {
+        List<Data> keys = new ArrayList<>(size);
+        IterationPointer[] newIterationPointers = fetchNext(pointers, size,
+                (k, v) -> keys.add(recordProcessor.convertData(k, DataType.HEAP)));
+        return new CacheKeysWithCursor(keys, newIterationPointers);
     }
 
     @Override
-    public CacheEntryIterationResult fetchEntries(int nextTableIndex, int size) {
+    public CacheEntriesWithCursor fetchEntries(IterationPointer[] pointers, int size) {
+        List<Entry<Data, Data>> entries = new ArrayList<>(size);
+        IterationPointer[] newIterationPointers = fetchNext(pointers, size, (k, v) -> {
+            Data key = recordProcessor.convertData(k, DataType.HEAP);
+            Data value = recordProcessor.convertData(v, DataType.HEAP);
+            entries.add(new SimpleEntry<>(key, value));
+        });
+        return new CacheEntriesWithCursor(entries, newIterationPointers);
+    }
+
+    /**
+     * Fetches at least {@code size} keys from the given {@code pointers} and
+     * invokes the {@code entryConsumer} for each key-value pair.
+     *
+     * @param pointers         the pointers defining the state where to begin iteration
+     * @param size             Count of how many entries will be fetched
+     * @param keyValueConsumer the consumer to call with fetched key-value pairs
+     * @return the pointers defining the state where iteration has ended
+     */
+    private IterationPointer[] fetchNext(IterationPointer[] pointers,
+                                         int size,
+                                         BiConsumer<Data, Data> keyValueConsumer) {
         long now = Clock.currentTimeMillis();
-        SlottableIterator<Entry<Data, HiDensityNativeMemoryCacheRecord>> iter = iterator(nextTableIndex);
-        List<Entry<Data, Data>> entries = new ArrayList<Entry<Data, Data>>(size);
-        for (int i = 0; i < size && iter.hasNext(); i++) {
-            Entry<Data, HiDensityNativeMemoryCacheRecord> entry = iter.next();
-            Data nativeKey = entry.getKey();
-            HiDensityNativeMemoryCacheRecord record = entry.getValue();
-            if (record.isExpiredAt(now)) {
-                continue;
-            }
-            NativeMemoryData nativeValue = record.getValue();
-            Data key = recordProcessor.convertData(nativeKey, DataType.HEAP);
-            Data value = recordProcessor.convertData(nativeValue, DataType.HEAP);
-            entries.add(new AbstractMap.SimpleEntry<Data, Data>(key, value));
+        IterationPointer[] updatedPointers = checkPointers(pointers, capacity());
+        IterationPointer lastPointer = updatedPointers[updatedPointers.length - 1];
+        int currentBaseSlot = lastPointer.getIndex();
+        int[] fetchedEntries = {0};
+
+        while (fetchedEntries[0] < size && currentBaseSlot >= 0) {
+            currentBaseSlot = fetchAllWithBaseSlot(currentBaseSlot, slot -> {
+                long currentKey = accessor.getKey(slot);
+                int currentKeyHashCode = NativeMemoryDataUtil.hashCode(currentKey);
+                if (hasNotBeenObserved(currentKeyHashCode, updatedPointers)) {
+                    long valueAddr = accessor.getValue(slot);
+                    HiDensityNativeMemoryCacheRecord record = readV(valueAddr);
+                    if (!record.isExpiredAt(now)) {
+                        NativeMemoryData keyData = accessor.keyData(slot);
+                        keyValueConsumer.accept(keyData, record.getValue());
+                        fetchedEntries[0]++;
+                    }
+                }
+            });
+            lastPointer.setIndex(currentBaseSlot);
         }
-        return new CacheEntryIterationResult(entries, iter.getNextSlot());
+        // either fetched enough entries or there are no more entries to iterate over
+        return pointers;
+    }
+
+    /**
+     * Returns {@code true} if the given {@code key} has not been already observed
+     * (or should have been observed) with the iteration state provided by the
+     * {@code pointers}.
+     *
+     * @param keyHash  the hashcode of the key to check
+     * @param pointers the iteration state
+     * @return if the key should have already been observed by the iteration user
+     */
+    private boolean hasNotBeenObserved(int keyHash, IterationPointer[] pointers) {
+        if (pointers.length < 2) {
+            // there was no resize yet so we most definitely haven't observed the entry
+            return true;
+        }
+
+        // check only the pointers up to the last, we haven't observed it with the last pointer
+        for (int i = 0; i < pointers.length - 1; i++) {
+            IterationPointer iterationPointer = pointers[i];
+            int tableCapacity = iterationPointer.getSize();
+            int mask = tableCapacity - 1;
+            int seenBaseSlot = iterationPointer.getIndex();
+
+            int keySlot = rehash(keyHash, computePerturbationValue(tableCapacity));
+            int keyBaseSlot = keySlot & mask;
+            if (keyBaseSlot <= seenBaseSlot) {
+                // on a table with the given capacity, we have already consumed
+                // entries with the base slot that the keyHash belongs to
+                return false;
+            }
+        }
+        // on none of the previous iteration pointers have we observed
+        // the base slot of the provided keyHash
+        return true;
+    }
+
+    /**
+     * Checks the {@code pointers} to see if we need to restart iteration on the
+     * current table and returns the updated pointers if necessary.
+     *
+     * @param pointers         the pointers defining the state of iteration
+     * @param currentTableSize the current table size
+     * @return the updated pointers, if necessary
+     */
+    private IterationPointer[] checkPointers(IterationPointer[] pointers,
+                                             int currentTableSize) {
+        IterationPointer lastPointer = pointers[pointers.length - 1];
+        if (lastPointer.getSize() == -1) {
+            // special case, iteration hasn't started yet
+            pointers[pointers.length - 1] = new IterationPointer(Integer.MAX_VALUE, currentTableSize);
+        } else if (lastPointer.getSize() != currentTableSize) {
+            // resize happened during iteration, restarting
+            pointers = Arrays.copyOf(pointers, pointers.length + 1);
+            pointers[pointers.length - 1] = new IterationPointer(Integer.MAX_VALUE, currentTableSize);
+        }
+        return pointers;
     }
 
     private final class CacheEvictableSamplingEntry

@@ -38,11 +38,11 @@ public class BehmSlotAccessor<V extends MemoryBlock> {
         this.size = that.size;
     }
 
-    static int rehash(Data o, int p) {
+    public static int rehash(Data o, int p) {
         return (o == null) ? 0 : MurmurHash3_fmix(o.hashCode() ^ p);
     }
 
-    static int rehash(int v, int p) {
+    public static int rehash(int v, int p) {
         return MurmurHash3_fmix(v ^ p);
     }
 

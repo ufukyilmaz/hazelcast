@@ -5,6 +5,7 @@ import com.hazelcast.core.EntryView;
 import com.hazelcast.internal.hotrestart.HotRestartKey;
 import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
+import com.hazelcast.internal.iteration.IterationPointer;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EntryCostEstimator;
@@ -150,14 +151,13 @@ public class HotRestartStorageImpl<R extends Record>
     }
 
     @Override
-    public MapKeysWithCursor fetchKeys(int tableIndex, int size) {
-        return storage.fetchKeys(tableIndex, size);
+    public MapKeysWithCursor fetchKeys(IterationPointer[] pointers, int size) {
+        return storage.fetchKeys(pointers, size);
     }
 
     @Override
-    public MapEntriesWithCursor fetchEntries(int tableIndex, int size,
-                                             SerializationService serializationService) {
-        return storage.fetchEntries(tableIndex, size, serializationService);
+    public MapEntriesWithCursor fetchEntries(IterationPointer[] pointers, int size) {
+        return storage.fetchEntries(pointers, size);
     }
 
     @Override

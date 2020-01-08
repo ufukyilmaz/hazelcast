@@ -211,7 +211,7 @@ public abstract class AbstractSecureWanTest {
 
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName("wan-cluster-for-" + mapName);
-        wanRef.setMergePolicy(PassThroughMergePolicy.class.getName());
+        wanRef.setMergePolicyClassName(PassThroughMergePolicy.class.getName());
         wanRef.setRepublishingEnabled(true);
 
         config.getMapConfig(mapName).setWanReplicationRef(wanRef);

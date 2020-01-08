@@ -54,7 +54,7 @@ public class WanMisconfigurationTest extends HazelcastTestSupport {
                 .addBatchReplicationPublisherConfig(pc);
         final WanReplicationRef wanReplicationRef = new WanReplicationRef()
                 .setName(wanReplicationName)
-                .setMergePolicy(PassThroughMergePolicy.class.getName());
+                .setMergePolicyClassName(PassThroughMergePolicy.class.getName());
         final MapConfig mapConfig = new MapConfig()
                 .setName("default")
                 .setWanReplicationRef(wanReplicationRef);

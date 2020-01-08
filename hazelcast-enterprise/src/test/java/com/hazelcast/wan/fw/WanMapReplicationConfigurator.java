@@ -22,7 +22,7 @@ public class WanMapReplicationConfigurator
     public void setup() {
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(wanReplication.getSetupName());
-        wanRef.setMergePolicy(mergePolicy.getName());
+        wanRef.setMergePolicyClassName(mergePolicy.getName());
 
         sourceCluster.config.getMapConfig(mapName).setWanReplicationRef(wanRef);
     }

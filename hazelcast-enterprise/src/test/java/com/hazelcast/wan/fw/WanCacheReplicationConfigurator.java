@@ -23,7 +23,7 @@ public class WanCacheReplicationConfigurator
     public void setup() {
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(wanReplication.getSetupName());
-        wanRef.setMergePolicy(mergePolicy.getName());
+        wanRef.setMergePolicyClassName(mergePolicy.getName());
 
         sourceCluster.config.getCacheConfig(cacheName).setWanReplicationRef(wanRef);
     }

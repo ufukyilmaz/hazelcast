@@ -941,7 +941,7 @@ public class WanBatchPublisherMapTest extends WanMapTestSupport {
             String wanReplicationConfigName,
             String targetClusterName) throws Exception {
         return (String) mBeanDataHolder.getMBeanAttribute(
-                "WanReplicationPublisher", wanReplicationConfigName + "." + targetClusterName, "state");
+                "WanPublisher", wanReplicationConfigName + "." + targetClusterName, "state");
     }
 
     @Test
@@ -1100,7 +1100,7 @@ public class WanBatchPublisherMapTest extends WanMapTestSupport {
 
         WanReplicationRef wanReplicationRef = new WanReplicationRef();
         wanReplicationRef.setName("b");
-        wanReplicationRef.setMergePolicy(PassThroughMergePolicy.class.getName());
+        wanReplicationRef.setMergePolicyClassName(PassThroughMergePolicy.class.getName());
         return wanReplicationRef;
     }
 

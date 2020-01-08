@@ -504,7 +504,7 @@ public class EnterpriseCacheService
                 throw new InvalidConfigurationException(msg);
             }
             wanReplicationDelegates.putIfAbsent(config.getNameWithPrefix(), delegate);
-            cacheMergePolicies.putIfAbsent(config.getNameWithPrefix(), wanReplicationRef.getMergePolicy());
+            cacheMergePolicies.putIfAbsent(config.getNameWithPrefix(), wanReplicationRef.getMergePolicyClassName());
         }
     }
 

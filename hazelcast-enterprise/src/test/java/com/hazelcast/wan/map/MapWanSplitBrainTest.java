@@ -78,7 +78,7 @@ public class MapWanSplitBrainTest extends SplitBrainTestSupport {
 
         WanReplicationRef wanReplicationRef = new WanReplicationRef()
                 .setName(WAN_REPLICATION_NAME)
-                .setMergePolicy(wanMergePolicy.getName());
+                .setMergePolicyClassName(wanMergePolicy.getName());
 
         MapConfig mapConfig = new MapConfig()
                 .setInMemoryFormat(inMemoryFormat)

@@ -446,7 +446,7 @@ public abstract class AbstractWanPublisherCacheTest extends WanCacheTestSupport 
 
         WanReplicationRef wanReplicationRef = new WanReplicationRef();
         wanReplicationRef.setName("b");
-        wanReplicationRef.setMergePolicy(PassThroughMergePolicy.class.getName());
+        wanReplicationRef.setMergePolicyClassName(PassThroughMergePolicy.class.getName());
 
         return wanReplicationRef;
     }

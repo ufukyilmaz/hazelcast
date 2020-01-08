@@ -80,7 +80,7 @@ public abstract class WanMapTestSupport extends WanTestSupport {
 
         WanReplicationRef wanRef = new WanReplicationRef()
                 .setName(setupName)
-                .setMergePolicy(policy);
+                .setMergePolicyClassName(policy);
         if (filter != null) {
             wanRef.addFilter(filter);
         }
@@ -106,7 +106,7 @@ public abstract class WanMapTestSupport extends WanTestSupport {
 
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(setupName);
-        wanRef.setMergePolicy(policy);
+        wanRef.setMergePolicyClassName(policy);
         if (filter != null) {
             wanRef.addFilter(filter);
         }

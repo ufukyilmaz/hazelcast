@@ -55,7 +55,7 @@ public class DynamicConfigWANTest extends WanCacheTestSupport {
         startClusterB();
 
         WanReplicationRef wanRef = new WanReplicationRef();
-        wanRef.setMergePolicy(PassThroughMergePolicy.class.getName());
+        wanRef.setMergePolicyClassName(PassThroughMergePolicy.class.getName());
         wanRef.setName(wanSetupName);
 
         CacheSimpleConfig cacheConfig = new CacheSimpleConfig();

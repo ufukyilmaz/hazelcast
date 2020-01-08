@@ -105,7 +105,7 @@ public class AdvancedNetworkingWanCommunicationIntegrationTest extends AbstractA
 
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName("my-wan-cluster");
-        wanRef.setMergePolicy(PassThroughMergePolicy.class.getName());
+        wanRef.setMergePolicyClassName(PassThroughMergePolicy.class.getName());
         wanRef.setRepublishingEnabled(false);
 
         config.getMapConfig(REPLICATED_MAP).setWanReplicationRef(wanRef);

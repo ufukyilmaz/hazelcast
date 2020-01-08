@@ -264,7 +264,7 @@ public class MCWanOperationsTest extends HazelcastTestSupport {
 
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(WAN_REPLICATION_NAME);
-        wanRef.setMergePolicy(PassThroughMergePolicy.class.getName());
+        wanRef.setMergePolicyClassName(PassThroughMergePolicy.class.getName());
         wanRef.setRepublishingEnabled(false);
 
         MerkleTreeConfig merkleTreeConfig = new MerkleTreeConfig();

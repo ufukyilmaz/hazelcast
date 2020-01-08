@@ -162,7 +162,7 @@ public class CacheWanSplitBrainTest extends SplitBrainTestSupport {
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         cacheConfig.setWanReplicationRef(new WanReplicationRef()
                 .setName(WAN_REPLICATION_NAME)
-                .setMergePolicy(wanMergePolicy.getName()));
+                .setMergePolicyClassName(wanMergePolicy.getName()));
         cacheConfig.setEvictionConfig(evictionConfig);
         return cacheConfig;
     }

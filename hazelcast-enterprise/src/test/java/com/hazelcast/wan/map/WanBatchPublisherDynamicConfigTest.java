@@ -39,7 +39,7 @@ public class WanBatchPublisherDynamicConfigTest extends WanMapTestSupport {
         startClusterB();
 
         WanReplicationRef wanRef = new WanReplicationRef();
-        wanRef.setMergePolicy(PassThroughMergePolicy.class.getName());
+        wanRef.setMergePolicyClassName(PassThroughMergePolicy.class.getName());
         wanRef.setName(wanSetupName);
 
         MapConfig mapConfig = new MapConfig(mapName);

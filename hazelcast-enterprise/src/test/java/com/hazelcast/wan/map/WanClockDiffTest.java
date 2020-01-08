@@ -172,7 +172,7 @@ public class WanClockDiffTest extends HazelcastTestSupport {
                                                                  .addBatchReplicationPublisherConfig(pc));
         WanReplicationRef wanReplicationRef = new WanReplicationRef()
                 .setName(WAN_REPLICATION_SCHEME)
-                .setMergePolicy(PassThroughMergePolicy.class.getName());
+                .setMergePolicyClassName(PassThroughMergePolicy.class.getName());
         config.getMapConfig("default").setWanReplicationRef(wanReplicationRef);
         return Hazelcast.newHazelcastInstance(config);
     }

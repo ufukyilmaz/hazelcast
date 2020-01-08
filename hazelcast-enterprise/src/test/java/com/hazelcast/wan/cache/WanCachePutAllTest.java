@@ -119,7 +119,7 @@ public class WanCachePutAllTest extends WanCacheTestSupport {
 
     private void configureCacheWithWanReplication(String cacheName, String wanSetupName) {
         WanReplicationRef wanRef = new WanReplicationRef()
-                .setMergePolicy(PassThroughMergePolicy.class.getName())
+                .setMergePolicyClassName(PassThroughMergePolicy.class.getName())
                 .setName(wanSetupName);
 
         CacheSimpleConfig cacheConfig = new CacheSimpleConfig()

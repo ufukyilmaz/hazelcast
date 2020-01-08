@@ -372,7 +372,7 @@ public class EnterpriseNodeExtension
 
         systemLogger.info("Hazelcast Enterprise " + buildInfo.getVersion()
                 + " (" + build + ") starting at " + node.getThisAddress());
-        systemLogger.info("Copyright (c) 2008-2018, Hazelcast, Inc. All Rights Reserved.");
+        systemLogger.info("Copyright (c) 2008-2020, Hazelcast, Inc. All Rights Reserved.");
     }
 
     @Override

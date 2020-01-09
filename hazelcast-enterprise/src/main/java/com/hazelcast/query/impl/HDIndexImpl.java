@@ -59,6 +59,11 @@ public class HDIndexImpl extends AbstractIndex {
     }
 
     @Override
+    public boolean allPartitionsIndexed(int ownedPartitionCount) {
+        return indexedPartition != UNINDEXED;
+    }
+
+    @Override
     public void markPartitionAsIndexed(int partitionId) {
         assert indexedPartition == UNINDEXED;
         indexedPartition = partitionId;

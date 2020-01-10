@@ -24,6 +24,7 @@ import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
+import static com.hazelcast.internal.nearcache.NearCache.UpdateSemantic.READ_UPDATE;
 import static com.hazelcast.internal.nearcache.NearCacheRecord.NOT_RESERVED;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
@@ -69,7 +70,7 @@ public class ClientHDMapNearCacheStressTest extends HazelcastTestSupport {
 
         for (int i = 0; i < NEAR_CACHE_PUT_COUNT; i++) {
             Data data = serializationService.toData(i);
-            long reservationId = nearCache.tryReserveForUpdate(data, data);
+            long reservationId = nearCache.tryReserveForUpdate(data, data, READ_UPDATE);
             if (reservationId != NOT_RESERVED) {
                 try {
                     nearCache.tryPublishReserved(data, data, reservationId, true);

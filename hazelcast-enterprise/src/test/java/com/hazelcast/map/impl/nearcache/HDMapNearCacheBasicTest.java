@@ -12,7 +12,7 @@ import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.NearCacheConfig.DEFAULT_SERIALIZE_KEYS;
-import static com.hazelcast.internal.nearcache.NearCacheTestUtils.createNearCacheConfig;
+import static com.hazelcast.internal.nearcache.impl.NearCacheTestUtils.createNearCacheConfig;
 
 /**
  * Basic HiDensity Near Cache tests for {@link IMap} on Hazelcast members.

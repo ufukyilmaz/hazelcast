@@ -1,4 +1,4 @@
-package com.hazelcast.internal.nearcache;
+package com.hazelcast.internal.nearcache.impl;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;

@@ -8,6 +8,7 @@ import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.internal.nearcache.HDNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.NearCache;
 import com.hazelcast.internal.nearcache.NearCacheRecord;
 import com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector;
 import com.hazelcast.internal.nearcache.impl.preloader.NearCachePreloader;
@@ -276,15 +277,9 @@ public class SegmentedHDNearCacheRecordStore<K, V>
     }
 
     @Override
-    public long tryReserveForUpdate(K key, Data keyData) {
+    public long tryReserveForUpdate(K key, Data keyData, NearCache.UpdateSemantic updateSemantic) {
         HDNearCacheRecordStoreImpl<K, V> segment = segmentFor(key);
-        return segment.tryReserveForUpdate(key, keyData);
-    }
-
-    @Override
-    public long tryReserveForCacheOnUpdate(K key, Data keyData) {
-        HDNearCacheRecordStoreImpl<K, V> segment = segmentFor(key);
-        return segment.tryReserveForCacheOnUpdate(key, keyData);
+        return segment.tryReserveForUpdate(key, keyData, updateSemantic);
     }
 
     @Override
@@ -405,20 +400,10 @@ public class SegmentedHDNearCacheRecordStore<K, V>
         }
 
         @Override
-        public long tryReserveForUpdate(K key, Data keyData) {
+        public long tryReserveForUpdate(K key, Data keyData, NearCache.UpdateSemantic updateSemantic) {
             lock.lock();
             try {
-                return super.tryReserveForUpdate(key, keyData);
-            } finally {
-                lock.unlock();
-            }
-        }
-
-        @Override
-        public long tryReserveForCacheOnUpdate(K key, Data keyData) {
-            lock.lock();
-            try {
-                return super.tryReserveForCacheOnUpdate(key, keyData);
+                return super.tryReserveForUpdate(key, keyData, updateSemantic);
             } finally {
                 lock.unlock();
             }

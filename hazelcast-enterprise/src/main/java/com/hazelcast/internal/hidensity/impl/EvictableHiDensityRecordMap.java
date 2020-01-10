@@ -10,9 +10,9 @@ import com.hazelcast.internal.eviction.ExpirationChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.Clock;
-import com.hazelcast.internal.serialization.Data;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +52,6 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
 
         int evictCount = (int) (size * (long) evictionPercentage / ONE_HUNDRED_PERCENT);
         evictCount = Math.max(evictCount, MIN_EVICTION_ELEMENT_COUNT);
-
 
         SlottableIterator<Data> iter = newRandomEvictionKeyIterator();
 

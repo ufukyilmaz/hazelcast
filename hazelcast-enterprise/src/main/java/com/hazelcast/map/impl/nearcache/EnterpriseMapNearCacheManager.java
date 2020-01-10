@@ -1,10 +1,10 @@
 package com.hazelcast.map.impl.nearcache;
 
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.internal.nearcache.HDNearCache;
 import com.hazelcast.internal.nearcache.NearCache;
-import com.hazelcast.map.impl.MapServiceContext;
+import com.hazelcast.internal.nearcache.impl.HDNearCache;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.spi.properties.HazelcastProperties;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;

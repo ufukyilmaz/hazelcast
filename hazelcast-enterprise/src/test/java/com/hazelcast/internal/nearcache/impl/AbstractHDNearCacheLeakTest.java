@@ -1,9 +1,9 @@
-package com.hazelcast.internal.nearcache;
+package com.hazelcast.internal.nearcache.impl;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
-import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.memory.MemoryStats;
+import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -15,7 +15,7 @@ import static com.hazelcast.NativeMemoryTestUtil.assertMemoryStatsZero;
 import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
 import static com.hazelcast.NativeMemoryTestUtil.dumpNativeMemory;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
-import static com.hazelcast.internal.nearcache.NearCacheTestUtils.assertNearCacheSize;
+import static com.hazelcast.internal.nearcache.impl.NearCacheTestUtils.assertNearCacheSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

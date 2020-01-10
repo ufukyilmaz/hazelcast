@@ -20,7 +20,7 @@ import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static com.hazelcast.config.NearCacheConfig.LocalUpdatePolicy.CACHE_ON_UPDATE;
 import static com.hazelcast.config.NearCacheConfig.LocalUpdatePolicy.INVALIDATE;
 import static com.hazelcast.internal.adapter.DataStructureAdapter.DataStructureMethods.GET;
-import static com.hazelcast.internal.nearcache.HDNearCacheTestUtils.createNativeMemoryConfig;
+import static com.hazelcast.internal.nearcache.impl.HDNearCacheTestUtils.createNativeMemoryConfig;
 import static java.util.Arrays.asList;
 
 /**

@@ -54,7 +54,6 @@ public class HDNearCacheRecordStoreImpl<K, V>
      */
     private static final int SLOT_COST_IN_BYTES = 16;
 
-
     private HiDensityStorageInfo storageInfo;
     private HazelcastMemoryManager memoryManager;
     private HDNearCacheRecordAccessor recordAccessor;
@@ -194,7 +193,8 @@ public class HDNearCacheRecordStoreImpl<K, V>
                 recordProcessor.disposeData(data);
             }
             if (retryOnOutOfMemoryError) {
-                return createRecordInternal(value, creationTime, expirationTime, true, false);
+                return createRecordInternal(value, creationTime, expirationTime,
+                        true, false);
             } else {
                 throw e;
             }
@@ -208,15 +208,15 @@ public class HDNearCacheRecordStoreImpl<K, V>
         HDNearCacheRecord record = null;
         try {
             Data keyData = toData(key);
-            NativeMemoryData nativeKeyData
-                    = new NativeMemoryData().reset(records.getNativeKeyAddress(keyData));
+            long keyStorageMemoryCost = getKeyStorageMemoryCost((K) keyData);
 
             record = records.remove(keyData);
 
             if (canUpdateStats(record)) {
                 nearCacheStats.decrementOwnedEntryCount();
                 nearCacheStats.incrementInvalidations();
-                nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) nativeKeyData, record));
+                long totalStorageMemoryCost = keyStorageMemoryCost + getRecordStorageMemoryCost(record);
+                nearCacheStats.decrementOwnedEntryMemoryCost(totalStorageMemoryCost);
             }
 
             onRemove(key, record, record != null);
@@ -277,32 +277,6 @@ public class HDNearCacheRecordStoreImpl<K, V>
     }
 
     @Override
-    protected HDNearCacheRecord reserveForCacheOnUpdate(K key, Data keyData, long reservationId) {
-        HDNearCacheRecord existingRecord = records.get(keyData);
-        HDNearCacheRecord reservedRecord = reserveForCacheOnUpdate0(key, keyData,
-                existingRecord, reservationId);
-
-        if (reservedRecord != null) {
-            Data nativeKey = null;
-            try {
-                // if we have an existingRecord, it means we previously
-                // created a key in HD memory and now we don't need
-                // to create once again. Otherwise, when there is no
-                // existingRecord, we have to create a new key in
-                // HD memory for the newly created reservedRecord.
-                nativeKey = existingRecord != null ? keyData : toNativeMemoryData(keyData);
-                records.put(nativeKey, reservedRecord);
-            } catch (Throwable throwable) {
-                freeHDMemory(nativeKey, reservedRecord);
-                throw rethrow(throwable);
-            }
-        } else {
-            invalidate((K) keyData);
-        }
-        return reservedRecord;
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
     protected V recordToValue(HDNearCacheRecord record) {
         if (record.getValue() == null) {
@@ -320,7 +294,33 @@ public class HDNearCacheRecordStoreImpl<K, V>
     }
 
     @Override
-    protected HDNearCacheRecord getOrCreateToReserve(K key, Data keyData, long reservationId) {
+    protected HDNearCacheRecord writeUpdate(K key, Data keyData, long reservationId) {
+        HDNearCacheRecord existingRecord = records.get(keyData);
+        HDNearCacheRecord reservedRecord = reserveForCacheOnUpdate0(key, keyData,
+                existingRecord, reservationId);
+
+        if (reservedRecord != null) {
+            Data nativeKey = null;
+            try {
+                // if we have an existingRecord, it means we previously
+                // created an HD key for it and now we don't need
+                // to create it once again. Otherwise, when there is no
+                // existingRecord, we have to create a new HD key
+                // for the newly created reservedRecord.
+                nativeKey = existingRecord != null ? keyData : toNativeMemoryData(keyData);
+                records.put(nativeKey, reservedRecord);
+            } catch (Throwable throwable) {
+                freeHDMemory(nativeKey, reservedRecord);
+                throw rethrow(throwable);
+            }
+        } else {
+            invalidate((K) keyData);
+        }
+        return reservedRecord;
+    }
+
+    @Override
+    protected HDNearCacheRecord readUpdate(K key, Data keyData, long reservationId) {
         HDNearCacheRecord recordToReserve = getRecord(key);
         if (recordToReserve != null) {
             return recordToReserve;
@@ -352,7 +352,7 @@ public class HDNearCacheRecordStoreImpl<K, V>
     }
 
     @Override
-    protected V updateAndGetReserved(K key, V value, long reservationId, boolean deserialize) {
+    protected V tryPublishReserved0(K key, V value, long reservationId, boolean deserialize) {
         HDNearCacheRecord reservedRecord = getRecord(key);
         if (reservedRecord == null) {
             return null;

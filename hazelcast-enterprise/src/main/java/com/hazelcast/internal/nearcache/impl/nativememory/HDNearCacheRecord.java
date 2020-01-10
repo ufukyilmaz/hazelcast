@@ -246,11 +246,12 @@ public class HDNearCacheRecord extends HiDensityRecord
     public String toString() {
         return address() == NULL_PTR ? "HDNearCacheRecord{NULL}"
                 : "HDNearCacheRecord{creationTime=" + getCreationTime()
-                + ", sequence=" + getInvalidationSequence()
+                + ", invalidationSequence=" + getInvalidationSequence()
                 + ", expirationTime=" + getExpirationTime()
                 + ", lastAccessTime=" + getLastAccessTime()
                 + ", hits=" + getHits()
-                + ", recordState=" + getPartitionId()
-                + ", value=" + getValueAddress();
+                + ", reservationId=" + getReservationId()
+                + ", partitionId=" + getPartitionId()
+                + ", valueAddress=" + getValueAddress();
     }
 }

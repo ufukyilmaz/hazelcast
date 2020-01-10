@@ -1,4 +1,4 @@
-package com.hazelcast.internal.nearcache;
+package com.hazelcast.internal.nearcache.impl;
 
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
@@ -6,7 +6,9 @@ import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.nearcache.NearCacheRecordStore;
 import com.hazelcast.internal.nearcache.impl.nativememory.HDNearCacheRecordStoreImpl;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.MemorySize;
@@ -140,11 +142,15 @@ public class HDNearCacheRecordStoreTest extends NearCacheRecordStoreTestSupport 
             nearCacheConfig.setTimeToLiveSeconds(cleanUpThresholdSeconds);
         }
 
-        final NearCacheRecordStore<Integer, String> nearCacheRecordStore = createNearCacheRecordStore(
+        final NearCacheRecordStore<Data, Data> nearCacheRecordStore = createNearCacheRecordStore(
                 nearCacheConfig, inMemoryFormat);
 
         for (int i = 0; i < DEFAULT_RECORD_COUNT; i++) {
-            nearCacheRecordStore.put(i, null, "Record-" + i, null);
+            String key = "Key-" + i;
+            String value = "Record-" + i;
+            Data dataKey = ess.toData(key);
+            Data dataValue = ess.toData(value);
+            nearCacheRecordStore.put(dataKey, dataKey, dataValue, dataValue);
         }
 
         assertTrueEventually(new AssertTask() {

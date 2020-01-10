@@ -12,7 +12,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.internal.nearcache.HDNearCacheTestUtils.createNativeMemoryConfig;
+import static com.hazelcast.internal.nearcache.impl.HDNearCacheTestUtils.createNativeMemoryConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})

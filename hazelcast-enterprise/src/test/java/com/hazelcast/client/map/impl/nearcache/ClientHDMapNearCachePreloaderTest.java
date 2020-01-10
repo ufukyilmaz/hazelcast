@@ -13,7 +13,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.NearCacheConfig.DEFAULT_INVALIDATE_ON_CHANGE;
 import static com.hazelcast.config.NearCacheConfig.DEFAULT_SERIALIZE_KEYS;
-import static com.hazelcast.internal.nearcache.HDNearCacheTestUtils.createNativeMemoryConfig;
+import static com.hazelcast.internal.nearcache.impl.HDNearCacheTestUtils.createNativeMemoryConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})

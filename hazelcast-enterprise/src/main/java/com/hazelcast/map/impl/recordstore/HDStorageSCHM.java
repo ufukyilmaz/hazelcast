@@ -17,7 +17,6 @@ import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -59,6 +58,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
     /**
      * Fetch minimally {@code size} keys from the {@code pointers} position.
      * The key is fetched on-heap.
+     * The method may return less keys if iteration has completed.
      * <p>
      * NOTE: The implementation is free to return more than {@code size} items.
      * This can happen if we cannot easily resume from the last returned item
@@ -68,7 +68,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
      * the requested {@code size}.
      *
      * @param pointers the pointers defining the state of iteration
-     * @param size     the minimal count of returned items
+     * @param size     the minimal count of returned items, unless iteration has completed
      * @return fetched keys and the new iteration state
      */
     public MapKeysWithCursor fetchKeys(IterationPointer[] pointers, int size) {
@@ -182,18 +182,24 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
      * @param currentTableSize the current table size
      * @return the updated pointers, if necessary
      */
-    private IterationPointer[] checkPointers(IterationPointer[] pointers,
-                                             int currentTableSize) {
+    private IterationPointer[] checkPointers(IterationPointer[] pointers, int currentTableSize) {
         IterationPointer lastPointer = pointers[pointers.length - 1];
-        if (lastPointer.getSize() == -1) {
-            // special case, iteration hasn't started yet
-            pointers[pointers.length - 1] = new IterationPointer(Integer.MAX_VALUE, currentTableSize);
-        } else if (lastPointer.getSize() != currentTableSize) {
-            // resize happened during iteration, restarting
-            pointers = Arrays.copyOf(pointers, pointers.length + 1);
-            pointers[pointers.length - 1] = new IterationPointer(Integer.MAX_VALUE, currentTableSize);
+        boolean iterationStarted = lastPointer.getSize() == -1;
+        boolean tableResized = lastPointer.getSize() != currentTableSize;
+        // clone pointers to avoid mutating given reference
+        // add new pointer if resize happened during iteration
+        int newLength = !iterationStarted && tableResized ? pointers.length + 1 : pointers.length;
+
+        IterationPointer[] updatedPointers = new IterationPointer[newLength];
+        for (int i = 0; i < pointers.length; i++) {
+            updatedPointers[i] = new IterationPointer(pointers[i]);
         }
-        return pointers;
+
+        // reset last pointer if we haven't started iteration or there was a resize
+        if (iterationStarted || tableResized) {
+            updatedPointers[updatedPointers.length - 1] = new IterationPointer(Integer.MAX_VALUE, currentTableSize);
+        }
+        return updatedPointers;
     }
 
     /**

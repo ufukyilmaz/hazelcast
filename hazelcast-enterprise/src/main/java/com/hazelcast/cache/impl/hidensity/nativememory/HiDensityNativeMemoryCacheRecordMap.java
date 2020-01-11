@@ -17,7 +17,6 @@ import com.hazelcast.internal.util.Clock;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -117,12 +116,12 @@ public class HiDensityNativeMemoryCacheRecordMap
 
         while (fetchedEntries[0] < size && currentBaseSlot >= 0) {
             currentBaseSlot = fetchAllWithBaseSlot(currentBaseSlot, slot -> {
-                long currentKey = accessor.getKey(slot);
-                int currentKeyHashCode = NativeMemoryDataUtil.hashCode(currentKey);
-                if (hasNotBeenObserved(currentKeyHashCode, updatedPointers)) {
-                    long valueAddr = accessor.getValue(slot);
-                    HiDensityNativeMemoryCacheRecord record = readV(valueAddr);
-                    if (!record.isExpiredAt(now)) {
+                long valueAddr = accessor.getValue(slot);
+                HiDensityNativeMemoryCacheRecord record = readV(valueAddr);
+                if (!record.isExpiredAt(now)) {
+                    long currentKey = accessor.getKey(slot);
+                    int currentKeyHashCode = NativeMemoryDataUtil.hashCode(currentKey);
+                    if (hasNotBeenObserved(currentKeyHashCode, updatedPointers)) {
                         NativeMemoryData keyData = accessor.keyData(slot);
                         keyValueConsumer.accept(keyData, record.getValue());
                         fetchedEntries[0]++;
@@ -132,7 +131,7 @@ public class HiDensityNativeMemoryCacheRecordMap
             lastPointer.setIndex(currentBaseSlot);
         }
         // either fetched enough entries or there are no more entries to iterate over
-        return pointers;
+        return updatedPointers;
     }
 
     /**
@@ -178,18 +177,24 @@ public class HiDensityNativeMemoryCacheRecordMap
      * @param currentTableSize the current table size
      * @return the updated pointers, if necessary
      */
-    private IterationPointer[] checkPointers(IterationPointer[] pointers,
-                                             int currentTableSize) {
+    private IterationPointer[] checkPointers(IterationPointer[] pointers, int currentTableSize) {
         IterationPointer lastPointer = pointers[pointers.length - 1];
-        if (lastPointer.getSize() == -1) {
-            // special case, iteration hasn't started yet
-            pointers[pointers.length - 1] = new IterationPointer(Integer.MAX_VALUE, currentTableSize);
-        } else if (lastPointer.getSize() != currentTableSize) {
-            // resize happened during iteration, restarting
-            pointers = Arrays.copyOf(pointers, pointers.length + 1);
-            pointers[pointers.length - 1] = new IterationPointer(Integer.MAX_VALUE, currentTableSize);
+        boolean iterationStarted = lastPointer.getSize() == -1;
+        boolean tableResized = lastPointer.getSize() != currentTableSize;
+        // clone pointers to avoid mutating given reference
+        // add new pointer if resize happened during iteration
+        int newLength = !iterationStarted && tableResized ? pointers.length + 1 : pointers.length;
+
+        IterationPointer[] updatedPointers = new IterationPointer[newLength];
+        for (int i = 0; i < pointers.length; i++) {
+            updatedPointers[i] = new IterationPointer(pointers[i]);
         }
-        return pointers;
+
+        // reset last pointer if we haven't started iteration or there was a resize
+        if (iterationStarted || tableResized) {
+            updatedPointers[updatedPointers.length - 1] = new IterationPointer(Integer.MAX_VALUE, currentTableSize);
+        }
+        return updatedPointers;
     }
 
     private final class CacheEvictableSamplingEntry

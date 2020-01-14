@@ -27,6 +27,8 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 
+import javax.annotation.Nullable;
+
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.nearcache.NearCache.CACHED_AS_NULL;
 import static com.hazelcast.internal.nearcache.NearCacheRecord.READ_PERMITTED;
@@ -293,10 +295,26 @@ public class HDNearCacheRecordStoreImpl<K, V>
         return records.get(toData(key));
     }
 
+    @Nullable
     @Override
-    protected HDNearCacheRecord writeUpdate(K key, Data keyData, long reservationId) {
+    public V tryPublishReserved(K key, V value, long reservationId, boolean deserialize) {
+        HDNearCacheRecord reservedRecord = getRecord(key);
+        if (reservedRecord == null) {
+            return null;
+        }
+
+        HDNearCacheRecord record = publishReservedRecord(key, value, reservedRecord, reservationId);
+        if (!deserialize) {
+            return null;
+        }
+
+        return toValue(record.getValue());
+    }
+
+    @Override
+    protected HDNearCacheRecord reserveForWriteUpdate(K key, Data keyData, long reservationId) {
         HDNearCacheRecord existingRecord = records.get(keyData);
-        HDNearCacheRecord reservedRecord = reserveForCacheOnUpdate0(key, keyData,
+        HDNearCacheRecord reservedRecord = reserveForWriteUpdate(key, keyData,
                 existingRecord, reservationId);
 
         if (reservedRecord != null) {
@@ -320,7 +338,7 @@ public class HDNearCacheRecordStoreImpl<K, V>
     }
 
     @Override
-    protected HDNearCacheRecord readUpdate(K key, Data keyData, long reservationId) {
+    protected HDNearCacheRecord reserveForReadUpdate(K key, Data keyData, long reservationId) {
         HDNearCacheRecord recordToReserve = getRecord(key);
         if (recordToReserve != null) {
             return recordToReserve;
@@ -329,7 +347,7 @@ public class HDNearCacheRecordStoreImpl<K, V>
         HDNearCacheRecord record = null;
         NativeMemoryData nativeKey = null;
         try {
-            record = reserveForUpdate0(key, keyData, reservationId);
+            record = newReservationRecord(key, keyData, reservationId);
             nativeKey = toNativeMemoryData(key);
             records.put(nativeKey, record);
         } catch (Throwable throwable) {
@@ -349,21 +367,6 @@ public class HDNearCacheRecordStoreImpl<K, V>
         if (isMemoryBlockValid(record)) {
             recordProcessor.dispose(record);
         }
-    }
-
-    @Override
-    protected V tryPublishReserved0(K key, V value, long reservationId, boolean deserialize) {
-        HDNearCacheRecord reservedRecord = getRecord(key);
-        if (reservedRecord == null) {
-            return null;
-        }
-
-        HDNearCacheRecord record = updateReservedRecordInternal(key, value, reservedRecord, reservationId);
-        if (!deserialize) {
-            return null;
-        }
-
-        return toValue(record.getValue());
     }
 
     @Override

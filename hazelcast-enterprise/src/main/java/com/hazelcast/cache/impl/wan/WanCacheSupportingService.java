@@ -186,7 +186,7 @@ public class WanCacheSupportingService implements WanSupportingService {
         SplitBrainMergePolicy mergePolicy = cacheService.getMergePolicyProvider().getMergePolicy(event.getMergePolicy());
         CacheMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
         Operation operation = operationProvider.createWanMergeOperation(mergingEntry,
-                (SplitBrainMergePolicy<Data, CacheMergeTypes>) mergePolicy, IGNORE_COMPLETION);
+                (SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object>) mergePolicy, IGNORE_COMPLETION);
 
         InternalCompletableFuture future = invokeOnPartition(event.getKey(), operation);
 

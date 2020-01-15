@@ -2,7 +2,6 @@ package com.hazelcast.cache.impl.hidensity.operation;
 
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.impl.operations.PartitionAwareOperationFactory;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
@@ -22,15 +21,15 @@ import java.util.List;
 public class CacheMergeOperationFactory extends PartitionAwareOperationFactory {
 
     private String name;
-    private List<CacheMergeTypes>[] mergingEntries;
-    private SplitBrainMergePolicy<Data, CacheMergeTypes> policy;
+    private List<CacheMergeTypes<Object, Object>>[] mergingEntries;
+    private SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> policy;
 
     public CacheMergeOperationFactory() {
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public CacheMergeOperationFactory(String name, int[] partitions, List<CacheMergeTypes>[] mergingEntries,
-                                      SplitBrainMergePolicy<Data, CacheMergeTypes> policy) {
+    public CacheMergeOperationFactory(String name, int[] partitions, List<CacheMergeTypes<Object, Object>>[] mergingEntries,
+                                      SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> policy) {
         this.name = name;
         this.partitions = partitions;
         this.mergingEntries = mergingEntries;
@@ -51,7 +50,7 @@ public class CacheMergeOperationFactory extends PartitionAwareOperationFactory {
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeUTF(name);
         out.writeIntArray(partitions);
-        for (List<CacheMergeTypes> list : mergingEntries) {
+        for (List<CacheMergeTypes<Object, Object>> list : mergingEntries) {
             out.writeInt(list.size());
             for (CacheMergeTypes mergingEntry : list) {
                 out.writeObject(mergingEntry);
@@ -68,7 +67,7 @@ public class CacheMergeOperationFactory extends PartitionAwareOperationFactory {
         mergingEntries = new List[partitions.length];
         for (int i = 0; i < partitions.length; i++) {
             int size = in.readInt();
-            List<CacheMergeTypes> list = new ArrayList<CacheMergeTypes>(size);
+            List<CacheMergeTypes<Object, Object>> list = new ArrayList<>(size);
             for (int j = 0; j < size; j++) {
                 CacheMergeTypes mergingEntry = in.readObject();
                 list.add(mergingEntry);

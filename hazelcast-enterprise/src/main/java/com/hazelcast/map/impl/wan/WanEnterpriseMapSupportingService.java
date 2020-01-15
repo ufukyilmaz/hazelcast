@@ -11,6 +11,7 @@ import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.NodeEngine;
+import com.hazelcast.spi.impl.merge.MapMergingEntryImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.proxyservice.ProxyService;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
@@ -35,7 +36,7 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
     private final ProxyService proxyService;
     private final MapServiceContext mapServiceContext;
     private final WanEventCounters wanEventCounters;
-    private final SplitBrainMergePolicy<Data, MapMergeTypes> defaultSyncMergePolicy;
+    private final SplitBrainMergePolicy<Object, MapMergeTypes<Object, Object>, Object> defaultSyncMergePolicy;
     private final ILogger logger;
 
     public WanEnterpriseMapSupportingService(MapServiceContext mapServiceContext) {
@@ -43,7 +44,7 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
         this.nodeEngine = mapServiceContext.getNodeEngine();
         this.logger = nodeEngine.getLogger(this.getClass());
         SplitBrainMergePolicyProvider mergePolicyProvider = nodeEngine.getSplitBrainMergePolicyProvider();
-        this.defaultSyncMergePolicy = (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicyProvider
+        this.defaultSyncMergePolicy = (SplitBrainMergePolicy<Object, MapMergeTypes<Object, Object>, Object>) mergePolicyProvider
                 .getMergePolicy(DEFAULT_MERGE_POLICY);
         this.proxyService = nodeEngine.getProxyService();
         this.wanEventCounters = nodeEngine.getWanReplicationService()
@@ -103,9 +104,9 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
 
         for (WanMapEntryView<Object, Object> entryView : event.getEntries().getNodeEntries()) {
-            MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), entryView);
+            MapMergingEntryImpl mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), entryView);
             MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
-            invokeOnPartition(mergingEntry.getKey(), operation);
+            invokeOnPartition(mergingEntry.getRawKey(), operation);
         }
     }
 
@@ -139,10 +140,11 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
         final Data key;
         final Operation operation;
 
-        MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
-        key = mergingEntry.getKey();
+        MapMergingEntryImpl mergingEntry = createMergingEntry(nodeEngine.getSerializationService(),
+                event.getEntryView());
+        key = mergingEntry.getRawKey();
         operation = operationProvider.createMergeOperation(mapName, mergingEntry,
-                (SplitBrainMergePolicy<Data, MapMergeTypes>) mergePolicy, true);
+                (SplitBrainMergePolicy<Object, MapMergeTypes<Object, Object>, Object>) mergePolicy, true);
 
         final InternalCompletableFuture future = invokeOnPartition(key, operation);
         if (future != null && acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
@@ -181,9 +183,9 @@ public class WanEnterpriseMapSupportingService implements WanSupportingService {
     private void handleSyncEvent(WanEnterpriseMapSyncEvent event) {
         String mapName = event.getMapName();
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
-        MapMergeTypes mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
+        MapMergingEntryImpl mergingEntry = createMergingEntry(nodeEngine.getSerializationService(), event.getEntryView());
         MapOperation operation = operationProvider.createMergeOperation(mapName, mergingEntry, defaultSyncMergePolicy, true);
-        InternalCompletableFuture<Boolean> future = invokeOnPartition(mergingEntry.getKey(), operation);
+        InternalCompletableFuture<Boolean> future = invokeOnPartition(mergingEntry.getRawKey(), operation);
         future.whenCompleteAsync((v, t) -> {
             if (t != null) {
                 logger.warning("Failed to process WAN sync event", t);

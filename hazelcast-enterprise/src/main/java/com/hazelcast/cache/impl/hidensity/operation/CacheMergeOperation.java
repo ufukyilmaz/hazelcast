@@ -2,6 +2,7 @@ package com.hazelcast.cache.impl.hidensity.operation;
 
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.spi.impl.merge.CacheMergingEntryImpl;
 import com.hazelcast.spi.impl.operationservice.MutatingOperation;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.wan.impl.CallerProvenance;
@@ -26,8 +27,8 @@ import static com.hazelcast.internal.util.MapUtil.createHashMap;
 public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
         implements MutableOperation, MutatingOperation {
 
-    private SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy;
-    private List<CacheMergeTypes> mergingEntries;
+    private SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> mergePolicy;
+    private List<CacheMergeTypes<Object, Object>> mergingEntries;
 
     private transient boolean hasBackups;
     private transient boolean wanReplicationEnabled;
@@ -36,8 +37,8 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     public CacheMergeOperation() {
     }
 
-    public CacheMergeOperation(String name, List<CacheMergeTypes> mergingEntries,
-                               SplitBrainMergePolicy<Data, CacheMergeTypes> policy) {
+    public CacheMergeOperation(String name, List<CacheMergeTypes<Object, Object>> mergingEntries,
+                               SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> policy) {
         super(name);
         this.mergingEntries = mergingEntries;
         this.mergePolicy = policy;
@@ -62,17 +63,19 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     }
 
     private void merge(CacheMergeTypes mergingEntry) {
+        assert mergingEntry instanceof CacheMergingEntryImpl;
+        CacheMergingEntryImpl mergingEntryImpl = (CacheMergingEntryImpl) mergingEntry;
         CacheRecord backupRecord = recordStore.merge(mergingEntry, mergePolicy, CallerProvenance.NOT_WAN);
 
         if (hasBackups && backupRecord != null) {
-            backupRecords.put(mergingEntry.getKey(), backupRecord);
+            backupRecords.put(mergingEntryImpl.getRawKey(), backupRecord);
         }
 
         if (wanReplicationEnabled) {
             if (backupRecord != null) {
-                publishWanUpdate(mergingEntry.getKey(), backupRecord);
+                publishWanUpdate(mergingEntryImpl.getRawKey(), backupRecord);
             } else {
-                publishWanRemove(mergingEntry.getKey());
+                publishWanRemove(mergingEntryImpl.getRawKey());
             }
         }
     }
@@ -101,7 +104,7 @@ public class CacheMergeOperation extends BackupAwareHiDensityCacheOperation
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        mergingEntries = new ArrayList<CacheMergeTypes>(size);
+        mergingEntries = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             CacheMergeTypes mergingEntry = in.readObject();
             mergingEntries.add(mergingEntry);

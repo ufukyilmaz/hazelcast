@@ -12,7 +12,7 @@ import java.io.IOException;
  * that ignores merging and existing entries and returns
  * null that ends up with deletion of the related key.
  */
-class DeleteMapMergePolicy implements SplitBrainMergePolicy<Object, MergingValue<Object>> {
+class DeleteMapMergePolicy implements SplitBrainMergePolicy<Object, MergingValue<Object>, Object> {
 
     @Override
     public Object merge(MergingValue<Object> mergingValue, MergingValue<Object> existingValue) {

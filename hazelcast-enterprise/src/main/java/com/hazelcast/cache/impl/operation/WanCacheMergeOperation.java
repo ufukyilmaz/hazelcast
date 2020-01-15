@@ -3,7 +3,7 @@ package com.hazelcast.cache.impl.operation;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.spi.impl.merge.CacheMergingEntryImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
@@ -19,15 +19,16 @@ import java.io.IOException;
  */
 public class WanCacheMergeOperation extends MutatingCacheOperation {
 
-    private CacheMergeTypes mergingEntry;
-    private SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy;
+    private CacheMergeTypes<Object, Object> mergingEntry;
+    private SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> mergePolicy;
 
     public WanCacheMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, CacheMergeTypes mergingEntry,
-                                  SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy, int completionId) {
-        super(name, mergingEntry.getKey(), completionId);
+    public WanCacheMergeOperation(String name, CacheMergeTypes<Object, Object> mergingEntry,
+                                  SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> mergePolicy,
+                                  int completionId) {
+        super(name, ((CacheMergingEntryImpl) mergingEntry).getRawKey(), completionId);
         this.mergingEntry = mergingEntry;
         this.mergePolicy = mergePolicy;
     }

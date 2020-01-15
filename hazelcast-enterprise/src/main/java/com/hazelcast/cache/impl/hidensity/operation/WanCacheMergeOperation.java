@@ -3,13 +3,13 @@ package com.hazelcast.cache.impl.hidensity.operation;
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.internal.util.Clock;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.spi.impl.merge.CacheMergingEntryImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 import com.hazelcast.spi.merge.SplitBrainMergeTypes.CacheMergeTypes;
-import com.hazelcast.internal.util.Clock;
 import com.hazelcast.wan.impl.CallerProvenance;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -25,17 +25,18 @@ public class WanCacheMergeOperation
         extends BackupAwareHiDensityCacheOperation
         implements MutableOperation {
 
-    private CacheMergeTypes mergingEntry;
-    private SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy;
+    private CacheMergingEntryImpl mergingEntry;
+    private SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> mergePolicy;
 
     public WanCacheMergeOperation() {
     }
 
     public WanCacheMergeOperation(String name,
-                                  SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy,
+                                  SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> mergePolicy,
                                   CacheMergeTypes mergingEntry, int completionId) {
         super(name, completionId);
-        this.mergingEntry = mergingEntry;
+        assert mergingEntry instanceof CacheMergingEntryImpl;
+        this.mergingEntry = (CacheMergingEntryImpl) mergingEntry;
         this.mergePolicy = mergePolicy;
     }
 
@@ -48,15 +49,15 @@ public class WanCacheMergeOperation
 
     @Override
     public boolean shouldBackup() {
-        return Boolean.TRUE.equals(response) && recordStore.getRecord(mergingEntry.getKey()) != null;
+        return Boolean.TRUE.equals(response) && recordStore.getRecord(mergingEntry.getRawKey()) != null;
     }
 
     @Override
     public Operation getBackupOperation() {
         ExpiryPolicy expiryPolicy = createOrNullBackupExpiryPolicy(mergingEntry.getExpirationTime());
-        CacheRecord record = recordStore.getRecord(mergingEntry.getKey());
-        return new CachePutBackupOperation(name, mergingEntry.getKey(),
-                mergingEntry.getValue(), expiryPolicy, record.getCreationTime(), true);
+        CacheRecord record = recordStore.getRecord(mergingEntry.getRawKey());
+        return new CachePutBackupOperation(name, mergingEntry.getRawKey(),
+                mergingEntry.getRawValue(), expiryPolicy, record.getCreationTime(), true);
     }
 
     static ExpiryPolicy createOrNullBackupExpiryPolicy(long expiryTime) {

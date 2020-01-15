@@ -103,20 +103,23 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
-    public Operation createWanMergeOperation(CacheMergeTypes mergingEntry,
-                                             SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy, int completionId) {
+    public Operation createWanMergeOperation(CacheMergeTypes<Object, Object> mergingEntry,
+                                             SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> mergePolicy,
+                                             int completionId) {
         return new WanCacheMergeOperation(nameWithPrefix, mergePolicy, mergingEntry, completionId);
     }
 
     @Override
-    public Operation createMergeOperation(String name, List<CacheMergeTypes> mergingEntries,
-                                          SplitBrainMergePolicy<Data, CacheMergeTypes> policy) {
+    public Operation createMergeOperation(String name, List<CacheMergeTypes<Object, Object>> mergingEntries,
+                                          SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> policy) {
         return new CacheMergeOperation(name, mergingEntries, policy);
     }
 
     @Override
-    public OperationFactory createMergeOperationFactory(String name, int[] partitions, List<CacheMergeTypes>[] mergingEntries,
-                                                        SplitBrainMergePolicy<Data, CacheMergeTypes> policy) {
+    public OperationFactory createMergeOperationFactory(String name, int[] partitions,
+                                                        List<CacheMergeTypes<Object, Object>>[] mergingEntries,
+                                                        SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>,
+                                                                Object> policy) {
         return new CacheMergeOperationFactory(name, partitions, mergingEntries, policy);
     }
 

@@ -284,8 +284,9 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public CacheRecord merge(CacheMergeTypes mergingEntry,
-                             SplitBrainMergePolicy<Data, CacheMergeTypes> mergePolicy, CallerProvenance callerProvenance) {
+    public CacheRecord merge(CacheMergeTypes<Object, Object> mergingEntry,
+                             SplitBrainMergePolicy<Object, CacheMergeTypes<Object, Object>, Object> mergePolicy,
+                             CallerProvenance callerProvenance) {
         return toHeapCacheRecord((HiDensityNativeMemoryCacheRecord) super.merge(mergingEntry, mergePolicy, callerProvenance));
     }
 

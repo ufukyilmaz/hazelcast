@@ -1,20 +1,23 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.impl.ClientEndpoint;
+import com.hazelcast.client.impl.ClientEngineImpl;
+import com.hazelcast.client.test.ClientTestSupport;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CredentialsFactoryConfig;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.security.JaasAuthenticationConfig;
 import com.hazelcast.config.security.RealmConfig;
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.security.ClusterLoginModule;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.CredentialsCallback;
 import com.hazelcast.security.ICredentialsFactory;
-import com.hazelcast.security.TokenDeserializerCallback;
 import com.hazelcast.security.TokenCredentials;
-import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.security.TokenDeserializerCallback;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Rule;
@@ -28,13 +31,15 @@ import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
-
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
+
+import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
+public class ClientCustomAuthenticationTest extends ClientTestSupport {
 
     @Rule
     public ExpectedException expected = ExpectedException.none();
@@ -278,7 +283,7 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
             CredentialsCallback cb = new CredentialsCallback();
             TokenDeserializerCallback tdcb = new TokenDeserializerCallback();
             try {
-                callbackHandler.handle(new Callback[] { cb, tdcb });
+                callbackHandler.handle(new Callback[]{cb, tdcb});
             } catch (IOException | UnsupportedCallbackException e) {
                 throw new LoginException("Problem getting credentials");
             }
@@ -305,5 +310,52 @@ public class ClientCustomAuthenticationTest extends HazelcastTestSupport {
         protected String getName() {
             return name;
         }
+    }
+
+    public static class LogoutThrowingExceptionModule extends ClusterLoginModule {
+
+        @Override
+        protected boolean onLogin() {
+            return true;
+        }
+
+        @Override
+        protected String getName() {
+            return "test";
+        }
+
+        @Override
+        protected boolean onLogout() throws LoginException {
+            throw new LoginException();
+        }
+    }
+
+    @Test
+    public void testLoginModuleThrowsExceptionOnLogout() {
+        Config config = new Config();
+
+        LoginModuleConfig loginModuleConfig = new LoginModuleConfig();
+        loginModuleConfig.setUsage(LoginModuleConfig.LoginModuleUsage.REQUIRED).setClassName(LogoutThrowingExceptionModule.class.getName());
+        JaasAuthenticationConfig jaasAuthenticationConfig = new JaasAuthenticationConfig();
+        jaasAuthenticationConfig.addLoginModuleConfig(loginModuleConfig);
+        RealmConfig realmConfig = new RealmConfig();
+        realmConfig.setJaasAuthenticationConfig(jaasAuthenticationConfig);
+        config.getSecurityConfig()
+                .setEnabled(true)
+                .setClientRealmConfig("realm", realmConfig);
+
+        HazelcastInstance instance = hazelcastFactory.newHazelcastInstance(config);
+
+        HazelcastInstance client = hazelcastFactory.newHazelcastClient(failFastClientConfig());
+        client.shutdown();
+
+        assertTrueEventually(() -> {
+            ClientEngineImpl clientEngine = getClientEngineImpl(instance);
+            Map<ClientEndpoint, Long> endpoints = clientEngine.getClusterListenerService().getClusterListeningEndpoints();
+
+            assertEquals(0, clientEngine.getClientEndpointCount());
+            assertEquals(0, endpoints.size());
+        });
+
     }
 }

@@ -10,6 +10,7 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.annotation.QuickTest;
@@ -66,15 +67,15 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
         return createNearCacheConfig(name, InMemoryFormat.NATIVE);
     }
 
-    private NearCache<Integer, Object> createNearCache(String name) {
+    private NearCache createNearCache(String name) {
         NearCacheConfig nearCacheConfig = createNearCacheConfig(name);
         return nearCacheManager.getOrCreateNearCache(name, nearCacheConfig);
     }
 
     @Test
     public void putToNearCacheShouldNotGetOOMEIfNativeMemoryIsFullAndThereIsNoRecordToEvict() {
-        NearCache<Integer, Object> nearCache1 = createNearCache("Near-Cache-1");
-        NearCache<Integer, Object> nearCache2 = createNearCache("Near-Cache-2");
+        NearCache nearCache1 = createNearCache("Near-Cache-1");
+        NearCache nearCache2 = createNearCache("Near-Cache-2");
 
         byte[] smallValue = new byte[8 * 1024];
         byte[] bigValue = new byte[NativeMemoryConfig.DEFAULT_PAGE_SIZE / 2]; // 2 MB = Smaller than page size (4 MB)
@@ -84,13 +85,17 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
 
         // fill up memory with Near Cache 1
         for (int i = 0; i < smallValuePutCount; i++) {
-            nearCache1.put(i, ess.toData(i), smallValue, ess.toData(smallValue));
+            Data keyData = ess.toData(i);
+            Data valueData = ess.toData(smallValue);
+            nearCache1.put(keyData, keyData, valueData, valueData);
         }
 
         // then put a big value to Near Cache 2 and there should not be OOME
         // since eviction is done on other Near Caches until there is enough space for new put
         for (int i = 0; i < bigValuePutCount; i++) {
-            nearCache2.put(i, ess.toData(i), bigValue, ess.toData(bigValue));
+            Data keyData = ess.toData(i);
+            Data valueData = ess.toData(bigValue);
+            nearCache2.put(keyData, keyData, valueData, valueData);
         }
     }
 }

@@ -8,6 +8,7 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.executionservice.impl.DelegatingTaskScheduler;
 import com.hazelcast.spi.properties.HazelcastProperties;
@@ -57,7 +58,9 @@ public class HiDensityNearCacheMemoryManagerTest extends HazelcastTestSupport {
     public void putToNearCache_throws_illegal_state_exception_if_memory_manager_was_disposed() {
         memoryManager.dispose();
 
-        createHDNearCache(ess, properties).put(1, ess.toData(1), 1, ess.toData(1));
+        Data keyData = ess.toData(1);
+        Data valueData = ess.toData(1);
+        createHDNearCache(ess, properties).put(keyData, keyData, valueData, valueData);
     }
 
     private static <K, V> NearCache<K, V> createHDNearCache(EnterpriseSerializationService ess,

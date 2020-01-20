@@ -38,14 +38,12 @@ import static org.mockito.Mockito.when;
 @Category(QuickTest.class)
 public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
 
-    private static final String KEY = "key";
-    private static final String VALUE = "value";
     private static final NativeOutOfMemoryError NATIVE_OOME = new NativeOutOfMemoryError();
     private static final MemorySize DEFAULT_MEMORY_SIZE = new MemorySize(256, MemoryUnit.MEGABYTES);
 
     private Collection<NearCache> nearCaches = new ArrayList<NearCache>();
 
-    private NearCacheRecordStore<String, String> nearCacheRecordStore;
+    private NearCacheRecordStore nearCacheRecordStore;
     private NearCacheConfig nearCacheConfig;
     private NearCacheManager nearCacheManager;
     private PoolingMemoryManager memoryManager;
@@ -55,7 +53,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     private Data keyData;
     private Data valueData;
 
-    private HiDensityNearCache<String, String> nearCache;
+    private HiDensityNearCache nearCache;
 
     @Before
     public void setUp() {
@@ -77,8 +75,8 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
         executionService = mock(ExecutionService.class);
         properties = new HazelcastProperties(new Properties());
 
-        keyData = serializationService.toData(KEY);
-        valueData = serializationService.toData(VALUE);
+        keyData = serializationService.toData("key");
+        valueData = serializationService.toData("value");
     }
 
     @After
@@ -90,7 +88,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     public void putWithoutNativeOOME() {
         createNearCache(nearCacheManager);
 
-        nearCache.put(KEY, keyData, VALUE, valueData);
+        nearCache.put(keyData, keyData, valueData, valueData);
 
         // recordStore.put() succeeds on the first try
         verifyPutOnRecordStore(1);
@@ -100,10 +98,10 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     @Test
     public void putWithNativeOOME_withSuccessfulEvictionOnSameNearCache() {
         createNearCache(nearCacheManager);
-        doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(KEY), eq(keyData), eq(VALUE), eq(valueData));
+        doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(keyData), eq(keyData), eq(valueData), eq(valueData));
         doReturn(1).when(nearCacheRecordStore).size();
 
-        nearCache.put(KEY, keyData, VALUE, valueData);
+        nearCache.put(keyData, keyData, valueData, valueData);
 
         // recordStore.put() succeeds after the first forced eviction on the same Near Cache
         verifyPutOnRecordStore(2);
@@ -114,11 +112,11 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     @Test
     public void putWithNativeOOME_afterEvictionOnSameNearCache() {
         createNearCache(nearCacheManager);
-        doThrow(NATIVE_OOME).doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(KEY), eq(keyData),
-                eq(VALUE), eq(valueData));
+        doThrow(NATIVE_OOME).doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(keyData), eq(keyData),
+                eq(valueData), eq(valueData));
         doReturn(1).when(nearCacheRecordStore).size();
 
-        nearCache.put(KEY, keyData, VALUE, valueData);
+        nearCache.put(keyData, keyData, valueData, valueData);
 
         // recordStore.put() succeeds in the second loop after the first forced eviction didn't work
         verifyPutOnRecordStore(3);
@@ -129,13 +127,13 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     @Test
     public void putWithNativeOOME_withSuccessfulEvictionOnOtherNearCache() {
         createNearCache(nearCacheManager);
-        doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(KEY), eq(keyData), eq(VALUE), eq(valueData));
+        doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(keyData), eq(keyData), eq(valueData), eq(valueData));
         doReturn(0).when(nearCacheRecordStore).size();
 
         NearCacheRecordStore<String, String> otherNearCacheRecordStore = addNearCacheToNearCacheManager();
         doReturn(1).when(otherNearCacheRecordStore).size();
 
-        nearCache.put(KEY, keyData, VALUE, valueData);
+        nearCache.put(keyData, keyData, valueData, valueData);
 
         // recordStore.put() succeeds after the first forced eviction on the other Near Cache
         verifyPutOnRecordStore(2);
@@ -149,14 +147,14 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     @Test
     public void putWithNativeOOME_withUnsuccessfulEvictionOnOtherNearCache() {
         createNearCache(nearCacheManager);
-        doThrow(NATIVE_OOME).doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(KEY), eq(keyData),
-                eq(VALUE), eq(valueData));
+        doThrow(NATIVE_OOME).doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(keyData), eq(keyData),
+                eq(valueData), eq(valueData));
         doReturn(0).when(nearCacheRecordStore).size();
 
         NearCacheRecordStore<String, String> otherNearCacheRecordStore = addNearCacheToNearCacheManager();
         doReturn(1).when(otherNearCacheRecordStore).size();
 
-        nearCache.put(KEY, keyData, VALUE, valueData);
+        nearCache.put(keyData, keyData, valueData, valueData);
 
         // recordStore.put() succeeds in the second loop after the first forced eviction on the other Near Cache didn't work
         verifyPutOnRecordStore(3);
@@ -170,13 +168,13 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     @Test
     public void putWithNativeOOME_noCandidatesForEviction_afterSuccessfulCompaction() {
         createNearCache(nearCacheManager);
-        doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(KEY), eq(keyData), eq(VALUE), eq(valueData));
+        doThrow(NATIVE_OOME).doNothing().when(nearCacheRecordStore).put(eq(keyData), eq(keyData), eq(valueData), eq(valueData));
         doReturn(0).when(nearCacheRecordStore).size();
 
         NearCacheRecordStore<String, String> otherNearCacheRecordStore = addNearCacheToNearCacheManager();
         doReturn(0).when(otherNearCacheRecordStore).size();
 
-        nearCache.put(KEY, keyData, VALUE, valueData);
+        nearCache.put(keyData, keyData, valueData, valueData);
 
         // recordStore.put() succeeds in the second loop after there were no Near Cache candidates for eviction,
         // so a memory compaction was done
@@ -191,15 +189,15 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
     @Test
     public void putWithNativeOOME_removeKey_afterUnsuccessfulMemoryCompaction() {
         createNearCache(nearCacheManager);
-        doThrow(NATIVE_OOME).when(nearCacheRecordStore).put(eq(KEY), eq(keyData), eq(VALUE), eq(valueData));
+        doThrow(NATIVE_OOME).when(nearCacheRecordStore).put(eq(keyData), eq(keyData), eq(valueData), eq(valueData));
         doReturn(0).when(nearCacheRecordStore).size();
 
-        nearCache.put(KEY, keyData, VALUE, valueData);
+        nearCache.put(keyData, keyData, valueData, valueData);
 
         // recordStore.put() doesn't succeed at all and we finally give up by removing the actual key from the RecordStore
         verifyPutOnRecordStore(2);
         verify(nearCacheRecordStore, times(2)).size();
-        verify(nearCacheRecordStore).invalidate(eq(KEY));
+        verify(nearCacheRecordStore).invalidate(eq(keyData));
         verifyNoMoreInteractions(nearCacheRecordStore);
     }
 
@@ -227,7 +225,7 @@ public class HiDensityNearCacheNativeOOMETest extends HazelcastTestSupport {
 
     private void verifyPutOnRecordStore(int times) {
         verify(nearCacheRecordStore, times(times)).doEviction(false);
-        verify(nearCacheRecordStore, times(times)).put(eq(KEY), eq(keyData), eq(VALUE), eq(valueData));
+        verify(nearCacheRecordStore, times(times)).put(eq(keyData), eq(keyData), eq(valueData), eq(valueData));
     }
 
     private void verifyForcedEviction(NearCacheRecordStore<String, String> recordStore, VerificationMode verificationMode) {

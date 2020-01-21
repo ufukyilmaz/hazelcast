@@ -1,18 +1,20 @@
 package com.hazelcast.query.impl;
 
+import com.hazelcast.core.TypeConverter;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.StoreAdapter;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.impl.StoreAdapter;
+import com.hazelcast.query.Predicate;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.hazelcast.query.impl.AbstractIndex.NULL;
 import static com.hazelcast.internal.util.ThreadUtil.assertRunningOnPartitionThread;
+import static com.hazelcast.query.impl.AbstractIndex.NULL;
 
 /**
  * Ordered index store for HD memory.
@@ -35,8 +37,8 @@ class HDOrderedIndexStore extends HDExpirableIndexStore {
         super(IndexCopyBehavior.NEVER, partitionStoreAdapter);
         assertRunningOnPartitionThread();
 
-        this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(this, ess, malloc, entryFactory);
-        this.records = new HDIndexNestedTreeMap<QueryableEntry>(this, ess, malloc, entryFactory);
+        this.recordsWithNullValue = new HDIndexHashMap<>(this, ess, malloc, entryFactory);
+        this.records = new HDIndexNestedTreeMap<>(this, ess, malloc, entryFactory);
     }
 
     @Override
@@ -70,6 +72,16 @@ class HDOrderedIndexStore extends HDExpirableIndexStore {
     }
 
     @Override
+    public boolean canEvaluate(Class<? extends Predicate> predicateClass) {
+        return false;
+    }
+
+    @Override
+    public Set<QueryableEntry> evaluate(Predicate predicate, TypeConverter converter) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Comparable canonicalizeQueryArgumentScalar(Comparable value) {
         // We still need to canonicalize query arguments for ordered indexes to
         // support InPredicate queries.
@@ -98,7 +110,7 @@ class HDOrderedIndexStore extends HDExpirableIndexStore {
 
     @Override
     public Set<QueryableEntry> getRecords(Set<Comparable> values) {
-        Set<QueryableEntry> results = new HashSet<QueryableEntry>();
+        Set<QueryableEntry> results = new HashSet<>();
         for (Comparable value : values) {
             results.addAll(doGetRecords(value));
         }
@@ -137,7 +149,7 @@ class HDOrderedIndexStore extends HDExpirableIndexStore {
     private Object mapAttributeToEntry(Comparable attribute, QueryableEntry entry) {
         NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
         MemoryBlock value = getValueToStore(entry);
-        MemoryBlock oldValue =  records.put(attribute, key, value);
+        MemoryBlock oldValue = records.put(attribute, key, value);
         return getValueData(oldValue);
     }
 

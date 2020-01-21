@@ -10,7 +10,7 @@ import com.hazelcast.internal.serialization.Data;
 /**
  * Expirable index store for HD memory.
  */
-abstract class HDExpirableIndexStore extends BaseIndexStore {
+abstract class HDExpirableIndexStore extends BaseSingleValueIndexStore {
 
     private final StoreAdapter partitionStoreAdapter;
 

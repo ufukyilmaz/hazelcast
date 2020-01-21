@@ -3,11 +3,11 @@ package com.hazelcast.query.impl;
 import com.hazelcast.config.IndexConfig;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.StoreAdapter;
 import com.hazelcast.internal.monitor.impl.PerIndexStats;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.impl.StoreAdapter;
 import com.hazelcast.query.impl.getters.Extractors;
 
 import static com.hazelcast.internal.serialization.DataType.HEAP;
@@ -33,12 +33,21 @@ public class HDIndexImpl extends AbstractIndex {
     }
 
     @Override
-    protected IndexStore createIndexStore(boolean ordered, PerIndexStats stats) {
+    protected IndexStore createIndexStore(IndexConfig config, PerIndexStats stats) {
         EnterpriseSerializationService ess = (EnterpriseSerializationService) ss;
         MemoryAllocator malloc = stats.wrapMemoryAllocator(ess.getCurrentMemoryAllocator());
         MapEntryFactory<QueryableEntry> entryFactory = new OnHeapEntryFactory(ess, extractors);
-        return ordered ? new HDOrderedIndexStore(ess, malloc, entryFactory, getPartitionStoreAdapter())
-                : new HDUnorderedIndexStore(ess, malloc, entryFactory, getPartitionStoreAdapter());
+
+        switch (config.getType()) {
+            case SORTED:
+                return new HDOrderedIndexStore(ess, malloc, entryFactory, getPartitionStoreAdapter());
+            case HASH:
+                return new HDUnorderedIndexStore(ess, malloc, entryFactory, getPartitionStoreAdapter());
+            case BITMAP:
+                throw new IllegalArgumentException("Bitmap indexes are not supported by NATIVE storage");
+            default:
+                throw new IllegalArgumentException("unexpected index type: " + config.getType());
+        }
     }
 
     @Override

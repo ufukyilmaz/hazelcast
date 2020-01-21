@@ -1,19 +1,21 @@
 package com.hazelcast.query.impl;
 
+import com.hazelcast.core.TypeConverter;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.StoreAdapter;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.impl.StoreAdapter;
+import com.hazelcast.query.Predicate;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.hazelcast.query.impl.AbstractIndex.NULL;
 import static com.hazelcast.internal.util.ThreadUtil.assertRunningOnPartitionThread;
+import static com.hazelcast.query.impl.AbstractIndex.NULL;
 
 /**
  * Unordered index store for HD memory.
@@ -37,8 +39,8 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
         assertRunningOnPartitionThread();
         this.ess = ess;
 
-        this.recordsWithNullValue = new HDIndexHashMap<QueryableEntry>(this, ess, malloc, entryFactory);
-        this.records = new HDIndexNestedHashMap<QueryableEntry>(this, ess, malloc, entryFactory);
+        this.recordsWithNullValue = new HDIndexHashMap<>(this, ess, malloc, entryFactory);
+        this.records = new HDIndexNestedHashMap<>(this, ess, malloc, entryFactory);
     }
 
     @Override
@@ -69,6 +71,16 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
         assertRunningOnPartitionThread();
         clear();
         dispose();
+    }
+
+    @Override
+    public boolean canEvaluate(Class<? extends Predicate> predicateClass) {
+        return false;
+    }
+
+    @Override
+    public Set<QueryableEntry> evaluate(Predicate predicate, TypeConverter converter) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -124,7 +136,7 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
     @Override
     public Set<QueryableEntry> getRecords(Set<Comparable> values) {
         assertRunningOnPartitionThread();
-        Set<QueryableEntry> results = new HashSet<QueryableEntry>();
+        Set<QueryableEntry> results = new HashSet<>();
         for (Comparable value : values) {
             // value is already canonicalized by the associated index
             results.addAll(getRecordsInternal(value));
@@ -135,7 +147,7 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
     @Override
     public Set<QueryableEntry> getRecords(Comparison comparison, Comparable value) {
         assertRunningOnPartitionThread();
-        Set<QueryableEntry> results = new HashSet<QueryableEntry>();
+        Set<QueryableEntry> results = new HashSet<>();
         for (Data valueData : records.keySet()) {
             Comparable indexedValue = ess.toObject(valueData);
             boolean valid;
@@ -173,7 +185,7 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
             return records.get(canonicalize(from));
         }
 
-        Set<QueryableEntry> results = new HashSet<QueryableEntry>();
+        Set<QueryableEntry> results = new HashSet<>();
         int fromBound = fromInclusive ? 0 : +1;
         int toBound = toInclusive ? 0 : -1;
         for (Data valueData : records.keySet()) {

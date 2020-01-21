@@ -187,6 +187,12 @@ public class HDEvictionTest extends EvictionTest {
         assertTrue(map.containsKey(6));
     }
 
+    @Override
+    @Test
+    public void testMaxIdle_readThroughBitmapIndex() {
+        // bitmap indexes are not supported by HD
+    }
+
     public static class Person implements DataSerializable {
 
         private int age;

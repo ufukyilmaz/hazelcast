@@ -70,7 +70,7 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
         if (getPredicate() != null) {
             // we use the partitioned-index to operate on the selected keys only
             Indexes indexes = mapContainer.getIndexes(getPartitionId());
-            Set<QueryableEntry> entries = indexes.query(queryOptimizer.optimize(getPredicate(), indexes));
+            Set<QueryableEntry> entries = indexes.query(queryOptimizer.optimize(getPredicate(), indexes), 1);
             if (entries != null) {
                 responses = new MapEntries(entries.size());
 

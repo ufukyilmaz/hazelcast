@@ -20,7 +20,7 @@ import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
 import static com.hazelcast.internal.util.QuickMath.isPowerOfTwo;
 
 /**
- * Implements a hierachical memory allocation scheme:
+ * Implements a hierarchical memory allocation scheme:
  * <ol><li>
  *     Tier-1 is the platform-native memory allocator. It is used to allocate <i>pages</i>
  *     managed by Tier-2. Also, larger blocks will be allocated directly from this tier.

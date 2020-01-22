@@ -51,7 +51,7 @@ public class EnterpriseProbeTest extends AbstractDiagnosticsPluginTest {
         plugin.run(logWriter);
         assertContains("[name=default,unit=count,metric=map.entryCount]=2");
         assertContains("[name=default,unit=count,metric=map.forceEvictionCount]=");
-        assertContains("[name=default,unit=count,metric=map.usedMemory]=");
+        assertContains("[name=default,unit=bytes,metric=map.usedMemory]=");
 
         map.remove("key2");
         plugin.run(logWriter);

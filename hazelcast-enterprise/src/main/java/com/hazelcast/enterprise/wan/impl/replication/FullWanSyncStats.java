@@ -7,21 +7,28 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_FULL_SYNC_PARTITIONS_SYNCED;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_FULL_SYNC_PARTITIONS_TO_SYNC;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_FULL_SYNC_RECORDS_SYNCED;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_FULL_SYNC_START_SYNC_NANOS;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_FULL_SYNC_SYNC_DURATION_NANOS;
+import static com.hazelcast.internal.metrics.ProbeUnit.NS;
+
 /**
  * Full sync specific implementation of the {@link WanSyncStats} interface
  */
 public class FullWanSyncStats implements WanSyncStats {
     private final UUID uuid;
-    @Probe
+    @Probe(name = WAN_METRIC_FULL_SYNC_START_SYNC_NANOS, unit = NS)
     private final long syncStartNanos = System.nanoTime();
-    @Probe
+    @Probe(name = WAN_METRIC_FULL_SYNC_PARTITIONS_TO_SYNC)
     private final int partitionsToSync;
 
-    @Probe
+    @Probe(name = WAN_METRIC_FULL_SYNC_PARTITIONS_SYNCED)
     private AtomicInteger partitionsSynced = new AtomicInteger();
-    @Probe
+    @Probe(name = WAN_METRIC_FULL_SYNC_RECORDS_SYNCED)
     private AtomicInteger recordsSynced = new AtomicInteger();
-    @Probe
+    @Probe(name = WAN_METRIC_FULL_SYNC_SYNC_DURATION_NANOS, unit = NS)
     private volatile long syncDurationNanos;
 
     FullWanSyncStats(UUID uuid, int partitionsToSync) {

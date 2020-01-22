@@ -35,6 +35,18 @@ import java.util.Collection;
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
 import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_DISCRIMINATOR_REPLICATION;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_CONSISTENCY_CHECK_LAST_DIFF_PARTITION_COUNT;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_AVG_ENTRIES_PER_LEAF;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_PARTITIONS_SYNCED;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_OUTBOUND_QUEUE_SIZE;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_UPDATE_COUNT;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_PREFIX;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_PREFIX_CONSISTENCY_CHECK;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_PREFIX_SYNC;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_CACHE;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_MAP;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_PUBLISHERID;
 import static com.hazelcast.internal.metrics.ProbeUnit.COUNT;
 import static com.hazelcast.internal.metrics.impl.DefaultMetricDescriptorSupplier.DEFAULT_DESCRIPTOR_SUPPLIER;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
@@ -141,30 +153,30 @@ public class EnterpriseWanMetricsTest extends HazelcastTestSupport {
         fillCache(sourceCluster, CACHE_NAME, 0, 100);
 
         MetricDescriptor descriptorOutboundQ = DEFAULT_DESCRIPTOR_SUPPLIER
-            .get()
-            .withPrefix("wan")
-            .withMetric("outboundQueueSize")
-            .withUnit(COUNT)
-            .withDiscriminator("replication", REPLICATION_NAME)
-            .withTag("publisherId", targetCluster.getName());
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_OUTBOUND_QUEUE_SIZE)
+                .withUnit(COUNT)
+                .withDiscriminator(WAN_DISCRIMINATOR_REPLICATION, REPLICATION_NAME)
+                .withTag(WAN_TAG_PUBLISHERID, targetCluster.getName());
 
         MetricDescriptor descriptorMap = DEFAULT_DESCRIPTOR_SUPPLIER
-            .get()
-            .withPrefix("wan")
-            .withMetric("updateCount")
-            .withUnit(COUNT)
-            .withDiscriminator("replication", REPLICATION_NAME)
-            .withTag("publisherId", targetCluster.getName())
-            .withTag("map", MAP_NAME);
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_UPDATE_COUNT)
+                .withUnit(COUNT)
+                .withDiscriminator(WAN_DISCRIMINATOR_REPLICATION, REPLICATION_NAME)
+                .withTag(WAN_TAG_PUBLISHERID, targetCluster.getName())
+                .withTag(WAN_TAG_MAP, MAP_NAME);
 
         MetricDescriptor descriptorCache = DEFAULT_DESCRIPTOR_SUPPLIER
-            .get()
-            .withPrefix("wan")
-            .withMetric("updateCount")
-            .withUnit(COUNT)
-            .withDiscriminator("replication", REPLICATION_NAME)
-            .withTag("publisherId", targetCluster.getName())
-            .withTag("cache", CACHE_NAME);
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_UPDATE_COUNT)
+                .withUnit(COUNT)
+                .withDiscriminator(WAN_DISCRIMINATOR_REPLICATION, REPLICATION_NAME)
+                .withTag(WAN_TAG_PUBLISHERID, targetCluster.getName())
+                .withTag(WAN_TAG_CACHE, CACHE_NAME);
 
         assertHasStatsEventually(sourceCluster, descriptorOutboundQ, descriptorMap, descriptorCache);
     }
@@ -181,32 +193,32 @@ public class EnterpriseWanMetricsTest extends HazelcastTestSupport {
         sourceCluster.syncMap(wanReplication, MAP_NAME);
 
         MetricDescriptor descriptorPartitionsSynced = DEFAULT_DESCRIPTOR_SUPPLIER
-            .get()
-            .withPrefix("wan.sync")
-            .withMetric("partitionsSynced")
-            .withUnit(COUNT)
-            .withDiscriminator("replication", REPLICATION_NAME)
-            .withTag("publisherId", targetCluster.getName())
-            .withTag("map", MAP_NAME);
+                .get()
+                .withPrefix(WAN_PREFIX_SYNC)
+                .withMetric(WAN_METRIC_MERKLE_SYNC_PARTITIONS_SYNCED)
+                .withUnit(COUNT)
+                .withDiscriminator(WAN_DISCRIMINATOR_REPLICATION, REPLICATION_NAME)
+                .withTag(WAN_TAG_PUBLISHERID, targetCluster.getName())
+                .withTag(WAN_TAG_MAP, MAP_NAME);
 
         if (MERKLE_TREES == consistencyCheckStrategy) {
             MetricDescriptor descriptorAvgEntriesPerLeaf = DEFAULT_DESCRIPTOR_SUPPLIER
-                .get()
-                .withPrefix("wan.sync")
-                .withMetric("avgEntriesPerLeaf")
-                .withUnit(COUNT)
-                .withDiscriminator("replication", REPLICATION_NAME)
-                .withTag("publisherId", targetCluster.getName())
-                .withTag("map", MAP_NAME);
+                    .get()
+                    .withPrefix(WAN_PREFIX_SYNC)
+                    .withMetric(WAN_METRIC_MERKLE_SYNC_AVG_ENTRIES_PER_LEAF)
+                    .withUnit(COUNT)
+                    .withDiscriminator(WAN_DISCRIMINATOR_REPLICATION, REPLICATION_NAME)
+                    .withTag(WAN_TAG_PUBLISHERID, targetCluster.getName())
+                    .withTag(WAN_TAG_MAP, MAP_NAME);
 
             MetricDescriptor descriptorConsistencyCheck = DEFAULT_DESCRIPTOR_SUPPLIER
-                .get()
-                .withPrefix("wan.consistencyCheck")
-                .withMetric("lastDiffPartitionCount")
-                .withUnit(COUNT)
-                .withDiscriminator("replication", REPLICATION_NAME)
-                .withTag("publisherId", targetCluster.getName())
-                .withTag("map", MAP_NAME);
+                    .get()
+                    .withPrefix(WAN_PREFIX_CONSISTENCY_CHECK)
+                    .withMetric(WAN_METRIC_CONSISTENCY_CHECK_LAST_DIFF_PARTITION_COUNT)
+                    .withUnit(COUNT)
+                    .withDiscriminator(WAN_DISCRIMINATOR_REPLICATION, REPLICATION_NAME)
+                    .withTag(WAN_TAG_PUBLISHERID, targetCluster.getName())
+                    .withTag(WAN_TAG_MAP, MAP_NAME);
 
             assertHasStatsEventually(sourceCluster, descriptorPartitionsSynced, descriptorAvgEntriesPerLeaf,
                 descriptorConsistencyCheck);

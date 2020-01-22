@@ -4,7 +4,12 @@ import com.hazelcast.internal.metrics.Probe;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HD_METRIC_ENTRY_COUNT;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HD_METRIC_FORCE_EVICTED_ENTRY_COUNT;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HD_METRIC_FORCE_EVICTION_COUNT;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HD_METRIC_USED_MEMORY;
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
+import static com.hazelcast.internal.metrics.ProbeUnit.BYTES;
 
 /**
  * Holds information about Hi-Density storage such as entry count, used memory, etc.
@@ -12,13 +17,13 @@ import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 public class HiDensityStorageInfo {
 
     private final String storageName;
-    @Probe(name = "usedMemory", level = MANDATORY)
+    @Probe(name = HD_METRIC_USED_MEMORY, level = MANDATORY, unit = BYTES)
     private final AtomicLong usedMemory = new AtomicLong(0L);
-    @Probe(name = "forceEvictionCount", level = MANDATORY)
+    @Probe(name = HD_METRIC_FORCE_EVICTION_COUNT, level = MANDATORY)
     private final AtomicLong forceEvictionCount = new AtomicLong(0L);
-    @Probe(name = "forceEvictedEntryCount", level = MANDATORY)
+    @Probe(name = HD_METRIC_FORCE_EVICTED_ENTRY_COUNT, level = MANDATORY)
     private final AtomicLong forceEvictedEntryCount = new AtomicLong(0L);
-    @Probe(name = "entryCount", level = MANDATORY)
+    @Probe(name = HD_METRIC_ENTRY_COUNT, level = MANDATORY)
     private final AtomicLong entryCount = new AtomicLong(0L);
 
     public HiDensityStorageInfo(String storageName) {

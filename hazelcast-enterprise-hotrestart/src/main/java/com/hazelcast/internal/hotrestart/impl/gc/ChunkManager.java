@@ -1,9 +1,5 @@
 package com.hazelcast.internal.hotrestart.impl.gc;
 
-import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.metrics.Probe;
-import com.hazelcast.internal.util.counters.Counter;
-import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.internal.hotrestart.HotRestartKey;
 import com.hazelcast.internal.hotrestart.KeyHandle;
 import com.hazelcast.internal.hotrestart.impl.di.DiContainer;
@@ -22,7 +18,11 @@ import com.hazelcast.internal.hotrestart.impl.gc.record.Record;
 import com.hazelcast.internal.hotrestart.impl.gc.record.RecordMap.Cursor;
 import com.hazelcast.internal.hotrestart.impl.gc.tracker.Tracker;
 import com.hazelcast.internal.hotrestart.impl.gc.tracker.TrackerMap;
+import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.metrics.Probe;
+import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.internal.util.collection.Long2ObjectHashMap;
+import com.hazelcast.internal.util.counters.Counter;
 
 import java.io.File;
 import java.util.Collection;
@@ -31,9 +31,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
-import static com.hazelcast.internal.util.counters.SwCounter.newSwCounter;
 import static com.hazelcast.internal.hotrestart.impl.gc.TombChunkSelector.selectTombChunksToCollect;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HOTRESTART_METRIC_TOMB_GARBAGE;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HOTRESTART_METRIC_TOMB_OCCUPANCY;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HOTRESTART_METRIC_VAL_GARBAGE;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HOTRESTART_METRIC_VAL_OCCUPANCY;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HOTRESTART_PREFIX;
+import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
+import static com.hazelcast.internal.metrics.ProbeUnit.BYTES;
+import static com.hazelcast.internal.util.counters.SwCounter.newSwCounter;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
@@ -47,30 +53,32 @@ public class ChunkManager implements Disposable {
      * The global byte size of value chunks. It is incremented when the active chunk is turned into a stable one. Used for
      * determining the {@link GcParams} and diagnostics.
      */
-    @Probe(level = MANDATORY)
+    @Probe(name = HOTRESTART_METRIC_VAL_OCCUPANCY, level = MANDATORY, unit = BYTES)
     final Counter valOccupancy = newSwCounter();
     /**
      * The global size of the value record garbage in bytes. The size is incremented when a record is retired or an active
      * chunk is turned into a stable one. It is used for calculating the {@link GcParams} and
      * diagnostics.
      */
-    @Probe(level = MANDATORY)
+    @Probe(name = HOTRESTART_METRIC_VAL_GARBAGE, level = MANDATORY, unit = BYTES)
     final Counter valGarbage = newSwCounter();
     /**
      * The global byte size of tombstone chunks. It is incremented when the active chunk is turned into a stable one. Used
      * mainly for diagnostics in {@link ChunkManager#tombGc(MutatorCatchup)}.
      */
-    @Probe(level = MANDATORY)
+    @Probe(name = HOTRESTART_METRIC_TOMB_OCCUPANCY, level = MANDATORY, unit = BYTES)
     final Counter tombOccupancy = newSwCounter();
     /**
      * The global size of the tombstone record garbage in bytes. The size is incremented when a record is retired or an active
      * chunk is turned into a stable one. Used mainly for diagnostics in {@link ChunkManager#tombGc(MutatorCatchup)}.
      */
-    @Probe(level = MANDATORY)
+    @Probe(name = HOTRESTART_METRIC_TOMB_GARBAGE, level = MANDATORY, unit = BYTES)
     final Counter tombGarbage = newSwCounter();
 
-    /** Stable chunks by chunk seq */
-    final Long2ObjectHashMap<StableChunk> chunks = new Long2ObjectHashMap<StableChunk>();
+    /**
+     * Stable chunks by chunk seq
+     */
+    final Long2ObjectHashMap<StableChunk> chunks = new Long2ObjectHashMap<>();
     final TrackerMap trackers;
 
     // temporary storage during GC
@@ -101,7 +109,7 @@ public class ChunkManager implements Disposable {
         this.trackers = gcHelper.newTrackerMap();
         this.backupExecutor = backupExecutor;
         this.storeName = storeName;
-        final String metricsPrefix = "hot-restart." + storeName;
+        final String metricsPrefix = HOTRESTART_PREFIX + "." + storeName;
         metrics.registerStaticMetrics(this, metricsPrefix);
         metrics.registerStaticMetrics(trackers, metricsPrefix);
     }

@@ -70,6 +70,8 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.cache.impl.AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.internal.hotrestart.PersistentConfigDescriptors.toPartitionId;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.CACHE_DISCRIMINATOR_NAME;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.CACHE_PREFIX;
 import static java.lang.Thread.currentThread;
 
 /**
@@ -682,12 +684,12 @@ public class EnterpriseCacheService
         @Override
         public void provideDynamicMetrics(MetricDescriptor descriptor,
                                           MetricsCollectionContext context) {
-            descriptor.withPrefix("cache");
+            descriptor.withPrefix(CACHE_PREFIX);
             for (Map.Entry<String, HiDensityStorageInfo> entry : hiDensityCacheInfoMap.entrySet()) {
                 String cacheName = entry.getKey();
                 HiDensityStorageInfo storageInfo = entry.getValue();
 
-                context.collect(descriptor.copy().withDiscriminator("name", cacheName), storageInfo);
+                context.collect(descriptor.copy().withDiscriminator(CACHE_DISCRIMINATOR_NAME, cacheName), storageInfo);
             }
         }
     }

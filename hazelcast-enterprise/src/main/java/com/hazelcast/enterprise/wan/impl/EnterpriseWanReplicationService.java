@@ -1,11 +1,11 @@
 package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.config.AbstractWanPublisherConfig;
-import com.hazelcast.config.WanBatchPublisherConfig;
-import com.hazelcast.config.WanCustomPublisherConfig;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.config.WanAcknowledgeType;
+import com.hazelcast.config.WanBatchPublisherConfig;
+import com.hazelcast.config.WanCustomPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.impl.operation.AddWanConfigOperationFactory;
 import com.hazelcast.enterprise.wan.impl.operation.PostJoinWanOperation;
@@ -42,11 +42,11 @@ import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanConsumer;
+import com.hazelcast.wan.WanEvent;
 import com.hazelcast.wan.WanEventCounters;
 import com.hazelcast.wan.WanEventCounters.DistributedObjectWanEventCounters;
 import com.hazelcast.wan.WanPublisher;
 import com.hazelcast.wan.WanPublisherState;
-import com.hazelcast.wan.WanEvent;
 import com.hazelcast.wan.impl.AddWanConfigResult;
 import com.hazelcast.wan.impl.ConsistencyCheckResult;
 import com.hazelcast.wan.impl.DelegatingWanScheme;
@@ -71,6 +71,13 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_DISCRIMINATOR_REPLICATION;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_PREFIX;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_PREFIX_CONSISTENCY_CHECK;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_PREFIX_SYNC;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_CACHE;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_MAP;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_PUBLISHERID;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static com.hazelcast.internal.util.MapUtil.createHashMap;
 import static com.hazelcast.wan.impl.WanReplicationServiceImpl.getWanPublisherId;
@@ -607,9 +614,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
             LocalWanStats localWanStats = entry.getValue();
 
             MetricDescriptor rootDescriptor = descriptor
-                .copy()
-                .withPrefix("wan")
-                .withDiscriminator("replication", replicationName);
+                    .copy()
+                    .withPrefix(WAN_PREFIX)
+                    .withDiscriminator(WAN_DISCRIMINATOR_REPLICATION, replicationName);
 
             for (Entry<String, LocalWanPublisherStats> publisherEntry : localWanStats.getLocalWanPublisherStats().entrySet()) {
                 String publisherId = publisherEntry.getKey();
@@ -617,15 +624,15 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
 
                 // replication
                 MetricDescriptor publisherDescriptor = rootDescriptor
-                    .copy()
-                    .withTag("publisherId", publisherId);
+                        .copy()
+                        .withTag(WAN_TAG_PUBLISHERID, publisherId);
                 context.collect(publisherDescriptor, wanPublisherStats);
 
                 // map counter
-                provideCounterMetrics(context, publisherDescriptor, wanPublisherStats.getSentMapEventCounter(), "map");
+                provideCounterMetrics(context, publisherDescriptor, wanPublisherStats.getSentMapEventCounter(), WAN_TAG_MAP);
 
                 // cache counter
-                provideCounterMetrics(context, publisherDescriptor, wanPublisherStats.getSentCacheEventCounter(), "cache");
+                provideCounterMetrics(context, publisherDescriptor, wanPublisherStats.getSentCacheEventCounter(), WAN_TAG_CACHE);
 
                 // sync
                 provideSyncMetrics(context, wanPublisherStats, publisherDescriptor);
@@ -646,9 +653,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
                 ConsistencyCheckResult consistencyCheckResult = syncStatsEntry.getValue();
 
                 MetricDescriptor counterDescriptor = publisherDescriptor
-                    .copy()
-                    .withPrefix("wan.consistencyCheck")
-                    .withTag("map", mapName);
+                        .copy()
+                        .withPrefix(WAN_PREFIX_CONSISTENCY_CHECK)
+                        .withTag(WAN_TAG_MAP, mapName);
                 context.collect(counterDescriptor, consistencyCheckResult);
             }
         }
@@ -663,9 +670,9 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
                 WanSyncStats syncStats = syncStatsEntry.getValue();
 
                 MetricDescriptor counterDescriptor = publisherDescriptor
-                    .copy()
-                    .withPrefix("wan.sync")
-                    .withTag("map", mapName);
+                        .copy()
+                        .withPrefix(WAN_PREFIX_SYNC)
+                        .withTag(WAN_TAG_MAP, mapName);
                 context.collect(counterDescriptor, syncStats);
             }
         }

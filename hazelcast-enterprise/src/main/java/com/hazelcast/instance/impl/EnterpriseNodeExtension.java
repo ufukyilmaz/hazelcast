@@ -116,6 +116,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import static com.hazelcast.instance.EndpointQualifier.MEMBER;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.MEMORY_MANAGER_PREFIX;
 import static com.hazelcast.internal.nio.CipherHelper.createSymmetricReaderCipher;
 import static com.hazelcast.internal.nio.CipherHelper.createSymmetricWriterCipher;
 import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
@@ -968,7 +969,7 @@ public class EnterpriseNodeExtension
     @Override
     public void provideStaticMetrics(MetricsRegistry registry) {
         if (memoryManager != null) {
-            registry.registerStaticMetrics(memoryManager, "memorymanager");
+            registry.registerStaticMetrics(memoryManager, MEMORY_MANAGER_PREFIX);
             if (memoryManager instanceof StaticMetricsProvider) {
                 ((StaticMetricsProvider) memoryManager).provideStaticMetrics(registry);
             }

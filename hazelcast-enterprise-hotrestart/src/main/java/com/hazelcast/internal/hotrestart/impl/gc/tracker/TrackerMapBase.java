@@ -1,9 +1,11 @@
 package com.hazelcast.internal.hotrestart.impl.gc.tracker;
 
+import com.hazelcast.internal.hotrestart.KeyHandle;
 import com.hazelcast.internal.metrics.Probe;
 import com.hazelcast.internal.util.counters.SwCounter;
-import com.hazelcast.internal.hotrestart.KeyHandle;
 
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HOTRESTART_METRIC_GC_LIVE_TOMBSTONES;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.HOTRESTART_METRIC_GC_LIVE_VALUES;
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.internal.util.counters.SwCounter.newSwCounter;
 
@@ -16,13 +18,13 @@ public abstract class TrackerMapBase implements TrackerMap {
      * The global count of live values in the store. Increases as records are added, decreases as they are retired or replaced
      * with tombstones
      */
-    @Probe(level = MANDATORY)
+    @Probe(name = HOTRESTART_METRIC_GC_LIVE_VALUES, level = MANDATORY)
     public final SwCounter liveValues = newSwCounter();
     /**
      * The global count of live tombstones in the store. Increases as records are added, decreases as they are retired. Can also
      * be decreased if there are no other records with the same key handle that it protects from resurrection.
      */
-    @Probe(level = MANDATORY)
+    @Probe(name = HOTRESTART_METRIC_GC_LIVE_TOMBSTONES, level = MANDATORY)
     public final SwCounter liveTombstones = newSwCounter();
 
     @Override

@@ -39,6 +39,8 @@ import com.hazelcast.version.Version;
 
 import java.util.concurrent.Executor;
 
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.CLIENT_PREFIX_MEMORY_MANAGER;
+
 /**
  * Enterprise implementation of {@code ClientExtension}.
  */
@@ -165,7 +167,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     @Override
     public void provideStaticMetrics(MetricsRegistry registry) {
         if (memoryManager != null) {
-            registry.registerStaticMetrics(memoryManager, "memorymanager");
+            registry.registerStaticMetrics(memoryManager, CLIENT_PREFIX_MEMORY_MANAGER);
             if (memoryManager instanceof StaticMetricsProvider) {
                 ((StaticMetricsProvider) memoryManager).provideStaticMetrics(registry);
             }

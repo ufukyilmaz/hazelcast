@@ -7,6 +7,17 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_AVG_ENTRIES_PER_LEAF;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_MAX_LEAF_ENTRY_COUNT;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_MIN_LEAF_ENTRY_COUNT;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_NODES_SYNCED;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_PARTITIONS_SYNCED;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_PARTITIONS_TO_SYNC;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_RECORDS_SYNCED;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_START_SYNC_NANOS;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_STD_DEV_ENTRIES_PER_LEAF;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_SYNC_DURATION_NANOS;
+import static com.hazelcast.internal.metrics.ProbeUnit.NS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
@@ -14,28 +25,28 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public class WanMerkleTreeSyncStats implements WanSyncStats {
     private final UUID uuid;
-    @Probe
+    @Probe(name = WAN_METRIC_MERKLE_SYNC_START_SYNC_NANOS, unit = NS)
     private final long syncStartNanos = System.nanoTime();
 
-    @Probe
+    @Probe(name = WAN_METRIC_MERKLE_SYNC_PARTITIONS_TO_SYNC)
     private final int partitionsToSync;
-    @Probe
+    @Probe(name = WAN_METRIC_MERKLE_SYNC_PARTITIONS_SYNCED)
     private final AtomicInteger partitionsSynced = new AtomicInteger();
-    @Probe
+    @Probe(name = WAN_METRIC_MERKLE_SYNC_RECORDS_SYNCED)
     private final AtomicInteger recordsSynced = new AtomicInteger();
-    @Probe
+    @Probe(name = WAN_METRIC_MERKLE_SYNC_NODES_SYNCED)
     private final AtomicInteger nodesSynced = new AtomicInteger();
     private final AtomicLong sumEntryCountSquares = new AtomicLong();
 
-    @Probe
+    @Probe(name = WAN_METRIC_MERKLE_SYNC_SYNC_DURATION_NANOS, unit = NS)
     private volatile long syncDurationNanos;
-    @Probe
+    @Probe(name = WAN_METRIC_MERKLE_SYNC_MIN_LEAF_ENTRY_COUNT)
     private volatile int minLeafEntryCount = Integer.MAX_VALUE;
-    @Probe
+    @Probe(name = WAN_METRIC_MERKLE_SYNC_MAX_LEAF_ENTRY_COUNT)
     private volatile int maxLeafEntryCount = Integer.MIN_VALUE;
-    @Probe
+    @Probe(name = WAN_METRIC_MERKLE_SYNC_AVG_ENTRIES_PER_LEAF)
     private volatile double avgEntriesPerLeaf;
-    @Probe
+    @Probe(name = WAN_METRIC_MERKLE_SYNC_STD_DEV_ENTRIES_PER_LEAF)
     private volatile double stdDevEntriesPerLeaf;
 
     WanMerkleTreeSyncStats(UUID uuid, int partitionsToSync) {

@@ -3,8 +3,8 @@ package com.hazelcast.internal.memory;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
-import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.util.QuickMath;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.MEMORY_MANAGER_PREFIX_STATS;
 import static com.hazelcast.internal.util.QuickMath.isPowerOfTwo;
 
 /**
@@ -317,6 +318,6 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
 
     @Override
     public void provideStaticMetrics(MetricsRegistry registry) {
-        registry.registerStaticMetrics(memoryStats, "memorymanager.stats");
+        registry.registerStaticMetrics(memoryStats, MEMORY_MANAGER_PREFIX_STATS);
     }
 }

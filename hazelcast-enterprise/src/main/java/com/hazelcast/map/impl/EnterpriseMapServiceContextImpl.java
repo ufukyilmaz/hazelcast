@@ -49,6 +49,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.MAP_DISCRIMINATOR_NAME;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.MAP_PREFIX;
 import static java.lang.Thread.currentThread;
 
 /**
@@ -269,11 +271,11 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
         @Override
         public void provideDynamicMetrics(MetricDescriptor descriptor, MetricsCollectionContext context) {
-            descriptor.withPrefix("map");
+            descriptor.withPrefix(MAP_PREFIX);
             for (MapContainer mapContainer : mapContainers.values()) {
                 if (mapContainer instanceof EnterpriseMapContainer) {
                     context.collect(descriptor.copy()
-                                    .withDiscriminator("name", mapContainer.name),
+                                              .withDiscriminator(MAP_DISCRIMINATOR_NAME, mapContainer.name),
                             ((EnterpriseMapContainer) mapContainer).getHdStorageInfo());
                 }
             }

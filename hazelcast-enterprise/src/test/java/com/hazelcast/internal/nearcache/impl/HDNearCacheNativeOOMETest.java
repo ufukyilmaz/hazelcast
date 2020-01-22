@@ -31,8 +31,8 @@ import static org.junit.Assert.assertTrue;
 @Category(QuickTest.class)
 public class HDNearCacheNativeOOMETest extends HazelcastTestSupport {
 
-    private static String EVICTION_DISABLED_NEAR_CACHED_MAP = "map-with-eviction-disabled-near-cache";
-    private static String EVICTION_ENABLED_NEAR_CACHED_MAP = "map-with-near-cache-eviction-enabled";
+    private static final String EVICTION_DISABLED_NEAR_CACHED_MAP = "map-with-eviction-disabled-near-cache";
+    private static final String EVICTION_ENABLED_NEAR_CACHED_MAP = "map-with-near-cache-eviction-enabled";
 
     /**
      * This is needed to hold HD near cache segment size small.

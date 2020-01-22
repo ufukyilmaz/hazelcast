@@ -3,18 +3,19 @@ package com.hazelcast.internal.memory;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
-import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.util.counters.Counter;
-import com.hazelcast.internal.util.counters.MwCounter;
+import com.hazelcast.internal.metrics.StaticMetricsProvider;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.internal.util.collection.Long2LongHashMap;
 import com.hazelcast.internal.util.collection.Long2ObjectHashMap;
+import com.hazelcast.internal.util.counters.Counter;
+import com.hazelcast.internal.util.counters.MwCounter;
 import com.hazelcast.internal.util.function.LongLongConsumer;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.MEMORY_MANAGER_PREFIX_STATS;
 
 public final class StandardMemoryManager implements HazelcastMemoryManager, StaticMetricsProvider {
 
@@ -222,7 +223,7 @@ public final class StandardMemoryManager implements HazelcastMemoryManager, Stat
 
     @Override
     public void provideStaticMetrics(MetricsRegistry registry) {
-        registry.registerStaticMetrics(memoryStats, "memorymanager.stats");
+        registry.registerStaticMetrics(memoryStats, MEMORY_MANAGER_PREFIX_STATS);
     }
 
     public synchronized void forEachAllocatedBlock(LongLongConsumer consumer) {

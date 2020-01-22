@@ -69,12 +69,12 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
         MetricsRegistryImpl metricsRegistry = clientImpl.getMetricsRegistry();
         Set<String> metrics = metricsRegistry.getNames();
 
-        assertContains(metrics, "[unit=count,metric=memorymanager.stats.committedNative]");
-        assertContains(metrics, "[unit=count,metric=memorymanager.stats.freeNative]");
-        assertContains(metrics, "[unit=count,metric=memorymanager.stats.maxMetadata]");
-        assertContains(metrics, "[unit=count,metric=memorymanager.stats.maxNative]");
-        assertContains(metrics, "[unit=count,metric=memorymanager.stats.usedMetadata]");
-        assertContains(metrics, "[unit=count,metric=memorymanager.stats.usedNative]");
+        assertContains(metrics, "[unit=bytes,metric=memorymanager.stats.committedNative]");
+        assertContains(metrics, "[unit=bytes,metric=memorymanager.stats.freeNative]");
+        assertContains(metrics, "[unit=bytes,metric=memorymanager.stats.maxMetadata]");
+        assertContains(metrics, "[unit=bytes,metric=memorymanager.stats.maxNative]");
+        assertContains(metrics, "[unit=bytes,metric=memorymanager.stats.usedMetadata]");
+        assertContains(metrics, "[unit=bytes,metric=memorymanager.stats.usedNative]");
     }
 
     @Test
@@ -86,12 +86,12 @@ public class EnterpriseClientDiagnosticsTests extends HazelcastTestSupport {
         MetricsRegistryImpl metricsRegistry = clientImpl.getMetricsRegistry();
         Set<String> metrics = metricsRegistry.getNames();
 
-        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.committedNative]");
-        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.freeNative]");
-        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.maxMetadata]");
-        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.maxNative]");
-        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.usedMetadata]");
-        assertNotContains(metrics, "[unit=count,metric=memorymanager.stats.usedNative]");
+        assertNotContains(metrics, "[unit=bytes,metric=memorymanager.stats.committedNative]");
+        assertNotContains(metrics, "[unit=bytes,metric=memorymanager.stats.freeNative]");
+        assertNotContains(metrics, "[unit=bytes,metric=memorymanager.stats.maxMetadata]");
+        assertNotContains(metrics, "[unit=bytes,metric=memorymanager.stats.maxNative]");
+        assertNotContains(metrics, "[unit=bytes,metric=memorymanager.stats.usedMetadata]");
+        assertNotContains(metrics, "[unit=bytes,metric=memorymanager.stats.usedNative]");
     }
 
     private ClientConfig makeClientConfig(boolean enableNativeMemory) throws Exception {

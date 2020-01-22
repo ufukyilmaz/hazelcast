@@ -20,9 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import static com.hazelcast.internal.elastic.map.BehmSlotAccessor.rehash;
-import static com.hazelcast.internal.util.HashUtil.computePerturbationValue;
-
 
 public class HiDensityNativeMemoryCacheRecordMap
         extends SampleableEvictableHiDensityRecordMap<HiDensityNativeMemoryCacheRecord>
@@ -81,7 +78,7 @@ public class HiDensityNativeMemoryCacheRecordMap
     public CacheKeysWithCursor fetchKeys(IterationPointer[] pointers, int size) {
         List<Data> keys = new ArrayList<>(size);
         IterationPointer[] newIterationPointers = fetchNext(pointers, size,
-                (k, v) -> keys.add(recordProcessor.convertData(k, DataType.HEAP)));
+                (k, v) -> keys.add(memoryBlockProcessor.convertData(k, DataType.HEAP)));
         return new CacheKeysWithCursor(keys, newIterationPointers);
     }
 
@@ -132,41 +129,6 @@ public class HiDensityNativeMemoryCacheRecordMap
         }
         // either fetched enough entries or there are no more entries to iterate over
         return updatedPointers;
-    }
-
-    /**
-     * Returns {@code true} if the given {@code key} has not been already observed
-     * (or should have been observed) with the iteration state provided by the
-     * {@code pointers}.
-     *
-     * @param keyHash  the hashcode of the key to check
-     * @param pointers the iteration state
-     * @return if the key should have already been observed by the iteration user
-     */
-    private boolean hasNotBeenObserved(int keyHash, IterationPointer[] pointers) {
-        if (pointers.length < 2) {
-            // there was no resize yet so we most definitely haven't observed the entry
-            return true;
-        }
-
-        // check only the pointers up to the last, we haven't observed it with the last pointer
-        for (int i = 0; i < pointers.length - 1; i++) {
-            IterationPointer iterationPointer = pointers[i];
-            int tableCapacity = iterationPointer.getSize();
-            int mask = tableCapacity - 1;
-            int seenBaseSlot = iterationPointer.getIndex();
-
-            int keySlot = rehash(keyHash, computePerturbationValue(tableCapacity));
-            int keyBaseSlot = keySlot & mask;
-            if (keyBaseSlot <= seenBaseSlot) {
-                // on a table with the given capacity, we have already consumed
-                // entries with the base slot that the keyHash belongs to
-                return false;
-            }
-        }
-        // on none of the previous iteration pointers have we observed
-        // the base slot of the provided keyHash
-        return true;
     }
 
     /**

@@ -8,6 +8,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.nearcache.NearCache;
 import com.hazelcast.internal.nearcache.NearCacheManager;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.util.Clock;
@@ -72,7 +73,7 @@ public class HDNearCacheStressTest extends NearCacheTestSupport {
     @Override
     protected NearCache<Integer, String> createNearCache(String name, NearCacheConfig nearCacheConfig,
                                                          ManagedNearCacheRecordStore nearCacheRecordStore) {
-        return new HDNearCache<Integer, String>(name, nearCacheConfig, newNearCacheManager(), nearCacheRecordStore, ess,
+        return new HDNearCache<>(name, nearCacheConfig, newNearCacheManager(), nearCacheRecordStore, ess,
                 executionService.getGlobalTaskScheduler(), null, properties);
     }
 
@@ -86,7 +87,7 @@ public class HDNearCacheStressTest extends NearCacheTestSupport {
     @Test
     public void putAndGetOnSoManyRecordsWithoutOOME() {
         NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-        NearCache<Integer, String> nearCache = new HDNearCache<Integer, String>(DEFAULT_NEAR_CACHE_NAME, nearCacheConfig,
+        NearCache<Data, String> nearCache = new HDNearCache<>(DEFAULT_NEAR_CACHE_NAME, nearCacheConfig,
                 newNearCacheManager(), ess, executionService.getGlobalTaskScheduler(), null, properties);
         nearCache.initialize();
 
@@ -94,8 +95,9 @@ public class HDNearCacheStressTest extends NearCacheTestSupport {
         long finishTime = Clock.currentTimeMillis() + TIMEOUT;
         for (int i = 0; Clock.currentTimeMillis() < finishTime; i++) {
             String value = valuePrefix + i;
-            nearCache.put(i, ess.toData(i), value, ess.toData(value));
-            assertEquals(value, nearCache.get(i));
+            Data keyData = ess.toData(i);
+            nearCache.put(keyData, keyData, value, ess.toData(value));
+            assertEquals(value, nearCache.get(keyData));
         }
     }
 
@@ -108,7 +110,7 @@ public class HDNearCacheStressTest extends NearCacheTestSupport {
             mm.registerThread(Thread.currentThread());
 
             NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-            NearCache<Integer, byte[]> nearCache = new HDNearCache<Integer, byte[]>(DEFAULT_NEAR_CACHE_NAME,
+            NearCache<Integer, byte[]> nearCache = new HDNearCache<>(DEFAULT_NEAR_CACHE_NAME,
                     nearCacheConfig, newNearCacheManager(), ess, executionService.getGlobalTaskScheduler(), null, properties);
             nearCache.initialize();
 
@@ -125,7 +127,7 @@ public class HDNearCacheStressTest extends NearCacheTestSupport {
     @Test
     public void putRemoveAndGetOnSoManyRecordsFromMultipleThreadsWithoutOOME() {
         NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-        final NearCache<Integer, String> nearCache = new HDNearCache<Integer, String>(DEFAULT_NEAR_CACHE_NAME,
+        final NearCache<Data, String> nearCache = new HDNearCache<>(DEFAULT_NEAR_CACHE_NAME,
                 nearCacheConfig, newNearCacheManager(), ess, executionService.getGlobalTaskScheduler(), null, properties);
         nearCache.initialize();
 
@@ -137,58 +139,54 @@ public class HDNearCacheStressTest extends NearCacheTestSupport {
         // do initial load from main thread
         for (int i = 0; i < maxRecordCount / 10 && Clock.currentTimeMillis() < finishTime1; i++) {
             String value = valuePrefix + "value-" + i;
-            nearCache.put(i, ess.toData(i), value, ess.toData(value));
-            assertEquals(value, nearCache.get(i));
+            Data keyData = ess.toData(i);
+            nearCache.put(keyData, keyData, value, ess.toData(value));
+            assertEquals(value, nearCache.get(keyData));
         }
 
         ExecutorService ex = Executors.newFixedThreadPool(threadCount);
         final long finishTime2 = Clock.currentTimeMillis() + TIMEOUT;
         for (int i = 0; i < threadCount; i++) {
             if (i % 3 == 0) {
-                ex.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        Random random = new Random();
-                        while (Clock.currentTimeMillis() < finishTime2) {
-                            int key = random.nextInt(maxRecordCount);
-                            String value = valuePrefix + "value-" + key;
-                            nearCache.put(key, ess.toData(key), value, ess.toData(value));
-                            sleepMillis(10);
-                        }
+                ex.execute(() -> {
+                    Random random = new Random();
+                    while (Clock.currentTimeMillis() < finishTime2) {
+                        int key = random.nextInt(maxRecordCount);
+                        String value = valuePrefix + "value-" + key;
+                        Data keyData = ess.toData(key);
+                        nearCache.put(keyData, keyData, value, ess.toData(value));
+                        sleepMillis(10);
                     }
                 });
             } else if (i % 3 == 1) {
-                ex.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        Random random = new Random();
-                        while (Clock.currentTimeMillis() < finishTime2) {
-                            int key = random.nextInt(maxRecordCount);
-                            nearCache.invalidate(key);
-                            sleepMillis(100);
-                        }
+                ex.execute(() -> {
+                    Random random = new Random();
+                    while (Clock.currentTimeMillis() < finishTime2) {
+                        int key = random.nextInt(maxRecordCount);
+                        Data keyData = ess.toData(key);
+                        nearCache.invalidate(keyData);
+                        sleepMillis(100);
                     }
                 });
             } else {
-                ex.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        while (Clock.currentTimeMillis() < finishTime2) {
-                            Random random = new Random();
-                            int key = random.nextInt(maxRecordCount);
-                            String expectedValue = valuePrefix + "value-" + key;
-                            String value = nearCache.get(key);
-                            if (value != null) {
-                                assertEquals(expectedValue, value);
-                            }
-                            sleepMillis(10);
+                ex.execute(() -> {
+                    while (Clock.currentTimeMillis() < finishTime2) {
+                        Random random = new Random();
+                        int key = random.nextInt(maxRecordCount);
+                        String expectedValue = valuePrefix + "value-" + key;
+                        Data keyData = ess.toData(key);
+                        String value = nearCache.get(keyData);
+                        if (value != null) {
+                            assertEquals(expectedValue, value);
                         }
+                        sleepMillis(10);
                     }
                 });
             }
         }
 
         try {
+            ex.shutdown();
             ex.awaitTermination(2 * TIMEOUT, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();

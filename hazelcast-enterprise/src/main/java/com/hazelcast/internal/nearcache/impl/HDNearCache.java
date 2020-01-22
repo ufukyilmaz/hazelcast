@@ -202,8 +202,7 @@ public class HDNearCache<K, V> extends DefaultNearCache<K, V> {
             return false;
         }
 
-        nearCacheRecordStore.doEviction(true);
-        return true;
+        return nearCacheRecordStore.doEviction(true);
     }
 
     private void compactMemory() {

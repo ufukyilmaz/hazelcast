@@ -77,20 +77,20 @@ public class SegmentedHDNearCacheRecordStore<K, V>
         int concurrencyLevel = Math.max(16, 8 * RuntimeAvailableProcessors.get());
         // find power-of-two sizes best matching arguments
         int segmentShift = 0;
-        int segmentSize = 1;
-        while (segmentSize < concurrencyLevel) {
+        int segmentCount = 1;
+        while (segmentCount < concurrencyLevel) {
             ++segmentShift;
-            segmentSize <<= 1;
+            segmentCount <<= 1;
         }
         this.hashSeed = hashCode();
-        this.segmentMask = segmentSize - 1;
+        this.segmentMask = segmentCount - 1;
         this.segmentShift = 32 - segmentShift;
 
         HiDensityStorageInfo storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
         this.expirySampleCount = getInteger(PROP_EXPIRY_SAMPLE_COUNT, DEFAULT_EXPIRY_SAMPLE_COUNT);
-        int perSegmentExpirySampleCount = (int) ceil(1D * expirySampleCount / segmentSize);
+        int perSegmentExpirySampleCount = (int) ceil(1D * expirySampleCount / segmentCount);
         this.segments = createSegments(nearCacheConfig, nearCacheStats,
-                storageInfo, segmentSize, perSegmentExpirySampleCount);
+                storageInfo, segmentCount, perSegmentExpirySampleCount);
         this.nearCachePreloader = createPreloader(name, nearCacheConfig, serializationService);
     }
 
@@ -110,9 +110,9 @@ public class SegmentedHDNearCacheRecordStore<K, V>
     private HDNearCacheRecordStoreImpl<K, V>[] createSegments(NearCacheConfig nearCacheConfig,
                                                               NearCacheStatsImpl nearCacheStats,
                                                               HiDensityStorageInfo storageInfo,
-                                                              int segmentSize, int perSegmentExpirySampleCount) {
-        HDNearCacheRecordStoreImpl<K, V>[] segments = new HDNearCacheRecordStoreImpl[segmentSize];
-        for (int i = 0; i < segmentSize; i++) {
+                                                              int segmentCount, int perSegmentExpirySampleCount) {
+        HDNearCacheRecordStoreImpl<K, V>[] segments = new HDNearCacheRecordStoreImpl[segmentCount];
+        for (int i = 0; i < segmentCount; i++) {
             segments[i] = new HDNearCacheRecordStoreSegment(nearCacheConfig, nearCacheStats,
                     storageInfo, serializationService, classLoader, perSegmentExpirySampleCount);
             segments[i].initialize();
@@ -239,19 +239,21 @@ public class SegmentedHDNearCacheRecordStore<K, V>
     }
 
     @Override
-    public void doEviction(boolean withoutMaxSizeCheck) {
+    public boolean doEviction(boolean withoutMaxSizeCheck) {
         if (evictionDisabled) {
-            // if eviction disabled, we are going to short-circuit the currently extremely expensive eviction
-            return;
+            // if eviction disabled, we are going to short-circuit
+            // the currently extremely expensive eviction
+            return false;
         }
 
         Thread currentThread = Thread.currentThread();
         for (HDNearCacheRecordStoreImpl<K, V> segment : segments) {
             if (currentThread.isInterrupted()) {
-                return;
+                return false;
             }
             segment.doEviction(withoutMaxSizeCheck);
         }
+        return true;
     }
 
     @Override
@@ -390,10 +392,10 @@ public class SegmentedHDNearCacheRecordStore<K, V>
         }
 
         @Override
-        public void doEviction(boolean withoutMaxSizeCheck) {
+        public boolean doEviction(boolean withoutMaxSizeCheck) {
             lock.lock();
             try {
-                super.doEviction(withoutMaxSizeCheck);
+                return super.doEviction(withoutMaxSizeCheck);
             } finally {
                 lock.unlock();
             }

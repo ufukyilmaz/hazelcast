@@ -74,6 +74,11 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
     }
 
     @Override
+    public boolean isEvaluateOnly() {
+        return false;
+    }
+
+    @Override
     public boolean canEvaluate(Class<? extends Predicate> predicateClass) {
         return false;
     }

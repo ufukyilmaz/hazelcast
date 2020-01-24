@@ -68,6 +68,11 @@ class HDOrderedIndexStore extends BaseSingleValueIndexStore {
     }
 
     @Override
+    public boolean isEvaluateOnly() {
+        return false;
+    }
+
+    @Override
     public Comparable canonicalizeQueryArgumentScalar(Comparable value) {
         // We still need to canonicalize query arguments for ordered indexes to
         // support InPredicate queries.

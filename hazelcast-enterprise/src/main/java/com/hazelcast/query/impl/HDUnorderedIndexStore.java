@@ -71,6 +71,11 @@ class HDUnorderedIndexStore extends BaseSingleValueIndexStore {
     }
 
     @Override
+    public boolean isEvaluateOnly() {
+        return false;
+    }
+
+    @Override
     public Comparable canonicalizeQueryArgumentScalar(Comparable value) {
         // Using a storage representation for arguments here to save on
         // conversions later.

@@ -31,6 +31,7 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static com.hazelcast.memory.MemorySize.toPrettyString;
+import static com.hazelcast.test.Accessors.getHazelcastInstanceImpl;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 

@@ -2,7 +2,7 @@ package com.hazelcast.internal.nio.ascii;
 
 import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getAddress;
+import static com.hazelcast.test.Accessors.getAddress;
 
 import java.io.IOException;
 import java.net.UnknownHostException;

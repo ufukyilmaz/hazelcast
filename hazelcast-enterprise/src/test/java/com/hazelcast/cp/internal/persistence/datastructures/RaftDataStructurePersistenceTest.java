@@ -11,6 +11,8 @@ import org.junit.Before;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.test.Accessors.getAddresses;
+
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public abstract class RaftDataStructurePersistenceTest extends PersistenceTestSupport {

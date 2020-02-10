@@ -49,6 +49,7 @@ import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_M
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_PUBLISHERID;
 import static com.hazelcast.internal.metrics.ProbeUnit.COUNT;
 import static com.hazelcast.internal.metrics.impl.DefaultMetricDescriptorSupplier.DEFAULT_DESCRIPTOR_SUPPLIER;
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanCacheTestSupport.fillCache;

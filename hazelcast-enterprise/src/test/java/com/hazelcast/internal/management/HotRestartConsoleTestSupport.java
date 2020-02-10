@@ -10,6 +10,7 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.Rule;
 
+import static com.hazelcast.test.Accessors.getNode;
 import static org.junit.Assert.assertFalse;
 
 public abstract class HotRestartConsoleTestSupport extends HazelcastTestSupport {

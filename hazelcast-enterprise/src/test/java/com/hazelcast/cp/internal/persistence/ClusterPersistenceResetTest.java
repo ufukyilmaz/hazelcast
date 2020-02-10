@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.spi.properties.ClusterProperty.OPERATION_CALL_TIMEOUT_MILLIS;
+import static com.hazelcast.test.Accessors.getAddress;
+import static com.hazelcast.test.Accessors.getAddresses;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;

@@ -16,7 +16,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
+import static com.hazelcast.test.Accessors.getNode;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

@@ -24,7 +24,7 @@ import static com.hazelcast.enterprise.SampleLicense.V5_ENTERPRISE_HD_SEC_40NODE
 import static com.hazelcast.enterprise.SampleLicense.V5_ENTERPRISE_HD_SEC_CF_RU_40NODES_2099EXP;
 import static com.hazelcast.test.HazelcastTestSupport.assertContains;
 import static com.hazelcast.test.HazelcastTestSupport.assertNotContains;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
+import static com.hazelcast.test.Accessors.getNode;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;

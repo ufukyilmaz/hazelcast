@@ -1,13 +1,13 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
+import com.hazelcast.cluster.Address;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.instance.impl.NodeState;
 import com.hazelcast.internal.util.RuntimeAvailableProcessors;
-import com.hazelcast.cluster.Address;
-import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -18,6 +18,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 
+import static com.hazelcast.test.Accessors.getAddress;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 

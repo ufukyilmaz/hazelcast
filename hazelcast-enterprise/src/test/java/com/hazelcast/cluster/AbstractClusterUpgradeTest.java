@@ -29,6 +29,8 @@ import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRI
 import static com.hazelcast.internal.cluster.Versions.CURRENT_CLUSTER_VERSION;
 import static com.hazelcast.license.domain.Feature.ROLLING_UPGRADE;
 import static com.hazelcast.spi.properties.ClusterProperty.ENTERPRISE_LICENSE_KEY;
+import static com.hazelcast.test.Accessors.getClusterService;
+import static com.hazelcast.test.Accessors.getNode;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeNotNull;

@@ -1,7 +1,7 @@
 package com.hazelcast.client.security;
 
 import static com.hazelcast.config.PermissionConfig.PermissionType.ALL;
-import static com.hazelcast.test.HazelcastTestSupport.getClusterService;
+import static com.hazelcast.test.Accessors.getClusterService;
 import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.TimeUnit;

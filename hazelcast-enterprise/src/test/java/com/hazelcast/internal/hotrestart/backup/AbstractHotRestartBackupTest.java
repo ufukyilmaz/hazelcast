@@ -20,6 +20,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 import static com.hazelcast.internal.hotrestart.encryption.TestHotRestartEncryptionUtils.withBasicEncryptionAtRestConfig;
+import static com.hazelcast.test.Accessors.getNode;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport {

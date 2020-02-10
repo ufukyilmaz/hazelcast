@@ -45,6 +45,7 @@ import java.util.Collection;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.internal.nearcache.impl.NearCacheTestUtils.createNearCacheConfig;
 import static com.hazelcast.internal.nearcache.impl.NearCacheTestUtils.getBaseConfig;
+import static com.hazelcast.test.Accessors.getNode;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)

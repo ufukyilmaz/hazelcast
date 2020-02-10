@@ -3,7 +3,7 @@ package com.hazelcast.client.nio.ssl;
 import static com.hazelcast.TestEnvironmentUtil.copyTestResource;
 import static com.hazelcast.TestEnvironmentUtil.isOpenSslSupported;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
-import static com.hazelcast.test.HazelcastTestSupport.getAddress;
+import static com.hazelcast.test.Accessors.getAddress;
 import static java.util.Arrays.asList;
 import static org.junit.Assume.assumeTrue;
 

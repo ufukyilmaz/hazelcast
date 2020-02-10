@@ -8,6 +8,7 @@ import com.hazelcast.function.ConsumerEx;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.spi.impl.securestore.SecureStoreException;
+import com.hazelcast.test.Accessors;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -93,7 +94,7 @@ public class JavaKeyStoreSecureStoreTest extends HazelcastTestSupport {
     private static final byte[] ANOTHER_KEY_BYTES = StringUtil.stringToBytes("1111222233334444");
 
     private Node getNode() {
-        return getNode(createHazelcastInstance());
+        return Accessors.getNode(createHazelcastInstance());
     }
 
 

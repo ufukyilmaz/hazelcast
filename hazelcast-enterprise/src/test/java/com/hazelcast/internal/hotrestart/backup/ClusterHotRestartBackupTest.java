@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 
+import static com.hazelcast.test.Accessors.getAddress;
+import static com.hazelcast.test.Accessors.getNode;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -125,7 +127,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final HazelcastInstance[] instancesArr = instances.toArray(new HazelcastInstance[instances.size()]);
 
         final HotBackupService backupService = (HotBackupService) getNode(instancesArr[1])
-                .getNodeExtension().getHotRestartService();
+                                                                           .getNodeExtension().getHotRestartService();
         backupService.prepareBackup(getAddress(instancesArr[2]), UuidUtil.newSecureUUID(), Long.MAX_VALUE);
 
         try {

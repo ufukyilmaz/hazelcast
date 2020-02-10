@@ -22,7 +22,7 @@ import java.util.Set;
 
 import static com.hazelcast.test.HazelcastTestSupport.ASSERT_TRUE_EVENTUALLY_TIMEOUT;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
+import static com.hazelcast.test.Accessors.getNode;
 import static java.lang.Math.min;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;

@@ -6,8 +6,8 @@ import com.hazelcast.internal.partition.PartitionReplica;
 import java.util.Arrays;
 
 import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COUNT;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.getPartitionService;
+import static com.hazelcast.test.Accessors.getNode;
+import static com.hazelcast.test.Accessors.getPartitionService;
 
 /**
  * Utility class to access package-private partition methods.

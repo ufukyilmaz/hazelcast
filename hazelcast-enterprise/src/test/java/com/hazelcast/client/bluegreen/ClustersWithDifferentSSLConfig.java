@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.getOrCreateTempFile;
+import static com.hazelcast.test.Accessors.getClientEngineImpl;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)

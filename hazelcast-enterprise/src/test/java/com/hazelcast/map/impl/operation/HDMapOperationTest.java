@@ -20,6 +20,8 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.CompletionException;
 
+import static com.hazelcast.test.Accessors.getOperationService;
+
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDMapOperationTest extends HazelcastTestSupport {
@@ -61,9 +63,9 @@ public class HDMapOperationTest extends HazelcastTestSupport {
         try {
             TestHDOperation operation = new TestHDOperation(mapName);
             getOperationService(node)
-                    .createInvocationBuilder(MapService.SERVICE_NAME, operation, 0)
-                    .invoke()
-                    .join();
+                     .createInvocationBuilder(MapService.SERVICE_NAME, operation, 0)
+                     .invoke()
+                     .join();
         } catch (CompletionException e) {
             throw ExceptionUtil.rethrow(e.getCause());
         }

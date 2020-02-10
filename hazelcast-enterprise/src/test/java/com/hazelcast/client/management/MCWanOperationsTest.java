@@ -22,11 +22,10 @@ import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.WanPublisher;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.impl.AddWanConfigResult;
 import com.hazelcast.wan.impl.DelegatingWanScheme;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,6 +40,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.hazelcast.config.WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE;
 import static com.hazelcast.config.WanQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE;
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static com.hazelcast.wan.WanPublisherState.PAUSED;
 import static com.hazelcast.wan.WanPublisherState.REPLICATING;
 import static com.hazelcast.wan.WanPublisherState.STOPPED;
@@ -122,12 +122,12 @@ public class MCWanOperationsTest extends HazelcastTestSupport {
 
     private int getOutboundQueueSize() {
         return getNodeEngineImpl(hazelcastInstances[0])
-                .getWanReplicationService()
-                .getStats()
-                .get(WAN_REPLICATION_NAME)
-                .getLocalWanPublisherStats()
-                .get(WAN_PUBLISHER_ID)
-                .getOutboundQueueSize();
+                        .getWanReplicationService()
+                        .getStats()
+                        .get(WAN_REPLICATION_NAME)
+                        .getLocalWanPublisherStats()
+                        .get(WAN_PUBLISHER_ID)
+                        .getOutboundQueueSize();
     }
 
     @Test
@@ -159,7 +159,7 @@ public class MCWanOperationsTest extends HazelcastTestSupport {
         assertTrue(result.getIgnoredPublisherIds().isEmpty());
 
         DelegatingWanScheme wanReplicationScheme = getNodeEngineImpl(hazelcastInstances[0])
-                .getWanReplicationService().getWanReplicationPublishers(wanReplicationName);
+                                                            .getWanReplicationService().getWanReplicationPublishers(wanReplicationName);
         assertEquals(1, wanReplicationScheme.getPublishers().size());
         WanPublisher publisher = wanReplicationScheme.getPublisher(publisherId);
         assertNotNull(publisher);
@@ -227,8 +227,8 @@ public class MCWanOperationsTest extends HazelcastTestSupport {
 
     private static void pauseWanReplication(HazelcastInstance instance) {
         getNodeEngineImpl(instance)
-                .getWanReplicationService()
-                .pause(WAN_REPLICATION_NAME, WAN_PUBLISHER_ID);
+                 .getWanReplicationService()
+                 .pause(WAN_REPLICATION_NAME, WAN_PUBLISHER_ID);
 
         assertTrueEventually(() -> {
             WanBatchPublisher endpoint = (WanBatchPublisher) wanReplicationService(instance)
@@ -239,12 +239,12 @@ public class MCWanOperationsTest extends HazelcastTestSupport {
 
     private static void assertPublisherState(HazelcastInstance instance, WanPublisherState expectedState) {
         WanPublisherState publisherState = getNodeEngineImpl(instance)
-                .getWanReplicationService()
-                .getStats()
-                .get(WAN_REPLICATION_NAME)
-                .getLocalWanPublisherStats()
-                .get(WAN_PUBLISHER_ID)
-                .getPublisherState();
+                                                    .getWanReplicationService()
+                                                    .getStats()
+                                                    .get(WAN_REPLICATION_NAME)
+                                                    .getLocalWanPublisherStats()
+                                                    .get(WAN_PUBLISHER_ID)
+                                                    .getPublisherState();
 
         assertEquals(expectedState, publisherState);
     }

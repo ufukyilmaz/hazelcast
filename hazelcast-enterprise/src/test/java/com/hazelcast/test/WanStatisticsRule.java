@@ -101,7 +101,7 @@ public final class WanStatisticsRule implements TestRule {
         sb.append("----- WAN STATS START -----").append(LINE_SEPARATOR);
         for (HazelcastInstance instance : instances) {
             sb.append(instance).append(LINE_SEPARATOR);
-            Node node = HazelcastTestSupport.getNode(instance);
+            Node node = Accessors.getNode(instance);
             NodeEngine nodeEngine = node.nodeEngine;
             final EnterpriseWanReplicationService s = nodeEngine.getService(EnterpriseWanReplicationService.SERVICE_NAME);
             Set<String> replicationNames = s.getStats().keySet();

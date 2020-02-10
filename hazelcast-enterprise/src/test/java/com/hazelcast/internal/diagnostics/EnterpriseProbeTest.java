@@ -13,6 +13,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 
 /**
  * Extends SystemLogPluginTest including test for logging of cluster version change.

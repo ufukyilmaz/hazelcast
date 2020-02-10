@@ -32,6 +32,7 @@ import java.io.IOException;
 import static com.hazelcast.enterprise.wan.impl.ConfigEventTest.WanConfigEventMatcher.addedEventMatcher;
 import static com.hazelcast.enterprise.wan.impl.ConfigEventTest.WanConfigEventMatcher.extendedMatcher;
 import static com.hazelcast.enterprise.wan.impl.ConfigEventTest.WanConfigEventMatcher.ignoredMatcher;
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.Cluster.clusterC;

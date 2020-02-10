@@ -13,6 +13,7 @@ import com.hazelcast.internal.management.operation.ChangeWanStateOperation;
 import com.hazelcast.internal.monitor.LocalWanPublisherStats;
 import com.hazelcast.internal.monitor.LocalWanStats;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.Accessors;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WanPublisherState;
@@ -87,8 +88,8 @@ public class WanBatchPublisherMapQuickTest extends WanMapTestSupport {
         for (HazelcastInstance instance : basicCluster) {
             ChangeWanStateOperation changeWanStateOperation = new ChangeWanStateOperation("atob",
                     configB.getClusterName(), PAUSED);
-            getOperationService(instance).createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
-                    changeWanStateOperation, getNode(instance).address).invoke().get();
+            Accessors.getOperationService(instance).createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
+                    changeWanStateOperation, Accessors.getNode(instance).address).invoke().get();
         }
         createDataIn(basicCluster, "map", 0, 1000);
     }

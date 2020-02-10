@@ -10,6 +10,7 @@ import com.hazelcast.internal.serialization.PortableHook;
 import com.hazelcast.map.IMap;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.Accessors;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WanPublisher;
@@ -88,7 +89,7 @@ public class WanBatchPublisherMapSerializationTest extends WanMapTestSupport {
 
     private static void assertPublisherFailureCount(HazelcastInstance[] cluster, int expectedFailureCount, String publisherName) {
         for (HazelcastInstance instance : cluster) {
-            final NodeEngineImpl nodeEngine = getNode(instance).nodeEngine;
+            final NodeEngineImpl nodeEngine = Accessors.getNode(instance).nodeEngine;
             final EnterpriseWanReplicationService s = nodeEngine.getService(EnterpriseWanReplicationService.SERVICE_NAME);
             final DelegatingWanScheme atob = s.getWanReplicationPublishers(publisherName);
             int failureCount = 0;

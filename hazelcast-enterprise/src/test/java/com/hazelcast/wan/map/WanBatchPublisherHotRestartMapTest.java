@@ -7,6 +7,7 @@ import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.Accessors;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Rule;
@@ -76,7 +77,7 @@ public class WanBatchPublisherHotRestartMapTest extends WanMapTestSupport {
         assertKeysNotInEventually(clusterB, "map", 0, 1000);
 
         EnterpriseWanReplicationService wanReplicationService
-                = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
+                = (EnterpriseWanReplicationService) Accessors.getNode(clusterA[0]).nodeEngine.getWanReplicationService();
         wanReplicationService.syncMap("atob", "B", "map");
 
         assertKeysInEventually(clusterB, "map", 0, 1000);

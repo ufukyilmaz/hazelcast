@@ -37,6 +37,7 @@ import java.util.Collection;
 
 import static com.hazelcast.internal.cluster.impl.MembershipUpdateCompatibilityTest.changeClusterVersionEventually;
 import static com.hazelcast.spi.properties.ClusterProperty.TCP_JOIN_PORT_TRY_COUNT;
+import static com.hazelcast.test.Accessors.getNode;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getOldestKnownVersion;
 import static java.util.Arrays.asList;

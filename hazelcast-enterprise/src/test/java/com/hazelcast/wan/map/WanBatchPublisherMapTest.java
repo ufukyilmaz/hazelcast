@@ -1,17 +1,14 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.WanCustomPublisherConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.WanBatchPublisherConfig;
-import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanConsumerConfig;
-import com.hazelcast.spi.properties.ClusterProperty;
-import com.hazelcast.test.JmxLeakHelper;
-import com.hazelcast.wan.WanPublisherState;
+import com.hazelcast.config.WanCustomPublisherConfig;
+import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.HazelcastInstance;
@@ -19,6 +16,10 @@ import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.internal.jmx.MBeanDataHolder;
+import com.hazelcast.internal.monitor.LocalWanPublisherStats;
+import com.hazelcast.internal.monitor.LocalWanStats;
+import com.hazelcast.internal.partition.IPartitionService;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.map.EntryProcessor;
@@ -31,20 +32,20 @@ import com.hazelcast.map.impl.mapstore.MapLoaderTest;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
-import com.hazelcast.internal.monitor.LocalWanPublisherStats;
-import com.hazelcast.internal.monitor.LocalWanStats;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.OperationFactory;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.spi.merge.HigherHitsMergePolicy;
 import com.hazelcast.spi.merge.LatestUpdateMergePolicy;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.PutIfAbsentMergePolicy;
-import com.hazelcast.internal.partition.IPartitionService;
+import com.hazelcast.spi.properties.ClusterProperty;
+import com.hazelcast.test.Accessors;
+import com.hazelcast.test.JmxLeakHelper;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.UninitializableWanPublisher;
+import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.impl.DelegatingWanScheme;
 import com.hazelcast.wan.impl.WanReplicationService;
 import com.hazelcast.wan.impl.WanSyncStatus;
@@ -73,6 +74,10 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
+import static com.hazelcast.test.Accessors.getOperationService;
+import static com.hazelcast.test.Accessors.getPartitionService;
+import static com.hazelcast.test.Accessors.getSerializationService;
 import static com.hazelcast.wan.WanPublisherState.PAUSED;
 import static com.hazelcast.wan.WanPublisherState.STOPPED;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
@@ -155,7 +160,7 @@ public class WanBatchPublisherMapTest extends WanMapTestSupport {
         clusterA[0].shutdown();
         sleepSeconds(10);
         startClusterB();
-        assertDataInFromEventually(clusterB, "map", 0, 1000, getNode(clusterA[1]).getConfig().getClusterName());
+        assertDataInFromEventually(clusterB, "map", 0, 1000, Accessors.getNode(clusterA[1]).getConfig().getClusterName());
     }
 
     @Test
@@ -434,7 +439,7 @@ public class WanBatchPublisherMapTest extends WanMapTestSupport {
         for (final HazelcastInstance instance : clusterA4Node) {
             assertTrueEventually(() -> {
                 Map<String, LocalWanStats> stats
-                        = getNode(instance).nodeEngine.getWanReplicationService().getStats();
+                        = Accessors.getNode(instance).nodeEngine.getWanReplicationService().getStats();
                 LocalWanPublisherStats publisherStats =
                         stats.get("multiBackup").getLocalWanPublisherStats().get("B");
                 assert 0 == publisherStats.getOutboundQueueSize();

@@ -32,6 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertFalse;
@@ -150,7 +151,7 @@ public class WanBatchPublisherMultiNodeTest extends WanMapTestSupport {
                                                         String targetClusterName) {
         DelegatingWanScheme replicationPublisher =
                 getNodeEngineImpl(hz).getWanReplicationService()
-                        .getWanReplicationPublishers(replicationConfigName);
+                         .getWanReplicationPublishers(replicationConfigName);
         return replicationPublisher.getStats().get(targetClusterName);
     }
 

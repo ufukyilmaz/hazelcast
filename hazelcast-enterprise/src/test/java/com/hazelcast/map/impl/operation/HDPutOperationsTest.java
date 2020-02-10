@@ -7,6 +7,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.map.IMap;
@@ -15,7 +16,6 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.listener.EntryAddedListener;
 import com.hazelcast.map.listener.EntryUpdatedListener;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -29,6 +29,7 @@ import java.util.Random;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.test.Accessors.getOperationService;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -81,9 +82,9 @@ public class HDPutOperationsTest extends HazelcastTestSupport {
         // run operation
         try {
             getOperationService(node)
-                    .createInvocationBuilder(MapService.SERVICE_NAME, op, 0)
-                    .invoke()
-                    .join();
+                     .createInvocationBuilder(MapService.SERVICE_NAME, op, 0)
+                     .invoke()
+                     .join();
         } catch (CompletionException e) {
             throw ExceptionUtil.rethrow(e.getCause());
         }

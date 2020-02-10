@@ -41,6 +41,10 @@ import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartCluste
 import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.NEVER;
 import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.SOMETIMES;
 import static com.hazelcast.internal.partition.AntiEntropyCorrectnessTest.setBackupPacketDropFilter;
+import static com.hazelcast.test.Accessors.getAddress;
+import static com.hazelcast.test.Accessors.getAddresses;
+import static com.hazelcast.test.Accessors.getClusterService;
+import static com.hazelcast.test.Accessors.getOperationService;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -322,9 +326,9 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
 
         int partitionId = getPartitionId(instances[0]);
         InternalCompletableFuture<Object> future = getOperationService(instances[0])
-                .createInvocationBuilder("", new PrimaryOperation(), partitionId)
-                .setFailOnIndeterminateOperationState(true)
-                .invoke();
+                                                            .createInvocationBuilder("", new PrimaryOperation(), partitionId)
+                                                            .setFailOnIndeterminateOperationState(true)
+                                                            .invoke();
 
         try {
             future.get();

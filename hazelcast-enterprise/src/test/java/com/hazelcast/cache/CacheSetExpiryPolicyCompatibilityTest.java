@@ -21,6 +21,7 @@ import javax.cache.spi.CachingProvider;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
+import static com.hazelcast.test.Accessors.getClusterService;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION;
 import static org.junit.Assert.assertNull;
 

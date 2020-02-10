@@ -21,6 +21,8 @@ import java.util.Collection;
 
 import static com.hazelcast.cluster.ClusterShutdownTest.assertNodesShutDownEventually;
 import static com.hazelcast.cluster.ClusterShutdownTest.getNodes;
+import static com.hazelcast.test.Accessors.getAddresses;
+import static com.hazelcast.test.Accessors.getClusterService;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

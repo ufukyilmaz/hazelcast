@@ -34,6 +34,7 @@ import static com.hazelcast.cp.internal.persistence.CPMetadataStoreImpl.getMetad
 import static com.hazelcast.cp.internal.persistence.ClusterPersistenceTest.awaitLeaderElectionAndGetTerm;
 import static com.hazelcast.cp.internal.persistence.FileIOSupport.TMP_SUFFIX;
 import static com.hazelcast.internal.nio.IOUtil.delete;
+import static com.hazelcast.test.Accessors.getAddresses;
 import static java.nio.file.Files.copy;
 import static java.nio.file.Files.move;
 import static java.nio.file.Files.write;

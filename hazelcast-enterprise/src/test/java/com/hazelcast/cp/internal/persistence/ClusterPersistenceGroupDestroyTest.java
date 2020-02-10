@@ -23,6 +23,8 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static com.hazelcast.test.Accessors.getAddresses;
+import static com.hazelcast.test.Accessors.getNode;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;

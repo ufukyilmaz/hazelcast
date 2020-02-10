@@ -81,6 +81,8 @@ import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
 import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.instance.impl.TestUtil.terminateInstance;
 import static com.hazelcast.spi.properties.ClusterProperty.PARTITION_MAX_PARALLEL_REPLICATIONS;
+import static com.hazelcast.test.Accessors.getNode;
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;

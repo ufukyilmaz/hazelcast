@@ -18,6 +18,8 @@ import org.junit.runner.RunWith;
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
 
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
+
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class WANPluginTest extends WanMapTestSupport {

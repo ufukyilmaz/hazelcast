@@ -31,6 +31,7 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
+import static com.hazelcast.test.Accessors.getNode;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
 import static java.util.concurrent.TimeUnit.SECONDS;

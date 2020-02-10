@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import static com.hazelcast.internal.cluster.Versions.CURRENT_CLUSTER_VERSION;
 import static com.hazelcast.internal.cluster.Versions.PREVIOUS_CLUSTER_VERSION;
+import static com.hazelcast.test.Accessors.getClusterService;
 import static org.junit.Assert.fail;
 
 // Ensures a data structure which was protected by split brain protection in previous version

@@ -7,6 +7,7 @@ import com.hazelcast.instance.impl.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.spi.impl.securestore.SecureStoreException;
+import com.hazelcast.test.Accessors;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Rule;
@@ -73,7 +74,7 @@ public class VaultSecureStoreTest extends HazelcastTestSupport {
     public ExpectedException expectedException = ExpectedException.none();
 
     private Node getNode() {
-        return getNode(createHazelcastInstance());
+        return Accessors.getNode(createHazelcastInstance());
     }
 
     @Test

@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
 import static com.hazelcast.cache.impl.eviction.CacheClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
+import static com.hazelcast.test.Accessors.getClusterService;
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION;
 import static com.hazelcast.test.OverridePropertyRule.set;
 import static com.hazelcast.test.TestTaskExecutorUtil.runOnPartitionThread;

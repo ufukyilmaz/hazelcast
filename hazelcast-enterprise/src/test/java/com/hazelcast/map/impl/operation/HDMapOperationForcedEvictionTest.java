@@ -32,6 +32,8 @@ import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.operation.ForcedEviction.EVICTION_RETRY_COUNT;
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
+import static com.hazelcast.test.Accessors.getOperationService;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -315,8 +317,8 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
                     noomeCountToBeThrown, createRecordStoreOnDemand);
 
             getOperationService(node)
-                    .createInvocationBuilder(MapService.SERVICE_NAME, operation, 0)
-                    .invoke().join();
+                     .createInvocationBuilder(MapService.SERVICE_NAME, operation, 0)
+                     .invoke().join();
         } catch (CompletionException e) {
             throw ExceptionUtil.rethrow(e.getCause());
         }

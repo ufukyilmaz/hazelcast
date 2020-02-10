@@ -27,6 +27,7 @@ import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.FULL_RECO
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE;
 import static com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.MemberHotRestartStatus.LOAD_IN_PROGRESS;
 import static com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.MemberHotRestartStatus.PENDING;
+import static com.hazelcast.test.Accessors.getNode;
 import static java.util.Collections.synchronizedCollection;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.junit.Assert.assertEquals;

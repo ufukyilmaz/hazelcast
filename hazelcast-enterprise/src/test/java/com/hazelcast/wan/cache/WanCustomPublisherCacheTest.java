@@ -42,6 +42,7 @@ import static com.hazelcast.HDTestSupport.getSmallInstanceHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.WanCacheTestSupport.fillCache;
 import static com.hazelcast.wan.fw.WanCacheTestSupport.getOrCreateCache;

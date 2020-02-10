@@ -15,7 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertCompletesEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getPartitionService;
+import static com.hazelcast.test.Accessors.getPartitionService;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationPublisher;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

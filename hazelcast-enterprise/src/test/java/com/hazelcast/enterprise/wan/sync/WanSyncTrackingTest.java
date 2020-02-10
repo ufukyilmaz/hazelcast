@@ -49,6 +49,7 @@ import java.util.function.BiConsumer;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
+import static com.hazelcast.test.Accessors.getNode;
 import static com.hazelcast.wan.WanPublisherState.STOPPED;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;

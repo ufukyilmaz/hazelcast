@@ -7,6 +7,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
+import com.hazelcast.test.Accessors;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.impl.DelegatingWanScheme;
@@ -60,7 +61,7 @@ public class WanBatchPublisherConnectedTest extends WanMapTestSupport {
 
     private DelegatingWanScheme getWanReplicationDelegate(String publisherName) {
         EnterpriseWanReplicationService wanReplicationService
-                = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
+                = (EnterpriseWanReplicationService) Accessors.getNode(clusterA[0]).nodeEngine.getWanReplicationService();
         return wanReplicationService.getWanReplicationPublishers(publisherName);
     }
 

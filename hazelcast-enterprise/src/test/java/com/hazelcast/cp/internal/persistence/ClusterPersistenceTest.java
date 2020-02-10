@@ -35,6 +35,9 @@ import java.util.concurrent.Future;
 
 import static com.hazelcast.cp.internal.raft.impl.RaftUtil.getTerm;
 import static com.hazelcast.internal.nio.IOUtil.delete;
+import static com.hazelcast.test.Accessors.getAddress;
+import static com.hazelcast.test.Accessors.getAddresses;
+import static com.hazelcast.test.Accessors.getSerializationService;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -228,7 +231,8 @@ public class ClusterPersistenceTest extends PersistenceTestSupport {
                 continue;
             }
 
-            CPMemberInfo cpMember = new CPMetadataStoreImpl(persistenceDirectory, getSerializationService(instances[2])).readLocalCPMember();
+            CPMemberInfo cpMember = new CPMetadataStoreImpl(persistenceDirectory,
+                    getSerializationService(instances[2])).readLocalCPMember();
             if (cpMember0.equals(cpMember)) {
                 delete(persistenceDirectory);
                 break;

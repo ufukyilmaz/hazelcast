@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
+import static com.hazelcast.test.Accessors.getClientEngineImpl;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)

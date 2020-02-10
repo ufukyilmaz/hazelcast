@@ -13,6 +13,7 @@ import org.junit.ClassRule;
 import org.junit.experimental.categories.Category;
 import org.junit.runners.Parameterized;
 
+import static com.hazelcast.test.Accessors.getNode;
 import static com.hazelcast.test.TestClusterUpgradeUtils.newHazelcastInstance;
 import static com.hazelcast.test.TestClusterUpgradeUtils.upgradeClusterMembers;
 import static org.junit.Assert.assertEquals;

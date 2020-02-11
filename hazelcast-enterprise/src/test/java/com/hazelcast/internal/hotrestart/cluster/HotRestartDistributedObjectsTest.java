@@ -9,6 +9,8 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.jmx.MBeanDataHolder;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -42,6 +44,7 @@ public class HotRestartDistributedObjectsTest extends AbstractHotRestartClusterS
 
         int expected = mapNames.length + cacheNames.length;
         assertDistributedObjectsSize(expected, instances);
+        assertMapMBeans(true, mapNames, instances);
 
         Address[] addresses = getAddresses(instances);
         Node[] nodes = getNodes(instances);
@@ -50,22 +53,31 @@ public class HotRestartDistributedObjectsTest extends AbstractHotRestartClusterS
 
         instances = restartInstances(addresses);
         assertDistributedObjectsSize(expected, instances);
+        assertMapMBeans(true, mapNames, instances);
 
         instances[0].getMap("onemore").put("foo", new Item());
         expected++;
         assertDistributedObjectsSize(expected, instances);
+        assertMapMBeans(true, mapNames, instances);
+        assertMapMBeans(true, new String[]{"onemore"}, instances);
 
         HazelcastInstance newInstance = startNewInstance();
         assertTrue(getClusterService(newInstance).isJoined());
         assertDistributedObjectsSize(expected, newInstance);
+        assertMapMBeans(true, mapNames, newInstance);
+        assertMapMBeans(true, new String[]{"onemore"}, newInstance);
 
-        instances[0].getMap(mapNames[0]).destroy();
+        instances[0].getMap("onemore").destroy();
         expected--;
         assertDistributedObjectsSize(expected, instances);
+        assertMapMBeans(true, mapNames, instances);
+        assertMapMBeans(false, new String[]{"onemore"}, instances);
         assertDistributedObjectsSize(expected, newInstance);
+        assertMapMBeans(true, mapNames, newInstance);
+        assertMapMBeans(false, new String[]{"onemore"}, newInstance);
     }
 
-    private static void assertDistributedObjectsSize(final int expected, final HazelcastInstance... instances) {
+    private static void assertDistributedObjectsSize(int expected, HazelcastInstance... instances) {
         assertTrueEventually(() -> {
             for (HazelcastInstance instance : instances) {
                 Collection<DistributedObject> objects = instance.getDistributedObjects();
@@ -74,12 +86,26 @@ public class HotRestartDistributedObjectsTest extends AbstractHotRestartClusterS
         });
     }
 
+    private static void assertMapMBeans(boolean contains, String[] mapNames, HazelcastInstance... instances) {
+        for (HazelcastInstance instance : instances) {
+            MBeanDataHolder holder = new MBeanDataHolder(instance);
+            for (String name : mapNames) {
+                if (contains) {
+                    holder.assertMBeanExistEventually("IMap", name);
+                } else {
+                    holder.assertMBeanNotExistEventually("IMap", name);
+                }
+            }
+        }
+    }
+
     @Override
     Config newConfig(ClusterHotRestartEventListener listener, HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         Config config = super.newConfig(listener, clusterStartPolicy);
         for (MapConfig mapConfig : config.getMapConfigs().values()) {
             mapConfig.addIndexConfig(new IndexConfig(IndexType.HASH, "attribute"));
         }
+        config.setProperty(ClusterProperty.ENABLE_JMX.getName(), "true");
         return config;
     }
 

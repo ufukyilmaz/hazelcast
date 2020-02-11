@@ -23,7 +23,7 @@
         <maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
         <timestamp>${maven.build.timestamp}</timestamp>
         <extraVmArgs/>
-        <vmHeapSettings>-Xms1g -Xmx1g -XX:MaxPermSize=1024M</vmHeapSettings>
+        <vmHeapSettings>-Xms1g -Xmx1g</vmHeapSettings>
         <!-- Java 9+ module system args to be appended during surefire/failsafe executions. -->
         <javaModuleArgs/>
 
@@ -433,7 +433,7 @@
         <profile>
             <id>test-coverage</id>
             <properties>
-                <vmHeapSettings>-Xms1g -Xmx3g -XX:MaxPermSize=1024M</vmHeapSettings>
+                <vmHeapSettings>-Xms1g -Xmx3g</vmHeapSettings>
                 <argLine>
                     ${vmHeapSettings}
                     ${extraVmArgs}
@@ -548,7 +548,7 @@
                                 </goals>
                                 <configuration combine.self="override">
                                     <properties>
-                                        <vmHeapSettings>-Xms128m -Xmx1G -XX:MaxPermSize=128M</vmHeapSettings>
+                                        <vmHeapSettings>-Xms128m -Xmx1G</vmHeapSettings>
                                     </properties>
                                     <!-- the argLine variable is needed for JaCoco -->
                                     <argLine>
@@ -589,7 +589,7 @@
         <profile>
             <id>nightly-build</id>
             <properties>
-                <vmHeapsettings>-Xms2g -Xmx2g -XX:MaxPermSize=1024M</vmHeapsettings>
+                <vmHeapsettings>-Xms2g -Xmx2g</vmHeapsettings>
                 <argLine>
                     ${vmHeapSettings}
                     ${extraVmArgs}
@@ -664,7 +664,7 @@
         <profile>
             <id>compatibility-tests</id>
             <properties>
-                <vmHeapSettings>-Xms512m -Xmx2G -XX:MaxPermSize=256M</vmHeapSettings>
+                <vmHeapSettings>-Xms512m -Xmx2G</vmHeapSettings>
             </properties>
             <build>
                 <plugins>

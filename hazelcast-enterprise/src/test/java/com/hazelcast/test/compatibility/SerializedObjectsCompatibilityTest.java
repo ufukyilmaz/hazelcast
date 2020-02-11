@@ -1,7 +1,10 @@
 package com.hazelcast.test.compatibility;
 
+import com.hazelcast.internal.memory.FreeMemoryChecker;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionAware;
@@ -9,11 +12,8 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.internal.memory.FreeMemoryChecker;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.memory.StandardMemoryManager;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -41,8 +41,8 @@ import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRI
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.Versions.CURRENT_CLUSTER_VERSION;
 import static com.hazelcast.internal.cluster.Versions.PREVIOUS_CLUSTER_VERSION;
-import static com.hazelcast.test.compatibility.SamplingSerializationService.isTestClass;
 import static com.hazelcast.internal.util.StringUtil.LINE_SEPARATOR;
+import static com.hazelcast.test.compatibility.SamplingSerializationService.isTestClass;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNotNull;
@@ -64,8 +64,7 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
     @Parameters(name = "samplesVersion: {0} testDeserializerVersion={1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {"3.11", "3.11"},
-                {"3.11.2", "3.11"},
+                {"4.0", "4.0"},
         });
     }
 
@@ -81,8 +80,8 @@ public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
 
     @Before
     public void setup() {
-        assumeTrue("This test must be updated for execution during 4.1 development cycle "
-                + "with serialized objects samples from 4.0", Version.of("4.1").equals(CURRENT_CLUSTER_VERSION));
+        assumeTrue("Test execution is skipped for new major versions.",
+                CURRENT_CLUSTER_VERSION.getMinor() > 0);
         serializedObjectsResource = format(CLASSPATH_RESOURCE_PATTERN, samplesVersion);
         eeSerializedObjectsResource = format(EE_CLASSPATH_RESOURCE_PATTERN, samplesVersion);
     }

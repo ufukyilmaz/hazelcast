@@ -156,12 +156,17 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "getOrDefault", "computeIfAbsent", "compute", "computeIfPresent",
                 "initialize", "putIfAbsent", "merge", "replace", "replaceAll",
         });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.topic.impl.TopicService.class, new String[]{"initialize"});
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.topic.impl.TopicService.class, new String[]{
+                "initialize", "addMessageListenerInternal", "publishInternal", "removeMessageListenerInternal",
+                "getLocalTopicStatsInternal",
+        });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.map.impl.MapService.class, new String[]{
                 "getOrDefault", "compute", "merge", "computeIfAbsent", "setOperationProvider",
                 "getOperationProvider", "computeIfPresent", "getPartitionStrategy", "waitUntilLoaded",
                 "initialize", "getQueryCache", "getTotalBackupCount", "subscribeToEventJournal",
-                "replace", "replaceAll",
+                "replace", "replaceAll", "getMapConfig", "executeOnKeyInternal", "containsValueInternal",
+                "addMapInterceptorInternal", "submitToKeysInternal", "clearInternal",
+                "addLocalEntryListenerInternal", "executeOnEntriesInternal",
         });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.lock.LockService.class,
                 new String[] {"getGroupId", "getObjectName"});

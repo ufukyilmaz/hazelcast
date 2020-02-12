@@ -36,7 +36,7 @@ public class BasicEnterpriseSerializationTest extends AbstractSerializationServi
     private class TestVersionAware implements EnterpriseClusterVersionAware {
         @Override
         public Version getClusterVersion() {
-            return Versions.V3_10;
+            return Versions.V4_0;
         }
     }
 

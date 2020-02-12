@@ -1,14 +1,14 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.instance.BuildInfoProvider;
+import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.SerializationServiceBuilder;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.nio.serialization.impl.VersionedDataSerializableFactory;
@@ -24,7 +24,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
-import static com.hazelcast.internal.cluster.Versions.V3_8;
+import static com.hazelcast.internal.cluster.Versions.V4_0;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -135,7 +135,7 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         TestVersionedIdentifiedDataSerializable deserialized = oldVersionedSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(V3_8, original.serializationVersion);
+        assertEquals(V4_0, original.serializationVersion);
         assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
@@ -147,7 +147,7 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         TestVersionedIdentifiedDataSerializable deserialized = ossVersionedSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(V3_8, original.serializationVersion);
+        assertEquals(V4_0, original.serializationVersion);
         assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
@@ -172,8 +172,8 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         TestVersionedIdentifiedDataSerializable deserialized = newVersionedSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(V3_8, original.serializationVersion);
-        assertEquals(V3_8, deserialized.deserializationVersion);
+        assertEquals(V4_0, original.serializationVersion);
+        assertEquals(V4_0, deserialized.deserializationVersion);
     }
 
     @Test
@@ -259,7 +259,7 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         TestIdentifiedDataSerializable deserialized = oldUnversionedSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(V3_8, original.serializationVersion);
+        assertEquals(V4_0, original.serializationVersion);
         assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
@@ -271,7 +271,7 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         TestIdentifiedDataSerializable deserialized = ossUnversionedSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(V3_8, original.serializationVersion);
+        assertEquals(V4_0, original.serializationVersion);
         assertEquals(CURRENT_VERSION, deserialized.deserializationVersion);
     }
 
@@ -296,8 +296,8 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         TestIdentifiedDataSerializable deserialized = newUnversionedSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(V3_8, original.serializationVersion);
-        assertEquals(V3_8, deserialized.deserializationVersion);
+        assertEquals(V4_0, original.serializationVersion);
+        assertEquals(V4_0, deserialized.deserializationVersion);
     }
 
     private EnterpriseSerializationService ss(boolean versionedSerializationEnabled, DataSerializableFactory factory) {
@@ -418,7 +418,7 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
     private static class TestClusterVersionAware implements EnterpriseClusterVersionAware {
         @Override
         public Version getClusterVersion() {
-            return V3_8;
+            return V4_0;
         }
     }
 

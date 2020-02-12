@@ -1,10 +1,10 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.internal.cluster.Versions;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -252,7 +252,7 @@ public class NestedVersionedUnversionedSerializationTest {
     }
 
     private static class TestVersionAware implements EnterpriseClusterVersionAware {
-        static final Version VERSION = Versions.V3_9;
+        static final Version VERSION = Versions.V4_0;
 
         @Override
         public Version getClusterVersion() {

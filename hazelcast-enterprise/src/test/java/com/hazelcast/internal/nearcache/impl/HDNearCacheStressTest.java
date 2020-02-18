@@ -141,7 +141,11 @@ public class HDNearCacheStressTest extends NearCacheTestSupport {
             String value = valuePrefix + "value-" + i;
             Data keyData = ess.toData(i);
             nearCache.put(keyData, keyData, value, ess.toData(value));
-            assertEquals(value, nearCache.get(keyData));
+            String actual = nearCache.get(keyData);
+            // getting null from near cache is a valid case here, if near cache is full at `put`.
+            if (actual != null) {
+                assertEquals(nearCache.getNearCacheStats().toString(), value, actual);
+            }
         }
 
         ExecutorService ex = Executors.newFixedThreadPool(threadCount);

@@ -30,6 +30,11 @@ final class EnterpriseByteArrayInputOutputFactory implements InputOutputFactory 
     }
 
     @Override
+    public EnterpriseBufferObjectDataInput createInput(byte[] buffer, int offset, InternalSerializationService service) {
+        return new EnterpriseByteArrayObjectDataInput(buffer, offset, (EnterpriseSerializationService) service, byteOrder);
+    }
+
+    @Override
     public EnterpriseBufferObjectDataOutput createOutput(int size, InternalSerializationService service) {
         return new EnterpriseByteArrayObjectDataOutput(size, (EnterpriseSerializationService) service, byteOrder);
     }

@@ -31,6 +31,11 @@ final class EnterpriseUnsafeInputOutputFactory implements InputOutputFactory {
     }
 
     @Override
+    public EnterpriseBufferObjectDataInput createInput(byte[] buffer, int offset, InternalSerializationService service) {
+        return new EnterpriseUnsafeObjectDataInput(buffer, offset, (EnterpriseSerializationService) service);
+    }
+
+    @Override
     public EnterpriseBufferObjectDataOutput createOutput(int size, InternalSerializationService service) {
         return new EnterpriseUnsafeObjectDataOutput(size, (EnterpriseSerializationService) service);
     }

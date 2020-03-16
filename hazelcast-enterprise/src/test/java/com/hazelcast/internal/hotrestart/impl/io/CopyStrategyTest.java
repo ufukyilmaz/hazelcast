@@ -25,19 +25,7 @@ public class CopyStrategyTest extends AbstractHotRestartBackupTest {
     @Test
     public void testCopyStrategies() throws Exception {
         testStrategy(new DefaultCopyStrategy());
-
-        final HardLinkCopyStrategy strategy = attemptGetHardLinkCopyStrategy();
-        if (strategy != null) {
-            testStrategy(strategy);
-        }
-    }
-
-    private static HardLinkCopyStrategy attemptGetHardLinkCopyStrategy() {
-        try {
-            return new HardLinkCopyStrategy();
-        } catch (UnsupportedOperationException e) {
-            return null;
-        }
+        testStrategy(new HardLinkCopyStrategy());
     }
 
     private void testStrategy(FileCopyStrategy strategy) throws Exception {

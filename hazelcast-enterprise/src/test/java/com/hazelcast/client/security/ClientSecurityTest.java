@@ -69,6 +69,8 @@ public class ClientSecurityTest {
         client.getMap(testObjectName).size();
         client.getMap(testObjectName).put("a", "b");
         client.getQueue("Q").poll();
+        client.getReliableTopic(testObjectName).publish("m");
+        client.getRingbuffer(testObjectName).add("s");
     }
 
     @Test

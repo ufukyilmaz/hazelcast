@@ -6,9 +6,11 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
+import com.hazelcast.ringbuffer.impl.RingbufferService;
 import com.hazelcast.security.ClusterEndpointPrincipal;
 import com.hazelcast.security.ClusterRolePrincipal;
 import com.hazelcast.security.IPermissionPolicy;
+import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.security.permission.AllPermissions;
 import com.hazelcast.security.permission.AllPermissions.AllPermissionsCollection;
 import com.hazelcast.security.permission.ClusterPermission;
@@ -20,6 +22,7 @@ import java.security.Permission;
 import java.security.PermissionCollection;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -68,13 +71,17 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
         loadPermissionConfig(config.getSecurityConfig().getClientPermissionConfigs());
     }
 
-    private void loadPermissionConfig(Set<PermissionConfig> permissionConfigs) {
+    private void loadPermissionConfig(Set<PermissionConfig> configuredPermissionConfigs) {
+        Set<PermissionConfig> permissionConfigs = new HashSet<>(configuredPermissionConfigs);
+        Set<PermissionConfig> impliedPermissionConfigs = createImpliedRingBufferPermissionConfigs(configuredPermissionConfigs);
+        permissionConfigs.addAll(impliedPermissionConfigs);
+
         for (PermissionConfig permCfg : permissionConfigs) {
             final ClusterPermission permission = createPermission(permCfg);
             // allow all principals
             final String[] principals = permCfg.getPrincipal() != null
                     ? permCfg.getPrincipal().split(PRINCIPAL_STRING_SEP)
-                    : new String[] { REGEX_ANY_PRINCIPAL };
+                    : new String[]{REGEX_ANY_PRINCIPAL};
 
             Collection<String> endpoints = permCfg.getEndpoints();
             if (endpoints.isEmpty()) {
@@ -95,6 +102,40 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
                 }
             }
         }
+    }
+
+    /**
+     * Creates implied ringbuffer permissions from the reliable topic config given by the user
+     *
+     * @param permissionConfigs all configured permissions
+     * @return implied ring buffer permission configs
+     */
+    private Set<PermissionConfig> createImpliedRingBufferPermissionConfigs(Set<PermissionConfig> permissionConfigs) {
+        Set<PermissionConfig> impliedRingBufferPermissionConfigs = new HashSet<>();
+        for (PermissionConfig permissionConfig : permissionConfigs) {
+            if (permissionConfig.getType().equals(PermissionConfig.PermissionType.RELIABLE_TOPIC)) {
+                PermissionConfig impliedRingBufferPermissions = new PermissionConfig();
+                impliedRingBufferPermissions.setName(RingbufferService.TOPIC_RB_PREFIX + permissionConfig.getName());
+                impliedRingBufferPermissions.setType(PermissionConfig.PermissionType.RING_BUFFER);
+                impliedRingBufferPermissions.setEndpoints(permissionConfig.getEndpoints());
+                Set<String> actions = permissionConfig.getActions();
+                HashSet<String> impliedActions = new HashSet<>();
+                for (String action : actions) {
+                    if (ActionConstants.ACTION_CREATE.equals(action)) {
+                        impliedActions.add(action);
+                    } else if (ActionConstants.ACTION_DESTROY.equals(action)) {
+                        impliedActions.add(action);
+                    } else if (ActionConstants.ACTION_PUBLISH.equals(action)) {
+                        impliedActions.add(ActionConstants.ACTION_PUT);
+                    } else if (ActionConstants.ACTION_LISTEN.equals(action)) {
+                        impliedActions.add(ActionConstants.ACTION_READ);
+                    }
+                }
+                impliedRingBufferPermissions.setActions(impliedActions);
+                impliedRingBufferPermissionConfigs.add(impliedRingBufferPermissions);
+            }
+        }
+        return impliedRingBufferPermissionConfigs;
     }
 
     /**

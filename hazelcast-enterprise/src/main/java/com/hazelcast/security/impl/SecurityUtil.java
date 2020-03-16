@@ -1,6 +1,7 @@
 package com.hazelcast.security.impl;
 
 import com.hazelcast.config.PermissionConfig;
+import com.hazelcast.internal.util.AddressUtil;
 import com.hazelcast.security.permission.AllPermissions;
 import com.hazelcast.security.permission.AtomicLongPermission;
 import com.hazelcast.security.permission.AtomicReferencePermission;
@@ -18,13 +19,14 @@ import com.hazelcast.security.permission.MapPermission;
 import com.hazelcast.security.permission.MultiMapPermission;
 import com.hazelcast.security.permission.PNCounterPermission;
 import com.hazelcast.security.permission.QueuePermission;
+import com.hazelcast.security.permission.ReliableTopicPermission;
+import com.hazelcast.security.permission.RingBufferPermission;
 import com.hazelcast.security.permission.ScheduledExecutorPermission;
 import com.hazelcast.security.permission.SemaphorePermission;
 import com.hazelcast.security.permission.SetPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.security.permission.UserCodeDeploymentPermission;
-import com.hazelcast.internal.util.AddressUtil;
 
 import java.util.Set;
 
@@ -39,8 +41,10 @@ public final class SecurityUtil {
     @SuppressWarnings({"checkstyle:cyclomaticcomplexity", "checkstyle:returncount"})
     public static ClusterPermission createPermission(PermissionConfig permissionConfig) {
         final Set<String> actionSet = permissionConfig.getActions();
-        final String[] actions = actionSet.toArray(new String[actionSet.size()]);
+        final String[] actions = actionSet.toArray(new String[0]);
         switch (permissionConfig.getType()) {
+            case ALL:
+                return new AllPermissions();
             case MAP:
                 return new MapPermission(permissionConfig.getName(), actions);
             case QUEUE:
@@ -77,14 +81,16 @@ public final class SecurityUtil {
                 return new ScheduledExecutorPermission(permissionConfig.getName(), actions);
             case PN_COUNTER:
                 return new PNCounterPermission(permissionConfig.getName(), actions);
-            case ALL:
-                return new AllPermissions();
             case CACHE:
                 return new CachePermission(permissionConfig.getName(), actions);
             case USER_CODE_DEPLOYMENT:
                 return new UserCodeDeploymentPermission(actions);
             case CONFIG:
                 return new ConfigPermission();
+            case RING_BUFFER:
+                return new RingBufferPermission(permissionConfig.getName(), actions);
+            case RELIABLE_TOPIC:
+                return new ReliableTopicPermission(permissionConfig.getName(), actions);
             default:
                 throw new IllegalArgumentException(permissionConfig.getType().toString());
         }

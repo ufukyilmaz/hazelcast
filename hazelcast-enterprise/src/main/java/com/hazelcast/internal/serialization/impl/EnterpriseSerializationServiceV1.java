@@ -48,7 +48,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         if (versionedSerializationEnabled) {
             clusterVersionAware = checkNotNull(clusterVersionAware, "ClusterVersionAware can't be null");
             this.dataSerializerAdapter = createSerializerAdapter(
-                    new EnterpriseDataSerializableSerializer(dataSerializableFactories, classLoader, clusterVersionAware), this);
+                    new EnterpriseDataSerializableSerializer(dataSerializableFactories, classLoader, clusterVersionAware));
             registerConstant(DataSerializable.class, dataSerializerAdapter);
         }
     }

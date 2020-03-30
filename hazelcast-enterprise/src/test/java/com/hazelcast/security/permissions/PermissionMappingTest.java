@@ -123,12 +123,13 @@ public class PermissionMappingTest extends HazelcastTestSupport {
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.multimap.impl.MultiMapService.class, new String[]{"initialize"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.list.ListService.class, new String[]{
                 "initialize", "removeIf", "stream", "parallelStream", "replaceAll", "sort",
+                "dataIterator", "dataSubList", "getLocalListStats"
         });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.queue.QueueService.class, new String[]{
                 "initialize", "removeIf", "stream", "parallelStream",
         });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.set.SetService.class, new String[]{
-                "initialize", "removeIf", "stream", "parallelStream",
+                "initialize", "removeIf", "stream", "parallelStream", "getLocalSetStats"
         });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.scheduledexecutor.impl.DistributedScheduledExecutorService.class,
                 new String[]{
@@ -169,15 +170,15 @@ public class PermissionMappingTest extends HazelcastTestSupport {
                 "addLocalEntryListenerInternal", "executeOnEntriesInternal",
         });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.lock.LockService.class,
-                new String[] {"getGroupId", "getObjectName"});
+                new String[]{"getGroupId", "getObjectName"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.countdownlatch.CountDownLatchService.class,
-                new String[] {"getGroupId"});
+                new String[]{"getGroupId"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.semaphore.SemaphoreService.class,
-                new String[] {"getGroupId"});
+                new String[]{"getGroupId"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.atomiclong.AtomicLongService.class,
-                new String[] {"getGroupId"});
+                new String[]{"getGroupId"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.atomicref.AtomicRefService.class,
-                new String[] {"getGroupId"});
+                new String[]{"getGroupId"});
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
+import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.serialization.InternalSerializationService;
@@ -30,6 +31,7 @@ public class BasicEnterpriseSerializationTest extends AbstractSerializationServi
                 .setClusterVersionAware(new BasicEnterpriseSerializationTest.TestVersionAware())
                 .setVersionedSerializationEnabled(versionedSerializationEnabled)
                 .setVersion(InternalSerializationService.VERSION_1)
+                .setNotActiveExceptionSupplier(HazelcastInstanceNotActiveException::new)
                 .build();
     }
 

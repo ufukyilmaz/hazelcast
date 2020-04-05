@@ -7,15 +7,15 @@ import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.networking.ChannelInitializer;
+import com.hazelcast.internal.nio.server.DefaultChannelInitializerProvider;
+import com.hazelcast.internal.nio.server.UnifiedProtocolDecoder;
+import com.hazelcast.internal.nio.server.UnifiedProtocolEncoder;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.internal.nio.ssl.ChannelHandlerPair;
 import com.hazelcast.internal.nio.ssl.ClientTLSChannelInitializer;
 import com.hazelcast.internal.nio.ssl.MemberTLSChannelInitializer;
 import com.hazelcast.internal.nio.ssl.TextTLSChannelInitializer;
 import com.hazelcast.internal.nio.ssl.UnifiedTLSChannelInitializer;
-import com.hazelcast.internal.nio.tcp.DefaultChannelInitializerProvider;
-import com.hazelcast.internal.nio.tcp.UnifiedProtocolDecoder;
-import com.hazelcast.internal.nio.tcp.UnifiedProtocolEncoder;
 
 import java.util.concurrent.Executor;
 import java.util.function.Function;

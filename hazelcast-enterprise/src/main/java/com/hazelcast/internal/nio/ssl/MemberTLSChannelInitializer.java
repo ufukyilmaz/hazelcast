@@ -7,9 +7,9 @@ import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.internal.nio.IOService;
-import com.hazelcast.internal.nio.tcp.MemberProtocolEncoder;
-import com.hazelcast.internal.nio.tcp.SingleProtocolDecoder;
-import com.hazelcast.internal.nio.tcp.TcpIpConnection;
+import com.hazelcast.internal.nio.server.MemberProtocolEncoder;
+import com.hazelcast.internal.nio.server.ServerConnection;
+import com.hazelcast.internal.nio.server.SingleProtocolDecoder;
 
 import java.util.concurrent.Executor;
 
@@ -21,7 +21,7 @@ public class MemberTLSChannelInitializer extends AbstractMultiSocketTLSChannelIn
 
     @Override
     protected void initPipeline(Channel channel) {
-        TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
+        ServerConnection connection = (ServerConnection) channel.attributeMap().get(ServerConnection.class);
 
         OutboundHandler[] outboundHandlers = ioService.createOutboundHandlers(EndpointQualifier.MEMBER, connection);
         InboundHandler[] inboundHandlers = ioService.createInboundHandlers(EndpointQualifier.MEMBER, connection);

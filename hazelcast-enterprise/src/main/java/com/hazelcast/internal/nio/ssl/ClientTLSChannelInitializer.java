@@ -5,8 +5,8 @@ import com.hazelcast.client.impl.protocol.util.ClientMessageEncoder;
 import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.nio.IOService;
-import com.hazelcast.internal.nio.tcp.SingleProtocolDecoder;
-import com.hazelcast.internal.nio.tcp.TcpIpConnection;
+import com.hazelcast.internal.nio.server.ServerConnection;
+import com.hazelcast.internal.nio.server.SingleProtocolDecoder;
 
 import java.util.concurrent.Executor;
 
@@ -20,7 +20,7 @@ public class ClientTLSChannelInitializer extends AbstractMultiSocketTLSChannelIn
 
     @Override
     protected void initPipeline(Channel channel) {
-        TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
+        ServerConnection connection = (ServerConnection) channel.attributeMap().get(ServerConnection.class);
         SingleProtocolDecoder protocolDecoder = new SingleProtocolDecoder(CLIENT,
                 new ClientMessageDecoder(connection, ioService.getClientEngine(), ioService.properties()));
 

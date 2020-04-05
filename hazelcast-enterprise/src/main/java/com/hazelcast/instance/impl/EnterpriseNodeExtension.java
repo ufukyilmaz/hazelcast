@@ -65,9 +65,9 @@ import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.internal.nio.CipherByteArrayProcessor;
 import com.hazelcast.internal.nio.EnterpriseChannelInitializerProvider;
 import com.hazelcast.internal.nio.IOService;
+import com.hazelcast.internal.nio.server.ServerConnection;
 import com.hazelcast.internal.nio.tcp.SymmetricCipherPacketDecoder;
 import com.hazelcast.internal.nio.tcp.SymmetricCipherPacketEncoder;
-import com.hazelcast.internal.nio.tcp.TcpIpConnection;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListener;
@@ -653,7 +653,7 @@ public class EnterpriseNodeExtension
     }
 
     @Override
-    public InboundHandler[] createInboundHandlers(EndpointQualifier qualifier, TcpIpConnection connection, IOService ioService) {
+    public InboundHandler[] createInboundHandlers(EndpointQualifier qualifier, ServerConnection connection, IOService ioService) {
         SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig(qualifier);
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
@@ -668,7 +668,7 @@ public class EnterpriseNodeExtension
 
     @Override
     public OutboundHandler[] createOutboundHandlers(EndpointQualifier qualifier,
-                                                    TcpIpConnection connection, IOService ioService) {
+                                                    ServerConnection connection, IOService ioService) {
         SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig(qualifier);
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {

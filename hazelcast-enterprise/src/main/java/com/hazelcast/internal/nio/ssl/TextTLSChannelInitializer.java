@@ -8,8 +8,8 @@ import com.hazelcast.internal.nio.ascii.MemcacheTextDecoder;
 import com.hazelcast.internal.nio.ascii.RestApiTextDecoder;
 import com.hazelcast.internal.nio.ascii.TextDecoder;
 import com.hazelcast.internal.nio.ascii.TextEncoder;
-import com.hazelcast.internal.nio.tcp.TcpIpConnection;
-import com.hazelcast.internal.nio.tcp.TextHandshakeDecoder;
+import com.hazelcast.internal.nio.server.ServerConnection;
+import com.hazelcast.internal.nio.server.TextHandshakeDecoder;
 
 import java.util.concurrent.Executor;
 
@@ -25,7 +25,7 @@ public class TextTLSChannelInitializer extends AbstractMultiSocketTLSChannelInit
 
     @Override
     protected void initPipeline(Channel channel) {
-        TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
+        ServerConnection connection = (ServerConnection) channel.attributeMap().get(ServerConnection.class);
         TextEncoder encoder = new TextEncoder(connection);
         TextDecoder decoder = rest
                 ? new RestApiTextDecoder(connection, encoder, true)

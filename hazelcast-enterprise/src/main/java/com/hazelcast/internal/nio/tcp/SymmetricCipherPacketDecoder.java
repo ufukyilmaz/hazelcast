@@ -6,6 +6,8 @@ import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.internal.nio.IOService;
 import com.hazelcast.internal.nio.Packet;
 import com.hazelcast.internal.nio.PacketIOHelper;
+import com.hazelcast.internal.nio.server.PacketDecoder;
+import com.hazelcast.internal.nio.server.ServerConnection;
 import com.hazelcast.logging.ILogger;
 
 import javax.crypto.Cipher;
@@ -27,7 +29,7 @@ public class SymmetricCipherPacketDecoder extends PacketDecoder {
     private ByteBuffer cipherBuffer;
     private int size = -1;
 
-    public SymmetricCipherPacketDecoder(SymmetricEncryptionConfig sic, TcpIpConnection connection,
+    public SymmetricCipherPacketDecoder(SymmetricEncryptionConfig sic, ServerConnection connection,
                                         IOService ioService, Consumer<Packet> dst) {
         super(connection, dst);
         this.logger = ioService.getLoggingService().getLogger(getClass());

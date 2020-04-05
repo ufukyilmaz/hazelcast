@@ -6,6 +6,7 @@ import com.hazelcast.internal.networking.HandlerStatus;
 import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.internal.nio.Packet;
 import com.hazelcast.internal.nio.PacketIOHelper;
+import com.hazelcast.internal.nio.server.ServerConnection;
 
 import javax.crypto.Cipher;
 import java.nio.ByteBuffer;
@@ -30,7 +31,7 @@ public class SymmetricCipherPacketEncoder extends OutboundHandler<Supplier<Packe
     private ByteBuffer packetBuffer;
     private boolean packetWritten;
 
-    public SymmetricCipherPacketEncoder(TcpIpConnection connection, SymmetricEncryptionConfig config) {
+    public SymmetricCipherPacketEncoder(ServerConnection connection, SymmetricEncryptionConfig config) {
         this.cipher = createSymmetricWriterCipher(config, connection);
     }
 

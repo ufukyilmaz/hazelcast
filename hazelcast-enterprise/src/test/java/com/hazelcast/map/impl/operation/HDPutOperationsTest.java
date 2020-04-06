@@ -93,7 +93,7 @@ public class HDPutOperationsTest extends HazelcastTestSupport {
     private Operation createPutAllOperation() {
         MapEntries mapEntries = createMapEntries(ENTRY_COUNT);
         return new HDPutAllOperation(MAP_NAME, mapEntries,
-                ENTRY_COUNT / 2);
+                ENTRY_COUNT / 2, true);
     }
 
     /**
@@ -122,8 +122,8 @@ public class HDPutOperationsTest extends HazelcastTestSupport {
         private int putNumberToThrowException;
         private int putCountSoFar;
 
-        HDPutAllOperation(String name, MapEntries mapEntries, int putNumberToThrowException) {
-            super(name, mapEntries);
+        HDPutAllOperation(String name, MapEntries mapEntries, int putNumberToThrowException, boolean triggerMapLoader) {
+            super(name, mapEntries, triggerMapLoader);
             this.putNumberToThrowException = putNumberToThrowException;
         }
 

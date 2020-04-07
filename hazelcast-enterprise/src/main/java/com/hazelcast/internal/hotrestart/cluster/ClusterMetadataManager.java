@@ -109,6 +109,7 @@ public class ClusterMetadataManager {
     private volatile ClusterMetadataWriterLoop metadataWriterLoop;
     private volatile boolean startWithHotRestart = true;
     private volatile HotRestartClusterStartStatus hotRestartStatus = CLUSTER_START_IN_PROGRESS;
+    // true when member start is completed and cluster has reached final state
     private volatile boolean startCompleted;
     private volatile Set<UUID> excludedMemberUuids = Collections.emptySet();
     private volatile ClusterState clusterState = ClusterState.ACTIVE;
@@ -339,6 +340,7 @@ public class ClusterMetadataManager {
             persistMembers();
             persistPartitions();
             waitUntilAllMembersReachFinalState();
+            startCompleted = true;
             restoredMembersRef.set(null);
             expectedMembersRef.set(null);
             partitionTableRef.set(null);
@@ -404,7 +406,6 @@ public class ClusterMetadataManager {
         hotRestartStatusLock.lock();
         try {
             setFinalClusterState(clusterState);
-            startCompleted = true;
         } finally {
             hotRestartStatusLock.unlock();
         }

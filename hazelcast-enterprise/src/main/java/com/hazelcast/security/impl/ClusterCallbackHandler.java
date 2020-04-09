@@ -1,12 +1,5 @@
 package com.hazelcast.security.impl;
 
-import static java.util.Objects.requireNonNull;
-
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.NameCallback;
-import javax.security.auth.callback.PasswordCallback;
-import javax.security.auth.callback.UnsupportedCallbackException;
-
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.nio.Connection;
 import com.hazelcast.security.CertificatesCallback;
@@ -15,6 +8,14 @@ import com.hazelcast.security.Credentials;
 import com.hazelcast.security.CredentialsCallback;
 import com.hazelcast.security.EndpointCallback;
 import com.hazelcast.security.PasswordCredentials;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import java.security.cert.Certificate;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * ClusterCallbackHandler is responsible for handling JAAS callbacks in Hazelcast login modules.
@@ -50,7 +51,12 @@ public class ClusterCallbackHandler extends NodeCallbackHandler {
         } else if (cb instanceof EndpointCallback) {
             handleEndpointCallback((EndpointCallback) cb);
         } else if (cb instanceof CertificatesCallback) {
-            ((CertificatesCallback) cb).setCertificates(connection != null ? connection.getRemoteCertificates() : null);
+            Certificate[] certificates = null;
+            if (connection != null) {
+                certificates = (Certificate[]) connection.attributeMap().get(Certificate.class);
+            }
+
+            ((CertificatesCallback) cb).setCertificates(certificates);
         } else if (cb instanceof ClusterNameCallback) {
             ((ClusterNameCallback) cb).setClusterName(clusterName);
         } else {

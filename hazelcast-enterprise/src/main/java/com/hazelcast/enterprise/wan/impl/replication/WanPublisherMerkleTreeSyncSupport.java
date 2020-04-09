@@ -600,9 +600,9 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                 String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
                 OperationService operationService = nodeEngine.getOperationService();
                 InternalCompletableFuture<T> future = operationService
-                        .createInvocationBuilder(serviceName, operation, connectionWrapper.getConnection().getEndPoint())
+                        .createInvocationBuilder(serviceName, operation, connectionWrapper.getConnection().getRemoteAddress())
                         .setTryCount(1)
-                        .setEndpointManager(connectionWrapper.getConnection().getEndpointManager())
+                        .setConnectionManager(connectionWrapper.getConnection().getConnectionManager())
                         .setCallTimeout(configurationContext.getResponseTimeoutMillis())
                         .invoke();
                 return future.joinInternal();

@@ -3,13 +3,13 @@ package com.hazelcast.internal.nio.ssl;
 import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.instance.ProtocolType;
 import com.hazelcast.internal.networking.Channel;
-import com.hazelcast.internal.nio.IOService;
 import com.hazelcast.internal.nio.ascii.MemcacheTextDecoder;
 import com.hazelcast.internal.nio.ascii.RestApiTextDecoder;
 import com.hazelcast.internal.nio.ascii.TextDecoder;
 import com.hazelcast.internal.nio.ascii.TextEncoder;
-import com.hazelcast.internal.nio.server.ServerConnection;
-import com.hazelcast.internal.nio.server.TextHandshakeDecoder;
+import com.hazelcast.internal.server.IOService;
+import com.hazelcast.internal.server.ServerConnection;
+import com.hazelcast.internal.server.tcp.TextHandshakeDecoder;
 
 import java.util.concurrent.Executor;
 

@@ -839,8 +839,8 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
         resetService(isAfterJoin);
 
-        // start connection-manager to setup and accept new connections
-        node.networkingService.start();
+        // start server to setup and accept new connections
+        node.server.start();
 
         if (isAfterJoin) {
             logger.info("Joining back...");
@@ -852,7 +852,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
 
     private void resetNode() {
         logger.info("Stopping connection manager...");
-        node.networkingService.stop();
+        node.server.stop();
 
         logger.info("Resetting node...");
         node.reset();

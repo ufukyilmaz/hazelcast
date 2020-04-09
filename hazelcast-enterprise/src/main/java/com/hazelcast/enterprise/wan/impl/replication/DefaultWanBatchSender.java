@@ -6,7 +6,7 @@ import com.hazelcast.enterprise.wan.impl.connection.WanConnectionWrapper;
 import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerOperation;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.cluster.Address;
-import com.hazelcast.internal.nio.EndpointManager;
+import com.hazelcast.internal.server.ServerConnectionManager;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
@@ -52,14 +52,14 @@ public class DefaultWanBatchSender implements WanBatchSender {
     private InternalCompletableFuture<Boolean> invokeOnWanTarget(WanConnectionWrapper connectionWrapper,
                                                                  IdentifiedDataSerializable event,
                                                                  Version wanProtocolVersion) {
-        EndpointManager endpointManager = connectionWrapper.getConnection().getEndpointManager();
-        Address target = connectionWrapper.getConnection().getEndPoint();
+        ServerConnectionManager endpointManager = connectionWrapper.getConnection().getConnectionManager();
+        Address target = connectionWrapper.getConnection().getRemoteAddress();
         Operation wanOperation = new WanEventContainerOperation(
                 event, configurationContext.getAcknowledgeType(), wanProtocolVersion);
         String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
         return operationService.createInvocationBuilder(serviceName, wanOperation, target)
                 .setTryCount(1)
-                .setEndpointManager(endpointManager)
+                .setConnectionManager(endpointManager)
                 .invoke();
     }
 }

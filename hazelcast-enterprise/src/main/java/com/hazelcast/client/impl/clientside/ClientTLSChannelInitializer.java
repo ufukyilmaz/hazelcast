@@ -1,9 +1,8 @@
 package com.hazelcast.client.impl.clientside;
 
 import com.hazelcast.client.config.SocketOptions;
-import com.hazelcast.client.impl.connection.nio.ClientConnection;
-import com.hazelcast.client.impl.connection.nio.ClientProtocolEncoder;
-import com.hazelcast.client.impl.protocol.ClientMessage;
+import com.hazelcast.client.impl.connection.tcp.ClientProtocolEncoder;
+import com.hazelcast.client.impl.connection.tcp.TcpClientConnection;
 import com.hazelcast.client.impl.protocol.util.ClientMessageEncoder;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.internal.networking.Channel;
@@ -11,7 +10,6 @@ import com.hazelcast.internal.nio.ssl.AbstractTLSChannelInitializer;
 import com.hazelcast.internal.nio.ssl.UnifiedTLSChannelInitializer;
 
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 
 import static com.hazelcast.client.config.SocketOptions.KILO_BYTE;
 import static com.hazelcast.internal.networking.ChannelOption.DIRECT_BUF;
@@ -38,11 +36,11 @@ public class ClientTLSChannelInitializer extends AbstractTLSChannelInitializer {
     /**
      * Creates a ClientTLSChannelInitializer.
      *
-     * @param sslConfig       the {@link SSLConfig}
-     * @param executor        the Executor used for TLS Handshake task offloading
-     *                        because these tasks should not be processed on the
-     *                        IO threads.
-     * @param socketOptions   the client SocketOptions.
+     * @param sslConfig     the {@link SSLConfig}
+     * @param executor      the Executor used for TLS Handshake task offloading
+     *                      because these tasks should not be processed on the
+     *                      IO threads.
+     * @param socketOptions the client SocketOptions.
      */
     public ClientTLSChannelInitializer(SSLConfig sslConfig,
                                        Executor executor,
@@ -70,15 +68,13 @@ public class ClientTLSChannelInitializer extends AbstractTLSChannelInitializer {
         // TLS encoders/decoders and handshaking encoders/decoders in the
         // pipeline. We only need to insert the client specific handlers.
 
-        final ClientConnection connection = (ClientConnection) channel.attributeMap().get(ClientConnection.class);
+        final TcpClientConnection connection = (TcpClientConnection) channel.attributeMap().get(TcpClientConnection.class);
 
         com.hazelcast.client.impl.protocol.util.ClientMessageDecoder clientMessageDecoder =
-                new com.hazelcast.client.impl.protocol.util.ClientMessageDecoder(connection, new Consumer<ClientMessage>() {
-                    @Override
-                    public void accept(ClientMessage message) {
-                        connection.handleClientMessage(message);
-                    }
-                }, null);
+                new com.hazelcast.client.impl.protocol.util.ClientMessageDecoder(
+                        connection,
+                        message -> connection.handleClientMessage(message),
+                        null);
         // adding of the inbound pipeline
         channel.inboundPipeline().addLast(clientMessageDecoder);
 

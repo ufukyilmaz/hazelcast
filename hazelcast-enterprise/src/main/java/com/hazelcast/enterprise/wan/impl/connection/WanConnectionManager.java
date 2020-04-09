@@ -8,11 +8,12 @@ import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationStatus;
 import com.hazelcast.enterprise.wan.impl.replication.WanConfigurationContext;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.server.ServerConnection;
+import com.hazelcast.internal.server.ServerConnectionManager;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.nio.Connection;
 import com.hazelcast.internal.nio.ConnectionListener;
-import com.hazelcast.internal.nio.EndpointManager;
 import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.impl.PredefinedDiscoveryService;
 import com.hazelcast.spi.discovery.integration.DiscoveryService;
@@ -92,7 +93,7 @@ public class WanConnectionManager implements ConnectionListener {
         String endpointIdentifier = configurationContext.getPublisherConfig().getEndpoint();
         this.endpointQualifier = endpointIdentifier == null ? EndpointQualifier.MEMBER
                 : EndpointQualifier.resolve(WAN, endpointIdentifier);
-        node.networkingService.getEndpointManager(endpointQualifier).addConnectionListener(this);
+        node.server.getConnectionManager(endpointQualifier).addConnectionListener(this);
 
         try {
             addToTargetEndpoints(discoverEndpointAddresses());
@@ -319,16 +320,16 @@ public class WanConnectionManager implements ConnectionListener {
     private WanConnectionWrapper connectAndNegotiate(Address targetAddress) {
         try {
             connectionsInProgress.add(targetAddress);
-            EndpointManager endpointManager = node.getEndpointManager(endpointQualifier);
-            if (endpointManager == null) {
-                endpointManager = node.getEndpointManager();
+            ServerConnectionManager connectionManager = node.getConnectionManager(endpointQualifier);
+            if (connectionManager == null) {
+                connectionManager = node.getConnectionManager();
             }
-            Connection conn = endpointManager.getOrConnect(targetAddress);
+            ServerConnection conn = connectionManager.getOrConnect(targetAddress);
             for (int i = 0; i < RETRY_CONNECTION_MAX; i++) {
                 if (conn == null) {
                     MILLISECONDS.sleep(RETRY_CONNECTION_SLEEP_MILLIS);
                 }
-                conn = endpointManager.getOrConnect(targetAddress);
+                conn = connectionManager.getOrConnect(targetAddress);
             }
             if (conn != null) {
                 return new WanConnectionWrapper(targetAddress, conn, negotiateWanProtocol(conn));
@@ -368,9 +369,9 @@ public class WanConnectionManager implements ConnectionListener {
         Future<WanProtocolNegotiationResponse> future =
                 node.getNodeEngine()
                     .getOperationService()
-                    .createInvocationBuilder(SERVICE_NAME, negotiationOp, conn.getEndPoint())
+                    .createInvocationBuilder(SERVICE_NAME, negotiationOp, conn.getRemoteAddress())
                     .setTryCount(1)
-                    .setEndpointManager(node.getEndpointManager(endpointQualifier))
+                    .setConnectionManager(node.getConnectionManager(endpointQualifier))
                     .invoke();
 
         String errorMsg;
@@ -384,11 +385,11 @@ public class WanConnectionManager implements ConnectionListener {
             }
 
             errorMsg = "WAN protocol negotiation failed for cluster name " + targetClusterName
-                    + " and target " + conn.getEndPoint() + " with status " + status;
+                    + " and target " + conn.getRemoteAddress() + " with status " + status;
         } catch (Exception exception) {
             negotiationException = exception;
             errorMsg = "WAN protocol negotiation failed for cluster name " + targetClusterName
-                    + " and target " + conn.getEndPoint();
+                    + " and target " + conn.getRemoteAddress();
         }
         conn.close(errorMsg, null);
         throw new WanConnectionException(errorMsg, negotiationException);
@@ -413,11 +414,11 @@ public class WanConnectionManager implements ConnectionListener {
 
     @Override
     public void connectionRemoved(Connection connection) {
-        Address endpoint = connection.getEndPoint();
-        WanConnectionWrapper wrapper = connectionPool.remove(endpoint);
+        Address remoteAddress = connection.getRemoteAddress();
+        WanConnectionWrapper wrapper = connectionPool.remove(remoteAddress);
         OperationService operationService = node.nodeEngine.getOperationService();
-        if (wrapper != null || connectionsInProgress.contains(endpoint)) {
-            operationService.onEndpointLeft(endpoint);
+        if (wrapper != null || connectionsInProgress.contains(remoteAddress)) {
+            operationService.onEndpointLeft(remoteAddress);
         }
     }
 

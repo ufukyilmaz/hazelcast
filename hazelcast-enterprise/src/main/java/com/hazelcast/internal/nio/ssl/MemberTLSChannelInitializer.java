@@ -6,10 +6,10 @@ import com.hazelcast.instance.ProtocolType;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
-import com.hazelcast.internal.nio.IOService;
-import com.hazelcast.internal.nio.server.MemberProtocolEncoder;
-import com.hazelcast.internal.nio.server.ServerConnection;
-import com.hazelcast.internal.nio.server.SingleProtocolDecoder;
+import com.hazelcast.internal.server.IOService;
+import com.hazelcast.internal.server.ServerConnection;
+import com.hazelcast.internal.server.tcp.MemberProtocolEncoder;
+import com.hazelcast.internal.server.tcp.SingleProtocolDecoder;
 
 import java.util.concurrent.Executor;
 

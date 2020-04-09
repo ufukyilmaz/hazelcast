@@ -3,6 +3,7 @@ package com.hazelcast.enterprise.wan.impl.connection;
 import com.hazelcast.enterprise.wan.impl.operation.WanProtocolNegotiationResponse;
 import com.hazelcast.cluster.Address;
 import com.hazelcast.internal.nio.Connection;
+import com.hazelcast.internal.server.ServerConnection;
 
 /**
  * Wrapper for {@link Connection} to add extra information related to WAN replication.
@@ -10,10 +11,10 @@ import com.hazelcast.internal.nio.Connection;
 public class WanConnectionWrapper {
     private final WanProtocolNegotiationResponse negotiationResponse;
     private final Address targetAddress;
-    private final Connection connection;
+    private final ServerConnection connection;
 
     public WanConnectionWrapper(Address targetAddress,
-                                Connection connection,
+                                ServerConnection connection,
                                 WanProtocolNegotiationResponse negotiationResponse) {
         this.targetAddress = targetAddress;
         this.connection = connection;
@@ -28,7 +29,7 @@ public class WanConnectionWrapper {
         return negotiationResponse;
     }
 
-    public Connection getConnection() {
+    public ServerConnection getConnection() {
         return connection;
     }
 }

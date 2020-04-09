@@ -6,7 +6,7 @@ import com.hazelcast.internal.networking.HandlerStatus;
 import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.internal.nio.Packet;
 import com.hazelcast.internal.nio.PacketIOHelper;
-import com.hazelcast.internal.nio.server.ServerConnection;
+import com.hazelcast.internal.server.ServerConnection;
 
 import javax.crypto.Cipher;
 import java.nio.ByteBuffer;

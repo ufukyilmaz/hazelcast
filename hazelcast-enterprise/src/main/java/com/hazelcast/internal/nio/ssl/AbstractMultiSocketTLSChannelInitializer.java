@@ -2,7 +2,7 @@ package com.hazelcast.internal.nio.ssl;
 
 import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.internal.networking.Channel;
-import com.hazelcast.internal.nio.IOService;
+import com.hazelcast.internal.server.IOService;
 
 import java.util.concurrent.Executor;
 

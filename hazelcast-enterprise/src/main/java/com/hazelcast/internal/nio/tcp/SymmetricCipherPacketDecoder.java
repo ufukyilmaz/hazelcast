@@ -3,11 +3,11 @@ package com.hazelcast.internal.nio.tcp;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.internal.networking.HandlerStatus;
 import com.hazelcast.internal.nio.Bits;
-import com.hazelcast.internal.nio.IOService;
 import com.hazelcast.internal.nio.Packet;
 import com.hazelcast.internal.nio.PacketIOHelper;
-import com.hazelcast.internal.nio.server.PacketDecoder;
-import com.hazelcast.internal.nio.server.ServerConnection;
+import com.hazelcast.internal.server.IOService;
+import com.hazelcast.internal.server.ServerConnection;
+import com.hazelcast.internal.server.tcp.PacketDecoder;
 import com.hazelcast.logging.ILogger;
 
 import javax.crypto.Cipher;

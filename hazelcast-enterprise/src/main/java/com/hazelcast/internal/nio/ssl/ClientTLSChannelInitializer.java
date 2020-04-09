@@ -4,9 +4,9 @@ import com.hazelcast.client.impl.protocol.util.ClientMessageDecoder;
 import com.hazelcast.client.impl.protocol.util.ClientMessageEncoder;
 import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.internal.networking.Channel;
-import com.hazelcast.internal.nio.IOService;
-import com.hazelcast.internal.nio.server.ServerConnection;
-import com.hazelcast.internal.nio.server.SingleProtocolDecoder;
+import com.hazelcast.internal.server.IOService;
+import com.hazelcast.internal.server.ServerConnection;
+import com.hazelcast.internal.server.tcp.SingleProtocolDecoder;
 
 import java.util.concurrent.Executor;
 

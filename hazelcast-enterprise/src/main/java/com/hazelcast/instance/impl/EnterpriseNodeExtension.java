@@ -59,7 +59,6 @@ import com.hazelcast.internal.monitor.impl.jmx.LicenseInfoMBean;
 import com.hazelcast.internal.monitor.impl.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.internal.monitor.impl.rest.EnterpriseTextCommandServiceImpl;
 import com.hazelcast.internal.monitor.impl.rest.LicenseInfoImpl;
-import com.hazelcast.internal.networking.ChannelInitializerProvider;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.internal.nio.CipherByteArrayProcessor;
@@ -72,6 +71,7 @@ import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListene
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.server.IOService;
 import com.hazelcast.internal.server.ServerConnection;
+import com.hazelcast.internal.server.tcp.ChannelInitializerProvider;
 import com.hazelcast.internal.util.ByteArrayProcessor;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.internal.util.LicenseExpirationReminderTask;

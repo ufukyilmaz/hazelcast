@@ -59,6 +59,7 @@ import com.hazelcast.internal.monitor.impl.jmx.LicenseInfoMBean;
 import com.hazelcast.internal.monitor.impl.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.internal.monitor.impl.rest.EnterpriseTextCommandServiceImpl;
 import com.hazelcast.internal.monitor.impl.rest.LicenseInfoImpl;
+import com.hazelcast.internal.networking.ChannelInitializer;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.internal.nio.CipherByteArrayProcessor;
@@ -71,7 +72,6 @@ import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListene
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.server.IOService;
 import com.hazelcast.internal.server.ServerConnection;
-import com.hazelcast.internal.server.tcp.ChannelInitializerProvider;
 import com.hazelcast.internal.util.ByteArrayProcessor;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.internal.util.LicenseExpirationReminderTask;
@@ -112,6 +112,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
@@ -681,7 +682,7 @@ public class EnterpriseNodeExtension
     }
 
     @Override
-    public ChannelInitializerProvider createChannelInitializerProvider(IOService ioService) {
+    public Function<EndpointQualifier, ChannelInitializer> createChannelInitializerFn(IOService ioService) {
         EnterpriseChannelInitializerProvider provider = new EnterpriseChannelInitializerProvider(ioService, node);
         provider.init();
         return provider;

@@ -7,16 +7,16 @@ import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.networking.ChannelInitializer;
-import com.hazelcast.internal.server.IOService;
-import com.hazelcast.internal.server.tcp.DefaultChannelInitializerProvider;
-import com.hazelcast.internal.server.tcp.UnifiedProtocolDecoder;
-import com.hazelcast.internal.server.tcp.UnifiedProtocolEncoder;
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.internal.nio.ssl.ChannelHandlerPair;
 import com.hazelcast.internal.nio.ssl.ClientTLSChannelInitializer;
 import com.hazelcast.internal.nio.ssl.MemberTLSChannelInitializer;
 import com.hazelcast.internal.nio.ssl.TextTLSChannelInitializer;
 import com.hazelcast.internal.nio.ssl.UnifiedTLSChannelInitializer;
+import com.hazelcast.internal.server.ServerContext;
+import com.hazelcast.internal.server.tcp.DefaultChannelInitializerProvider;
+import com.hazelcast.internal.server.tcp.UnifiedProtocolDecoder;
+import com.hazelcast.internal.server.tcp.UnifiedProtocolEncoder;
+import com.hazelcast.logging.ILogger;
 
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -29,9 +29,9 @@ public class EnterpriseChannelInitializerProvider extends DefaultChannelInitiali
     private final boolean unifiedSslEnabled;
     private final Executor sslExecutor;
 
-    public EnterpriseChannelInitializerProvider(IOService ioService, Node node) {
-        super(ioService, node.getConfig());
-        this.logger = ioService.getLoggingService().getLogger(EnterpriseChannelInitializerProvider.class);
+    public EnterpriseChannelInitializerProvider(ServerContext serverContext, Node node) {
+        super(serverContext, node.getConfig());
+        this.logger = serverContext.getLoggingService().getLogger(EnterpriseChannelInitializerProvider.class);
         this.node = node;
         this.unifiedSslEnabled = unifiedSslEnabled();
         this.sslExecutor = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();
@@ -41,7 +41,7 @@ public class EnterpriseChannelInitializerProvider extends DefaultChannelInitiali
     @Override
     protected ChannelInitializer provideMemberChannelInitializer(EndpointConfig endpointConfig) {
         if (endpointSslEnabled(endpointConfig)) {
-            return new MemberTLSChannelInitializer(endpointConfig, sslExecutor, ioService);
+            return new MemberTLSChannelInitializer(endpointConfig, sslExecutor, serverContext);
         } else {
             return super.provideMemberChannelInitializer(endpointConfig);
         }
@@ -50,7 +50,7 @@ public class EnterpriseChannelInitializerProvider extends DefaultChannelInitiali
     @Override
     protected ChannelInitializer provideClientChannelInitializer(EndpointConfig endpointConfig) {
         if (endpointSslEnabled(endpointConfig)) {
-            return new ClientTLSChannelInitializer(endpointConfig, sslExecutor, ioService);
+            return new ClientTLSChannelInitializer(endpointConfig, sslExecutor, serverContext);
         } else {
             return super.provideClientChannelInitializer(endpointConfig);
         }
@@ -59,7 +59,7 @@ public class EnterpriseChannelInitializerProvider extends DefaultChannelInitiali
     @Override
     protected ChannelInitializer provideTextChannelInitializer(EndpointConfig endpointConfig, boolean rest) {
         if (endpointSslEnabled(endpointConfig)) {
-            return new TextTLSChannelInitializer(endpointConfig, sslExecutor, ioService, rest);
+            return new TextTLSChannelInitializer(endpointConfig, sslExecutor, serverContext, rest);
         } else {
             return super.provideTextChannelInitializer(endpointConfig, rest);
         }
@@ -96,8 +96,8 @@ public class EnterpriseChannelInitializerProvider extends DefaultChannelInitiali
                     new Function<Channel, ChannelHandlerPair>() {
                         @Override
                         public ChannelHandlerPair apply(Channel channel) {
-                            UnifiedProtocolEncoder encoder = new UnifiedProtocolEncoder(ioService);
-                            UnifiedProtocolDecoder decoder = new UnifiedProtocolDecoder(ioService, encoder);
+                            UnifiedProtocolEncoder encoder = new UnifiedProtocolEncoder(serverContext);
+                            UnifiedProtocolDecoder decoder = new UnifiedProtocolDecoder(serverContext, encoder);
                             return new ChannelHandlerPair(decoder, encoder);
                         }
                     });

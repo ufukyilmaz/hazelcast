@@ -70,8 +70,8 @@ import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListener;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.internal.server.IOService;
 import com.hazelcast.internal.server.ServerConnection;
+import com.hazelcast.internal.server.ServerContext;
 import com.hazelcast.internal.util.ByteArrayProcessor;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.internal.util.LicenseExpirationReminderTask;
@@ -145,6 +145,7 @@ public class EnterpriseNodeExtension
      */
     private static final Map<LicenseVersion, Set<Feature>> LICENSE_FEATURE_ADDITIONS
             = new HashMap<>();
+
     static {
         LICENSE_FEATURE_REMOVALS.put(LicenseVersion.V5, EnumSet.of(Feature.WEB_SESSION));
         LICENSE_FEATURE_ADDITIONS.put(LicenseVersion.V5, EnumSet.of(Feature.CLIENT_FILTERING, Feature.CP_PERSISTENCE));
@@ -654,23 +655,26 @@ public class EnterpriseNodeExtension
     }
 
     @Override
-    public InboundHandler[] createInboundHandlers(EndpointQualifier qualifier, ServerConnection connection, IOService ioService) {
-        SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig(qualifier);
+    public InboundHandler[] createInboundHandlers(EndpointQualifier qualifier,
+                                                  ServerConnection connection,
+                                                  ServerContext serverContext) {
+        SymmetricEncryptionConfig symmetricEncryptionConfig = serverContext.getSymmetricEncryptionConfig(qualifier);
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info(qualifier + " reader started with SymmetricEncryption");
             SymmetricCipherPacketDecoder decoder = new SymmetricCipherPacketDecoder(symmetricEncryptionConfig,
-                    connection, ioService, node.nodeEngine.getPacketDispatcher());
+                    connection, serverContext, node.nodeEngine.getPacketDispatcher());
             return new InboundHandler[]{decoder};
         }
 
-        return super.createInboundHandlers(qualifier, connection, ioService);
+        return super.createInboundHandlers(qualifier, connection, serverContext);
     }
 
     @Override
     public OutboundHandler[] createOutboundHandlers(EndpointQualifier qualifier,
-                                                    ServerConnection connection, IOService ioService) {
-        SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig(qualifier);
+                                                    ServerConnection connection,
+                                                    ServerContext serverContext) {
+        SymmetricEncryptionConfig symmetricEncryptionConfig = serverContext.getSymmetricEncryptionConfig(qualifier);
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info(qualifier + " writer started with SymmetricEncryption");
@@ -678,12 +682,12 @@ public class EnterpriseNodeExtension
             return new OutboundHandler[]{encoder};
         }
 
-        return super.createOutboundHandlers(qualifier, connection, ioService);
+        return super.createOutboundHandlers(qualifier, connection, serverContext);
     }
 
     @Override
-    public Function<EndpointQualifier, ChannelInitializer> createChannelInitializerFn(IOService ioService) {
-        EnterpriseChannelInitializerProvider provider = new EnterpriseChannelInitializerProvider(ioService, node);
+    public Function<EndpointQualifier, ChannelInitializer> createChannelInitializerFn(ServerContext serverContext) {
+        EnterpriseChannelInitializerProvider provider = new EnterpriseChannelInitializerProvider(serverContext, node);
         provider.init();
         return provider;
     }
@@ -983,27 +987,27 @@ public class EnterpriseNodeExtension
     }
 
     @Override
-    public ByteArrayProcessor createMulticastInputProcessor(IOService ioService) {
-        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig(MEMBER);
+    public ByteArrayProcessor createMulticastInputProcessor(ServerContext serverContext) {
+        final SymmetricEncryptionConfig symmetricEncryptionConfig = serverContext.getSymmetricEncryptionConfig(MEMBER);
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Multicast is starting with SymmetricEncryption on input processor");
             return new CipherByteArrayProcessor(createSymmetricReaderCipher(symmetricEncryptionConfig));
         }
 
-        return super.createMulticastInputProcessor(ioService);
+        return super.createMulticastInputProcessor(serverContext);
     }
 
     @Override
-    public ByteArrayProcessor createMulticastOutputProcessor(IOService ioService) {
-        final SymmetricEncryptionConfig symmetricEncryptionConfig = ioService.getSymmetricEncryptionConfig(MEMBER);
+    public ByteArrayProcessor createMulticastOutputProcessor(ServerContext serverContext) {
+        final SymmetricEncryptionConfig symmetricEncryptionConfig = serverContext.getSymmetricEncryptionConfig(MEMBER);
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Multicast is starting with SymmetricEncryption on output processor");
             return new CipherByteArrayProcessor(createSymmetricWriterCipher(symmetricEncryptionConfig));
         }
 
-        return super.createMulticastOutputProcessor(ioService);
+        return super.createMulticastOutputProcessor(serverContext);
     }
 
     @Override

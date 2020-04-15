@@ -13,7 +13,7 @@ import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.internal.nio.CipherByteArrayProcessor;
 import com.hazelcast.internal.nio.Packet;
 import com.hazelcast.internal.serialization.InternalSerializationService;
-import com.hazelcast.internal.server.tcp.NodeIOService;
+import com.hazelcast.internal.server.tcp.TcpServerContext;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
@@ -155,22 +155,22 @@ public class EnterpriseNodeExtensionTest extends HazelcastTestSupport {
 
     @Test
     public void test_returningNullByteArrayProcessor_whenNoSymmetricEnc() {
-        NodeIOService nodeIOService = new NodeIOService(node, node.nodeEngine);
-        assertNull(nodeExtension.createMulticastInputProcessor(nodeIOService));
-        assertNull(nodeExtension.createMulticastOutputProcessor(nodeIOService));
+        TcpServerContext serverContext = new TcpServerContext(node, node.nodeEngine);
+        assertNull(nodeExtension.createMulticastInputProcessor(serverContext));
+        assertNull(nodeExtension.createMulticastOutputProcessor(serverContext));
     }
 
     @Test
     public void test_returningCipherByteArrayProcessor_whenSymmetricEnc() {
-        NodeIOService nodeIOService = new NodeIOService(node, node.nodeEngine);
+        TcpServerContext serverContext = new TcpServerContext(node, node.nodeEngine);
         SymmetricEncryptionConfig sec = new SymmetricEncryptionConfig()
                 .setEnabled(true)
                 .setPassword("foo")
                 .setSalt("foobar");
         node.getConfig().getNetworkConfig().setSymmetricEncryptionConfig(sec);
 
-        assertTrue(nodeExtension.createMulticastInputProcessor(nodeIOService) instanceof CipherByteArrayProcessor);
-        assertTrue(nodeExtension.createMulticastOutputProcessor(nodeIOService) instanceof CipherByteArrayProcessor);
+        assertTrue(nodeExtension.createMulticastInputProcessor(serverContext) instanceof CipherByteArrayProcessor);
+        assertTrue(nodeExtension.createMulticastOutputProcessor(serverContext) instanceof CipherByteArrayProcessor);
     }
 
     @Test

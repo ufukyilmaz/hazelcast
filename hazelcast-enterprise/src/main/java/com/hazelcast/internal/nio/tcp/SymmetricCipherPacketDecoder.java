@@ -5,8 +5,8 @@ import com.hazelcast.internal.networking.HandlerStatus;
 import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.internal.nio.Packet;
 import com.hazelcast.internal.nio.PacketIOHelper;
-import com.hazelcast.internal.server.IOService;
 import com.hazelcast.internal.server.ServerConnection;
+import com.hazelcast.internal.server.ServerContext;
 import com.hazelcast.internal.server.tcp.PacketDecoder;
 import com.hazelcast.logging.ILogger;
 
@@ -30,9 +30,9 @@ public class SymmetricCipherPacketDecoder extends PacketDecoder {
     private int size = -1;
 
     public SymmetricCipherPacketDecoder(SymmetricEncryptionConfig sic, ServerConnection connection,
-                                        IOService ioService, Consumer<Packet> dst) {
+                                        ServerContext serverContext, Consumer<Packet> dst) {
         super(connection, dst);
-        this.logger = ioService.getLoggingService().getLogger(getClass());
+        this.logger = serverContext.getLoggingService().getLogger(getClass());
         this.cipher = createSymmetricReaderCipher(sic, connection);
     }
 

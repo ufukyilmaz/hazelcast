@@ -2,7 +2,7 @@ package com.hazelcast.internal.nio.ssl;
 
 import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.internal.networking.Channel;
-import com.hazelcast.internal.server.IOService;
+import com.hazelcast.internal.server.ServerContext;
 
 import java.util.concurrent.Executor;
 
@@ -12,14 +12,14 @@ public abstract class AbstractMultiSocketTLSChannelInitializer
         extends AbstractTLSChannelInitializer {
 
     protected final EndpointConfig config;
-    protected final IOService ioService;
+    protected final ServerContext serverContext;
 
     public AbstractMultiSocketTLSChannelInitializer(EndpointConfig endpointConfig,
                                                     Executor tlsExecutor,
-                                                    IOService ioService) {
+                                                    ServerContext serverContext) {
         super(endpointConfig.getSSLConfig(), tlsExecutor);
         this.config = endpointConfig;
-        this.ioService = ioService;
+        this.serverContext = serverContext;
     }
 
     @Override

@@ -7,8 +7,8 @@ import com.hazelcast.internal.nio.ascii.MemcacheTextDecoder;
 import com.hazelcast.internal.nio.ascii.RestApiTextDecoder;
 import com.hazelcast.internal.nio.ascii.TextDecoder;
 import com.hazelcast.internal.nio.ascii.TextEncoder;
-import com.hazelcast.internal.server.IOService;
 import com.hazelcast.internal.server.ServerConnection;
+import com.hazelcast.internal.server.ServerContext;
 import com.hazelcast.internal.server.tcp.TextHandshakeDecoder;
 
 import java.util.concurrent.Executor;
@@ -18,7 +18,7 @@ public class TextTLSChannelInitializer extends AbstractMultiSocketTLSChannelInit
     // when true, channel is intended for REST usage, otherwise memcache text protocol
     private final boolean rest;
 
-    public TextTLSChannelInitializer(EndpointConfig endpointConfig, Executor tlsExecutor, IOService ioService, boolean rest) {
+    public TextTLSChannelInitializer(EndpointConfig endpointConfig, Executor tlsExecutor, ServerContext ioService, boolean rest) {
         super(endpointConfig, tlsExecutor, ioService);
         this.rest = rest;
     }

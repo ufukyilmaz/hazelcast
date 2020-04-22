@@ -15,8 +15,8 @@ import static com.hazelcast.internal.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.internal.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.internal.nio.Bits.NULL_ARRAY_LENGTH;
 import static com.hazelcast.internal.nio.Bits.SHORT_SIZE_IN_BYTES;
-import static com.hazelcast.internal.nio.Bits.UTF_8;
 import static com.hazelcast.version.Version.UNKNOWN;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * FixedBufferObjectDataOutput is specialized {@code BufferObjectDataOutput}

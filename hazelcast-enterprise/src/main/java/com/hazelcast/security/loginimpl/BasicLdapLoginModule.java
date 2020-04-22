@@ -15,6 +15,7 @@ import java.util.Set;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
+import javax.naming.PartialResultException;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
@@ -204,7 +205,7 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
                 ctx.close();
             }
         } catch (NamingException e) {
-            logger.finest(e);
+            logger.finest("Naming exception", e);
             throw new FailedLoginException("Naming problem occured: " + e.getMessage());
         }
 
@@ -263,6 +264,7 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
     protected LdapContext createLdapContext() throws NamingException {
         Properties env = new Properties();
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+        env.put(Context.REFERRAL, "ignore");
         env.putAll(options);
         env.put(Context.SECURITY_AUTHENTICATION, "simple");
         env.put(Context.SECURITY_PRINCIPAL, login);
@@ -343,7 +345,7 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
                 logger.fine("Searching role objects with reverse mapping using filter: " + filter);
             }
             NamingEnumeration<SearchResult> roleSearchResultEnum = ctx.search(roleContext, filter, roleSearchControls);
-            while (roleSearchResultEnum.hasMore()) {
+            while (hasMoreIgnorePartResEx(roleSearchResultEnum)) {
                 SearchResult roleSearchResult = roleSearchResultEnum.next();
                 if (!roleSearchResult.isRelative()) {
                     continue;
@@ -361,6 +363,15 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
             }
             roleSearchResultEnum.close();
         }
+    }
+
+    protected boolean hasMoreIgnorePartResEx(NamingEnumeration<SearchResult> namingEnum) throws NamingException {
+        try {
+            return namingEnum.hasMore();
+        } catch (PartialResultException pre) {
+            logger.fine("Ignoring PartialResultException", pre);
+        }
+        return false;
     }
 
     protected LdapSearchScope getSearchScope(String optionName) {

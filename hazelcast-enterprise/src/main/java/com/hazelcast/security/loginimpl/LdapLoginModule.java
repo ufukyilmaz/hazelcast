@@ -111,7 +111,7 @@ public class LdapLoginModule extends BasicLdapLoginModule {
         NamingEnumeration<SearchResult> namingEnum = ctx.search(userContext, filter, searchControls);
         boolean isRelative = false;
         // use the first non-referral entry
-        while (namingEnum.hasMore() && !isRelative) {
+        while (hasMoreIgnorePartResEx(namingEnum) && !isRelative) {
             userSearchResult = namingEnum.next();
             isRelative = userSearchResult.isRelative();
         }
@@ -161,6 +161,7 @@ public class LdapLoginModule extends BasicLdapLoginModule {
     protected LdapContext createLdapContext() throws NamingException {
         Properties env = new Properties();
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+        env.put(Context.REFERRAL, "ignore");
         env.putAll(options);
         logLdapContextProperties(env);
         return new InitialLdapContext(env, null);

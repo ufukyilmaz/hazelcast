@@ -3,6 +3,7 @@ package com.hazelcast.security.loginimpl;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static org.junit.Assert.assertEquals;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.naming.Context;
@@ -112,6 +113,25 @@ public class LdapLoginModuleTest extends BasicLdapLoginModuleTest {
         doLogin("Best IMDG", "imdg", subject, options);
         assertIdentity(subject, "hazelcast");
         assertRoles(subject, "cn=Role1,ou=Roles,dc=hazelcast,dc=com");
+    }
+
+    @Test
+    public void testSkipAuthentication() throws Exception {
+        Subject subject = new Subject();
+        Map<String, String> options = createBasicLdapOptions();
+        options.put(BasicLdapLoginModule.OPTION_ROLE_MAPPING_ATTRIBUTE, "cn");
+        options.put(LdapLoginModule.OPTION_SKIP_AUTHENTICATION, "true");
+        options.put(LdapLoginModule.OPTION_USER_FILTER, "(&(krb5PrincipalName={login})(objectClass=inetOrgPerson))");
+        LoginModule lm = createLoginModule();
+        HashMap<String, String> sharedState = new HashMap<>();
+        sharedState.put("hazelcast.last.identity", "jduke@HAZELCAST.COM");
+        lm.initialize(subject, new TestCallbackHandler(null, null), sharedState, options);
+        lm.login();
+        lm.commit();
+        assertEquals("Unexpected number or principals in the Subject", 3,
+                subject.getPrincipals(HazelcastPrincipal.class).size());
+        assertIdentity(subject, "jduke");
+        assertRoles(subject, "Java Duke");
     }
 
     @Override

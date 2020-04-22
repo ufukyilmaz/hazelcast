@@ -17,6 +17,7 @@ import javax.naming.ldap.LdapContext;
 import javax.security.auth.login.FailedLoginException;
 
 import com.hazelcast.config.security.LdapSearchScope;
+import com.hazelcast.security.HazelcastPrincipal;
 
 
 /**
@@ -71,6 +72,12 @@ public class LdapLoginModule extends BasicLdapLoginModule {
     public static final String OPTION_PASSWORD_ATTRIBUTE = "passwordAttribute";
 
     /**
+     * Login module option name - Allows disabling password verification and only takes care about filling
+     * {@link HazelcastPrincipal} instances into the Subject.
+     */
+    public static final String OPTION_SKIP_AUTHENTICATION = "skipAuthentication";
+
+    /**
      * Default value for the {@value #OPTION_USER_FILTER} option.
      */
     public static final String DEFAULT_USER_FILTER = "(uid=" + PLACEHOLDER_LOGIN + ")";
@@ -79,6 +86,7 @@ public class LdapLoginModule extends BasicLdapLoginModule {
     private String userContext;
     private String userFilter;
     private String passwordAttribute;
+    private boolean skipAuthentication;
 
     @Override
     protected void onInitialize() {
@@ -87,10 +95,10 @@ public class LdapLoginModule extends BasicLdapLoginModule {
         userContext = getStringOption(OPTION_USER_CONTEXT, "");
         userFilter = getStringOption(OPTION_USER_FILTER, DEFAULT_USER_FILTER);
         passwordAttribute = getStringOption(OPTION_PASSWORD_ATTRIBUTE, null);
+        skipAuthentication = getBoolOption(OPTION_SKIP_AUTHENTICATION, false);
     }
 
     @Override
-    @SuppressWarnings("checkstyle:npathcomplexity")
     protected Attributes setUserDnAndGetAttributes() throws NamingException, FailedLoginException {
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(userSearchScope.toSearchControlValue());
@@ -118,6 +126,13 @@ public class LdapLoginModule extends BasicLdapLoginModule {
             logger.fine("Matching user object was found. DN: " + userDN);
         }
         userAttributes = userSearchResult.getAttributes();
+        if (!skipAuthentication) {
+            verifyPassword();
+        }
+        return userSearchResult.getAttributes();
+    }
+
+    private void verifyPassword() throws FailedLoginException, NamingException {
         if (passwordAttribute == null) {
             logger.fine("Verifying user credentials by doing a new LDAP bind.");
             authenticateByNewBind(userDN, password);
@@ -131,8 +146,15 @@ public class LdapLoginModule extends BasicLdapLoginModule {
                 throw new FailedLoginException("Provided password doesn't match the expected value.");
             }
         }
+    }
 
-        return userSearchResult.getAttributes();
+    @Override
+    protected void initAuthentication() throws FailedLoginException {
+        if (skipAuthentication) {
+            login = getLastIdentity();
+        } else {
+            super.initAuthentication();
+        }
     }
 
     @Override
@@ -160,10 +182,5 @@ public class LdapLoginModule extends BasicLdapLoginModule {
             logger.finest(e);
             throw new FailedLoginException("User authentication by LDAP bind failed");
         }
-    }
-
-    @Override
-    protected String getName() {
-        return name;
     }
 }

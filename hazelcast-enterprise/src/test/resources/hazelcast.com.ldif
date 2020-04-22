@@ -14,10 +14,14 @@ dn: uid=jduke,ou=Users,dc=hazelcast,dc=com
 objectClass: top
 objectClass: person
 objectClass: inetOrgPerson
+objectClass: krb5principal
+objectClass: krb5kdcentry
 cn: Java Duke
 sn: duke
 uid: jduke
 userPassword: theduke
+krb5PrincipalName: jduke@HAZELCAST.COM
+krb5KeyVersionNumber: 0
 
 dn: uid=hazelcast,ou=Users,dc=hazelcast,dc=com
 objectClass: top
@@ -33,11 +37,14 @@ dn: uid=josef,ou=Users,dc=hazelcast,dc=com
 objectClass: top
 objectClass: person
 objectClass: inetOrgPerson
+objectClass: krb5principal
+objectClass: krb5kdcentry
 cn: Locksmith
 sn: kwart
 uid: josef
 userPassword: s3crEt
-
+krb5PrincipalName: josef@HAZELCAST.COM
+krb5KeyVersionNumber: 0
 
 dn: ou=Roles,dc=hazelcast,dc=com
 objectclass: top
@@ -82,3 +89,35 @@ objectClass: top
 objectClass: groupOfNames
 member:
 cn: Role3
+
+dn: ou=Services,dc=hazelcast,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: Services
+
+dn: uid=krbtgt,ou=Services,dc=hazelcast,dc=com
+objectClass: top
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: krb5principal
+objectClass: krb5kdcentry
+cn: KDC
+sn: KDC
+uid: krbtgt
+userPassword: secret
+krb5PrincipalName: krbtgt/HAZELCAST.COM@HAZELCAST.COM
+krb5KeyVersionNumber: 0
+
+dn: uid=member,ou=Services,dc=hazelcast,dc=com
+objectClass: top
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: krb5principal
+objectClass: krb5kdcentry
+cn: Hazelcast Member
+sn: Member
+uid: member
+userPassword: secret
+krb5PrincipalName: hz/127.0.0.1@HAZELCAST.COM
+krb5KeyVersionNumber: 0
+

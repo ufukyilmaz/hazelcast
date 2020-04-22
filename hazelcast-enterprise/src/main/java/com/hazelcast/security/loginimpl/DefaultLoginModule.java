@@ -72,7 +72,7 @@ public class DefaultLoginModule extends ClusterLoginModule implements LoginModul
             logger.warning("Member realm name " + memberRealm + " is missing an identity configuration.");
             return null;
         }
-        Credentials creds = cf.newCredentials();
+        Credentials creds = cf.newCredentials(null);
         if (! (creds instanceof UsernamePasswordCredentials)) {
             logger.warning("Member realm '" + memberRealm + "' doesn't have username-password identity configured."
                     + " Only cluster-name comparison will be used for authentication.");

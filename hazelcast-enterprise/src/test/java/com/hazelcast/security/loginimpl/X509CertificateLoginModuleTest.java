@@ -185,7 +185,7 @@ public class X509CertificateLoginModuleTest {
     public void testNullCertChain() throws Exception {
         Subject subject = new Subject();
         X509CertificateLoginModule lm = new X509CertificateLoginModule();
-        lm.initialize(subject, new TestCallbackHandler(null), emptyMap(), emptyMap());
+        lm.initialize(subject, new TestCallbackHandler(null), new HashMap<String, Object>(), emptyMap());
         expectedException.expect(LoginException.class);
         lm.login();
     }
@@ -194,7 +194,7 @@ public class X509CertificateLoginModuleTest {
     public void testEmptyCertChain() throws LoginException {
         Subject subject = new Subject();
         X509CertificateLoginModule lm = new X509CertificateLoginModule();
-        lm.initialize(subject, new TestCallbackHandler(new Certificate[0]), emptyMap(), emptyMap());
+        lm.initialize(subject, new TestCallbackHandler(new Certificate[0]), new HashMap<String, Object>(), emptyMap());
         expectedException.expect(LoginException.class);
         lm.login();
     }
@@ -204,14 +204,14 @@ public class X509CertificateLoginModuleTest {
         Certificate[] certs = new Certificate[] { new TestCertificate("Foo") };
         Subject subject = new Subject();
         X509CertificateLoginModule lm = new X509CertificateLoginModule();
-        lm.initialize(subject, new TestCallbackHandler(certs), emptyMap(), emptyMap());
+        lm.initialize(subject, new TestCallbackHandler(certs), new HashMap<String, Object>(), emptyMap());
         expectedException.expect(LoginException.class);
         lm.login();
     }
 
     private void doLogin(Subject subject, Map<String, ?> options, Certificate[] certs) throws LoginException {
         X509CertificateLoginModule lm = new X509CertificateLoginModule();
-        lm.initialize(subject, new TestCallbackHandler(certs), emptyMap(), options);
+        lm.initialize(subject, new TestCallbackHandler(certs), new HashMap<String, Object>(), options);
         lm.login();
         assertEquals("Login should not add Principals to the Subject", 0,
                 subject.getPrincipals(HazelcastPrincipal.class).size());

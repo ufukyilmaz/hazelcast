@@ -1,12 +1,12 @@
 package com.hazelcast.security.loginimpl;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -50,7 +50,9 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.security.CertificatesCallback;
+import com.hazelcast.security.ClusterEndpointPrincipal;
 import com.hazelcast.security.ClusterIdentityPrincipal;
+import com.hazelcast.security.ClusterLoginModule;
 import com.hazelcast.security.ClusterRolePrincipal;
 import com.hazelcast.security.EndpointCallback;
 import com.hazelcast.security.HazelcastPrincipal;
@@ -97,13 +99,17 @@ public class BasicLdapLoginModuleTest {
 
     @Test
     public void testAuthentication() throws Exception {
-        Subject subject = new Subject();
         Map<String, String> options = createBasicLdapOptions();
         options.put(BasicLdapLoginModule.OPTION_ROLE_MAPPING_ATTRIBUTE, "cn");
+        Subject subject = new Subject();
+        subject.getPrincipals().add(new ClusterIdentityPrincipal("test"));
+        subject.getPrincipals().add(new ClusterEndpointPrincipal("123.123.123.123"));
         doLogin("jduke", "theduke", subject, options);
         assertEquals("Unexpected number or principals in the Subject", 3,
                 subject.getPrincipals(HazelcastPrincipal.class).size());
         assertRoles(subject, "Java Duke");
+        assertIdentity(subject, "jduke");
+        assertEndpoint(subject, "127.0.0.1");
     }
 
     @Test
@@ -225,11 +231,44 @@ public class BasicLdapLoginModuleTest {
     public void testLdapUrlFallback() throws Exception {
         Map<String, String> options = createBasicLdapOptions();
         // use an arbitrary unasigned IP address to test LDAP failover.
-        // An IPv4 address from the multicast range is used in thistest
+        // An IPv4 address from the multicast range is used in this test
         options.put(Context.PROVIDER_URL, "ldap://224.0.0.3 " + getServerUrl());
         Subject subject = new Subject();
         doLogin("jduke", "theduke", subject, options);
         assertIdentity(subject, "jduke");
+    }
+
+    @Test
+    public void testIdentityReplacement() throws Exception {
+        Map<String, String> options = createBasicLdapOptions();
+        options.put(ClusterLoginModule.OPTION_SKIP_IDENTITY, "true");
+        options.put(ClusterLoginModule.OPTION_SKIP_ENDPOINT, "false");
+        options.put(BasicLdapLoginModule.OPTION_ROLE_MAPPING_ATTRIBUTE, "cn");
+        Subject subject = new Subject();
+        subject.getPrincipals().add(new ClusterIdentityPrincipal("test"));
+        subject.getPrincipals().add(new ClusterEndpointPrincipal("123.123.123.123"));
+        doLogin("jduke", "theduke", subject, options);
+        assertEquals("Unexpected number or principals in the Subject", 3,
+                subject.getPrincipals(HazelcastPrincipal.class).size());
+        assertRoles(subject, "Java Duke");
+        assertIdentity(subject, "test");
+        assertEndpoint(subject, "127.0.0.1");
+    }
+
+    @Test
+    public void testNoIdentityReplacement() throws Exception {
+        Map<String, String> options = createBasicLdapOptions();
+        options.put(ClusterLoginModule.OPTION_SKIP_IDENTITY, "false");
+        options.put(ClusterLoginModule.OPTION_SKIP_ENDPOINT, "true");
+        options.put(BasicLdapLoginModule.OPTION_ROLE_MAPPING_ATTRIBUTE, "cn");
+        Subject subject = new Subject();
+        subject.getPrincipals().add(new ClusterIdentityPrincipal("test"));
+        subject.getPrincipals().add(new ClusterEndpointPrincipal("123.123.123.123"));
+        doLogin("jduke", "theduke", subject, options);
+        assertEquals("Unexpected number or principals in the Subject", 3,
+                subject.getPrincipals(HazelcastPrincipal.class).size());
+        assertIdentity(subject, "jduke");
+        assertEndpoint(subject, "123.123.123.123");
     }
 
     protected Map<String, String> createBasicLdapOptions() {
@@ -253,7 +292,7 @@ public class BasicLdapLoginModuleTest {
     }
 
     protected String getLoginForUid(String uid) {
-        return "uid=" + uid + ",ou=Users,dc=hazelcast,dc=com";
+        return uid == null ? null : "uid=" + uid + ",ou=Users,dc=hazelcast,dc=com";
     }
 
     protected void assertRoles(Subject subject, String... roles) {
@@ -269,20 +308,28 @@ public class BasicLdapLoginModuleTest {
     }
 
     protected void assertIdentity(Subject subject, String expected) {
-        Set<String> identitiesInSubject = subject.getPrincipals(ClusterIdentityPrincipal.class).stream()
-                .map(p -> p.getName())
+        assertSinglePrincipal(subject, expected, ClusterIdentityPrincipal.class);
+    }
+
+    protected void assertEndpoint(Subject subject, String expected) {
+        assertSinglePrincipal(subject, expected, ClusterEndpointPrincipal.class);
+    }
+
+    private void assertSinglePrincipal(Subject subject, String expectedName, Class<? extends Principal> clazz) {
+        Set<String> principalNames = subject.getPrincipals(clazz).stream().map(p -> p.getName())
                 .collect(Collectors.toSet());
-        assertEquals("Unexpected number of roles in the Subject", 1, identitiesInSubject.size());
-        if (!identitiesInSubject.contains(expected)) {
-            fail("Identity '" + expected + "' was not found in the Subject");
+        assertEquals("Unexpected number of Principal with type " + clazz.getName(), 1, principalNames.size());
+        if (!principalNames.contains(expectedName)) {
+            fail("Principal '" + expectedName + "' was not found in the Subject");
         }
     }
 
     protected void doLogin(String uid, String password, Subject subject, Map<String, ?> options) throws LoginException {
         LoginModule lm = createLoginModule();
-        lm.initialize(subject, new TestCallbackHandler(getLoginForUid(uid), password), emptyMap(), options);
+        lm.initialize(subject, new TestCallbackHandler(getLoginForUid(uid), password), new HashMap<String, Object>(), options);
+        int expectedPrincipals = subject.getPrincipals(HazelcastPrincipal.class).size();
         lm.login();
-        assertEquals("Login should not add Principals to the Subject", 0,
+        assertEquals("Login should not add Principals to the Subject", expectedPrincipals,
                 subject.getPrincipals(HazelcastPrincipal.class).size());
         lm.commit();
     }

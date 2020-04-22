@@ -1,7 +1,11 @@
 package com.hazelcast.security.impl;
 
 import com.hazelcast.config.PermissionConfig;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.internal.util.AddressUtil;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
+import com.hazelcast.security.RealmConfigCallback;
 import com.hazelcast.security.permission.AllPermissions;
 import com.hazelcast.security.permission.AtomicLongPermission;
 import com.hazelcast.security.permission.AtomicReferencePermission;
@@ -28,10 +32,23 @@ import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.security.permission.UserCodeDeploymentPermission;
 
+import java.io.IOException;
 import java.util.Set;
 
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+
+/**
+ * Helper methods related to Hazelcast security routines.
+ */
 @SuppressWarnings("checkstyle:classdataabstractioncoupling")
 public final class SecurityUtil {
+
+    private static final ILogger LOGGER = Logger.getLogger(SecurityUtil.class);
 
     private static final ThreadLocal<Boolean> SECURE_CALL = new ThreadLocal<Boolean>();
 
@@ -117,5 +134,42 @@ public final class SecurityUtil {
 
     public static boolean addressMatches(String address, String pattern) {
         return AddressUtil.matchInterface(address, pattern);
+    }
+
+    /**
+     * Runs JAAS authentication ({@link LoginContext#login()}) on {@link RealmConfig} with given name retrieved by using given
+     * {@link CallbackHandler}. Return either the authenticated {@link Subject} when the authentication passes or {@code null}.
+     *
+     * @param callbackHandler handler used to retrieve the {@link RealmConfig}
+     * @param securityRealm name of a security realm to be retrieved by callbackHandler
+     * @return {@link Subject} when the authentication passes, {@code null} otherwise
+     */
+    public static Subject getRunAsSubject(CallbackHandler callbackHandler, String securityRealm) {
+        if (securityRealm == null) {
+            if (LOGGER.isFineEnabled()) {
+                LOGGER.fine("No RunAs Subject created for callbackHandler=" + callbackHandler + ", realm is not provided");
+            }
+            return null;
+        }
+        RealmConfigCallback cb = new RealmConfigCallback(securityRealm);
+        try {
+            callbackHandler.handle(new Callback[] { cb });
+        } catch (IOException | UnsupportedCallbackException e) {
+            LOGGER.info("Unable to retrieve the RealmConfig", e);
+            return null;
+        }
+        RealmConfig realmConfig = cb.getRealmConfig();
+        if (realmConfig == null) {
+            return null;
+        }
+        LoginConfigurationDelegate loginConfiguration = new LoginConfigurationDelegate(realmConfig.asLoginModuleConfigs());
+        try {
+            LoginContext lc = new LoginContext(securityRealm, new Subject(), callbackHandler, loginConfiguration);
+            lc.login();
+            return lc.getSubject();
+        } catch (LoginException e) {
+            LOGGER.info("Authentication failed in realm " + securityRealm, e);
+            return null;
+        }
     }
 }

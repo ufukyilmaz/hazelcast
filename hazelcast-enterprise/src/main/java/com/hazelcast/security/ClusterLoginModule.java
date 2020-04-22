@@ -24,12 +24,14 @@ public abstract class ClusterLoginModule implements LoginModule {
     public static final String OPTION_SKIP_ROLE = "skipRole";
     public static final String OPTION_SKIP_ENDPOINT = "skipEndpoint";
 
+    protected static final String SHARED_STATE_IDENTITY = "hazelcast.last.identity";
+
     protected final ILogger logger = Logger.getLogger(getClass().getName());
 
     protected String endpoint;
     protected Subject subject;
     protected Map<String, ?> options;
-    protected Map<String, ?> sharedState;
+    protected Map sharedState;
     protected boolean loginSucceeded;
     protected boolean commitSucceeded;
     protected CallbackHandler callbackHandler;
@@ -64,6 +66,10 @@ public abstract class ClusterLoginModule implements LoginModule {
             logger.log(Level.FINEST, "Authenticating request from " + getEndpointString());
         }
         loginSucceeded = onLogin();
+        String name = getName();
+        if (loginSucceeded && !isSkipIdentity() && name != null) {
+            sharedState.put(SHARED_STATE_IDENTITY, name);
+        }
         return loginSucceeded;
     }
 
@@ -76,11 +82,11 @@ public abstract class ClusterLoginModule implements LoginModule {
         String name = getName();
         logger.log(Level.FINEST, "Committing authentication from " + name);
         Set<Principal> principals = subject.getPrincipals();
-        if (name != null && !getBoolOption(OPTION_SKIP_IDENTITY, false)) {
-            principals.add(new ClusterIdentityPrincipal(name));
+        if (name != null && !isSkipIdentity()) {
+            replaceTypedPrincipal(principals, new ClusterIdentityPrincipal(name));
         }
         if (endpoint != null && !getBoolOption(OPTION_SKIP_ENDPOINT, false)) {
-            principals.add(new ClusterEndpointPrincipal(endpoint));
+            replaceTypedPrincipal(principals, new ClusterEndpointPrincipal(endpoint));
         }
         if (!isSkipRole()) {
             for (String role : assignedRoles) {
@@ -89,6 +95,16 @@ public abstract class ClusterLoginModule implements LoginModule {
         }
         commitSucceeded = onCommit();
         return commitSucceeded;
+    }
+
+    private void replaceTypedPrincipal(Set<Principal> principals, Principal newPrincipal) {
+        Class<? extends Principal> cls = newPrincipal.getClass();
+        for (Iterator<Principal> it = principals.iterator(); it.hasNext();) {
+            if (cls.isInstance(it.next())) {
+                it.remove();
+            }
+        }
+        principals.add(newPrincipal);
     }
 
     @Override
@@ -162,6 +178,14 @@ public abstract class ClusterLoginModule implements LoginModule {
 
     protected boolean isSkipRole() {
         return getBoolOption(OPTION_SKIP_ROLE, false);
+    }
+
+    protected boolean isSkipIdentity() {
+        return getBoolOption(OPTION_SKIP_IDENTITY, false);
+    }
+
+    protected String getLastIdentity() {
+        return (String) sharedState.get(SHARED_STATE_IDENTITY);
     }
 
     private String getOptionInternal(String optionName) {

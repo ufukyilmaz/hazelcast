@@ -173,7 +173,8 @@ public class DefaultLoginModuleTest {
     private void doLogin(Subject subject, Map<String, ?> options, String clusterName, String name, String password,
             Config config) throws LoginException {
         DefaultLoginModule lm = new DefaultLoginModule();
-        lm.initialize(subject, new TestCallbackHandler(clusterName, name, password, config), emptyMap(), options);
+        lm.initialize(subject, new TestCallbackHandler(clusterName, name, password, config), new HashMap<String, Object>(),
+                options);
         lm.login();
         assertEquals("Login should not add Principals to the Subject", 0,
                 subject.getPrincipals(HazelcastPrincipal.class).size());

@@ -178,21 +178,7 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
 
     @Override
     protected boolean onLogin() throws LoginException {
-        NameCallback ncb = new NameCallback("Name");
-        PasswordCallback pcb = new PasswordCallback("Password", false);
-        try {
-            callbackHandler.handle(new Callback[] { ncb, pcb });
-        } catch (IOException | UnsupportedCallbackException e) {
-            logger.finest(e);
-            throw new FailedLoginException("Handling callbacks failed.. " + e.getMessage());
-        }
-        char[] pass = pcb.getPassword();
-        login = ncb.getName();
-        password = pass == null ? null : new String(pass);
-        pcb.clearPassword();
-        if (isNullOrEmpty(password) || isNullOrEmpty(login)) {
-            throw new FailedLoginException("Both the login name and the password have to be provided.");
-        }
+        initAuthentication();
         try {
             ctx = createLdapContext();
             try {
@@ -223,6 +209,24 @@ public class BasicLdapLoginModule extends ClusterLoginModule {
         }
 
         return true;
+    }
+
+    protected void initAuthentication() throws FailedLoginException {
+        NameCallback ncb = new NameCallback("Name");
+        PasswordCallback pcb = new PasswordCallback("Password", false);
+        try {
+            callbackHandler.handle(new Callback[] { ncb, pcb });
+        } catch (IOException | UnsupportedCallbackException e) {
+            logger.finest(e);
+            throw new FailedLoginException("Handling callbacks failed.. " + e.getMessage());
+        }
+        char[] pass = pcb.getPassword();
+        login = ncb.getName();
+        password = pass == null ? null : new String(pass);
+        pcb.clearPassword();
+        if (isNullOrEmpty(password) || isNullOrEmpty(login)) {
+            throw new FailedLoginException("Both the login name and the password have to be provided.");
+        }
     }
 
     protected void verifyOptions() {

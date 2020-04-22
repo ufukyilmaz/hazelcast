@@ -193,6 +193,7 @@ public class LdapAuthenticationTest {
     private ClientConfig createClientConfig(String username, String password) {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getSecurityConfig().setUsernamePasswordIdentityConfig(getLoginForUid(username), password);
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setClusterConnectTimeoutMillis(0);
         return clientConfig;
     }
 

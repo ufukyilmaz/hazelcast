@@ -21,6 +21,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.LifecycleService;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.instance.impl.NodeState;
@@ -126,6 +127,11 @@ public class AnswerTest extends HazelcastTestSupport {
         assertTrue("Expected isMaster() to be true", node.isMaster());
         Address localAddress = hz.getCluster().getLocalMember().getAddress();
         assertEquals("Expected the same address from HazelcastInstance and Node", localAddress, node.getThisAddress());
+        assertNotNull("Server should not be null", node.getServer());
+        assertNotNull("EndpointManager should not be null",
+                node.getServer().getConnectionManager(EndpointQualifier.MEMBER));
+        assertNotNull("ConnectionManager should not be null",
+                node.getConnectionManager(EndpointQualifier.MEMBER));
     }
 
     @Test
@@ -142,7 +148,7 @@ public class AnswerTest extends HazelcastTestSupport {
         assertNotNull("SerializationService should not be null", serializationService);
 
         OperationServiceImpl operationService = nodeEngine.getOperationService();
-        assertNotNull("InternalOperationService should not be null", operationService);
+        assertNotNull("OperationService should not be null", operationService);
 
         CollectionService collectionService = nodeEngine.getService(SetService.SERVICE_NAME);
         assertNotNull("CollectionService from ISet should not be null", collectionService);

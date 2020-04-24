@@ -128,11 +128,9 @@ public class AnswerTest extends HazelcastTestSupport {
         Address localAddress = hz.getCluster().getLocalMember().getAddress();
         assertEquals("Expected the same address from HazelcastInstance and Node", localAddress, node.getThisAddress());
         assertNotNull("Server should not be null", node.getServer());
-        assertNotNull("EndpointManager should not be null",
-                node.getServer().getConnectionManager(EndpointQualifier.MEMBER));
         assertNotNull("ConnectionManager should not be null",
-                node.getConnectionManager(EndpointQualifier.MEMBER));
-    }
+                node.getServer().getConnectionManager(EndpointQualifier.MEMBER));
+     }
 
     @Test
     public void testNodeEngine() {

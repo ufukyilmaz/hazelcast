@@ -45,7 +45,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Maintains connections for WAN replication for a single
  * {@link WanPublisher}.
  */
-public class WanConnectionManager implements ConnectionListener {
+public class WanConnectionManager implements ConnectionListener<ServerConnection> {
     /**
      * Delay in seconds between the initialisation of the connection manager and
      * the time the discovery task is first run.
@@ -320,9 +320,9 @@ public class WanConnectionManager implements ConnectionListener {
     private WanConnectionWrapper connectAndNegotiate(Address targetAddress) {
         try {
             connectionsInProgress.add(targetAddress);
-            ServerConnectionManager connectionManager = node.getConnectionManager(endpointQualifier);
+            ServerConnectionManager connectionManager = node.getServer().getConnectionManager(endpointQualifier);
             if (connectionManager == null) {
-                connectionManager = node.getConnectionManager();
+                connectionManager = node.getServer().getConnectionManager(EndpointQualifier.MEMBER);
             }
             ServerConnection conn = connectionManager.getOrConnect(targetAddress);
             for (int i = 0; i < RETRY_CONNECTION_MAX; i++) {
@@ -371,7 +371,7 @@ public class WanConnectionManager implements ConnectionListener {
                     .getOperationService()
                     .createInvocationBuilder(SERVICE_NAME, negotiationOp, conn.getRemoteAddress())
                     .setTryCount(1)
-                    .setConnectionManager(node.getConnectionManager(endpointQualifier))
+                    .setConnectionManager(node.getServer().getConnectionManager(endpointQualifier))
                     .invoke();
 
         String errorMsg;
@@ -408,12 +408,12 @@ public class WanConnectionManager implements ConnectionListener {
     }
 
     @Override
-    public void connectionAdded(Connection connection) {
+    public void connectionAdded(ServerConnection connection) {
         // NOOP
     }
 
     @Override
-    public void connectionRemoved(Connection connection) {
+    public void connectionRemoved(ServerConnection connection) {
         Address remoteAddress = connection.getRemoteAddress();
         WanConnectionWrapper wrapper = connectionPool.remove(remoteAddress);
         OperationService operationService = node.nodeEngine.getOperationService();

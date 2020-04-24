@@ -2,8 +2,11 @@ package com.hazelcast.security.loginimpl;
 
 import static com.hazelcast.security.impl.LdapUtils.getAttributeValue;
 import static com.hazelcast.security.impl.LdapUtils.replacePlaceholders;
+import static com.hazelcast.security.impl.SecurityUtil.getRunAsSubject;
 import static com.hazelcast.internal.util.StringUtil.isNullOrEmpty;
 
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Properties;
 
 import javax.naming.Context;
@@ -14,7 +17,9 @@ import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
+import javax.security.auth.Subject;
 import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginException;
 
 import com.hazelcast.config.security.LdapSearchScope;
 import com.hazelcast.security.HazelcastPrincipal;
@@ -78,6 +83,12 @@ public class LdapLoginModule extends BasicLdapLoginModule {
     public static final String OPTION_SKIP_AUTHENTICATION = "skipAuthentication";
 
     /**
+     * Option name for referencing Security realm name in Hazelcast configuration. The realm's authentication configuration
+     * (when defined) will be used to authenticate the "run-as Subject" for LDAP queries.
+     */
+    public static final String OPTION_SECURITY_REALM = "securityRealm";
+
+    /**
      * Default value for the {@value #OPTION_USER_FILTER} option.
      */
     public static final String DEFAULT_USER_FILTER = "(uid=" + PLACEHOLDER_LOGIN + ")";
@@ -96,6 +107,25 @@ public class LdapLoginModule extends BasicLdapLoginModule {
         userFilter = getStringOption(OPTION_USER_FILTER, DEFAULT_USER_FILTER);
         passwordAttribute = getStringOption(OPTION_PASSWORD_ATTRIBUTE, null);
         skipAuthentication = getBoolOption(OPTION_SKIP_AUTHENTICATION, false);
+    }
+
+    @Override
+    protected boolean onLogin() throws LoginException {
+        Subject subject = getRunAsSubject(callbackHandler, getStringOption(OPTION_SECURITY_REALM, null));
+        if (subject != null) {
+            try {
+                return Subject.doAs(subject, (PrivilegedExceptionAction<Boolean>) () -> super.onLogin());
+            } catch (PrivilegedActionException e) {
+                if (e.getCause() instanceof LoginException) {
+                    throw (LoginException) e.getCause();
+                } else {
+                    LoginException loginException = new LoginException("PrivilegedAction execution failed");
+                    loginException.initCause(e.getCause());
+                    throw loginException;
+                }
+            }
+        }
+        return super.onLogin();
     }
 
     @Override
@@ -162,6 +192,7 @@ public class LdapLoginModule extends BasicLdapLoginModule {
         Properties env = new Properties();
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
         env.put(Context.REFERRAL, "ignore");
+        env.put(Context.SECURITY_AUTHENTICATION, "simple");
         env.putAll(options);
         logLdapContextProperties(env);
         return new InitialLdapContext(env, null);

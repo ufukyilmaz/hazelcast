@@ -6,15 +6,20 @@ import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static com.hazelcast.test.KerberosUtils.createKerberosJaasRealmConfig;
 import static com.hazelcast.test.KerberosUtils.createKeytab;
 import static java.lang.Boolean.TRUE;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.security.AccessControlException;
 
 import javax.naming.Context;
 
+import org.apache.directory.api.ldap.model.constants.SupportedSaslMechanisms;
 import org.apache.directory.server.annotations.CreateKdcServer;
 import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
+import org.apache.directory.server.annotations.SaslMechanism;
 import org.apache.directory.server.core.annotations.ApplyLdifFiles;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
@@ -23,6 +28,7 @@ import org.apache.directory.server.core.kerberos.KeyDerivationInterceptor;
 import org.apache.directory.server.factory.ServerAnnotationProcessor;
 import org.apache.directory.server.kerberos.kdc.KdcServer;
 import org.apache.directory.server.ldap.LdapServer;
+import org.apache.directory.server.ldap.handlers.sasl.gssapi.GssapiMechanismHandler;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -67,7 +73,11 @@ import com.hazelcast.test.annotation.QuickTest;
 @CreateLdapServer(
         transports = {
             @CreateTransport(protocol = "LDAP", address = "127.0.0.1"),
-        })
+        },
+
+        saslHost = "localhost",
+        saslPrincipal = "ldap/localhost@HAZELCAST.COM",
+        saslMechanisms = { @SaslMechanism(name = SupportedSaslMechanisms.GSSAPI, implClass = GssapiMechanismHandler.class) })
 @CreateKdcServer(primaryRealm = "HAZELCAST.COM",
         kdcPrincipal = "krbtgt/HAZELCAST.COM@HAZELCAST.COM",
         transports = {
@@ -97,7 +107,9 @@ public class KerberosAuthenticationTest {
     @BeforeClass
     public static void beforeClass() throws Exception {
         TestEnvironmentUtil.assumeNoIbmJvm();
+        assumeLocalhostIsCanonical();
         kdc = ServerAnnotationProcessor.getKdcServer(serverRule.getDirectoryService(), 10088);
+        serverRule.getLdapServer().setSearchBaseDn("dc=hazelcast,dc=com");
         assertTrueEventually(() -> kdc.isStarted());
         File krb5Conf = tempDir.newFile("krb5.conf");
         IOUtil.copy(KerberosCredentialsFactoryTest.class.getResourceAsStream("/krb5.conf"), krb5Conf);
@@ -161,7 +173,7 @@ public class KerberosAuthenticationTest {
     }
 
     @Test
-    public void testClientAuthnWithLdapRoleMapping() throws Exception {
+    public void testClientAuthnWithLdapRoleMappingSimple() throws Exception {
         LdapAuthenticationConfig ldapConfig = new LdapAuthenticationConfig().setSystemUserDn("uid=admin,ou=system")
                 .setSystemUserPassword("secret").setUrl(getLdapServerUrl()).setRoleMappingAttribute("cn")
                 .setUserFilter("(krb5PrincipalName={login})").setSkipAuthentication(TRUE);
@@ -191,6 +203,50 @@ public class KerberosAuthenticationTest {
         ClientConfig unauthzClientConfig = createClientConfig();
         unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
                 createKerberosJaasRealmConfig("josef@HAZELCAST.COM", keytabJosef.getAbsolutePath(), true));
+
+        HazelcastInstance unauhtzClient = factory.newHazelcastClient(unauthzClientConfig);
+        expected.expect(AccessControlException.class);
+        unauhtzClient.getMap("test").size();
+    }
+
+    @Test
+    public void testClientAuthnWithLdapRoleMappingGssApi() throws Exception {
+        RealmConfig krb5InitiatorRealm = createKerberosJaasRealmConfig("josef@HAZELCAST.COM", keytabJosef.getAbsolutePath(), true);
+        LdapAuthenticationConfig ldapConfig =
+                new LdapAuthenticationConfig()
+                .setSystemAuthentication("GSSAPI")
+                .setSecurityRealm("krb5Initiator")
+                .setUrl(getLdapServerUrl())
+                .setRoleMappingAttribute("cn")
+                .setUserFilter("(krb5PrincipalName={login})")
+                .setSkipAuthentication(TRUE);
+
+        KerberosAuthenticationConfig kerbClientAuthn = new KerberosAuthenticationConfig();
+        kerbClientAuthn.setSecurityRealm("krb5Acceptor").setSkipRole(true).setLdapAuthenticationConfig(ldapConfig);
+
+        Config config = createConfig("Java Duke", "josef@HAZELCAST.COM");
+        config.getSecurityConfig()
+            .setClientRealmConfig("kerberosClientAuthn", new RealmConfig().setKerberosAuthenticationConfig(kerbClientAuthn))
+            .addRealmConfig("krb5Initiator", krb5InitiatorRealm)
+            .addRealmConfig("krb5Acceptor",
+                createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytabLocalhost.getAbsolutePath(), false));
+
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
+        assertClusterSize(2, hz1, hz2);
+
+        KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                .setSecurityRealm("krb5Initiator");
+        ClientConfig clientConfig = createClientConfig();
+        clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
+
+        HazelcastInstance client = factory.newHazelcastClient(clientConfig);
+        client.getMap("test").put("key", "value");
+
+        ClientConfig unauthzClientConfig = createClientConfig();
+        unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                krb5InitiatorRealm);
 
         HazelcastInstance unauhtzClient = factory.newHazelcastClient(unauthzClientConfig);
         expected.expect(AccessControlException.class);
@@ -316,6 +372,20 @@ public class KerberosAuthenticationTest {
     }
 
     private String getLdapServerUrl() {
-        return "ldap://127.0.0.1:" + getLdapServer().getPort();
+        return "ldap://localhost:" + getLdapServer().getPort();
+    }
+
+    /**
+     * Throws {@link org.junit.AssumptionViolatedException} if the "localhost" isn't the canonical hostname for IP 127.0.0.1.
+     */
+    public static void assumeLocalhostIsCanonical() {
+        boolean isLocalhostCannonical = false;
+        try {
+            InetAddress ia = InetAddress.getByName("127.0.0.1");
+            isLocalhostCannonical = "localhost".equals(ia.getCanonicalHostName());
+        } catch (UnknownHostException e) {
+            // OK
+        }
+        assumeTrue("The localhost isn't canonical hostname for 127.0.0.1. Skipping the test.", isLocalhostCannonical);
     }
 }

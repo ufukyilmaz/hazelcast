@@ -44,8 +44,8 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
     public static final String PROPERTY_REALM = "realm";
 
     /**
-     * Property name for referencing Security realm name in Hazelcast configuration. The realm's authenticaion configuration
-     * (when defined) will be used to fill the {@link Subject} with Kerberos credentials (e.g. TGT).
+     * Property name for referencing Security realm name in Hazelcast configuration. The realm's authentication configuration
+     * (when defined) can be used to fill the {@link Subject} with Kerberos credentials (e.g. TGT).
      */
     public static final String PROPERTY_SECURITY_REALM = "securityRealm";
 

@@ -35,7 +35,7 @@ public class GssApiLoginModule extends ClusterLoginModule {
     public static final String OPTION_RELAX_FLAGS_CHECK = "relaxFlagsCheck";
 
     /**
-     * Option name for referencing Security realm name in Hazelcast configuration. The realm's authenticaion configuration
+     * Option name for referencing Security realm name in Hazelcast configuration. The realm's authentication configuration
      * (when defined) will be used to fill the {@link Subject} with Kerberos credentials (e.g. KeyTab entry).
      */
     public static final String OPTION_SECURITY_REALM = "securityRealm";

@@ -13,7 +13,7 @@ import com.hazelcast.internal.nio.ssl.MemberTLSChannelInitializer;
 import com.hazelcast.internal.nio.ssl.TextTLSChannelInitializer;
 import com.hazelcast.internal.nio.ssl.UnifiedTLSChannelInitializer;
 import com.hazelcast.internal.server.ServerContext;
-import com.hazelcast.internal.server.tcp.DefaultChannelInitializerProvider;
+import com.hazelcast.internal.server.tcp.ChannelInitializerFunction;
 import com.hazelcast.internal.server.tcp.UnifiedProtocolDecoder;
 import com.hazelcast.internal.server.tcp.UnifiedProtocolEncoder;
 import com.hazelcast.logging.ILogger;
@@ -21,7 +21,7 @@ import com.hazelcast.logging.ILogger;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 
-public class EnterpriseChannelInitializerProvider extends DefaultChannelInitializerProvider {
+public class EnterpriseChannelInitializerFunction extends ChannelInitializerFunction {
 
     private final ChannelInitializer tlsChannelInitializer;
     private final ILogger logger;
@@ -29,9 +29,9 @@ public class EnterpriseChannelInitializerProvider extends DefaultChannelInitiali
     private final boolean unifiedSslEnabled;
     private final Executor sslExecutor;
 
-    public EnterpriseChannelInitializerProvider(ServerContext serverContext, Node node) {
+    public EnterpriseChannelInitializerFunction(ServerContext serverContext, Node node) {
         super(serverContext, node.getConfig());
-        this.logger = serverContext.getLoggingService().getLogger(EnterpriseChannelInitializerProvider.class);
+        this.logger = serverContext.getLoggingService().getLogger(EnterpriseChannelInitializerFunction.class);
         this.node = node;
         this.unifiedSslEnabled = unifiedSslEnabled();
         this.sslExecutor = node.nodeEngine.getExecutionService().getGlobalTaskScheduler();

@@ -63,7 +63,7 @@ import com.hazelcast.internal.networking.ChannelInitializer;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.internal.nio.CipherByteArrayProcessor;
-import com.hazelcast.internal.nio.EnterpriseChannelInitializerProvider;
+import com.hazelcast.internal.nio.EnterpriseChannelInitializerFunction;
 import com.hazelcast.internal.nio.tcp.SymmetricCipherPacketDecoder;
 import com.hazelcast.internal.nio.tcp.SymmetricCipherPacketEncoder;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
@@ -687,7 +687,7 @@ public class EnterpriseNodeExtension
 
     @Override
     public Function<EndpointQualifier, ChannelInitializer> createChannelInitializerFn(ServerContext serverContext) {
-        EnterpriseChannelInitializerProvider provider = new EnterpriseChannelInitializerProvider(serverContext, node);
+        EnterpriseChannelInitializerFunction provider = new EnterpriseChannelInitializerFunction(serverContext, node);
         provider.init();
         return provider;
     }

@@ -1,16 +1,15 @@
-package com.hazelcast.nio.serialization;
+package com.hazelcast.internal.serialization.impl;
 
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
-import com.hazelcast.partition.PartitionAware;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.internal.serialization.impl.HeapData;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.nio.serialization.Portable;
+import com.hazelcast.nio.serialization.PortableFactory;
+import com.hazelcast.partition.PartitionAware;
 import com.hazelcast.partition.strategy.DefaultPartitioningStrategy;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
@@ -21,11 +20,11 @@ import org.junit.runner.RunWith;
 import java.io.Serializable;
 import java.nio.ByteOrder;
 
-import static com.hazelcast.nio.serialization.SerializationConcurrencyTest.Address;
-import static com.hazelcast.nio.serialization.SerializationConcurrencyTest.FACTORY_ID;
-import static com.hazelcast.nio.serialization.SerializationConcurrencyTest.Person;
-import static com.hazelcast.nio.serialization.SerializationConcurrencyTest.PortableAddress;
-import static com.hazelcast.nio.serialization.SerializationConcurrencyTest.PortablePerson;
+import static com.hazelcast.internal.serialization.impl.SerializationConcurrencyTest.Address;
+import static com.hazelcast.internal.serialization.impl.SerializationConcurrencyTest.FACTORY_ID;
+import static com.hazelcast.internal.serialization.impl.SerializationConcurrencyTest.Person;
+import static com.hazelcast.internal.serialization.impl.SerializationConcurrencyTest.PortableAddress;
+import static com.hazelcast.internal.serialization.impl.SerializationConcurrencyTest.PortablePerson;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -78,9 +77,9 @@ public class EnterpriseDataTest {
         HazelcastMemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         try {
             EnterpriseSerializationService ss = createSerializationServiceBuilder().setMemoryManager(memPool)
-                                                                                   .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(byteOrder)
-                                                                                   .setPartitioningStrategy(new DefaultPartitioningStrategy())
-                                                                                   .build();
+                    .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(byteOrder)
+                    .setPartitioningStrategy(new DefaultPartitioningStrategy())
+                    .build();
 
             Object[] objects = new Object[]{
                     System.currentTimeMillis(),

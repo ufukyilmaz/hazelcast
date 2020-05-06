@@ -1,13 +1,14 @@
-package com.hazelcast.nio.serialization;
+package com.hazelcast.internal.serialization.impl;
 
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.serialization.impl.portable.PortableTest;
+import com.hazelcast.internal.serialization.impl.portable.SerializationV1Portable;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;

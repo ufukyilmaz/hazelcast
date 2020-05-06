@@ -1,4 +1,4 @@
-package com.hazelcast.nio.serialization;
+package com.hazelcast.internal.serialization.impl;
 
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;

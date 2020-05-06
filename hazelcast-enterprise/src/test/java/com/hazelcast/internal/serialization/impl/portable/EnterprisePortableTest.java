@@ -1,31 +1,35 @@
-package com.hazelcast.nio.serialization;
+package com.hazelcast.internal.serialization.impl.portable;
 
 import com.hazelcast.config.SerializationConfig;
+import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.PortableContext;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.serialization.impl.TestSerializationConstants;
+import com.hazelcast.internal.serialization.impl.portable.PortableTest.ParentPortableObject;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.memory.StandardMemoryManager;
+import com.hazelcast.nio.serialization.ClassDefinition;
+import com.hazelcast.nio.serialization.ClassDefinitionBuilder;
+import com.hazelcast.nio.serialization.FieldDefinition;
+import com.hazelcast.nio.serialization.FieldType;
+import com.hazelcast.nio.serialization.HazelcastSerializationException;
+import com.hazelcast.nio.serialization.Portable;
+import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.nio.ByteOrder;
 
-import static com.hazelcast.nio.serialization.PortableTest.ChildPortableObject;
-import static com.hazelcast.nio.serialization.PortableTest.GrandParentPortableObject;
-import static com.hazelcast.nio.serialization.PortableTest.ParentPortableObject;
-import static com.hazelcast.nio.serialization.PortableTest.TestObject1;
-import static com.hazelcast.nio.serialization.PortableTest.TestObject2;
-import static com.hazelcast.nio.serialization.PortableTest.TestPortableFactory;
-import static com.hazelcast.nio.serialization.PortableTest.createNamedPortableClassDefinition;
+import static com.hazelcast.internal.serialization.impl.portable.PortableTest.createNamedPortableClassDefinition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -94,7 +98,7 @@ public class EnterprisePortableTest {
     static EnterpriseSerializationService createSerializationService(int version, ByteOrder order, boolean allowUnsafe) {
         return new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(order).setPortableVersion(version)
-                .addPortableFactory(FACTORY_ID, new TestPortableFactory()).build();
+                .addPortableFactory(FACTORY_ID, new PortableTest.TestPortableFactory()).build();
     }
 
     @Test
@@ -153,7 +157,7 @@ public class EnterprisePortableTest {
     @Test
     public void testClassDefinitionConfigWithErrors() throws Exception {
         SerializationConfig serializationConfig = new SerializationConfig();
-        serializationConfig.addPortableFactory(FACTORY_ID, new TestPortableFactory());
+        serializationConfig.addPortableFactory(FACTORY_ID, new PortableTest.TestPortableFactory());
         serializationConfig.setPortableVersion(1);
         serializationConfig.addClassDefinition(
                 new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.RAW_DATA_PORTABLE).addLongField("l")
@@ -176,7 +180,7 @@ public class EnterprisePortableTest {
     @Test
     public void testClassDefinitionConfig() {
         SerializationConfig serializationConfig = new SerializationConfig();
-        serializationConfig.addPortableFactory(FACTORY_ID, new TestPortableFactory());
+        serializationConfig.addPortableFactory(FACTORY_ID, new PortableTest.TestPortableFactory());
         serializationConfig.setPortableVersion(1);
         serializationConfig
                 .addClassDefinition(
@@ -214,7 +218,7 @@ public class EnterprisePortableTest {
     @Test
     public void test_1096_ByteArrayContentSame() {
         InternalSerializationService ss = new EnterpriseSerializationServiceBuilder()
-                .addPortableFactory(FACTORY_ID, new TestPortableFactory()).build();
+                .addPortableFactory(FACTORY_ID, new PortableTest.TestPortableFactory()).build();
 
         assertRepeatedSerialisationGivesSameByteArrays(ss, new NamedPortable("issue-1096", 1096));
 
@@ -240,12 +244,12 @@ public class EnterprisePortableTest {
     @Test
     public void test_issue2172_WritePortableArray() {
         InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().setInitialOutputBufferSize(16).build();
-        TestObject2[] testObject2s = new TestObject2[100];
+        PortableTest.TestObject2[] testObject2s = new PortableTest.TestObject2[100];
         for (int i = 0; i < testObject2s.length; i++) {
-            testObject2s[i] = new TestObject2();
+            testObject2s[i] = new PortableTest.TestObject2();
         }
 
-        TestObject1 testObject1 = new TestObject1(testObject2s);
+        PortableTest.TestObject1 testObject1 = new PortableTest.TestObject1(testObject2s);
         ss.toData(testObject1);
     }
 
@@ -341,9 +345,9 @@ public class EnterprisePortableTest {
     public void testSerializationService_createPortableReader() throws Exception {
         InternalSerializationService serializationService = new EnterpriseSerializationServiceBuilder().build();
 
-        ChildPortableObject child = new ChildPortableObject(System.nanoTime());
+        PortableTest.ChildPortableObject child = new PortableTest.ChildPortableObject(System.nanoTime());
         ParentPortableObject parent = new ParentPortableObject(System.currentTimeMillis(), child);
-        GrandParentPortableObject grandParent = new GrandParentPortableObject(System.nanoTime(), parent);
+        PortableTest.GrandParentPortableObject grandParent = new PortableTest.GrandParentPortableObject(System.nanoTime(), parent);
 
         Data data = serializationService.toData(grandParent);
         PortableReader reader = serializationService.createPortableReader(data);
@@ -358,16 +362,16 @@ public class EnterprisePortableTest {
         InternalSerializationService serializationService = new EnterpriseSerializationServiceBuilder().build();
         PortableContext portableContext = serializationService.getPortableContext();
 
-        ChildPortableObject child = new ChildPortableObject(System.nanoTime());
+        PortableTest.ChildPortableObject child = new PortableTest.ChildPortableObject(System.nanoTime());
         ParentPortableObject parent = new ParentPortableObject(System.currentTimeMillis(), child);
-        GrandParentPortableObject grandParent = new GrandParentPortableObject(System.nanoTime(), parent);
+        PortableTest.GrandParentPortableObject grandParent = new PortableTest.GrandParentPortableObject(System.nanoTime(), parent);
 
         Data data = serializationService.toData(grandParent);
         ClassDefinition classDefinition = portableContext.lookupClassDefinition(data);
 
         FieldDefinition fd = portableContext.getFieldDefinition(classDefinition, "child");
         assertNotNull(fd);
-        assertEquals(FieldType.PORTABLE, fd.getType());
+        Assert.assertEquals(FieldType.PORTABLE, fd.getType());
 
         fd = portableContext.getFieldDefinition(classDefinition, "child.child");
         assertNotNull(fd);

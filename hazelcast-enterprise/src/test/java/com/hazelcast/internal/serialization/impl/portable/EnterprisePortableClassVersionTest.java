@@ -1,16 +1,18 @@
-package com.hazelcast.nio.serialization;
+package com.hazelcast.internal.serialization.impl.portable;
 
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.Portable;
+import com.hazelcast.nio.serialization.PortableFactory;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.nio.serialization.EnterprisePortableTest.createSerializationService;
-import static com.hazelcast.nio.serialization.PortableClassVersionTest.createInnerPortableClassDefinition;
+import static com.hazelcast.internal.serialization.impl.portable.EnterprisePortableTest.createSerializationService;
+import static com.hazelcast.internal.serialization.impl.portable.PortableClassVersionTest.createInnerPortableClassDefinition;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)

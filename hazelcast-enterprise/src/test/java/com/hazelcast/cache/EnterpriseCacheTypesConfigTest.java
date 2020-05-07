@@ -3,15 +3,15 @@ package com.hazelcast.cache;
 import classloading.domain.Person;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.WanCustomPublisherConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanConsumerConfig;
+import com.hazelcast.config.WanCustomPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
+import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
@@ -21,8 +21,10 @@ import com.hazelcast.wan.CountingWanPublisher;
 import com.hazelcast.wan.WanConsumer;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Collections;
 
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_RECENT;
@@ -36,7 +38,7 @@ import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE;
 public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
 
     @Rule
-    public HotRestartFolderRule hotRestartFolderRule = new HotRestartFolderRule();
+    public TemporaryFolder hotRestartFolder = new TemporaryFolder();
 
     @Override
     CacheConfig createCacheConfig() {
@@ -58,21 +60,27 @@ public class EnterpriseCacheTypesConfigTest extends CacheTypesConfigTest {
     protected Config getConfig() {
         Config config = super.getConfig();
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(16, MemoryUnit.MEGABYTES));
-        WanReplicationConfig wanReplicationConfig = new WanReplicationConfig().setName("wan-replication");
+
         WanCustomPublisherConfig pc = new WanCustomPublisherConfig()
                 .setPublisherId("target-cluster")
                 .setClassName(CountingWanPublisher.class.getName());
         WanConsumerConfig wanConsumerConfig = new WanConsumerConfig()
                 .setClassName(NoopWanConsumer.class.getName());
+
+        WanReplicationConfig wanReplicationConfig = new WanReplicationConfig().setName("wan-replication");
         wanReplicationConfig.addCustomPublisherConfig(pc);
         wanReplicationConfig.setConsumerConfig(wanConsumerConfig);
         config.addWanReplicationConfig(wanReplicationConfig);
 
-        config.getHotRestartPersistenceConfig().setEnabled(true)
-                .setBaseDir(hotRestartFolderRule.getBaseDir())
-                .setClusterDataRecoveryPolicy(PARTIAL_RECOVERY_MOST_RECENT)
-                .setDataLoadTimeoutSeconds(10)
-                .setValidationTimeoutSeconds(10);
+        try {
+            config.getHotRestartPersistenceConfig().setEnabled(true)
+                    .setBaseDir(hotRestartFolder.newFolder())
+                    .setClusterDataRecoveryPolicy(PARTIAL_RECOVERY_MOST_RECENT)
+                    .setDataLoadTimeoutSeconds(10)
+                    .setValidationTimeoutSeconds(10);
+        } catch (IOException e) {
+            throw ExceptionUtil.rethrow(e);
+        }
         return config;
     }
 

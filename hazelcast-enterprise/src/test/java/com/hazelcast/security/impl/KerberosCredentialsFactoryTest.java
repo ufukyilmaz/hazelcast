@@ -1,20 +1,14 @@
 package com.hazelcast.security.impl;
 
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static com.hazelcast.test.KerberosUtils.createKerberosJaasRealmConfig;
-import static com.hazelcast.test.KerberosUtils.createKeytab;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-
-import java.io.File;
-import java.util.Properties;
-
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.UnsupportedCallbackException;
-
+import com.hazelcast.TestEnvironmentUtil;
+import com.hazelcast.internal.nio.IOUtil;
+import com.hazelcast.security.Credentials;
+import com.hazelcast.security.RealmConfigCallback;
+import com.hazelcast.security.SimpleTokenCredentials;
+import com.hazelcast.test.ChangeLoggingRule;
+import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.OverridePropertyRule;
+import com.hazelcast.test.annotation.QuickTest;
 import org.apache.directory.server.annotations.CreateKdcServer;
 import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.core.annotations.ApplyLdifFiles;
@@ -33,14 +27,19 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
-import com.hazelcast.TestEnvironmentUtil;
-import com.hazelcast.internal.nio.IOUtil;
-import com.hazelcast.security.Credentials;
-import com.hazelcast.security.RealmConfigCallback;
-import com.hazelcast.security.SimpleTokenCredentials;
-import com.hazelcast.test.HazelcastSerialClassRunner;
-import com.hazelcast.test.OverridePropertyRule;
-import com.hazelcast.test.annotation.QuickTest;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import java.io.File;
+import java.util.Properties;
+
+import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
+import static com.hazelcast.test.KerberosUtils.createKerberosJaasRealmConfig;
+import static com.hazelcast.test.KerberosUtils.createKeytab;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests creating Kerberos credentials (ticket wrapped as GSS-API token).
@@ -65,10 +64,15 @@ public class KerberosCredentialsFactoryTest {
     @ClassRule
     public static CreateDsRule dsRule = new CreateDsRule();
 
+    // TODO Remove this after 4.1 release. Keeping around for debugging purposes in cases tests start failing
+    @ClassRule
+    public static ChangeLoggingRule changeLoggingRule = new ChangeLoggingRule("log4j2-debug-krb5.xml");
+
     private static KdcServer kdc;
 
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
+
     @Rule
     public OverridePropertyRule propKrb5Conf = OverridePropertyRule.clear("java.security.krb5.conf");
 

@@ -85,7 +85,9 @@ public class KerberosCredentialsFactoryTest {
 
     @AfterClass
     public static void afterClass() throws Exception {
-        kdc.stop();
+        if (kdc != null) {
+            kdc.stop();
+        }
     }
 
     @Test

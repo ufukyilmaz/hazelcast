@@ -1,12 +1,14 @@
 package com.hazelcast.enterprise.wan.impl.operation;
 
 import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.internal.cluster.Versions;
+import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.spi.impl.operationservice.BackupAwareOperation;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.internal.partition.IPartition;
 
 import java.io.IOException;
 
@@ -17,16 +19,19 @@ import java.io.IOException;
  * The operation also sends out backup operations to ensure we cover members
  * which are backups for any partitions for which they are replicas.
  */
-public class AddWanConfigOperation extends Operation implements IdentifiedDataSerializable, BackupAwareOperation {
+public class AddWanConfigOperation extends Operation
+        implements IdentifiedDataSerializable, BackupAwareOperation, Versioned {
 
     private WanReplicationConfig wanReplicationConfig;
+    private boolean shouldBackup = true;
 
     @SuppressWarnings("unused")
     public AddWanConfigOperation() {
     }
 
-    public AddWanConfigOperation(WanReplicationConfig wanReplicationConfig) {
+    public AddWanConfigOperation(WanReplicationConfig wanReplicationConfig, boolean shouldBackup) {
         this.wanReplicationConfig = wanReplicationConfig;
+        this.shouldBackup = shouldBackup;
     }
 
     @Override
@@ -37,7 +42,7 @@ public class AddWanConfigOperation extends Operation implements IdentifiedDataSe
 
     @Override
     public boolean shouldBackup() {
-        return true;
+        return shouldBackup;
     }
 
     @Override
@@ -80,10 +85,16 @@ public class AddWanConfigOperation extends Operation implements IdentifiedDataSe
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         out.writeObject(wanReplicationConfig);
+        if (out.getVersion().isGreaterOrEqual(Versions.V4_1)) {
+            out.writeBoolean(shouldBackup);
+        }
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         wanReplicationConfig = in.readObject();
+        if (in.getVersion().isGreaterOrEqual(Versions.V4_1)) {
+            shouldBackup = in.readBoolean();
+        }
     }
 }

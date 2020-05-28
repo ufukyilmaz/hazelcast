@@ -28,7 +28,7 @@ public class AddWanConfigOperationFactory implements OperationFactory {
 
     @Override
     public Operation createOperation() {
-        return new AddWanConfigOperation(wanReplicationConfig);
+        return new AddWanConfigOperation(wanReplicationConfig, true);
     }
 
     @Override

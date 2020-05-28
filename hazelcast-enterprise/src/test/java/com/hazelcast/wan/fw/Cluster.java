@@ -2,6 +2,8 @@ package com.hazelcast.wan.fw;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConfigXmlGenerator;
+import com.hazelcast.config.InMemoryXmlConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.LifecycleEvent;
@@ -14,6 +16,7 @@ import com.hazelcast.wan.impl.AddWanConfigResult;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -22,14 +25,14 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static com.hazelcast.internal.util.Preconditions.checkNotNull;
+import static com.hazelcast.internal.util.Preconditions.checkPositive;
 import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static com.hazelcast.test.HazelcastTestSupport.spawn;
 import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
 import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
-import static com.hazelcast.internal.util.Preconditions.checkNotNull;
-import static com.hazelcast.internal.util.Preconditions.checkPositive;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -66,7 +69,13 @@ public class Cluster {
     }
 
     public HazelcastInstance[] getMembers() {
-        return clusterMembers;
+        LinkedList<HazelcastInstance> instances = new LinkedList<>();
+        for (HazelcastInstance instance : clusterMembers) {
+            if (instance != null) {
+                instances.add(instance);
+            }
+        }
+        return instances.toArray(new HazelcastInstance[0]);
     }
 
     public void shutdownMembers() {
@@ -89,7 +98,7 @@ public class Cluster {
 
     public void startCluster() {
         for (int i = 0; i < clusterMembers.length; i++) {
-            startClusterMember(i);
+            startClusterMember(i, null);
         }
     }
 
@@ -141,9 +150,13 @@ public class Cluster {
     }
 
     public HazelcastInstance startAClusterMember() {
+        return startAClusterMember(null);
+    }
+
+    public HazelcastInstance startAClusterMember(Consumer<Config> configConsumer) {
         for (int i = 0; i < clusterMembers.length; i++) {
             if (clusterMembers[i] == null || !clusterMembers[i].getLifecycleService().isRunning()) {
-                return startClusterMember(i);
+                return startClusterMember(i, configConsumer);
             }
         }
 
@@ -155,19 +168,30 @@ public class Cluster {
         int membersStarted = 0;
         for (int i = 0; i < clusterMembers.length && membersStarted < members; i++) {
             if (clusterMembers[i] == null || !clusterMembers[i].getLifecycleService().isRunning()) {
-                startClusterMember(i);
+                startClusterMember(i, null);
                 membersStarted++;
             }
         }
     }
 
     public HazelcastInstance startClusterMember(int index) {
+        return startClusterMember(index, null);
+    }
+
+    public HazelcastInstance startClusterMember(int index, Consumer<Config> configConsumer) {
         if (clusterMembers[index] != null && clusterMembers[index].getLifecycleService().isRunning()) {
             throw new IllegalArgumentException("Cluster member with index " + index + " has already started");
         }
 
         config.setInstanceName(instanceNamePrefix + index);
-        clusterMembers[index] = factory.newHazelcastInstance(config);
+
+        Config instanceConfig = this.config;
+        if (configConsumer != null) {
+            instanceConfig = new InMemoryXmlConfig(new ConfigXmlGenerator().generate(instanceConfig));
+            configConsumer.accept(instanceConfig);
+        }
+
+        clusterMembers[index] = factory.newHazelcastInstance(instanceConfig);
         waitAllForSafeState(clusterMembers);
         return clusterMembers[index];
     }
@@ -175,7 +199,7 @@ public class Cluster {
     public void startClusterMembers() {
         for (int i = 0; i < clusterMembers.length; i++) {
             if (clusterMembers[i] == null) {
-                startClusterMember(i);
+                startClusterMember(i, null);
             }
         }
     }
@@ -184,7 +208,7 @@ public class Cluster {
         int membersStarted = 0;
         for (int i = 0; i < clusterMembers.length && membersStarted < membersToStart; i++) {
             if (clusterMembers[i] == null) {
-                HazelcastInstance startedInstance = startClusterMember(i);
+                HazelcastInstance startedInstance = startClusterMember(i, null);
                 membersStarted++;
                 startAction.onMemberStarted(startedInstance);
             }
@@ -194,7 +218,7 @@ public class Cluster {
     public void startClusterMembers(ClusterMemberStartAction startAction) {
         for (int i = 0; i < clusterMembers.length; i++) {
             if (clusterMembers[i] == null) {
-                HazelcastInstance startedInstance = startClusterMember(i);
+                HazelcastInstance startedInstance = startClusterMember(i, null);
                 startAction.onMemberStarted(startedInstance);
             }
         }

@@ -91,7 +91,7 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
 
     @Before
     public void setup() {
-        clusterA = clusterA(factory, 2).setup();
+        clusterA = clusterA(factory, 3).setup();
         clusterB = clusterB(factory, 2).setup();
 
         configureMerkleTrees(clusterA);
@@ -116,9 +116,9 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
     private void configureMerkleTrees(Cluster cluster) {
         if (consistencyCheckStrategy == MERKLE_TREES) {
             cluster.getConfig()
-                    .getMapConfig("default").getMerkleTreeConfig()
-                    .setEnabled(true)
-                    .setDepth(6);
+                   .getMapConfig("default").getMerkleTreeConfig()
+                   .setEnabled(true)
+                   .setDepth(6);
         }
     }
 
@@ -216,8 +216,10 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
     }
 
     @Test
-    public void addNewWanConfigAndSyncTest() {
-        clusterA.startCluster();
+    public void addNewWanConfigAndSyncTestWithLiteMember() {
+        clusterA.startAClusterMember();
+        clusterA.startAClusterMember();
+        HazelcastInstance clusterALiteMember = clusterA.startAClusterMember(c -> c.setLiteMember(true));
         clusterB.startCluster();
 
         fillMap(clusterA, "map", 0, 1000);
@@ -233,7 +235,8 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
                 .withSetupName(newReplicationName)
                 .setup();
 
-        AddWanConfigResult result = clusterA.addWanReplication(toBReplication);
+        AddWanConfigResult result = wanReplicationService(clusterALiteMember)
+                .addWanReplicationConfig(toBReplication.getConfig());
         assertContains(result.getAddedPublisherIds(), clusterB.getName());
         assertEquals(0, result.getIgnoredPublisherIds().size());
 
@@ -243,12 +246,14 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
         assertKeysNotInEventually(clusterB.getMembers(), "map2", 0, 2000);
         assertKeysNotInEventually(clusterB.getMembers(), "map3", 0, 3000);
 
-        clusterA.syncAllMaps(toBReplication);
+        wanReplicationService(clusterALiteMember)
+                .syncAllMaps(toBReplication.getSetupName(), toBReplication.getTargetClusterName());
 
         waitForSyncToComplete(clusterA);
         if (!isAllMembersConnected(clusterA.getMembers(), newReplicationName, "B")) {
             // we give another try to the sync if it failed because of unsuccessful connection attempt
-            clusterA.syncAllMaps(toBReplication);
+            wanReplicationService(clusterALiteMember)
+                    .syncAllMaps(toBReplication.getSetupName(), toBReplication.getTargetClusterName());
         }
 
         verifyMapReplicated(clusterA, clusterB, "map");

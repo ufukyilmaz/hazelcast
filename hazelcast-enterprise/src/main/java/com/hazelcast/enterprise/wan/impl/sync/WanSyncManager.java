@@ -1,23 +1,26 @@
 package com.hazelcast.enterprise.wan.impl.sync;
 
 import com.hazelcast.cluster.Member;
+import com.hazelcast.cluster.memberselector.MemberSelectors;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
+import com.hazelcast.internal.monitor.WanSyncState;
+import com.hazelcast.internal.monitor.impl.WanSyncStateImpl;
+import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.internal.util.collection.InflatableSet;
 import com.hazelcast.internal.util.collection.InflatableSet.Builder;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.internal.monitor.WanSyncState;
-import com.hazelcast.internal.monitor.impl.WanSyncStateImpl;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
-import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.wan.impl.WanSyncStatus;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -75,7 +78,15 @@ public class WanSyncManager {
                                            String wanPublisherId,
                                            AbstractWanAntiEntropyEvent event) {
         // first check if publisher exists for the given wanReplicationName and wanPublisherId
-        wanReplicationService.getPublisherOrFail(wanReplicationName, wanPublisherId);
+        if (wanReplicationService.getPublisherOrNull(wanReplicationName, wanPublisherId) == null) {
+            String errorMsg = String.format("Sync request failed because WAN Replication Config doesn't exist"
+                    + " with WAN configuration name %s and publisher ID %s.", wanReplicationName, wanPublisherId);
+            if (node.isLiteMember()) {
+                errorMsg += " If you have added the WAN configuration dynamically, try re-running WAN sync on non-lite members.";
+            }
+            throw new InvalidConfigurationException(errorMsg);
+        }
+
         if (!SYNC_STATUS.compareAndSet(this, WanSyncStatus.READY, WanSyncStatus.IN_PROGRESS)) {
             throw new SyncFailedException("Another anti-entropy request is already in progress.");
         }
@@ -175,7 +186,9 @@ public class WanSyncManager {
                                 String wanPublisherId,
                                 AbstractWanAntiEntropyEvent event,
                                 Set<Integer> partitionsToSync) {
-        final Set<Member> members = getClusterService().getMembers();
+        // send only to data members since lite members don't own partitions and may not have
+        // the WAN replication config if it was added dynamically
+        final Collection<Member> members = getClusterService().getMembers(MemberSelectors.DATA_MEMBER_SELECTOR);
         final List<Future<WanAntiEntropyEventResult>> futures = new ArrayList<>(members.size());
 
         for (Member member : members) {

@@ -7,12 +7,14 @@ import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanBatchPublisherConfig;
 import com.hazelcast.config.WanCustomPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.enterprise.wan.impl.operation.AddWanConfigOperation;
 import com.hazelcast.enterprise.wan.impl.operation.AddWanConfigOperationFactory;
 import com.hazelcast.enterprise.wan.impl.operation.PostJoinWanOperation;
 import com.hazelcast.enterprise.wan.impl.operation.WanEventContainerOperation;
 import com.hazelcast.enterprise.wan.impl.replication.WanEventBatch;
 import com.hazelcast.enterprise.wan.impl.sync.WanSyncManager;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.management.events.AddWanConfigIgnoredEvent;
 import com.hazelcast.internal.management.events.Event;
 import com.hazelcast.internal.management.events.WanConfigurationAddedEvent;
@@ -32,6 +34,7 @@ import com.hazelcast.internal.partition.PartitionReplicationEvent;
 import com.hazelcast.internal.services.ManagedService;
 import com.hazelcast.internal.services.PostJoinAwareService;
 import com.hazelcast.internal.services.ServiceNamespace;
+import com.hazelcast.internal.util.InvocationUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.NodeEngine;
@@ -97,6 +100,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      * be retrieved dynamically e.g. using a service loader.
      */
     private static final List<Version> SUPPORTED_WAN_PROTOCOL_VERSIONS = Collections.singletonList(Version.of(1, 0));
+
+    private static final int ADD_WAN_CONFIG_MAX_RETRIES = 10;
 
     private final Node node;
     private final ILogger logger;
@@ -541,6 +546,16 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         try {
             OperationService operationService = node.getNodeEngine().getOperationService();
             operationService.invokeOnAllPartitions(null, new AddWanConfigOperationFactory(wanReplicationConfig));
+
+            if (node.getClusterService().getClusterVersion().isUnknownOrLessThan(Versions.V4_1)) {
+                // best-effort to add config locally if member does not own any
+                // partitions
+                addWanReplicationConfigLocally(wanReplicationConfig);
+            } else {
+                // adds on other members such as lite members and members
+                InvocationUtil.invokeOnStableClusterSerial(node.getNodeEngine(),
+                        () -> new AddWanConfigOperation(wanReplicationConfig, false), ADD_WAN_CONFIG_MAX_RETRIES).get();
+            }
         } catch (Throwable t) {
             throw rethrow(t);
         }

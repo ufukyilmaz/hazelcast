@@ -7,6 +7,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.logging.ILogger;
@@ -56,6 +57,7 @@ import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
+import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static com.hazelcast.wan.map.WanBatchPublisherMapTest.isAllMembersConnected;
 import static com.hazelcast.wan.map.WanMapTestSupport.assertKeysNotInEventually;
 import static org.junit.Assert.assertEquals;
@@ -100,7 +102,7 @@ public class WanAddConfigTest extends HazelcastTestSupport {
 
     @Before
     public void setup() {
-        clusterA = clusterA(factory, 2).setup();
+        clusterA = clusterA(factory, 3).setup();
         clusterB = clusterB(factory, 2).setup();
         clusterC = clusterC(factory, 2).setup();
 
@@ -355,11 +357,63 @@ public class WanAddConfigTest extends HazelcastTestSupport {
         assertPublisherCountEventually(REPLICATION_NAME, 2);
     }
 
+    @Test
+    public void testConfigAddingOnLite() {
+        final WanReplication wanReplication = replicate()
+                .to(clusterB)
+                .withSetupName(REPLICATION_NAME)
+                .setup();
+
+        clusterA.startAClusterMember();
+        clusterA.startAClusterMember();
+        HazelcastInstance liteMember = clusterA.startAClusterMember(c -> c.setLiteMember(true));
+
+        EnterpriseWanReplicationService wanService = wanReplicationService(liteMember);
+
+        AddWanConfigResult addResult = wanService.addWanReplicationConfig(wanReplication.getConfig());
+        assertEquals(1, addResult.getAddedPublisherIds().size());
+        assertEquals(0, addResult.getIgnoredPublisherIds().size());
+
+        addResult = wanService.addWanReplicationConfig(wanReplication.getConfig());
+        assertEquals(0, addResult.getAddedPublisherIds().size());
+        assertEquals(1, addResult.getIgnoredPublisherIds().size());
+
+        assertPublisherCountEventually(REPLICATION_NAME, 1);
+    }
+
+    @Test
+    public void testConfigAddingWithLiteMembersAdded() {
+        WanReplication wanReplication = replicate()
+                .to(clusterC)
+                .withSetupName(REPLICATION_NAME)
+                .setup();
+
+        clusterA.startAClusterMember();
+        clusterA.startAClusterMember(c -> c.setLiteMember(true));
+
+        AddWanConfigResult addResult = clusterA.addWanReplication(wanReplication);
+        assertEquals(1, addResult.getAddedPublisherIds().size());
+        assertEquals(0, addResult.getIgnoredPublisherIds().size());
+        assertPublisherCountEventually(REPLICATION_NAME, 1);
+        assertPublisherCountEventually(clusterA, REPLICATION_NAME, 1);
+
+        clusterA.startAClusterMember(c -> c.setLiteMember(true));
+        assertPublisherCountEventually(REPLICATION_NAME, 1);
+        assertPublisherCountEventually(clusterA, REPLICATION_NAME, 1);
+    }
+
     private Map<String, Integer> getSourceClusterConfigCountMap(String wanReplicationName) {
+        return getSourceClusterConfigCountMap(clusterA, wanReplicationName);
+    }
+
+    private Map<String, Integer> getSourceClusterConfigCountMap(Cluster cluster, String wanReplicationName) {
         while (true) {
             Map<String, Integer> instanceConfigCount = new HashMap<>();
             boolean encounteredException = false;
-            for (HazelcastInstance instance : clusterA.getMembers()) {
+            for (HazelcastInstance instance : cluster.getMembers()) {
+                if (instance == null || !instance.getLifecycleService().isRunning()) {
+                    continue;
+                }
                 Node node;
                 try {
                     node = getNode(instance);
@@ -383,8 +437,14 @@ public class WanAddConfigTest extends HazelcastTestSupport {
 
     private void assertPublisherCountEventually(final String wanReplicationName,
                                                 final int count) {
+        assertPublisherCountEventually(clusterA, wanReplicationName, count);
+    }
+
+    private void assertPublisherCountEventually(final Cluster sourceCluster,
+                                                final String wanReplicationName,
+                                                final int count) {
         assertTrueEventually(() -> {
-            Map<String, Integer> instanceConfigCount = getSourceClusterConfigCountMap(wanReplicationName);
+            Map<String, Integer> instanceConfigCount = getSourceClusterConfigCountMap(sourceCluster, wanReplicationName);
             for (Map.Entry<String, Integer> entry : instanceConfigCount.entrySet()) {
                 if (entry.getValue() != count) {
                     fail(instanceConfigCount.toString());

@@ -1,14 +1,16 @@
 package com.hazelcast.map.impl;
 
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MerkleTreeConfig;
-import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.internal.util.ConcurrencyUtil;
 import com.hazelcast.internal.util.ConstructorFunction;
 import com.hazelcast.internal.util.ContextMutexFactory;
+import com.hazelcast.internal.util.MapUtil;
+import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.wan.impl.merkletree.ArrayMerkleTree;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -18,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  * @since 3.11
  */
 public class EnterprisePartitionContainer extends PartitionContainer {
-    private final ConcurrentMap<String, MerkleTree> merkleTrees = new ConcurrentHashMap<>(1000);
+    private final ConcurrentMap<String, MerkleTree> merkleTrees;
     private final ContextMutexFactory merkleTreesMutexFactory = new ContextMutexFactory();
 
     private final ConstructorFunction<String, MerkleTree> merkleTreeConstructor
@@ -26,6 +28,14 @@ public class EnterprisePartitionContainer extends PartitionContainer {
 
     public EnterprisePartitionContainer(MapService mapService, int partitionId) {
         super(mapService, partitionId);
+        int expectedMerkleTrees = 0;
+        Collection<MapConfig> mapConfigs = mapService.mapServiceContext.getNodeEngine().getConfig().getMapConfigs().values();
+        for (MapConfig config : mapConfigs) {
+            if (config.getMerkleTreeConfig().isEnabled()) {
+                expectedMerkleTrees++;
+            }
+        }
+        merkleTrees = MapUtil.createConcurrentHashMap(Math.max(expectedMerkleTrees, 1));
     }
 
     /**

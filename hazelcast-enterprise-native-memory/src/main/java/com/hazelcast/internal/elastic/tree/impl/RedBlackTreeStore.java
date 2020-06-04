@@ -5,9 +5,10 @@ import com.hazelcast.internal.elastic.tree.OffHeapTreeEntry;
 import com.hazelcast.internal.elastic.tree.OffHeapTreeStore;
 import com.hazelcast.internal.elastic.tree.OrderingDirection;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.internal.serialization.impl.HeapData;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,8 +32,8 @@ import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
  * The algorithm is based on the CLRS book, Introduction to Algorithms.
  */
 @SuppressWarnings({"checkstyle:magicnumber", "checkstyle:methodcount", "checkstyle:npathcomplexity",
-                   "checkstyle:cyclomaticcomplexity", "checkstyle:methodlength", "checkstyle:nestedifdepth",
-                   "checkstyle:innerassignment", "checkstyle:returncount"})
+        "checkstyle:cyclomaticcomplexity", "checkstyle:methodlength", "checkstyle:nestedifdepth",
+        "checkstyle:innerassignment", "checkstyle:returncount"})
 public class RedBlackTreeStore
         implements OffHeapTreeStore {
 
@@ -270,7 +271,7 @@ public class RedBlackTreeStore
             entry.addValue(value);
 
             return node;
-        } catch (Exception ex) {
+        } catch (Exception | NativeOutOfMemoryError ex) {
             if (node != null) {
                 node.dispose();
             }
@@ -634,7 +635,7 @@ public class RedBlackTreeStore
                 // Case 2, Sibling's color is BLACK and so are his children
                 if (!fathersLeftChild.isNil()
                         && ((fathersLeftChildsLeftChild.color() == BLACK)
-                        &&  (fathersLeftChildsRightChild.color() == BLACK))) {
+                        && (fathersLeftChildsRightChild.color() == BLACK))) {
                     fathersLeftChild.color(RED);
                     node = father;
                 } else {

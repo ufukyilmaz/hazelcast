@@ -5,23 +5,27 @@ import com.hazelcast.internal.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.internal.elastic.map.NativeBehmSlotAccessorFactory;
 import com.hazelcast.internal.elastic.map.NativeMemoryDataAccessor;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
+import com.hazelcast.internal.elastic.util.DisposalUtil;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
 import static com.hazelcast.internal.elastic.map.BinaryElasticHashMap.loadFromOffHeapHeader;
 import static com.hazelcast.internal.serialization.DataType.HEAP;
+import static com.hazelcast.internal.util.CollectionUtil.isNotEmpty;
 
 /**
  * Nested map, so a map of maps, with two-tiers of keys.
@@ -46,20 +50,23 @@ import static com.hazelcast.internal.serialization.DataType.HEAP;
 class HDIndexNestedHashMap<T extends QueryableEntry> {
 
     private static final long NULL_ADDRESS = 0L;
+    private static final ThreadLocal<LinkedList> THREAD_LOCAL_DISPOSE_QUEUE
+            = ThreadLocal.withInitial(() -> new LinkedList());
 
-    private final BinaryElasticHashMap<NativeMemoryData> records;
-
-    private final EnterpriseSerializationService ess;
     private final MemoryAllocator malloc;
-    private final MapEntryFactory<T> mapEntryFactory;
     private final HDExpirableIndexStore indexStore;
-    private final BehmSlotAccessorFactory behmSlotAccessorFactory;
+    private final MapEntryFactory<T> mapEntryFactory;
+    private final EnterpriseSerializationService ess;
     private final MemoryBlockAccessor behmMemoryBlockAccessor;
+    private final BinaryElasticHashMap<NativeMemoryData> records;
+    private final BehmSlotAccessorFactory behmSlotAccessorFactory;
 
-    HDIndexNestedHashMap(HDExpirableIndexStore indexStore, EnterpriseSerializationService ess, MemoryAllocator malloc,
+    HDIndexNestedHashMap(HDExpirableIndexStore indexStore,
+                         EnterpriseSerializationService ess,
+                         MemoryAllocator malloc,
                          MapEntryFactory<T> mapEntryFactory) {
         this.indexStore = indexStore;
-        this.records = new BinaryElasticHashMap<NativeMemoryData>(ess, new NativeBehmSlotAccessorFactory(),
+        this.records = new BinaryElasticHashMap<>(ess, new NativeBehmSlotAccessorFactory(),
                 new NativeMemoryDataAccessor(ess), malloc);
         this.ess = ess;
         this.malloc = malloc;
@@ -78,25 +85,51 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
 
         NativeMemoryData mapHeader = records.get(segmentData);
 
-        BinaryElasticHashMap<MemoryBlock> map;
-        if (isNullOrEmptyData(mapHeader)) {
-            map = new BinaryElasticHashMap<MemoryBlock>(ess, behmSlotAccessorFactory, behmMemoryBlockAccessor, malloc);
-            mapHeader = map.storeHeaderOffHeap(malloc, NULL_ADDRESS);
-            NativeMemoryData oldValue = records.put(segmentData, mapHeader);
-            if (oldValue != null) {
-                throw new ConcurrentModificationException();
+        LinkedList disposeQueue = null;
+
+        try {
+            BinaryElasticHashMap<MemoryBlock> map;
+
+            if (isNullOrEmptyData(mapHeader)) {
+                map = new BinaryElasticHashMap<MemoryBlock>(ess, behmSlotAccessorFactory,
+                        behmMemoryBlockAccessor, malloc);
+
+                disposeQueue = THREAD_LOCAL_DISPOSE_QUEUE.get();
+                disposeQueue.clear();
+
+                disposeQueue.offer(map);
+
+                mapHeader = map.storeHeaderOffHeap(malloc, NULL_ADDRESS);
+                disposeQueue.offer(mapHeader);
+
+                Data nativeSegmentData = ess.toNativeData(segmentData, malloc);
+                disposeQueue.offer(nativeSegmentData);
+
+                NativeMemoryData oldValue = records.put(nativeSegmentData, mapHeader);
+                if (oldValue != null) {
+                    throw new ConcurrentModificationException();
+                }
+            } else {
+                map = loadFromOffHeapHeader(ess, malloc, mapHeader.address(),
+                        behmSlotAccessorFactory, behmMemoryBlockAccessor);
             }
-        } else {
-            map = loadFromOffHeapHeader(ess, malloc, mapHeader.address(), behmSlotAccessorFactory, behmMemoryBlockAccessor);
-        }
 
-        if (value == null) {
-            value = new NativeMemoryData();
-        }
-        MemoryBlock oldValueData = map.put(keyData, value);
-        map.storeHeaderOffHeap(malloc, mapHeader.address());
+            if (value == null) {
+                value = new NativeMemoryData();
+            }
+            MemoryBlock oldValueData = map.put(keyData, value);
+            map.storeHeaderOffHeap(malloc, mapHeader.address());
 
-        return oldValueData;
+            return oldValueData;
+        } catch (NativeOutOfMemoryError e) {
+            if (isNotEmpty(disposeQueue)) {
+                Iterator iterator = disposeQueue.descendingIterator();
+                while (iterator.hasNext()) {
+                    dispose(iterator.next());
+                }
+            }
+            throw e;
+        }
     }
 
     /**
@@ -152,8 +185,8 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         if (isNullOrEmptyData(mapHeader)) {
             return null;
         }
-        BinaryElasticHashMap<MemoryBlock> map = loadFromOffHeapHeader(ess, malloc, mapHeader.address(), behmSlotAccessorFactory,
-                behmMemoryBlockAccessor);
+        BinaryElasticHashMap<MemoryBlock> map = loadFromOffHeapHeader(ess, malloc,
+                mapHeader.address(), behmSlotAccessorFactory, behmMemoryBlockAccessor);
         // we are not disposing value - governed by the user of the map
         MemoryBlock value = map.remove(key);
         if (map.isEmpty()) {
@@ -175,8 +208,8 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
                 continue;
             }
 
-            BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc, mapHeader.address(), behmSlotAccessorFactory,
-                    behmMemoryBlockAccessor);
+            BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc,
+                    mapHeader.address(), behmSlotAccessorFactory, behmMemoryBlockAccessor);
             map.dispose();
         }
 
@@ -197,7 +230,8 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         long size = 0;
         Iterator<NativeMemoryData> iterator = records.valueIter();
         while (iterator.hasNext()) {
-            BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc, iterator.next().address(), behmSlotAccessorFactory,
+            BinaryElasticHashMap map = loadFromOffHeapHeader(ess, malloc,
+                    iterator.next().address(), behmSlotAccessorFactory,
                     behmMemoryBlockAccessor);
             size += map.size();
         }
@@ -212,5 +246,9 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         if (isNullOrEmptyData(data)) {
             throw new IllegalArgumentException(message);
         }
+    }
+
+    private void dispose(Object object) {
+        DisposalUtil.dispose(ess, malloc, object);
     }
 }

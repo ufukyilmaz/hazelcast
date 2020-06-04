@@ -3,6 +3,7 @@ package com.hazelcast.internal.elastic.tree.impl;
 import com.hazelcast.internal.elastic.tree.OffHeapTreeEntry;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 
 import java.util.Iterator;
 
@@ -10,8 +11,7 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 
 @SuppressWarnings({"checkstyle:innerassignment"})
-class RedBlackTreeNode
-    extends MemoryBlock {
+class RedBlackTreeNode extends MemoryBlock {
 
     // Tree
     static final byte RED = 1;
@@ -91,6 +91,7 @@ class RedBlackTreeNode
     /**
      * The left node of this node, which could also be NIL
      * NIL is allowed on purpose, see sentinel nodes on CLR implementation
+     *
      * @return The left node {@link RedBlackTreeNode}
      */
     RedBlackTreeNode left() {
@@ -115,6 +116,7 @@ class RedBlackTreeNode
     /**
      * The right node of this node, which could also be NIL
      * NIL is allowed on purpose, see sentinel nodes on CLR implementation
+     *
      * @return The right node {@link RedBlackTreeNode}
      */
     RedBlackTreeNode right() {
@@ -147,6 +149,7 @@ class RedBlackTreeNode
     /**
      * The color of the current node, black or red.
      * NIL nodes, will always be black, see sentinel nodes on CLR implementation.
+     *
      * @return The color of the node
      */
     byte color() {
@@ -360,12 +363,12 @@ class RedBlackTreeNode
 
                     head.last(newVal);
                 }
-            } catch (Exception ex) {
+            } catch (Exception | NativeOutOfMemoryError ex) {
                 if (newVal != null) {
                     malloc.free(newVal.address(), newVal.size());
                 }
 
-                rethrow(ex);
+                throw rethrow(ex);
             }
         }
 
@@ -392,8 +395,7 @@ class RedBlackTreeNode
      * LinkedList of Entry values
      */
     @SuppressWarnings({"checkstyle:magicnumber"})
-    class EntryValueNode
-        extends MemoryBlock {
+    class EntryValueNode extends MemoryBlock {
 
         private static final int VALUE_SZ_OFFSET = 0;
 

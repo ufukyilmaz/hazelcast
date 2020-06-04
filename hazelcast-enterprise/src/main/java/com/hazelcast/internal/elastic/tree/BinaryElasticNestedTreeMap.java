@@ -1,30 +1,31 @@
 package com.hazelcast.internal.elastic.tree;
 
-import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.elastic.map.BehmSlotAccessorFactory;
 import com.hazelcast.internal.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.internal.elastic.tree.impl.RedBlackTreeStore;
+import com.hazelcast.internal.elastic.util.DisposalUtil;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.HeapData;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
-import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.HeapData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.query.impl.Comparables;
 
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static com.hazelcast.internal.elastic.map.BinaryElasticHashMap.loadFromOffHeapHeader;
 import static com.hazelcast.internal.serialization.DataType.HEAP;
+import static com.hazelcast.internal.util.CollectionUtil.isNotEmpty;
 
 /**
  * Nested map, so a map of maps, with two-tiers of keys.
@@ -41,7 +42,7 @@ import static com.hazelcast.internal.serialization.DataType.HEAP;
  * <p>
  * Contract of each segment:
  * - Expects the key to be in the NativeMemoryData,
- *   Expects the value to be in MemoryBlock,
+ * Expects the value to be in MemoryBlock,
  * - Returns MemoryBlock and an actual type is customized via {@code memoryBlockAccessor},
  * - Never disposes any MemoryBlock passed to it,
  * <p>
@@ -53,13 +54,16 @@ import static com.hazelcast.internal.serialization.DataType.HEAP;
 public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends MemoryBlock> {
 
     private static final long NULL_ADDRESS = 0L;
+    private static final ThreadLocal<LinkedList> THREAD_LOCAL_DISPOSE_QUEUE
+            = ThreadLocal.withInitial(() -> new LinkedList());
 
     protected final MapEntryFactory<T> mapEntryFactory;
+
+    private final MemoryAllocator malloc;
     private final OffHeapTreeStore records;
     private final EnterpriseSerializationService ess;
-    private final MemoryAllocator malloc;
-    private final BehmSlotAccessorFactory behmSlotAccessorFactory;
     private final MemoryBlockAccessor memoryBlockAccessor;
+    private final BehmSlotAccessorFactory behmSlotAccessorFactory;
 
     public BinaryElasticNestedTreeMap(EnterpriseSerializationService ess, MemoryAllocator malloc,
                                       OffHeapComparator keyComparator, MapEntryFactory<T> mapEntryFactory,
@@ -79,46 +83,56 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
     }
 
     public V put(Data segmentKey, NativeMemoryData key, V value) {
-
         checkNotNullOrEmpty(segmentKey, "segmentKey can't be null or empty");
         checkNotNullOrEmpty(key, "key can't be null or empty");
 
-        NativeMemoryData nativeSegmentKey = ess.toNativeData(segmentKey, malloc);
-        BinaryElasticHashMap<V> map = null;
-        MemoryBlock mapMemBlock = null;
+        OffHeapTreeEntry entry = segmentKey instanceof HeapData
+                ? records.getEntry((HeapData) segmentKey)
+                : records.getEntry((MemoryBlock) segmentKey);
 
-        boolean deallocateNativeSegmentKey = true;
-        boolean deallocateMapAndBlock = true;
+        MemoryBlock mapMemBlock;
+        BinaryElasticHashMap<V> map;
+        LinkedList disposeQueue = null;
+
         try {
-            OffHeapTreeEntry entry = records.getEntry(nativeSegmentKey);
             if (entry == null) {
-                map = new BinaryElasticHashMap<V>(ess, behmSlotAccessorFactory, memoryBlockAccessor,
-                        malloc);
+                map = new BinaryElasticHashMap<V>(ess, behmSlotAccessorFactory,
+                        memoryBlockAccessor, malloc);
+
+                disposeQueue = THREAD_LOCAL_DISPOSE_QUEUE.get();
+                disposeQueue.clear();
+
+                disposeQueue.add(map);
+
                 mapMemBlock = map.storeHeaderOffHeap(malloc, NULL_ADDRESS);
+                disposeQueue.add(mapMemBlock);
+
+                NativeMemoryData nativeSegmentKey = ess.toNativeData(segmentKey, malloc);
+                disposeQueue.add(nativeSegmentKey);
+
                 records.put(nativeSegmentKey, mapMemBlock);
-                deallocateNativeSegmentKey = false;
             } else {
                 mapMemBlock = entry.values().next();
-                map = loadFromOffHeapHeader(ess, malloc, mapMemBlock.address(), behmSlotAccessorFactory, memoryBlockAccessor);
+                map = loadFromOffHeapHeader(ess, malloc, mapMemBlock.address(),
+                        behmSlotAccessorFactory, memoryBlockAccessor);
             }
 
             V oldValue = map.put(key, value);
             map.storeHeaderOffHeap(malloc, mapMemBlock.address());
-            deallocateMapAndBlock = false;
-            return oldValue;
-        } finally {
-            if (deallocateNativeSegmentKey) {
-                dispose(nativeSegmentKey);
-            }
 
-            if (deallocateMapAndBlock) {
-                dispose(map, mapMemBlock);
+            return oldValue;
+        } catch (NativeOutOfMemoryError e) {
+            if (isNotEmpty(disposeQueue)) {
+                Iterator iterator = disposeQueue.descendingIterator();
+                while (iterator.hasNext()) {
+                    dispose(iterator.next());
+                }
             }
+            throw e;
         }
     }
 
     public V get(Data segmentKey, NativeMemoryData key) {
-
         checkNotNullOrEmpty(segmentKey, "segmentKey can't be null");
         checkNotNullOrEmpty(key, "key can't be null");
 
@@ -145,7 +159,6 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
     }
 
     public Set<T> get(Data segmentKey) {
-
         checkNotNullOrEmpty(segmentKey, "segmentKey can't be null or empty");
 
         NativeMemoryData nativeSegmentKey = null;
@@ -181,7 +194,6 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
     protected abstract void addEntries(Set<T> result, Set<Map.Entry<Data, MemoryBlock>> entrySet);
 
     public V remove(Data segmentKey, NativeMemoryData key) {
-
         checkNotNullOrEmpty(segmentKey, "segmentKey can't be null or empty");
         checkNotNullOrEmpty(key, "key can't be null or empty");
 
@@ -214,7 +226,8 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
 
     @SuppressWarnings({"checkstyle:npathcomplexity", "checkstyle:cyclomaticcomplexity", "checkstyle:methodlength",
             "checkstyle:nestedifdepth", "checkstyle:returncount"})
-    public Set<T> subMap(Data fromSegmentKey, boolean fromInclusive, Data toSegmentKey, boolean toInclusive) {
+    public Set<T> subMap(Data fromSegmentKey, boolean fromInclusive,
+                         Data toSegmentKey, boolean toInclusive) {
 
         EntryIterator iterator;
         NativeMemoryData nativeSegmentKey = null;
@@ -375,7 +388,8 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
         private void advanceValueIterator() {
             if (valueIterator.hasNext()) {
                 MemoryBlock valueBlob = valueIterator.next();
-                value = loadFromOffHeapHeader(ess, malloc, valueBlob.address(), behmSlotAccessorFactory, memoryBlockAccessor);
+                value = loadFromOffHeapHeader(ess, malloc, valueBlob.address(),
+                        behmSlotAccessorFactory, memoryBlockAccessor);
             } else {
                 value = null;
             }
@@ -444,8 +458,11 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
     }
 
     public void dispose() {
-        clear();
-        records.dispose(false);
+        try {
+            clear();
+        } finally {
+            records.dispose(false);
+        }
     }
 
     public long size() {
@@ -473,31 +490,12 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
         }
     }
 
+    private void dispose(Object object) {
+        DisposalUtil.dispose(ess, malloc, object);
+    }
+
     private void dispose(Object... objects) {
-        Exception caught = null;
-        for (Object object : objects) {
-            if (object == null) {
-                continue;
-            }
-
-            try {
-                if (object instanceof Disposable) {
-                    ((Disposable) object).dispose();
-                } else if (object instanceof NativeMemoryData) {
-                    NativeMemoryDataUtil.dispose(ess, malloc, (NativeMemoryData) object);
-                } else if (object instanceof MemoryBlock) {
-                    NativeMemoryDataUtil.dispose(ess, malloc, (MemoryBlock) object);
-                } else {
-                    throw new IllegalStateException("Unidentifiable object, don't know how to dispose. May cause leaks.");
-                }
-            } catch (Exception exception) {
-                caught = exception;
-            }
-        }
-
-        if (caught != null) {
-            throw new HazelcastException("Could not deallocate memory. There may be a native memory leak!", caught);
-        }
+        DisposalUtil.dispose(ess, malloc, objects);
     }
 
     private static class DefaultMapEntryFactory<T extends Map.Entry> implements MapEntryFactory<T> {
@@ -509,5 +507,4 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
         }
 
     }
-
 }

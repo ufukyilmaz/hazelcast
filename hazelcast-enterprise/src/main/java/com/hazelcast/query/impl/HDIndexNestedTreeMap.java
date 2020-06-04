@@ -3,10 +3,10 @@ package com.hazelcast.query.impl;
 import com.hazelcast.internal.elastic.tree.ComparableComparator;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import java.util.Set;
 
@@ -88,5 +88,4 @@ class HDIndexNestedTreeMap<T extends QueryableEntry> {
     public void dispose() {
         recordMap.dispose();
     }
-
 }

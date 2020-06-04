@@ -33,14 +33,15 @@ import static com.hazelcast.internal.util.Preconditions.checkNotNull;
 class HDIndexHashMap<T extends QueryableEntry> {
 
     private final MapEntryFactory<T> entryFactory;
-
+    private final HDExpirableIndexStore indexStore;
     private final EnterpriseSerializationService ess;
     private final MemoryAllocator malloc;
 
     private BinaryElasticHashMap<MemoryBlock> records;
-    private final HDExpirableIndexStore indexStore;
 
-    HDIndexHashMap(HDExpirableIndexStore indexStore, EnterpriseSerializationService ess, MemoryAllocator malloc,
+    HDIndexHashMap(HDExpirableIndexStore indexStore,
+                   EnterpriseSerializationService ess,
+                   MemoryAllocator malloc,
                    MapEntryFactory<T> entryFactory) {
         this.indexStore = indexStore;
         this.ess = ess;
@@ -48,7 +49,7 @@ class HDIndexHashMap<T extends QueryableEntry> {
 
         MemoryBlockAccessor valueAccessor = new NativeMemoryDataAccessor(ess);
         MemoryBlockAccessor recordAccessor = new HDRecordAccessor(ess);
-        this.records = new BinaryElasticHashMap<MemoryBlock>(ess,
+        this.records = new BinaryElasticHashMap<>(ess,
                 new HDIndexBehmSlotAccessorFactory(),
                 new HDIndexBehmMemoryBlockAccessor(valueAccessor, recordAccessor), malloc);
 

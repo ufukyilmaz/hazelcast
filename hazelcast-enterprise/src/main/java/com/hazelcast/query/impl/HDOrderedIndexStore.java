@@ -21,7 +21,7 @@ import static com.hazelcast.query.impl.AbstractIndex.NULL;
  * <p>
  * Contract:
  * - Whenever QueryableEntry is passed to it, expects the key to be NativeMemoryData and the value
- *   to be in either NativeMemoryData or HDRecord
+ * to be in either NativeMemoryData or HDRecord
  * - Whenever Data is passed to it (removeInternal), expects it to be NativeMemoryData
  * - Never returns any native memory - all returning objects are on-heap (QueryableEntry and its fields).
  * - There is no read & write locking since it's accessed from a single partition-thread only
@@ -31,8 +31,10 @@ class HDOrderedIndexStore extends HDExpirableIndexStore {
     private final HDIndexHashMap<QueryableEntry> recordsWithNullValue;
     private final HDIndexNestedTreeMap<QueryableEntry> records;
 
-    HDOrderedIndexStore(EnterpriseSerializationService ess, MemoryAllocator malloc,
-                        MapEntryFactory<QueryableEntry> entryFactory, StoreAdapter partitionStoreAdapter) {
+    HDOrderedIndexStore(EnterpriseSerializationService ess,
+                        MemoryAllocator malloc,
+                        MapEntryFactory<QueryableEntry> entryFactory,
+                        StoreAdapter partitionStoreAdapter) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
         super(IndexCopyBehavior.NEVER, partitionStoreAdapter);
         assertRunningOnPartitionThread();
@@ -67,8 +69,11 @@ class HDOrderedIndexStore extends HDExpirableIndexStore {
     @Override
     public void destroy() {
         assertRunningOnPartitionThread();
-        clear();
-        dispose();
+        try {
+            clear();
+        } finally {
+            dispose();
+        }
     }
 
     @Override

@@ -32,8 +32,10 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
     private final HDIndexHashMap<QueryableEntry> recordsWithNullValue;
     private final HDIndexNestedHashMap<QueryableEntry> records;
 
-    HDUnorderedIndexStore(EnterpriseSerializationService ess, MemoryAllocator malloc,
-                          MapEntryFactory<QueryableEntry> entryFactory, StoreAdapter partitionStoreAdapter) {
+    HDUnorderedIndexStore(EnterpriseSerializationService ess,
+                          MemoryAllocator malloc,
+                          MapEntryFactory<QueryableEntry> entryFactory,
+                          StoreAdapter partitionStoreAdapter) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
         super(IndexCopyBehavior.NEVER, partitionStoreAdapter);
         assertRunningOnPartitionThread();
@@ -69,8 +71,11 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
     @Override
     public void destroy() {
         assertRunningOnPartitionThread();
-        clear();
-        dispose();
+        try {
+            clear();
+        } finally {
+            dispose();
+        }
     }
 
     @Override
@@ -225,8 +230,8 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
 
     private void dispose() {
         assertRunningOnPartitionThread();
-        records.dispose();
         recordsWithNullValue.dispose();
+        records.dispose();
     }
 
     private Comparable canonicalize(Comparable value) {

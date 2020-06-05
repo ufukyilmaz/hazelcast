@@ -48,7 +48,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         int length = QuickMath.log2(pageSize) - minBlockSizePower + 1;
         addressQueues = new AddressQueue[length];
         pageAllocator = new StandardMemoryManager(malloc, stats);
-        systemAllocator = new MetadataMemoryAllocator(malloc);
+        systemAllocator = new MetadataMemoryAllocator(malloc, stats);
         sequenceGenerator = newCounter();
     }
 
@@ -438,13 +438,15 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         return sb.toString();
     }
 
-    protected final class MetadataMemoryAllocator
+    protected static final class MetadataMemoryAllocator
             implements MemoryAllocator {
 
         private final LibMalloc malloc;
+        private final PooledNativeMemoryStats memoryStats;
 
-        public MetadataMemoryAllocator(LibMalloc malloc) {
+        public MetadataMemoryAllocator(LibMalloc malloc, PooledNativeMemoryStats memoryStats) {
             this.malloc = malloc;
+            this.memoryStats = memoryStats;
         }
 
         @Override

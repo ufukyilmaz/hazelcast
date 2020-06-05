@@ -64,6 +64,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
     private final LibMalloc malloc;
     private final PooledNativeMemoryStats memoryStats;
     private final GlobalPoolingMemoryManager globalMemoryManager;
+    private final MemoryAllocator globalIndexAllocator;
     private final Map<Thread, HazelcastMemoryManager> threadLocalManagers
             = new ConcurrentHashMap<Thread, HazelcastMemoryManager>(32, .75f, 1);
 
@@ -103,6 +104,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
 
         memoryStats = new PooledNativeMemoryStats(maxNative, maxMetadata);
         globalMemoryManager = new GlobalPoolingMemoryManager(minBlockSize, pageSize, malloc, memoryStats, gc);
+        globalIndexAllocator = new GlobalIndexPoolingAllocator(malloc, memoryStats);
 
         gc.registerGarbageCollectable(this);
         gc.start();
@@ -220,6 +222,10 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
         return globalMemoryManager;
     }
 
+    public MemoryAllocator getGlobalIndexAllocator() {
+        return globalIndexAllocator;
+    }
+
     public HazelcastMemoryManager getMemoryManager() {
         Thread current = Thread.currentThread();
         HazelcastMemoryManager pool = threadLocalManagers.get(current);
@@ -244,6 +250,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
         }
         threadLocalManagers.clear();
         destroyPool(globalMemoryManager);
+        destroyPool(globalIndexAllocator);
         malloc.dispose();
         memoryStats.resetUsedNativeMemory();
     }
@@ -254,7 +261,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
         return manager == null || manager.isDisposed();
     }
 
-    private static void destroyPool(HazelcastMemoryManager pool) {
+    private static void destroyPool(MemoryAllocator pool) {
         try {
             pool.dispose();
         } catch (Throwable e) {
@@ -313,7 +320,8 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
 
     @Override
     public String toString() {
-        return "PoolingMemoryManager{globalMemoryManager=" + globalMemoryManager + '}';
+        return "PoolingMemoryManager{globalMemoryManager=" + globalMemoryManager
+                + ", globalIndexMemoryAllocator=" + globalIndexAllocator + "}";
     }
 
     @Override

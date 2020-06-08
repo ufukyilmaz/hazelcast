@@ -40,6 +40,12 @@ public class GssApiLoginModule extends ClusterLoginModule {
      */
     public static final String OPTION_SECURITY_REALM = "securityRealm";
 
+    /**
+     * Option name which allows cutting off the Kerberos realm part from authenticated name. When the property value is set to
+     * {@code true}, the {@code '@REALM'} part is removed from the name (e.g. {@code jduke@ACME.COM} becomes {@code jduke}).
+     */
+    public static final String OPTION_USE_NAME_WITHOUT_REALM = "useNameWithoutRealm";
+
     private String name;
 
     @Override
@@ -75,6 +81,8 @@ public class GssApiLoginModule extends ClusterLoginModule {
                     throw loginException;
                 }
             }
+        } else {
+            acceptToken(token);
         }
         return true;
     }
@@ -98,7 +106,7 @@ public class GssApiLoginModule extends ClusterLoginModule {
                     throw new FailedLoginException("Confidentiality and data integrity is not provided by this login module.");
                 }
             }
-            name = gssContext.getSrcName().toString();
+            name = getAuthenticatedName(gssContext);
             if (!getBoolOption(OPTION_SKIP_ROLE, false)) {
                 addRole(name);
             }
@@ -107,6 +115,17 @@ public class GssApiLoginModule extends ClusterLoginModule {
             throw new LoginException("Accepting the GSS-API token failed. " + e.getMessage());
         }
         return null;
+    }
+
+    protected String getAuthenticatedName(GSSContext gssContext) throws GSSException {
+        String srcName = gssContext.getSrcName().toString();
+        if (getBoolOption(OPTION_USE_NAME_WITHOUT_REALM, false)) {
+            int pos = srcName.lastIndexOf('@');
+            if (pos > -1) {
+                srcName = srcName.substring(0, pos);
+            }
+        }
+        return srcName;
     }
 
     @Override

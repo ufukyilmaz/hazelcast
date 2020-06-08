@@ -1,5 +1,7 @@
 package com.hazelcast.security.impl;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.security.PrivilegedAction;
 import java.util.Properties;
 
@@ -50,6 +52,14 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
     public static final String PROPERTY_SECURITY_REALM = "securityRealm";
 
     /**
+     * Property name which allows using fully qualified domain name instead of IP address when the SPN is constructed from a
+     * prefix and realm name. For instance, when set {@code true}, the SPN {@code "hz/192.168.1.1@ACME.COM"} could become
+     * {@code "hz/member1.acme.com@ACME.COM"} (given the reverse DNS lookup for 192.168.1.1 returns the "member1.acme.com"
+     * hostname).
+     */
+    public static final String PROPERTY_USE_CANONICAL_HOSTNAME = "useCanonicalHostname";
+
+    /**
      * Default value for {@link #PROPERTY_PREFIX} property.
      */
     public static final String DEFAULT_VALUE_PREFIX = "hz/";
@@ -68,6 +78,7 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
     private volatile String spn;
     private volatile String serviceNamePrefix;
     private volatile String serviceRealm;
+    private volatile boolean useCanonicalHostname;
 
     private volatile String securityRealm;
     private volatile CallbackHandler callbackHandler;
@@ -83,6 +94,7 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
         serviceNamePrefix = properties.getProperty(PROPERTY_PREFIX);
         serviceRealm = properties.getProperty(PROPERTY_REALM);
         securityRealm = properties.getProperty(PROPERTY_SECURITY_REALM);
+        useCanonicalHostname = Boolean.parseBoolean(properties.getProperty(PROPERTY_USE_CANONICAL_HOSTNAME));
         if (spn != null && serviceNamePrefix != null) {
             throw new InvalidConfigurationException(
                     "Service name must not be configured together with the service name prefix.");
@@ -100,7 +112,7 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
                 throw new IllegalArgumentException(
                         "Kerberos Service principal name can't be generated without the address provided.");
             }
-            serviceName = serviceNamePrefix + address.getHost();
+            serviceName = serviceNamePrefix + getSpnHostPart(address);
         }
         if (serviceRealm != null) {
             serviceName = serviceName + "@" + serviceRealm;
@@ -117,6 +129,18 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
             token = createTokenCredentials(serviceName);
         }
         return token;
+    }
+
+    protected String getSpnHostPart(Address address) {
+        String host = address.getHost();
+        if (useCanonicalHostname) {
+            try {
+                host = InetAddress.getByName(host).getCanonicalHostName();
+            } catch (UnknownHostException e) {
+                logger.fine("Getting canonical hostname for the address failed: " + address, e);
+            }
+        }
+        return host;
     }
 
     @Override

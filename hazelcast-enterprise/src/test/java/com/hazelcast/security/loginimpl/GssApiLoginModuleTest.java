@@ -8,6 +8,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -32,8 +33,10 @@ import org.apache.directory.server.kerberos.kdc.KdcServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
@@ -83,6 +86,9 @@ public class GssApiLoginModuleTest {
     @ClassRule
     public static OverridePropertyRule propKrb5Conf = OverridePropertyRule.clear("java.security.krb5.conf");
 
+    @Rule
+    public ExpectedException expected = ExpectedException.none();
+
     @BeforeClass
     public static void beforeClass() throws Exception {
         TestEnvironmentUtil.assumeNoIbmJvm();
@@ -115,6 +121,30 @@ public class GssApiLoginModuleTest {
                 subject.getPrincipals(HazelcastPrincipal.class).size());
         assertRoles(subject, "jduke@HAZELCAST.COM");
         assertIdentity(subject, "jduke@HAZELCAST.COM");
+    }
+
+    @Test
+    public void testCutOffRealmFromName() throws Exception {
+        Subject subject = new Subject();
+        Map<String, String> options = new HashMap<>();
+        options.put(GssApiLoginModule.OPTION_SECURITY_REALM, "foo");
+        options.put(GssApiLoginModule.OPTION_USE_NAME_WITHOUT_REALM, "true");
+        Credentials kerberosCredentials = getKerberosCredentials("jduke", "jduke.keytab");
+        assertNotNull(kerberosCredentials);
+        doLogin(kerberosCredentials, subject, options);
+        assertEquals("Unexpected number or principals in the Subject", 3,
+                subject.getPrincipals(HazelcastPrincipal.class).size());
+        assertRoles(subject, "jduke");
+        assertIdentity(subject, "jduke");
+    }
+
+    @Test
+    public void testAuthenticationFailsWhenNoRealm() throws Exception {
+        Subject subject = new Subject();
+        Credentials kerberosCredentials = getKerberosCredentials("jduke", "jduke.keytab");
+        assertNotNull(kerberosCredentials);
+        expected.expect(LoginException.class);
+        doLogin(kerberosCredentials, subject, Collections.emptyMap());
     }
 
     protected void doLogin(Credentials credentials, Subject subject, Map<String, ?> options) throws LoginException {

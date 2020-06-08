@@ -121,6 +121,19 @@ userPassword: secret
 krb5PrincipalName: hz/127.0.0.1@HAZELCAST.COM
 krb5KeyVersionNumber: 0
 
+dn: uid=member-localhost,ou=Services,dc=hazelcast,dc=com
+objectClass: top
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: krb5principal
+objectClass: krb5kdcentry
+cn: Hazelcast localhost Member
+sn: Member
+uid: member-localhost
+userPassword: secret
+krb5PrincipalName: hz/localhost@HAZELCAST.COM
+krb5KeyVersionNumber: 0
+
 dn: uid=ldap,ou=Services,dc=hazelcast,dc=com
 objectClass: top
 objectClass: person

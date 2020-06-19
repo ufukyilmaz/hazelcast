@@ -60,7 +60,6 @@ public class PartitionedMapTableResolverHDTest extends SqlTestSupport {
 
         checkFail(table::getFieldCount);
         checkFail(() -> table.getField(0));
-        checkFail(table::getStatistics);
     }
 
     private void checkFail(Runnable code) {

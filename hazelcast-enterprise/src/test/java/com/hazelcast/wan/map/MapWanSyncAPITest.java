@@ -3,7 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.WanMerkleTreeSyncStats;
 import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
 import com.hazelcast.internal.monitor.WanSyncState;
@@ -13,7 +13,6 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.environment.RuntimeAvailableProcessorsRule;
 import com.hazelcast.wan.fw.Cluster;
@@ -39,6 +38,7 @@ import java.util.Map;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
+import static com.hazelcast.spi.properties.ClusterProperty.WAN_CONSUMER_INVOCATION_THRESHOLD;
 import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static com.hazelcast.test.Accessors.getPartitionService;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
@@ -56,20 +56,22 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelJVMTest.class})
+@UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
+@Category(QuickTest.class)
 public class MapWanSyncAPITest extends HazelcastTestSupport {
 
     @Rule
     public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
 
-    @Parameters(name = "consistencyCheckStrategy:{0}, maxConcurrentInvocations:{1}")
+    @Parameters(name = "consistencyCheckStrategy:{0}, maxConcurrentInvocations:{1}, invocationThreshold:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {NONE, -1},
-                {NONE, 100},
-                {MERKLE_TREES, -1},
-                {MERKLE_TREES, 100}
+                {NONE, -1, -1},
+                {NONE, 100, -1},
+                {NONE, -1, 10},
+                {NONE, 100, 10},
+                {MERKLE_TREES, -1, 10},
+                {MERKLE_TREES, 100, 10}
         });
     }
 
@@ -87,11 +89,14 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
     @After
     public void cleanup() {
         factory.terminateAll();
+        System.clearProperty(WAN_CONSUMER_INVOCATION_THRESHOLD.getName());
     }
 
     @Before
     public void setup() {
         clusterA = clusterA(factory, 3).setup();
+        System.setProperty(WAN_CONSUMER_INVOCATION_THRESHOLD.getName(), Integer.toString(invocationThreshold));
+
         clusterB = clusterB(factory, 2).setup();
 
         configureMerkleTrees(clusterA);
@@ -127,6 +132,9 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
 
     @Parameter(1)
     public int maxConcurrentInvocations;
+
+    @Parameter(2)
+    public int invocationThreshold;
 
     @Test
     public void basicSyncTest() {
@@ -285,7 +293,7 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
     @Test
     public void tryToSyncNonExistingConfig() {
         clusterA.startCluster();
-        final WanReplication nonExistantReplication = replicate()
+        final WanReplication nonExistentReplication = replicate()
                 .to(clusterB)
                 .withConsistencyCheckStrategy(consistencyCheckStrategy)
                 .withMaxConcurrentInvocations(maxConcurrentInvocations)
@@ -294,7 +302,7 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
 
         expectedException.expect(new RootCauseMatcher(InvalidConfigurationException.class,
                 "WAN Replication Config doesn't exist with WAN configuration name wanReplication and publisher ID B"));
-        clusterA.syncMap(nonExistantReplication, MAP_NAME);
+        clusterA.syncMap(nonExistentReplication, MAP_NAME);
     }
 
     @Test
@@ -417,26 +425,28 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
                                         WanReplication wanReplication,
                                         WanSyncStatus syncStatus,
                                         int expectedSyncedPartitionCount) {
-        boolean passed = false;
-        ArrayList<WanSyncState> wanSyncStates = new ArrayList<WanSyncState>(cluster.size());
-        int totalSyncedPartitions = 0;
+        assertTrueEventually(() -> {
+            boolean passed = false;
+            ArrayList<WanSyncState> wanSyncStates = new ArrayList<>(cluster.size());
+            int totalSyncedPartitions = 0;
 
-        for (HazelcastInstance instance : cluster.getMembers()) {
-            WanSyncState syncState = wanReplicationService(instance).getWanSyncState();
-            boolean memberSyncStatePasses =
-                    syncState.getStatus() == syncStatus
-                            && wanReplication.getSetupName().equals(syncState.getActiveWanConfigName())
-                            && wanReplication.getTargetClusterName().equals(syncState.getActivePublisherName());
-            passed |= memberSyncStatePasses;
-            wanSyncStates.add(syncState);
-            totalSyncedPartitions += syncState.getSyncedPartitionCount();
-        }
-        assertTrue("Expected one cluster member to have syncStatus " + syncStatus + " but statuses were " + wanSyncStates,
-                passed);
+            for (HazelcastInstance instance : cluster.getMembers()) {
+                WanSyncState syncState = wanReplicationService(instance).getWanSyncState();
+                boolean memberSyncStatePasses =
+                        syncState.getStatus() == syncStatus
+                                && wanReplication.getSetupName().equals(syncState.getActiveWanConfigName())
+                                && wanReplication.getTargetClusterName().equals(syncState.getActivePublisherName());
+                passed |= memberSyncStatePasses;
+                wanSyncStates.add(syncState);
+                totalSyncedPartitions += syncState.getSyncedPartitionCount();
+            }
+            assertTrue("Expected one cluster member to have syncStatus " + syncStatus + " but statuses were " + wanSyncStates,
+                    passed);
 
-        if (expectedSyncedPartitionCount > 0) {
-            assertEquals("Expected " + totalSyncedPartitions + " but sync states were " + wanSyncStates,
-                    expectedSyncedPartitionCount, totalSyncedPartitions);
-        }
+            if (expectedSyncedPartitionCount > 0) {
+                assertEquals("Expected " + expectedSyncedPartitionCount + " but sync states were " + wanSyncStates,
+                        expectedSyncedPartitionCount, totalSyncedPartitions);
+            }
+        });
     }
 }

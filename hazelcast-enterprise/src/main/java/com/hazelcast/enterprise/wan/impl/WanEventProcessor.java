@@ -11,6 +11,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.util.Collection;
@@ -21,15 +22,19 @@ import java.util.concurrent.RejectedExecutionException;
 
 import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
 import static com.hazelcast.internal.util.ThreadUtil.createThreadName;
+import static com.hazelcast.spi.properties.ClusterProperty.WAN_CONSUMER_INVOCATION_THRESHOLD;
 
 /**
  * The class responsible for processing WAN events coming from a source
  * cluster.
  */
 class WanEventProcessor implements LiveOperationsTracker {
+
     private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 1000;
     private static final int DEFAULT_KEY_FOR_STRIPED_EXECUTORS = -1;
-    /** Mutex for creating the executor for processing incoming WAN events */
+    /**
+     * Mutex for creating the executor for processing incoming WAN events
+     */
     private final Object executorMutex = new Object();
     private final ILogger logger;
     private final Node node;
@@ -39,11 +44,23 @@ class WanEventProcessor implements LiveOperationsTracker {
      * to send operation heartbeats to the operation sender.
      */
     private final Set<Operation> liveOperations = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final WanAcknowledger acknowledger;
     private volatile StripedExecutor executor;
 
     WanEventProcessor(Node node) {
         this.logger = node.getLogger(WanEventProcessor.class.getName());
         this.node = node;
+        this.acknowledger = createAcknowledger();
+    }
+
+    private WanAcknowledger createAcknowledger() {
+        HazelcastProperties properties = node.getProperties();
+        int invocationThreshold = properties.getInteger(WAN_CONSUMER_INVOCATION_THRESHOLD);
+        if (invocationThreshold <= 0) {
+            return new WanNonThrottlingAcknowledger(node);
+        } else {
+            return new WanThrottlingAcknowledger(node, invocationThreshold);
+        }
     }
 
     /**
@@ -60,7 +77,7 @@ class WanEventProcessor implements LiveOperationsTracker {
                 ? DEFAULT_KEY_FOR_STRIPED_EXECUTORS
                 : getPartitionId(eventList.iterator().next().getKey());
         BatchWanEventRunnable processingRunnable = new BatchWanEventRunnable(
-                replicationEvent, op, partitionId, node.getNodeEngine(), liveOperations, logger);
+                replicationEvent, op, partitionId, node.getNodeEngine(), liveOperations, logger, acknowledger);
         executeAndNotify(processingRunnable, op);
     }
 
@@ -72,10 +89,11 @@ class WanEventProcessor implements LiveOperationsTracker {
      * @param op    the operation which will be notified of the
      *              processing result
      */
+
     public void handleRepEvent(InternalWanEvent event, WanEventContainerOperation op) {
         final int partitionId = getPartitionId(event.getKey());
         final WanEventRunnable processingRunnable
-                = new WanEventRunnable(event, op, partitionId, node.getNodeEngine(), liveOperations, logger);
+                = new WanEventRunnable(event, op, partitionId, node.getNodeEngine(), liveOperations, logger, acknowledger);
         executeAndNotify(processingRunnable, op);
     }
 

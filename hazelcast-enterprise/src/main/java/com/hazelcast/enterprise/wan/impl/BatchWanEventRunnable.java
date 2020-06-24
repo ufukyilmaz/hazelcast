@@ -19,18 +19,21 @@ class BatchWanEventRunnable extends AbstractWanEventRunnable {
     private final NodeEngine nodeEngine;
     private final Set<Operation> liveOperations;
     private final ILogger logger;
+    private final WanAcknowledger acknowledger;
 
     BatchWanEventRunnable(WanEventBatch batchEvent,
                           WanEventContainerOperation operation,
                           int partitionId,
                           NodeEngine nodeEngine,
                           Set<Operation> liveOperations,
-                          ILogger logger) {
+                          ILogger logger,
+                          WanAcknowledger acknowledger) {
         super(operation, partitionId);
         this.batchEvent = batchEvent;
         this.nodeEngine = nodeEngine;
         this.liveOperations = liveOperations;
         this.logger = logger;
+        this.acknowledger = acknowledger;
     }
 
     @Override
@@ -41,9 +44,9 @@ class BatchWanEventRunnable extends AbstractWanEventRunnable {
                 WanSupportingService service = nodeEngine.getService(serviceName);
                 service.onReplicationEvent(wanEvent, operation.getAcknowledgeType());
             }
-            operation.sendResponse(true);
+            acknowledger.acknowledgeSuccess(operation);
         } catch (Exception e) {
-            operation.sendResponse(false);
+            acknowledger.acknowledgeFailure(operation);
             log(logger, e);
         } finally {
             if (!liveOperations.remove(operation)) {

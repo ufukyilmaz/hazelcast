@@ -28,7 +28,7 @@ public final class FreeMemoryChecker {
 
     private final boolean enabled;
 
-    FreeMemoryChecker() {
+    public FreeMemoryChecker() {
         String enabledStr = FREE_MEMORY_CHECKER_ENABLED.getSystemProperty();
         this.enabled = Boolean.parseBoolean(enabledStr != null ? enabledStr : "true");
     }

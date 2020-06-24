@@ -501,7 +501,7 @@ public class HDLockManagerTest extends HazelcastTestSupport {
 
     static void assertLockState(long lockAddress,
                                 int expectedUsersCount, int expectedReadWaitersCount, int expectedWriteWaitersCount) {
-        long lockState = AMEM.getLong(lockAddress);
+        long lockState = AMEM.getLongVolatile(lockAddress);
         long mask = 0xFFFFL;
         assertEquals(expectedUsersCount, (short) (lockState & mask));
         assertEquals(expectedReadWaitersCount, (lockState >> 16) & mask);

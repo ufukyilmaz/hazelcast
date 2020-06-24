@@ -332,7 +332,7 @@ public final class HDLockManager implements LockManager {
     }
 
     @SuppressWarnings("checkstyle:magicnumber")
-    private int getUsersCount(long lockState) {
+    static int getUsersCount(long lockState) {
         // Users count can be negative, don't treat it as unsigned 2 bytes integer
         return (short) (lockState & 0xFFFFL);
     }
@@ -365,16 +365,16 @@ public final class HDLockManager implements LockManager {
         return AMEM.compareAndSwapLong(lockAddr, oldLockState, newLockState);
     }
 
-    private int getReadWaitersCount(long lockState) {
+    static int getReadWaitersCount(long lockState) {
         return getWaitersCount(lockState, true);
     }
 
-    private int getWriteWaitersCount(long lockState) {
+    static int getWriteWaitersCount(long lockState) {
         return getWaitersCount(lockState, false);
     }
 
     @SuppressWarnings("checkstyle:magicnumber")
-    private int getWaitersCount(long lockState, boolean read) {
+    private static int getWaitersCount(long lockState, boolean read) {
         int shiftBits = read ? 16 : 32;
         return (int) ((lockState >> shiftBits) & 0xFFFFL);
     }
@@ -416,17 +416,17 @@ public final class HDLockManager implements LockManager {
 
     boolean readerShouldBlock() {
         float readLockRequestWinsPercentage = lockFairnessPolicy.readLockRequestWinsPercentage();
-        return !fullPercentage(readLockRequestWinsPercentage) && nextPercentage() > readLockRequestWinsPercentage;
+        return !fullPercentage(readLockRequestWinsPercentage) && nextPercentage() >= readLockRequestWinsPercentage;
     }
 
     boolean writerShouldBlock() {
         float writeLockRequestWinsPercentage = lockFairnessPolicy.writeLockRequestWinsPercentage();
-        return !fullPercentage(writeLockRequestWinsPercentage) && nextPercentage() > writeLockRequestWinsPercentage;
+        return !fullPercentage(writeLockRequestWinsPercentage) && nextPercentage() >= writeLockRequestWinsPercentage;
     }
 
     boolean nextNotifyWriter() {
         float writeWaiterWinsPercentage = lockFairnessPolicy.writeWaiterWinsPercentage();
-        return fullPercentage(writeWaiterWinsPercentage) || nextPercentage() <= writeWaiterWinsPercentage;
+        return fullPercentage(writeWaiterWinsPercentage) || nextPercentage() < writeWaiterWinsPercentage;
     }
 
     private void notifyWaiters0(long lockAddr, boolean writers) {
@@ -467,4 +467,3 @@ public final class HDLockManager implements LockManager {
         return percentage >= 0.0f && percentage <= 100.0f;
     }
 }
-

@@ -53,7 +53,7 @@ public final class NativeMemoryDataUtil {
         return BIG_ENDIAN ? type : Integer.reverseBytes(type);
     }
 
-    static int readDataSize(long address) {
+    public static int readDataSize(long address) {
         return Math.max(readTotalSize(address) - HeapData.HEAP_DATA_OVERHEAD, 0);
     }
 

@@ -95,8 +95,8 @@ public final class GlobalIndexPoolingAllocator implements MemoryAllocator {
     @SuppressWarnings("checkstyle:magicnumber")
     private static void zeroOutHeader(long address) {
         assertValidAddress(address);
-        // Make sure the lock state is 0
-        AMEM.putLong(address, 0);
+        // Make sure the lock state (8 bytes) and sequence number (next 8 bytes) are 0
+        AMEM.setMemory(address, 16, (byte) 0);
     }
 
     protected void onMallocPage(long pageAddress) {

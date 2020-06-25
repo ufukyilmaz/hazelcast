@@ -37,6 +37,7 @@ public final class KerberosUtils {
                         .setProperty("doNotPrompt", "true")
                         .setProperty("useKeyTab", "true")
                         .setProperty("storeKey", "true")
+                        .setProperty("debug", "true")
                         .setProperty("principal", principal)
                         .setProperty("keyTab", keytabPath)
                         .setProperty("isInitiator", Boolean.toString(isInitiator))));

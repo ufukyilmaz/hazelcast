@@ -16,7 +16,6 @@ import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
-import org.apache.commons.lang.mutable.MutableBoolean;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -230,17 +229,17 @@ public class EnterpriseWanMetricsTest extends HazelcastTestSupport {
 
     private void assertHasStatsEventually(Cluster cluster, MetricDescriptor... expectedDescriptors) {
         assertTrueEventually(() -> {
-            MutableBoolean found = new MutableBoolean(true);
+            boolean found = true;
             for (HazelcastInstance member : cluster.getMembers()) {
                 MetricsRegistry metricsRegistry = getNodeEngineImpl(member).getMetricsRegistry();
                 CapturingCollector collector = new CapturingCollector();
                 metricsRegistry.collect(collector);
 
                 for (MetricDescriptor expectedDescriptor : expectedDescriptors) {
-                    found.setValue(found.booleanValue() && collector.captures().containsKey(expectedDescriptor));
+                    found &= collector.captures().containsKey(expectedDescriptor);
                 }
             }
-            assertTrue(found.booleanValue());
+            assertTrue(found);
         });
     }
 

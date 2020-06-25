@@ -28,7 +28,6 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
-import org.apache.directory.api.util.DummySSLSocketFactory;
 import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.core.annotations.ApplyLdifFiles;
@@ -56,6 +55,7 @@ import com.hazelcast.security.ClusterLoginModule;
 import com.hazelcast.security.ClusterRolePrincipal;
 import com.hazelcast.security.EndpointCallback;
 import com.hazelcast.security.HazelcastPrincipal;
+import com.hazelcast.security.TrustAllSSLSocketFactory;
 import com.hazelcast.test.annotation.QuickTest;
 
 /**
@@ -276,7 +276,7 @@ public class BasicLdapLoginModuleTest {
         options.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
         options.put(Context.PROVIDER_URL, getServerUrl());
         if (tls) {
-            options.put("java.naming.ldap.factory.socket", DummySSLSocketFactory.class.getName());
+            options.put("java.naming.ldap.factory.socket", TrustAllSSLSocketFactory.class.getName());
         }
         return options;
     }

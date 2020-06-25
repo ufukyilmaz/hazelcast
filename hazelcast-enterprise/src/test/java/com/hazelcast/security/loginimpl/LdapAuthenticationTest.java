@@ -9,7 +9,6 @@ import static org.junit.Assert.fail;
 import java.security.AccessControlException;
 import java.util.Collection;
 
-import org.apache.directory.api.util.DummySSLSocketFactory;
 import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.core.annotations.ApplyLdifFiles;
@@ -42,6 +41,7 @@ import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.util.EmptyStatement;
+import com.hazelcast.security.TrustAllSSLSocketFactory;
 import com.hazelcast.test.annotation.QuickTest;
 
 /**
@@ -200,7 +200,7 @@ public class LdapAuthenticationTest {
     private Config createConfig(LdapAuthenticationConfig ldapConfig, String... adminRoles) {
         ldapConfig.setUrl(getServerUrl());
         if (tls) {
-            ldapConfig.setSocketFactoryClassName(DummySSLSocketFactory.class.getName());
+            ldapConfig.setSocketFactoryClassName(TrustAllSSLSocketFactory.class.getName());
         }
         if (useSystemUser) {
             ldapConfig.setSystemUserDn("uid=admin,ou=system");

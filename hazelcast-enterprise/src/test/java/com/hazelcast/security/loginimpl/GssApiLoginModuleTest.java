@@ -51,7 +51,7 @@ import com.hazelcast.security.HazelcastPrincipal;
 import com.hazelcast.security.RealmConfigCallback;
 import com.hazelcast.security.impl.KerberosCredentialsFactory;
 import com.hazelcast.security.impl.KerberosCredentialsFactoryTest;
-import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.QuickTest;
 
@@ -71,7 +71,9 @@ import com.hazelcast.test.annotation.QuickTest;
         },
         searchBaseDn = "dc=hazelcast,dc=com")
 @ApplyLdifFiles({"hazelcast.com.ldif"})
-@RunWith(HazelcastParallelClassRunner.class)
+// disable parallel execution to workaround the https://issues.apache.org/jira/browse/DIRKRB-744
+//@RunWith(HazelcastParallelClassRunner.class)
+@RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class})
 public class GssApiLoginModuleTest {
 

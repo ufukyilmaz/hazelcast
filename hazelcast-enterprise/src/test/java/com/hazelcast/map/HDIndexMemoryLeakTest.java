@@ -34,6 +34,7 @@ import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
+import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
@@ -127,12 +128,18 @@ public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
         executorService.shutdown();
         if (!executorService.awaitTermination(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
             executorService.shutdownNow();
+
+            // wait a while for lingering tasks
+            if (!executorService.awaitTermination(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                fail("Could not terminate tasks");
+            }
         }
 
         map.clear();
         map.destroy();
 
         assertFreeNativeMemory(hz1, hz2);
+
     }
 
 

@@ -3,7 +3,6 @@ package com.hazelcast.map;
 import com.hazelcast.config.CacheDeserializedValues;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MaxSizePolicy;
@@ -22,9 +21,6 @@ import com.hazelcast.map.impl.operation.MergeOperation;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.query.PredicateBuilder;
-import com.hazelcast.query.PredicateBuilder.EntryObject;
-import com.hazelcast.query.Predicates;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.impl.InvocationFuture;
@@ -74,7 +70,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(60);
     private static final MemoryAllocatorType ALLOCATOR_TYPE = MemoryAllocatorType.STANDARD;
     private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
-    private static final int[] OP_SET = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    private static final int[] OP_SET = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
     private static final int KEY_RANGE = 10000000;
     private static final int PARTITION_COUNT = 271;
     private static final int REPS = 1000;
@@ -120,7 +116,6 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
 
         IMap<Integer, byte[]> map = hz1.getMap(MAP_NAME);
-        map.addIndex(IndexType.SORTED, "__key");
 
         final AtomicBoolean stopBouncingThread = new AtomicBoolean(false);
         Thread bouncingThread = new Thread(() -> {
@@ -140,7 +135,8 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
             new WorkerThread(map, workerDoneLatch, running, hz1).start();
         }
 
-        assertOpenEventually("WorkerThreads didn't finish in time", workerDoneLatch, TIMEOUT * 2);
+        assertOpenEventually("WorkerThreads didn't finish in time",
+                workerDoneLatch, TIMEOUT * 2);
 
         stopBouncingThread.set(true);
         assertJoinable(bouncingThread);
@@ -186,7 +182,6 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     }
 
     private static class WorkerThread extends Thread {
-
         private final IMap<Integer, byte[]> map;
         private final CountDownLatch latch;
         private final Random rand = new Random();
@@ -340,12 +335,6 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                     break;
 
                 case 18:
-                    EntryObject entryObject = Predicates.newPredicateBuilder().getEntryObject();
-                    PredicateBuilder predicate = entryObject.key().between(key, key + 32);
-                    map.keySet(predicate);
-                    break;
-
-                case 19:
                     for (int k = key, i = 0; i < 32 && k < KEY_RANGE; k++, i++) {
                         executeMergeOperation(instance, MAP_NAME, key, newValue(key));
                     }

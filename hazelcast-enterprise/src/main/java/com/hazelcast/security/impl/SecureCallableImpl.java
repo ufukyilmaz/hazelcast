@@ -62,6 +62,7 @@ import com.hazelcast.security.permission.SetPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.splitbrainprotection.SplitBrainProtectionService;
+import com.hazelcast.sql.SqlService;
 import com.hazelcast.topic.ITopic;
 import com.hazelcast.transaction.HazelcastXAResource;
 import com.hazelcast.transaction.TransactionContext;
@@ -442,6 +443,12 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Override
         public CPSubsystem getCPSubsystem() {
             return new CPSubsystemDelegate(instance.getCPSubsystem());
+        }
+
+        @Nonnull
+        @Override
+        public SqlService getSql() {
+            return instance.getSql();
         }
     }
 

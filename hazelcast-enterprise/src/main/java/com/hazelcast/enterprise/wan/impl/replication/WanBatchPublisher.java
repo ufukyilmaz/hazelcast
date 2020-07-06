@@ -17,6 +17,7 @@ import com.hazelcast.internal.nio.ClassLoaderUtil;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.internal.util.concurrent.IdleStrategy;
+import com.hazelcast.map.impl.MerkleTreeNodeEntries;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
@@ -175,11 +176,7 @@ public class WanBatchPublisher extends AbstractWanReplication implements Runnabl
 
         if (!syncEvents.isEmpty()) {
             WanEventBatch batch = new WanEventBatch(configurationContext.isSnapshotEnabled());
-            ArrayList<InternalWanEvent> batchList = new ArrayList<>(configurationContext.getBatchSize());
-            syncEvents.drainTo(batchList, configurationContext.getBatchSize());
-            for (InternalWanEvent event : batchList) {
-                batch.addEvent(event);
-            }
+            fillBatch(batch, configurationContext.getBatchSize());
             boolean sent = sendBatch(endpoint, batch, true);
             if (sent) {
                 ongoingSyncInvocations.incrementAndGet();
@@ -206,6 +203,28 @@ public class WanBatchPublisher extends AbstractWanReplication implements Runnabl
 
         replicationStrategy.complete(endpoint);
         return false;
+    }
+
+    private void fillBatch(WanEventBatch batch, int batchSize) {
+        boolean batchComplete;
+        do {
+            InternalWanEvent syncEvent = syncEvents.peek();
+            int syncEntryCount = syncEvent instanceof MerkleTreeNodeEntries
+                    ? ((MerkleTreeNodeEntries) syncEvent).getNodeEntries().size()
+                    : 1;
+
+            int batchSizeWithThisEvent = batch.getTotalEntryCount() + syncEntryCount;
+            // edge case: the number of entries to sync is bigger than the configured batch size
+            // if that's the case and the batch is empty, we put to the event into the batch forcibly to make progress
+            if (batchSizeWithThisEvent <= batchSize || batch.isEmpty()) {
+                syncEvents.poll();
+                batch.addEvent(syncEvent);
+                batchComplete = batchSizeWithThisEvent >= batchSize || syncEvents.isEmpty();
+            } else {
+                // if the batch is not empty, but the next sync event doesn't fit in the batch is complete
+                batchComplete = true;
+            }
+        } while (!batchComplete);
     }
 
     /**

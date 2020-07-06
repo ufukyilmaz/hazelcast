@@ -53,7 +53,6 @@ public class WanEventBatch implements IdentifiedDataSerializable {
         }
     }
 
-
     /**
      * Adds a WAN event to the batch. Depending on the whether snapshot is
      * enabled, the event may be coalesced with an another event with the same
@@ -142,6 +141,10 @@ public class WanEventBatch implements IdentifiedDataSerializable {
         return eventList == null
                 ? Collections.emptyList()
                 : eventList;
+    }
+
+    public boolean isEmpty() {
+        return getTotalEntryCount() == 0;
     }
 
     @Override

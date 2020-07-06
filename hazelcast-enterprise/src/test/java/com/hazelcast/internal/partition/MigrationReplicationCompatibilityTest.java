@@ -17,6 +17,7 @@ import com.hazelcast.map.IMap;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.multimap.MultiMap;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
@@ -38,6 +39,7 @@ import java.util.Collection;
 import static com.hazelcast.internal.cluster.impl.MembershipUpdateCompatibilityTest.changeClusterVersionEventually;
 import static com.hazelcast.spi.properties.ClusterProperty.TCP_JOIN_PORT_TRY_COUNT;
 import static com.hazelcast.test.Accessors.getNode;
+import static com.hazelcast.test.Accessors.getPartitionService;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getOldestKnownVersion;
 import static java.util.Arrays.asList;
@@ -329,14 +331,25 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
         HazelcastInstance instance2 = HazelcastInstanceFactory.newHazelcastInstance(createConfig());
 
         assertClusterSizeEventually(3, latest);
+        waitAllForSafeState(instance, instance2);
 
         Version currentVersion = getNode(latest).getVersion().asVersion();
         changeClusterVersionEventually(latest, currentVersion);
+
+        PartitionTableView pt1 = getPartitionService(latest).createPartitionTableView();
+        PartitionTableView pt2 = getPartitionService(instance).createPartitionTableView();
+        PartitionTableView pt3 = getPartitionService(instance2).createPartitionTableView();
+        assertEquals(pt1, pt2);
+        assertEquals(pt1, pt3);
 
         validate(latest);
 
         latest.getLifecycleService().terminate();
         waitAllForSafeState(instance, instance2);
+
+        pt1 = getPartitionService(instance).createPartitionTableView();
+        pt2 = getPartitionService(instance2).createPartitionTableView();
+        assertEquals(pt1, pt2);
     }
 
     private void validate(HazelcastInstance instance) {
@@ -397,6 +410,8 @@ public class MigrationReplicationCompatibilityTest extends HazelcastTestSupport 
 
     private Config createConfig() {
         Config config = new Config();
+        config.setProperty(ClusterProperty.LOGGING_TYPE.getName(), "log4j2");
+        config.setProperty(ClusterProperty.WAIT_SECONDS_BEFORE_JOIN.getName(), "0");
         config.setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(getKnownPreviousVersionsCount() + 2));
 
         JoinConfig join = config.getNetworkConfig().getJoin();

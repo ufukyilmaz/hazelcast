@@ -271,9 +271,9 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         assertClusterSizeEventually(instances);
 
         PartitionTableView newPartitionTable = getPartitionService(instances[0]).createPartitionTableView();
-        assertEquals(originalPartitionTable.getLength(), newPartitionTable.getLength());
+        assertEquals(originalPartitionTable.length(), newPartitionTable.length());
 
-        for (int i = 0; i < originalPartitionTable.getLength(); i++) {
+        for (int i = 0; i < originalPartitionTable.length(); i++) {
             for (int j = 0; j < InternalPartition.MAX_REPLICA_COUNT; j++) {
                 PartitionReplica originalReplica = originalPartitionTable.getReplica(i, j);
                 PartitionReplica newReplica = newPartitionTable.getReplica(i, j);
@@ -288,7 +288,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         }
 
         OperationService operationService = getOperationService(instances[0]);
-        for (int i = 0; i < newPartitionTable.getLength(); i++) {
+        for (int i = 0; i < newPartitionTable.length(); i++) {
             operationService.invokeOnPartition(null, new NonRetryablePartitionOperation(), i).join();
         }
     }
@@ -333,9 +333,9 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         assertClusterSizeEventually(instances);
 
         PartitionTableView newPartitionTable = getPartitionService(instances[0]).createPartitionTableView();
-        assertEquals(originalPartitionTable.getLength(), newPartitionTable.getLength());
+        assertEquals(originalPartitionTable.length(), newPartitionTable.length());
 
-        for (int i = 0; i < originalPartitionTable.getLength(); i++) {
+        for (int i = 0; i < originalPartitionTable.length(); i++) {
             for (int j = 0; j < InternalPartition.MAX_REPLICA_COUNT; j++) {
                 PartitionReplica originalReplica = originalPartitionTable.getReplica(i, j);
                 PartitionReplica newReplica = newPartitionTable.getReplica(i, j);
@@ -352,7 +352,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         }
 
         OperationService operationService = getOperationService(instances[0]);
-        for (int i = 0; i < newPartitionTable.getLength(); i++) {
+        for (int i = 0; i < newPartitionTable.length(); i++) {
             operationService.invokeOnPartition(null, new NonRetryablePartitionOperation(), i).join();
         }
     }
@@ -392,7 +392,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         PartitionTableView newPartitionTable0 = getPartitionService(instances[0]).createPartitionTableView();
         PartitionTableView newPartitionTable1 = getPartitionService(instances[1]).createPartitionTableView();
 
-        for (int i = 0; i < originalPartitionTable.getLength(); i++) {
+        for (int i = 0; i < originalPartitionTable.length(); i++) {
             for (int j = 0; j < InternalPartition.MAX_REPLICA_COUNT; j++) {
                 PartitionReplica originalReplica = originalPartitionTable.getReplica(i, j);
                 PartitionReplica newReplica0 = newPartitionTable0.getReplica(i, j);
@@ -411,7 +411,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         }
 
         OperationService operationService = getOperationService(instances[0]);
-        for (int i = 0; i < newPartitionTable0.getLength(); i++) {
+        for (int i = 0; i < newPartitionTable0.length(); i++) {
             InternalCompletableFuture<Object> f =
                     operationService.invokeOnPartition(null, new NonRetryablePartitionOperation(), i);
 

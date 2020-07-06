@@ -33,6 +33,8 @@ final class ClusterMetadataWriterLoop implements Runnable {
     private final MPSCQueue<Runnable> taskQueue = new MPSCQueue<>(null);
     private final MemberListHandler memberListHandler;
     private final PartitionTableHandler partitionTableHandler;
+    //RU_COMPAT_4_0
+    private final PartitionTableHandler legacyPartitionTableHandler;
     private final ClusterStateHandler clusterStateHandler;
     private final ClusterVersionHandler clusterVersionHandler;
     private final Thread thread;
@@ -45,6 +47,7 @@ final class ClusterMetadataWriterLoop implements Runnable {
         logger = node.getLogger(getClass());
         memberListHandler = new MemberListHandler(new MemberListWriter(homeDir, node));
         partitionTableHandler = new PartitionTableHandler(new PartitionTableWriter(homeDir));
+        legacyPartitionTableHandler = new PartitionTableHandler(new LegacyPartitionTableWriter(homeDir));
         clusterStateHandler = new ClusterStateHandler(new ClusterStateWriter(homeDir));
         clusterVersionHandler = new ClusterVersionHandler(new ClusterVersionWriter(homeDir));
 
@@ -103,6 +106,11 @@ final class ClusterMetadataWriterLoop implements Runnable {
     void writePartitionTable(PartitionTableView partitionTable) {
         partitionTableHandler.set(partitionTable);
         taskQueue.offer(partitionTableHandler);
+    }
+
+    void writePartitionTableLegacy(PartitionTableView partitionTable) {
+        legacyPartitionTableHandler.set(partitionTable);
+        taskQueue.offer(legacyPartitionTableHandler);
     }
 
     void writeClusterState(ClusterState state) {
@@ -191,7 +199,7 @@ final class ClusterMetadataWriterLoop implements Runnable {
                 return;
             }
             if (logger.isFinestEnabled()) {
-                logger.finest("Persisting partition table version: " + partitionTable.getVersion());
+                logger.finest("Persisting partition table with stamp: " + partitionTable.stamp());
             }
             persist(writer, partitionTable, "Partition Table");
         }
